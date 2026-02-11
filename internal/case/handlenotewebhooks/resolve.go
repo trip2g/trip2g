@@ -2,19 +2,20 @@ package handlenotewebhooks
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
-
-	"github.com/bmatcuk/doublestar/v4"
+	"trip2g/internal/webhookutil"
 )
+
+const eventRemove = "remove"
 
 // NoteChange describes a single note change event.
 type NoteChange struct {
 	PathID int64
+	Path   string // Used for "remove" events when note is no longer in NoteViews.
 	Event  string // "create", "update", "remove"
 }
 
@@ -72,15 +73,15 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 		}
 
 		// Parse include/exclude patterns from JSON.
-		includePatterns, err := parseJSONStringArray(wh.IncludePatterns)
-		if err != nil {
-			env.Logger().Error("failed to parse include_patterns", "webhook_id", wh.ID, "error", err)
+		includePatterns, parseErr := webhookutil.ParseJSONStringArray(wh.IncludePatterns)
+		if parseErr != nil {
+			env.Logger().Error("failed to parse include_patterns", "webhook_id", wh.ID, "error", parseErr)
 			continue
 		}
 
-		excludePatterns, err := parseJSONStringArray(wh.ExcludePatterns)
-		if err != nil {
-			env.Logger().Error("failed to parse exclude_patterns", "webhook_id", wh.ID, "error", err)
+		excludePatterns, parseErr := webhookutil.ParseJSONStringArray(wh.ExcludePatterns)
+		if parseErr != nil {
+			env.Logger().Error("failed to parse exclude_patterns", "webhook_id", wh.ID, "error", parseErr)
 			continue
 		}
 
@@ -98,7 +99,7 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 				if !wh.OnUpdate {
 					continue
 				}
-			case "remove":
+			case eventRemove:
 				if !wh.OnRemove {
 					continue
 				}
@@ -107,32 +108,46 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 			// Get note view for path info.
 			noteView := nvs.GetByPathID(ch.PathID)
 			if noteView == nil {
-				// Note not found in latest views (might have been deleted).
-				continue
+				if ch.Event == eventRemove && ch.Path != "" {
+					// For remove events, the note may already be gone from NoteViews.
+					// Use the path provided directly in the change.
+				} else {
+					// Note not found in latest views.
+					continue
+				}
 			}
 
-			path := noteView.Path
+			// Determine path from noteView or from the change itself (for remove events).
+			var path string
+			if noteView != nil {
+				path = noteView.Path
+			} else {
+				path = ch.Path
+			}
 
 			// Glob matching: include patterns.
-			if !matchesAny(path, includePatterns) {
+			if !webhookutil.MatchesAny(path, includePatterns) {
 				continue
 			}
 
 			// Glob matching: exclude patterns.
-			if matchesAny(path, excludePatterns) {
+			if webhookutil.MatchesAny(path, excludePatterns) {
 				continue
 			}
 
 			info := ChangeInfo{
-				Path:    path,
-				Event:   ch.Event,
-				PathID:  noteView.PathID,
-				Version: noteView.VersionID,
-				Title:   noteView.Title,
+				Path:   path,
+				Event:  ch.Event,
+				PathID: ch.PathID,
+			}
+
+			if noteView != nil {
+				info.Version = noteView.VersionID
+				info.Title = noteView.Title
 			}
 
 			// Include content if enabled and not a remove event.
-			if wh.IncludeContent && ch.Event != "remove" {
+			if wh.IncludeContent && ch.Event != eventRemove && noteView != nil {
 				info.Content = string(noteView.Content)
 			}
 
@@ -149,25 +164,25 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 		})
 
 		// Create delivery record.
-		delivery, err := env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
+		delivery, insertErr := env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
 			WebhookID: wh.ID,
 			Attempt:   1,
 		})
-		if err != nil {
-			env.Logger().Error("failed to insert webhook delivery", "webhook_id", wh.ID, "error", err)
+		if insertErr != nil {
+			env.Logger().Error("failed to insert webhook delivery", "webhook_id", wh.ID, "error", insertErr)
 			continue
 		}
 
 		// Enqueue background job.
-		err = env.EnqueueDeliverChangeWebhook(ctx, DeliverChangeWebhookParams{
+		enqueueErr := env.EnqueueDeliverChangeWebhook(ctx, DeliverChangeWebhookParams{
 			DeliveryID: delivery.ID,
 			WebhookID:  wh.ID,
 			Attempt:    1,
 			Depth:      depth,
 			Changes:    matched,
 		})
-		if err != nil {
-			env.Logger().Error("failed to enqueue webhook delivery", "webhook_id", wh.ID, "delivery_id", delivery.ID, "error", err)
+		if enqueueErr != nil {
+			env.Logger().Error("failed to enqueue webhook delivery", "webhook_id", wh.ID, "delivery_id", delivery.ID, "error", enqueueErr)
 			continue
 		}
 
@@ -179,31 +194,4 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 	}
 
 	return nil
-}
-
-// matchesAny checks if path matches any of the glob patterns.
-func matchesAny(path string, patterns []string) bool {
-	for _, p := range patterns {
-		matched, err := doublestar.Match(p, path)
-		if err != nil {
-			// Invalid pattern — skip it.
-			continue
-		}
-		if matched {
-			return true
-		}
-	}
-	return false
-}
-
-// parseJSONStringArray parses a JSON string array like '["blog/**","docs/*"]'.
-func parseJSONStringArray(raw string) ([]string, error) {
-	var result []string
-
-	err := json.Unmarshal([]byte(raw), &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse JSON string array: %w", err)
-	}
-
-	return result, nil
 }

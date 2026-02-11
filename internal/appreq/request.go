@@ -36,6 +36,9 @@ type Request struct {
 	WebhookDepth         int
 	WebhookReadPatterns  []string
 	WebhookWritePatterns []string
+
+	// SkipWebhooks indicates this API key should not trigger webhooks.
+	SkipWebhooks bool
 }
 
 func (c *Request) Reset() {
@@ -48,6 +51,7 @@ func (c *Request) Reset() {
 	c.WebhookDepth = 0
 	c.WebhookReadPatterns = nil
 	c.WebhookWritePatterns = nil
+	c.SkipWebhooks = false
 }
 
 func (c *Request) StoreInContext() {

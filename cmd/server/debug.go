@@ -278,7 +278,8 @@ func (a *app) handleDebugTestWebhook(ctx *fasthttp.RequestCtx) bool {
 		rawBody = make(json.RawMessage, len(body))
 		copy(rawBody, body)
 	} else {
-		rawBody = json.RawMessage(`"` + string(body) + `"`)
+		marshaledStr, _ := json.Marshal(string(body))
+		rawBody = json.RawMessage(marshaledStr)
 	}
 
 	call := webhookTestCall{

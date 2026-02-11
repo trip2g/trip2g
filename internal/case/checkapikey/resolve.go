@@ -94,6 +94,8 @@ func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string,
 		return nil, fmt.Errorf("failed to insert API key log: %w", err)
 	}
 
+	req.SkipWebhooks = apiKey.SkipWebhooks
+
 	return &apiKey, nil
 }
 

@@ -932,7 +932,6 @@ func (a *app) AdminJSURL() string {
 func (a *app) UserJSURLs() []string {
 	return []string{
 		a.assetURL("/assets/ui/user/-/web.js"),
-		// a.assetURL("/assets/turbo.js"),
 	}
 }
 
@@ -1035,6 +1034,18 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 	}
 
 	// Trigger change webhook deliveries for changed notes.
+	// Check if the current request has skip_webhooks enabled.
+	req, reqErr := appreq.FromCtx(ctx)
+	skipWebhooks := reqErr == nil && req.SkipWebhooks
+	webhookDepth := 0
+	if reqErr == nil {
+		webhookDepth = req.WebhookDepth
+	}
+
+	if skipWebhooks {
+		return nil
+	}
+
 	webhookChanges := make([]handlenotewebhooks.NoteChange, 0, len(changedPathIDs))
 	for _, pathID := range changedPathIDs {
 		notePath, npErr := a.NotePathByID(ctx, pathID)
@@ -1055,7 +1066,7 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 	}
 
 	if len(webhookChanges) > 0 {
-		webhookErr := handlenotewebhooks.Resolve(ctx, a, webhookChanges, 0)
+		webhookErr := handlenotewebhooks.Resolve(ctx, a, webhookChanges, webhookDepth)
 		if webhookErr != nil {
 			a.log.Error("failed to handle note webhooks", "error", webhookErr)
 		}

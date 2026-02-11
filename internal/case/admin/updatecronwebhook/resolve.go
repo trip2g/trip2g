@@ -42,6 +42,21 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 	}
 
+	// Validate bounds for optional fields.
+	var fieldErrs []model.FieldMessage
+	if input.MaxDepth != nil && (*input.MaxDepth < 0 || *input.MaxDepth > 999) {
+		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxDepth", Value: "must be between 0 and 999"})
+	}
+	if input.TimeoutSeconds != nil && (*input.TimeoutSeconds < 1 || *input.TimeoutSeconds > 3600) {
+		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "timeoutSeconds", Value: "must be between 1 and 3600"})
+	}
+	if input.MaxRetries != nil && (*input.MaxRetries < 0 || *input.MaxRetries > 100) {
+		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxRetries", Value: "must be between 0 and 100"})
+	}
+	if len(fieldErrs) > 0 {
+		return &model.ErrorPayload{ByFields: fieldErrs}, nil
+	}
+
 	params := db.UpdateCronWebhookParams{
 		ID:             input.ID,
 		Url:            input.URL,

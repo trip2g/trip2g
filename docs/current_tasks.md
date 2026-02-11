@@ -5,6 +5,46 @@
 Формат см. в CLAUDE.md
 -->
 
+## [DONE] Фиксы после merge feat/webhooks
+
+### Контекст
+Code review merge `feat/webhooks` выявил критические баги, HIGH проблемы и мелочи. Исправлено перед продакшн-деплоем.
+
+### План
+
+**CRITICAL**
+
+- [x] **`skip_webhooks` флаг не работает** — добавлен `SkipWebhooks bool` в `appreq.Request`, заполняется в `checkapikey.resolveAPIKey`, проверяется в `HandleLatestNotesAfterSave`. `WebhookDepth` передаётся вместо hardcoded 0.
+- [x] **Removed notes не доставляются** — добавлен `Path string` в `NoteChange`, remove events обрабатываются когда noteView nil. Webhook trigger интегрирован в HideNotes resolver (`schema.resolvers.go`).
+
+**HIGH**
+
+- [x] **Agent writes обходят write_patterns** — создан `webhookutil/patterns.go` с `ParseJSONStringArray` и `MatchesAny`. Валидация path против writePatterns перед InsertNote в обоих deliver*webhook.
+- [x] **Delivery "success" при ошибке agent changes** — при applyErr без retries теперь mark as "failed" + return, без fallthrough к "success".
+- [x] **Валидация: max_depth ≤ 999, timeout ≥ 1s, max_retries ≤ 100** — добавлена во все 4 CRUD resolver (create/update webhook/cronwebhook).
+
+**MEDIUM**
+
+- [x] **HTTP >= 300 = ошибка** — порог изменён с >= 500 на >= 300 в обоих deliver*webhook.
+- [x] **Debug endpoint: JSON injection fix** — `json.Marshal(string(body))` вместо строковой конкатенации.
+- [x] **SQL: `updated_at` триггеры** — миграция `20260211120000_add_updated_at_triggers_for_webhooks.sql`.
+
+**Cleanup**
+
+- [x] **Удалить `turbo.js`** — файл удалён, embed directive и закомментированная строка убраны.
+
+- ~~Partial changes: обернуть в транзакцию~~ — требует рефакторинг InsertNote/Env interface, отложить
+- ~~GraphQL: `createdAt` в AdminCronWebhook~~ — уже есть (`schema.graphqls:711`)
+- Frontend: readPatterns/writePatterns в формах (отдельная сессия)
+
+### Заметки
+- SSRF — не фиксим, localhost обращения к соседним контейнерам — by design
+- Missing indexes — не нужны пока, мало данных
+- CHECK constraints — не критично
+- `parseJSONStringArray` дублируется в 3 пакетах — вынести в `webhookutil` при фиксе write_patterns (нужен `matchesAny` тоже)
+- `createdAt` в `AdminCronWebhook` — проверено, уже есть в schema.graphqls:711
+- shortapitoken `SkipWebhooks: false` (checkapikey/resolve.go:116) — правильно, shortapitoken использует depth вместо skip
+
 ## [DONE] Рефакторинг конфига — Фаза 1
 
 ### Контекст

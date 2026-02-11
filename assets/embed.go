@@ -5,5 +5,5 @@ package assets
 
 import "embed"
 
-//go:embed output.css turbo.js tiptap/tiptap.js ui/admin/-/web.js ui/user/-/web.js ui/user/-/web.locale* ui/user/space/-/web.locale* ui/admin/-/web.locale* *.woff *.woff2 *.png *.ico *.svg *.webmanifest
+//go:embed output.css tiptap/tiptap.js ui/admin/-/web.js ui/user/-/web.js ui/user/-/web.locale* ui/user/space/-/web.locale* ui/admin/-/web.locale* *.woff *.woff2 *.png *.ico *.svg *.webmanifest
 var FS embed.FS

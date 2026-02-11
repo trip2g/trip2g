@@ -682,6 +682,16 @@ CREATE TABLE webhook_delivery_logs (
 );
 CREATE INDEX idx_wdl_delivery on webhook_delivery_logs(kind, delivery_id);
 CREATE INDEX idx_wdl_created on webhook_delivery_logs(created_at);
+CREATE TRIGGER trg_change_webhooks_updated_at
+after update on change_webhooks
+begin
+  update change_webhooks set updated_at = datetime('now') where id = new.id;
+end;
+CREATE TRIGGER trg_cron_webhooks_updated_at
+after update on cron_webhooks
+begin
+  update cron_webhooks set updated_at = datetime('now') where id = new.id;
+end;
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -788,4 +798,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260126113359'),
   ('20260127122121'),
   ('20260128081252'),
-  ('20260209100000');
+  ('20260209100000'),
+  ('20260211120000');

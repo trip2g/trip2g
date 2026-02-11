@@ -42,6 +42,25 @@ func parseCronSchedule(expression string) (time.Time, error) {
 	return schedule.Next(time.Now()), nil
 }
 
+func validateBounds(maxDepth, timeoutSeconds, maxRetries int64) *model.ErrorPayload {
+	var errs []model.FieldMessage
+
+	if maxDepth < 0 || maxDepth > 999 {
+		errs = append(errs, model.FieldMessage{Name: "maxDepth", Value: "must be between 0 and 999"})
+	}
+	if timeoutSeconds < 1 || timeoutSeconds > 3600 {
+		errs = append(errs, model.FieldMessage{Name: "timeoutSeconds", Value: "must be between 1 and 3600"})
+	}
+	if maxRetries < 0 || maxRetries > 100 {
+		errs = append(errs, model.FieldMessage{Name: "maxRetries", Value: "must be between 0 and 100"})
+	}
+
+	if len(errs) > 0 {
+		return &model.ErrorPayload{ByFields: errs}
+	}
+	return nil
+}
+
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	errPayload := validateInput(&input)
 	if errPayload != nil {
@@ -121,6 +140,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	enabled := true
 	if input.Enabled != nil {
 		enabled = *input.Enabled
+	}
+
+	boundsErr := validateBounds(maxDepth, timeoutSeconds, maxRetries)
+	if boundsErr != nil {
+		return boundsErr, nil
 	}
 
 	// Compute nextRunAt only if enabled.

@@ -2,9 +2,9 @@ package main
 
 import (
 	"trip2g/internal/case/cronjob/applygitchanges"
-	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
+	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/executecronwebhooks"
 	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
 	"trip2g/internal/case/cronjob/regeneratenoteembeddings"

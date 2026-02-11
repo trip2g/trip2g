@@ -73,18 +73,19 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		PreviousError:  params.PreviousError,
 	}
 
+	// Parse write patterns for validating agent response changes.
+	writePatterns, wpErr := webhookutil.ParseJSONStringArray(wh.WritePatterns)
+	if wpErr != nil {
+		log.Error("failed to parse write_patterns", "cron_webhook_id", wh.ID, "error", wpErr)
+		writePatterns = []string{}
+	}
+
 	// Generate short API token if pass_api_key is enabled.
 	if wh.PassApiKey {
-		readPatterns, rpErr := parseJSONStringArray(wh.ReadPatterns)
+		readPatterns, rpErr := webhookutil.ParseJSONStringArray(wh.ReadPatterns)
 		if rpErr != nil {
 			log.Error("failed to parse read_patterns", "cron_webhook_id", wh.ID, "error", rpErr)
 			readPatterns = []string{"*"}
-		}
-
-		writePatterns, wpErr := parseJSONStringArray(wh.WritePatterns)
-		if wpErr != nil {
-			log.Error("failed to parse write_patterns", "cron_webhook_id", wh.ID, "error", wpErr)
-			writePatterns = []string{}
 		}
 
 		ttl := time.Duration(wh.TimeoutSeconds) * time.Second
@@ -148,8 +149,8 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	}
 
 	// Handle HTTP error or server error.
-	if result.Err != nil || result.StatusCode >= 500 {
-		errMsg := "server error"
+	if result.Err != nil || result.StatusCode >= 300 {
+		var errMsg string
 		if result.Err != nil {
 			errMsg = result.Err.Error()
 		} else {
@@ -190,6 +191,12 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 			applyErr = parseErr
 		} else if agentResp != nil && len(agentResp.Changes) > 0 {
 			for _, change := range agentResp.Changes {
+				// Validate path against write patterns.
+				if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
+					applyErr = fmt.Errorf("path %q not allowed by write_patterns", change.Path)
+					break
+				}
+
 				_, insertErr := env.InsertNote(ctx, model.RawNote{
 					Path:    change.Path,
 					Content: change.Content,
@@ -221,6 +228,18 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 			"delivery_id", params.DeliveryID,
 			"error", applyErr,
 		)
+
+		// Mark as failed when agent response error with no retries left.
+		updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
+			Status:         "failed",
+			ResponseStatus: ptr.To(int64(result.StatusCode)),
+			DurationMs:     ptr.To(result.DurationMs),
+			ID:             params.DeliveryID,
+		})
+		if updateErr != nil {
+			log.Error("failed to update cron delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
+		}
+		return nil
 	}
 
 	// Mark as success.
@@ -235,16 +254,4 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	}
 
 	return nil
-}
-
-// parseJSONStringArray parses a JSON string array like '["blog/**","docs/*"]'.
-func parseJSONStringArray(raw string) ([]string, error) {
-	var result []string
-
-	err := json.Unmarshal([]byte(raw), &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse JSON string array: %w", err)
-	}
-
-	return result, nil
 }
