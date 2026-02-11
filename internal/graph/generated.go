@@ -501,8 +501,10 @@ type AdminQueryResolver interface {
 	ActiveUserSubgraphs(ctx context.Context, obj *model1.AdminQuery, id int64) ([]string, error)
 	AllBackgroundQueues(ctx context.Context, obj *model1.AdminQuery) (*model.AdminBackgroundQueuesConnection, error)
 	BackgroundQueue(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.BackgroundQueue, error)
+	ChangeWebhook(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.ChangeWebhook, error)
 	AllChangeWebhooks(ctx context.Context, obj *model1.AdminQuery) (*model.AdminChangeWebhooksConnection, error)
 	ChangeWebhookDeliveries(ctx context.Context, obj *model1.AdminQuery, filter model.AdminChangeWebhookDeliveriesFilterInput) (*model.AdminChangeWebhookDeliveriesConnection, error)
+	CronWebhook(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.CronWebhook, error)
 	AllCronWebhooks(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronWebhooksConnection, error)
 	CronWebhookDeliveries(ctx context.Context, obj *model1.AdminQuery, filter model.AdminCronWebhookDeliveriesFilterInput) (*model.AdminCronWebhookDeliveriesConnection, error)
 	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
@@ -1997,6 +1999,17 @@ func (ec *executionContext) field_AdminQuery_changeWebhookDeliveries_args(ctx co
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminQuery_changeWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminQuery_configValue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2027,6 +2040,17 @@ func (ec *executionContext) field_AdminQuery_cronWebhookDeliveries_args(ctx cont
 		return nil, err
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_cronWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -16861,6 +16885,93 @@ func (ec *executionContext) fieldContext_AdminQuery_backgroundQueue(ctx context.
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_changeWebhook(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_changeWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().ChangeWebhook(ctx, obj, fc.Args["id"].(int64))
+		},
+		nil,
+		ec.marshalOAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_changeWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
+			case "instruction":
+				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "maxDepth":
+				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
+			case "passApiKey":
+				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
+			case "includeContent":
+				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
+			case "maxRetries":
+				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
+			case "lastDeliveryAt":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
+			case "lastDeliveryStatus":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
+			case "onCreate":
+				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
+			case "onUpdate":
+				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
+			case "onRemove":
+				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
+			case "readPatterns":
+				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
+			case "writePatterns":
+				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_changeWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allChangeWebhooks(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -16933,6 +17044,85 @@ func (ec *executionContext) fieldContext_AdminQuery_changeWebhookDeliveries(ctx 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_changeWebhookDeliveries_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_cronWebhook(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_cronWebhook,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().CronWebhook(ctx, obj, fc.Args["id"].(int64))
+		},
+		nil,
+		ec.marshalOAdminCronWebhook2ᚖtrip2gᚋinternalᚋdbᚐCronWebhook,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_cronWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCronWebhook_id(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminCronWebhook_url(ctx, field)
+			case "cronSchedule":
+				return ec.fieldContext_AdminCronWebhook_cronSchedule(ctx, field)
+			case "instruction":
+				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "passApiKey":
+				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_AdminCronWebhook_timeoutSeconds(ctx, field)
+			case "maxDepth":
+				return ec.fieldContext_AdminCronWebhook_maxDepth(ctx, field)
+			case "maxRetries":
+				return ec.fieldContext_AdminCronWebhook_maxRetries(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminCronWebhook_enabled(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminCronWebhook_description(ctx, field)
+			case "readPatterns":
+				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
+			case "writePatterns":
+				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "nextRunAt":
+				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminCronWebhook_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminCronWebhook_createdBy(ctx, field)
+			case "lastDeliveryAt":
+				return ec.fieldContext_AdminCronWebhook_lastDeliveryAt(ctx, field)
+			case "lastDeliveryStatus":
+				return ec.fieldContext_AdminCronWebhook_lastDeliveryStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronWebhook", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_cronWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26794,10 +26984,14 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allBackgroundQueues(ctx, field)
 			case "backgroundQueue":
 				return ec.fieldContext_AdminQuery_backgroundQueue(ctx, field)
+			case "changeWebhook":
+				return ec.fieldContext_AdminQuery_changeWebhook(ctx, field)
 			case "allChangeWebhooks":
 				return ec.fieldContext_AdminQuery_allChangeWebhooks(ctx, field)
 			case "changeWebhookDeliveries":
 				return ec.fieldContext_AdminQuery_changeWebhookDeliveries(ctx, field)
+			case "cronWebhook":
+				return ec.fieldContext_AdminQuery_cronWebhook(ctx, field)
 			case "allCronWebhooks":
 				return ec.fieldContext_AdminQuery_allCronWebhooks(ctx, field)
 			case "cronWebhookDeliveries":
@@ -49606,6 +49800,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "changeWebhook":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_changeWebhook(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allChangeWebhooks":
 			field := field
 
@@ -49655,6 +49882,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "cronWebhook":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_cronWebhook(ctx, field, obj)
 				return res
 			}
 
@@ -66811,6 +67071,13 @@ func (ec *executionContext) marshalOAdminBoostyTier2ᚖtrip2gᚋinternalᚋdbᚐ
 	return ec._AdminBoostyTier(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook(ctx context.Context, sel ast.SelectionSet, v *db.ChangeWebhook) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminChangeWebhook(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAdminConfigValue2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigValue(ctx context.Context, sel ast.SelectionSet, v model.AdminConfigValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -66823,6 +67090,13 @@ func (ec *executionContext) marshalOAdminCronJob2ᚖtrip2gᚋinternalᚋdbᚐCro
 		return graphql.Null
 	}
 	return ec._AdminCronJob(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminCronWebhook2ᚖtrip2gᚋinternalᚋdbᚐCronWebhook(ctx context.Context, sel ast.SelectionSet, v *db.CronWebhook) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminCronWebhook(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GithubOauthCredential) graphql.Marshaler {

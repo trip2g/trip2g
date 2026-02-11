@@ -2,21 +2,19 @@ namespace $.$$ {
 	const request = $trip2g_graphql_request(/* GraphQL */`
 		query AdminShowCronWebhookForUpdate($id: Int64!) {
 			admin {
-				allCronWebhooks {
-					nodes {
-						id
-						url
-						cronSchedule
-						enabled
-						description
-						instruction
-						passApiKey
-						maxDepth
-						timeoutSeconds
-						maxRetries
-						readPatterns
-						writePatterns
-					}
+				cronWebhook(id: $id) {
+					id
+					url
+					cronSchedule
+					enabled
+					description
+					instruction
+					passApiKey
+					maxDepth
+					timeoutSeconds
+					maxRetries
+					readPatterns
+					writePatterns
 				}
 			}
 		}
@@ -44,7 +42,7 @@ namespace $.$$ {
 		@$mol_mem
 		data(reset?: null) {
 			const res = request({ id: this.cronwebhook_id() })
-			const cw = res.admin.allCronWebhooks.nodes.find( (n: any) => n.id === this.cronwebhook_id() )
+			const cw = res.admin.cronWebhook
 			if( !cw ) throw new Error( 'Cron Webhook not found' )
 			return cw
 		}

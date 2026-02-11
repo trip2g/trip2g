@@ -314,8 +314,10 @@ type Env interface {
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 
 	// Webhook queries
+	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
 	ListWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	ListWebhookDeliveries(ctx context.Context, params db.ListWebhookDeliveriesParams) ([]db.ChangeWebhookDelivery, error)
+	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
 	ListCronWebhooks(ctx context.Context) ([]db.CronWebhook, error)
 	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)
 

@@ -1104,10 +1104,12 @@ type AdminQuery {
   backgroundQueue(id: String!): AdminBackgroundQueue
 
   # Change Webhooks
+  changeWebhook(id: Int64!): AdminChangeWebhook
   allChangeWebhooks: AdminChangeWebhooksConnection!
   changeWebhookDeliveries(filter: AdminChangeWebhookDeliveriesFilterInput!): AdminChangeWebhookDeliveriesConnection!
 
   # Cron Webhooks
+  cronWebhook(id: Int64!): AdminCronWebhook
   allCronWebhooks: AdminCronWebhooksConnection!
   cronWebhookDeliveries(filter: AdminCronWebhookDeliveriesFilterInput!): AdminCronWebhookDeliveriesConnection!
 

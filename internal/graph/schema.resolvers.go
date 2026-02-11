@@ -1604,6 +1604,11 @@ func (r *adminQueryResolver) BackgroundQueue(ctx context.Context, obj *appmodel.
 	return q, nil
 }
 
+// ChangeWebhook is the resolver for the changeWebhook field.
+func (r *adminQueryResolver) ChangeWebhook(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.ChangeWebhook, error) {
+	return resolveOne[db.ChangeWebhook](ctx, id, r.env(ctx).WebhookByID)
+}
+
 // AllChangeWebhooks is the resolver for the allChangeWebhooks field.
 func (r *adminQueryResolver) AllChangeWebhooks(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminChangeWebhooksConnection, error) {
 	return &model.AdminChangeWebhooksConnection{}, nil
@@ -1619,6 +1624,11 @@ func (r *adminQueryResolver) ChangeWebhookDeliveries(ctx context.Context, obj *a
 		WebhookID: filter.WebhookID,
 		Limit:     limit,
 	}, nil
+}
+
+// CronWebhook is the resolver for the cronWebhook field.
+func (r *adminQueryResolver) CronWebhook(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.CronWebhook, error) {
+	return resolveOne[db.CronWebhook](ctx, id, r.env(ctx).CronWebhookByID)
 }
 
 // AllCronWebhooks is the resolver for the allCronWebhooks field.

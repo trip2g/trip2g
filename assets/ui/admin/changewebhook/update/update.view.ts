@@ -2,26 +2,24 @@ namespace $.$$ {
 	const request = $trip2g_graphql_request(/* GraphQL */`
 		query AdminShowChangeWebhookForUpdate($id: Int64!) {
 			admin {
-				allChangeWebhooks {
-					nodes {
-						id
-						url
-						enabled
-						description
-						instruction
-						includePatterns
-						excludePatterns
-						passApiKey
-						includeContent
-						maxDepth
-						timeoutSeconds
-						maxRetries
-						onCreate
-						onUpdate
-						onRemove
-						readPatterns
-						writePatterns
-					}
+				changeWebhook(id: $id) {
+					id
+					url
+					enabled
+					description
+					instruction
+					includePatterns
+					excludePatterns
+					passApiKey
+					includeContent
+					maxDepth
+					timeoutSeconds
+					maxRetries
+					onCreate
+					onUpdate
+					onRemove
+					readPatterns
+					writePatterns
 				}
 			}
 		}
@@ -49,7 +47,7 @@ namespace $.$$ {
 		@$mol_mem
 		data(reset?: null) {
 			const res = request({ id: this.changewebhook_id() })
-			const wh = res.admin.allChangeWebhooks.nodes.find( (n: any) => n.id === this.changewebhook_id() )
+			const wh = res.admin.changeWebhook
 			if( !wh ) throw new Error( 'Webhook not found' )
 			return wh
 		}
