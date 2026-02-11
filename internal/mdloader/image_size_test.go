@@ -1,6 +1,7 @@
 package mdloader_test
 
 import (
+	"strings"
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -182,6 +183,123 @@ func TestImageNoSize(t *testing.T) {
 	require.NotContains(t, html, `height=`, "Should not have height attribute")
 	require.Contains(t, html, `<img src="image.jpg">`, "Should have img tag for wikilink")
 	require.Contains(t, html, `src="other.png"`, "Should have img tag for markdown")
+}
+
+// TestCustomEmojiCETripURL tests that ce.trip2g.com URLs render as inline custom emoji.
+func TestCustomEmojiCETripURL(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "note.md",
+		Content: []byte(`text ![😅](https://ce.trip2g.com/5384209107215456745.webp) more text`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/note"].HTML)
+	t.Logf("HTML: %s", html)
+
+	require.Contains(t, html, `class="custom-emoji"`, "Should have custom-emoji class")
+	require.Contains(t, html, `width="20"`, "Should have 20px width")
+	require.Contains(t, html, `height="20"`, "Should have 20px height")
+	require.Contains(t, html, `src="https://ce.trip2g.com/5384209107215456745.webp"`, "Should have ce.trip2g.com src")
+}
+
+// TestCustomEmojiTgCeLocal tests that tg_ce_*.webp files render as inline custom emoji.
+func TestCustomEmojiTgCeLocal(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "note.md",
+		Content: []byte(`text ![➡️](tg_ce_5974249837439224721.webp) more text`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/note"].HTML)
+	t.Logf("HTML: %s", html)
+
+	require.Contains(t, html, `class="custom-emoji"`, "Should have custom-emoji class")
+	require.Contains(t, html, `width="20"`, "Should have 20px width")
+	require.Contains(t, html, `height="20"`, "Should have 20px height")
+}
+
+// TestCustomEmojiTgCeWithSize tests that tg_ce_*.webp with explicit size preserves custom-emoji class.
+func TestCustomEmojiTgCeWithSize(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "note.md",
+		Content: []byte(`text ![➡️|20x20](tg_ce_5974249837439224721.webp) more text`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/note"].HTML)
+	t.Logf("HTML: %s", html)
+
+	require.Contains(t, html, `class="custom-emoji"`, "Should have custom-emoji class")
+	require.Contains(t, html, `width="20"`, "Should have 20px width")
+	require.Contains(t, html, `height="20"`, "Should have 20px height")
+}
+
+// TestCustomEmojiBothInSameParagraph tests both tg_ce and ce.trip2g.com in one paragraph.
+func TestCustomEmojiBothInSameParagraph(t *testing.T) {
+	log := logger.TestLogger{}
+
+	testCases := []struct {
+		name    string
+		content string
+	}{
+		{
+			"tg_ce_first",
+			`test: ![➡️|20x20](tg_ce_5974249837439224721.webp) and ![😅](https://ce.trip2g.com/5384209107215456745.webp).`,
+		},
+		{
+			"ce_trip_first",
+			`test: ![😅](https://ce.trip2g.com/5384209107215456745.webp) and ![➡️|20x20](tg_ce_5974249837439224721.webp).`,
+		},
+		{
+			"two_regular_images",
+			`test: ![a](image1.png) and ![b](image2.png).`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			sourceFiles := []mdloader.SourceFile{{
+				Path:    "note.md",
+				Content: []byte(tc.content),
+			}}
+
+			pages, err := mdloader.Load(mdloader.Options{
+				Sources: sourceFiles,
+				Log:     &log,
+			})
+			require.NoError(t, err)
+
+			html := string(pages.Map["/note"].HTML)
+			t.Logf("HTML: %s", html)
+
+			// Both images must be rendered by enclave renderer (self-closing />).
+			selfClosing := strings.Count(html, ` />`)
+			allImgs := strings.Count(html, `<img `)
+			require.Equal(t, 2, allImgs, "Should have 2 img tags")
+			require.Equal(t, 2, selfClosing, "Both images must use self-closing tags (enclave renderer)")
+		})
+	}
 }
 
 // TestImageSizeWithAssetReplace tests that size works with asset replacement.

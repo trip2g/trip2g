@@ -436,6 +436,42 @@ test.describe('Broken Layout Handling', () => {
   });
 });
 
+test.describe('Custom Telegram Emoji', () => {
+  test('custom emoji images render inline at 20x20', async ({ page }) => {
+    await page.goto('/telegram_image_with_emoji');
+
+    await expect(page.locator('h1').first()).toContainText('Image with Custom Emoji');
+
+    // Find all custom-emoji images
+    const emojiImgs = page.locator('img.custom-emoji');
+    await expect(emojiImgs).toHaveCount(2);
+
+    // Both should have 20x20 size attributes
+    for (let i = 0; i < 2; i++) {
+      const img = emojiImgs.nth(i);
+      await expect(img).toHaveAttribute('width', '20');
+      await expect(img).toHaveAttribute('height', '20');
+    }
+
+    // Verify actual rendered size is small (not block-level)
+    const box = await emojiImgs.first().boundingBox();
+    expect(box.width).toBeLessThanOrEqual(25);
+    expect(box.height).toBeLessThanOrEqual(25);
+  });
+
+  test('regular images do NOT have custom-emoji class', async ({ page }) => {
+    await page.goto('/telegram_image_with_emoji');
+
+    // The main photo should not have custom-emoji class
+    const allImgs = page.locator('#noteview-content img');
+    const regularImgs = page.locator('#noteview-content img:not(.custom-emoji)');
+
+    // Total images: 1 regular photo + 2 custom emoji = 3
+    await expect(allImgs).toHaveCount(3);
+    await expect(regularImgs).toHaveCount(1);
+  });
+});
+
 test.describe('YouTube Embed', () => {
   test('YouTube link renders as embedded iframe', async ({ page }) => {
     await page.goto('/code_and_media');

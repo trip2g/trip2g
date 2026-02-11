@@ -15,10 +15,21 @@ import (
 // imageSizeRegex matches size specifications like "20x20" or "100".
 var imageSizeRegex = regexp.MustCompile(`^(\d+)(?:x(\d+))?$`)
 
+// ceEmojiURLPattern matches URLs like https://ce.trip2g.com/5460736117236048513.webp.
+var ceEmojiURLPattern = regexp.MustCompile(`^https://ce\.trip2g\.com/(\d+)\.webp$`)
+
+// localCustomEmojiPattern matches local files like tg_ce_5460736117236048513.webp.
+var localCustomEmojiPattern = regexp.MustCompile(`tg_ce_(\d+)\.webp$`)
+
 // imageSize represents parsed image dimensions.
 type imageSize struct {
 	Width  string
 	Height string
+}
+
+// isCustomEmoji checks if the URL is a custom Telegram emoji (ce.trip2g.com or tg_ce_*.webp).
+func isCustomEmoji(url string) bool {
+	return ceEmojiURLPattern.MatchString(url) || localCustomEmojiPattern.MatchString(url)
 }
 
 // parseImageSize extracts size specification from the end of alt text.
@@ -200,6 +211,9 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 		}
 	}
 
+	// Detect if this is a custom emoji (before asset replacement)
+	isEmoji := isCustomEmoji(originalURL)
+
 	// Get size - first check Params (set by enclave transformer), then parse from alt
 	var size *imageSize
 	if enc.Provider == enclavecore.EnclaveProviderQuailImage {
@@ -221,6 +235,11 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 		cleanAlt = alt
 	}
 
+	// Force 20x20 size for custom emoji if no size specified
+	if isEmoji && size == nil {
+		size = &imageSize{Width: "20", Height: "20"}
+	}
+
 	// Build alt text fallback
 	if cleanAlt == "" && len(enc.Title) != 0 {
 		cleanAlt = fmt.Sprintf("An image to describe %s", enc.Title)
@@ -229,16 +248,21 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 		cleanAlt = "An image to describe post"
 	}
 
-	// Build HTML with optional size attributes
+	// Build HTML with optional size attributes and emoji class
 	var html string
+	classAttr := ""
+	if isEmoji {
+		classAttr = ` class="custom-emoji"`
+	}
+
 	if size != nil {
 		if size.Height != "" {
-			html = fmt.Sprintf(`<img src="%s" alt="%s" width="%s" height="%s" />`, resolvedURL, cleanAlt, size.Width, size.Height)
+			html = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" height="%s" />`, resolvedURL, cleanAlt, classAttr, size.Width, size.Height)
 		} else {
-			html = fmt.Sprintf(`<img src="%s" alt="%s" width="%s" />`, resolvedURL, cleanAlt, size.Width)
+			html = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, resolvedURL, cleanAlt, classAttr, size.Width)
 		}
 	} else {
-		html = fmt.Sprintf(`<img src="%s" alt="%s" />`, resolvedURL, cleanAlt)
+		html = fmt.Sprintf(`<img src="%s" alt="%s"%s />`, resolvedURL, cleanAlt, classAttr)
 	}
 	_, _ = w.Write([]byte(html))
 }

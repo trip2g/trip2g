@@ -344,3 +344,11 @@ html {
 .prose code:not(pre code) {
   @apply bg-gray-100 dark:bg-gray-700 px-1 rounded;
 }
+
+/* Custom Telegram emoji - render inline at 20x20. */
+.prose img.custom-emoji {
+  display: inline;
+  vertical-align: middle;
+  margin: 0;
+  border-radius: 0;
+}

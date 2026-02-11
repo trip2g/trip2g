@@ -24,8 +24,20 @@ func (a *astTransformer) InsertFailedHint(n ast.Node, msg string) {
 	n.Parent().InsertAfter(n.Parent(), n, msgNode)
 }
 
+// imageReplacement holds data for deferred image-to-enclave replacement.
+type imageReplacement struct {
+	img     *ast.Image
+	enclave *core.Enclave
+}
+
+//nolint:gocognit,gocyclo,cyclop,funlen // provider detection requires many branches.
 func (a *astTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
-	replaceImages := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	// Pass 1: Walk and collect replacements without modifying the AST.
+	// ReplaceChild inside ast.Walk breaks sibling traversal,
+	// causing only the first image per paragraph to be transformed.
+	var replacements []imageReplacement
+
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
@@ -150,8 +162,6 @@ func (a *astTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 					// the ad id must be an UUID
 					if _, err := uuid.Parse(adUUID); err == nil {
 						oid = adUUID
-					} else {
-						return ast.WalkContinue, nil
 					}
 				}
 			}
@@ -275,14 +285,17 @@ func (a *astTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 					IframeDisabled: a.cfg.IframeDisabled,
 				})
 
-			parent := n.Parent()
-			// FIX: Use ReplaceChild instead of AppendChild to preserve node order
-			// Bug in goldmark-enclave v0.2.0+: AppendChild moves nodes to the end
-			parent.ReplaceChild(parent, n, ev)
+			replacements = append(replacements, imageReplacement{img: img, enclave: ev})
 		}
 
 		return ast.WalkContinue, nil
-	}
+	})
 
-	ast.Walk(node, replaceImages)
+	// Pass 2: Apply all replacements after the walk is complete.
+	for _, r := range replacements {
+		parent := r.img.Parent()
+		if parent != nil {
+			parent.ReplaceChild(parent, r.img, r.enclave)
+		}
+	}
 }
