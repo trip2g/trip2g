@@ -1,0 +1,5 @@
+{
+	"$trip2g_admin_cronwebhook_create_title": "Создать крон-вебхук",
+	"$trip2g_admin_cronwebhook_create_Schedule_field_name": "Крон-расписание (напр. 0 * * * *)",
+	"$trip2g_admin_cronwebhook_create_CreatedSecret_labeler_title": "Секрет (сохраните сейчас!)"
+}

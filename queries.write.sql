@@ -852,3 +852,129 @@ delete from google_oauth_credentials where id = ?;
 
 -- name: DeleteGitHubOAuthCredentials :exec
 delete from github_oauth_credentials where id = ?;
+
+-- ============================================
+-- Change Webhooks
+-- ============================================
+
+-- name: InsertWebhook :one
+insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateWebhook :one
+update change_webhooks
+set url = coalesce(sqlc.narg(url), url),
+    include_patterns = coalesce(sqlc.narg(include_patterns), include_patterns),
+    exclude_patterns = coalesce(sqlc.narg(exclude_patterns), exclude_patterns),
+    instruction = coalesce(sqlc.narg(instruction), instruction),
+    max_depth = coalesce(sqlc.narg(max_depth), max_depth),
+    pass_api_key = coalesce(sqlc.narg(pass_api_key), pass_api_key),
+    include_content = coalesce(sqlc.narg(include_content), include_content),
+    timeout_seconds = coalesce(sqlc.narg(timeout_seconds), timeout_seconds),
+    max_retries = coalesce(sqlc.narg(max_retries), max_retries),
+    enabled = coalesce(sqlc.narg(enabled), enabled),
+    description = coalesce(sqlc.narg(description), description),
+    on_create = coalesce(sqlc.narg(on_create), on_create),
+    on_update = coalesce(sqlc.narg(on_update), on_update),
+    on_remove = coalesce(sqlc.narg(on_remove), on_remove),
+    read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
+    write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    updated_at = datetime('now')
+where id = sqlc.arg(id) and disabled_at is null
+returning *;
+
+-- name: DisableWebhook :exec
+update change_webhooks
+set disabled_at = datetime('now'), disabled_by = ?, enabled = false
+where id = ?;
+
+-- name: RegenerateWebhookSecret :one
+update change_webhooks
+set secret = ?, updated_at = datetime('now')
+where id = ? and disabled_at is null
+returning *;
+
+-- name: InsertWebhookDelivery :one
+insert into change_webhook_deliveries (webhook_id, attempt)
+values (?, ?)
+returning *;
+
+-- name: UpdateWebhookDeliveryResult :exec
+update change_webhook_deliveries
+set status = ?, response_status = ?, duration_ms = ?,
+    completed_at = datetime('now')
+where id = ?;
+
+-- ============================================
+-- Cron Webhooks
+-- ============================================
+
+-- name: InsertCronWebhook :one
+insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateCronWebhook :one
+update cron_webhooks
+set url = coalesce(sqlc.narg(url), url),
+    cron_schedule = coalesce(sqlc.narg(cron_schedule), cron_schedule),
+    instruction = coalesce(sqlc.narg(instruction), instruction),
+    pass_api_key = coalesce(sqlc.narg(pass_api_key), pass_api_key),
+    timeout_seconds = coalesce(sqlc.narg(timeout_seconds), timeout_seconds),
+    max_depth = coalesce(sqlc.narg(max_depth), max_depth),
+    max_retries = coalesce(sqlc.narg(max_retries), max_retries),
+    read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
+    write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    enabled = coalesce(sqlc.narg(enabled), enabled),
+    description = coalesce(sqlc.narg(description), description),
+    updated_at = datetime('now')
+where id = sqlc.arg(id) and disabled_at is null
+returning *;
+
+-- name: UpdateCronWebhookNextRunAt :exec
+update cron_webhooks
+set next_run_at = ?, updated_at = datetime('now')
+where id = ?;
+
+-- name: RegenerateCronWebhookSecret :one
+update cron_webhooks
+set secret = ?, updated_at = datetime('now')
+where id = ? and disabled_at is null
+returning *;
+
+-- name: DisableCronWebhook :exec
+update cron_webhooks
+set disabled_at = datetime('now'), disabled_by = ?, enabled = false
+where id = ?;
+
+-- name: InsertCronWebhookDelivery :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt)
+values (?, ?)
+returning *;
+
+-- name: UpdateCronWebhookDeliveryResult :exec
+update cron_webhook_deliveries
+set status = ?, response_status = ?, duration_ms = ?,
+    completed_at = datetime('now')
+where id = ?;
+
+-- ============================================
+-- Webhook Delivery Logs
+-- ============================================
+
+-- name: InsertWebhookDeliveryLog :exec
+insert into webhook_delivery_logs (delivery_id, kind, request_body, response_body, error_message)
+values (?, ?, ?, ?, ?);
+
+-- name: CleanupOldDeliveryLogs :exec
+delete from webhook_delivery_logs
+where created_at < datetime('now', '-7 days');
+
+-- name: CleanupOldChangeWebhookDeliveries :exec
+delete from change_webhook_deliveries
+where created_at < datetime('now', '-30 days');
+
+-- name: CleanupOldCronWebhookDeliveries :exec
+delete from cron_webhook_deliveries
+where created_at < datetime('now', '-30 days');

@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createcronwebhook"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -24,20 +25,25 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	"trip2g/internal/case/admin/createwebhook"
 	"trip2g/internal/case/admin/deactivategithuboauth"
 	"trip2g/internal/case/admin/deactivategoogleoauth"
 	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletecronwebhook"
 	"trip2g/internal/case/admin/deletegithuboauthcredentials"
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
+	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
+	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -63,6 +69,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
+	"trip2g/internal/case/admin/updatecronwebhook"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -73,6 +80,7 @@ import (
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/admin/updatewebhook"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -281,6 +289,16 @@ type Env interface {
 	settelegramaccountchatpublishinstanttags.Env
 	importtelegramaccountchannel.Env
 
+	// Webhooks
+	createwebhook.Env
+	updatewebhook.Env
+	deletewebhook.Env
+	regeneratewebhooksecret.Env
+	createcronwebhook.Env
+	updatecronwebhook.Env
+	deletecronwebhook.Env
+	regeneratecronwebhooksecret.Env
+
 	// OAuth credentials
 	creategoogleoauthcredentials.Env
 	deletegoogleoauthcredentials.Env
@@ -294,6 +312,12 @@ type Env interface {
 	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
 	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+
+	// Webhook queries
+	ListWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
+	ListWebhookDeliveries(ctx context.Context, params db.ListWebhookDeliveriesParams) ([]db.ChangeWebhookDelivery, error)
+	ListCronWebhooks(ctx context.Context) ([]db.CronWebhook, error)
+	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 

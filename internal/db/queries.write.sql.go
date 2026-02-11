@@ -73,6 +73,36 @@ func (q *WriteQueries) ChangeLiveRelease(ctx context.Context, id int64) error {
 	return err
 }
 
+const cleanupOldChangeWebhookDeliveries = `-- name: CleanupOldChangeWebhookDeliveries :exec
+delete from change_webhook_deliveries
+where created_at < datetime('now', '-30 days')
+`
+
+func (q *WriteQueries) CleanupOldChangeWebhookDeliveries(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldChangeWebhookDeliveries)
+	return err
+}
+
+const cleanupOldCronWebhookDeliveries = `-- name: CleanupOldCronWebhookDeliveries :exec
+delete from cron_webhook_deliveries
+where created_at < datetime('now', '-30 days')
+`
+
+func (q *WriteQueries) CleanupOldCronWebhookDeliveries(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldCronWebhookDeliveries)
+	return err
+}
+
+const cleanupOldDeliveryLogs = `-- name: CleanupOldDeliveryLogs :exec
+delete from webhook_delivery_logs
+where created_at < datetime('now', '-7 days')
+`
+
+func (q *WriteQueries) CleanupOldDeliveryLogs(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldDeliveryLogs)
+	return err
+}
+
 const clearPatreonCredentialsWebhookSecret = `-- name: ClearPatreonCredentialsWebhookSecret :exec
 update patreon_credentials
 set webhook_secret = null
@@ -513,7 +543,7 @@ const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
  where id = ?
-returning id, value, created_at, created_by, disabled_at, disabled_by, description
+returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks
 `
 
 type DisableApiKeyParams struct {
@@ -532,8 +562,25 @@ func (q *WriteQueries) DisableApiKey(ctx context.Context, arg DisableApiKeyParam
 		&i.DisabledAt,
 		&i.DisabledBy,
 		&i.Description,
+		&i.SkipWebhooks,
 	)
 	return i, err
+}
+
+const disableCronWebhook = `-- name: DisableCronWebhook :exec
+update cron_webhooks
+set disabled_at = datetime('now'), disabled_by = ?, enabled = false
+where id = ?
+`
+
+type DisableCronWebhookParams struct {
+	DisabledBy *int64 `json:"disabled_by"`
+	ID         int64  `json:"id"`
+}
+
+func (q *WriteQueries) DisableCronWebhook(ctx context.Context, arg DisableCronWebhookParams) error {
+	_, err := q.db.ExecContext(ctx, disableCronWebhook, arg.DisabledBy, arg.ID)
+	return err
 }
 
 const disableGitToken = `-- name: DisableGitToken :one
@@ -565,6 +612,22 @@ func (q *WriteQueries) DisableGitToken(ctx context.Context, arg DisableGitTokenP
 		&i.DisabledBy,
 	)
 	return i, err
+}
+
+const disableWebhook = `-- name: DisableWebhook :exec
+update change_webhooks
+set disabled_at = datetime('now'), disabled_by = ?, enabled = false
+where id = ?
+`
+
+type DisableWebhookParams struct {
+	DisabledBy *int64 `json:"disabled_by"`
+	ID         int64  `json:"id"`
+}
+
+func (q *WriteQueries) DisableWebhook(ctx context.Context, arg DisableWebhookParams) error {
+	_, err := q.db.ExecContext(ctx, disableWebhook, arg.DisabledBy, arg.ID)
+	return err
 }
 
 const hideNotePath = `-- name: HideNotePath :exec
@@ -618,7 +681,7 @@ func (q *WriteQueries) IncrementNoteVersionCount(ctx context.Context, arg Increm
 const insertAPIKey = `-- name: InsertAPIKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)
-returning id, value, created_at, created_by, disabled_at, disabled_by, description
+returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks
 `
 
 type InsertAPIKeyParams struct {
@@ -638,6 +701,7 @@ func (q *WriteQueries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams)
 		&i.DisabledAt,
 		&i.DisabledBy,
 		&i.Description,
+		&i.SkipWebhooks,
 	)
 	return i, err
 }
@@ -880,6 +944,100 @@ func (q *WriteQueries) InsertCronJobExecution(ctx context.Context, arg InsertCro
 		&i.Status,
 		&i.ReportData,
 		&i.ErrorMessage,
+	)
+	return i, err
+}
+
+const insertCronWebhook = `-- name: InsertCronWebhook :one
+
+insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type InsertCronWebhookParams struct {
+	Url            string     `json:"url"`
+	CronSchedule   string     `json:"cron_schedule"`
+	Instruction    string     `json:"instruction"`
+	Secret         string     `json:"secret"`
+	PassApiKey     bool       `json:"pass_api_key"`
+	TimeoutSeconds int64      `json:"timeout_seconds"`
+	MaxDepth       int64      `json:"max_depth"`
+	MaxRetries     int64      `json:"max_retries"`
+	NextRunAt      *time.Time `json:"next_run_at"`
+	ReadPatterns   string     `json:"read_patterns"`
+	WritePatterns  string     `json:"write_patterns"`
+	Description    string     `json:"description"`
+	CreatedBy      int64      `json:"created_by"`
+}
+
+// ============================================
+// Cron Webhooks
+// ============================================
+func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebhookParams) (CronWebhook, error) {
+	row := q.db.QueryRowContext(ctx, insertCronWebhook,
+		arg.Url,
+		arg.CronSchedule,
+		arg.Instruction,
+		arg.Secret,
+		arg.PassApiKey,
+		arg.TimeoutSeconds,
+		arg.MaxDepth,
+		arg.MaxRetries,
+		arg.NextRunAt,
+		arg.ReadPatterns,
+		arg.WritePatterns,
+		arg.Description,
+		arg.CreatedBy,
+	)
+	var i CronWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.CronSchedule,
+		&i.Instruction,
+		&i.Secret,
+		&i.PassApiKey,
+		&i.TimeoutSeconds,
+		&i.MaxDepth,
+		&i.MaxRetries,
+		&i.NextRunAt,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const insertCronWebhookDelivery = `-- name: InsertCronWebhookDelivery :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt)
+values (?, ?)
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at
+`
+
+type InsertCronWebhookDeliveryParams struct {
+	CronWebhookID int64 `json:"cron_webhook_id"`
+	Attempt       int64 `json:"attempt"`
+}
+
+func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg InsertCronWebhookDeliveryParams) (CronWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertCronWebhookDelivery, arg.CronWebhookID, arg.Attempt)
+	var i CronWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.CronWebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
 	)
 	return i, err
 }
@@ -1846,6 +2004,140 @@ func (q *WriteQueries) InsertWaitListTgBotRequest(ctx context.Context, arg Inser
 	return err
 }
 
+const insertWebhook = `-- name: InsertWebhook :one
+
+insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type InsertWebhookParams struct {
+	Url             string `json:"url"`
+	IncludePatterns string `json:"include_patterns"`
+	ExcludePatterns string `json:"exclude_patterns"`
+	Instruction     string `json:"instruction"`
+	Secret          string `json:"secret"`
+	MaxDepth        int64  `json:"max_depth"`
+	PassApiKey      bool   `json:"pass_api_key"`
+	IncludeContent  bool   `json:"include_content"`
+	TimeoutSeconds  int64  `json:"timeout_seconds"`
+	MaxRetries      int64  `json:"max_retries"`
+	Description     string `json:"description"`
+	OnCreate        bool   `json:"on_create"`
+	OnUpdate        bool   `json:"on_update"`
+	OnRemove        bool   `json:"on_remove"`
+	ReadPatterns    string `json:"read_patterns"`
+	WritePatterns   string `json:"write_patterns"`
+	CreatedBy       int64  `json:"created_by"`
+}
+
+// ============================================
+// Change Webhooks
+// ============================================
+func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParams) (ChangeWebhook, error) {
+	row := q.db.QueryRowContext(ctx, insertWebhook,
+		arg.Url,
+		arg.IncludePatterns,
+		arg.ExcludePatterns,
+		arg.Instruction,
+		arg.Secret,
+		arg.MaxDepth,
+		arg.PassApiKey,
+		arg.IncludeContent,
+		arg.TimeoutSeconds,
+		arg.MaxRetries,
+		arg.Description,
+		arg.OnCreate,
+		arg.OnUpdate,
+		arg.OnRemove,
+		arg.ReadPatterns,
+		arg.WritePatterns,
+		arg.CreatedBy,
+	)
+	var i ChangeWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Instruction,
+		&i.Secret,
+		&i.MaxDepth,
+		&i.PassApiKey,
+		&i.IncludeContent,
+		&i.TimeoutSeconds,
+		&i.MaxRetries,
+		&i.OnCreate,
+		&i.OnUpdate,
+		&i.OnRemove,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const insertWebhookDelivery = `-- name: InsertWebhookDelivery :one
+insert into change_webhook_deliveries (webhook_id, attempt)
+values (?, ?)
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at
+`
+
+type InsertWebhookDeliveryParams struct {
+	WebhookID int64 `json:"webhook_id"`
+	Attempt   int64 `json:"attempt"`
+}
+
+func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebhookDeliveryParams) (ChangeWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertWebhookDelivery, arg.WebhookID, arg.Attempt)
+	var i ChangeWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.WebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const insertWebhookDeliveryLog = `-- name: InsertWebhookDeliveryLog :exec
+
+insert into webhook_delivery_logs (delivery_id, kind, request_body, response_body, error_message)
+values (?, ?, ?, ?, ?)
+`
+
+type InsertWebhookDeliveryLogParams struct {
+	DeliveryID   int64   `json:"delivery_id"`
+	Kind         string  `json:"kind"`
+	RequestBody  *string `json:"request_body"`
+	ResponseBody *string `json:"response_body"`
+	ErrorMessage *string `json:"error_message"`
+}
+
+// ============================================
+// Webhook Delivery Logs
+// ============================================
+func (q *WriteQueries) InsertWebhookDeliveryLog(ctx context.Context, arg InsertWebhookDeliveryLogParams) error {
+	_, err := q.db.ExecContext(ctx, insertWebhookDeliveryLog,
+		arg.DeliveryID,
+		arg.Kind,
+		arg.RequestBody,
+		arg.ResponseBody,
+		arg.ErrorMessage,
+	)
+	return err
+}
+
 const markBoostyMembersAsMissed = `-- name: MarkBoostyMembersAsMissed :exec
 update boosty_members
 set missed_at = datetime('now')
@@ -1921,6 +2213,88 @@ where telegram_id = ?
 func (q *WriteQueries) MarkTgBotChatRemoved(ctx context.Context, telegramID int64) error {
 	_, err := q.db.ExecContext(ctx, markTgBotChatRemoved, telegramID)
 	return err
+}
+
+const regenerateCronWebhookSecret = `-- name: RegenerateCronWebhookSecret :one
+update cron_webhooks
+set secret = ?, updated_at = datetime('now')
+where id = ? and disabled_at is null
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type RegenerateCronWebhookSecretParams struct {
+	Secret string `json:"secret"`
+	ID     int64  `json:"id"`
+}
+
+func (q *WriteQueries) RegenerateCronWebhookSecret(ctx context.Context, arg RegenerateCronWebhookSecretParams) (CronWebhook, error) {
+	row := q.db.QueryRowContext(ctx, regenerateCronWebhookSecret, arg.Secret, arg.ID)
+	var i CronWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.CronSchedule,
+		&i.Instruction,
+		&i.Secret,
+		&i.PassApiKey,
+		&i.TimeoutSeconds,
+		&i.MaxDepth,
+		&i.MaxRetries,
+		&i.NextRunAt,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const regenerateWebhookSecret = `-- name: RegenerateWebhookSecret :one
+update change_webhooks
+set secret = ?, updated_at = datetime('now')
+where id = ? and disabled_at is null
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type RegenerateWebhookSecretParams struct {
+	Secret string `json:"secret"`
+	ID     int64  `json:"id"`
+}
+
+func (q *WriteQueries) RegenerateWebhookSecret(ctx context.Context, arg RegenerateWebhookSecretParams) (ChangeWebhook, error) {
+	row := q.db.QueryRowContext(ctx, regenerateWebhookSecret, arg.Secret, arg.ID)
+	var i ChangeWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Instruction,
+		&i.Secret,
+		&i.MaxDepth,
+		&i.PassApiKey,
+		&i.IncludeContent,
+		&i.TimeoutSeconds,
+		&i.MaxRetries,
+		&i.OnCreate,
+		&i.OnUpdate,
+		&i.OnRemove,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
 }
 
 const removeTgChatMember = `-- name: RemoveTgChatMember :exec
@@ -2361,6 +2735,119 @@ where id = ?
 
 func (q *WriteQueries) UpdateCronJobLastExec(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, updateCronJobLastExec, id)
+	return err
+}
+
+const updateCronWebhook = `-- name: UpdateCronWebhook :one
+update cron_webhooks
+set url = coalesce(?1, url),
+    cron_schedule = coalesce(?2, cron_schedule),
+    instruction = coalesce(?3, instruction),
+    pass_api_key = coalesce(?4, pass_api_key),
+    timeout_seconds = coalesce(?5, timeout_seconds),
+    max_depth = coalesce(?6, max_depth),
+    max_retries = coalesce(?7, max_retries),
+    read_patterns = coalesce(?8, read_patterns),
+    write_patterns = coalesce(?9, write_patterns),
+    enabled = coalesce(?10, enabled),
+    description = coalesce(?11, description),
+    updated_at = datetime('now')
+where id = ?12 and disabled_at is null
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type UpdateCronWebhookParams struct {
+	Url            *string `json:"url"`
+	CronSchedule   *string `json:"cron_schedule"`
+	Instruction    *string `json:"instruction"`
+	PassApiKey     *bool   `json:"pass_api_key"`
+	TimeoutSeconds *int64  `json:"timeout_seconds"`
+	MaxDepth       *int64  `json:"max_depth"`
+	MaxRetries     *int64  `json:"max_retries"`
+	ReadPatterns   *string `json:"read_patterns"`
+	WritePatterns  *string `json:"write_patterns"`
+	Enabled        *bool   `json:"enabled"`
+	Description    *string `json:"description"`
+	ID             int64   `json:"id"`
+}
+
+func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebhookParams) (CronWebhook, error) {
+	row := q.db.QueryRowContext(ctx, updateCronWebhook,
+		arg.Url,
+		arg.CronSchedule,
+		arg.Instruction,
+		arg.PassApiKey,
+		arg.TimeoutSeconds,
+		arg.MaxDepth,
+		arg.MaxRetries,
+		arg.ReadPatterns,
+		arg.WritePatterns,
+		arg.Enabled,
+		arg.Description,
+		arg.ID,
+	)
+	var i CronWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.CronSchedule,
+		&i.Instruction,
+		&i.Secret,
+		&i.PassApiKey,
+		&i.TimeoutSeconds,
+		&i.MaxDepth,
+		&i.MaxRetries,
+		&i.NextRunAt,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const updateCronWebhookDeliveryResult = `-- name: UpdateCronWebhookDeliveryResult :exec
+update cron_webhook_deliveries
+set status = ?, response_status = ?, duration_ms = ?,
+    completed_at = datetime('now')
+where id = ?
+`
+
+type UpdateCronWebhookDeliveryResultParams struct {
+	Status         string `json:"status"`
+	ResponseStatus *int64 `json:"response_status"`
+	DurationMs     *int64 `json:"duration_ms"`
+	ID             int64  `json:"id"`
+}
+
+func (q *WriteQueries) UpdateCronWebhookDeliveryResult(ctx context.Context, arg UpdateCronWebhookDeliveryResultParams) error {
+	_, err := q.db.ExecContext(ctx, updateCronWebhookDeliveryResult,
+		arg.Status,
+		arg.ResponseStatus,
+		arg.DurationMs,
+		arg.ID,
+	)
+	return err
+}
+
+const updateCronWebhookNextRunAt = `-- name: UpdateCronWebhookNextRunAt :exec
+update cron_webhooks
+set next_run_at = ?, updated_at = datetime('now')
+where id = ?
+`
+
+type UpdateCronWebhookNextRunAtParams struct {
+	NextRunAt *time.Time `json:"next_run_at"`
+	ID        int64      `json:"id"`
+}
+
+func (q *WriteQueries) UpdateCronWebhookNextRunAt(ctx context.Context, arg UpdateCronWebhookNextRunAtParams) error {
+	_, err := q.db.ExecContext(ctx, updateCronWebhookNextRunAt, arg.NextRunAt, arg.ID)
 	return err
 }
 
@@ -2920,6 +3407,122 @@ func (q *WriteQueries) UpdateUserTgID(ctx context.Context, arg UpdateUserTgIDPar
 	return err
 }
 
+const updateWebhook = `-- name: UpdateWebhook :one
+update change_webhooks
+set url = coalesce(?1, url),
+    include_patterns = coalesce(?2, include_patterns),
+    exclude_patterns = coalesce(?3, exclude_patterns),
+    instruction = coalesce(?4, instruction),
+    max_depth = coalesce(?5, max_depth),
+    pass_api_key = coalesce(?6, pass_api_key),
+    include_content = coalesce(?7, include_content),
+    timeout_seconds = coalesce(?8, timeout_seconds),
+    max_retries = coalesce(?9, max_retries),
+    enabled = coalesce(?10, enabled),
+    description = coalesce(?11, description),
+    on_create = coalesce(?12, on_create),
+    on_update = coalesce(?13, on_update),
+    on_remove = coalesce(?14, on_remove),
+    read_patterns = coalesce(?15, read_patterns),
+    write_patterns = coalesce(?16, write_patterns),
+    updated_at = datetime('now')
+where id = ?17 and disabled_at is null
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+`
+
+type UpdateWebhookParams struct {
+	Url             *string `json:"url"`
+	IncludePatterns *string `json:"include_patterns"`
+	ExcludePatterns *string `json:"exclude_patterns"`
+	Instruction     *string `json:"instruction"`
+	MaxDepth        *int64  `json:"max_depth"`
+	PassApiKey      *bool   `json:"pass_api_key"`
+	IncludeContent  *bool   `json:"include_content"`
+	TimeoutSeconds  *int64  `json:"timeout_seconds"`
+	MaxRetries      *int64  `json:"max_retries"`
+	Enabled         *bool   `json:"enabled"`
+	Description     *string `json:"description"`
+	OnCreate        *bool   `json:"on_create"`
+	OnUpdate        *bool   `json:"on_update"`
+	OnRemove        *bool   `json:"on_remove"`
+	ReadPatterns    *string `json:"read_patterns"`
+	WritePatterns   *string `json:"write_patterns"`
+	ID              int64   `json:"id"`
+}
+
+func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParams) (ChangeWebhook, error) {
+	row := q.db.QueryRowContext(ctx, updateWebhook,
+		arg.Url,
+		arg.IncludePatterns,
+		arg.ExcludePatterns,
+		arg.Instruction,
+		arg.MaxDepth,
+		arg.PassApiKey,
+		arg.IncludeContent,
+		arg.TimeoutSeconds,
+		arg.MaxRetries,
+		arg.Enabled,
+		arg.Description,
+		arg.OnCreate,
+		arg.OnUpdate,
+		arg.OnRemove,
+		arg.ReadPatterns,
+		arg.WritePatterns,
+		arg.ID,
+	)
+	var i ChangeWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Instruction,
+		&i.Secret,
+		&i.MaxDepth,
+		&i.PassApiKey,
+		&i.IncludeContent,
+		&i.TimeoutSeconds,
+		&i.MaxRetries,
+		&i.OnCreate,
+		&i.OnUpdate,
+		&i.OnRemove,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const updateWebhookDeliveryResult = `-- name: UpdateWebhookDeliveryResult :exec
+update change_webhook_deliveries
+set status = ?, response_status = ?, duration_ms = ?,
+    completed_at = datetime('now')
+where id = ?
+`
+
+type UpdateWebhookDeliveryResultParams struct {
+	Status         string `json:"status"`
+	ResponseStatus *int64 `json:"response_status"`
+	DurationMs     *int64 `json:"duration_ms"`
+	ID             int64  `json:"id"`
+}
+
+func (q *WriteQueries) UpdateWebhookDeliveryResult(ctx context.Context, arg UpdateWebhookDeliveryResultParams) error {
+	_, err := q.db.ExecContext(ctx, updateWebhookDeliveryResult,
+		arg.Status,
+		arg.ResponseStatus,
+		arg.DurationMs,
+		arg.ID,
+	)
+	return err
+}
+
 const upsertAPIKeyLogAction = `-- name: UpsertAPIKeyLogAction :exec
 insert into api_key_log_actions (name)
 values (?)
@@ -3277,11 +3880,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

@@ -1,0 +1,35 @@
+$trip2g_admin_changewebhook_catalog $trip2g_admin_catalog
+	menu_title @ \Change Webhooks
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_changewebhook_show
+		changewebhook_id <= row_id* 0
+	CreateForm $trip2g_admin_changewebhook_create
+	menu_link_content* / <= WebhookItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 800
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Row_url_labeler* $mol_labeler
+						title \URL
+						Content <= Row_url* $trip2g_admin_cell
+							content <= row_url* \url
+					<= Row_enabled_labeler* $mol_labeler
+						title \Enabled
+						Content <= Row_enabled* $trip2g_admin_cell
+							content <= row_enabled* \enabled
+					<= Row_events_labeler* $mol_labeler
+						title \Events
+						Content <= Row_events* $trip2g_admin_cell
+							content <= row_events* \events
+					<= Row_last_delivery_labeler* $mol_labeler
+						title @ \Last Delivery
+						Content <= Row_last_delivery* $trip2g_admin_cell
+							content <= row_last_delivery* \-

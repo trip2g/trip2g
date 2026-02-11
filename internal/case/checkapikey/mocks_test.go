@@ -26,6 +26,9 @@ var _ checkapikey.Env = &EnvMock{}
 //			InsertAPIKeyLogFunc: func(ctx context.Context, arg db.InsertAPIKeyLogParams) error {
 //				panic("mock out the InsertAPIKeyLog method")
 //			},
+//			ShortAPITokenSecretFunc: func() string {
+//				panic("mock out the ShortAPITokenSecret method")
+//			},
 //			UpsertAPIKeyLogActionFunc: func(ctx context.Context, name string) error {
 //				panic("mock out the UpsertAPIKeyLogAction method")
 //			},
@@ -44,6 +47,9 @@ type EnvMock struct {
 
 	// InsertAPIKeyLogFunc mocks the InsertAPIKeyLog method.
 	InsertAPIKeyLogFunc func(ctx context.Context, arg db.InsertAPIKeyLogParams) error
+
+	// ShortAPITokenSecretFunc mocks the ShortAPITokenSecret method.
+	ShortAPITokenSecretFunc func() string
 
 	// UpsertAPIKeyLogActionFunc mocks the UpsertAPIKeyLogAction method.
 	UpsertAPIKeyLogActionFunc func(ctx context.Context, name string) error
@@ -67,6 +73,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertAPIKeyLogParams
 		}
+		// ShortAPITokenSecret holds details about calls to the ShortAPITokenSecret method.
+		ShortAPITokenSecret []struct {
+		}
 		// UpsertAPIKeyLogAction holds details about calls to the UpsertAPIKeyLogAction method.
 		UpsertAPIKeyLogAction []struct {
 			// Ctx is the ctx argument value.
@@ -84,6 +93,7 @@ type EnvMock struct {
 	}
 	lockApiKeyByValue         sync.RWMutex
 	lockInsertAPIKeyLog       sync.RWMutex
+	lockShortAPITokenSecret   sync.RWMutex
 	lockUpsertAPIKeyLogAction sync.RWMutex
 	lockUpsertAPIKeyLogIP     sync.RWMutex
 }
@@ -157,6 +167,33 @@ func (mock *EnvMock) InsertAPIKeyLogCalls() []struct {
 	mock.lockInsertAPIKeyLog.RLock()
 	calls = mock.calls.InsertAPIKeyLog
 	mock.lockInsertAPIKeyLog.RUnlock()
+	return calls
+}
+
+// ShortAPITokenSecret calls ShortAPITokenSecretFunc.
+func (mock *EnvMock) ShortAPITokenSecret() string {
+	if mock.ShortAPITokenSecretFunc == nil {
+		panic("EnvMock.ShortAPITokenSecretFunc: method is nil but Env.ShortAPITokenSecret was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockShortAPITokenSecret.Lock()
+	mock.calls.ShortAPITokenSecret = append(mock.calls.ShortAPITokenSecret, callInfo)
+	mock.lockShortAPITokenSecret.Unlock()
+	return mock.ShortAPITokenSecretFunc()
+}
+
+// ShortAPITokenSecretCalls gets all the calls that were made to ShortAPITokenSecret.
+// Check the length with:
+//
+//	len(mockedEnv.ShortAPITokenSecretCalls())
+func (mock *EnvMock) ShortAPITokenSecretCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockShortAPITokenSecret.RLock()
+	calls = mock.calls.ShortAPITokenSecret
+	mock.lockShortAPITokenSecret.RUnlock()
 	return calls
 }
 

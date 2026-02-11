@@ -992,7 +992,7 @@ func (q *Queries) AllWaitListTgBotRequests(ctx context.Context) ([]AllWaitListTg
 }
 
 const apiKeyByValue = `-- name: ApiKeyByValue :one
-select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys where value = ? and disabled_at is null limit 1
+select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks from api_keys where value = ? and disabled_at is null limit 1
 `
 
 func (q *Queries) ApiKeyByValue(ctx context.Context, value string) (ApiKey, error) {
@@ -1006,6 +1006,7 @@ func (q *Queries) ApiKeyByValue(ctx context.Context, value string) (ApiKey, erro
 		&i.DisabledAt,
 		&i.DisabledBy,
 		&i.Description,
+		&i.SkipWebhooks,
 	)
 	return i, err
 }
@@ -1152,6 +1153,37 @@ func (q *Queries) CronJobByName(ctx context.Context, name string) (CronJob, erro
 		&i.Enabled,
 		&i.Expression,
 		&i.LastExecAt,
+	)
+	return i, err
+}
+
+const cronWebhookByID = `-- name: CronWebhookByID :one
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where id = ? and disabled_at is null
+`
+
+func (q *Queries) CronWebhookByID(ctx context.Context, id int64) (CronWebhook, error) {
+	row := q.db.QueryRowContext(ctx, cronWebhookByID, id)
+	var i CronWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.CronSchedule,
+		&i.Instruction,
+		&i.Secret,
+		&i.PassApiKey,
+		&i.TimeoutSeconds,
+		&i.MaxDepth,
+		&i.MaxRetries,
+		&i.NextRunAt,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
 	)
 	return i, err
 }
@@ -2681,7 +2713,7 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 }
 
 const listAllAPIKeys = `-- name: ListAllAPIKeys :many
-select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys order by created_by, created_at desc
+select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks from api_keys order by created_by, created_at desc
 `
 
 func (q *Queries) ListAllAPIKeys(ctx context.Context) ([]ApiKey, error) {
@@ -2701,6 +2733,7 @@ func (q *Queries) ListAllAPIKeys(ctx context.Context) ([]ApiKey, error) {
 			&i.DisabledAt,
 			&i.DisabledBy,
 			&i.Description,
+			&i.SkipWebhooks,
 		); err != nil {
 			return nil, err
 		}
@@ -3464,6 +3497,151 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 	return items, nil
 }
 
+const listCronWebhookDeliveries = `-- name: ListCronWebhookDeliveries :many
+select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at from cron_webhook_deliveries
+where cron_webhook_id = ?
+order by created_at desc
+limit ?
+`
+
+type ListCronWebhookDeliveriesParams struct {
+	CronWebhookID int64 `json:"cron_webhook_id"`
+	Limit         int64 `json:"limit"`
+}
+
+func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWebhookDeliveriesParams) ([]CronWebhookDelivery, error) {
+	rows, err := q.db.QueryContext(ctx, listCronWebhookDeliveries, arg.CronWebhookID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronWebhookDelivery
+	for rows.Next() {
+		var i CronWebhookDelivery
+		if err := rows.Scan(
+			&i.ID,
+			&i.CronWebhookID,
+			&i.Status,
+			&i.ResponseStatus,
+			&i.Attempt,
+			&i.DurationMs,
+			&i.CreatedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCronWebhooks = `-- name: ListCronWebhooks :many
+
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where disabled_at is null order by created_at
+`
+
+// ============================================
+// Cron Webhooks
+// ============================================
+func (q *Queries) ListCronWebhooks(ctx context.Context) ([]CronWebhook, error) {
+	rows, err := q.db.QueryContext(ctx, listCronWebhooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronWebhook
+	for rows.Next() {
+		var i CronWebhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.CronSchedule,
+			&i.Instruction,
+			&i.Secret,
+			&i.PassApiKey,
+			&i.TimeoutSeconds,
+			&i.MaxDepth,
+			&i.MaxRetries,
+			&i.NextRunAt,
+			&i.ReadPatterns,
+			&i.WritePatterns,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCronWebhooksDueForExecution = `-- name: ListCronWebhooksDueForExecution :many
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks
+where enabled = true
+  and disabled_at is null
+  and next_run_at <= datetime('now')
+`
+
+func (q *Queries) ListCronWebhooksDueForExecution(ctx context.Context) ([]CronWebhook, error) {
+	rows, err := q.db.QueryContext(ctx, listCronWebhooksDueForExecution)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronWebhook
+	for rows.Next() {
+		var i CronWebhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.CronSchedule,
+			&i.Instruction,
+			&i.Secret,
+			&i.PassApiKey,
+			&i.TimeoutSeconds,
+			&i.MaxDepth,
+			&i.MaxRetries,
+			&i.NextRunAt,
+			&i.ReadPatterns,
+			&i.WritePatterns,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDistinctAccountIDsFromSentAccountMessages = `-- name: ListDistinctAccountIDsFromSentAccountMessages :many
 select distinct account_id
   from telegram_publish_sent_account_messages
@@ -3522,6 +3700,53 @@ func (q *Queries) ListDistinctChatIDsFromSentMessages(ctx context.Context) ([]in
 	return items, nil
 }
 
+const listEnabledCronWebhooks = `-- name: ListEnabledCronWebhooks :many
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where enabled = true and disabled_at is null
+`
+
+func (q *Queries) ListEnabledCronWebhooks(ctx context.Context) ([]CronWebhook, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledCronWebhooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronWebhook
+	for rows.Next() {
+		var i CronWebhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.CronSchedule,
+			&i.Instruction,
+			&i.Secret,
+			&i.PassApiKey,
+			&i.TimeoutSeconds,
+			&i.MaxDepth,
+			&i.MaxRetries,
+			&i.NextRunAt,
+			&i.ReadPatterns,
+			&i.WritePatterns,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
 select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
 `
@@ -3543,6 +3768,57 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEnabledWebhooks = `-- name: ListEnabledWebhooks :many
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where enabled = true and disabled_at is null
+`
+
+func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledWebhooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ChangeWebhook
+	for rows.Next() {
+		var i ChangeWebhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.IncludePatterns,
+			&i.ExcludePatterns,
+			&i.Instruction,
+			&i.Secret,
+			&i.MaxDepth,
+			&i.PassApiKey,
+			&i.IncludeContent,
+			&i.TimeoutSeconds,
+			&i.MaxRetries,
+			&i.OnCreate,
+			&i.OnUpdate,
+			&i.OnRemove,
+			&i.ReadPatterns,
+			&i.WritePatterns,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledBy,
 		); err != nil {
 			return nil, err
 		}
@@ -4817,6 +5093,105 @@ func (q *Queries) ListUserFavoriteNotes(ctx context.Context, userID int64) ([]Li
 	return items, nil
 }
 
+const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
+select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at from change_webhook_deliveries
+where webhook_id = ?
+order by created_at desc
+limit ?
+`
+
+type ListWebhookDeliveriesParams struct {
+	WebhookID int64 `json:"webhook_id"`
+	Limit     int64 `json:"limit"`
+}
+
+func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeliveriesParams) ([]ChangeWebhookDelivery, error) {
+	rows, err := q.db.QueryContext(ctx, listWebhookDeliveries, arg.WebhookID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ChangeWebhookDelivery
+	for rows.Next() {
+		var i ChangeWebhookDelivery
+		if err := rows.Scan(
+			&i.ID,
+			&i.WebhookID,
+			&i.Status,
+			&i.ResponseStatus,
+			&i.Attempt,
+			&i.DurationMs,
+			&i.CreatedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWebhooks = `-- name: ListWebhooks :many
+
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where disabled_at is null order by created_at
+`
+
+// ============================================
+// Change Webhooks
+// ============================================
+func (q *Queries) ListWebhooks(ctx context.Context) ([]ChangeWebhook, error) {
+	rows, err := q.db.QueryContext(ctx, listWebhooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ChangeWebhook
+	for rows.Next() {
+		var i ChangeWebhook
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.IncludePatterns,
+			&i.ExcludePatterns,
+			&i.Instruction,
+			&i.Secret,
+			&i.MaxDepth,
+			&i.PassApiKey,
+			&i.IncludeContent,
+			&i.TimeoutSeconds,
+			&i.MaxRetries,
+			&i.OnCreate,
+			&i.OnUpdate,
+			&i.OnRemove,
+			&i.ReadPatterns,
+			&i.WritePatterns,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const notFoundIgnoredPatternByID = `-- name: NotFoundIgnoredPatternByID :one
 select id, pattern, created_at, created_by from not_found_ignored_patterns where id = ?
 `
@@ -5990,4 +6365,70 @@ func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodePara
 	var user_id int64
 	err := row.Scan(&user_id)
 	return user_id, err
+}
+
+const webhookByID = `-- name: WebhookByID :one
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where id = ? and disabled_at is null
+`
+
+func (q *Queries) WebhookByID(ctx context.Context, id int64) (ChangeWebhook, error) {
+	row := q.db.QueryRowContext(ctx, webhookByID, id)
+	var i ChangeWebhook
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Instruction,
+		&i.Secret,
+		&i.MaxDepth,
+		&i.PassApiKey,
+		&i.IncludeContent,
+		&i.TimeoutSeconds,
+		&i.MaxRetries,
+		&i.OnCreate,
+		&i.OnUpdate,
+		&i.OnRemove,
+		&i.ReadPatterns,
+		&i.WritePatterns,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const webhookDeliveryLogByDelivery = `-- name: WebhookDeliveryLogByDelivery :one
+
+select id, delivery_id, kind, request_body, response_body, error_message, created_at from webhook_delivery_logs
+where kind = ? and delivery_id = ?
+order by created_at desc
+limit 1
+`
+
+type WebhookDeliveryLogByDeliveryParams struct {
+	Kind       string `json:"kind"`
+	DeliveryID int64  `json:"delivery_id"`
+}
+
+// ============================================
+// Webhook Delivery Logs
+// ============================================
+func (q *Queries) WebhookDeliveryLogByDelivery(ctx context.Context, arg WebhookDeliveryLogByDeliveryParams) (WebhookDeliveryLog, error) {
+	row := q.db.QueryRowContext(ctx, webhookDeliveryLogByDelivery, arg.Kind, arg.DeliveryID)
+	var i WebhookDeliveryLog
+	err := row.Scan(
+		&i.ID,
+		&i.DeliveryID,
+		&i.Kind,
+		&i.RequestBody,
+		&i.ResponseBody,
+		&i.ErrorMessage,
+		&i.CreatedAt,
+	)
+	return i, err
 }

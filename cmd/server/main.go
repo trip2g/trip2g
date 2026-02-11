@@ -32,6 +32,8 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/backjob/deliverchangewebhook"
+	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
@@ -49,6 +51,7 @@ import (
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
+	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
@@ -89,6 +92,7 @@ import (
 	"trip2g/internal/tgtd"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
+	"trip2g/internal/webhookutil"
 	"trip2g/internal/zerologger"
 
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -138,6 +142,12 @@ type app struct {
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 	*updateallaccounttelegrampublishposts.UpdateAllAccountTelegramPublishPostsJob
 	GenerateNoteVersionEmbeddingJob *generatenoteversionembedding.Job
+	*deliverchangewebhook.DeliverChangeWebhookJob
+	*delivercronwebhook.DeliverCronWebhookJob
+	webhookHTTPClient *fasthttp.Client
+
+	webhookTestCalls []webhookTestCall
+	webhookTestMu    sync.Mutex
 
 	openaiClient *openai.Client
 
@@ -442,6 +452,9 @@ func (a *app) initJobs(ctx context.Context) {
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
 	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
 	a.GenerateNoteVersionEmbeddingJob = generatenoteversionembedding.New(a)
+	a.DeliverChangeWebhookJob = deliverchangewebhook.New(a)
+	a.DeliverCronWebhookJob = delivercronwebhook.New(a)
+	a.webhookHTTPClient = webhookutil.NewClient()
 
 	var err error
 
@@ -1018,6 +1031,33 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 					a.log.Error("failed to enqueue embedding generation", "version_id", noteView.VersionID, "error", enqueueErr)
 				}
 			}
+		}
+	}
+
+	// Trigger change webhook deliveries for changed notes.
+	webhookChanges := make([]handlenotewebhooks.NoteChange, 0, len(changedPathIDs))
+	for _, pathID := range changedPathIDs {
+		notePath, npErr := a.NotePathByID(ctx, pathID)
+		if npErr != nil {
+			a.log.Error("failed to get note path for webhook", "path_id", pathID, "error", npErr)
+			continue
+		}
+
+		event := "update"
+		if notePath.VersionCount == 1 {
+			event = "create"
+		}
+
+		webhookChanges = append(webhookChanges, handlenotewebhooks.NoteChange{
+			PathID: pathID,
+			Event:  event,
+		})
+	}
+
+	if len(webhookChanges) > 0 {
+		webhookErr := handlenotewebhooks.Resolve(ctx, a, webhookChanges, 0)
+		if webhookErr != nil {
+			a.log.Error("failed to handle note webhooks", "error", webhookErr)
 		}
 	}
 
@@ -2213,4 +2253,24 @@ func (r *restoreEnvAdapter) DB() *sql.DB {
 // BackupManager returns the backup manager for cronjob env interface.
 func (a *app) BackupManager() *simplebackup.Manager {
 	return a.simpleBackup
+}
+
+// ShortAPITokenSecret returns the secret used for signing short API tokens.
+func (a *app) ShortAPITokenSecret() string {
+	return a.config.UserToken.Secret
+}
+
+// WebhookHTTPClient returns the shared HTTP client for webhook deliveries.
+func (a *app) WebhookHTTPClient() *fasthttp.Client {
+	return a.webhookHTTPClient
+}
+
+// EnqueueDeliverChangeWebhook enqueues a change webhook delivery job.
+func (a *app) EnqueueDeliverChangeWebhook(ctx context.Context, params handlenotewebhooks.DeliverChangeWebhookParams) error {
+	return a.DeliverChangeWebhookJob.EnqueueDeliverChangeWebhook(ctx, params)
+}
+
+// EnqueueDeliverCronWebhook enqueues a cron webhook delivery job.
+func (a *app) EnqueueDeliverCronWebhook(ctx context.Context, params delivercronwebhook.DeliverCronParams) error {
+	return a.DeliverCronWebhookJob.EnqueueDeliverCronWebhook(ctx, params)
 }

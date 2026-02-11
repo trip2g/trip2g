@@ -44,8 +44,15 @@
       "Bash(npx tsx:*)",
       "WebFetch(domain:gqlgen.com)",
       "WebFetch(domain:gist.github.com)",
-      "Bash(git mv:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(node esbuild.browser.mjs:*)",
+      "WebFetch(domain:docs.stripe.com)",
+      "WebFetch(domain:docs.github.com)",
+      "Bash(git -C /home/alexes/projects2/trip2g add docs/current_tasks.md)",
+      "Bash(git -C /home/alexes/projects2/trip2g commit -m \"wip: обновить current_tasks — заметка о data race fix\")",
+      "Write",
+      "Edit",
+      "Bash(golangci-lint run:*)"
     ],
     "deny": []
   },

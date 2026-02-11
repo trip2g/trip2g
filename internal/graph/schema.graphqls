@@ -638,6 +638,108 @@ type AdminCronJobsConnection {
   nodes: [AdminCronJob!]! @goField(forceResolver: true)
 }
 
+#
+# Webhook types
+#
+
+type AdminChangeWebhook @goModel(model: "trip2g/internal/db.ChangeWebhook") {
+  id: Int64!
+  url: String!
+  includePatterns: [String!]! @goField(forceResolver: true)
+  excludePatterns: [String!]! @goField(forceResolver: true)
+  instruction: String!
+  hasSecret: Boolean! @goField(forceResolver: true)
+  maxDepth: Int64!
+  passApiKey: Boolean!
+  includeContent: Boolean!
+  timeoutSeconds: Int64!
+  maxRetries: Int64!
+  enabled: Boolean!
+  description: String!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+  lastDeliveryAt: Time @goField(forceResolver: true)
+  lastDeliveryStatus: String @goField(forceResolver: true)
+  onCreate: Boolean!
+  onUpdate: Boolean!
+  onRemove: Boolean!
+  readPatterns: [String!]! @goField(forceResolver: true)
+  writePatterns: [String!]! @goField(forceResolver: true)
+}
+
+type AdminChangeWebhooksConnection {
+  nodes: [AdminChangeWebhook!]! @goField(forceResolver: true)
+}
+
+type AdminChangeWebhookDelivery @goModel(model: "trip2g/internal/db.ChangeWebhookDelivery") {
+  id: Int64!
+  webhookId: Int64!
+  status: String!
+  responseStatus: Int64
+  attempt: Int64!
+  durationMs: Int64
+  createdAt: Time!
+  completedAt: Time
+}
+
+type AdminChangeWebhookDeliveriesConnection
+  @goExtraField(name: "WebhookID", type: "int64")
+  @goExtraField(name: "Limit", type: "int64") {
+  nodes: [AdminChangeWebhookDelivery!]! @goField(forceResolver: true)
+}
+
+input AdminChangeWebhookDeliveriesFilterInput {
+  webhookId: Int64!
+  limit: Int64
+}
+
+type AdminCronWebhook @goModel(model: "trip2g/internal/db.CronWebhook") {
+  id: Int64!
+  url: String!
+  cronSchedule: String!
+  instruction: String!
+  hasSecret: Boolean! @goField(forceResolver: true)
+  passApiKey: Boolean!
+  timeoutSeconds: Int64!
+  maxDepth: Int64!
+  maxRetries: Int64!
+  enabled: Boolean!
+  description: String!
+  readPatterns: [String!]! @goField(forceResolver: true)
+  writePatterns: [String!]! @goField(forceResolver: true)
+  nextRunAt: Time
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+  lastDeliveryAt: Time @goField(forceResolver: true)
+  lastDeliveryStatus: String @goField(forceResolver: true)
+}
+
+type AdminCronWebhooksConnection {
+  nodes: [AdminCronWebhook!]! @goField(forceResolver: true)
+}
+
+type AdminCronWebhookDelivery @goModel(model: "trip2g/internal/db.CronWebhookDelivery") {
+  id: Int64!
+  cronWebhookId: Int64!
+  status: String!
+  responseStatus: Int64
+  attempt: Int64!
+  durationMs: Int64
+  createdAt: Time!
+  completedAt: Time
+}
+
+type AdminCronWebhookDeliveriesConnection
+  @goExtraField(name: "CronWebhookID", type: "int64")
+  @goExtraField(name: "Limit", type: "int64") {
+  nodes: [AdminCronWebhookDelivery!]! @goField(forceResolver: true)
+}
+
+input AdminCronWebhookDeliveriesFilterInput {
+  cronWebhookId: Int64!
+  limit: Int64
+}
+
 
 #
 # Atomic config types
@@ -1000,6 +1102,14 @@ type AdminQuery {
 
   allBackgroundQueues: AdminBackgroundQueuesConnection!
   backgroundQueue(id: String!): AdminBackgroundQueue
+
+  # Change Webhooks
+  allChangeWebhooks: AdminChangeWebhooksConnection!
+  changeWebhookDeliveries(filter: AdminChangeWebhookDeliveriesFilterInput!): AdminChangeWebhookDeliveriesConnection!
+
+  # Cron Webhooks
+  allCronWebhooks: AdminCronWebhooksConnection!
+  cronWebhookDeliveries(filter: AdminCronWebhookDeliveriesFilterInput!): AdminCronWebhookDeliveriesConnection!
 
   healthChecks: [HealchCheck!]!
   buildGitCommit: String!
@@ -2544,4 +2654,218 @@ type AdminMutation {
   stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!
   startBackgroundQueue(input: StartBackgroundQueueInput!): StartBackgroundQueueOrErrorPayload!
   clearBackgroundQueue(input: ClearBackgroundQueueInput!): ClearBackgroundQueueOrErrorPayload!
+
+  # Change Webhook mutations
+  createWebhook(input: CreateWebhookInput!): CreateWebhookOrErrorPayload!
+  updateWebhook(input: UpdateWebhookInput!): UpdateWebhookOrErrorPayload!
+  deleteWebhook(input: DeleteWebhookInput!): DeleteWebhookOrErrorPayload!
+  regenerateWebhookSecret(input: RegenerateWebhookSecretInput!): RegenerateWebhookSecretOrErrorPayload!
+  triggerChangeWebhook(input: TriggerChangeWebhookInput!): TriggerChangeWebhookOrErrorPayload!
+
+  # Cron Webhook mutations
+  createCronWebhook(input: CreateCronWebhookInput!): CreateCronWebhookOrErrorPayload!
+  updateCronWebhook(input: UpdateCronWebhookInput!): UpdateCronWebhookOrErrorPayload!
+  deleteCronWebhook(input: DeleteCronWebhookInput!): DeleteCronWebhookOrErrorPayload!
+  regenerateCronWebhookSecret(input: RegenerateCronWebhookSecretInput!): RegenerateCronWebhookSecretOrErrorPayload!
+  triggerCronWebhook(input: TriggerCronWebhookInput!): TriggerCronWebhookOrErrorPayload!
 }
+
+#
+# Change Webhook inputs and payloads
+#
+
+input CreateWebhookInput {
+  url: String!
+  includePatterns: [String!]!
+  excludePatterns: [String!]
+  instruction: String
+  secret: String
+  maxDepth: Int64
+  passApiKey: Boolean
+  includeContent: Boolean
+  timeoutSeconds: Int64
+  maxRetries: Int64
+  description: String
+  onCreate: Boolean
+  onUpdate: Boolean
+  onRemove: Boolean
+  readPatterns: [String!]
+  writePatterns: [String!]
+}
+
+type CreateWebhookPayload {
+  webhook: AdminChangeWebhook!
+  secret: String!
+}
+
+union CreateWebhookOrErrorPayload = CreateWebhookPayload | ErrorPayload
+
+#
+# updateWebhook
+#
+
+input UpdateWebhookInput {
+  id: Int64!
+  url: String
+  includePatterns: [String!]
+  excludePatterns: [String!]
+  instruction: String
+  maxDepth: Int64
+  passApiKey: Boolean
+  includeContent: Boolean
+  timeoutSeconds: Int64
+  maxRetries: Int64
+  enabled: Boolean
+  description: String
+  onCreate: Boolean
+  onUpdate: Boolean
+  onRemove: Boolean
+  readPatterns: [String!]
+  writePatterns: [String!]
+}
+
+type UpdateWebhookPayload {
+  webhook: AdminChangeWebhook!
+}
+
+union UpdateWebhookOrErrorPayload = UpdateWebhookPayload | ErrorPayload
+
+#
+# deleteWebhook
+#
+
+input DeleteWebhookInput {
+  id: Int64!
+}
+
+type DeleteWebhookPayload {
+  deletedId: Int64!
+}
+
+union DeleteWebhookOrErrorPayload = DeleteWebhookPayload | ErrorPayload
+
+#
+# regenerateWebhookSecret
+#
+
+input RegenerateWebhookSecretInput {
+  id: Int64!
+}
+
+type RegenerateWebhookSecretPayload {
+  webhook: AdminChangeWebhook!
+  secret: String!
+}
+
+union RegenerateWebhookSecretOrErrorPayload = RegenerateWebhookSecretPayload | ErrorPayload
+
+#
+# triggerChangeWebhook
+#
+
+input TriggerChangeWebhookInput {
+  webhookId: Int64!
+  pathIds: [Int64!]!
+}
+
+type TriggerChangeWebhookPayload {
+  matchedCount: Int64!
+  ignoredCount: Int64!
+  deliveryId: Int64
+}
+
+union TriggerChangeWebhookOrErrorPayload = TriggerChangeWebhookPayload | ErrorPayload
+
+#
+# Cron Webhook inputs and payloads
+#
+
+input CreateCronWebhookInput {
+  url: String!
+  cronSchedule: String!
+  instruction: String
+  secret: String
+  passApiKey: Boolean
+  timeoutSeconds: Int64
+  maxDepth: Int64
+  maxRetries: Int64
+  enabled: Boolean
+  description: String
+  readPatterns: [String!]
+  writePatterns: [String!]
+}
+
+type CreateCronWebhookPayload {
+  cronWebhook: AdminCronWebhook!
+  secret: String!
+}
+
+union CreateCronWebhookOrErrorPayload = CreateCronWebhookPayload | ErrorPayload
+
+#
+# updateCronWebhook
+#
+
+input UpdateCronWebhookInput {
+  id: Int64!
+  url: String
+  cronSchedule: String
+  instruction: String
+  passApiKey: Boolean
+  timeoutSeconds: Int64
+  maxDepth: Int64
+  maxRetries: Int64
+  enabled: Boolean
+  description: String
+  readPatterns: [String!]
+  writePatterns: [String!]
+}
+
+type UpdateCronWebhookPayload {
+  cronWebhook: AdminCronWebhook!
+}
+
+union UpdateCronWebhookOrErrorPayload = UpdateCronWebhookPayload | ErrorPayload
+
+#
+# deleteCronWebhook
+#
+
+input DeleteCronWebhookInput {
+  id: Int64!
+}
+
+type DeleteCronWebhookPayload {
+  deletedId: Int64!
+}
+
+union DeleteCronWebhookOrErrorPayload = DeleteCronWebhookPayload | ErrorPayload
+
+#
+# regenerateCronWebhookSecret
+#
+
+input RegenerateCronWebhookSecretInput {
+  id: Int64!
+}
+
+type RegenerateCronWebhookSecretPayload {
+  cronWebhook: AdminCronWebhook!
+  secret: String!
+}
+
+union RegenerateCronWebhookSecretOrErrorPayload = RegenerateCronWebhookSecretPayload | ErrorPayload
+
+#
+# triggerCronWebhook
+#
+
+input TriggerCronWebhookInput {
+  cronWebhookId: Int64!
+}
+
+type TriggerCronWebhookPayload {
+  deliveryId: Int64!
+}
+
+union TriggerCronWebhookOrErrorPayload = TriggerCronWebhookPayload | ErrorPayload

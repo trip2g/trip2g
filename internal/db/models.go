@@ -23,13 +23,14 @@ type Admin struct {
 }
 
 type ApiKey struct {
-	ID          int64      `json:"id"`
-	Value       string     `json:"value"`
-	CreatedAt   time.Time  `json:"created_at"`
-	CreatedBy   int64      `json:"created_by"`
-	DisabledAt  *time.Time `json:"disabled_at"`
-	DisabledBy  *int64     `json:"disabled_by"`
-	Description string     `json:"description"`
+	ID           int64      `json:"id"`
+	Value        string     `json:"value"`
+	CreatedAt    time.Time  `json:"created_at"`
+	CreatedBy    int64      `json:"created_by"`
+	DisabledAt   *time.Time `json:"disabled_at"`
+	DisabledBy   *int64     `json:"disabled_by"`
+	Description  string     `json:"description"`
+	SkipWebhooks bool       `json:"skip_webhooks"`
 }
 
 type ApiKeyLog struct {
@@ -125,6 +126,43 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type ChangeWebhook struct {
+	ID              int64      `json:"id"`
+	Url             string     `json:"url"`
+	IncludePatterns string     `json:"include_patterns"`
+	ExcludePatterns string     `json:"exclude_patterns"`
+	Instruction     string     `json:"instruction"`
+	Secret          string     `json:"secret"`
+	MaxDepth        int64      `json:"max_depth"`
+	PassApiKey      bool       `json:"pass_api_key"`
+	IncludeContent  bool       `json:"include_content"`
+	TimeoutSeconds  int64      `json:"timeout_seconds"`
+	MaxRetries      int64      `json:"max_retries"`
+	OnCreate        bool       `json:"on_create"`
+	OnUpdate        bool       `json:"on_update"`
+	OnRemove        bool       `json:"on_remove"`
+	ReadPatterns    string     `json:"read_patterns"`
+	WritePatterns   string     `json:"write_patterns"`
+	Enabled         bool       `json:"enabled"`
+	Description     string     `json:"description"`
+	CreatedAt       time.Time  `json:"created_at"`
+	CreatedBy       int64      `json:"created_by"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	DisabledAt      *time.Time `json:"disabled_at"`
+	DisabledBy      *int64     `json:"disabled_by"`
+}
+
+type ChangeWebhookDelivery struct {
+	ID             int64      `json:"id"`
+	WebhookID      int64      `json:"webhook_id"`
+	Status         string     `json:"status"`
+	ResponseStatus *int64     `json:"response_status"`
+	Attempt        int64      `json:"attempt"`
+	DurationMs     *int64     `json:"duration_ms"`
+	CreatedAt      time.Time  `json:"created_at"`
+	CompletedAt    *time.Time `json:"completed_at"`
+}
+
 type ConfigBoolValue struct {
 	ChangeID int64 `json:"change_id"`
 	Value    bool  `json:"value"`
@@ -158,6 +196,39 @@ type CronJobExecution struct {
 	Status       int64      `json:"status"`
 	ReportData   *string    `json:"report_data"`
 	ErrorMessage *string    `json:"error_message"`
+}
+
+type CronWebhook struct {
+	ID             int64      `json:"id"`
+	Url            string     `json:"url"`
+	CronSchedule   string     `json:"cron_schedule"`
+	Instruction    string     `json:"instruction"`
+	Secret         string     `json:"secret"`
+	PassApiKey     bool       `json:"pass_api_key"`
+	TimeoutSeconds int64      `json:"timeout_seconds"`
+	MaxDepth       int64      `json:"max_depth"`
+	MaxRetries     int64      `json:"max_retries"`
+	NextRunAt      *time.Time `json:"next_run_at"`
+	ReadPatterns   string     `json:"read_patterns"`
+	WritePatterns  string     `json:"write_patterns"`
+	Enabled        bool       `json:"enabled"`
+	Description    string     `json:"description"`
+	CreatedAt      time.Time  `json:"created_at"`
+	CreatedBy      int64      `json:"created_by"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	DisabledAt     *time.Time `json:"disabled_at"`
+	DisabledBy     *int64     `json:"disabled_by"`
+}
+
+type CronWebhookDelivery struct {
+	ID             int64      `json:"id"`
+	CronWebhookID  int64      `json:"cron_webhook_id"`
+	Status         string     `json:"status"`
+	ResponseStatus *int64     `json:"response_status"`
+	Attempt        int64      `json:"attempt"`
+	DurationMs     *int64     `json:"duration_ms"`
+	CreatedAt      time.Time  `json:"created_at"`
+	CompletedAt    *time.Time `json:"completed_at"`
 }
 
 type GitToken struct {
@@ -651,4 +722,14 @@ type WaitListTgBotRequest struct {
 	ChatID     int64     `json:"chat_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	NotePathID int64     `json:"note_path_id"`
+}
+
+type WebhookDeliveryLog struct {
+	ID           int64     `json:"id"`
+	DeliveryID   int64     `json:"delivery_id"`
+	Kind         string    `json:"kind"`
+	RequestBody  *string   `json:"request_body"`
+	ResponseBody *string   `json:"response_body"`
+	ErrorMessage *string   `json:"error_message"`
+	CreatedAt    time.Time `json:"created_at"`
 }

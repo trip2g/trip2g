@@ -1,0 +1,59 @@
+$trip2g_admin_cronwebhook_create $mol_page
+	title @ \Create Cron Webhook
+	CreatedView $mol_view
+		sub /
+			<= CreatedId_labeler $mol_labeler
+				title \ID
+				Content <= CreatedId $trip2g_admin_cell
+					content <= created_id_string? \
+			<= CreatedSecret_labeler $mol_labeler
+				title @ \Secret (save it now!)
+				Content <= CreatedSecret $trip2g_admin_cell
+					content <= created_secret? \
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Url_field $mol_form_field
+					name \URL
+					bid <= url_bid \
+					Content <= url_control $mol_string
+						value? <=> url? \
+						hint \https://example.com/cron-webhook
+				<= Schedule_field $mol_form_field
+					name @ \Cron Schedule (e.g. 0 * * * *)
+					bid <= schedule_bid \
+					Content <= schedule_control $mol_string
+						value? <=> schedule? \
+						hint \0 * * * *
+				<= Description_field $mol_form_field
+					name \Description
+					Content <= description_control $mol_string
+						value? <=> description? \
+				<= Instruction_field $mol_form_field
+					name \Instruction
+					Content <= instruction_control $mol_text
+						text? <=> instruction? \
+				<= PassApiKey_field $mol_form_field
+					name \Pass API Key
+					Content <= pass_api_key_control $mol_check_box
+						checked? <=> pass_api_key? false
+				<= MaxDepth_field $mol_form_field
+					name \Max Depth
+					Content <= max_depth_control $mol_number
+						value? <=> max_depth? 1
+				<= TimeoutSeconds_field $mol_form_field
+					name \Timeout (seconds)
+					Content <= timeout_seconds_control $mol_number
+						value? <=> timeout_seconds? 30
+				<= MaxRetries_field $mol_form_field
+					name \Max Retries
+					Content <= max_retries_control $mol_number
+						value? <=> max_retries? 3
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

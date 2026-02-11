@@ -1,0 +1,39 @@
+$trip2g_admin_cronwebhook_catalog $trip2g_admin_catalog
+	menu_title @ \Cron Webhooks
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_cronwebhook_show
+		cronwebhook_id <= row_id* 0
+	CreateForm $trip2g_admin_cronwebhook_create
+	menu_link_content* / <= CronWebhookItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 800
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Row_url_labeler* $mol_labeler
+						title \URL
+						Content <= Row_url* $trip2g_admin_cell
+							content <= row_url* \url
+					<= Row_schedule_labeler* $mol_labeler
+						title \Schedule
+						Content <= Row_schedule* $trip2g_admin_cell
+							content <= row_schedule* \schedule
+					<= Row_enabled_labeler* $mol_labeler
+						title \Enabled
+						Content <= Row_enabled* $trip2g_admin_cell
+							content <= row_enabled* \enabled
+					<= Row_next_run_labeler* $mol_labeler
+						title @ \Next Run
+						Content <= Row_next_run* $trip2g_admin_cell
+							content <= row_next_run* \-
+					<= Row_last_delivery_labeler* $mol_labeler
+						title @ \Last Delivery
+						Content <= Row_last_delivery* $trip2g_admin_cell
+							content <= row_last_delivery* \-

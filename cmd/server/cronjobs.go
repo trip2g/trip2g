@@ -3,6 +3,9 @@ package main
 import (
 	"trip2g/internal/case/cronjob/applygitchanges"
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
+	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
+	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
+	"trip2g/internal/case/cronjob/executecronwebhooks"
 	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
 	"trip2g/internal/case/cronjob/regeneratenoteembeddings"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
@@ -28,6 +31,11 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		_ refreshtelegramaccounts.Env           = app
 
 		_ regeneratenoteembeddings.Env = app
+
+		_ executecronwebhooks.Env = app
+
+		_ cleanupwebhookdeliverylogs.Env = app
+		_ cleanupwebhookdeliveries.Env   = app
 	)
 
 	jobs := []cronjobs.Job{
@@ -39,6 +47,9 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&refreshtelegramaccounts.Job{},
 		&vacuumdatabase.Job{},
 		&regeneratenoteembeddings.Job{},
+		&executecronwebhooks.Job{},
+		&cleanupwebhookdeliverylogs.Job{},
+		&cleanupwebhookdeliveries.Job{},
 	}
 
 	// Conditionally add simple backup job if enabled
