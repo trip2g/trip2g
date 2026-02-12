@@ -1709,8 +1709,12 @@ func (r *adminTelegramAccountResolver) CreatedBy(ctx context.Context, obj *db.Te
 }
 
 // Dialogs is the resolver for the dialogs field.
-func (r *adminTelegramAccountResolver) Dialogs(ctx context.Context, obj *db.TelegramAccount) ([]appmodel.TelegramAccountDialog, error) {
-	return r.env(ctx).ListTelegramAccountDialogs(ctx, obj.ID)
+func (r *adminTelegramAccountResolver) Dialogs(ctx context.Context, obj *db.TelegramAccount, limit *int32) ([]appmodel.TelegramAccountDialog, error) {
+	l := dialogsDefaultLimit
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.env(ctx).ListTelegramAccountDialogs(ctx, obj.ID, l)
 }
 
 // Type is the resolver for the type field.

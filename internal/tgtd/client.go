@@ -259,8 +259,10 @@ func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo,
 	return chats, nil
 }
 
-// ListDialogs returns all dialogs (users, channels, groups) the account has.
-func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogInfo, error) {
+// ListDialogs returns dialogs (users, channels, groups) the account has.
+// If limit > 0, stops after collecting that many dialogs (avoids FLOOD_WAIT from pagination).
+// If limit <= 0, paginates through all dialogs.
+func (c *Client) ListDialogs(ctx context.Context, sessionData []byte, limit int) ([]DialogInfo, error) {
 	ctx, cancel := safeCtx(ctx)
 	defer cancel()
 
@@ -279,15 +281,17 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 	err = client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
 
-		// Paginate through all dialogs.
+		// Paginate through dialogs.
 		var offsetPeer tg.InputPeerClass = &tg.InputPeerEmpty{}
 		offsetDate := 0
 
 		for {
-			dialogsResp, getDialogsErr := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-				OffsetPeer: offsetPeer,
-				OffsetDate: offsetDate,
-				Limit:      100,
+			dialogsResp, getDialogsErr := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
+				return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+					OffsetPeer: offsetPeer,
+					OffsetDate: offsetDate,
+					Limit:      100,
+				})
 			})
 			if getDialogsErr != nil {
 				return fmt.Errorf("failed to get dialogs: %w", getDialogsErr)
@@ -295,6 +299,12 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 
 			page := extractDialogPage(dialogsResp)
 			dialogs = append(dialogs, collectDialogInfos(page.Chats, page.Users)...)
+
+			// Stop if we've collected enough dialogs.
+			if limit > 0 && len(dialogs) >= limit {
+				dialogs = dialogs[:limit]
+				break
+			}
 
 			// MessagesDialogs (not slice) means all dialogs fit in one response.
 			if _, allFit := dialogsResp.(*tg.MessagesDialogs); allFit {

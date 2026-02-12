@@ -361,8 +361,9 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 }
 
 // ListTelegramAccountDialogs fetches dialogs (users, channels, groups) for a telegram account.
-func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) ([]appmodel.TelegramAccountDialog, error) {
-	// Get the account to retrieve api credentials and session data
+// limit > 0: return at most that many dialogs. limit <= 0: return all (may trigger FLOOD_WAIT).
+func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64, limit int) ([]appmodel.TelegramAccountDialog, error) {
+	// Get the account to retrieve api credentials and session data.
 	account, err := a.GetTelegramAccountByID(ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get telegram account: %w", err)
@@ -373,16 +374,15 @@ func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) (
 		return nil, fmt.Errorf("failed to decrypt session data: %w", err)
 	}
 
-	// Create tgtd client
+	// Create tgtd client.
 	client := tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 
-	// List dialogs from Telegram
-	dialogs, err := client.ListDialogs(ctx, sessionData)
+	dialogs, err := client.ListDialogs(ctx, sessionData, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list dialogs: %w", err)
 	}
 
-	// Convert to model
+	// Convert to model.
 	result := make([]appmodel.TelegramAccountDialog, 0, len(dialogs))
 	for _, d := range dialogs {
 		result = append(result, appmodel.TelegramAccountDialog{

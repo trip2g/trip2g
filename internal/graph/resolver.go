@@ -106,6 +106,10 @@ import (
 	"trip2g/internal/model"
 )
 
+// dialogsDefaultLimit is the default number of Telegram dialogs to fetch.
+// Covers 2 RPC pages (100 per page). Pass 0 or negative to fetch all.
+const dialogsDefaultLimit = 200
+
 type Resolver struct {
 	DefaultEnv Env
 }
@@ -391,7 +395,7 @@ type Env interface {
 
 	// Telegram account queries
 	ListAllTelegramAccounts(ctx context.Context) ([]db.TelegramAccount, error)
-	ListTelegramAccountDialogs(ctx context.Context, accountID int64) ([]model.TelegramAccountDialog, error)
+	ListTelegramAccountDialogs(ctx context.Context, accountID int64, limit int) ([]model.TelegramAccountDialog, error)
 	GetTelegramAccountDialogPublishTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
 	GetTelegramAccountDialogPublishInstantTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
 }

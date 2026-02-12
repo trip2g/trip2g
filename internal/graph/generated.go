@@ -533,7 +533,7 @@ type AdminTelegramAccountResolver interface {
 	Enabled(ctx context.Context, obj *db.TelegramAccount) (bool, error)
 
 	CreatedBy(ctx context.Context, obj *db.TelegramAccount) (*db.User, error)
-	Dialogs(ctx context.Context, obj *db.TelegramAccount) ([]model1.TelegramAccountDialog, error)
+	Dialogs(ctx context.Context, obj *db.TelegramAccount, limit *int32) ([]model1.TelegramAccountDialog, error)
 }
 type AdminTelegramAccountDialogResolver interface {
 	Type(ctx context.Context, obj *model1.TelegramAccountDialog) (model.AdminTelegramAccountDialogType, error)
@@ -2249,6 +2249,17 @@ func (ec *executionContext) field_AdminQuery_user_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminTelegramAccount_dialogs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
 	return args, nil
 }
 
@@ -18400,7 +18411,8 @@ func (ec *executionContext) _AdminTelegramAccount_dialogs(ctx context.Context, f
 		field,
 		ec.fieldContext_AdminTelegramAccount_dialogs,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTelegramAccount().Dialogs(ctx, obj)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminTelegramAccount().Dialogs(ctx, obj, fc.Args["limit"].(*int32))
 		},
 		nil,
 		ec.marshalNAdminTelegramAccountDialog2ᚕtrip2gᚋinternalᚋmodelᚐTelegramAccountDialogᚄ,
@@ -18409,7 +18421,7 @@ func (ec *executionContext) _AdminTelegramAccount_dialogs(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminTelegramAccount_dialogs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminTelegramAccount_dialogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminTelegramAccount",
 		Field:      field,
@@ -18432,6 +18444,17 @@ func (ec *executionContext) fieldContext_AdminTelegramAccount_dialogs(_ context.
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccountDialog", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminTelegramAccount_dialogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }

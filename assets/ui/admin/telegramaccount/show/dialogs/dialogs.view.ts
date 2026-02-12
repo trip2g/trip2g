@@ -1,10 +1,10 @@
 namespace $.$$ {
 	const data_request = $trip2g_graphql_request(
 		`
-			query AdminTelegramAccountDialogs($id: Int64!) {
+			query AdminTelegramAccountDialogs($id: Int64!, $limit: Int) {
 				admin {
 					telegramAccount(id: $id) {
-						dialogs {
+						dialogs(limit: $limit) {
 							id
 							username
 							title
@@ -27,6 +27,7 @@ namespace $.$$ {
 		data( reset?: null ) {
 			const res = data_request({
 				id: String(this.account_id()),
+				limit: this.load_all() ? 0 : undefined,
 			})
 
 			if (!res.admin.telegramAccount) {

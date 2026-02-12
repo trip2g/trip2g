@@ -871,7 +871,7 @@ type AdminTelegramAccount @goModel(model: "trip2g/internal/db.TelegramAccount") 
   enabled: Boolean!
   createdAt: Time!
   createdBy: User @goField(forceResolver: true)
-  dialogs: [AdminTelegramAccountDialog!]! @goField(forceResolver: true)
+  dialogs(limit: Int): [AdminTelegramAccountDialog!]! @goField(forceResolver: true)
 }
 
 type AdminTelegramAccountDialog @goModel(model: "trip2g/internal/model.TelegramAccountDialog") {

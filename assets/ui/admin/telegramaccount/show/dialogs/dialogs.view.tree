@@ -19,11 +19,17 @@ $trip2g_admin_telegramaccount_show_dialogs $mol_view
 	style *
 		flexDirection \column
 		minWidth \800px
+	load_all? false
 	sub /
-		<= Search_labeler $mol_labeler
-			title \Search
-			Content <= Search $mol_string
-				value? <=> search? \
+		<= Controls $mol_row
+			sub /
+				<= Search_labeler $mol_labeler
+					title \Search
+					Content <= Search $mol_string
+						value? <=> search? \
+				<= Load_all_check $mol_check_box
+					title \Load all
+					checked? <=> load_all?
 		<= Rows $mol_list
 			rows <= data_rows /$mol_view
 				<= Row*0 $mol_row
