@@ -1,0 +1,7 @@
+[trip2g_sse_icon_status="open"] {
+	color: var(--mol_theme_success, limegreen);
+}
+
+[trip2g_sse_icon_status="error"] {
+	color: var(--mol_theme_danger, crimson);
+}

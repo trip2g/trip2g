@@ -36,7 +36,10 @@ namespace $ {
 		}
 
 		@ $mol_mem
-		data(next?: any) { return next ?? null }
+		data(next?: any) {
+			this.source()
+			return next ?? null
+		}
 
 		@ $mol_mem
 		source(reset?: null) {

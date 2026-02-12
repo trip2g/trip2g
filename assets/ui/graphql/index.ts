@@ -126,17 +126,17 @@ namespace $ {
 		}
 	}
 
-	// const subscription_hosts = new Map<string, $trip2g_sse_host>()
+	const subscription_hosts = new Map<string, $trip2g_sse_host>()
 
-	// export function $trip2g_graphql_raw_subscription(query: string, variables?: any): $trip2g_sse_host {
-	// 	const key = query + JSON.stringify(variables ?? {})
-	// 	let host = subscription_hosts.get(key)
-	// 	if (!host) {
-	// 		host = new $trip2g_sse_host()
-	// 		host.query = () => query
-	// 		host.variables = () => variables ?? {}
-	// 		subscription_hosts.set(key, host)
-	// 	}
-	// 	return host
-	// }
+	export function $trip2g_graphql_raw_subscription(query: string, variables?: any): $trip2g_sse_host {
+		const key = query + JSON.stringify(variables ?? {})
+		let host = subscription_hosts.get(key)
+		if (!host) {
+			host = new $trip2g_sse_host()
+			host.query = () => query
+			host.variables = () => variables ?? {}
+			subscription_hosts.set(key, host)
+		}
+		return host
+	}
 }
