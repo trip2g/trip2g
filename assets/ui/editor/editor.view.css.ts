@@ -5,13 +5,7 @@ namespace $ {
 			alignItems: 'center',
 			gap: $mol_gap.block,
 			padding: $mol_gap.block,
-			border: {
-				bottom: {
-					width: '1px',
-					style: 'solid',
-					color: $mol_theme.line,
-				},
-			},
+			borderBottom: `1px solid ${$mol_theme.line}`,
 			flex: {
 				shrink: 0,
 			},

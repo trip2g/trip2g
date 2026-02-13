@@ -180,13 +180,27 @@ namespace $.$$ {
 		@$mol_mem
 		edit_value_string(next?: string): string {
 			if (next !== undefined) return next
-			return this.data().stringValue || ''
+
+			const data = this.data()
+
+			if (data.__typename !== 'AdminConfigStringValue') {
+				throw new Error('Not a string config')
+			}
+
+			return data.stringValue || ''
 		}
 
 		@$mol_mem
 		edit_value_bool(next?: boolean): boolean {
 			if (next !== undefined) return next
-			return this.data().boolValue || false
+
+			const data = this.data()
+
+			if (data.__typename !== 'AdminConfigBoolValue') {
+				throw new Error('Not a bool config')
+			}
+
+			return data.boolValue || false
 		}
 
 		@$mol_mem

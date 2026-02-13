@@ -80,7 +80,7 @@ namespace $.$$ {
 		}
 
 		override row_disabled_at( id: any ): string {
-			return this.row(id).disabledAt
+			return this.row(id).disabledAt ?? ''
 		}
 
 		override row_disabled(id: any): boolean {

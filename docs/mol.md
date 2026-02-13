@@ -534,6 +534,7 @@ Note: There is old way howto to use property with id. Instead of `*` you can wri
 - `^` - return value of the same property from super class
 - `\` - raw string, e.g. `message \Hello`
 - `@` - localized string, e.g. `message @ \Hello world`
+- `*` with `@` values - localized dictionary for use in code (see trick below)
 - `<=` - provides read-only property from owner to sub-componen
 - `=>` - provides read-only property from sub-componen to owner
 - `<=>` - fully replace sub component property by owner's one
@@ -612,6 +613,37 @@ namespace $.$$ {
 	}
 }
 ```
+
+## Трюк: перевод текста в коде (texts)
+
+Если нужно использовать переведённый текст в `.view.ts` (например, для условных строк), используй словарь `texts` с `@`-значениями:
+
+**view.tree:**
+```tree
+$my_component $mol_page
+	texts *
+		active @ \Active
+		set_active @ \Set Active
+```
+
+**view.tree.locale=ru.json:**
+```json
+{
+	"$my_component_texts_active": "Активен",
+	"$my_component_texts_set_active": "Сделать активным"
+}
+```
+
+**view.ts:**
+```typescript
+override set_active_title() {
+	return this.data().active
+		? this.texts().active
+		: this.texts().set_active
+}
+```
+
+Ключ в JSON складывается из: `$компонент` + `_texts_` + `имя_ключа`.
 
 ## Async/Sync интеграция
 

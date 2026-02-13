@@ -9,8 +9,9 @@ $trip2g_admin_healthchecks $mol_page
 					sub /
 						<= ID* $trip2g_admin_labeler_name
 							value <= row_id* \id
-						<= Status* $trip2g_admin_labeler_name
-							value <= status_cell* $mol_view
+						<= Status_labeler* $mol_labeler
+							title \Status
+							Content <= Status_cell* $mol_view
 								style *
 									backgroundColor <= row_status_color* \inherit
 									color <= row_status_text_color* \inherit

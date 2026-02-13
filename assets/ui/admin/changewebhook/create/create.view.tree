@@ -1,6 +1,8 @@
 $trip2g_admin_changewebhook_create $mol_page
 	title @ \Create Change Webhook
 	CreatedView $mol_view
+		style *
+			flexDirection \column
 		sub /
 			<= CreatedId_labeler $mol_labeler
 				title \ID
@@ -38,7 +40,7 @@ $trip2g_admin_changewebhook_create $mol_page
 				<= Instruction_field $mol_form_field
 					name \Instruction
 					Content <= instruction_control $mol_textarea
-						text? <=> instruction? \
+						value? <=> instruction? \
 				<= EvenType_row $mol_row
 					sub /
 						<= OnCreate_field $mol_form_field

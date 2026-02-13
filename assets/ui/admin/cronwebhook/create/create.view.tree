@@ -33,7 +33,7 @@ $trip2g_admin_cronwebhook_create $mol_page
 				<= Instruction_field $mol_form_field
 					name \Instruction
 					Content <= instruction_control $mol_textarea
-						text? <=> instruction? \
+						value? <=> instruction? \
 				<= PassApiKey_field $mol_form_field
 					name \Pass API Key
 					Content <= pass_api_key_control $mol_check_box

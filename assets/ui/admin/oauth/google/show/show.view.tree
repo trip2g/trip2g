@@ -1,6 +1,9 @@
 $trip2g_admin_oauth_google_show $mol_page
 	credentials_id? 0
 	title \Google OAuth Credentials
+	texts *
+		active @ \Active
+		set_active @ \Set Active
 	tools /
 		<= SetActiveButton $mol_button_minor
 			disabled <= is_active false

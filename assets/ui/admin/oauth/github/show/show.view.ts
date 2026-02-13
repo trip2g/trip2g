@@ -39,7 +39,9 @@ namespace $.$$ {
 
 		@$mol_mem
 		data( reset?: null ) {
-			return query({ id: this.credentials_id() }).admin.gitHubOAuthCredentials
+			const data = query({ id: this.credentials_id() }).admin.gitHubOAuthCredentials
+			if (!data) throw new Error('GitHub OAuth credentials not found')
+			return data
 		}
 
 		override body() {
@@ -80,7 +82,7 @@ namespace $.$$ {
 		}
 
 		set_active_title() {
-			return this.data().active ? 'Active' : 'Set Active'
+			return this.data().active ? this.texts().active : this.texts().set_active
 		}
 
 		set_active_click() {

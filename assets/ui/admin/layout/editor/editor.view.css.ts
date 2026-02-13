@@ -78,26 +78,6 @@ namespace $ {
 				},
 			},
 		},
-		Content: {
-			padding: '0.5rem',
-			border: {
-				style: 'solid',
-				width: '1px',
-				color: $mol_theme.line,
-			},
-			background: {
-				color: $mol_theme.card,
-			},
-			cursor: 'grab',
-		},
-		Type: {
-			font: {
-				weight: 'bold',
-			},
-		},
-		Name: {
-			color: $mol_theme.shade,
-		},
 		'@': {
 			mol_drag_status: {
 				drag: {
