@@ -1,0 +1,15 @@
+{
+	"$trip2g_admin_frontmatterpatch_show_title": "Патч метаданных",
+	"$trip2g_admin_frontmatterpatch_show_Edit_title": "Редактировать",
+	"$trip2g_admin_frontmatterpatch_show_Details_labeler_title": "Детали патча метаданных",
+	"$trip2g_admin_frontmatterpatch_show_Id_labeler_title": "ID",
+	"$trip2g_admin_frontmatterpatch_show_Description_labeler_title": "Описание",
+	"$trip2g_admin_frontmatterpatch_show_Priority_labeler_title": "Приоритет",
+	"$trip2g_admin_frontmatterpatch_show_Enabled_labeler_title": "Включено",
+	"$trip2g_admin_frontmatterpatch_show_IncludePatterns_labeler_title": "Include паттерны",
+	"$trip2g_admin_frontmatterpatch_show_ExcludePatterns_labeler_title": "Exclude паттерны",
+	"$trip2g_admin_frontmatterpatch_show_Jsonnet_labeler_title": "Jsonnet выражение",
+	"$trip2g_admin_frontmatterpatch_show_CreatedAt_labeler_title": "Создано",
+	"$trip2g_admin_frontmatterpatch_show_CreatedBy_labeler_title": "Создатель",
+	"$trip2g_admin_frontmatterpatch_show_UpdatedAt_labeler_title": "Обновлено"
+}

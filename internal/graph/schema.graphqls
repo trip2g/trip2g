@@ -105,6 +105,11 @@ type NoteAssetReplaceT {
   absolutePath: String!
 }
 
+type AppliedFrontmatterPatchInfo {
+  patchId: Int!
+  description: String!
+}
+
 type NoteView {
   id: String!
   path: String!
@@ -128,6 +133,8 @@ type NoteView {
   toc: [NoteTocItem!]!
 
   assetReplaces: [NoteAssetReplaceT!]! @goField(forceResolver: true)
+
+  appliedFrontmatterPatches: [AppliedFrontmatterPatchInfo!]! @goField(forceResolver: true)
 }
 
 type AdminUserSubgraphAccessesConnection {
@@ -612,6 +619,23 @@ type AdminHtmlInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
 
 type AdminHtmlInjectionsConnection {
   nodes: [AdminHtmlInjection!]! @goField(forceResolver: true)
+}
+
+type AdminFrontmatterPatch @goModel(model: "trip2g/internal/db.NoteFrontmatterPatch") {
+  id: Int64!
+  includePatterns: [String!]! @goField(forceResolver: true)
+  excludePatterns: [String!]! @goField(forceResolver: true)
+  jsonnet: String!
+  priority: Int!
+  description: String!
+  enabled: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminFrontmatterPatchesConnection {
+  nodes: [AdminFrontmatterPatch!]! @goField(forceResolver: true)
 }
 
 type AdminCronJob @goModel(model: "trip2g/internal/db.CronJob") {
@@ -1118,6 +1142,9 @@ type AdminQuery {
 
   # Layout blocks for visual editor autocomplete
   layoutBlocks: [LayoutBlock!]!
+
+  allFrontmatterPatches: AdminFrontmatterPatchesConnection!
+  frontmatterPatch(id: Int64!): AdminFrontmatterPatch
 }
 
 # Block definition from Jet templates
@@ -2671,6 +2698,11 @@ type AdminMutation {
   deleteCronWebhook(input: DeleteCronWebhookInput!): DeleteCronWebhookOrErrorPayload!
   regenerateCronWebhookSecret(input: RegenerateCronWebhookSecretInput!): RegenerateCronWebhookSecretOrErrorPayload!
   triggerCronWebhook(input: TriggerCronWebhookInput!): TriggerCronWebhookOrErrorPayload!
+
+  # Frontmatter Patch mutations
+  createFrontmatterPatch(input: CreateFrontmatterPatchInput!): CreateFrontmatterPatchOrErrorPayload!
+  updateFrontmatterPatch(input: UpdateFrontmatterPatchInput!): UpdateFrontmatterPatchOrErrorPayload!
+  deleteFrontmatterPatch(input: DeleteFrontmatterPatchInput!): DeleteFrontmatterPatchOrErrorPayload!
 }
 
 #
@@ -2872,3 +2904,56 @@ type TriggerCronWebhookPayload {
 }
 
 union TriggerCronWebhookOrErrorPayload = TriggerCronWebhookPayload | ErrorPayload
+
+#
+# createFrontmatterPatch
+#
+
+input CreateFrontmatterPatchInput {
+  includePatterns: [String!]!
+  excludePatterns: [String!]
+  jsonnet: String!
+  priority: Int!
+  description: String!
+  enabled: Boolean!
+}
+
+type CreateFrontmatterPatchPayload {
+  frontmatterPatch: AdminFrontmatterPatch!
+}
+
+union CreateFrontmatterPatchOrErrorPayload = CreateFrontmatterPatchPayload | ErrorPayload
+
+#
+# updateFrontmatterPatch
+#
+
+input UpdateFrontmatterPatchInput {
+  id: Int64!
+  includePatterns: [String!]!
+  excludePatterns: [String!]
+  jsonnet: String!
+  priority: Int!
+  description: String!
+  enabled: Boolean!
+}
+
+type UpdateFrontmatterPatchPayload {
+  frontmatterPatch: AdminFrontmatterPatch!
+}
+
+union UpdateFrontmatterPatchOrErrorPayload = UpdateFrontmatterPatchPayload | ErrorPayload
+
+#
+# deleteFrontmatterPatch
+#
+
+input DeleteFrontmatterPatchInput {
+  id: Int64!
+}
+
+type DeleteFrontmatterPatchPayload {
+  deletedId: Int64!
+}
+
+union DeleteFrontmatterPatchOrErrorPayload = DeleteFrontmatterPatchPayload | ErrorPayload

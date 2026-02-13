@@ -1,0 +1,105 @@
+package updatefrontmatterpatch
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+
+	"trip2g/internal/db"
+	"trip2g/internal/frontmatterpatch"
+	"trip2g/internal/graph/model"
+	"trip2g/internal/usertoken"
+)
+
+type Env interface {
+	UpdateFrontmatterPatch(ctx context.Context, arg db.UpdateFrontmatterPatchParams) (db.NoteFrontmatterPatch, error)
+	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+}
+
+// Input is an alias for the GraphQL input type.
+type Input = model.UpdateFrontmatterPatchInput
+
+// Payload is an alias for the GraphQL payload type.
+type Payload = model.UpdateFrontmatterPatchOrErrorPayload
+
+// validateRequest validates input and returns ErrorPayload if invalid.
+func validateRequest(r *Input) *model.ErrorPayload {
+	return model.NewOzzoError(validation.ValidateStruct(r,
+		validation.Field(&r.ID, validation.Required),
+		validation.Field(&r.IncludePatterns, validation.Required, validation.Length(1, 0)),
+		validation.Field(&r.Jsonnet, validation.Required),
+		validation.Field(&r.Priority, validation.Required),
+		validation.Field(&r.Description, validation.Required),
+	))
+}
+
+// Resolve updates an existing frontmatter patch.
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	// Check admin authorization.
+	_, err := env.CurrentAdminUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	// Always validate input first.
+	errPayload := validateRequest(&input)
+	if errPayload != nil {
+		return errPayload, nil
+	}
+
+	// Validate patterns.
+	err = frontmatterpatch.ValidatePatterns(input.IncludePatterns)
+	if err != nil {
+		return model.NewFieldError("includePatterns", "invalid glob pattern"), nil
+	}
+
+	if len(input.ExcludePatterns) > 0 {
+		err = frontmatterpatch.ValidatePatterns(input.ExcludePatterns)
+		if err != nil {
+			return model.NewFieldError("excludePatterns", "invalid glob pattern"), nil
+		}
+	}
+
+	// Validate jsonnet.
+	err = frontmatterpatch.ValidateJsonnet(input.Jsonnet)
+	if err != nil {
+		return model.NewFieldError("jsonnet", "invalid jsonnet: "+err.Error()), nil
+	}
+
+	// Marshal patterns to JSON.
+	includePatternsJSON, err := json.Marshal(input.IncludePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal include patterns: %w", err)
+	}
+
+	excludePatternsJSON, err := json.Marshal(input.ExcludePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal exclude patterns: %w", err)
+	}
+
+	// Define params as separate variable for cleaner code.
+	params := db.UpdateFrontmatterPatchParams{
+		ID:              input.ID,
+		IncludePatterns: string(includePatternsJSON),
+		ExcludePatterns: string(excludePatternsJSON),
+		Jsonnet:         input.Jsonnet,
+		Priority:        int64(input.Priority),
+		Description:     input.Description,
+		Enabled:         input.Enabled,
+	}
+
+	// Execute database operation.
+	patch, err := env.UpdateFrontmatterPatch(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update frontmatter patch: %w", err)
+	}
+
+	// Define payload as separate variable.
+	payload := model.UpdateFrontmatterPatchPayload{
+		FrontmatterPatch: &patch,
+	}
+
+	return &payload, nil
+}

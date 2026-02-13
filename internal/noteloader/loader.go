@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -63,8 +64,9 @@ type Loader struct {
 	searchIndex   bleve.Index
 	contentHashes map[int64][32]byte // PathID -> content hash for incremental indexing
 
-	version string
-	config  mdloader.Config
+	version            string
+	config             mdloader.Config
+	frontmatterPatches []frontmatterpatch.CompiledPatch
 }
 
 func New(version string, env Env, config mdloader.Config) *Loader {
@@ -75,6 +77,13 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		version: version,
 		config:  config,
 	}
+}
+
+// SetFrontmatterPatches sets the frontmatter patches to apply during note loading.
+func (l *Loader) SetFrontmatterPatches(patches []frontmatterpatch.CompiledPatch) {
+	l.Lock()
+	defer l.Unlock()
+	l.frontmatterPatches = patches
 }
 
 type LoadOptions struct {
@@ -188,6 +197,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			}
 			return nil
 		},
+		FrontmatterPatches: l.frontmatterPatches,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)

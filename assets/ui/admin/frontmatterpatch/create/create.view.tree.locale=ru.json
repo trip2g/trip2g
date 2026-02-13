@@ -1,0 +1,15 @@
+{
+	"$trip2g_admin_frontmatterpatch_create_title": "Создать патч метаданных",
+	"$trip2g_admin_frontmatterpatch_create_description_field_name": "Описание",
+	"$trip2g_admin_frontmatterpatch_create_include_patterns_field_name": "Include паттерны",
+	"$trip2g_admin_frontmatterpatch_create_include_patterns_field_hint": "Один паттерн на строку (синтаксис glob)",
+	"$trip2g_admin_frontmatterpatch_create_exclude_patterns_field_name": "Exclude паттерны",
+	"$trip2g_admin_frontmatterpatch_create_exclude_patterns_field_hint": "Один паттерн на строку (синтаксис glob, опционально)",
+	"$trip2g_admin_frontmatterpatch_create_jsonnet_field_name": "Jsonnet выражение",
+	"$trip2g_admin_frontmatterpatch_create_jsonnet_field_hint": "Пример: { free: true }",
+	"$trip2g_admin_frontmatterpatch_create_priority_field_name": "Приоритет",
+	"$trip2g_admin_frontmatterpatch_create_priority_field_hint": "Меньше = применяется первым",
+	"$trip2g_admin_frontmatterpatch_create_enabled_field_name": "Включено",
+	"$trip2g_admin_frontmatterpatch_create_submit_title": "Создать",
+	"$trip2g_admin_frontmatterpatch_create_result": ""
+}

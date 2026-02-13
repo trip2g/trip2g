@@ -1,0 +1,60 @@
+$trip2g_admin_frontmatterpatch_show $mol_page
+	frontmatterpatch_id? 0
+	after_delete? null
+	title @ \Frontmatter Patch
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title @ \Edit
+		<= DeleteButton $trip2g_admin_frontmatterpatch_button_delete
+			frontmatterpatch_id <= frontmatterpatch_id
+			after_success <= after_delete null
+	UpdateForm $trip2g_admin_frontmatterpatch_update
+		frontmatterpatch_id <= frontmatterpatch_id
+	body /
+		<= PatchDetails $mol_view
+			sub /
+				<= Details_labeler $mol_labeler
+					title @ \Frontmatter Patch Details
+					Content <= Details $mol_view
+						sub /
+							<= Id_labeler $mol_labeler
+								title @ \ID
+								Content <= Id $trip2g_admin_cell
+									content <= patch_id \
+							<= Description_labeler $mol_labeler
+								title @ \Description
+								Content <= Description $trip2g_admin_cell
+									content <= patch_description \
+							<= Priority_labeler $mol_labeler
+								title @ \Priority
+								Content <= Priority $trip2g_admin_cell
+									content <= patch_priority \
+							<= Enabled_labeler $mol_labeler
+								title @ \Enabled
+								Content <= Enabled $trip2g_admin_cell
+									content <= patch_enabled \
+							<= IncludePatterns_labeler $mol_labeler
+								title @ \Include Patterns
+								Content <= IncludePatterns $trip2g_admin_cell
+									content <= patch_include_patterns \
+							<= ExcludePatterns_labeler $mol_labeler
+								title @ \Exclude Patterns
+								Content <= ExcludePatterns $trip2g_admin_cell
+									content <= patch_exclude_patterns \
+							<= Jsonnet_labeler $mol_labeler
+								title @ \Jsonnet Expression
+								Content <= JsonnetView $mol_text_code
+									text <= patch_jsonnet \
+							<= CreatedAt_labeler $mol_labeler
+								title @ \Created At
+								Content <= CreatedAt $trip2g_admin_cell
+									content <= patch_created_at \
+							<= CreatedBy_labeler $mol_labeler
+								title @ \Created By
+								Content <= CreatedBy $trip2g_admin_cell
+									content <= patch_created_by \
+							<= UpdatedAt_labeler $mol_labeler
+								title @ \Updated At
+								Content <= UpdatedAt $trip2g_admin_cell
+									content <= patch_updated_at \

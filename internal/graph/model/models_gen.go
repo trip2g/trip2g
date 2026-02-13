@@ -102,6 +102,10 @@ type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
 
+type CreateFrontmatterPatchOrErrorPayload interface {
+	IsCreateFrontmatterPatchOrErrorPayload()
+}
+
 type CreateGitHubOAuthCredentialsOrErrorPayload interface {
 	IsCreateGitHubOAuthCredentialsOrErrorPayload()
 }
@@ -172,6 +176,10 @@ type DeleteBoostyCredentialsOrErrorPayload interface {
 
 type DeleteCronWebhookOrErrorPayload interface {
 	IsDeleteCronWebhookOrErrorPayload()
+}
+
+type DeleteFrontmatterPatchOrErrorPayload interface {
+	IsDeleteFrontmatterPatchOrErrorPayload()
 }
 
 type DeleteGitHubOAuthCredentialsOrErrorPayload interface {
@@ -356,6 +364,10 @@ type UpdateCronJobOrErrorPayload interface {
 
 type UpdateCronWebhookOrErrorPayload interface {
 	IsUpdateCronWebhookOrErrorPayload()
+}
+
+type UpdateFrontmatterPatchOrErrorPayload interface {
+	IsUpdateFrontmatterPatchOrErrorPayload()
 }
 
 type UpdateHTMLInjectionOrErrorPayload interface {
@@ -564,6 +576,10 @@ type AdminCronWebhookDeliveriesFilterInput struct {
 
 type AdminCronWebhooksConnection struct {
 	Nodes []db.CronWebhook `json:"nodes"`
+}
+
+type AdminFrontmatterPatchesConnection struct {
+	Nodes []db.NoteFrontmatterPatch `json:"nodes"`
 }
 
 type AdminGitHubOAuthCredentialsConnection struct {
@@ -795,6 +811,11 @@ type APIKeyLogsFilterInput struct {
 	APIKeyID *int64 `json:"apiKeyId,omitempty"`
 }
 
+type AppliedFrontmatterPatchInfo struct {
+	PatchID     int32  `json:"patchId"`
+	Description string `json:"description"`
+}
+
 type BanUserInput struct {
 	UserID int64  `json:"userId"`
 	Reason string `json:"reason"`
@@ -968,6 +989,21 @@ type CreateEmailWaitListRequestPayload struct {
 }
 
 func (CreateEmailWaitListRequestPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
+
+type CreateFrontmatterPatchInput struct {
+	IncludePatterns []string `json:"includePatterns"`
+	ExcludePatterns []string `json:"excludePatterns,omitempty"`
+	Jsonnet         string   `json:"jsonnet"`
+	Priority        int32    `json:"priority"`
+	Description     string   `json:"description"`
+	Enabled         bool     `json:"enabled"`
+}
+
+type CreateFrontmatterPatchPayload struct {
+	FrontmatterPatch *db.NoteFrontmatterPatch `json:"frontmatterPatch"`
+}
+
+func (CreateFrontmatterPatchPayload) IsCreateFrontmatterPatchOrErrorPayload() {}
 
 type CreateGitHubOAuthCredentialsInput struct {
 	Name         string `json:"name"`
@@ -1168,6 +1204,16 @@ type DeleteCronWebhookPayload struct {
 }
 
 func (DeleteCronWebhookPayload) IsDeleteCronWebhookOrErrorPayload() {}
+
+type DeleteFrontmatterPatchInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteFrontmatterPatchPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteFrontmatterPatchPayload) IsDeleteFrontmatterPatchOrErrorPayload() {}
 
 type DeleteGitHubOAuthCredentialsInput struct {
 	ID int64 `json:"id"`
@@ -1438,6 +1484,12 @@ func (ErrorPayload) IsDeleteCronWebhookOrErrorPayload() {}
 func (ErrorPayload) IsRegenerateCronWebhookSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsTriggerCronWebhookOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateFrontmatterPatchOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateFrontmatterPatchOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteFrontmatterPatchOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -2002,6 +2054,22 @@ type UpdateCronWebhookPayload struct {
 }
 
 func (UpdateCronWebhookPayload) IsUpdateCronWebhookOrErrorPayload() {}
+
+type UpdateFrontmatterPatchInput struct {
+	ID              int64    `json:"id"`
+	IncludePatterns []string `json:"includePatterns"`
+	ExcludePatterns []string `json:"excludePatterns,omitempty"`
+	Jsonnet         string   `json:"jsonnet"`
+	Priority        int32    `json:"priority"`
+	Description     string   `json:"description"`
+	Enabled         bool     `json:"enabled"`
+}
+
+type UpdateFrontmatterPatchPayload struct {
+	FrontmatterPatch *db.NoteFrontmatterPatch `json:"frontmatterPatch"`
+}
+
+func (UpdateFrontmatterPatchPayload) IsUpdateFrontmatterPatchOrErrorPayload() {}
 
 type UpdateHTMLInjectionInput struct {
 	ID          int64      `json:"id"`

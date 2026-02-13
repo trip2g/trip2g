@@ -1,0 +1,35 @@
+$trip2g_admin_frontmatterpatch_catalog $trip2g_admin_catalog
+	menu_title @ \Frontmatter Patches
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_frontmatterpatch_show
+		frontmatterpatch_id <= row_id* 0
+		after_delete <= after_delete* null
+	CreateForm $trip2g_admin_frontmatterpatch_create
+		after_success? <=> after_create? 0
+	menu_link_content* / <= FrontmatterPatchItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Description* $trip2g_admin_labeler_description
+						value <= row_description* \description
+					<= Row_priority_labeler* $mol_labeler
+						title @ \Priority
+						Content <= Row_priority* $trip2g_admin_cell
+							content <= row_priority* \priority
+					<= Row_enabled_labeler* $mol_labeler
+						title @ \Enabled
+						Content <= Row_enabled* $trip2g_admin_cell
+							content <= row_enabled* \enabled
+					<= Row_patterns_labeler* $mol_labeler
+						title @ \Patterns
+						Content <= Row_patterns* $trip2g_admin_cell
+							content <= row_patterns* \patterns

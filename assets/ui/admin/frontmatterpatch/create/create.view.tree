@@ -1,0 +1,49 @@
+$trip2g_admin_frontmatterpatch_create $mol_page
+	title @ \Create Frontmatter Patch
+	after_success? 0
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Description_field $mol_form_field
+					name @ \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description? \
+				<= IncludePatterns_field $mol_form_field
+					name @ \Include Patterns
+					bid <= include_patterns_bid \
+					hint @ \One pattern per line (glob syntax)
+					Content <= include_patterns_control $mol_textarea
+						value? <=> include_patterns_text? \
+				<= ExcludePatterns_field $mol_form_field
+					name @ \Exclude Patterns
+					bid <= exclude_patterns_bid \
+					hint @ \One pattern per line (glob syntax, optional)
+					Content <= exclude_patterns_control $mol_textarea
+						value? <=> exclude_patterns_text? \
+				<= Jsonnet_field $mol_form_field
+					name @ \Jsonnet Expression
+					bid <= jsonnet_bid \
+					hint @ \Example: { free: true }
+					Content <= jsonnet_control $mol_textarea
+						value? <=> jsonnet? \
+						rows 10
+						font_family \monospace
+				<= Priority_field $mol_form_field
+					name @ \Priority
+					bid <= priority_bid \
+					hint @ \Lower = evaluated first
+					Content <= priority_control $mol_number
+						value? <=> priority? 0
+				<= Enabled_field $mol_form_field
+					name @ \Enabled
+					Content <= enabled_control $mol_check_box
+						checked? <=> enabled? true
+			buttons /
+				<= Submit $mol_button_major
+					title @ \Create
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \
