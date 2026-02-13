@@ -20,8 +20,8 @@ $trip2g_admin_cronwebhook_update $mol_view
 						value? <=> description? \
 				<= Instruction_field $mol_form_field
 					name \Instruction
-					Content <= instruction_control $mol_text
-						text? <=> instruction? \
+					Content <= instruction_control $mol_textarea
+						value? <=> instruction? \
 				<= Enabled_field $mol_form_field
 					name \Enabled
 					Content <= enabled_control $mol_check_box
