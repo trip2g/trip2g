@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-13
+
+- **Change Webhooks**: исправлен баг с agent response
+  - Заметки, созданные webhook'ом через agent response, теперь сразу доступны
+  - Добавлен вызов `PrepareLatestNotes` после `InsertNote` для обновления кеша
+  - E2E тесты для проверки полного workflow webhook delivery + agent response
+
 ## 2026-02-10
 
 - **Change Webhooks**: уведомления внешних сервисов об изменениях заметок

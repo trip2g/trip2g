@@ -1,10 +1,10 @@
 namespace $.$$ {
 	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminCreateWebhookMutation($input: CreateWebhookInput!) {
+		mutation AdminChangeWebhookCreateMutation($input: ChangeWebhookCreateInput!) {
 			admin {
-				payload: createWebhook(input: $input) {
+				payload: changeWebhookCreate(input: $input) {
 					__typename
-					... on CreateWebhookPayload {
+					... on ChangeWebhookCreatePayload {
 						webhook {
 							id
 						}
@@ -71,7 +71,7 @@ namespace $.$$ {
 				return
 			}
 
-			if( res.admin.payload.__typename === 'CreateWebhookPayload' ) {
+			if( res.admin.payload.__typename === 'ChangeWebhookCreatePayload' ) {
 				this.created_id_string( res.admin.payload.webhook.id.toString() )
 				this.created_secret( res.admin.payload.secret )
 				return

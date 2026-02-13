@@ -39,6 +39,9 @@ var _ updatetelegramaccountmessage.Env = &EnvMock{}
 //			GetTelegramPublishSentAccountMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentAccountMessagePostTypeParams) (string, error) {
 //				panic("mock out the GetTelegramPublishSentAccountMessagePostType method")
 //			},
+//			LogLevelFunc: func() string {
+//				panic("mock out the LogLevel method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -78,6 +81,9 @@ type EnvMock struct {
 
 	// GetTelegramPublishSentAccountMessagePostTypeFunc mocks the GetTelegramPublishSentAccountMessagePostType method.
 	GetTelegramPublishSentAccountMessagePostTypeFunc func(ctx context.Context, arg db.GetTelegramPublishSentAccountMessagePostTypeParams) (string, error)
+
+	// LogLevelFunc mocks the LogLevel method.
+	LogLevelFunc func() string
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -136,6 +142,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.GetTelegramPublishSentAccountMessagePostTypeParams
 		}
+		// LogLevel holds details about calls to the LogLevel method.
+		LogLevel []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
@@ -174,6 +183,7 @@ type EnvMock struct {
 	lockGetTelegramPublishAccountInstantChatAccessHash    sync.RWMutex
 	lockGetTelegramPublishSentAccountMessageContentHash   sync.RWMutex
 	lockGetTelegramPublishSentAccountMessagePostType      sync.RWMutex
+	lockLogLevel                                          sync.RWMutex
 	lockLogger                                            sync.RWMutex
 	lockTelegramCaptionLengthLimit                        sync.RWMutex
 	lockUpdateTelegramPublishAccountChatAccessHash        sync.RWMutex
@@ -390,6 +400,33 @@ func (mock *EnvMock) GetTelegramPublishSentAccountMessagePostTypeCalls() []struc
 	mock.lockGetTelegramPublishSentAccountMessagePostType.RLock()
 	calls = mock.calls.GetTelegramPublishSentAccountMessagePostType
 	mock.lockGetTelegramPublishSentAccountMessagePostType.RUnlock()
+	return calls
+}
+
+// LogLevel calls LogLevelFunc.
+func (mock *EnvMock) LogLevel() string {
+	if mock.LogLevelFunc == nil {
+		panic("EnvMock.LogLevelFunc: method is nil but Env.LogLevel was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogLevel.Lock()
+	mock.calls.LogLevel = append(mock.calls.LogLevel, callInfo)
+	mock.lockLogLevel.Unlock()
+	return mock.LogLevelFunc()
+}
+
+// LogLevelCalls gets all the calls that were made to LogLevel.
+// Check the length with:
+//
+//	len(mockedEnv.LogLevelCalls())
+func (mock *EnvMock) LogLevelCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogLevel.RLock()
+	calls = mock.calls.LogLevel
+	mock.lockLogLevel.RUnlock()
 	return calls
 }
 

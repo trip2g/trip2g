@@ -15,8 +15,8 @@ type Env interface {
 	RegenerateWebhookSecret(ctx context.Context, params db.RegenerateWebhookSecretParams) (db.ChangeWebhook, error)
 }
 
-type Input = model.RegenerateWebhookSecretInput
-type Payload = model.RegenerateWebhookSecretOrErrorPayload
+type Input = model.ChangeWebhookRegenerateSecretInput
+type Payload = model.ChangeWebhookRegenerateSecretOrErrorPayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
@@ -39,7 +39,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to regenerate webhook secret: %w", err)
 	}
 
-	return &model.RegenerateWebhookSecretPayload{
+	return &model.ChangeWebhookRegenerateSecretPayload{
 		Webhook: &webhook,
 		Secret:  secret,
 	}, nil

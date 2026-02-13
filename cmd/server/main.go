@@ -1215,6 +1215,10 @@ func (a *app) Logger() logger.Logger {
 	return a.log
 }
 
+func (a *app) LogLevel() string {
+	return a.config.LogLevel
+}
+
 func (a *app) Features() features.Features {
 	return a.config.Features
 }

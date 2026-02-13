@@ -46,6 +46,9 @@ var _ sendtelegramaccountmessage.Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
+//			LogLevelFunc: func() string {
+//				panic("mock out the LogLevel method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -94,6 +97,9 @@ type EnvMock struct {
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
+
+	// LogLevelFunc mocks the LogLevel method.
+	LogLevelFunc func() string
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -165,6 +171,9 @@ type EnvMock struct {
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
+		// LogLevel holds details about calls to the LogLevel method.
+		LogLevel []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
@@ -212,6 +221,7 @@ type EnvMock struct {
 	lockGetTelegramPublishAccountInstantChatAccessHash    sync.RWMutex
 	lockInsertTelegramPublishSentAccountMessage           sync.RWMutex
 	lockLatestNoteViews                                   sync.RWMutex
+	lockLogLevel                                          sync.RWMutex
 	lockLogger                                            sync.RWMutex
 	lockSetTelegramPublishNoteLastError                   sync.RWMutex
 	lockTelegramCaptionLengthLimit                        sync.RWMutex
@@ -492,6 +502,33 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// LogLevel calls LogLevelFunc.
+func (mock *EnvMock) LogLevel() string {
+	if mock.LogLevelFunc == nil {
+		panic("EnvMock.LogLevelFunc: method is nil but Env.LogLevel was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogLevel.Lock()
+	mock.calls.LogLevel = append(mock.calls.LogLevel, callInfo)
+	mock.lockLogLevel.Unlock()
+	return mock.LogLevelFunc()
+}
+
+// LogLevelCalls gets all the calls that were made to LogLevel.
+// Check the length with:
+//
+//	len(mockedEnv.LogLevelCalls())
+func (mock *EnvMock) LogLevelCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogLevel.RLock()
+	calls = mock.calls.LogLevel
+	mock.lockLogLevel.RUnlock()
 	return calls
 }
 

@@ -19,8 +19,8 @@ type Env interface {
 	InsertWebhook(ctx context.Context, params db.InsertWebhookParams) (db.ChangeWebhook, error)
 }
 
-type Input = model.CreateWebhookInput
-type Payload = model.CreateWebhookOrErrorPayload
+type Input = model.ChangeWebhookCreateInput
+type Payload = model.ChangeWebhookCreateOrErrorPayload
 
 func validateInput(i *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
@@ -175,7 +175,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to insert webhook: %w", err)
 	}
 
-	return &model.CreateWebhookPayload{
+	return &model.ChangeWebhookCreatePayload{
 		Webhook: &webhook,
 		Secret:  secret,
 	}, nil

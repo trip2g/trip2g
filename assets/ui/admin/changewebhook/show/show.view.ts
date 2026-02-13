@@ -46,11 +46,11 @@ namespace $.$$ {
 	`)
 
 	const deleteMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminDeleteWebhookMutation($input: DeleteWebhookInput!) {
+		mutation AdminChangeWebhookDeleteMutation($input: ChangeWebhookDeleteInput!) {
 			admin {
-				payload: deleteWebhook(input: $input) {
+				payload: changeWebhookDelete(input: $input) {
 					__typename
-					... on DeleteWebhookPayload {
+					... on ChangeWebhookDeletePayload {
 						deletedId
 					}
 					... on ErrorPayload {
@@ -62,11 +62,11 @@ namespace $.$$ {
 	`)
 
 	const regenerateMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminRegenerateWebhookSecretMutation($input: RegenerateWebhookSecretInput!) {
+		mutation AdminChangeWebhookRegenerateSecretMutation($input: ChangeWebhookRegenerateSecretInput!) {
 			admin {
-				payload: regenerateWebhookSecret(input: $input) {
+				payload: changeWebhookRegenerateSecret(input: $input) {
 					__typename
-					... on RegenerateWebhookSecretPayload {
+					... on ChangeWebhookRegenerateSecretPayload {
 						secret
 					}
 					... on ErrorPayload {
@@ -169,7 +169,7 @@ namespace $.$$ {
 				return
 			}
 
-			if( res.admin.payload.__typename === 'DeleteWebhookPayload' ) {
+			if( res.admin.payload.__typename === 'ChangeWebhookDeletePayload' ) {
 				this.delete_result( 'Webhook deleted successfully' )
 				this.$.$mol_state_arg.value( 'id', '' )
 				return
@@ -186,7 +186,7 @@ namespace $.$$ {
 				return
 			}
 
-			if( res.admin.payload.__typename === 'RegenerateWebhookSecretPayload' ) {
+			if( res.admin.payload.__typename === 'ChangeWebhookRegenerateSecretPayload' ) {
 				this.secret_result( 'New secret: ' + res.admin.payload.secret )
 				return
 			}

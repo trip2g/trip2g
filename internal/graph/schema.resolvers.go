@@ -1053,23 +1053,23 @@ func (r *adminMutationResolver) ClearBackgroundQueue(ctx context.Context, obj *a
 	}, nil
 }
 
-// CreateWebhook is the resolver for the createWebhook field.
-func (r *adminMutationResolver) CreateWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateWebhookInput) (model.CreateWebhookOrErrorPayload, error) {
+// ChangeWebhookCreate is the resolver for the changeWebhookCreate field.
+func (r *adminMutationResolver) ChangeWebhookCreate(ctx context.Context, obj *appmodel.AdminMutation, input model.ChangeWebhookCreateInput) (model.ChangeWebhookCreateOrErrorPayload, error) {
 	return createwebhook.Resolve(ctx, r.env(ctx), input)
 }
 
-// UpdateWebhook is the resolver for the updateWebhook field.
-func (r *adminMutationResolver) UpdateWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateWebhookInput) (model.UpdateWebhookOrErrorPayload, error) {
+// ChangeWebhookUpdate is the resolver for the changeWebhookUpdate field.
+func (r *adminMutationResolver) ChangeWebhookUpdate(ctx context.Context, obj *appmodel.AdminMutation, input model.ChangeWebhookUpdateInput) (model.ChangeWebhookUpdateOrErrorPayload, error) {
 	return updatewebhook.Resolve(ctx, r.env(ctx), input)
 }
 
-// DeleteWebhook is the resolver for the deleteWebhook field.
-func (r *adminMutationResolver) DeleteWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteWebhookInput) (model.DeleteWebhookOrErrorPayload, error) {
+// ChangeWebhookDelete is the resolver for the changeWebhookDelete field.
+func (r *adminMutationResolver) ChangeWebhookDelete(ctx context.Context, obj *appmodel.AdminMutation, input model.ChangeWebhookDeleteInput) (model.ChangeWebhookDeleteOrErrorPayload, error) {
 	return deletewebhook.Resolve(ctx, r.env(ctx), input)
 }
 
-// RegenerateWebhookSecret is the resolver for the regenerateWebhookSecret field.
-func (r *adminMutationResolver) RegenerateWebhookSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.RegenerateWebhookSecretInput) (model.RegenerateWebhookSecretOrErrorPayload, error) {
+// ChangeWebhookRegenerateSecret is the resolver for the changeWebhookRegenerateSecret field.
+func (r *adminMutationResolver) ChangeWebhookRegenerateSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.ChangeWebhookRegenerateSecretInput) (model.ChangeWebhookRegenerateSecretOrErrorPayload, error) {
 	return regeneratewebhooksecret.Resolve(ctx, r.env(ctx), input)
 }
 

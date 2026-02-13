@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { signInAsAdmin } from './helpers/auth.js';
 
 /**
  * Setup test - runs first
@@ -25,29 +26,8 @@ test.describe.serial('Setup', () => {
   });
 
   test('sign in and create API key via UI', async ({ page }) => {
-    await page.goto('/');
-
-    // 1. Click sign in button
-    await page.locator('mol_button_minor[trip2g_user_space_signinbutton]').click();
-
-    // 2. Enter email
-    await page.locator('input[trip2g_auth_email_form_email_control]').fill('hello@example.com');
-
-    // 3. Click request code
-    await page.locator('button[trip2g_auth_email_form_requestcode]').click();
-
-    // Wait for code input to appear
-    await page.locator('input[trip2g_auth_code_form_code_control]').waitFor({ state: 'visible' });
-
-    // 4. Enter code (111111 is dev code)
-    await page.locator('input[trip2g_auth_code_form_code_control]').clear()
-    await page.locator('input[trip2g_auth_code_form_code_control]').fill('111111');
-
-    // 5. Click sign up
-    await page.locator('mol_button_major[trip2g_auth_code_form_signup]').click();
-
-    // Wait for sign in to complete
-    await page.waitForTimeout(500);
+    // Sign in as admin using shared helper
+    await signInAsAdmin(page);
 
     // Verify onboarding page shows download link for admin
     await page.goto('/');

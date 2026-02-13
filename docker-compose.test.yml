@@ -33,7 +33,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
       - DEV=true # sign in code 000000
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms

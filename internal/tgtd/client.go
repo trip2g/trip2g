@@ -27,6 +27,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -46,9 +48,26 @@ const (
 	extM4V  = ".m4v"
 )
 
+// createGotdLogger creates a zap logger for gotd based on log level.
+// Returns nil if logLevel is not "debug".
+func createGotdLogger(logLevel string) *zap.Logger {
+	if logLevel != "debug" {
+		return nil
+	}
+
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+	logger, err := config.Build()
+	if err != nil {
+		return nil
+	}
+	return logger
+}
+
 // ClientEnv provides dependencies for Client.
 type ClientEnv interface {
 	Logger() logger.Logger
+	LogLevel() string
 	DecryptData(ciphertext []byte) ([]byte, error)
 	// Access hash cache methods
 	GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error)
@@ -204,6 +223,7 @@ func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo,
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var chats []ChatInfo
@@ -274,6 +294,7 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte, limit int)
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var dialogs []DialogInfo
@@ -375,6 +396,7 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var result *SendMessageResult
@@ -464,6 +486,7 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var result *SendMessageResult
@@ -538,6 +561,7 @@ func (c *Client) SendMediaGroup(ctx context.Context, sessionData []byte, params 
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var result *SendMessageResult
@@ -771,6 +795,7 @@ func (c *Client) EditMessage(ctx context.Context, sessionData []byte, params Edi
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -815,6 +840,7 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -883,6 +909,7 @@ func (c *Client) EditMessageCaption(ctx context.Context, sessionData []byte, par
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -935,6 +962,7 @@ func (c *Client) DeleteMessage(ctx context.Context, sessionData []byte, params D
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {
@@ -1280,6 +1308,7 @@ func (c *Client) GetAppConfig(ctx context.Context, sessionData []byte) (*AppConf
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var result *AppConfig
@@ -1389,6 +1418,7 @@ func (c *Client) GetUserInfo(ctx context.Context, sessionData []byte) (*UserInfo
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	var result *UserInfo
@@ -1431,6 +1461,7 @@ func (c *Client) RunWithAPI(ctx context.Context, sessionData []byte, f APIFunc) 
 
 	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
 	})
 
 	return client.Run(ctx, func(ctx context.Context) error {

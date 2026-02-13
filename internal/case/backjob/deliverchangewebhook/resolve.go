@@ -23,6 +23,7 @@ type Env interface {
 	UpdateWebhookDeliveryResult(ctx context.Context, arg db.UpdateWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error)
 	EnqueueDeliverChangeWebhook(ctx context.Context, params handlenotewebhooks.DeliverChangeWebhookParams) error
 	ShortAPITokenSecret() string
 	WebhookHTTPClient() *fasthttp.Client
@@ -258,6 +259,12 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		if insertErr != nil {
 			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
 		}
+	}
+
+	// Refresh LatestNoteViews cache after applying changes.
+	_, prepareErr := env.PrepareLatestNotes(ctx, false)
+	if prepareErr != nil {
+		return fmt.Errorf("failed to refresh note views: %w", prepareErr)
 	}
 
 	return nil

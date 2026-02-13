@@ -453,29 +453,29 @@ cmd/server/case_methods.go
 ```graphql
 # Admin mutations
 type Mutation {
-  createWebhook(input: CreateWebhookInput!): CreateWebhookPayload!
-  updateWebhook(input: UpdateWebhookInput!): UpdateWebhookPayload!
-  deleteWebhook(id: Int!): DeleteWebhookPayload!
-  triggerChangeWebhook(input: TriggerWebhookInput!): TriggerWebhookPayload!
-  regenerateWebhookSecret(id: Int!): RegenerateSecretPayload!
+  changeWebhookCreate(input: ChangeWebhookCreateInput!): ChangeWebhookCreatePayload!
+  changeWebhookUpdate(input: ChangeWebhookUpdateInput!): ChangeWebhookUpdatePayload!
+  changeWebhookDelete(input: ChangeWebhookDeleteInput!): ChangeWebhookDeletePayload!
+  triggerChangeWebhook(input: TriggerChangeWebhookInput!): TriggerChangeWebhookPayload!
+  changeWebhookRegenerateSecret(input: ChangeWebhookRegenerateSecretInput!): ChangeWebhookRegenerateSecretPayload!
 }
 
-type RegenerateSecretPayload {
+type ChangeWebhookRegenerateSecretPayload {
   secret: String!    # new secret, shown once
 }
 
-input TriggerWebhookInput {
+input TriggerChangeWebhookInput {
   webhookId: Int!
   pathIds: [Int!]!            # ID путей для триггера
 }
 
-type TriggerWebhookPayload {
+type TriggerChangeWebhookPayload {
   matchedCount: Int!           # сколько путей прошли glob-матчинг
   ignoredCount: Int!           # сколько путей не прошли
   deliveryId: Int              # ID созданного delivery (null если matchedCount=0)
 }
 
-input CreateWebhookInput {
+input ChangeWebhookCreateInput {
   url: String!
   includePatterns: [String!]!      # glob patterns: ["blog/**", "docs/*"]
   excludePatterns: [String!]       # exclude glob patterns (optional)
@@ -494,7 +494,7 @@ input CreateWebhookInput {
   writePatterns: [String!]! = []
 }
 
-input UpdateWebhookInput {
+input ChangeWebhookUpdateInput {
   id: Int!
   url: String
   includePatterns: [String!]

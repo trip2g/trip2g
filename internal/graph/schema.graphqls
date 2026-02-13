@@ -2659,10 +2659,10 @@ type AdminMutation {
   clearBackgroundQueue(input: ClearBackgroundQueueInput!): ClearBackgroundQueueOrErrorPayload!
 
   # Change Webhook mutations
-  createWebhook(input: CreateWebhookInput!): CreateWebhookOrErrorPayload!
-  updateWebhook(input: UpdateWebhookInput!): UpdateWebhookOrErrorPayload!
-  deleteWebhook(input: DeleteWebhookInput!): DeleteWebhookOrErrorPayload!
-  regenerateWebhookSecret(input: RegenerateWebhookSecretInput!): RegenerateWebhookSecretOrErrorPayload!
+  changeWebhookCreate(input: ChangeWebhookCreateInput!): ChangeWebhookCreateOrErrorPayload!
+  changeWebhookUpdate(input: ChangeWebhookUpdateInput!): ChangeWebhookUpdateOrErrorPayload!
+  changeWebhookDelete(input: ChangeWebhookDeleteInput!): ChangeWebhookDeleteOrErrorPayload!
+  changeWebhookRegenerateSecret(input: ChangeWebhookRegenerateSecretInput!): ChangeWebhookRegenerateSecretOrErrorPayload!
   triggerChangeWebhook(input: TriggerChangeWebhookInput!): TriggerChangeWebhookOrErrorPayload!
 
   # Cron Webhook mutations
@@ -2677,7 +2677,7 @@ type AdminMutation {
 # Change Webhook inputs and payloads
 #
 
-input CreateWebhookInput {
+input ChangeWebhookCreateInput {
   url: String!
   includePatterns: [String!]!
   excludePatterns: [String!]
@@ -2696,18 +2696,18 @@ input CreateWebhookInput {
   writePatterns: [String!]
 }
 
-type CreateWebhookPayload {
+type ChangeWebhookCreatePayload {
   webhook: AdminChangeWebhook!
   secret: String!
 }
 
-union CreateWebhookOrErrorPayload = CreateWebhookPayload | ErrorPayload
+union ChangeWebhookCreateOrErrorPayload = ChangeWebhookCreatePayload | ErrorPayload
 
 #
-# updateWebhook
+# changeWebhookUpdate
 #
 
-input UpdateWebhookInput {
+input ChangeWebhookUpdateInput {
   id: Int64!
   url: String
   includePatterns: [String!]
@@ -2727,40 +2727,40 @@ input UpdateWebhookInput {
   writePatterns: [String!]
 }
 
-type UpdateWebhookPayload {
+type ChangeWebhookUpdatePayload {
   webhook: AdminChangeWebhook!
 }
 
-union UpdateWebhookOrErrorPayload = UpdateWebhookPayload | ErrorPayload
+union ChangeWebhookUpdateOrErrorPayload = ChangeWebhookUpdatePayload | ErrorPayload
 
 #
-# deleteWebhook
+# changeWebhookDelete
 #
 
-input DeleteWebhookInput {
+input ChangeWebhookDeleteInput {
   id: Int64!
 }
 
-type DeleteWebhookPayload {
+type ChangeWebhookDeletePayload {
   deletedId: Int64!
 }
 
-union DeleteWebhookOrErrorPayload = DeleteWebhookPayload | ErrorPayload
+union ChangeWebhookDeleteOrErrorPayload = ChangeWebhookDeletePayload | ErrorPayload
 
 #
-# regenerateWebhookSecret
+# changeWebhookRegenerateSecret
 #
 
-input RegenerateWebhookSecretInput {
+input ChangeWebhookRegenerateSecretInput {
   id: Int64!
 }
 
-type RegenerateWebhookSecretPayload {
+type ChangeWebhookRegenerateSecretPayload {
   webhook: AdminChangeWebhook!
   secret: String!
 }
 
-union RegenerateWebhookSecretOrErrorPayload = RegenerateWebhookSecretPayload | ErrorPayload
+union ChangeWebhookRegenerateSecretOrErrorPayload = ChangeWebhookRegenerateSecretPayload | ErrorPayload
 
 #
 # triggerChangeWebhook

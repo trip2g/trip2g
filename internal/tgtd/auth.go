@@ -87,6 +87,7 @@ func (m *AuthManager) StartAuth(ctx context.Context, phone string, apiID int, ap
 	// Create client
 	client := telegram.NewClient(apiID, apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         createGotdLogger(""),
 	})
 
 	// Create context with cancel

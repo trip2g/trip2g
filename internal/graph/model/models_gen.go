@@ -58,6 +58,22 @@ type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
 
+type ChangeWebhookCreateOrErrorPayload interface {
+	IsChangeWebhookCreateOrErrorPayload()
+}
+
+type ChangeWebhookDeleteOrErrorPayload interface {
+	IsChangeWebhookDeleteOrErrorPayload()
+}
+
+type ChangeWebhookRegenerateSecretOrErrorPayload interface {
+	IsChangeWebhookRegenerateSecretOrErrorPayload()
+}
+
+type ChangeWebhookUpdateOrErrorPayload interface {
+	IsChangeWebhookUpdateOrErrorPayload()
+}
+
 type ClearBackgroundQueueOrErrorPayload interface {
 	IsClearBackgroundQueueOrErrorPayload()
 }
@@ -138,10 +154,6 @@ type CreateUserSubgraphAccessOrErrorPayload interface {
 	IsCreateUserSubgraphAccessOrErrorPayload()
 }
 
-type CreateWebhookOrErrorPayload interface {
-	IsCreateWebhookOrErrorPayload()
-}
-
 type DeactivateGitHubOAuthOrErrorPayload interface {
 	IsDeactivateGitHubOAuthOrErrorPayload()
 }
@@ -186,10 +198,6 @@ type DeleteRedirectOrErrorPayload interface {
 	IsDeleteRedirectOrErrorPayload()
 }
 
-type DeleteWebhookOrErrorPayload interface {
-	IsDeleteWebhookOrErrorPayload()
-}
-
 type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
 }
@@ -228,10 +236,6 @@ type RefreshPatreonDataOrErrorPayload interface {
 
 type RegenerateCronWebhookSecretOrErrorPayload interface {
 	IsRegenerateCronWebhookSecretOrErrorPayload()
-}
-
-type RegenerateWebhookSecretOrErrorPayload interface {
-	IsRegenerateWebhookSecretOrErrorPayload()
 }
 
 type RemoveExpiredTgChatMembersOrErrorPayload interface {
@@ -388,10 +392,6 @@ type UpdateUserOrErrorPayload interface {
 
 type UpdateUserSubgraphAccessOrErrorPayload interface {
 	IsUpdateUserSubgraphAccessOrErrorPayload()
-}
-
-type UpdateWebhookOrErrorPayload interface {
-	IsUpdateWebhookOrErrorPayload()
 }
 
 type UploadNoteAssetOrErrorPayload interface {
@@ -813,6 +813,79 @@ type BoolParamValue struct {
 
 func (BoolParamValue) IsLayoutBlockParamValue() {}
 
+type ChangeWebhookCreateInput struct {
+	URL             string   `json:"url"`
+	IncludePatterns []string `json:"includePatterns"`
+	ExcludePatterns []string `json:"excludePatterns,omitempty"`
+	Instruction     *string  `json:"instruction,omitempty"`
+	Secret          *string  `json:"secret,omitempty"`
+	MaxDepth        *int64   `json:"maxDepth,omitempty"`
+	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
+	IncludeContent  *bool    `json:"includeContent,omitempty"`
+	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
+	MaxRetries      *int64   `json:"maxRetries,omitempty"`
+	Description     *string  `json:"description,omitempty"`
+	OnCreate        *bool    `json:"onCreate,omitempty"`
+	OnUpdate        *bool    `json:"onUpdate,omitempty"`
+	OnRemove        *bool    `json:"onRemove,omitempty"`
+	ReadPatterns    []string `json:"readPatterns,omitempty"`
+	WritePatterns   []string `json:"writePatterns,omitempty"`
+}
+
+type ChangeWebhookCreatePayload struct {
+	Webhook *db.ChangeWebhook `json:"webhook"`
+	Secret  string            `json:"secret"`
+}
+
+func (ChangeWebhookCreatePayload) IsChangeWebhookCreateOrErrorPayload() {}
+
+type ChangeWebhookDeleteInput struct {
+	ID int64 `json:"id"`
+}
+
+type ChangeWebhookDeletePayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (ChangeWebhookDeletePayload) IsChangeWebhookDeleteOrErrorPayload() {}
+
+type ChangeWebhookRegenerateSecretInput struct {
+	ID int64 `json:"id"`
+}
+
+type ChangeWebhookRegenerateSecretPayload struct {
+	Webhook *db.ChangeWebhook `json:"webhook"`
+	Secret  string            `json:"secret"`
+}
+
+func (ChangeWebhookRegenerateSecretPayload) IsChangeWebhookRegenerateSecretOrErrorPayload() {}
+
+type ChangeWebhookUpdateInput struct {
+	ID              int64    `json:"id"`
+	URL             *string  `json:"url,omitempty"`
+	IncludePatterns []string `json:"includePatterns,omitempty"`
+	ExcludePatterns []string `json:"excludePatterns,omitempty"`
+	Instruction     *string  `json:"instruction,omitempty"`
+	MaxDepth        *int64   `json:"maxDepth,omitempty"`
+	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
+	IncludeContent  *bool    `json:"includeContent,omitempty"`
+	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
+	MaxRetries      *int64   `json:"maxRetries,omitempty"`
+	Enabled         *bool    `json:"enabled,omitempty"`
+	Description     *string  `json:"description,omitempty"`
+	OnCreate        *bool    `json:"onCreate,omitempty"`
+	OnUpdate        *bool    `json:"onUpdate,omitempty"`
+	OnRemove        *bool    `json:"onRemove,omitempty"`
+	ReadPatterns    []string `json:"readPatterns,omitempty"`
+	WritePatterns   []string `json:"writePatterns,omitempty"`
+}
+
+type ChangeWebhookUpdatePayload struct {
+	Webhook *db.ChangeWebhook `json:"webhook"`
+}
+
+func (ChangeWebhookUpdatePayload) IsChangeWebhookUpdateOrErrorPayload() {}
+
 type ClearBackgroundQueueInput struct {
 	ID string `json:"id"`
 }
@@ -1053,32 +1126,6 @@ type CreateUserSubgraphAccessPayload struct {
 
 func (CreateUserSubgraphAccessPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 
-type CreateWebhookInput struct {
-	URL             string   `json:"url"`
-	IncludePatterns []string `json:"includePatterns"`
-	ExcludePatterns []string `json:"excludePatterns,omitempty"`
-	Instruction     *string  `json:"instruction,omitempty"`
-	Secret          *string  `json:"secret,omitempty"`
-	MaxDepth        *int64   `json:"maxDepth,omitempty"`
-	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
-	IncludeContent  *bool    `json:"includeContent,omitempty"`
-	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
-	MaxRetries      *int64   `json:"maxRetries,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	OnCreate        *bool    `json:"onCreate,omitempty"`
-	OnUpdate        *bool    `json:"onUpdate,omitempty"`
-	OnRemove        *bool    `json:"onRemove,omitempty"`
-	ReadPatterns    []string `json:"readPatterns,omitempty"`
-	WritePatterns   []string `json:"writePatterns,omitempty"`
-}
-
-type CreateWebhookPayload struct {
-	Webhook *db.ChangeWebhook `json:"webhook"`
-	Secret  string            `json:"secret"`
-}
-
-func (CreateWebhookPayload) IsCreateWebhookOrErrorPayload() {}
-
 type DeactivateGitHubOAuthPayload struct {
 	Success bool `json:"success"`
 }
@@ -1182,16 +1229,6 @@ type DeleteRedirectPayload struct {
 }
 
 func (DeleteRedirectPayload) IsDeleteRedirectOrErrorPayload() {}
-
-type DeleteWebhookInput struct {
-	ID int64 `json:"id"`
-}
-
-type DeleteWebhookPayload struct {
-	DeletedID int64 `json:"deletedId"`
-}
-
-func (DeleteWebhookPayload) IsDeleteWebhookOrErrorPayload() {}
 
 type DisableAPIKeyInput struct {
 	ID int64 `json:"id"`
@@ -1382,13 +1419,13 @@ func (ErrorPayload) IsStartBackgroundQueueOrErrorPayload() {}
 
 func (ErrorPayload) IsClearBackgroundQueueOrErrorPayload() {}
 
-func (ErrorPayload) IsCreateWebhookOrErrorPayload() {}
+func (ErrorPayload) IsChangeWebhookCreateOrErrorPayload() {}
 
-func (ErrorPayload) IsUpdateWebhookOrErrorPayload() {}
+func (ErrorPayload) IsChangeWebhookUpdateOrErrorPayload() {}
 
-func (ErrorPayload) IsDeleteWebhookOrErrorPayload() {}
+func (ErrorPayload) IsChangeWebhookDeleteOrErrorPayload() {}
 
-func (ErrorPayload) IsRegenerateWebhookSecretOrErrorPayload() {}
+func (ErrorPayload) IsChangeWebhookRegenerateSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsTriggerChangeWebhookOrErrorPayload() {}
 
@@ -1595,17 +1632,6 @@ type RegenerateCronWebhookSecretPayload struct {
 }
 
 func (RegenerateCronWebhookSecretPayload) IsRegenerateCronWebhookSecretOrErrorPayload() {}
-
-type RegenerateWebhookSecretInput struct {
-	ID int64 `json:"id"`
-}
-
-type RegenerateWebhookSecretPayload struct {
-	Webhook *db.ChangeWebhook `json:"webhook"`
-	Secret  string            `json:"secret"`
-}
-
-func (RegenerateWebhookSecretPayload) IsRegenerateWebhookSecretOrErrorPayload() {}
 
 type RemoveExpiredTgChatMembersInput struct {
 	ChatID *int64 `json:"chatId,omitempty"`
@@ -2085,32 +2111,6 @@ type UpdateUserSubgraphAccessPayload struct {
 }
 
 func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
-
-type UpdateWebhookInput struct {
-	ID              int64    `json:"id"`
-	URL             *string  `json:"url,omitempty"`
-	IncludePatterns []string `json:"includePatterns,omitempty"`
-	ExcludePatterns []string `json:"excludePatterns,omitempty"`
-	Instruction     *string  `json:"instruction,omitempty"`
-	MaxDepth        *int64   `json:"maxDepth,omitempty"`
-	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
-	IncludeContent  *bool    `json:"includeContent,omitempty"`
-	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
-	MaxRetries      *int64   `json:"maxRetries,omitempty"`
-	Enabled         *bool    `json:"enabled,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	OnCreate        *bool    `json:"onCreate,omitempty"`
-	OnUpdate        *bool    `json:"onUpdate,omitempty"`
-	OnRemove        *bool    `json:"onRemove,omitempty"`
-	ReadPatterns    []string `json:"readPatterns,omitempty"`
-	WritePatterns   []string `json:"writePatterns,omitempty"`
-}
-
-type UpdateWebhookPayload struct {
-	Webhook *db.ChangeWebhook `json:"webhook"`
-}
-
-func (UpdateWebhookPayload) IsUpdateWebhookOrErrorPayload() {}
 
 type UploadNoteAssetInput struct {
 	SkipCommit   *bool          `json:"skipCommit,omitempty"`

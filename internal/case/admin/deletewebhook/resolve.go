@@ -15,8 +15,8 @@ type Env interface {
 	DisableWebhook(ctx context.Context, params db.DisableWebhookParams) error
 }
 
-type Input = model.DeleteWebhookInput
-type Payload = model.DeleteWebhookOrErrorPayload
+type Input = model.ChangeWebhookDeleteInput
+type Payload = model.ChangeWebhookDeleteOrErrorPayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	token, err := env.CurrentAdminUserToken(ctx)
@@ -34,7 +34,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to disable webhook: %w", err)
 	}
 
-	return &model.DeleteWebhookPayload{
+	return &model.ChangeWebhookDeletePayload{
 		DeletedID: input.ID,
 	}, nil
 }

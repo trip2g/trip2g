@@ -16,8 +16,8 @@ type Env interface {
 	UpdateWebhook(ctx context.Context, params db.UpdateWebhookParams) (db.ChangeWebhook, error)
 }
 
-type Input = model.UpdateWebhookInput
-type Payload = model.UpdateWebhookOrErrorPayload
+type Input = model.ChangeWebhookUpdateInput
+type Payload = model.ChangeWebhookUpdateOrErrorPayload
 
 // validateBounds checks optional numeric fields are within allowed ranges.
 func validateBounds(input Input) *model.ErrorPayload {
@@ -99,7 +99,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to update webhook: %w", err)
 	}
 
-	return &model.UpdateWebhookPayload{
+	return &model.ChangeWebhookUpdatePayload{
 		Webhook: &webhook,
 	}, nil
 }

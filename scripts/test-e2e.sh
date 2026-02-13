@@ -1,6 +1,51 @@
 #!/bin/bash
 # End-to-end test runner
-# Usage: ./scripts/test-e2e.sh
+# Usage: ./scripts/test-e2e.sh [--headed|--debug|--ui]
+#
+# Test Flow Overview:
+# ===================
+# 1. Setup (e2e/setup.spec.js)
+#    - Sign in as admin (hello@example.com with dev code 111111)
+#    - Create API key via UI, save to .test-api-key
+#    - This runs FIRST via Playwright before sync tests
+#
+# 2. CLI Sync Tests (scripts/test-sync-cli.sh)
+#    - Upload test vault via obsidian-sync CLI
+#    - Verify files are synced to backend
+#    - NOTE: Some notes have scheduled telegram posts, creating background jobs
+#
+# 3. Telegram Cron
+#    - Schedules telegram publish posts job
+#    - Background jobs start processing immediately
+#
+# 4. Main Playwright Tests
+#    - Browser-based UI tests (smoke, vault, rss, etc.)
+#    - Excludes Setup, Layout CSS, and Webhook tests (--grep-invert)
+#
+# 5. Layout CSS Tests
+#    - Test CSS hot-reload functionality
+#
+# 6. Telegram Update Tests
+#    - Update telegram posts and verify changes
+#    - Wait for ALL background jobs to complete (wait_all_jobs)
+#
+# 7. Webhook E2E Tests (e2e/webhooks.spec.js) - RUNS LAST
+#    - Test webhook delivery, agent responses, depth protection
+#    - CRITICAL: Must run LAST after all telegram jobs complete
+#    - Uses /debug/wait_all_jobs which waits for ALL background jobs
+#    - Running earlier would cause timeouts due to pending telegram jobs
+#
+# Why This Order?
+# ===============
+# - Setup FIRST: Creates admin session and API key needed by all other tests
+# - Sync BEFORE Browser: Ensures test data is loaded before UI tests
+# - Webhooks LAST: Ensures job queue is empty (wait_all_jobs won't block on unrelated jobs)
+#
+# Environment:
+# ============
+# - Docker Compose test environment (docker-compose.test.yml)
+# - App runs on port 20081 with DEV=true (allows dev code 111111)
+# - USER_TOKEN_COOKIE_NAME=trip2g_e2e (avoids conflicts with dev cookies)
 
 set -e
 
@@ -120,12 +165,12 @@ echo ""
   exit 1
 }
 
-# Schedule send_scheduled_telegram_publishposts job
-run_telegram_cron
-
 echo ""
 echo -e "${GREEN}✓ CLI sync tests passed${NC}"
 echo ""
+
+# Schedule send_scheduled_telegram_publishposts job
+run_telegram_cron
 
 # Check for MANUAL mode
 if [ "$MANUAL" = "1" ] || [ "$MANUAL" = "true" ]; then
@@ -151,13 +196,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --ui
 else
-  npx playwright test --grep-invert "Setup|Layout CSS"
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook"
 fi
 
 TEST_EXIT_CODE=$?
@@ -213,6 +258,15 @@ wait_all_jobs
 # Check channel snapshots after update
 echo "📷 Checking Telegram channel snapshots after update..."
 go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
+
+# Run webhook E2E tests AFTER all other tests (when job queue is empty)
+echo ""
+echo "🔗 Running webhook E2E tests..."
+npx playwright test e2e/webhooks.spec.js || {
+  echo -e "${RED}✗ Webhook E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Webhook E2E tests passed${NC}"
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"

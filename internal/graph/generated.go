@@ -385,10 +385,10 @@ type AdminMutationResolver interface {
 	StopBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error)
 	StartBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StartBackgroundQueueInput) (model.StartBackgroundQueueOrErrorPayload, error)
 	ClearBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.ClearBackgroundQueueInput) (model.ClearBackgroundQueueOrErrorPayload, error)
-	CreateWebhook(ctx context.Context, obj *model1.AdminMutation, input model.CreateWebhookInput) (model.CreateWebhookOrErrorPayload, error)
-	UpdateWebhook(ctx context.Context, obj *model1.AdminMutation, input model.UpdateWebhookInput) (model.UpdateWebhookOrErrorPayload, error)
-	DeleteWebhook(ctx context.Context, obj *model1.AdminMutation, input model.DeleteWebhookInput) (model.DeleteWebhookOrErrorPayload, error)
-	RegenerateWebhookSecret(ctx context.Context, obj *model1.AdminMutation, input model.RegenerateWebhookSecretInput) (model.RegenerateWebhookSecretOrErrorPayload, error)
+	ChangeWebhookCreate(ctx context.Context, obj *model1.AdminMutation, input model.ChangeWebhookCreateInput) (model.ChangeWebhookCreateOrErrorPayload, error)
+	ChangeWebhookUpdate(ctx context.Context, obj *model1.AdminMutation, input model.ChangeWebhookUpdateInput) (model.ChangeWebhookUpdateOrErrorPayload, error)
+	ChangeWebhookDelete(ctx context.Context, obj *model1.AdminMutation, input model.ChangeWebhookDeleteInput) (model.ChangeWebhookDeleteOrErrorPayload, error)
+	ChangeWebhookRegenerateSecret(ctx context.Context, obj *model1.AdminMutation, input model.ChangeWebhookRegenerateSecretInput) (model.ChangeWebhookRegenerateSecretOrErrorPayload, error)
 	TriggerChangeWebhook(ctx context.Context, obj *model1.AdminMutation, input model.TriggerChangeWebhookInput) (model.TriggerChangeWebhookOrErrorPayload, error)
 	CreateCronWebhook(ctx context.Context, obj *model1.AdminMutation, input model.CreateCronWebhookInput) (model.CreateCronWebhookOrErrorPayload, error)
 	UpdateCronWebhook(ctx context.Context, obj *model1.AdminMutation, input model.UpdateCronWebhookInput) (model.UpdateCronWebhookOrErrorPayload, error)
@@ -799,6 +799,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminUpdateTelegramAccountInput,
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
+		ec.unmarshalInputChangeWebhookCreateInput,
+		ec.unmarshalInputChangeWebhookDeleteInput,
+		ec.unmarshalInputChangeWebhookRegenerateSecretInput,
+		ec.unmarshalInputChangeWebhookUpdateInput,
 		ec.unmarshalInputClearBackgroundQueueInput,
 		ec.unmarshalInputCreateAdminInput,
 		ec.unmarshalInputCreateApiKeyInput,
@@ -818,7 +822,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTgBotInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateUserSubgraphAccessInput,
-		ec.unmarshalInputCreateWebhookInput,
 		ec.unmarshalInputDeleteAdminInput,
 		ec.unmarshalInputDeleteBoostyCredentialsInput,
 		ec.unmarshalInputDeleteCronWebhookInput,
@@ -828,7 +831,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
-		ec.unmarshalInputDeleteWebhookInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputDisableGitTokenInput,
 		ec.unmarshalInputGenerateTgAttachCodeInput,
@@ -843,7 +845,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRefreshBoostyDataInput,
 		ec.unmarshalInputRefreshPatreonDataInput,
 		ec.unmarshalInputRegenerateCronWebhookSecretInput,
-		ec.unmarshalInputRegenerateWebhookSecretInput,
 		ec.unmarshalInputRemoveExpiredTgChatMembersInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
@@ -884,7 +885,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateTgBotInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
-		ec.unmarshalInputUpdateWebhookInput,
 		ec.unmarshalInputUploadNoteAssetInput,
 		ec.unmarshalInputViewerOffersFilter,
 	)
@@ -1035,6 +1035,50 @@ func (ec *executionContext) field_AdminMutation_cancelTelegramAccountAuth_args(c
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAdminCancelTelegramAccountAuthInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCancelTelegramAccountAuthInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_changeWebhookCreate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChangeWebhookCreateInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookCreateInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_changeWebhookDelete_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChangeWebhookDeleteInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookDeleteInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_changeWebhookRegenerateSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChangeWebhookRegenerateSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookRegenerateSecretInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_changeWebhookUpdate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChangeWebhookUpdateInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookUpdateInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1240,17 +1284,6 @@ func (ec *executionContext) field_AdminMutation_createUser_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_AdminMutation_createWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateWebhookInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_AdminMutation_deleteAdmin_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1350,17 +1383,6 @@ func (ec *executionContext) field_AdminMutation_deleteRedirect_args(ctx context.
 	return args, nil
 }
 
-func (ec *executionContext) field_AdminMutation_deleteWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteWebhookInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_AdminMutation_disableApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1431,17 +1453,6 @@ func (ec *executionContext) field_AdminMutation_regenerateCronWebhookSecret_args
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRegenerateCronWebhookSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐRegenerateCronWebhookSecretInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_AdminMutation_regenerateWebhookSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRegenerateWebhookSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐRegenerateWebhookSecretInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1871,17 +1882,6 @@ func (ec *executionContext) field_AdminMutation_updateUser_args(ctx context.Cont
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateUserInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_AdminMutation_updateWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateWebhookInput)
 	if err != nil {
 		return nil, err
 	}
@@ -11717,31 +11717,31 @@ func (ec *executionContext) fieldContext_AdminMutation_clearBackgroundQueue(ctx 
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_createWebhook(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminMutation_changeWebhookCreate(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AdminMutation_createWebhook,
+		ec.fieldContext_AdminMutation_changeWebhookCreate,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().CreateWebhook(ctx, obj, fc.Args["input"].(model.CreateWebhookInput))
+			return ec.resolvers.AdminMutation().ChangeWebhookCreate(ctx, obj, fc.Args["input"].(model.ChangeWebhookCreateInput))
 		},
 		nil,
-		ec.marshalNCreateWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateWebhookOrErrorPayload,
+		ec.marshalNChangeWebhookCreateOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookCreateOrErrorPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_createWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_changeWebhookCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type CreateWebhookOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type ChangeWebhookCreateOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -11751,38 +11751,38 @@ func (ec *executionContext) fieldContext_AdminMutation_createWebhook(ctx context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_createWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_changeWebhookCreate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_updateWebhook(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminMutation_changeWebhookUpdate(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AdminMutation_updateWebhook,
+		ec.fieldContext_AdminMutation_changeWebhookUpdate,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().UpdateWebhook(ctx, obj, fc.Args["input"].(model.UpdateWebhookInput))
+			return ec.resolvers.AdminMutation().ChangeWebhookUpdate(ctx, obj, fc.Args["input"].(model.ChangeWebhookUpdateInput))
 		},
 		nil,
-		ec.marshalNUpdateWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateWebhookOrErrorPayload,
+		ec.marshalNChangeWebhookUpdateOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookUpdateOrErrorPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_updateWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_changeWebhookUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UpdateWebhookOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type ChangeWebhookUpdateOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -11792,38 +11792,38 @@ func (ec *executionContext) fieldContext_AdminMutation_updateWebhook(ctx context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_updateWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_changeWebhookUpdate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_deleteWebhook(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminMutation_changeWebhookDelete(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AdminMutation_deleteWebhook,
+		ec.fieldContext_AdminMutation_changeWebhookDelete,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().DeleteWebhook(ctx, obj, fc.Args["input"].(model.DeleteWebhookInput))
+			return ec.resolvers.AdminMutation().ChangeWebhookDelete(ctx, obj, fc.Args["input"].(model.ChangeWebhookDeleteInput))
 		},
 		nil,
-		ec.marshalNDeleteWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteWebhookOrErrorPayload,
+		ec.marshalNChangeWebhookDeleteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookDeleteOrErrorPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_deleteWebhook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_changeWebhookDelete(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DeleteWebhookOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type ChangeWebhookDeleteOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -11833,38 +11833,38 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteWebhook(ctx context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_deleteWebhook_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_changeWebhookDelete_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_regenerateWebhookSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminMutation_changeWebhookRegenerateSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AdminMutation_regenerateWebhookSecret,
+		ec.fieldContext_AdminMutation_changeWebhookRegenerateSecret,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().RegenerateWebhookSecret(ctx, obj, fc.Args["input"].(model.RegenerateWebhookSecretInput))
+			return ec.resolvers.AdminMutation().ChangeWebhookRegenerateSecret(ctx, obj, fc.Args["input"].(model.ChangeWebhookRegenerateSecretInput))
 		},
 		nil,
-		ec.marshalNRegenerateWebhookSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRegenerateWebhookSecretOrErrorPayload,
+		ec.marshalNChangeWebhookRegenerateSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookRegenerateSecretOrErrorPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_regenerateWebhookSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_changeWebhookRegenerateSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type RegenerateWebhookSecretOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type ChangeWebhookRegenerateSecretOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -11874,7 +11874,7 @@ func (ec *executionContext) fieldContext_AdminMutation_regenerateWebhookSecret(c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_regenerateWebhookSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_changeWebhookRegenerateSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -21936,6 +21936,318 @@ func (ec *executionContext) fieldContext_BoolParamValue_defaultValue(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _ChangeWebhookCreatePayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookCreatePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookCreatePayload_webhook,
+		func(ctx context.Context) (any, error) {
+			return obj.Webhook, nil
+		},
+		nil,
+		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookCreatePayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookCreatePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
+			case "instruction":
+				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "maxDepth":
+				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
+			case "passApiKey":
+				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
+			case "includeContent":
+				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
+			case "maxRetries":
+				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
+			case "lastDeliveryAt":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
+			case "lastDeliveryStatus":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
+			case "onCreate":
+				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
+			case "onUpdate":
+				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
+			case "onRemove":
+				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
+			case "readPatterns":
+				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
+			case "writePatterns":
+				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChangeWebhookCreatePayload_secret(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookCreatePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookCreatePayload_secret,
+		func(ctx context.Context) (any, error) {
+			return obj.Secret, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookCreatePayload_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookCreatePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChangeWebhookDeletePayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookDeletePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookDeletePayload_deletedId,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookDeletePayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookDeletePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChangeWebhookRegenerateSecretPayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookRegenerateSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookRegenerateSecretPayload_webhook,
+		func(ctx context.Context) (any, error) {
+			return obj.Webhook, nil
+		},
+		nil,
+		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookRegenerateSecretPayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookRegenerateSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
+			case "instruction":
+				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "maxDepth":
+				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
+			case "passApiKey":
+				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
+			case "includeContent":
+				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
+			case "maxRetries":
+				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
+			case "lastDeliveryAt":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
+			case "lastDeliveryStatus":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
+			case "onCreate":
+				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
+			case "onUpdate":
+				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
+			case "onRemove":
+				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
+			case "readPatterns":
+				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
+			case "writePatterns":
+				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChangeWebhookRegenerateSecretPayload_secret(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookRegenerateSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookRegenerateSecretPayload_secret,
+		func(ctx context.Context) (any, error) {
+			return obj.Secret, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookRegenerateSecretPayload_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookRegenerateSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChangeWebhookUpdatePayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.ChangeWebhookUpdatePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChangeWebhookUpdatePayload_webhook,
+		func(ctx context.Context) (any, error) {
+			return obj.Webhook, nil
+		},
+		nil,
+		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChangeWebhookUpdatePayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChangeWebhookUpdatePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
+			case "instruction":
+				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
+			case "hasSecret":
+				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "maxDepth":
+				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
+			case "passApiKey":
+				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
+			case "includeContent":
+				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
+			case "timeoutSeconds":
+				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
+			case "maxRetries":
+				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
+			case "lastDeliveryAt":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
+			case "lastDeliveryStatus":
+				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
+			case "onCreate":
+				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
+			case "onUpdate":
+				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
+			case "onRemove":
+				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
+			case "readPatterns":
+				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
+			case "writePatterns":
+				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ClearBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.ClearBackgroundQueuePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22947,110 +23259,6 @@ func (ec *executionContext) fieldContext_CreateUserSubgraphAccessPayload_accesse
 	return fc, nil
 }
 
-func (ec *executionContext) _CreateWebhookPayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.CreateWebhookPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CreateWebhookPayload_webhook,
-		func(ctx context.Context) (any, error) {
-			return obj.Webhook, nil
-		},
-		nil,
-		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CreateWebhookPayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CreateWebhookPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
-			case "url":
-				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
-			case "includePatterns":
-				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
-			case "excludePatterns":
-				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
-			case "instruction":
-				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
-			case "hasSecret":
-				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
-			case "maxDepth":
-				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
-			case "passApiKey":
-				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
-			case "includeContent":
-				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
-			case "timeoutSeconds":
-				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
-			case "maxRetries":
-				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
-			case "enabled":
-				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
-			case "description":
-				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
-			case "lastDeliveryAt":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
-			case "lastDeliveryStatus":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
-			case "onCreate":
-				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
-			case "onUpdate":
-				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
-			case "onRemove":
-				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
-			case "readPatterns":
-				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
-			case "writePatterns":
-				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _CreateWebhookPayload_secret(ctx context.Context, field graphql.CollectedField, obj *model.CreateWebhookPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CreateWebhookPayload_secret,
-		func(ctx context.Context) (any, error) {
-			return obj.Secret, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CreateWebhookPayload_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CreateWebhookPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _DeactivateGitHubOAuthPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeactivateGitHubOAuthPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23462,35 +23670,6 @@ func (ec *executionContext) _DeleteRedirectPayload_id(ctx context.Context, field
 func (ec *executionContext) fieldContext_DeleteRedirectPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteRedirectPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DeleteWebhookPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteWebhookPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DeleteWebhookPayload_deletedId,
-		func(ctx context.Context) (any, error) {
-			return obj.DeletedID, nil
-		},
-		nil,
-		ec.marshalNInt642int64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DeleteWebhookPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DeleteWebhookPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -24836,14 +25015,14 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_startBackgroundQueue(ctx, field)
 			case "clearBackgroundQueue":
 				return ec.fieldContext_AdminMutation_clearBackgroundQueue(ctx, field)
-			case "createWebhook":
-				return ec.fieldContext_AdminMutation_createWebhook(ctx, field)
-			case "updateWebhook":
-				return ec.fieldContext_AdminMutation_updateWebhook(ctx, field)
-			case "deleteWebhook":
-				return ec.fieldContext_AdminMutation_deleteWebhook(ctx, field)
-			case "regenerateWebhookSecret":
-				return ec.fieldContext_AdminMutation_regenerateWebhookSecret(ctx, field)
+			case "changeWebhookCreate":
+				return ec.fieldContext_AdminMutation_changeWebhookCreate(ctx, field)
+			case "changeWebhookUpdate":
+				return ec.fieldContext_AdminMutation_changeWebhookUpdate(ctx, field)
+			case "changeWebhookDelete":
+				return ec.fieldContext_AdminMutation_changeWebhookDelete(ctx, field)
+			case "changeWebhookRegenerateSecret":
+				return ec.fieldContext_AdminMutation_changeWebhookRegenerateSecret(ctx, field)
 			case "triggerChangeWebhook":
 				return ec.fieldContext_AdminMutation_triggerChangeWebhook(ctx, field)
 			case "createCronWebhook":
@@ -27687,110 +27866,6 @@ func (ec *executionContext) fieldContext_RegenerateCronWebhookSecretPayload_secr
 	return fc, nil
 }
 
-func (ec *executionContext) _RegenerateWebhookSecretPayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.RegenerateWebhookSecretPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_RegenerateWebhookSecretPayload_webhook,
-		func(ctx context.Context) (any, error) {
-			return obj.Webhook, nil
-		},
-		nil,
-		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_RegenerateWebhookSecretPayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RegenerateWebhookSecretPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
-			case "url":
-				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
-			case "includePatterns":
-				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
-			case "excludePatterns":
-				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
-			case "instruction":
-				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
-			case "hasSecret":
-				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
-			case "maxDepth":
-				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
-			case "passApiKey":
-				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
-			case "includeContent":
-				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
-			case "timeoutSeconds":
-				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
-			case "maxRetries":
-				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
-			case "enabled":
-				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
-			case "description":
-				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
-			case "lastDeliveryAt":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
-			case "lastDeliveryStatus":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
-			case "onCreate":
-				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
-			case "onUpdate":
-				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
-			case "onRemove":
-				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
-			case "readPatterns":
-				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
-			case "writePatterns":
-				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _RegenerateWebhookSecretPayload_secret(ctx context.Context, field graphql.CollectedField, obj *model.RegenerateWebhookSecretPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_RegenerateWebhookSecretPayload_secret,
-		func(ctx context.Context) (any, error) {
-			return obj.Secret, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_RegenerateWebhookSecretPayload_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RegenerateWebhookSecretPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _RemoveExpiredTgChatMembersPayload_removedCount(ctx context.Context, field graphql.CollectedField, obj *model.RemoveExpiredTgChatMembersPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -30482,81 +30557,6 @@ func (ec *executionContext) fieldContext_UpdateUserSubgraphAccessPayload_userSub
 				return ec.fieldContext_UserSubgraphAccess_subgraph(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserSubgraphAccess", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _UpdateWebhookPayload_webhook(ctx context.Context, field graphql.CollectedField, obj *model.UpdateWebhookPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_UpdateWebhookPayload_webhook,
-		func(ctx context.Context) (any, error) {
-			return obj.Webhook, nil
-		},
-		nil,
-		ec.marshalNAdminChangeWebhook2ᚖtrip2gᚋinternalᚋdbᚐChangeWebhook,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_UpdateWebhookPayload_webhook(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "UpdateWebhookPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminChangeWebhook_id(ctx, field)
-			case "url":
-				return ec.fieldContext_AdminChangeWebhook_url(ctx, field)
-			case "includePatterns":
-				return ec.fieldContext_AdminChangeWebhook_includePatterns(ctx, field)
-			case "excludePatterns":
-				return ec.fieldContext_AdminChangeWebhook_excludePatterns(ctx, field)
-			case "instruction":
-				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
-			case "hasSecret":
-				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
-			case "maxDepth":
-				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
-			case "passApiKey":
-				return ec.fieldContext_AdminChangeWebhook_passApiKey(ctx, field)
-			case "includeContent":
-				return ec.fieldContext_AdminChangeWebhook_includeContent(ctx, field)
-			case "timeoutSeconds":
-				return ec.fieldContext_AdminChangeWebhook_timeoutSeconds(ctx, field)
-			case "maxRetries":
-				return ec.fieldContext_AdminChangeWebhook_maxRetries(ctx, field)
-			case "enabled":
-				return ec.fieldContext_AdminChangeWebhook_enabled(ctx, field)
-			case "description":
-				return ec.fieldContext_AdminChangeWebhook_description(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminChangeWebhook_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminChangeWebhook_createdBy(ctx, field)
-			case "lastDeliveryAt":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryAt(ctx, field)
-			case "lastDeliveryStatus":
-				return ec.fieldContext_AdminChangeWebhook_lastDeliveryStatus(ctx, field)
-			case "onCreate":
-				return ec.fieldContext_AdminChangeWebhook_onCreate(ctx, field)
-			case "onUpdate":
-				return ec.fieldContext_AdminChangeWebhook_onUpdate(ctx, field)
-			case "onRemove":
-				return ec.fieldContext_AdminChangeWebhook_onRemove(ctx, field)
-			case "readPatterns":
-				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
-			case "writePatterns":
-				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
 	}
 	return fc, nil
@@ -33481,6 +33481,331 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputChangeWebhookCreateInput(ctx context.Context, obj any) (model.ChangeWebhookCreateInput, error) {
+	var it model.ChangeWebhookCreateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "includePatterns", "excludePatterns", "instruction", "secret", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "includePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludePatterns = data
+		case "excludePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludePatterns = data
+		case "instruction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instruction"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Instruction = data
+		case "secret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Secret = data
+		case "maxDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxDepth"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxDepth = data
+		case "passApiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passApiKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PassAPIKey = data
+		case "includeContent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeContent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeContent = data
+		case "timeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeoutSeconds = data
+		case "maxRetries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxRetries"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxRetries = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "onCreate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onCreate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnCreate = data
+		case "onUpdate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onUpdate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnUpdate = data
+		case "onRemove":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onRemove"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnRemove = data
+		case "readPatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("readPatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReadPatterns = data
+		case "writePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("writePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WritePatterns = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChangeWebhookDeleteInput(ctx context.Context, obj any) (model.ChangeWebhookDeleteInput, error) {
+	var it model.ChangeWebhookDeleteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChangeWebhookRegenerateSecretInput(ctx context.Context, obj any) (model.ChangeWebhookRegenerateSecretInput, error) {
+	var it model.ChangeWebhookRegenerateSecretInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChangeWebhookUpdateInput(ctx context.Context, obj any) (model.ChangeWebhookUpdateInput, error) {
+	var it model.ChangeWebhookUpdateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "url", "includePatterns", "excludePatterns", "instruction", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "enabled", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "includePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludePatterns = data
+		case "excludePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludePatterns = data
+		case "instruction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instruction"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Instruction = data
+		case "maxDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxDepth"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxDepth = data
+		case "passApiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passApiKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PassAPIKey = data
+		case "includeContent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeContent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeContent = data
+		case "timeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TimeoutSeconds = data
+		case "maxRetries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxRetries"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxRetries = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "onCreate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onCreate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnCreate = data
+		case "onUpdate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onUpdate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnUpdate = data
+		case "onRemove":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onRemove"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OnRemove = data
+		case "readPatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("readPatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReadPatterns = data
+		case "writePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("writePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WritePatterns = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputClearBackgroundQueueInput(ctx context.Context, obj any) (model.ClearBackgroundQueueInput, error) {
 	var it model.ClearBackgroundQueueInput
 	asMap := map[string]any{}
@@ -34267,138 +34592,6 @@ func (ec *executionContext) unmarshalInputCreateUserSubgraphAccessInput(ctx cont
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCreateWebhookInput(ctx context.Context, obj any) (model.CreateWebhookInput, error) {
-	var it model.CreateWebhookInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"url", "includePatterns", "excludePatterns", "instruction", "secret", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "url":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.URL = data
-		case "includePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
-			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IncludePatterns = data
-		case "excludePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExcludePatterns = data
-		case "instruction":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instruction"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Instruction = data
-		case "secret":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Secret = data
-		case "maxDepth":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxDepth"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxDepth = data
-		case "passApiKey":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passApiKey"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PassAPIKey = data
-		case "includeContent":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeContent"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IncludeContent = data
-		case "timeoutSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TimeoutSeconds = data
-		case "maxRetries":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxRetries"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxRetries = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		case "onCreate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onCreate"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnCreate = data
-		case "onUpdate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onUpdate"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnUpdate = data
-		case "onRemove":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onRemove"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnRemove = data
-		case "readPatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("readPatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ReadPatterns = data
-		case "writePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("writePatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.WritePatterns = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputDeleteAdminInput(ctx context.Context, obj any) (model.DeleteAdminInput, error) {
 	var it model.DeleteAdminInput
 	asMap := map[string]any{}
@@ -34617,33 +34810,6 @@ func (ec *executionContext) unmarshalInputDeletePatreonCredentialsInput(ctx cont
 
 func (ec *executionContext) unmarshalInputDeleteRedirectInput(ctx context.Context, obj any) (model.DeleteRedirectInput, error) {
 	var it model.DeleteRedirectInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputDeleteWebhookInput(ctx context.Context, obj any) (model.DeleteWebhookInput, error) {
-	var it model.DeleteWebhookInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -35071,33 +35237,6 @@ func (ec *executionContext) unmarshalInputRefreshPatreonDataInput(ctx context.Co
 
 func (ec *executionContext) unmarshalInputRegenerateCronWebhookSecretInput(ctx context.Context, obj any) (model.RegenerateCronWebhookSecretInput, error) {
 	var it model.RegenerateCronWebhookSecretInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputRegenerateWebhookSecretInput(ctx context.Context, obj any) (model.RegenerateWebhookSecretInput, error) {
-	var it model.RegenerateWebhookSecretInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -36581,145 +36720,6 @@ func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx cont
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateWebhookInput(ctx context.Context, obj any) (model.UpdateWebhookInput, error) {
-	var it model.UpdateWebhookInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id", "url", "includePatterns", "excludePatterns", "instruction", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "enabled", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "url":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.URL = data
-		case "includePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IncludePatterns = data
-		case "excludePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExcludePatterns = data
-		case "instruction":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instruction"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Instruction = data
-		case "maxDepth":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxDepth"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxDepth = data
-		case "passApiKey":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passApiKey"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PassAPIKey = data
-		case "includeContent":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeContent"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IncludeContent = data
-		case "timeoutSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeoutSeconds"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TimeoutSeconds = data
-		case "maxRetries":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxRetries"))
-			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxRetries = data
-		case "enabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Enabled = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		case "onCreate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onCreate"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnCreate = data
-		case "onUpdate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onUpdate"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnUpdate = data
-		case "onRemove":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("onRemove"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.OnRemove = data
-		case "readPatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("readPatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ReadPatterns = data
-		case "writePatterns":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("writePatterns"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.WritePatterns = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Context, obj any) (model.UploadNoteAssetInput, error) {
 	var it model.UploadNoteAssetInput
 	asMap := map[string]any{}
@@ -37038,6 +37038,98 @@ func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.
 			return graphql.Null
 		}
 		return ec._BanUserPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ChangeWebhookCreateOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ChangeWebhookCreateOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.ChangeWebhookCreatePayload:
+		return ec._ChangeWebhookCreatePayload(ctx, sel, &obj)
+	case *model.ChangeWebhookCreatePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ChangeWebhookCreatePayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ChangeWebhookDeleteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ChangeWebhookDeleteOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.ChangeWebhookDeletePayload:
+		return ec._ChangeWebhookDeletePayload(ctx, sel, &obj)
+	case *model.ChangeWebhookDeletePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ChangeWebhookDeletePayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ChangeWebhookRegenerateSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ChangeWebhookRegenerateSecretOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.ChangeWebhookRegenerateSecretPayload:
+		return ec._ChangeWebhookRegenerateSecretPayload(ctx, sel, &obj)
+	case *model.ChangeWebhookRegenerateSecretPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ChangeWebhookRegenerateSecretPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ChangeWebhookUpdateOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ChangeWebhookUpdateOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.ChangeWebhookUpdatePayload:
+		return ec._ChangeWebhookUpdatePayload(ctx, sel, &obj)
+	case *model.ChangeWebhookUpdatePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ChangeWebhookUpdatePayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -37503,29 +37595,6 @@ func (ec *executionContext) _CreateUserSubgraphAccessOrErrorPayload(ctx context.
 	}
 }
 
-func (ec *executionContext) _CreateWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateWebhookOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	case model.CreateWebhookPayload:
-		return ec._CreateWebhookPayload(ctx, sel, &obj)
-	case *model.CreateWebhookPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CreateWebhookPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 func (ec *executionContext) _DeactivateGitHubOAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeactivateGitHubOAuthOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -37779,29 +37848,6 @@ func (ec *executionContext) _DeleteRedirectOrErrorPayload(ctx context.Context, s
 	}
 }
 
-func (ec *executionContext) _DeleteWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteWebhookOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	case model.DeleteWebhookPayload:
-		return ec._DeleteWebhookPayload(ctx, sel, &obj)
-	case *model.DeleteWebhookPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._DeleteWebhookPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 func (ec *executionContext) _DisableApiKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DisableAPIKeyOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -38034,29 +38080,6 @@ func (ec *executionContext) _RegenerateCronWebhookSecretOrErrorPayload(ctx conte
 			return graphql.Null
 		}
 		return ec._RegenerateCronWebhookSecretPayload(ctx, sel, obj)
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
-func (ec *executionContext) _RegenerateWebhookSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RegenerateWebhookSecretOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.RegenerateWebhookSecretPayload:
-		return ec._RegenerateWebhookSecretPayload(ctx, sel, &obj)
-	case *model.RegenerateWebhookSecretPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._RegenerateWebhookSecretPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -38947,29 +38970,6 @@ func (ec *executionContext) _UpdateUserSubgraphAccessOrErrorPayload(ctx context.
 			return graphql.Null
 		}
 		return ec._UpdateUserSubgraphAccessPayload(ctx, sel, obj)
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
-func (ec *executionContext) _UpdateWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateWebhookOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.UpdateWebhookPayload:
-		return ec._UpdateWebhookPayload(ctx, sel, &obj)
-	case *model.UpdateWebhookPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._UpdateWebhookPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -46018,7 +46018,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "createWebhook":
+		case "changeWebhookCreate":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -46027,7 +46027,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_createWebhook(ctx, field, obj)
+				res = ec._AdminMutation_changeWebhookCreate(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -46054,7 +46054,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "updateWebhook":
+		case "changeWebhookUpdate":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -46063,7 +46063,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_updateWebhook(ctx, field, obj)
+				res = ec._AdminMutation_changeWebhookUpdate(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -46090,7 +46090,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "deleteWebhook":
+		case "changeWebhookDelete":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -46099,7 +46099,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_deleteWebhook(ctx, field, obj)
+				res = ec._AdminMutation_changeWebhookDelete(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -46126,7 +46126,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "regenerateWebhookSecret":
+		case "changeWebhookRegenerateSecret":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -46135,7 +46135,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_regenerateWebhookSecret(ctx, field, obj)
+				res = ec._AdminMutation_changeWebhookRegenerateSecret(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -53764,6 +53764,172 @@ func (ec *executionContext) _BoolParamValue(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var changeWebhookCreatePayloadImplementors = []string{"ChangeWebhookCreatePayload", "ChangeWebhookCreateOrErrorPayload"}
+
+func (ec *executionContext) _ChangeWebhookCreatePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ChangeWebhookCreatePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, changeWebhookCreatePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeWebhookCreatePayload")
+		case "webhook":
+			out.Values[i] = ec._ChangeWebhookCreatePayload_webhook(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._ChangeWebhookCreatePayload_secret(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var changeWebhookDeletePayloadImplementors = []string{"ChangeWebhookDeletePayload", "ChangeWebhookDeleteOrErrorPayload"}
+
+func (ec *executionContext) _ChangeWebhookDeletePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ChangeWebhookDeletePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, changeWebhookDeletePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeWebhookDeletePayload")
+		case "deletedId":
+			out.Values[i] = ec._ChangeWebhookDeletePayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var changeWebhookRegenerateSecretPayloadImplementors = []string{"ChangeWebhookRegenerateSecretPayload", "ChangeWebhookRegenerateSecretOrErrorPayload"}
+
+func (ec *executionContext) _ChangeWebhookRegenerateSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ChangeWebhookRegenerateSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, changeWebhookRegenerateSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeWebhookRegenerateSecretPayload")
+		case "webhook":
+			out.Values[i] = ec._ChangeWebhookRegenerateSecretPayload_webhook(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._ChangeWebhookRegenerateSecretPayload_secret(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var changeWebhookUpdatePayloadImplementors = []string{"ChangeWebhookUpdatePayload", "ChangeWebhookUpdateOrErrorPayload"}
+
+func (ec *executionContext) _ChangeWebhookUpdatePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ChangeWebhookUpdatePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, changeWebhookUpdatePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeWebhookUpdatePayload")
+		case "webhook":
+			out.Values[i] = ec._ChangeWebhookUpdatePayload_webhook(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var clearBackgroundQueuePayloadImplementors = []string{"ClearBackgroundQueuePayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ClearBackgroundQueuePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ClearBackgroundQueuePayload) graphql.Marshaler {
@@ -54566,50 +54732,6 @@ func (ec *executionContext) _CreateUserSubgraphAccessPayload(ctx context.Context
 	return out
 }
 
-var createWebhookPayloadImplementors = []string{"CreateWebhookPayload", "CreateWebhookOrErrorPayload"}
-
-func (ec *executionContext) _CreateWebhookPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateWebhookPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, createWebhookPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CreateWebhookPayload")
-		case "webhook":
-			out.Values[i] = ec._CreateWebhookPayload_webhook(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "secret":
-			out.Values[i] = ec._CreateWebhookPayload_secret(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var deactivateGitHubOAuthPayloadImplementors = []string{"DeactivateGitHubOAuthPayload", "DeactivateGitHubOAuthOrErrorPayload"}
 
 func (ec *executionContext) _DeactivateGitHubOAuthPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeactivateGitHubOAuthPayload) graphql.Marshaler {
@@ -55111,45 +55233,6 @@ func (ec *executionContext) _DeleteRedirectPayload(ctx context.Context, sel ast.
 	return out
 }
 
-var deleteWebhookPayloadImplementors = []string{"DeleteWebhookPayload", "DeleteWebhookOrErrorPayload"}
-
-func (ec *executionContext) _DeleteWebhookPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteWebhookPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, deleteWebhookPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DeleteWebhookPayload")
-		case "deletedId":
-			out.Values[i] = ec._DeleteWebhookPayload_deletedId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var disableApiKeyPayloadImplementors = []string{"DisableApiKeyPayload", "DisableApiKeyOrErrorPayload"}
 
 func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DisableAPIKeyPayload) graphql.Marshaler {
@@ -55228,7 +55311,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "CreateWebhookOrErrorPayload", "UpdateWebhookOrErrorPayload", "DeleteWebhookOrErrorPayload", "RegenerateWebhookSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -57516,50 +57599,6 @@ func (ec *executionContext) _RegenerateCronWebhookSecretPayload(ctx context.Cont
 	return out
 }
 
-var regenerateWebhookSecretPayloadImplementors = []string{"RegenerateWebhookSecretPayload", "RegenerateWebhookSecretOrErrorPayload"}
-
-func (ec *executionContext) _RegenerateWebhookSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RegenerateWebhookSecretPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, regenerateWebhookSecretPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("RegenerateWebhookSecretPayload")
-		case "webhook":
-			out.Values[i] = ec._RegenerateWebhookSecretPayload_webhook(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "secret":
-			out.Values[i] = ec._RegenerateWebhookSecretPayload_secret(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var removeExpiredTgChatMembersPayloadImplementors = []string{"RemoveExpiredTgChatMembersPayload", "RemoveExpiredTgChatMembersOrErrorPayload"}
 
 func (ec *executionContext) _RemoveExpiredTgChatMembersPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveExpiredTgChatMembersPayload) graphql.Marshaler {
@@ -59758,45 +59797,6 @@ func (ec *executionContext) _UpdateUserSubgraphAccessPayload(ctx context.Context
 			out.Values[i] = graphql.MarshalString("UpdateUserSubgraphAccessPayload")
 		case "userSubgraphAccess":
 			out.Values[i] = ec._UpdateUserSubgraphAccessPayload_userSubgraphAccess(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var updateWebhookPayloadImplementors = []string{"UpdateWebhookPayload", "UpdateWebhookOrErrorPayload"}
-
-func (ec *executionContext) _UpdateWebhookPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateWebhookPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, updateWebhookPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("UpdateWebhookPayload")
-		case "webhook":
-			out.Values[i] = ec._UpdateWebhookPayload_webhook(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -64180,6 +64180,66 @@ func (ec *executionContext) marshalNBoostyCredentialsStateEnum2trip2gᚋinternal
 	return v
 }
 
+func (ec *executionContext) unmarshalNChangeWebhookCreateInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookCreateInput(ctx context.Context, v any) (model.ChangeWebhookCreateInput, error) {
+	res, err := ec.unmarshalInputChangeWebhookCreateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChangeWebhookCreateOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookCreateOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ChangeWebhookCreateOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChangeWebhookCreateOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChangeWebhookDeleteInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookDeleteInput(ctx context.Context, v any) (model.ChangeWebhookDeleteInput, error) {
+	res, err := ec.unmarshalInputChangeWebhookDeleteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChangeWebhookDeleteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookDeleteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ChangeWebhookDeleteOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChangeWebhookDeleteOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChangeWebhookRegenerateSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookRegenerateSecretInput(ctx context.Context, v any) (model.ChangeWebhookRegenerateSecretInput, error) {
+	res, err := ec.unmarshalInputChangeWebhookRegenerateSecretInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChangeWebhookRegenerateSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookRegenerateSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ChangeWebhookRegenerateSecretOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChangeWebhookRegenerateSecretOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChangeWebhookUpdateInput2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookUpdateInput(ctx context.Context, v any) (model.ChangeWebhookUpdateInput, error) {
+	res, err := ec.unmarshalInputChangeWebhookUpdateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNChangeWebhookUpdateOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐChangeWebhookUpdateOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ChangeWebhookUpdateOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChangeWebhookUpdateOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNClearBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueInput(ctx context.Context, v any) (model.ClearBackgroundQueueInput, error) {
 	res, err := ec.unmarshalInputClearBackgroundQueueInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -64475,21 +64535,6 @@ func (ec *executionContext) marshalNCreateUserSubgraphAccessOrErrorPayload2trip2
 	return ec._CreateUserSubgraphAccessOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNCreateWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateWebhookInput(ctx context.Context, v any) (model.CreateWebhookInput, error) {
-	res, err := ec.unmarshalInputCreateWebhookInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNCreateWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateWebhookOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._CreateWebhookOrErrorPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNCronJobExecutionStatus2trip2gᚋinternalᚋgraphᚋmodelᚐCronJobExecutionStatus(ctx context.Context, v any) (model.CronJobExecutionStatus, error) {
 	var res model.CronJobExecutionStatus
 	err := res.UnmarshalGQL(v)
@@ -64653,21 +64698,6 @@ func (ec *executionContext) marshalNDeleteRedirectOrErrorPayload2trip2gᚋintern
 		return graphql.Null
 	}
 	return ec._DeleteRedirectOrErrorPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNDeleteWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteWebhookInput(ctx context.Context, v any) (model.DeleteWebhookInput, error) {
-	res, err := ec.unmarshalInputDeleteWebhookInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNDeleteWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteWebhookOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._DeleteWebhookOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDisableApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableAPIKeyInput(ctx context.Context, v any) (model.DisableAPIKeyInput, error) {
@@ -65750,21 +65780,6 @@ func (ec *executionContext) marshalNRegenerateCronWebhookSecretOrErrorPayload2tr
 	return ec._RegenerateCronWebhookSecretOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRegenerateWebhookSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐRegenerateWebhookSecretInput(ctx context.Context, v any) (model.RegenerateWebhookSecretInput, error) {
-	res, err := ec.unmarshalInputRegenerateWebhookSecretInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRegenerateWebhookSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRegenerateWebhookSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RegenerateWebhookSecretOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._RegenerateWebhookSecretOrErrorPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNRemoveExpiredTgChatMembersInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersInput(ctx context.Context, v any) (model.RemoveExpiredTgChatMembersInput, error) {
 	res, err := ec.unmarshalInputRemoveExpiredTgChatMembersInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -66660,21 +66675,6 @@ func (ec *executionContext) marshalNUpdateUserSubgraphAccessOrErrorPayload2trip2
 		return graphql.Null
 	}
 	return ec._UpdateUserSubgraphAccessOrErrorPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNUpdateWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateWebhookInput(ctx context.Context, v any) (model.UpdateWebhookInput, error) {
-	res, err := ec.unmarshalInputUpdateWebhookInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNUpdateWebhookOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateWebhookOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateWebhookOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._UpdateWebhookOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {

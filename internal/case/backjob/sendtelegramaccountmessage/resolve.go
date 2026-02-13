@@ -26,6 +26,7 @@ type Env interface {
 	DecryptData(ciphertext []byte) ([]byte, error)
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 	Logger() logger.Logger
+	LogLevel() string
 	// Access hash cache (tgtd.ClientEnv)
 	GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error)
 	GetTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error)
