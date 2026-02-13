@@ -73,6 +73,22 @@ namespace $.$$ {
 		}
 	`)
 
+	const triggerMutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminTriggerCronWebhookMutation($input: TriggerCronWebhookInput!) {
+			admin {
+				payload: triggerCronWebhook(input: $input) {
+					__typename
+					... on TriggerCronWebhookPayload {
+						deliveryId
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_cronwebhook_show extends $.$trip2g_admin_cronwebhook_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view'
@@ -96,7 +112,7 @@ namespace $.$$ {
 			if( this.action() === 'update' ) {
 				return [ this.UpdateForm() ]
 			}
-			return [ this.CronWebhookDetails(), this.SecretResult(), this.DeleteResult(), this.Deliveries_labeler() ]
+			return [ this.CronWebhookDetails(), this.SecretResult(), this.TriggerResult(), this.DeleteResult(), this.Deliveries_labeler() ]
 		}
 
 		cw_url(): string { return this.data().url }
@@ -181,6 +197,23 @@ namespace $.$$ {
 			}
 
 			this.secret_result( 'Unexpected response type' )
+		}
+
+		trigger() {
+			const res = triggerMutate({ input: { cronWebhookId: this.cronwebhook_id() } })
+
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				this.trigger_result( res.admin.payload.message )
+				return
+			}
+
+			if( res.admin.payload.__typename === 'TriggerCronWebhookPayload' ) {
+				this.trigger_result( `Webhook triggered successfully. Delivery ID: ${res.admin.payload.deliveryId}` )
+				this.deliveries(null) // Refresh deliveries list
+				return
+			}
+
+			this.trigger_result( 'Unexpected response type' )
 		}
 	}
 }

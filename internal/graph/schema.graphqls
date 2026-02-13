@@ -1233,6 +1233,7 @@ type Purchase {
 }
 
 type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
+  id: Int64!
   value: String!
   latestContentHash: String!
   latestNoteView: NoteView

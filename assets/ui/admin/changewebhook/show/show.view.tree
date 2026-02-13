@@ -5,6 +5,9 @@ $trip2g_admin_changewebhook_show $mol_page
 		<= EditLink $mol_link
 			arg * action \update
 			title \Edit
+		<= TriggerLink $mol_link
+			arg * action \trigger
+			title @ \Trigger
 		<= RegenerateSecretButton $mol_button_minor
 			title @ \Regenerate Secret
 			click? <=> regenerate_secret? null
@@ -12,6 +15,8 @@ $trip2g_admin_changewebhook_show $mol_page
 			title \Delete
 			click? <=> delete? null
 	UpdateForm $trip2g_admin_changewebhook_update
+		changewebhook_id <= changewebhook_id
+	TriggerPage $trip2g_admin_changewebhook_trigger
 		changewebhook_id <= changewebhook_id
 	body /
 		<= WebhookDetails $mol_section

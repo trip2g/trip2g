@@ -1,0 +1,24 @@
+$trip2g_admin_changewebhook_trigger $mol_page
+	changewebhook_id? 0
+	title @ \Trigger Change Webhook
+	tools /
+		<= BackLink $mol_link
+			arg * action \view
+			title \Back
+	body /
+		<= Form $mol_view
+			style *
+				flexDirection \column
+				gap \1rem
+			sub /
+				<= SelectSection $mol_section
+					title @ \Select Paths
+					content /
+						<= PathList $mol_select_list
+							value? <=> selected_path_ids? /string
+							dictionary <= path_dictionary *string
+				<= SubmitButton $mol_button_major
+					title @ \Trigger Webhook
+					click? <=> trigger? null
+				<= Result $mol_status
+					message <= trigger_result? \

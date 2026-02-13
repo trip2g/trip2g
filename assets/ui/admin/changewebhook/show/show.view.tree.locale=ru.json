@@ -1,5 +1,6 @@
 {
 	"$trip2g_admin_changewebhook_show_RegenerateSecretButton_title": "Перегенерировать секрет",
+	"$trip2g_admin_changewebhook_show_TriggerLink_title": "Триггер",
 	"$trip2g_admin_changewebhook_show_CreatedAt_labeler_title": "Создан",
 	"$trip2g_admin_changewebhook_show_Deliveries_labeler_title": "Последние доставки",
 	"$trip2g_admin_changewebhook_show_DeliveryCreatedAt_labeler_title": "Создан"

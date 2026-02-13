@@ -100,6 +100,9 @@ namespace $.$$ {
 			if( this.action() === 'update' ) {
 				return [ this.UpdateForm() ]
 			}
+			if( this.action() === 'trigger' ) {
+				return [ this.TriggerPage() ]
+			}
 			return [ this.WebhookDetails(), this.SecretResult(), this.DeleteResult(), this.Deliveries_labeler() ]
 		}
 

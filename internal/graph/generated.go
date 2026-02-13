@@ -24979,6 +24979,35 @@ func (ec *executionContext) fieldContext_NoteAssetReplaceT_absolutePath(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _NotePath_id(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NotePath_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NotePath_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NotePath",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NotePath_value(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27206,6 +27235,8 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_NotePath_id(ctx, field)
 			case "value":
 				return ec.fieldContext_NotePath_value(ctx, field)
 			case "latestContentHash":
@@ -55883,6 +55914,11 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("NotePath")
+		case "id":
+			out.Values[i] = ec._NotePath_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "value":
 			out.Values[i] = ec._NotePath_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -66,6 +66,8 @@ import (
 	"trip2g/internal/case/admin/startbackgroundqueue"
 	"trip2g/internal/case/admin/starttelegramaccountauth"
 	"trip2g/internal/case/admin/stopbackgroundqueue"
+	"trip2g/internal/case/admin/triggerchangewebhook"
+	"trip2g/internal/case/admin/triggercronwebhook"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
@@ -298,10 +300,12 @@ type Env interface {
 	updatewebhook.Env
 	deletewebhook.Env
 	regeneratewebhooksecret.Env
+	triggerchangewebhook.Env
 	createcronwebhook.Env
 	updatecronwebhook.Env
 	deletecronwebhook.Env
 	regeneratecronwebhooksecret.Env
+	triggercronwebhook.Env
 
 	// OAuth credentials
 	creategoogleoauthcredentials.Env

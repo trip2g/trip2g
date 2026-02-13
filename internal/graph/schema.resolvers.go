@@ -79,6 +79,8 @@ import (
 	"trip2g/internal/case/admin/startbackgroundqueue"
 	"trip2g/internal/case/admin/starttelegramaccountauth"
 	"trip2g/internal/case/admin/stopbackgroundqueue"
+	"trip2g/internal/case/admin/triggerchangewebhook"
+	"trip2g/internal/case/admin/triggercronwebhook"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
@@ -1073,7 +1075,7 @@ func (r *adminMutationResolver) RegenerateWebhookSecret(ctx context.Context, obj
 
 // TriggerChangeWebhook is the resolver for the triggerChangeWebhook field.
 func (r *adminMutationResolver) TriggerChangeWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerChangeWebhookInput) (model.TriggerChangeWebhookOrErrorPayload, error) {
-	return nil, errors.New("not implemented: trigger webhooks requires delivery job infrastructure")
+	return triggerchangewebhook.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateCronWebhook is the resolver for the createCronWebhook field.
@@ -1098,7 +1100,7 @@ func (r *adminMutationResolver) RegenerateCronWebhookSecret(ctx context.Context,
 
 // TriggerCronWebhook is the resolver for the triggerCronWebhook field.
 func (r *adminMutationResolver) TriggerCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerCronWebhookInput) (model.TriggerCronWebhookOrErrorPayload, error) {
-	return nil, errors.New("not implemented: trigger cron webhooks requires delivery job infrastructure")
+	return triggercronwebhook.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.

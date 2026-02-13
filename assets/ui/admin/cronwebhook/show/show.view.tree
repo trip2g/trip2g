@@ -8,6 +8,9 @@ $trip2g_admin_cronwebhook_show $mol_page
 		<= RegenerateSecretButton $mol_button_minor
 			title @ \Regenerate Secret
 			click? <=> regenerate_secret? null
+		<= TriggerButton $mol_button_minor
+			title @ \Trigger Now
+			click? <=> trigger? null
 		<= DeleteButton $mol_button_minor
 			title \Delete
 			click? <=> delete? null
@@ -78,6 +81,8 @@ $trip2g_admin_cronwebhook_show $mol_page
 							content <= cw_created_at \
 		<= SecretResult $mol_status
 			message <= secret_result? \
+		<= TriggerResult $mol_status
+			message <= trigger_result? \
 		<= DeleteResult $mol_status
 			message <= delete_result? \
 		<= Deliveries_labeler $mol_labeler
