@@ -9,11 +9,13 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/enclavefix"
+	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/image"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
 
+	jsonnet "github.com/google/go-jsonnet"
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 
 	"github.com/yuin/goldmark"
@@ -54,6 +56,9 @@ type loader struct {
 	basenameIndex map[string][]*model.NoteView
 
 	noteCache func(source SourceFile) *model.NoteView
+
+	frontmatterPatches []frontmatterpatch.CompiledPatch
+	jsonnetVM          *jsonnet.VM
 }
 
 type Config struct {
@@ -70,6 +75,8 @@ type Options struct {
 
 	// NoteCache returns cached NoteView if content hasn't changed, nil otherwise
 	NoteCache func(source SourceFile) *model.NoteView
+
+	FrontmatterPatches []frontmatterpatch.CompiledPatch
 }
 
 // Load transforms markdown files into pages.
@@ -87,6 +94,11 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.nvs.Version = options.Version
 	ldr.linkResolver.nvs = ldr.nvs
 	ldr.linkResolver.log = options.Log
+
+	ldr.frontmatterPatches = options.FrontmatterPatches
+	if len(ldr.frontmatterPatches) > 0 {
+		ldr.jsonnetVM = frontmatterpatch.NewVM()
+	}
 
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
@@ -547,8 +559,13 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		}
 	}
 
+	// Apply frontmatter patches.
+	var appliedPatches []model.AppliedFrontmatterPatch
+	rawMeta, appliedPatches = ldr.applyFrontmatterPatches(src.Path, rawMeta, &pp)
+
 	// Use cached or freshly parsed meta
 	pp.RawMeta = rawMeta
+	pp.AppliedFrontmatterPatches = appliedPatches
 
 	// Extract slug from metadata before preparing permalink
 	if slugI, ok := pp.RawMeta["slug"]; ok {
@@ -582,4 +599,28 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	// ldr.log.Debug("read page", "path", pp.Path)
 
 	return &pp, nil
+}
+
+func (ldr *loader) applyFrontmatterPatches(path string, rawMeta map[string]interface{}, pp *model.NoteView) (map[string]interface{}, []model.AppliedFrontmatterPatch) {
+	if len(ldr.frontmatterPatches) == 0 {
+		return rawMeta, nil
+	}
+
+	result := frontmatterpatch.ApplyPatches(ldr.jsonnetVM, ldr.frontmatterPatches, path, rawMeta)
+
+	// Convert AppliedPatch to model.AppliedFrontmatterPatch.
+	applied := make([]model.AppliedFrontmatterPatch, len(result.AppliedPatches))
+	for i, p := range result.AppliedPatches {
+		applied[i] = model.AppliedFrontmatterPatch{
+			PatchID:     p.PatchID,
+			Description: p.Description,
+		}
+	}
+
+	// Add warnings to the note.
+	for _, warning := range result.Warnings {
+		pp.AddWarning(model.NoteWarningWarning, "frontmatter patch: %s", warning)
+	}
+
+	return result.RawMeta, applied
 }

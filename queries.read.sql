@@ -1197,3 +1197,16 @@ select * from webhook_delivery_logs
 where kind = ? and delivery_id = ?
 order by created_at desc
 limit 1;
+
+-- ============================================
+-- Frontmatter Patches
+-- ============================================
+
+-- name: ListFrontmatterPatches :many
+select * from note_frontmatter_patches order by priority asc, id asc;
+
+-- name: ListEnabledFrontmatterPatches :many
+select * from note_frontmatter_patches where enabled = true order by priority asc, id asc;
+
+-- name: FrontmatterPatchByID :one
+select * from note_frontmatter_patches where id = ?;

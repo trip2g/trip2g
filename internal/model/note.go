@@ -103,6 +103,11 @@ type SearchResult struct {
 	NoteView *NoteView
 }
 
+type AppliedFrontmatterPatch struct {
+	PatchID     int
+	Description string
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -154,7 +159,8 @@ type NoteView struct {
 
 	EmbededClass string
 
-	Warnings []NoteWarning
+	Warnings                  []NoteWarning
+	AppliedFrontmatterPatches []AppliedFrontmatterPatch
 
 	FirstImage *string
 

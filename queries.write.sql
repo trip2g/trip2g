@@ -978,3 +978,27 @@ where created_at < datetime('now', '-30 days');
 -- name: CleanupOldCronWebhookDeliveries :exec
 delete from cron_webhook_deliveries
 where created_at < datetime('now', '-30 days');
+
+-- ============================================
+-- Frontmatter Patches
+-- ============================================
+
+-- name: InsertFrontmatterPatch :one
+insert into note_frontmatter_patches (include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_by)
+values (?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateFrontmatterPatch :one
+update note_frontmatter_patches
+set include_patterns = ?,
+    exclude_patterns = ?,
+    jsonnet = ?,
+    priority = ?,
+    description = ?,
+    enabled = ?,
+    updated_at = datetime('now')
+where id = ?
+returning *;
+
+-- name: DeleteFrontmatterPatch :exec
+delete from note_frontmatter_patches where id = ?;

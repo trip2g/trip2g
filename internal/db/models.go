@@ -316,6 +316,19 @@ type NoteAsset struct {
 	Size         int64     `json:"size"`
 }
 
+type NoteFrontmatterPatch struct {
+	ID              int64     `json:"id"`
+	IncludePatterns string    `json:"include_patterns"`
+	ExcludePatterns string    `json:"exclude_patterns"`
+	Jsonnet         string    `json:"jsonnet"`
+	Priority        int64     `json:"priority"`
+	Description     string    `json:"description"`
+	Enabled         bool      `json:"enabled"`
+	CreatedAt       time.Time `json:"created_at"`
+	CreatedBy       int64     `json:"created_by"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 type NotePath struct {
 	ID                int64      `json:"id"`
 	Value             string     `json:"value"`

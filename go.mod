@@ -184,6 +184,7 @@ require (
 	github.com/google/cel-go v0.24.1 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/go-jsonnet v0.21.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
@@ -387,6 +388,7 @@ require (
 	mvdan.cc/gofumpt v0.8.0 // indirect
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 	rsc.io/qr v0.2.0 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace maragu.dev/goqite => github.com/maragudk/goqite v0.3.2-0.20250930123615-c457c467d1df

@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createcronwebhook"
+	"trip2g/internal/case/admin/createfrontmatterpatch"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -44,6 +45,7 @@ import (
 	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletecronwebhook"
+	"trip2g/internal/case/admin/deletefrontmatterpatch"
 	"trip2g/internal/case/admin/deletegithuboauthcredentials"
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
@@ -85,6 +87,7 @@ import (
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
 	"trip2g/internal/case/admin/updatecronwebhook"
+	"trip2g/internal/case/admin/updatefrontmatterpatch"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -555,6 +558,41 @@ func (r *adminCronWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context
 // Nodes is the resolver for the nodes field.
 func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error) {
 	return r.env(ctx).ListCronWebhooks(ctx)
+}
+
+// IncludePatterns is the resolver for the includePatterns field.
+func (r *adminFrontmatterPatchResolver) IncludePatterns(ctx context.Context, obj *db.NoteFrontmatterPatch) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.IncludePatterns), &patterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal include patterns: %w", err)
+	}
+	return patterns, nil
+}
+
+// ExcludePatterns is the resolver for the excludePatterns field.
+func (r *adminFrontmatterPatchResolver) ExcludePatterns(ctx context.Context, obj *db.NoteFrontmatterPatch) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.ExcludePatterns), &patterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal exclude patterns: %w", err)
+	}
+	return patterns, nil
+}
+
+// Priority is the resolver for the priority field.
+func (r *adminFrontmatterPatchResolver) Priority(ctx context.Context, obj *db.NoteFrontmatterPatch) (int32, error) {
+	return int32(obj.Priority), nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminFrontmatterPatchResolver) CreatedBy(ctx context.Context, obj *db.NoteFrontmatterPatch) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminFrontmatterPatchesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminFrontmatterPatchesConnection) ([]db.NoteFrontmatterPatch, error) {
+	return obj.Nodes, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -1101,6 +1139,21 @@ func (r *adminMutationResolver) RegenerateCronWebhookSecret(ctx context.Context,
 // TriggerCronWebhook is the resolver for the triggerCronWebhook field.
 func (r *adminMutationResolver) TriggerCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerCronWebhookInput) (model.TriggerCronWebhookOrErrorPayload, error) {
 	return triggercronwebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateFrontmatterPatch is the resolver for the createFrontmatterPatch field.
+func (r *adminMutationResolver) CreateFrontmatterPatch(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateFrontmatterPatchInput) (model.CreateFrontmatterPatchOrErrorPayload, error) {
+	return createfrontmatterpatch.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateFrontmatterPatch is the resolver for the updateFrontmatterPatch field.
+func (r *adminMutationResolver) UpdateFrontmatterPatch(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateFrontmatterPatchInput) (model.UpdateFrontmatterPatchOrErrorPayload, error) {
+	return updatefrontmatterpatch.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteFrontmatterPatch is the resolver for the deleteFrontmatterPatch field.
+func (r *adminMutationResolver) DeleteFrontmatterPatch(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteFrontmatterPatchInput) (model.DeleteFrontmatterPatchOrErrorPayload, error) {
+	return deletefrontmatterpatch.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -1663,6 +1716,26 @@ func (r *adminQueryResolver) BuildGitCommit(ctx context.Context, obj *appmodel.A
 // LayoutBlocks is the resolver for the layoutBlocks field.
 func (r *adminQueryResolver) LayoutBlocks(ctx context.Context, obj *appmodel.AdminQuery) ([]appmodel.LayoutBlock, error) {
 	return r.env(ctx).Layouts().Blocks.All(), nil
+}
+
+// AllFrontmatterPatches is the resolver for the allFrontmatterPatches field.
+func (r *adminQueryResolver) AllFrontmatterPatches(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminFrontmatterPatchesConnection, error) {
+	patches, err := r.env(ctx).ListFrontmatterPatches(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.AdminFrontmatterPatchesConnection{
+		Nodes: patches,
+	}, nil
+}
+
+// FrontmatterPatch is the resolver for the frontmatterPatch field.
+func (r *adminQueryResolver) FrontmatterPatch(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error) {
+	patch, err := r.env(ctx).FrontmatterPatchByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &patch, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -2370,6 +2443,18 @@ func (r *noteViewResolver) AssetReplaces(ctx context.Context, obj *appmodel.Note
 	return res, nil
 }
 
+// AppliedFrontmatterPatches is the resolver for the appliedFrontmatterPatches field.
+func (r *noteViewResolver) AppliedFrontmatterPatches(ctx context.Context, obj *appmodel.NoteView) ([]model.AppliedFrontmatterPatchInfo, error) {
+	result := make([]model.AppliedFrontmatterPatchInfo, len(obj.AppliedFrontmatterPatches))
+	for i, patch := range obj.AppliedFrontmatterPatches {
+		result[i] = model.AppliedFrontmatterPatchInfo{
+			PatchID:     int32(patch.PatchID),
+			Description: patch.Description,
+		}
+	}
+	return result, nil
+}
+
 // Level is the resolver for the level field.
 func (r *noteWarningResolver) Level(ctx context.Context, obj *appmodel.NoteWarning) (model.NoteWarningLevelEnum, error) {
 	mapping := map[appmodel.NoteWarningLevel]model.NoteWarningLevelEnum{
@@ -3012,6 +3097,16 @@ func (r *Resolver) AdminCronWebhooksConnection() AdminCronWebhooksConnectionReso
 	return &adminCronWebhooksConnectionResolver{r}
 }
 
+// AdminFrontmatterPatch returns AdminFrontmatterPatchResolver implementation.
+func (r *Resolver) AdminFrontmatterPatch() AdminFrontmatterPatchResolver {
+	return &adminFrontmatterPatchResolver{r}
+}
+
+// AdminFrontmatterPatchesConnection returns AdminFrontmatterPatchesConnectionResolver implementation.
+func (r *Resolver) AdminFrontmatterPatchesConnection() AdminFrontmatterPatchesConnectionResolver {
+	return &adminFrontmatterPatchesConnectionResolver{r}
+}
+
 // AdminGitHubOAuthCredentials returns AdminGitHubOAuthCredentialsResolver implementation.
 func (r *Resolver) AdminGitHubOAuthCredentials() AdminGitHubOAuthCredentialsResolver {
 	return &adminGitHubOAuthCredentialsResolver{r}
@@ -3380,6 +3475,8 @@ type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
+type adminFrontmatterPatchResolver struct{ *Resolver }
+type adminFrontmatterPatchesConnectionResolver struct{ *Resolver }
 type adminGitHubOAuthCredentialsResolver struct{ *Resolver }
 type adminGitHubOAuthCredentialsConnectionResolver struct{ *Resolver }
 type adminGitTokenResolver struct{ *Resolver }

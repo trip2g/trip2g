@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createcronwebhook"
+	"trip2g/internal/case/admin/createfrontmatterpatch"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -31,6 +32,7 @@ import (
 	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletecronwebhook"
+	"trip2g/internal/case/admin/deletefrontmatterpatch"
 	"trip2g/internal/case/admin/deletegithuboauthcredentials"
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
@@ -72,6 +74,7 @@ import (
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
 	"trip2g/internal/case/admin/updatecronwebhook"
+	"trip2g/internal/case/admin/updatefrontmatterpatch"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -320,6 +323,13 @@ type Env interface {
 	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
 	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+
+	// Frontmatter patches
+	createfrontmatterpatch.Env
+	updatefrontmatterpatch.Env
+	deletefrontmatterpatch.Env
+	ListFrontmatterPatches(ctx context.Context) ([]db.NoteFrontmatterPatch, error)
+	FrontmatterPatchByID(ctx context.Context, id int64) (db.NoteFrontmatterPatch, error)
 
 	// Webhook queries
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)

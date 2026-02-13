@@ -72,6 +72,8 @@ type ResolverRoot interface {
 	AdminCronWebhook() AdminCronWebhookResolver
 	AdminCronWebhookDeliveriesConnection() AdminCronWebhookDeliveriesConnectionResolver
 	AdminCronWebhooksConnection() AdminCronWebhooksConnectionResolver
+	AdminFrontmatterPatch() AdminFrontmatterPatchResolver
+	AdminFrontmatterPatchesConnection() AdminFrontmatterPatchesConnectionResolver
 	AdminGitHubOAuthCredentials() AdminGitHubOAuthCredentialsResolver
 	AdminGitHubOAuthCredentialsConnection() AdminGitHubOAuthCredentialsConnectionResolver
 	AdminGitToken() AdminGitTokenResolver
@@ -282,6 +284,17 @@ type AdminCronWebhookDeliveriesConnectionResolver interface {
 type AdminCronWebhooksConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error)
 }
+type AdminFrontmatterPatchResolver interface {
+	IncludePatterns(ctx context.Context, obj *db.NoteFrontmatterPatch) ([]string, error)
+	ExcludePatterns(ctx context.Context, obj *db.NoteFrontmatterPatch) ([]string, error)
+
+	Priority(ctx context.Context, obj *db.NoteFrontmatterPatch) (int32, error)
+
+	CreatedBy(ctx context.Context, obj *db.NoteFrontmatterPatch) (*db.User, error)
+}
+type AdminFrontmatterPatchesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminFrontmatterPatchesConnection) ([]db.NoteFrontmatterPatch, error)
+}
 type AdminGitHubOAuthCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.GithubOauthCredential) (*db.User, error)
 }
@@ -395,6 +408,9 @@ type AdminMutationResolver interface {
 	DeleteCronWebhook(ctx context.Context, obj *model1.AdminMutation, input model.DeleteCronWebhookInput) (model.DeleteCronWebhookOrErrorPayload, error)
 	RegenerateCronWebhookSecret(ctx context.Context, obj *model1.AdminMutation, input model.RegenerateCronWebhookSecretInput) (model.RegenerateCronWebhookSecretOrErrorPayload, error)
 	TriggerCronWebhook(ctx context.Context, obj *model1.AdminMutation, input model.TriggerCronWebhookInput) (model.TriggerCronWebhookOrErrorPayload, error)
+	CreateFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.CreateFrontmatterPatchInput) (model.CreateFrontmatterPatchOrErrorPayload, error)
+	UpdateFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.UpdateFrontmatterPatchInput) (model.UpdateFrontmatterPatchOrErrorPayload, error)
+	DeleteFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.DeleteFrontmatterPatchInput) (model.DeleteFrontmatterPatchOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -510,6 +526,8 @@ type AdminQueryResolver interface {
 	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
 	BuildGitCommit(ctx context.Context, obj *model1.AdminQuery) (string, error)
 	LayoutBlocks(ctx context.Context, obj *model1.AdminQuery) ([]model1.LayoutBlock, error)
+	AllFrontmatterPatches(ctx context.Context, obj *model1.AdminQuery) (*model.AdminFrontmatterPatchesConnection, error)
+	FrontmatterPatch(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -667,6 +685,7 @@ type NoteViewResolver interface {
 	Meta(ctx context.Context, obj *model1.NoteView) ([]model.NoteViewMeta, error)
 	Toc(ctx context.Context, obj *model1.NoteView) ([]model.NoteTocItem, error)
 	AssetReplaces(ctx context.Context, obj *model1.NoteView) ([]model.NoteAssetReplaceT, error)
+	AppliedFrontmatterPatches(ctx context.Context, obj *model1.NoteView) ([]model.AppliedFrontmatterPatchInfo, error)
 }
 type NoteWarningResolver interface {
 	Level(ctx context.Context, obj *model1.NoteWarning) (model.NoteWarningLevelEnum, error)
@@ -805,6 +824,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateBoostyCredentialsInput,
 		ec.unmarshalInputCreateCronWebhookInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
+		ec.unmarshalInputCreateFrontmatterPatchInput,
 		ec.unmarshalInputCreateGitHubOAuthCredentialsInput,
 		ec.unmarshalInputCreateGitTokenInput,
 		ec.unmarshalInputCreateGoogleOAuthCredentialsInput,
@@ -822,6 +842,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteAdminInput,
 		ec.unmarshalInputDeleteBoostyCredentialsInput,
 		ec.unmarshalInputDeleteCronWebhookInput,
+		ec.unmarshalInputDeleteFrontmatterPatchInput,
 		ec.unmarshalInputDeleteGitHubOAuthCredentialsInput,
 		ec.unmarshalInputDeleteGoogleOAuthCredentialsInput,
 		ec.unmarshalInputDeleteHtmlInjectionInput,
@@ -874,6 +895,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
 		ec.unmarshalInputUpdateCronJobInput,
 		ec.unmarshalInputUpdateCronWebhookInput,
+		ec.unmarshalInputUpdateFrontmatterPatchInput,
 		ec.unmarshalInputUpdateHtmlInjectionInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
@@ -1108,6 +1130,17 @@ func (ec *executionContext) field_AdminMutation_createCronWebhook_args(ctx conte
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createFrontmatterPatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateFrontmatterPatchInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createGitHubOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1277,6 +1310,17 @@ func (ec *executionContext) field_AdminMutation_deleteCronWebhook_args(ctx conte
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteCronWebhookInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteCronWebhookInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteFrontmatterPatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteFrontmatterPatchInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1768,6 +1812,17 @@ func (ec *executionContext) field_AdminMutation_updateCronWebhook_args(ctx conte
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_updateFrontmatterPatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateFrontmatterPatchInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_updateHtmlInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2044,6 +2099,17 @@ func (ec *executionContext) field_AdminQuery_cronWebhookDeliveries_args(ctx cont
 }
 
 func (ec *executionContext) field_AdminQuery_cronWebhook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_frontmatterPatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
@@ -7651,6 +7717,359 @@ func (ec *executionContext) fieldContext_AdminCronWebhooksConnection_nodes(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminFrontmatterPatch_id(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_includePatterns(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_includePatterns,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFrontmatterPatch().IncludePatterns(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_includePatterns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_excludePatterns(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_excludePatterns,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFrontmatterPatch().ExcludePatterns(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_excludePatterns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_jsonnet(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_jsonnet,
+		func(ctx context.Context) (any, error) {
+			return obj.Jsonnet, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_jsonnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_priority(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_priority,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFrontmatterPatch().Priority(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_priority(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_description(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_enabled(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_enabled,
+		func(ctx context.Context) (any, error) {
+			return obj.Enabled, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_updatedAt(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatch_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatch_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFrontmatterPatch().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatch_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatch",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFrontmatterPatchesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminFrontmatterPatchesConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFrontmatterPatchesConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFrontmatterPatchesConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminFrontmatterPatch2ᚕtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFrontmatterPatchesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFrontmatterPatchesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFrontmatterPatch_id(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_excludePatterns(ctx, field)
+			case "jsonnet":
+				return ec.fieldContext_AdminFrontmatterPatch_jsonnet(ctx, field)
+			case "priority":
+				return ec.fieldContext_AdminFrontmatterPatch_priority(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminFrontmatterPatch_description(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminFrontmatterPatch_enabled(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminFrontmatterPatch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_AdminFrontmatterPatch_updatedAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminFrontmatterPatch_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFrontmatterPatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminGitHubOAuthCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8823,6 +9242,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -12127,6 +12548,129 @@ func (ec *executionContext) fieldContext_AdminMutation_triggerCronWebhook(ctx co
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_createFrontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createFrontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateFrontmatterPatch(ctx, obj, fc.Args["input"].(model.CreateFrontmatterPatchInput))
+		},
+		nil,
+		ec.marshalNCreateFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateFrontmatterPatchOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createFrontmatterPatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateFrontmatterPatchOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createFrontmatterPatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateFrontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_updateFrontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().UpdateFrontmatterPatch(ctx, obj, fc.Args["input"].(model.UpdateFrontmatterPatchInput))
+		},
+		nil,
+		ec.marshalNUpdateFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateFrontmatterPatchOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateFrontmatterPatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateFrontmatterPatchOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateFrontmatterPatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteFrontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deleteFrontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().DeleteFrontmatterPatch(ctx, obj, fc.Args["input"].(model.DeleteFrontmatterPatchInput))
+		},
+		nil,
+		ec.marshalNDeleteFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteFrontmatterPatchOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteFrontmatterPatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteFrontmatterPatchOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteFrontmatterPatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14659,6 +15203,8 @@ func (ec *executionContext) fieldContext_AdminQuery_recentlyModifiedNoteViews(_ 
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -16167,6 +16713,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -17325,6 +17873,102 @@ func (ec *executionContext) fieldContext_AdminQuery_layoutBlocks(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allFrontmatterPatches(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allFrontmatterPatches,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllFrontmatterPatches(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminFrontmatterPatchesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFrontmatterPatchesConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allFrontmatterPatches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminFrontmatterPatchesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFrontmatterPatchesConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_frontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_frontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().FrontmatterPatch(ctx, obj, fc.Args["id"].(int64))
+		},
+		nil,
+		ec.marshalOAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_frontmatterPatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFrontmatterPatch_id(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_excludePatterns(ctx, field)
+			case "jsonnet":
+				return ec.fieldContext_AdminFrontmatterPatch_jsonnet(ctx, field)
+			case "priority":
+				return ec.fieldContext_AdminFrontmatterPatch_priority(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminFrontmatterPatch_description(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminFrontmatterPatch_enabled(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminFrontmatterPatch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_AdminFrontmatterPatch_updatedAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminFrontmatterPatch_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFrontmatterPatch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_frontmatterPatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17802,6 +18446,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -19104,6 +19750,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_noteView(_ con
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -21837,6 +22485,64 @@ func (ec *executionContext) fieldContext_AdminWaitListTgBotRequestsConnection_no
 	return fc, nil
 }
 
+func (ec *executionContext) _AppliedFrontmatterPatchInfo_patchId(ctx context.Context, field graphql.CollectedField, obj *model.AppliedFrontmatterPatchInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AppliedFrontmatterPatchInfo_patchId,
+		func(ctx context.Context) (any, error) {
+			return obj.PatchID, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AppliedFrontmatterPatchInfo_patchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AppliedFrontmatterPatchInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AppliedFrontmatterPatchInfo_description(ctx context.Context, field graphql.CollectedField, obj *model.AppliedFrontmatterPatchInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AppliedFrontmatterPatchInfo_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AppliedFrontmatterPatchInfo_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AppliedFrontmatterPatchInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.BanUserPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22317,6 +23023,57 @@ func (ec *executionContext) fieldContext_CreateEmailWaitListRequestPayload_succe
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateFrontmatterPatchPayload_frontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model.CreateFrontmatterPatchPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateFrontmatterPatchPayload_frontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			return obj.FrontmatterPatch, nil
+		},
+		nil,
+		ec.marshalNAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateFrontmatterPatchPayload_frontmatterPatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateFrontmatterPatchPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFrontmatterPatch_id(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_excludePatterns(ctx, field)
+			case "jsonnet":
+				return ec.fieldContext_AdminFrontmatterPatch_jsonnet(ctx, field)
+			case "priority":
+				return ec.fieldContext_AdminFrontmatterPatch_priority(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminFrontmatterPatch_description(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminFrontmatterPatch_enabled(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminFrontmatterPatch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_AdminFrontmatterPatch_updatedAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminFrontmatterPatch_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFrontmatterPatch", field.Name)
 		},
 	}
 	return fc, nil
@@ -23237,6 +23994,35 @@ func (ec *executionContext) _DeleteCronWebhookPayload_deletedId(ctx context.Cont
 func (ec *executionContext) fieldContext_DeleteCronWebhookPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteCronWebhookPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteFrontmatterPatchPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteFrontmatterPatchPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteFrontmatterPatchPayload_deletedId,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteFrontmatterPatchPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteFrontmatterPatchPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -24856,6 +25642,12 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_regenerateCronWebhookSecret(ctx, field)
 			case "triggerCronWebhook":
 				return ec.fieldContext_AdminMutation_triggerCronWebhook(ctx, field)
+			case "createFrontmatterPatch":
+				return ec.fieldContext_AdminMutation_createFrontmatterPatch(ctx, field)
+			case "updateFrontmatterPatch":
+				return ec.fieldContext_AdminMutation_updateFrontmatterPatch(ctx, field)
+			case "deleteFrontmatterPatch":
+				return ec.fieldContext_AdminMutation_deleteFrontmatterPatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -25126,6 +25918,8 @@ func (ec *executionContext) fieldContext_NotePath_latestNoteView(_ context.Conte
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -25673,6 +26467,8 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -25879,6 +26675,41 @@ func (ec *executionContext) fieldContext_NoteView_assetReplaces(_ context.Contex
 				return ec.fieldContext_NoteAssetReplaceT_absolutePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteAssetReplaceT", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_appliedFrontmatterPatches(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteView_appliedFrontmatterPatches,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteView().AppliedFrontmatterPatches(ctx, obj)
+		},
+		nil,
+		ec.marshalNAppliedFrontmatterPatchInfo2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAppliedFrontmatterPatchInfoᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteView_appliedFrontmatterPatches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "patchId":
+				return ec.fieldContext_AppliedFrontmatterPatchInfo_patchId(ctx, field)
+			case "description":
+				return ec.fieldContext_AppliedFrontmatterPatchInfo_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AppliedFrontmatterPatchInfo", field.Name)
 		},
 	}
 	return fc, nil
@@ -27054,6 +27885,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_buildGitCommit(ctx, field)
 			case "layoutBlocks":
 				return ec.fieldContext_AdminQuery_layoutBlocks(ctx, field)
+			case "allFrontmatterPatches":
+				return ec.fieldContext_AdminQuery_allFrontmatterPatches(ctx, field)
+			case "frontmatterPatch":
+				return ec.fieldContext_AdminQuery_frontmatterPatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -30047,6 +30882,57 @@ func (ec *executionContext) fieldContext_UpdateCronWebhookPayload_cronWebhook(_ 
 	return fc, nil
 }
 
+func (ec *executionContext) _UpdateFrontmatterPatchPayload_frontmatterPatch(ctx context.Context, field graphql.CollectedField, obj *model.UpdateFrontmatterPatchPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateFrontmatterPatchPayload_frontmatterPatch,
+		func(ctx context.Context) (any, error) {
+			return obj.FrontmatterPatch, nil
+		},
+		nil,
+		ec.marshalNAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateFrontmatterPatchPayload_frontmatterPatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateFrontmatterPatchPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFrontmatterPatch_id(ctx, field)
+			case "includePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_includePatterns(ctx, field)
+			case "excludePatterns":
+				return ec.fieldContext_AdminFrontmatterPatch_excludePatterns(ctx, field)
+			case "jsonnet":
+				return ec.fieldContext_AdminFrontmatterPatch_jsonnet(ctx, field)
+			case "priority":
+				return ec.fieldContext_AdminFrontmatterPatch_priority(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminFrontmatterPatch_description(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminFrontmatterPatch_enabled(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminFrontmatterPatch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_AdminFrontmatterPatch_updatedAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminFrontmatterPatch_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFrontmatterPatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UpdateHtmlInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.UpdateHTMLInjectionPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -30222,6 +31108,8 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 				return ec.fieldContext_NoteView_toc(ctx, field)
 			case "assetReplaces":
 				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -33741,6 +34629,68 @@ func (ec *executionContext) unmarshalInputCreateEmailWaitListRequestInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateFrontmatterPatchInput(ctx context.Context, obj any) (model.CreateFrontmatterPatchInput, error) {
+	var it model.CreateFrontmatterPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"includePatterns", "excludePatterns", "jsonnet", "priority", "description", "enabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "includePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludePatterns = data
+		case "excludePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludePatterns = data
+		case "jsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jsonnet"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Jsonnet = data
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateGitHubOAuthCredentialsInput(ctx context.Context, obj any) (model.CreateGitHubOAuthCredentialsInput, error) {
 	var it model.CreateGitHubOAuthCredentialsInput
 	asMap := map[string]any{}
@@ -34455,6 +35405,33 @@ func (ec *executionContext) unmarshalInputDeleteBoostyCredentialsInput(ctx conte
 
 func (ec *executionContext) unmarshalInputDeleteCronWebhookInput(ctx context.Context, obj any) (model.DeleteCronWebhookInput, error) {
 	var it model.DeleteCronWebhookInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteFrontmatterPatchInput(ctx context.Context, obj any) (model.DeleteFrontmatterPatchInput, error) {
+	var it model.DeleteFrontmatterPatchInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -36136,6 +37113,75 @@ func (ec *executionContext) unmarshalInputUpdateCronWebhookInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateFrontmatterPatchInput(ctx context.Context, obj any) (model.UpdateFrontmatterPatchInput, error) {
+	var it model.UpdateFrontmatterPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "includePatterns", "excludePatterns", "jsonnet", "priority", "description", "enabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "includePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludePatterns = data
+		case "excludePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludePatterns = data
+		case "jsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jsonnet"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Jsonnet = data
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateHtmlInjectionInput(ctx context.Context, obj any) (model.UpdateHTMLInjectionInput, error) {
 	var it model.UpdateHTMLInjectionInput
 	asMap := map[string]any{}
@@ -37204,6 +38250,29 @@ func (ec *executionContext) _CreateEmailWaitListRequestOrErrorPayload(ctx contex
 	}
 }
 
+func (ec *executionContext) _CreateFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateFrontmatterPatchPayload:
+		return ec._CreateFrontmatterPatchPayload(ctx, sel, &obj)
+	case *model.CreateFrontmatterPatchPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateFrontmatterPatchPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -37636,6 +38705,29 @@ func (ec *executionContext) _DeleteCronWebhookOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._DeleteCronWebhookPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteFrontmatterPatchPayload:
+		return ec._DeleteFrontmatterPatchPayload(ctx, sel, &obj)
+	case *model.DeleteFrontmatterPatchPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteFrontmatterPatchPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -38740,6 +39832,29 @@ func (ec *executionContext) _UpdateCronWebhookOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._UpdateCronWebhookPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateFrontmatterPatchPayload:
+		return ec._UpdateFrontmatterPatchPayload(ctx, sel, &obj)
+	case *model.UpdateFrontmatterPatchPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateFrontmatterPatchPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -42524,6 +43639,284 @@ func (ec *executionContext) _AdminCronWebhooksConnection(ctx context.Context, se
 					}
 				}()
 				res = ec._AdminCronWebhooksConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFrontmatterPatchImplementors = []string{"AdminFrontmatterPatch"}
+
+func (ec *executionContext) _AdminFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, obj *db.NoteFrontmatterPatch) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFrontmatterPatchImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFrontmatterPatch")
+		case "id":
+			out.Values[i] = ec._AdminFrontmatterPatch_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "includePatterns":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFrontmatterPatch_includePatterns(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "excludePatterns":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFrontmatterPatch_excludePatterns(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "jsonnet":
+			out.Values[i] = ec._AdminFrontmatterPatch_jsonnet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "priority":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFrontmatterPatch_priority(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "description":
+			out.Values[i] = ec._AdminFrontmatterPatch_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "enabled":
+			out.Values[i] = ec._AdminFrontmatterPatch_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminFrontmatterPatch_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._AdminFrontmatterPatch_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFrontmatterPatch_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFrontmatterPatchesConnectionImplementors = []string{"AdminFrontmatterPatchesConnection"}
+
+func (ec *executionContext) _AdminFrontmatterPatchesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminFrontmatterPatchesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFrontmatterPatchesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFrontmatterPatchesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFrontmatterPatchesConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -46378,6 +47771,114 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createFrontmatterPatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createFrontmatterPatch(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateFrontmatterPatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateFrontmatterPatch(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteFrontmatterPatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteFrontmatterPatch(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -50172,6 +51673,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allFrontmatterPatches":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allFrontmatterPatches(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "frontmatterPatch":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_frontmatterPatch(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -53653,6 +55223,50 @@ func (ec *executionContext) _AdminWaitListTgBotRequestsConnection(ctx context.Co
 	return out
 }
 
+var appliedFrontmatterPatchInfoImplementors = []string{"AppliedFrontmatterPatchInfo"}
+
+func (ec *executionContext) _AppliedFrontmatterPatchInfo(ctx context.Context, sel ast.SelectionSet, obj *model.AppliedFrontmatterPatchInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, appliedFrontmatterPatchInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AppliedFrontmatterPatchInfo")
+		case "patchId":
+			out.Values[i] = ec._AppliedFrontmatterPatchInfo_patchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._AppliedFrontmatterPatchInfo_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var banUserPayloadImplementors = []string{"BanUserPayload", "BanUserOrErrorPayload"}
 
 func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.BanUserPayload) graphql.Marshaler {
@@ -54026,6 +55640,45 @@ func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Conte
 			out.Values[i] = graphql.MarshalString("CreateEmailWaitListRequestPayload")
 		case "success":
 			out.Values[i] = ec._CreateEmailWaitListRequestPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var createFrontmatterPatchPayloadImplementors = []string{"CreateFrontmatterPatchPayload", "CreateFrontmatterPatchOrErrorPayload"}
+
+func (ec *executionContext) _CreateFrontmatterPatchPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateFrontmatterPatchPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createFrontmatterPatchPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateFrontmatterPatchPayload")
+		case "frontmatterPatch":
+			out.Values[i] = ec._CreateFrontmatterPatchPayload_frontmatterPatch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -54841,6 +56494,45 @@ func (ec *executionContext) _DeleteCronWebhookPayload(ctx context.Context, sel a
 	return out
 }
 
+var deleteFrontmatterPatchPayloadImplementors = []string{"DeleteFrontmatterPatchPayload", "DeleteFrontmatterPatchOrErrorPayload"}
+
+func (ec *executionContext) _DeleteFrontmatterPatchPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteFrontmatterPatchPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteFrontmatterPatchPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteFrontmatterPatchPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteFrontmatterPatchPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteGitHubOAuthCredentialsPayloadImplementors = []string{"DeleteGitHubOAuthCredentialsPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload"}
 
 func (ec *executionContext) _DeleteGitHubOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteGitHubOAuthCredentialsPayload) graphql.Marshaler {
@@ -55228,7 +56920,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "CreateWebhookOrErrorPayload", "UpdateWebhookOrErrorPayload", "DeleteWebhookOrErrorPayload", "RegenerateWebhookSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "CreateWebhookOrErrorPayload", "UpdateWebhookOrErrorPayload", "DeleteWebhookOrErrorPayload", "RegenerateWebhookSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -56423,6 +58115,42 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._NoteView_assetReplaces(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "appliedFrontmatterPatches":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_appliedFrontmatterPatches(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -59397,6 +61125,45 @@ func (ec *executionContext) _UpdateCronWebhookPayload(ctx context.Context, sel a
 	return out
 }
 
+var updateFrontmatterPatchPayloadImplementors = []string{"UpdateFrontmatterPatchPayload", "UpdateFrontmatterPatchOrErrorPayload"}
+
+func (ec *executionContext) _UpdateFrontmatterPatchPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateFrontmatterPatchPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateFrontmatterPatchPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateFrontmatterPatchPayload")
+		case "frontmatterPatch":
+			out.Values[i] = ec._UpdateFrontmatterPatchPayload_frontmatterPatch(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var updateHtmlInjectionPayloadImplementors = []string{"UpdateHtmlInjectionPayload", "UpdateHtmlInjectionOrErrorPayload"}
 
 func (ec *executionContext) _UpdateHtmlInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateHTMLInjectionPayload) graphql.Marshaler {
@@ -62033,6 +63800,78 @@ func (ec *executionContext) marshalNAdminCronWebhooksConnection2ᚖtrip2gᚋinte
 	return ec._AdminCronWebhooksConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminFrontmatterPatch2trip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v db.NoteFrontmatterPatch) graphql.Marshaler {
+	return ec._AdminFrontmatterPatch(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminFrontmatterPatch2ᚕtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatchᚄ(ctx context.Context, sel ast.SelectionSet, v []db.NoteFrontmatterPatch) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminFrontmatterPatch2trip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v *db.NoteFrontmatterPatch) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminFrontmatterPatch(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminFrontmatterPatchesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFrontmatterPatchesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminFrontmatterPatchesConnection) graphql.Marshaler {
+	return ec._AdminFrontmatterPatchesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminFrontmatterPatchesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFrontmatterPatchesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminFrontmatterPatchesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminFrontmatterPatchesConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminGitHubOAuthCredentials2trip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v db.GithubOauthCredential) graphql.Marshaler {
 	return ec._AdminGitHubOAuthCredentials(ctx, sel, &v)
 }
@@ -64107,6 +65946,54 @@ func (ec *executionContext) unmarshalNApiKeyLogsFilterInput2trip2gᚋinternalᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNAppliedFrontmatterPatchInfo2trip2gᚋinternalᚋgraphᚋmodelᚐAppliedFrontmatterPatchInfo(ctx context.Context, sel ast.SelectionSet, v model.AppliedFrontmatterPatchInfo) graphql.Marshaler {
+	return ec._AppliedFrontmatterPatchInfo(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAppliedFrontmatterPatchInfo2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAppliedFrontmatterPatchInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AppliedFrontmatterPatchInfo) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAppliedFrontmatterPatchInfo2trip2gᚋinternalᚋgraphᚋmodelᚐAppliedFrontmatterPatchInfo(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNAuditLogLevelEnum2trip2gᚋinternalᚋgraphᚋmodelᚐAuditLogLevelEnum(ctx context.Context, v any) (model.AuditLogLevelEnum, error) {
 	var res model.AuditLogLevelEnum
 	err := res.UnmarshalGQL(v)
@@ -64278,6 +66165,21 @@ func (ec *executionContext) marshalNCreateEmailWaitListRequestOrErrorPayload2tri
 		return graphql.Null
 	}
 	return ec._CreateEmailWaitListRequestOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateFrontmatterPatchInput(ctx context.Context, v any) (model.CreateFrontmatterPatchInput, error) {
+	res, err := ec.unmarshalInputCreateFrontmatterPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateFrontmatterPatchOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitHubOAuthCredentialsInput(ctx context.Context, v any) (model.CreateGitHubOAuthCredentialsInput, error) {
@@ -64563,6 +66465,21 @@ func (ec *executionContext) marshalNDeleteCronWebhookOrErrorPayload2trip2gᚋint
 		return graphql.Null
 	}
 	return ec._DeleteCronWebhookOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteFrontmatterPatchInput(ctx context.Context, v any) (model.DeleteFrontmatterPatchInput, error) {
+	res, err := ec.unmarshalInputDeleteFrontmatterPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteFrontmatterPatchOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGitHubOAuthCredentialsInput(ctx context.Context, v any) (model.DeleteGitHubOAuthCredentialsInput, error) {
@@ -66507,6 +68424,21 @@ func (ec *executionContext) marshalNUpdateCronWebhookOrErrorPayload2trip2gᚋint
 	return ec._UpdateCronWebhookOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUpdateFrontmatterPatchInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateFrontmatterPatchInput(ctx context.Context, v any) (model.UpdateFrontmatterPatchInput, error) {
+	res, err := ec.unmarshalInputUpdateFrontmatterPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateFrontmatterPatchOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateFrontmatterPatchOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateFrontmatterPatchOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateFrontmatterPatchOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNUpdateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx context.Context, v any) (model.UpdateHTMLInjectionInput, error) {
 	res, err := ec.unmarshalInputUpdateHtmlInjectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -67156,6 +69088,13 @@ func (ec *executionContext) marshalOAdminCronWebhook2ᚖtrip2gᚋinternalᚋdb�
 		return graphql.Null
 	}
 	return ec._AdminCronWebhook(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v *db.NoteFrontmatterPatch) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminFrontmatterPatch(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GithubOauthCredential) graphql.Marshaler {

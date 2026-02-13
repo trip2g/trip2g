@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -65,6 +66,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/fastgql"
 	"trip2g/internal/features"
+	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/githubauth"
 	"trip2g/internal/googleauth"
@@ -732,11 +734,52 @@ func (a *app) CalculateSha256(s string) string {
 	return hex.EncodeToString(hash[:])
 }
 
+func loadFrontmatterPatches(ctx context.Context, queries *db.Queries) ([]frontmatterpatch.CompiledPatch, error) {
+	patches, err := queries.ListEnabledFrontmatterPatches(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list frontmatter patches: %w", err)
+	}
+
+	compiled := make([]frontmatterpatch.CompiledPatch, len(patches))
+	for i, patch := range patches {
+		var includePatterns []string
+		err = json.Unmarshal([]byte(patch.IncludePatterns), &includePatterns)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal include patterns for patch %d: %w", patch.ID, err)
+		}
+
+		var excludePatterns []string
+		err = json.Unmarshal([]byte(patch.ExcludePatterns), &excludePatterns)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal exclude patterns for patch %d: %w", patch.ID, err)
+		}
+
+		compiled[i] = frontmatterpatch.Compile(
+			int(patch.ID),
+			includePatterns,
+			excludePatterns,
+			patch.Jsonnet,
+			int(patch.Priority),
+			patch.Description,
+		)
+	}
+
+	return compiled, nil
+}
+
 func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	err := a.liveNoteLoader.Load(startCtx, options)
+	patches, err := loadFrontmatterPatches(startCtx, a.queries)
+	if err != nil {
+		return fmt.Errorf("failed to load frontmatter patches: %w", err)
+	}
+
+	a.liveNoteLoader.SetFrontmatterPatches(patches)
+	a.latestNoteLoader.SetFrontmatterPatches(patches)
+
+	err = a.liveNoteLoader.Load(startCtx, options)
 	if err != nil {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}

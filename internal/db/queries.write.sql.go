@@ -256,6 +256,15 @@ func (q *WriteQueries) DeleteCronJobByName(ctx context.Context, name string) err
 	return err
 }
 
+const deleteFrontmatterPatch = `-- name: DeleteFrontmatterPatch :exec
+delete from note_frontmatter_patches where id = ?
+`
+
+func (q *WriteQueries) DeleteFrontmatterPatch(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteFrontmatterPatch, id)
+	return err
+}
+
 const deleteGitHubOAuthCredentials = `-- name: DeleteGitHubOAuthCredentials :exec
 delete from github_oauth_credentials where id = ?
 `
@@ -1038,6 +1047,52 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 		&i.DurationMs,
 		&i.CreatedAt,
 		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const insertFrontmatterPatch = `-- name: InsertFrontmatterPatch :one
+
+insert into note_frontmatter_patches (include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_by)
+values (?, ?, ?, ?, ?, ?, ?)
+returning id, include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_at, created_by, updated_at
+`
+
+type InsertFrontmatterPatchParams struct {
+	IncludePatterns string `json:"include_patterns"`
+	ExcludePatterns string `json:"exclude_patterns"`
+	Jsonnet         string `json:"jsonnet"`
+	Priority        int64  `json:"priority"`
+	Description     string `json:"description"`
+	Enabled         bool   `json:"enabled"`
+	CreatedBy       int64  `json:"created_by"`
+}
+
+// ============================================
+// Frontmatter Patches
+// ============================================
+func (q *WriteQueries) InsertFrontmatterPatch(ctx context.Context, arg InsertFrontmatterPatchParams) (NoteFrontmatterPatch, error) {
+	row := q.db.QueryRowContext(ctx, insertFrontmatterPatch,
+		arg.IncludePatterns,
+		arg.ExcludePatterns,
+		arg.Jsonnet,
+		arg.Priority,
+		arg.Description,
+		arg.Enabled,
+		arg.CreatedBy,
+	)
+	var i NoteFrontmatterPatch
+	err := row.Scan(
+		&i.ID,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Jsonnet,
+		&i.Priority,
+		&i.Description,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -2851,6 +2906,55 @@ func (q *WriteQueries) UpdateCronWebhookNextRunAt(ctx context.Context, arg Updat
 	return err
 }
 
+const updateFrontmatterPatch = `-- name: UpdateFrontmatterPatch :one
+update note_frontmatter_patches
+set include_patterns = ?,
+    exclude_patterns = ?,
+    jsonnet = ?,
+    priority = ?,
+    description = ?,
+    enabled = ?,
+    updated_at = datetime('now')
+where id = ?
+returning id, include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_at, created_by, updated_at
+`
+
+type UpdateFrontmatterPatchParams struct {
+	IncludePatterns string `json:"include_patterns"`
+	ExcludePatterns string `json:"exclude_patterns"`
+	Jsonnet         string `json:"jsonnet"`
+	Priority        int64  `json:"priority"`
+	Description     string `json:"description"`
+	Enabled         bool   `json:"enabled"`
+	ID              int64  `json:"id"`
+}
+
+func (q *WriteQueries) UpdateFrontmatterPatch(ctx context.Context, arg UpdateFrontmatterPatchParams) (NoteFrontmatterPatch, error) {
+	row := q.db.QueryRowContext(ctx, updateFrontmatterPatch,
+		arg.IncludePatterns,
+		arg.ExcludePatterns,
+		arg.Jsonnet,
+		arg.Priority,
+		arg.Description,
+		arg.Enabled,
+		arg.ID,
+	)
+	var i NoteFrontmatterPatch
+	err := row.Scan(
+		&i.ID,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Jsonnet,
+		&i.Priority,
+		&i.Description,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateHTMLInjection = `-- name: UpdateHTMLInjection :one
 update html_injections
 set description = ?,
@@ -3880,11 +3984,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

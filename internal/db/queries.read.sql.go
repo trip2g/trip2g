@@ -1236,6 +1236,28 @@ func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChats
 	return items, nil
 }
 
+const frontmatterPatchByID = `-- name: FrontmatterPatchByID :one
+select id, include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_at, created_by, updated_at from note_frontmatter_patches where id = ?
+`
+
+func (q *Queries) FrontmatterPatchByID(ctx context.Context, id int64) (NoteFrontmatterPatch, error) {
+	row := q.db.QueryRowContext(ctx, frontmatterPatchByID, id)
+	var i NoteFrontmatterPatch
+	err := row.Scan(
+		&i.ID,
+		&i.IncludePatterns,
+		&i.ExcludePatterns,
+		&i.Jsonnet,
+		&i.Priority,
+		&i.Description,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getActiveGitHubOAuthCredentials = `-- name: GetActiveGitHubOAuthCredentials :one
 select id, name, client_id, client_secret_encrypted, active, created_at, created_by from github_oauth_credentials where active = true limit 1
 `
@@ -3747,6 +3769,44 @@ func (q *Queries) ListEnabledCronWebhooks(ctx context.Context) ([]CronWebhook, e
 	return items, nil
 }
 
+const listEnabledFrontmatterPatches = `-- name: ListEnabledFrontmatterPatches :many
+select id, include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_at, created_by, updated_at from note_frontmatter_patches where enabled = true order by priority asc, id asc
+`
+
+func (q *Queries) ListEnabledFrontmatterPatches(ctx context.Context) ([]NoteFrontmatterPatch, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledFrontmatterPatches)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteFrontmatterPatch
+	for rows.Next() {
+		var i NoteFrontmatterPatch
+		if err := rows.Scan(
+			&i.ID,
+			&i.IncludePatterns,
+			&i.ExcludePatterns,
+			&i.Jsonnet,
+			&i.Priority,
+			&i.Description,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
 select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
 `
@@ -3819,6 +3879,48 @@ func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, err
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFrontmatterPatches = `-- name: ListFrontmatterPatches :many
+
+select id, include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_at, created_by, updated_at from note_frontmatter_patches order by priority asc, id asc
+`
+
+// ============================================
+// Frontmatter Patches
+// ============================================
+func (q *Queries) ListFrontmatterPatches(ctx context.Context) ([]NoteFrontmatterPatch, error) {
+	rows, err := q.db.QueryContext(ctx, listFrontmatterPatches)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteFrontmatterPatch
+	for rows.Next() {
+		var i NoteFrontmatterPatch
+		if err := rows.Scan(
+			&i.ID,
+			&i.IncludePatterns,
+			&i.ExcludePatterns,
+			&i.Jsonnet,
+			&i.Priority,
+			&i.Description,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

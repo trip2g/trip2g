@@ -1,0 +1,4 @@
+$trip2g_admin_frontmatterpatch_button_delete $mol_button_minor
+	frontmatterpatch_id 0
+	after_success? null
+	title @ \Delete
