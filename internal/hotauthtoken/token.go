@@ -36,7 +36,7 @@ func (c fullData) Validate() error {
 func DefaultConfig() Config {
 	return Config{
 		Secret:    "change_me_please",
-		ExpiresIn: 30 * time.Minute,
+		ExpiresIn: 5 * time.Minute,
 	}
 }
 
@@ -49,7 +49,7 @@ func NewManager(config Config) *Manager {
 
 func (m *Manager) NewToken(data model.HotAuthToken) (string, error) {
 	now := time.Now()
-	exp := now.Add(m.config.ExpiresIn) // TODO: change to 30 minutes
+	exp := now.Add(m.config.ExpiresIn)
 
 	claims := fullData{
 		HotAuthToken: data,

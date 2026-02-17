@@ -89,7 +89,7 @@ namespace $.$$ {
 
 		patch_created_by(): string {
 			const createdBy = this.data().createdBy
-			return createdBy ? createdBy.email : '-'
+			return createdBy?.email || '-'
 		}
 
 		patch_updated_at(): string {

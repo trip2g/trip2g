@@ -7,12 +7,14 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	DeleteFrontmatterPatch(ctx context.Context, id int64) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 // Input is an alias for the GraphQL input type.
@@ -46,6 +48,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	err = env.DeleteFrontmatterPatch(ctx, input.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete frontmatter patch: %w", err)
+	}
+
+	// Reload notes to apply the deletion.
+	_, err = env.PrepareLatestNotes(ctx, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload notes after patch deletion: %w", err)
 	}
 
 	// Define payload as separate variable.

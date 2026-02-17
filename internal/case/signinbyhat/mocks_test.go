@@ -21,7 +21,16 @@ var _ signinbyhat.Env = &EnvMock{}
 //
 //		// make and configure a mocked signinbyhat.Env
 //		mockedEnv := &EnvMock{
-//			ParseHotAuthTokenFunc: func(contextMoqParam context.Context, token string) (*model.HotAuthToken, error) {
+//			AdminByUserIDFunc: func(ctx context.Context, userID int64) (db.Admin, error) {
+//				panic("mock out the AdminByUserID method")
+//			},
+//			InsertAdminFunc: func(ctx context.Context, params db.InsertAdminParams) (db.Admin, error) {
+//				panic("mock out the InsertAdmin method")
+//			},
+//			InsertUserWithEmailFunc: func(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error) {
+//				panic("mock out the InsertUserWithEmail method")
+//			},
+//			ParseHotAuthTokenFunc: func(ctx context.Context, token string) (*model.HotAuthToken, error) {
 //				panic("mock out the ParseHotAuthToken method")
 //			},
 //			SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {
@@ -37,8 +46,17 @@ var _ signinbyhat.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AdminByUserIDFunc mocks the AdminByUserID method.
+	AdminByUserIDFunc func(ctx context.Context, userID int64) (db.Admin, error)
+
+	// InsertAdminFunc mocks the InsertAdmin method.
+	InsertAdminFunc func(ctx context.Context, params db.InsertAdminParams) (db.Admin, error)
+
+	// InsertUserWithEmailFunc mocks the InsertUserWithEmail method.
+	InsertUserWithEmailFunc func(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error)
+
 	// ParseHotAuthTokenFunc mocks the ParseHotAuthToken method.
-	ParseHotAuthTokenFunc func(contextMoqParam context.Context, token string) (*model.HotAuthToken, error)
+	ParseHotAuthTokenFunc func(ctx context.Context, token string) (*model.HotAuthToken, error)
 
 	// SetupUserTokenFunc mocks the SetupUserToken method.
 	SetupUserTokenFunc func(ctx context.Context, userID int64) (string, error)
@@ -48,10 +66,31 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AdminByUserID holds details about calls to the AdminByUserID method.
+		AdminByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
+		// InsertAdmin holds details about calls to the InsertAdmin method.
+		InsertAdmin []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Params is the params argument value.
+			Params db.InsertAdminParams
+		}
+		// InsertUserWithEmail holds details about calls to the InsertUserWithEmail method.
+		InsertUserWithEmail []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Params is the params argument value.
+			Params db.InsertUserWithEmailParams
+		}
 		// ParseHotAuthToken holds details about calls to the ParseHotAuthToken method.
 		ParseHotAuthToken []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Token is the token argument value.
 			Token string
 		}
@@ -70,27 +109,138 @@ type EnvMock struct {
 			Email string
 		}
 	}
-	lockParseHotAuthToken sync.RWMutex
-	lockSetupUserToken    sync.RWMutex
-	lockUserByEmail       sync.RWMutex
+	lockAdminByUserID       sync.RWMutex
+	lockInsertAdmin         sync.RWMutex
+	lockInsertUserWithEmail sync.RWMutex
+	lockParseHotAuthToken   sync.RWMutex
+	lockSetupUserToken      sync.RWMutex
+	lockUserByEmail         sync.RWMutex
+}
+
+// AdminByUserID calls AdminByUserIDFunc.
+func (mock *EnvMock) AdminByUserID(ctx context.Context, userID int64) (db.Admin, error) {
+	if mock.AdminByUserIDFunc == nil {
+		panic("EnvMock.AdminByUserIDFunc: method is nil but Env.AdminByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockAdminByUserID.Lock()
+	mock.calls.AdminByUserID = append(mock.calls.AdminByUserID, callInfo)
+	mock.lockAdminByUserID.Unlock()
+	return mock.AdminByUserIDFunc(ctx, userID)
+}
+
+// AdminByUserIDCalls gets all the calls that were made to AdminByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.AdminByUserIDCalls())
+func (mock *EnvMock) AdminByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockAdminByUserID.RLock()
+	calls = mock.calls.AdminByUserID
+	mock.lockAdminByUserID.RUnlock()
+	return calls
+}
+
+// InsertAdmin calls InsertAdminFunc.
+func (mock *EnvMock) InsertAdmin(ctx context.Context, params db.InsertAdminParams) (db.Admin, error) {
+	if mock.InsertAdminFunc == nil {
+		panic("EnvMock.InsertAdminFunc: method is nil but Env.InsertAdmin was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Params db.InsertAdminParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	mock.lockInsertAdmin.Lock()
+	mock.calls.InsertAdmin = append(mock.calls.InsertAdmin, callInfo)
+	mock.lockInsertAdmin.Unlock()
+	return mock.InsertAdminFunc(ctx, params)
+}
+
+// InsertAdminCalls gets all the calls that were made to InsertAdmin.
+// Check the length with:
+//
+//	len(mockedEnv.InsertAdminCalls())
+func (mock *EnvMock) InsertAdminCalls() []struct {
+	Ctx    context.Context
+	Params db.InsertAdminParams
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Params db.InsertAdminParams
+	}
+	mock.lockInsertAdmin.RLock()
+	calls = mock.calls.InsertAdmin
+	mock.lockInsertAdmin.RUnlock()
+	return calls
+}
+
+// InsertUserWithEmail calls InsertUserWithEmailFunc.
+func (mock *EnvMock) InsertUserWithEmail(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error) {
+	if mock.InsertUserWithEmailFunc == nil {
+		panic("EnvMock.InsertUserWithEmailFunc: method is nil but Env.InsertUserWithEmail was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Params db.InsertUserWithEmailParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	mock.lockInsertUserWithEmail.Lock()
+	mock.calls.InsertUserWithEmail = append(mock.calls.InsertUserWithEmail, callInfo)
+	mock.lockInsertUserWithEmail.Unlock()
+	return mock.InsertUserWithEmailFunc(ctx, params)
+}
+
+// InsertUserWithEmailCalls gets all the calls that were made to InsertUserWithEmail.
+// Check the length with:
+//
+//	len(mockedEnv.InsertUserWithEmailCalls())
+func (mock *EnvMock) InsertUserWithEmailCalls() []struct {
+	Ctx    context.Context
+	Params db.InsertUserWithEmailParams
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Params db.InsertUserWithEmailParams
+	}
+	mock.lockInsertUserWithEmail.RLock()
+	calls = mock.calls.InsertUserWithEmail
+	mock.lockInsertUserWithEmail.RUnlock()
+	return calls
 }
 
 // ParseHotAuthToken calls ParseHotAuthTokenFunc.
-func (mock *EnvMock) ParseHotAuthToken(contextMoqParam context.Context, token string) (*model.HotAuthToken, error) {
+func (mock *EnvMock) ParseHotAuthToken(ctx context.Context, token string) (*model.HotAuthToken, error) {
 	if mock.ParseHotAuthTokenFunc == nil {
 		panic("EnvMock.ParseHotAuthTokenFunc: method is nil but Env.ParseHotAuthToken was just called")
 	}
 	callInfo := struct {
-		ContextMoqParam context.Context
-		Token           string
+		Ctx   context.Context
+		Token string
 	}{
-		ContextMoqParam: contextMoqParam,
-		Token:           token,
+		Ctx:   ctx,
+		Token: token,
 	}
 	mock.lockParseHotAuthToken.Lock()
 	mock.calls.ParseHotAuthToken = append(mock.calls.ParseHotAuthToken, callInfo)
 	mock.lockParseHotAuthToken.Unlock()
-	return mock.ParseHotAuthTokenFunc(contextMoqParam, token)
+	return mock.ParseHotAuthTokenFunc(ctx, token)
 }
 
 // ParseHotAuthTokenCalls gets all the calls that were made to ParseHotAuthToken.
@@ -98,12 +248,12 @@ func (mock *EnvMock) ParseHotAuthToken(contextMoqParam context.Context, token st
 //
 //	len(mockedEnv.ParseHotAuthTokenCalls())
 func (mock *EnvMock) ParseHotAuthTokenCalls() []struct {
-	ContextMoqParam context.Context
-	Token           string
+	Ctx   context.Context
+	Token string
 } {
 	var calls []struct {
-		ContextMoqParam context.Context
-		Token           string
+		Ctx   context.Context
+		Token string
 	}
 	mock.lockParseHotAuthToken.RLock()
 	calls = mock.calls.ParseHotAuthToken

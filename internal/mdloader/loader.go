@@ -526,7 +526,10 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	if ldr.noteCache != nil {
 		if cached := ldr.noteCache(src); cached != nil {
 			doc = cached.Ast()
-			rawMeta = cached.RawMeta
+			// Use OriginalRawMeta (pre-patch) so patches can be re-applied cleanly.
+			// Using RawMeta (post-patch) would cause patches to accumulate on
+			// every reload (e.g. title suffix appended N times).
+			rawMeta = cached.OriginalRawMeta
 		}
 	}
 
@@ -558,6 +561,16 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 			// TODO: add a placeholder
 		}
 	}
+
+	// Snapshot pre-patch rawMeta so future cached reloads can start from the
+	// original values rather than the already-patched ones.  We must make a
+	// shallow copy because ApplyPatches mutates the map in-place; without a copy,
+	// OriginalRawMeta would point to the same map and end up patched too.
+	origRawMeta := make(map[string]interface{}, len(rawMeta))
+	for k, v := range rawMeta {
+		origRawMeta[k] = v
+	}
+	pp.OriginalRawMeta = origRawMeta
 
 	// Apply frontmatter patches.
 	var appliedPatches []model.AppliedFrontmatterPatch

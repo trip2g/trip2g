@@ -28,8 +28,6 @@ $trip2g_admin_frontmatterpatch_create $mol_page
 					hint @ \Example: { free: true }
 					Content <= jsonnet_control $mol_textarea
 						value? <=> jsonnet? \
-						rows 10
-						font_family \monospace
 				<= Priority_field $mol_form_field
 					name @ \Priority
 					bid <= priority_bid \

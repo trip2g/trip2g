@@ -365,6 +365,25 @@ export type AdminCronWebhooksConnection = {
   nodes: Array<AdminCronWebhook>;
 };
 
+export type AdminFrontmatterPatch = {
+  __typename?: 'AdminFrontmatterPatch';
+  createdAt: Scalars['Time']['output'];
+  createdBy: AdminUser;
+  description: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  excludePatterns: Array<Scalars['String']['output']>;
+  id: Scalars['Int64']['output'];
+  includePatterns: Array<Scalars['String']['output']>;
+  jsonnet: Scalars['String']['output'];
+  priority: Scalars['Int']['output'];
+  updatedAt: Scalars['Time']['output'];
+};
+
+export type AdminFrontmatterPatchesConnection = {
+  __typename?: 'AdminFrontmatterPatchesConnection';
+  nodes: Array<AdminFrontmatterPatch>;
+};
+
 export type AdminGitHubOAuthCredentials = {
   __typename?: 'AdminGitHubOAuthCredentials';
   active: Scalars['Boolean']['output'];
@@ -472,6 +491,7 @@ export type AdminMutation = {
   createApiKey: CreateApiKeyOrErrorPayload;
   createBoostyCredentials: CreateBoostyCredentialsOrErrorPayload;
   createCronWebhook: CreateCronWebhookOrErrorPayload;
+  createFrontmatterPatch: CreateFrontmatterPatchOrErrorPayload;
   createGitHubOAuthCredentials: CreateGitHubOAuthCredentialsOrErrorPayload;
   createGitToken: CreateGitTokenOrErrorPayload;
   createGoogleOAuthCredentials: CreateGoogleOAuthCredentialsOrErrorPayload;
@@ -489,6 +509,7 @@ export type AdminMutation = {
   deleteAdmin: DeleteAdminOrErrorPayload;
   deleteBoostyCredentials: DeleteBoostyCredentialsOrErrorPayload;
   deleteCronWebhook: DeleteCronWebhookOrErrorPayload;
+  deleteFrontmatterPatch: DeleteFrontmatterPatchOrErrorPayload;
   deleteGitHubOAuthCredentials: DeleteGitHubOAuthCredentialsOrErrorPayload;
   deleteGoogleOAuthCredentials: DeleteGoogleOAuthCredentialsOrErrorPayload;
   deleteHtmlInjection: DeleteHtmlInjectionOrErrorPayload;
@@ -531,6 +552,7 @@ export type AdminMutation = {
   updateBoostyCredentials: UpdateBoostyCredentialsOrErrorPayload;
   updateCronJob: UpdateCronJobOrErrorPayload;
   updateCronWebhook: UpdateCronWebhookOrErrorPayload;
+  updateFrontmatterPatch: UpdateFrontmatterPatchOrErrorPayload;
   updateHtmlInjection: UpdateHtmlInjectionOrErrorPayload;
   updateNotFoundIgnoredPattern: UpdateNotFoundIgnoredPatternOrErrorPayload;
   updateNoteGraphPositions: UpdateNoteGraphPositionsOrErrorPayload;
@@ -601,6 +623,11 @@ export type AdminMutationCreateBoostyCredentialsArgs = {
 
 export type AdminMutationCreateCronWebhookArgs = {
   input: CreateCronWebhookInput;
+};
+
+
+export type AdminMutationCreateFrontmatterPatchArgs = {
+  input: CreateFrontmatterPatchInput;
 };
 
 
@@ -676,6 +703,11 @@ export type AdminMutationDeleteBoostyCredentialsArgs = {
 
 export type AdminMutationDeleteCronWebhookArgs = {
   input: DeleteCronWebhookInput;
+};
+
+
+export type AdminMutationDeleteFrontmatterPatchArgs = {
+  input: DeleteFrontmatterPatchInput;
 };
 
 
@@ -889,6 +921,11 @@ export type AdminMutationUpdateCronWebhookArgs = {
 };
 
 
+export type AdminMutationUpdateFrontmatterPatchArgs = {
+  input: UpdateFrontmatterPatchInput;
+};
+
+
 export type AdminMutationUpdateHtmlInjectionArgs = {
   input: UpdateHtmlInjectionInput;
 };
@@ -1088,6 +1125,7 @@ export type AdminQuery = {
   allChangeWebhooks: AdminChangeWebhooksConnection;
   allCronJobs: AdminCronJobsConnection;
   allCronWebhooks: AdminCronWebhooksConnection;
+  allFrontmatterPatches: AdminFrontmatterPatchesConnection;
   allGitHubOAuthCredentials: AdminGitHubOAuthCredentialsConnection;
   allGitTokens: AdminGitTokensConnection;
   allGoogleOAuthCredentials: AdminGoogleOAuthCredentialsConnection;
@@ -1123,6 +1161,7 @@ export type AdminQuery = {
   cronJob?: Maybe<AdminCronJob>;
   cronWebhook?: Maybe<AdminCronWebhook>;
   cronWebhookDeliveries: AdminCronWebhookDeliveriesConnection;
+  frontmatterPatch?: Maybe<AdminFrontmatterPatch>;
   gitHubOAuthCredentials?: Maybe<AdminGitHubOAuthCredentials>;
   googleOAuthCredentials?: Maybe<AdminGoogleOAuthCredentials>;
   healthChecks: Array<HealchCheck>;
@@ -1219,6 +1258,11 @@ export type AdminQueryCronWebhookArgs = {
 
 export type AdminQueryCronWebhookDeliveriesArgs = {
   filter: AdminCronWebhookDeliveriesFilterInput;
+};
+
+
+export type AdminQueryFrontmatterPatchArgs = {
+  id: Scalars['Int64']['input'];
 };
 
 
@@ -1678,6 +1722,12 @@ export type ApiKeyLogsFilterInput = {
   apiKeyId?: InputMaybe<Scalars['Int64']['input']>;
 };
 
+export type AppliedFrontmatterPatchInfo = {
+  __typename?: 'AppliedFrontmatterPatchInfo';
+  description: Scalars['String']['output'];
+  patchId: Scalars['Int']['output'];
+};
+
 export enum AuditLogLevelEnum {
   Debug = 'DEBUG',
   Error = 'ERROR',
@@ -1874,6 +1924,22 @@ export type CreateEmailWaitListRequestOrErrorPayload = CreateEmailWaitListReques
 export type CreateEmailWaitListRequestPayload = {
   __typename?: 'CreateEmailWaitListRequestPayload';
   success: Scalars['Boolean']['output'];
+};
+
+export type CreateFrontmatterPatchInput = {
+  description: Scalars['String']['input'];
+  enabled: Scalars['Boolean']['input'];
+  excludePatterns?: InputMaybe<Array<Scalars['String']['input']>>;
+  includePatterns: Array<Scalars['String']['input']>;
+  jsonnet: Scalars['String']['input'];
+  priority: Scalars['Int']['input'];
+};
+
+export type CreateFrontmatterPatchOrErrorPayload = CreateFrontmatterPatchPayload | ErrorPayload;
+
+export type CreateFrontmatterPatchPayload = {
+  __typename?: 'CreateFrontmatterPatchPayload';
+  frontmatterPatch: AdminFrontmatterPatch;
 };
 
 export type CreateGitHubOAuthCredentialsInput = {
@@ -2098,6 +2164,17 @@ export type DeleteCronWebhookOrErrorPayload = DeleteCronWebhookPayload | ErrorPa
 
 export type DeleteCronWebhookPayload = {
   __typename?: 'DeleteCronWebhookPayload';
+  deletedId: Scalars['Int64']['output'];
+};
+
+export type DeleteFrontmatterPatchInput = {
+  id: Scalars['Int64']['input'];
+};
+
+export type DeleteFrontmatterPatchOrErrorPayload = DeleteFrontmatterPatchPayload | ErrorPayload;
+
+export type DeleteFrontmatterPatchPayload = {
+  __typename?: 'DeleteFrontmatterPatchPayload';
   deletedId: Scalars['Int64']['output'];
 };
 
@@ -2391,6 +2468,7 @@ export type NoteTocItem = {
 
 export type NoteView = {
   __typename?: 'NoteView';
+  appliedFrontmatterPatches: Array<AppliedFrontmatterPatchInfo>;
   assetReplaces: Array<NoteAssetReplaceT>;
   content: Scalars['String']['output'];
   description?: Maybe<Scalars['String']['output']>;
@@ -3038,6 +3116,23 @@ export type UpdateCronWebhookPayload = {
   cronWebhook: AdminCronWebhook;
 };
 
+export type UpdateFrontmatterPatchInput = {
+  description: Scalars['String']['input'];
+  enabled: Scalars['Boolean']['input'];
+  excludePatterns?: InputMaybe<Array<Scalars['String']['input']>>;
+  id: Scalars['Int64']['input'];
+  includePatterns: Array<Scalars['String']['input']>;
+  jsonnet: Scalars['String']['input'];
+  priority: Scalars['Int']['input'];
+};
+
+export type UpdateFrontmatterPatchOrErrorPayload = ErrorPayload | UpdateFrontmatterPatchPayload;
+
+export type UpdateFrontmatterPatchPayload = {
+  __typename?: 'UpdateFrontmatterPatchPayload';
+  frontmatterPatch: AdminFrontmatterPatch;
+};
+
 export type UpdateHtmlInjectionInput = {
   activeFrom?: InputMaybe<Scalars['Time']['input']>;
   activeTo?: InputMaybe<Scalars['Time']['input']>;
@@ -3574,6 +3669,46 @@ export type AdminRecentlyModifiedNotesQueryVariables = Exact<{ [key: string]: ne
 
 
 export type AdminRecentlyModifiedNotesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', recentlyModifiedNoteViews: Array<{ __typename?: 'NoteView', id: string, title: string, permalink: string }> } };
+
+export type DeleteFrontmatterPatchMutationVariables = Exact<{
+  input: DeleteFrontmatterPatchInput;
+}>;
+
+
+export type DeleteFrontmatterPatchMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteFrontmatterPatchPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+
+export type AdminFrontmatterPatchesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminFrontmatterPatchesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allFrontmatterPatches: { __typename?: 'AdminFrontmatterPatchesConnection', nodes: Array<{ __typename?: 'AdminFrontmatterPatch', id: any, description: string, priority: number, enabled: boolean, includePatterns: Array<string>, excludePatterns: Array<string> }> } } };
+
+export type AdminCreateFrontmatterPatchMutationMutationVariables = Exact<{
+  input: CreateFrontmatterPatchInput;
+}>;
+
+
+export type AdminCreateFrontmatterPatchMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateFrontmatterPatchPayload', frontmatterPatch: { __typename?: 'AdminFrontmatterPatch', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+
+export type FrontmatterPatchQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type FrontmatterPatchQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', frontmatterPatch?: { __typename?: 'AdminFrontmatterPatch', id: any, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, description: string, enabled: boolean, createdAt: any, updatedAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
+
+export type AdminUpdateDataFrontmatterPatchQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type AdminUpdateDataFrontmatterPatchQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', frontmatterPatch?: { __typename?: 'AdminFrontmatterPatch', id: any, createdAt: any, description: string, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, enabled: boolean } | null } };
+
+export type AdminUpdateFrontmatterPatchMutationVariables = Exact<{
+  input: UpdateFrontmatterPatchInput;
+}>;
+
+
+export type AdminUpdateFrontmatterPatchMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateFrontmatterPatchPayload', frontmatterPatch: { __typename?: 'AdminFrontmatterPatch', id: any } } } };
 
 export type DisableGitTokenMutationVariables = Exact<{
   input: DisableGitTokenInput;
@@ -4503,6 +4638,18 @@ export function $trip2g_graphql_request(query: '\n\t\tquery AdminBuildInfo {\n\t
 
 export function $trip2g_graphql_request(query: '\n\t\tquery AdminRecentlyModifiedNotes {\n\t\t\tadmin {\n\t\t\t\trecentlyModifiedNoteViews {\n\t\t\t\tid\n\t\t\t\ttitle\n\t\t\t\tpermalink\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): () => AdminRecentlyModifiedNotesQuery
 
+export function $trip2g_graphql_request(query: '\n\t\t\tmutation DeleteFrontmatterPatch($input: DeleteFrontmatterPatchInput!) {\n\t\t\t\tadmin {\n\t\t\t\t\tdata: deleteFrontmatterPatch(input: $input) {\n\t\t\t\t\t\t__typename\n\t\t\t\t\t\t... on DeleteFrontmatterPatchPayload {\n\t\t\t\t\t\t\tdeletedId\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): (variables: DeleteFrontmatterPatchMutationVariables) => DeleteFrontmatterPatchMutation
+
+export function $trip2g_graphql_request(query: '\n\t\t\tquery AdminFrontmatterPatches {\n\t\t\t\tadmin {\n\t\t\t\t\tallFrontmatterPatches {\n\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\tdescription\n\t\t\t\t\t\t\tpriority\n\t\t\t\t\t\t\tenabled\n\t\t\t\t\t\t\tincludePatterns\n\t\t\t\t\t\t\texcludePatterns\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): () => AdminFrontmatterPatchesQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\tmutation AdminCreateFrontmatterPatchMutation($input: CreateFrontmatterPatchInput!) {\n\t\t\t\tadmin {\n\t\t\t\t\tdata: createFrontmatterPatch(input: $input) {\n\t\t\t\t\t\t__typename\n\t\t\t\t\t\t... on CreateFrontmatterPatchPayload {\n\t\t\t\t\t\t\tfrontmatterPatch {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): (variables: AdminCreateFrontmatterPatchMutationMutationVariables) => AdminCreateFrontmatterPatchMutationMutation
+
+export function $trip2g_graphql_request(query: '\n\t\t\tquery FrontmatterPatch($id: Int64!) {\n\t\t\t\tadmin {\n\t\t\t\t\tfrontmatterPatch(id: $id) {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tincludePatterns\n\t\t\t\t\t\texcludePatterns\n\t\t\t\t\t\tjsonnet\n\t\t\t\t\t\tpriority\n\t\t\t\t\t\tdescription\n\t\t\t\t\t\tenabled\n\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\tupdatedAt\n\t\t\t\t\t\tcreatedBy {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\temail\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): (variables: FrontmatterPatchQueryVariables) => FrontmatterPatchQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\tquery AdminUpdateDataFrontmatterPatch($id: Int64!) {\n\t\t\t\tadmin {\n\t\t\t\t\tfrontmatterPatch(id: $id) {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\tdescription\n\t\t\t\t\t\tincludePatterns\n\t\t\t\t\t\texcludePatterns\n\t\t\t\t\t\tjsonnet\n\t\t\t\t\t\tpriority\n\t\t\t\t\t\tenabled\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): (variables: AdminUpdateDataFrontmatterPatchQueryVariables) => AdminUpdateDataFrontmatterPatchQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\tmutation AdminUpdateFrontmatterPatch($input: UpdateFrontmatterPatchInput!) {\n\t\t\t\tadmin {\n\t\t\t\t\tdata: updateFrontmatterPatch(input: $input) {\n\t\t\t\t\t\t__typename\n\t\t\t\t\t\t... on UpdateFrontmatterPatchPayload {\n\t\t\t\t\t\t\tfrontmatterPatch {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t'): (variables: AdminUpdateFrontmatterPatchMutationVariables) => AdminUpdateFrontmatterPatchMutation
+
 export function $trip2g_graphql_request(query: '\n\t\tmutation DisableGitToken($input: DisableGitTokenInput!) {\n\t\t\tadmin {\n\t\t\t\tdata: disableGitToken(input: $input) {\n\t\t\t\t\t__typename\n\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\tmessage\n\t\t\t\t\t}\n\t\t\t\t\t... on DisableGitTokenPayload {\n\t\t\t\t\t\tgitToken {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): (variables: DisableGitTokenMutationVariables) => DisableGitTokenMutation
 
 export function $trip2g_graphql_request(query: '\n\t\tquery AdminGitTokens {\n\t\t\tadmin {\n\t\t\t\tallGitTokens {\n\t\t\t\t\tnodes {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\tdescription\n\t\t\t\t\t\tcanPull\n\t\t\t\t\t\tcanPush\n\t\t\t\t\t\tcreatedBy {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\temail\n\t\t\t\t\t\t}\n\t\t\t\t\t\tdisabledAt\n\t\t\t\t\t\tdisabledBy {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\temail\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): () => AdminGitTokensQuery
@@ -4767,7 +4914,7 @@ export function $trip2g_graphql_subscription(query: any, variables?: any) { retu
 
 
 
-export const $trip2g_graphql_persist_queries = {"Admins":"31b7b9c10ee6d0342eb987451d91aa3385bfe05d179bc9d6f78cb5c170b3109d","AdminCreateAdmin":"0cd8304085a78068a083add31904c14a77ccbe7b11be6f66bad3f291cacb3733","DisableApiKey":"e834a198cb4b6cc4e061cfd9a4d9aa98eb2c56ad1552a51cfa01d1fa3294e00d","AdminListApiKeys":"d59e369cd035f94198e7e9f2bc106e8db3c4fff2230e092b3763060130ad7c0d","AdminCreateApiKey":"a2170d5503be730c920e1749a1277261d594cbd3f2338b3c63ac41bcb63fc7d8","AdminApiKeyShowQuery":"7b2ca3f35170292de2930efaa89e1ef5c6fedd2f69612e2819657e72584d79a9","AdminAuditLogs":"1a082b80a9018c133e5b8dbb36ff99f1eea34ff8fdc8515e9a56042aa2aedc60","AdminClearBackgroundQueue":"db89b56d9675982a013fd0a4d7430aea6f090194c04fe0b7bcbd8fccbd8f7ee0","AdminStartBackgroundQueue":"2f81310580c2f0fb7bdff12f31e1a8919f0a2dd536245ea4e183be40a9f8747b","AdminStopBackgroundQueue":"82b19096c8dcac82dfdeb84afbbb446280269846daae5d26761b02a482be8b79","AdminBackgroundQueues":"c38f2e764f1302b28748a2cbccdf44bffd62403b0ef524e598decc6f5c471fca","AdminBackgroundQueue":"e7773b5dfc8c0760bdb2b96d6facad42f397081a0c21de1e8e693a43172c606d","AdminDeleteBoostyCredentials":"3d0823a1b5aeea640b9da428da98caea95a7e8e3d6b18c2ec3c9bc0c00a7ffd5","RefreshBoostyData":"61acb201718f9780deaacd13cc05397dfa1e05a27bd1ada5fe1ae45ffacbda30","AdminRestoreBoostyCredentials":"090d1e2ed8132bb6cf8d362449514c9e46a88b8c9c3b9eb931ba57fece576dc4","AdminBoostyCredentials":"25c080897f9450a5a8fac63762e30f821774e6ce857a3c2351428fb6d6f186a2","AdminCreateBoostyCreds":"4e5b4046aa6ced6ef375f9c9d50c17ee276a4bef3b9e8add04cbfd68a4095a0f","AdminBoostyCredentialsById":"600723d3709db0ec905cecbc765d16c70ea0e39599872800c79618c9d3ea85d9","AdminBoostycredentialsShowSubgraphs":"0f4837d0dbe327b61f7968350094b7c6728dcf8a328188169f1ddc1df26d3e70","AdminBoostycredentialsShowSubgraphsSave":"afc4036233eb030a18f9008ecb7d84c458daef51d9a8bf2c5f7f6396c0370d04","AdminChangeWebhooks":"110383de5429188bf04adb98b0b661e2a1180262e2a95f627b6961132223fc06","AdminChangeWebhookCreateMutation":"02ad3dbeb15524d7c4077900872fa040669be1da87351777d8f257403b48da72","AdminShowChangeWebhook":"6a370017ebc2fbade6f370c64cd98b686ef64156559c8e756599e569e19ef0b4","AdminGetChangeWebhook":"c77fff9f91966ea77bdf9e95434773cd8d1dc3c087cb3d21b5b6ec40ae3bbf54","AdminChangeWebhookDeleteMutation":"873a6765107e8f020ad8fe3dc601dbce843dd1732bb31bb850f0ba57c160d9ab","AdminChangeWebhookRegenerateSecretMutation":"50978606baf15e04a3245ec3eab1031946a88a19fcf653f01a5d3c271f73a130","AllNotePaths":"02d88500c7bad8e33eba0d72ec7fd0e1d0bfa98f4ab8aa48e214e6460e02cbe6","TriggerChangeWebhook":"7e6d6431ae1ba05d67b2e979c0e7adef66b8d09ebf30bb7a6cedab219da59686","AdminShowChangeWebhookForUpdate":"2435feb94bcc94b577b6fb208c8201016cdf383d77e5be770a881212bf25c120","AdminChangeWebhookUpdateMutation":"841a5c9a2cd9a7cf08cf29cd4f0663225843691d2df18a2279706c65ad54d67d","AdminConfigValues":"238605faedc6b217f910c2f3fa5ce5efbb1b2e468f0c5cf57d8642b499bd018d","AdminConfigValue":"bb0209e3f31fca362ca9253639526239df90794d1a454c880df2b45f65342b9b","AdminSetConfigStringValue":"e3b45bf61c7c03c038665257a115a59f9006b3e1ba1cafaa71943a0872caeecb","AdminSetConfigBoolValue":"a64e2635ce09780bc965d513ad0d196d6da99c82fc0be71f2cba3405e0780348","AdminRunCronJob":"73fe25ff98dbcdaa87a886f7d13c75f7ffe76a9048206bfdd6f08ac526a21ca8","AdminAllCronJobs":"f5f63f4f2278f386473d9c48f85b5f4c892afa6b6f1f6d686172ec9ec42bbc82","AdminCronJobExecutions":"b7948c64a8dcefbbdb118e876b939034d89e930e92728b76280fe802709e065c","AdminCronJobShow":"1fd178aee76ce85c0b4fd89b1c2483decce36187def4e8b728ec298378f3df14","AdminCronJobUpdate":"e07bfb2906838f35ba3b84db68aaecc9fce8d039bd2661a0963432c5203e7540","AdminUpdateCronJob":"0460e7f0fe223c77a594e150679fc7dac589ae3683b6561e4dcf201c1b24b6fe","AdminCronWebhooks":"f6f782d8d7f61720cf5408bb2ee2882d3b102d41f23bc3bc0fc0a3056a4df49f","AdminCreateCronWebhookMutation":"fa922bbe5632644e1714dbd82cf24e17b98b870d59cd5bf311c23f29231c0a96","AdminCronWebhookDeliveries":"001bcf1bd441cc0fa01833b4106cee68de0030383138cb4470967349390f4172","AdminGetCronWebhook":"36eba08c90cc2e1a55c263005799135c29ca31f300c78e5805fc624798bfc7f6","AdminDeleteCronWebhookMutation":"ff1013b19648ece55cfe83b085bc2544940aef95894227ff2543ff6afedc8998","AdminRegenerateCronWebhookSecretMutation":"3334f1849f5dd5f01136c289c5093ad2d63a681d2123c8601d637b6863737ee4","AdminTriggerCronWebhookMutation":"68fc074d4f43a2dd97b3c9d7d201cfca015ccc5992fde513194d5cfb75a4a844","AdminShowCronWebhookForUpdate":"d16a3b1dc2682905f7fb228fbd78e03c9fc455626b139e4f33122f9094bf6d06","AdminUpdateCronWebhookMutation":"3454bcc779c118c52c0b3061474b1f1681892c374f132417bf37da632032c1b0","AdminBuildInfo":"58951e6413181734d969d6ae3a9b2c37e7e37d0fd7b53a41ef63aed2cde8daac","AdminRecentlyModifiedNotes":"c990aab7efd50d9c5f08aa834b361cbf185e60a156e4f985bf4f144db0973751","DisableGitToken":"9c25101951f62812b1b5f43845e7925e6c779d85b9db019a29d67171a77b3606","AdminGitTokens":"6def4f2bfa2ae2af52361495dc476322d1bdf3f668755576ac98c69e42d44f80","AdminCreateGitToken":"c77c2ffe6a0ed90fa7d3e6546ad9fab5d516e99f8f52b560c46e6233b9251855","AdminHealthChecks":"6964f2657595c376d2ed7613376870a4c9df5f07f84441f9bb6ed440f1400dc7","AdminDeleteHtmlInjection":"ae499ffc5c4e3a0effac670cd84adda14cd1573333d2e193ed90901aa56bd438","AdminHtmlInjections":"79ba1ce7ee04726dbb1b7a64ba86d6d56f42f98defa44ec8ea77d48996972a44","AdminCreateHtmlInjectionMutation":"0d3cd80d4fb88be22d74efc570797fdfa7889e77f49f09a50c8bf61c07c15338","AdminShowHtmlInjection":"d1727312046a0f7ec9fa7c976c3ee5b6fe7094ba765c29dde63c6d523e274b94","AdminUpdateDataHtmlInjection":"8f9cadd42bf1df9f09c137e3e03937be4696b409c18b4e152d6702ee5cec5f0f","AdminUpdateHtmlInjection":"6499c958bc268e2a2b0684437e009f50a025f80b015473f81b317ab9af03e267","AdminNoteAssets":"71a80b7702d3fcb06d723818802e51a8f4683408e31b03650412844748685f88","AdminNoteAsset":"4125392777e418cddd74406af3ef384a49eba5794ca39a79e92787e8d2df71b3","AdminListNoteViews":"0750d17bf811e2f7bc48ae7b3857e345519ba374a98adb18a5a982644b71c1f7","AdminGraph":"b843c79d94c52d96087513a2768e3a2f1732c9a86d6ef27d97be9e93750bd332","UpdateNoteGraphPositions":"86e2eb3c75b9c50e011a46b6e3723cd97ebfe5e88f7b3c47e1e8e23566ea0a63","AdminSelectNoteView":"9739a047b122716296664c2d10ad92e31b8b3c6367ae1927a54b2468ba349b25","AdminNoteView":"0b01d78ceadccc26319d47b4d4c85400cd2be93bc5cbd0ebc84482780fae73a8","AdminNoteWarnings":"1761520561721485891ab1b2cdd5e54a0d27ced539ce95c5c70e877dafb9e23e","AdminResetNotFoundPath":"3be560968348f9adb9e5797c65b11caa913adf5db7ea3e47113591ec441796b9","AdminNotFoundPaths":"4d3dde4e044f707f70109b48bf5b12853e8a407ec5b439d8011da5ec5113be92","AdminShowNotFoundPath":"148013382b0a14cf65448fd68f05cec947bb19d9e337cc931e6f89aa4735e6ac","AdminDeleteNotFoundIgnoredPattern":"e5a6db3369038ca64e498d1f49f297c005bc719eb5e8c1ae4be5f46d9ea5523a","AdminNotFoundIgnoredPatterns":"d4146534b56631bd5736e90599f12702e1b7419199e03706244afd07789db0e2","AdminCreateNotFoundIgnoredPatternMutation":"fed2411c47a1e72a6913857c3db536e66e84323daf400c53787a0eaa3309ddcc","AdminShowNotFoundIgnoredPattern":"e2cb9295a351038a0984f23a599dfe4da435d518a0b0fe866e21f7556b37c94c","AdminDeleteNotFoundIgnoredPatternMutation":"95e5d380983cc3c2e1941b630f89e46c770b00acb4efa06520c1d7e8da5ccf68","AdminUpdateNotFoundIgnoredPatternMutation":"42c55aca562a687cef0bd7055b7ff7a856441e5638263d394761fa46f2bfad80","AdminGitHubOAuthCredentials":"ae20ebecde30a7c2f890a77112b30707319a46824779e38701014e1e2f37cb74","GitHubOAuthUrls":"8eb089bea06db39bf879e45270bcc78298e7dcd95ede3413bac2608eabd60382","AdminCreateGitHubOAuthCredentials":"9e0d16c008339c1b9cfd48e3ffc9c824439232553fc9da6dccdacd80ac5ee83b","AdminDeleteGitHubOAuthCredentials":"047ea66546439e1271c4e3b22c6e59771ae6a902e3ab352001cfb6ab11e5eabb","AdminDeactivateGitHubOAuth":"20721810f28a6e054cbf78f2db7c07b653becd532482e40d51020da7a7c49692","AdminGitHubOAuthCredentialsById":"69d2e0bbfd71eb9e460b304480b735288a5b828fd185bd285906313c2ff4f6fe","AdminSetActiveGitHubOAuthCredentials":"56b187d1b4e5e609b3c728539d7c08973b0cc1a121c3df15779148f41393c59f","AdminGoogleOAuthCredentials":"fc12d1e69c0718c4e77447c473af359154ed327c25c097a790295148c9577220","GoogleOAuthUrls":"25ab4d881975d3a7684aadc910ef7c02cd7c859deb3aaf45de0611d00e2eead4","AdminCreateGoogleOAuthCredentials":"cfb615b5fe53efc76a952e6f05ea83a38380b7fde90b5767b15defd7c4bb7456","AdminDeleteGoogleOAuthCredentials":"45d6e047a69d6f2a590fa9d026432ad28650aa8c51ea72a77da6316c33e4aff4","AdminDeactivateGoogleOAuth":"d0f48879890a043145736b3b0be4a0de635698abbe0f0e7a28aa577428ead961","AdminGoogleOAuthCredentialsById":"9bbea3876d10cda812cb8ecf03091780c2127242b91c9c254c7974476e74a797","AdminSetActiveGoogleOAuthCredentials":"3f7a5bf54024efa30e7afec36d476ddea3b7bbf4e67403c0c93926049b338429","AdminOffers":"67c8a75420630b288603cd670ee7b7b0d1f4dae99a6bfc850490fa70cc402592","AdminCreateOfferMutation":"9a7b80fc55ee31e3ed9bc89cca38c430d4ccc638f3178c3915901f5c06c606b9","AdminShowOffer":"b4b0730aaea13ee9837ac89cae8fae39c5d4aedfde90511e144d3c99f122b8be","AdminUpdateOfferMutation":"fa85da58878c033a66304433b230ae409242e86d8e4cd5ec5961581696efaf71","AdminDeletePatreonCredentials":"d9b0d57409c0f708110ca4ffc5b16b894e57296bbadebdd9f095ff836cad717a","RefreshPatreonData":"a8e2c68cfc11cb6dee15d381ad64b90f8affafaecd80ae4cf5243dfdf79d86bd","AdminRestorePatreonCredentials":"0e8bfe8d4965f71bd48d1a2caeba1375cdecb2cf5743635e848b31b88267e7ea","AdminPatreonCredentials":"f52852dd95a63d271b3760b72e00c5a11cebf70f07f2a4c7dabcacb833186942","AdminCreatePatreonCreds":"a93585e99935493cb94147a8bd919cb1fcbe6eac2164ff18a056341ea3c91e1f","AdminPatreonCredentialsById":"6ab08480f36bdc278d86a755a994eb18053bea5ac61f1da0da15203a79872e26","AdminPatreoncredentialsShowSubgraphs":"2d9c3b59a29a6cd02b40a246d90491d6e81d8ecf44c4bf8333610d0ff0894a2b","AdminPatreoncredentialsShowSubgraphsSave":"c622724ecc6dd0d147cae6049d2bc052af809fa672deece0add30b3a2609b81f","AdminPurchases":"1793e7b78b882135bb3539e185cf1a05580cd039398c40e3c821ce31b668ef7c","AdminRedirects":"065f6c26aae03086af98536d0dcffd0af1e6c26ec78d6bd0bfb7d804b77abab5","AdminCreateRedirectMutation":"ab0062cdcf64364e2729d50b4d3edc2eb0f28de74a81413c9268116fc18ff821","AdminShowRedirect":"0b9899a7d1c06acec4a43512e6099fa239dbf133f2c92ede155fc029bbe03189","AdminDeleteRedirectMutation":"028aa4c93df10d59a0199b134dc6cc1d969e79f5b36f7a991502417df37bea63","AdminUpdateRedirectMutation":"58ac7bc9b0653a2eb0ff1df7317eefb92eea73f60dc5af7e64cdfaadf7c19731","AdminMakeReleaseLive":"f09d1bf08994771a5812fbab10cc35c074136c56f3a947fd446d1f2a393bc1d9","AdminReleases":"8a72ee8f42e12a7a72260cf6fe9b6bbaee7d695296a21e878cf1196a80000111","AdminCreateRelease":"5853ac63ee8c6f0c73e0bbf96c61c1463c9e8db0a4aaf77624a4bc92e0064d03","AdminListSubgraphs":"7e21e2c649f89e31277158ceab6af158e25ce8ca0c66dab331485ed72e181dfc","AdminSelectSubgraphList":"867c73ab0c102a05db2d31123506cb6973caf9eb19849d7e613068a685187549","AdminSelectSubgraph":"52faf3aa57ac3311a4cf93b5ac60f728f67a1a0601220c77732e632640f38f10","AdminShowSubgraph":"92032e177122bb3ae0bc2ce470ab9f2c03d9a558339708f7e34cd07b7a739d08","UpdateSubgraph":"99c35b5884cff26f3227d22441a021d53924b38555e3ebb3dce6877ceab48a30","AdminTelegramAccounts":"823027a6413d9457b2ea78fdc17e96f3d3d7e65b89c45ba147e9bdee66e614cb","StartTelegramAccountAuth":"f44006ab412fadbcd4f37eafcd67bd4635a0b9e1fdb0a2a420e06479068ce832","CompleteTelegramAccountAuth":"3db8d63d093586f036683377aaf9bb95545bf1594fada4104fb1c2008b702a20","AdminTelegramAccountDialogs":"a4c94e9ec6f808e20c39bf541711ada9569a701c2a7cee02f84de659694cea53","AdminImportTelegramAccountChannel":"aa3d7e56c47f9a8f4b2f3209098106bc3f380ac05439d5a274feaa3d5ed46fdb","AdminTelegramAccountShowDialogsInstantTags":"d9cb29f94cda3f0070d0c6ee92d0ad2944482e89a43373203cf78389ee220c6a","AdminTelegramAccountShowDialogsInstantTagsSave":"3198e5415c24f8e37f0c18669d473c4b5ac956c91b2b52240773ebe56808f8e2","AdminTelegramAccountShowDialogsTags":"c13ef5bf0a56e1626e6dc1da45de3a2a29e23461db35c8b4d77fd6d1bb580c99","AdminTelegramAccountShowDialogsTagsSave":"be25bf420a207a797642454d8f173c0a2799d61c7f3684792a443a25801d2191","AdminSignOutTelegramAccount":"d126faf062d914f8d772ec0929b17c598f822f103e973b1e3fc8354664847cad","AdminTelegramAccountUpdate":"09dabbb216687efbca24568b8814d0405d912891d77ccd9b00f15aaec73c3896","AdminUpdateTelegramAccountMutation":"85f6aa4153aad281a8477f087224c6c61f7ee50bfd7ea9454c08e3391ec18e74","AdminResetTelegramPublishNote":"8b8c0111dc74e29ed18f3b68dcf721756e2d52ad653a11d6e019b3d421f7bc4e","AdminSendTelegramPublishNoteNow":"5b547629781b70847c504811a74f10d8c2cdf488c872033cfb3cb116f6dd7dcd","AdminTelegramPublishNoteCount":"7b72b8fcfc9bde3d6ea209c58f6266a5b027271d8d7c9a7499ef64492cf98cf3","AdminTelegramPublishNotes":"1a2dcf5b167fdada3d83ca707f9afeac488f2f4a995e8b7b4a31061be891bd73","AdminTelegramPublishNote":"1f38b2d7fc924a619f3abd68502ae38963022316b6d85930bf895a3ee3d4bb1c","AdminTgBots":"d7fabe798197e90df76f04f6afe8af9eef1b9da6cae7a6059afa0126c8aeaa92","AdminCreateTgBotMutation":"f8fb2ca52d215f00fbf111f8860b042f6d2adfafe40acd13a2a564cd2904726e","AdminTgBotChats":"710f5f761a43fc1edf9f7754e4b0111ce547fe049a6f078544f3705babe89234","AdminTgbotShowChatsSubgraphs":"a8aab396ad86724e5333e78ad9e71bb3f170700f9e70e6c13760e3dd60d4c7df","AdminTgbotsShowchatsSubgraphsSave":"55a009736a1249932c88ba54268a58ae13b868d0679159bae0c62390c2fb5fca","AdminTgBotInviteChats":"da6a44f35e1ca767093837eebcfe4846bb4674d6f03665302bd444360e098224","AdminTgbotShowInviteChatsSubgraphs":"95eddf5cabffdb9900906b2c4637031b7f2de1441a6c90cf23c75d988aa47d25","AdminTgbotShowInviteChatsSubgraphsSave":"1e871ffcfb0c44803bb02ce90adb3c5444c459c38cf30ef23b4ef04766cbf12c","AdminTgbotShowPublishInstantTags":"0b41ad16a2f936719eee6f209bbe243727aeed842961ef408507307533bfff22","AdminTgbotShowPublishInstantTagsSave":"55845592ad7292229fcd8e90f80b95ae8128dc2394ba2b6f07352912f63932de","AdminTgBotPublishTags":"c75b0f890e59788a0d0076a2e67fe2b74430c201074b13f751a77590a6767012","AdminTgbotShowPublishTags":"9970ddc0b0f15902549a9e824e581c69c9939c1cf241825da97563000ab09ee6","AdminTgbotShowPublishTagsSave":"75e6b0280009d01328280e3a4fd9b93844695308424eaabe6d7eeb923ce999bd","AdminShowTgBot":"6d99ca3f745b6b02a4d8e21e72620eef5d84d27effcbd63ae3055e40797418b3","AdminUpdateTgBotMutation":"0324b130d88743b356749ef9b7d9aaaf2461e08dcf9511d10550c648ff237eb7","AdminListUserBans":"6040d70a10b3382a3831068918a788a213dee3374a9efbf1f74dcf252a7b45e8","AdminBanUser":"c4a45b44b3642384d4e28936d7ddfa82f5b2b4504f873c694be3f0369c545512","AdminUnbanUser":"6d2f4cf8341515d7b6d96df9815f4c72b044e05b77e29ede9e45873ab8efd602","AdminListUsers":"94a761f818704004a943609dd89aa84af34036425d597b779b91b574e13aa46d","AdminCreateUser":"9e8192928cf6ac787508c63ea8ce9dcf820787ecb1dcae0444d5bd4b5d27f94f","AdminSelectUser":"05e7812c9ff639305f6b58c821ffd8697dfa934b995b94e34e5d5edc56675f66","AdminUserShow":"3a1ed51b7f3af071f5e6c8d0c16887dd40cfeaa6f4d999689c4c7236abe7cbc0","AdminUserEditQuery":"e5a4a4da29de00348707415a78c5982d1c7bad95bf43aecff9fe935f9de553ef","AdminUpdateUser":"f79fd3f160176c393f341411c19068223f4cd4d3083382add6eb3eeb654a8b60","AdminListUserSubgraphAccesses":"dcd373f4fc744041cf1d3cd6d96aadc49d2f633305ecde0973283fe5dde1e3b2","AdminCreateUserSubgraphAccess":"001f59f06fd1edbf3f4c77e0925a2a97915a8163dbc378c689059068e7cbf525","AdminUserSubgraphAccess":"cf4b04345f46aa7118228621cb393b6ecf0720159301308ce29a41cfdefb6da0","AdminUpdateUserSubgraphAccess":"fdcb57d0a19494fd015fe16d95c1657e50fa130ff19e2e2dde89a5ab4d1025b7","AdminWaitListEmailRequests":"f7df2fc974a6048b1e8d9e7b839963b14a32e4ecd46d769bb37f3a843be4fc7e","AdminWaitListTgBotRequests":"67ba998693c036677fb6933b96e6a39c905f209e433c653448832e127b8d8aad","SignOut":"ce93de9e93d241aa23f7f1fc875c14a9529ae881014cca4da3844f1f0c9b019d","RequestEmailSignInCode":"092d8a0ea5dd092a91fdfff67ea796bb03a6a86c7951832e55d9dbe034290add","SignInByEmail":"9fd9d325614b814c0c8925114e01bb9e14b32530d359e12ec5dc073f4519358c","OAuthUrls":"6567b3ab126d531e7cf9a2ea9283d32bed4eb4542b89077e577a9460ce0e3c4f","Viewer":"653f9a99dddb2deee894084f53713e9452caea239eb7e087656dbc2aae7c555d","ReaderQuery":"01e92181e52161f23624ca6dc445ac0316c0a8e53253c3e21cf91fd60aa71a7c","CurrentTime":"df99af6371dd0520a058143d364dab687589a342516dc70ef34a167faa0580bf","FavoriteNotes":"95149858dee6f011bbad69b07f10b51110a8ac1f24f849547f7feeed617b4dce","ToggleFavoriteNote":"de3e0de0e3d014e1e9e11daf108e93f204f45dbe7bd90956979e124d1ea76790","PaywallActivePurchaseQuery":"4884e87c0c2a528c8fc7e42c8914c0327d114cbd7be6bf4e719a7c3fbb9fe5fb","CreateEmailWaitListRequestMutation":"f9af5df41fe86e9363f570765ab1833f3ce56a47f1d3fbef54502dfa0f74707a","PaywallQuery":"2a77280606a1905203b68482e752e3b6bad4c0ddf76b7b01cd7f60c9218692fb","CreatePaymentLink":"ac8b21f2dc1e8f8ecdb847d0102b2b6a83dba671692e790f0ab0baf14a4facf4","SiteSearch":"a826bb24b493c8a5e3bc3919c5e9595dd4e2c36d4e0cbf3db3cf30ee2e9819f0","UserSubscriptions":"f703829d1cbd3c9ece3c9f248da8b91ff1bde0dbdff42f0b8ae5faee195a26f0"}
+export const $trip2g_graphql_persist_queries = {"Admins":"31b7b9c10ee6d0342eb987451d91aa3385bfe05d179bc9d6f78cb5c170b3109d","AdminCreateAdmin":"0cd8304085a78068a083add31904c14a77ccbe7b11be6f66bad3f291cacb3733","DisableApiKey":"e834a198cb4b6cc4e061cfd9a4d9aa98eb2c56ad1552a51cfa01d1fa3294e00d","AdminListApiKeys":"d59e369cd035f94198e7e9f2bc106e8db3c4fff2230e092b3763060130ad7c0d","AdminCreateApiKey":"a2170d5503be730c920e1749a1277261d594cbd3f2338b3c63ac41bcb63fc7d8","AdminApiKeyShowQuery":"7b2ca3f35170292de2930efaa89e1ef5c6fedd2f69612e2819657e72584d79a9","AdminAuditLogs":"1a082b80a9018c133e5b8dbb36ff99f1eea34ff8fdc8515e9a56042aa2aedc60","AdminClearBackgroundQueue":"db89b56d9675982a013fd0a4d7430aea6f090194c04fe0b7bcbd8fccbd8f7ee0","AdminStartBackgroundQueue":"2f81310580c2f0fb7bdff12f31e1a8919f0a2dd536245ea4e183be40a9f8747b","AdminStopBackgroundQueue":"82b19096c8dcac82dfdeb84afbbb446280269846daae5d26761b02a482be8b79","AdminBackgroundQueues":"c38f2e764f1302b28748a2cbccdf44bffd62403b0ef524e598decc6f5c471fca","AdminBackgroundQueue":"e7773b5dfc8c0760bdb2b96d6facad42f397081a0c21de1e8e693a43172c606d","AdminDeleteBoostyCredentials":"3d0823a1b5aeea640b9da428da98caea95a7e8e3d6b18c2ec3c9bc0c00a7ffd5","RefreshBoostyData":"61acb201718f9780deaacd13cc05397dfa1e05a27bd1ada5fe1ae45ffacbda30","AdminRestoreBoostyCredentials":"090d1e2ed8132bb6cf8d362449514c9e46a88b8c9c3b9eb931ba57fece576dc4","AdminBoostyCredentials":"25c080897f9450a5a8fac63762e30f821774e6ce857a3c2351428fb6d6f186a2","AdminCreateBoostyCreds":"4e5b4046aa6ced6ef375f9c9d50c17ee276a4bef3b9e8add04cbfd68a4095a0f","AdminBoostyCredentialsById":"600723d3709db0ec905cecbc765d16c70ea0e39599872800c79618c9d3ea85d9","AdminBoostycredentialsShowSubgraphs":"0f4837d0dbe327b61f7968350094b7c6728dcf8a328188169f1ddc1df26d3e70","AdminBoostycredentialsShowSubgraphsSave":"afc4036233eb030a18f9008ecb7d84c458daef51d9a8bf2c5f7f6396c0370d04","AdminChangeWebhooks":"110383de5429188bf04adb98b0b661e2a1180262e2a95f627b6961132223fc06","AdminChangeWebhookCreateMutation":"02ad3dbeb15524d7c4077900872fa040669be1da87351777d8f257403b48da72","AdminShowChangeWebhook":"6a370017ebc2fbade6f370c64cd98b686ef64156559c8e756599e569e19ef0b4","AdminGetChangeWebhook":"c77fff9f91966ea77bdf9e95434773cd8d1dc3c087cb3d21b5b6ec40ae3bbf54","AdminChangeWebhookDeleteMutation":"873a6765107e8f020ad8fe3dc601dbce843dd1732bb31bb850f0ba57c160d9ab","AdminChangeWebhookRegenerateSecretMutation":"50978606baf15e04a3245ec3eab1031946a88a19fcf653f01a5d3c271f73a130","AllNotePaths":"02d88500c7bad8e33eba0d72ec7fd0e1d0bfa98f4ab8aa48e214e6460e02cbe6","TriggerChangeWebhook":"7e6d6431ae1ba05d67b2e979c0e7adef66b8d09ebf30bb7a6cedab219da59686","AdminShowChangeWebhookForUpdate":"2435feb94bcc94b577b6fb208c8201016cdf383d77e5be770a881212bf25c120","AdminChangeWebhookUpdateMutation":"841a5c9a2cd9a7cf08cf29cd4f0663225843691d2df18a2279706c65ad54d67d","AdminConfigValues":"238605faedc6b217f910c2f3fa5ce5efbb1b2e468f0c5cf57d8642b499bd018d","AdminConfigValue":"bb0209e3f31fca362ca9253639526239df90794d1a454c880df2b45f65342b9b","AdminSetConfigStringValue":"e3b45bf61c7c03c038665257a115a59f9006b3e1ba1cafaa71943a0872caeecb","AdminSetConfigBoolValue":"a64e2635ce09780bc965d513ad0d196d6da99c82fc0be71f2cba3405e0780348","AdminRunCronJob":"73fe25ff98dbcdaa87a886f7d13c75f7ffe76a9048206bfdd6f08ac526a21ca8","AdminAllCronJobs":"f5f63f4f2278f386473d9c48f85b5f4c892afa6b6f1f6d686172ec9ec42bbc82","AdminCronJobExecutions":"b7948c64a8dcefbbdb118e876b939034d89e930e92728b76280fe802709e065c","AdminCronJobShow":"1fd178aee76ce85c0b4fd89b1c2483decce36187def4e8b728ec298378f3df14","AdminCronJobUpdate":"e07bfb2906838f35ba3b84db68aaecc9fce8d039bd2661a0963432c5203e7540","AdminUpdateCronJob":"0460e7f0fe223c77a594e150679fc7dac589ae3683b6561e4dcf201c1b24b6fe","AdminCronWebhooks":"f6f782d8d7f61720cf5408bb2ee2882d3b102d41f23bc3bc0fc0a3056a4df49f","AdminCreateCronWebhookMutation":"fa922bbe5632644e1714dbd82cf24e17b98b870d59cd5bf311c23f29231c0a96","AdminCronWebhookDeliveries":"001bcf1bd441cc0fa01833b4106cee68de0030383138cb4470967349390f4172","AdminGetCronWebhook":"36eba08c90cc2e1a55c263005799135c29ca31f300c78e5805fc624798bfc7f6","AdminDeleteCronWebhookMutation":"ff1013b19648ece55cfe83b085bc2544940aef95894227ff2543ff6afedc8998","AdminRegenerateCronWebhookSecretMutation":"3334f1849f5dd5f01136c289c5093ad2d63a681d2123c8601d637b6863737ee4","AdminTriggerCronWebhookMutation":"68fc074d4f43a2dd97b3c9d7d201cfca015ccc5992fde513194d5cfb75a4a844","AdminShowCronWebhookForUpdate":"d16a3b1dc2682905f7fb228fbd78e03c9fc455626b139e4f33122f9094bf6d06","AdminUpdateCronWebhookMutation":"3454bcc779c118c52c0b3061474b1f1681892c374f132417bf37da632032c1b0","AdminBuildInfo":"58951e6413181734d969d6ae3a9b2c37e7e37d0fd7b53a41ef63aed2cde8daac","AdminRecentlyModifiedNotes":"c990aab7efd50d9c5f08aa834b361cbf185e60a156e4f985bf4f144db0973751","DeleteFrontmatterPatch":"8be0cf71adbcf6f0116075c0f13deeb1218eee6b28ec94dcfd99ea9584bd4cfe","AdminFrontmatterPatches":"17ecef22698270294cd7d0f46f31b90a26f80aa793312bfa22358d2602cc6df4","AdminCreateFrontmatterPatchMutation":"efd6d9dcf4e21e0b4665bac98fd9ecd455d267e0e1af531aa2a1e4e4e387a1fc","FrontmatterPatch":"f95dd24ab7f58e462ad83641f2c81bce4e5c77a540929b4fa0198e4cb583aadf","AdminUpdateDataFrontmatterPatch":"fb09ae6156e953c35f0181476a8d563f0af1089e4399b362e71a87fb2d9cea45","AdminUpdateFrontmatterPatch":"d2ce94d4b30c1fa57cc92ac358c870c1d6723b1ce30934763c656db0e5c8e2c6","DisableGitToken":"9c25101951f62812b1b5f43845e7925e6c779d85b9db019a29d67171a77b3606","AdminGitTokens":"6def4f2bfa2ae2af52361495dc476322d1bdf3f668755576ac98c69e42d44f80","AdminCreateGitToken":"c77c2ffe6a0ed90fa7d3e6546ad9fab5d516e99f8f52b560c46e6233b9251855","AdminHealthChecks":"6964f2657595c376d2ed7613376870a4c9df5f07f84441f9bb6ed440f1400dc7","AdminDeleteHtmlInjection":"ae499ffc5c4e3a0effac670cd84adda14cd1573333d2e193ed90901aa56bd438","AdminHtmlInjections":"79ba1ce7ee04726dbb1b7a64ba86d6d56f42f98defa44ec8ea77d48996972a44","AdminCreateHtmlInjectionMutation":"0d3cd80d4fb88be22d74efc570797fdfa7889e77f49f09a50c8bf61c07c15338","AdminShowHtmlInjection":"d1727312046a0f7ec9fa7c976c3ee5b6fe7094ba765c29dde63c6d523e274b94","AdminUpdateDataHtmlInjection":"8f9cadd42bf1df9f09c137e3e03937be4696b409c18b4e152d6702ee5cec5f0f","AdminUpdateHtmlInjection":"6499c958bc268e2a2b0684437e009f50a025f80b015473f81b317ab9af03e267","AdminNoteAssets":"71a80b7702d3fcb06d723818802e51a8f4683408e31b03650412844748685f88","AdminNoteAsset":"4125392777e418cddd74406af3ef384a49eba5794ca39a79e92787e8d2df71b3","AdminListNoteViews":"0750d17bf811e2f7bc48ae7b3857e345519ba374a98adb18a5a982644b71c1f7","AdminGraph":"b843c79d94c52d96087513a2768e3a2f1732c9a86d6ef27d97be9e93750bd332","UpdateNoteGraphPositions":"86e2eb3c75b9c50e011a46b6e3723cd97ebfe5e88f7b3c47e1e8e23566ea0a63","AdminSelectNoteView":"9739a047b122716296664c2d10ad92e31b8b3c6367ae1927a54b2468ba349b25","AdminNoteView":"0b01d78ceadccc26319d47b4d4c85400cd2be93bc5cbd0ebc84482780fae73a8","AdminNoteWarnings":"1761520561721485891ab1b2cdd5e54a0d27ced539ce95c5c70e877dafb9e23e","AdminResetNotFoundPath":"3be560968348f9adb9e5797c65b11caa913adf5db7ea3e47113591ec441796b9","AdminNotFoundPaths":"4d3dde4e044f707f70109b48bf5b12853e8a407ec5b439d8011da5ec5113be92","AdminShowNotFoundPath":"148013382b0a14cf65448fd68f05cec947bb19d9e337cc931e6f89aa4735e6ac","AdminDeleteNotFoundIgnoredPattern":"e5a6db3369038ca64e498d1f49f297c005bc719eb5e8c1ae4be5f46d9ea5523a","AdminNotFoundIgnoredPatterns":"d4146534b56631bd5736e90599f12702e1b7419199e03706244afd07789db0e2","AdminCreateNotFoundIgnoredPatternMutation":"fed2411c47a1e72a6913857c3db536e66e84323daf400c53787a0eaa3309ddcc","AdminShowNotFoundIgnoredPattern":"e2cb9295a351038a0984f23a599dfe4da435d518a0b0fe866e21f7556b37c94c","AdminDeleteNotFoundIgnoredPatternMutation":"95e5d380983cc3c2e1941b630f89e46c770b00acb4efa06520c1d7e8da5ccf68","AdminUpdateNotFoundIgnoredPatternMutation":"42c55aca562a687cef0bd7055b7ff7a856441e5638263d394761fa46f2bfad80","AdminGitHubOAuthCredentials":"ae20ebecde30a7c2f890a77112b30707319a46824779e38701014e1e2f37cb74","GitHubOAuthUrls":"8eb089bea06db39bf879e45270bcc78298e7dcd95ede3413bac2608eabd60382","AdminCreateGitHubOAuthCredentials":"9e0d16c008339c1b9cfd48e3ffc9c824439232553fc9da6dccdacd80ac5ee83b","AdminDeleteGitHubOAuthCredentials":"047ea66546439e1271c4e3b22c6e59771ae6a902e3ab352001cfb6ab11e5eabb","AdminDeactivateGitHubOAuth":"20721810f28a6e054cbf78f2db7c07b653becd532482e40d51020da7a7c49692","AdminGitHubOAuthCredentialsById":"69d2e0bbfd71eb9e460b304480b735288a5b828fd185bd285906313c2ff4f6fe","AdminSetActiveGitHubOAuthCredentials":"56b187d1b4e5e609b3c728539d7c08973b0cc1a121c3df15779148f41393c59f","AdminGoogleOAuthCredentials":"fc12d1e69c0718c4e77447c473af359154ed327c25c097a790295148c9577220","GoogleOAuthUrls":"25ab4d881975d3a7684aadc910ef7c02cd7c859deb3aaf45de0611d00e2eead4","AdminCreateGoogleOAuthCredentials":"cfb615b5fe53efc76a952e6f05ea83a38380b7fde90b5767b15defd7c4bb7456","AdminDeleteGoogleOAuthCredentials":"45d6e047a69d6f2a590fa9d026432ad28650aa8c51ea72a77da6316c33e4aff4","AdminDeactivateGoogleOAuth":"d0f48879890a043145736b3b0be4a0de635698abbe0f0e7a28aa577428ead961","AdminGoogleOAuthCredentialsById":"9bbea3876d10cda812cb8ecf03091780c2127242b91c9c254c7974476e74a797","AdminSetActiveGoogleOAuthCredentials":"3f7a5bf54024efa30e7afec36d476ddea3b7bbf4e67403c0c93926049b338429","AdminOffers":"67c8a75420630b288603cd670ee7b7b0d1f4dae99a6bfc850490fa70cc402592","AdminCreateOfferMutation":"9a7b80fc55ee31e3ed9bc89cca38c430d4ccc638f3178c3915901f5c06c606b9","AdminShowOffer":"b4b0730aaea13ee9837ac89cae8fae39c5d4aedfde90511e144d3c99f122b8be","AdminUpdateOfferMutation":"fa85da58878c033a66304433b230ae409242e86d8e4cd5ec5961581696efaf71","AdminDeletePatreonCredentials":"d9b0d57409c0f708110ca4ffc5b16b894e57296bbadebdd9f095ff836cad717a","RefreshPatreonData":"a8e2c68cfc11cb6dee15d381ad64b90f8affafaecd80ae4cf5243dfdf79d86bd","AdminRestorePatreonCredentials":"0e8bfe8d4965f71bd48d1a2caeba1375cdecb2cf5743635e848b31b88267e7ea","AdminPatreonCredentials":"f52852dd95a63d271b3760b72e00c5a11cebf70f07f2a4c7dabcacb833186942","AdminCreatePatreonCreds":"a93585e99935493cb94147a8bd919cb1fcbe6eac2164ff18a056341ea3c91e1f","AdminPatreonCredentialsById":"6ab08480f36bdc278d86a755a994eb18053bea5ac61f1da0da15203a79872e26","AdminPatreoncredentialsShowSubgraphs":"2d9c3b59a29a6cd02b40a246d90491d6e81d8ecf44c4bf8333610d0ff0894a2b","AdminPatreoncredentialsShowSubgraphsSave":"c622724ecc6dd0d147cae6049d2bc052af809fa672deece0add30b3a2609b81f","AdminPurchases":"1793e7b78b882135bb3539e185cf1a05580cd039398c40e3c821ce31b668ef7c","AdminRedirects":"065f6c26aae03086af98536d0dcffd0af1e6c26ec78d6bd0bfb7d804b77abab5","AdminCreateRedirectMutation":"ab0062cdcf64364e2729d50b4d3edc2eb0f28de74a81413c9268116fc18ff821","AdminShowRedirect":"0b9899a7d1c06acec4a43512e6099fa239dbf133f2c92ede155fc029bbe03189","AdminDeleteRedirectMutation":"028aa4c93df10d59a0199b134dc6cc1d969e79f5b36f7a991502417df37bea63","AdminUpdateRedirectMutation":"58ac7bc9b0653a2eb0ff1df7317eefb92eea73f60dc5af7e64cdfaadf7c19731","AdminMakeReleaseLive":"f09d1bf08994771a5812fbab10cc35c074136c56f3a947fd446d1f2a393bc1d9","AdminReleases":"8a72ee8f42e12a7a72260cf6fe9b6bbaee7d695296a21e878cf1196a80000111","AdminCreateRelease":"5853ac63ee8c6f0c73e0bbf96c61c1463c9e8db0a4aaf77624a4bc92e0064d03","AdminListSubgraphs":"7e21e2c649f89e31277158ceab6af158e25ce8ca0c66dab331485ed72e181dfc","AdminSelectSubgraphList":"867c73ab0c102a05db2d31123506cb6973caf9eb19849d7e613068a685187549","AdminSelectSubgraph":"52faf3aa57ac3311a4cf93b5ac60f728f67a1a0601220c77732e632640f38f10","AdminShowSubgraph":"92032e177122bb3ae0bc2ce470ab9f2c03d9a558339708f7e34cd07b7a739d08","UpdateSubgraph":"99c35b5884cff26f3227d22441a021d53924b38555e3ebb3dce6877ceab48a30","AdminTelegramAccounts":"823027a6413d9457b2ea78fdc17e96f3d3d7e65b89c45ba147e9bdee66e614cb","StartTelegramAccountAuth":"f44006ab412fadbcd4f37eafcd67bd4635a0b9e1fdb0a2a420e06479068ce832","CompleteTelegramAccountAuth":"3db8d63d093586f036683377aaf9bb95545bf1594fada4104fb1c2008b702a20","AdminTelegramAccountDialogs":"a4c94e9ec6f808e20c39bf541711ada9569a701c2a7cee02f84de659694cea53","AdminImportTelegramAccountChannel":"aa3d7e56c47f9a8f4b2f3209098106bc3f380ac05439d5a274feaa3d5ed46fdb","AdminTelegramAccountShowDialogsInstantTags":"d9cb29f94cda3f0070d0c6ee92d0ad2944482e89a43373203cf78389ee220c6a","AdminTelegramAccountShowDialogsInstantTagsSave":"3198e5415c24f8e37f0c18669d473c4b5ac956c91b2b52240773ebe56808f8e2","AdminTelegramAccountShowDialogsTags":"c13ef5bf0a56e1626e6dc1da45de3a2a29e23461db35c8b4d77fd6d1bb580c99","AdminTelegramAccountShowDialogsTagsSave":"be25bf420a207a797642454d8f173c0a2799d61c7f3684792a443a25801d2191","AdminSignOutTelegramAccount":"d126faf062d914f8d772ec0929b17c598f822f103e973b1e3fc8354664847cad","AdminTelegramAccountUpdate":"09dabbb216687efbca24568b8814d0405d912891d77ccd9b00f15aaec73c3896","AdminUpdateTelegramAccountMutation":"85f6aa4153aad281a8477f087224c6c61f7ee50bfd7ea9454c08e3391ec18e74","AdminResetTelegramPublishNote":"8b8c0111dc74e29ed18f3b68dcf721756e2d52ad653a11d6e019b3d421f7bc4e","AdminSendTelegramPublishNoteNow":"5b547629781b70847c504811a74f10d8c2cdf488c872033cfb3cb116f6dd7dcd","AdminTelegramPublishNoteCount":"7b72b8fcfc9bde3d6ea209c58f6266a5b027271d8d7c9a7499ef64492cf98cf3","AdminTelegramPublishNotes":"1a2dcf5b167fdada3d83ca707f9afeac488f2f4a995e8b7b4a31061be891bd73","AdminTelegramPublishNote":"1f38b2d7fc924a619f3abd68502ae38963022316b6d85930bf895a3ee3d4bb1c","AdminTgBots":"d7fabe798197e90df76f04f6afe8af9eef1b9da6cae7a6059afa0126c8aeaa92","AdminCreateTgBotMutation":"f8fb2ca52d215f00fbf111f8860b042f6d2adfafe40acd13a2a564cd2904726e","AdminTgBotChats":"710f5f761a43fc1edf9f7754e4b0111ce547fe049a6f078544f3705babe89234","AdminTgbotShowChatsSubgraphs":"a8aab396ad86724e5333e78ad9e71bb3f170700f9e70e6c13760e3dd60d4c7df","AdminTgbotsShowchatsSubgraphsSave":"55a009736a1249932c88ba54268a58ae13b868d0679159bae0c62390c2fb5fca","AdminTgBotInviteChats":"da6a44f35e1ca767093837eebcfe4846bb4674d6f03665302bd444360e098224","AdminTgbotShowInviteChatsSubgraphs":"95eddf5cabffdb9900906b2c4637031b7f2de1441a6c90cf23c75d988aa47d25","AdminTgbotShowInviteChatsSubgraphsSave":"1e871ffcfb0c44803bb02ce90adb3c5444c459c38cf30ef23b4ef04766cbf12c","AdminTgbotShowPublishInstantTags":"0b41ad16a2f936719eee6f209bbe243727aeed842961ef408507307533bfff22","AdminTgbotShowPublishInstantTagsSave":"55845592ad7292229fcd8e90f80b95ae8128dc2394ba2b6f07352912f63932de","AdminTgBotPublishTags":"c75b0f890e59788a0d0076a2e67fe2b74430c201074b13f751a77590a6767012","AdminTgbotShowPublishTags":"9970ddc0b0f15902549a9e824e581c69c9939c1cf241825da97563000ab09ee6","AdminTgbotShowPublishTagsSave":"75e6b0280009d01328280e3a4fd9b93844695308424eaabe6d7eeb923ce999bd","AdminShowTgBot":"6d99ca3f745b6b02a4d8e21e72620eef5d84d27effcbd63ae3055e40797418b3","AdminUpdateTgBotMutation":"0324b130d88743b356749ef9b7d9aaaf2461e08dcf9511d10550c648ff237eb7","AdminListUserBans":"6040d70a10b3382a3831068918a788a213dee3374a9efbf1f74dcf252a7b45e8","AdminBanUser":"c4a45b44b3642384d4e28936d7ddfa82f5b2b4504f873c694be3f0369c545512","AdminUnbanUser":"6d2f4cf8341515d7b6d96df9815f4c72b044e05b77e29ede9e45873ab8efd602","AdminListUsers":"94a761f818704004a943609dd89aa84af34036425d597b779b91b574e13aa46d","AdminCreateUser":"9e8192928cf6ac787508c63ea8ce9dcf820787ecb1dcae0444d5bd4b5d27f94f","AdminSelectUser":"05e7812c9ff639305f6b58c821ffd8697dfa934b995b94e34e5d5edc56675f66","AdminUserShow":"3a1ed51b7f3af071f5e6c8d0c16887dd40cfeaa6f4d999689c4c7236abe7cbc0","AdminUserEditQuery":"e5a4a4da29de00348707415a78c5982d1c7bad95bf43aecff9fe935f9de553ef","AdminUpdateUser":"f79fd3f160176c393f341411c19068223f4cd4d3083382add6eb3eeb654a8b60","AdminListUserSubgraphAccesses":"dcd373f4fc744041cf1d3cd6d96aadc49d2f633305ecde0973283fe5dde1e3b2","AdminCreateUserSubgraphAccess":"001f59f06fd1edbf3f4c77e0925a2a97915a8163dbc378c689059068e7cbf525","AdminUserSubgraphAccess":"cf4b04345f46aa7118228621cb393b6ecf0720159301308ce29a41cfdefb6da0","AdminUpdateUserSubgraphAccess":"fdcb57d0a19494fd015fe16d95c1657e50fa130ff19e2e2dde89a5ab4d1025b7","AdminWaitListEmailRequests":"f7df2fc974a6048b1e8d9e7b839963b14a32e4ecd46d769bb37f3a843be4fc7e","AdminWaitListTgBotRequests":"67ba998693c036677fb6933b96e6a39c905f209e433c653448832e127b8d8aad","SignOut":"ce93de9e93d241aa23f7f1fc875c14a9529ae881014cca4da3844f1f0c9b019d","RequestEmailSignInCode":"092d8a0ea5dd092a91fdfff67ea796bb03a6a86c7951832e55d9dbe034290add","SignInByEmail":"9fd9d325614b814c0c8925114e01bb9e14b32530d359e12ec5dc073f4519358c","OAuthUrls":"6567b3ab126d531e7cf9a2ea9283d32bed4eb4542b89077e577a9460ce0e3c4f","Viewer":"653f9a99dddb2deee894084f53713e9452caea239eb7e087656dbc2aae7c555d","ReaderQuery":"01e92181e52161f23624ca6dc445ac0316c0a8e53253c3e21cf91fd60aa71a7c","CurrentTime":"df99af6371dd0520a058143d364dab687589a342516dc70ef34a167faa0580bf","FavoriteNotes":"95149858dee6f011bbad69b07f10b51110a8ac1f24f849547f7feeed617b4dce","ToggleFavoriteNote":"de3e0de0e3d014e1e9e11daf108e93f204f45dbe7bd90956979e124d1ea76790","PaywallActivePurchaseQuery":"4884e87c0c2a528c8fc7e42c8914c0327d114cbd7be6bf4e719a7c3fbb9fe5fb","CreateEmailWaitListRequestMutation":"f9af5df41fe86e9363f570765ab1833f3ce56a47f1d3fbef54502dfa0f74707a","PaywallQuery":"2a77280606a1905203b68482e752e3b6bad4c0ddf76b7b01cd7f60c9218692fb","CreatePaymentLink":"ac8b21f2dc1e8f8ecdb847d0102b2b6a83dba671692e790f0ab0baf14a4facf4","SiteSearch":"a826bb24b493c8a5e3bc3919c5e9595dd4e2c36d4e0cbf3db3cf30ee2e9819f0","UserSubscriptions":"f703829d1cbd3c9ece3c9f248da8b91ff1bde0dbdff42f0b8ae5faee195a26f0"}
 
 export const $trip2g_graphql_admin_telegram_account_auth_state_enum = AdminTelegramAccountAuthStateEnum;
 
@@ -4874,6 +5021,16 @@ export type $trip2g_graphql_AdminTriggerCronWebhookMutationVariables = AdminTrig
 export type $trip2g_graphql_AdminShowCronWebhookForUpdateVariables = AdminShowCronWebhookForUpdateQueryVariables
 
 export type $trip2g_graphql_AdminUpdateCronWebhookMutationVariables = AdminUpdateCronWebhookMutationMutationVariables
+
+export type $trip2g_graphql_DeleteFrontmatterPatchVariables = DeleteFrontmatterPatchMutationVariables
+
+export type $trip2g_graphql_AdminCreateFrontmatterPatchMutationVariables = AdminCreateFrontmatterPatchMutationMutationVariables
+
+export type $trip2g_graphql_FrontmatterPatchVariables = FrontmatterPatchQueryVariables
+
+export type $trip2g_graphql_AdminUpdateDataFrontmatterPatchVariables = AdminUpdateDataFrontmatterPatchQueryVariables
+
+export type $trip2g_graphql_AdminUpdateFrontmatterPatchVariables = AdminUpdateFrontmatterPatchMutationVariables
 
 export type $trip2g_graphql_DisableGitTokenVariables = DisableGitTokenMutationVariables
 

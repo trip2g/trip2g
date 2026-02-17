@@ -691,6 +691,55 @@ Title модифицируется на этапе `parsePage()`, до `ExtractT
 
 ---
 
+## Отладка: meta inspector на коленке
+
+Чтобы быстро увидеть что реально лежит в frontmatter после применения патчей — создай layout, который выводит raw JSON.
+
+### 1. Создай layout
+
+`_layouts/meta_inspector.html`:
+```
+{{ note.M().Raw() | writeJson }}
+```
+
+Jet template engine имеет встроенный `writeJson`, который сериализует любое значение в JSON и пишет в ответ. `note.M().Raw()` возвращает всю `map[string]interface{}` frontmatter после патчей.
+
+### 2. Укажи layout в заметке
+
+```yaml
+---
+layout: meta_inspector
+title: My Note
+free: false
+---
+```
+
+### 3. Открой страницу
+
+GET `/my-note` вернёт чистый JSON:
+
+```json
+{"free":true,"layout":"meta_inspector","title":"My Note","patch_applied":true}
+```
+
+Видно что патч добавил `free: true` и `patch_applied: true`.
+
+### Использование в e2e тестах
+
+```javascript
+const response = await request.get('/patch_tests/path_based');
+const meta = await response.json();
+expect(meta.patch_applied).toBe(true);
+expect(meta.free).toBe(true);
+```
+
+### Важно
+
+- `Meta.Raw()` возвращает frontmatter **после** применения всех патчей — именно то что попадает в note rendering.
+- Layout `meta_inspector` не нужно добавлять в prod vault, только в тестовый (`testdata/vault/_layouts/`).
+
+---
+
 ## Открытые вопросы / Future
 
 1. **Deep merge mode** — опциональный флаг `deep_merge: true` на патче. Пока не нужен, shallow merge покрывает все текущие use cases.

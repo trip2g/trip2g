@@ -95,6 +95,11 @@ func (m *Meta) GetBool(key string, def bool) bool {
 	}
 }
 
+// Raw returns the underlying raw frontmatter map (for JSON serialization in templates).
+func (m *Meta) Raw() map[string]interface{} {
+	return m.raw
+}
+
 // GetStringSlice returns a string slice or empty slice if not found/wrong type.
 func (m *Meta) GetStringSlice(key string) []string {
 	if m.raw == nil {

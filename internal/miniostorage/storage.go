@@ -29,6 +29,11 @@ type Config struct {
 	UseSSL    bool
 	Prefix    string
 
+	// PublicURL overrides the scheme and host in presigned URLs.
+	// Useful when the SDK connects to an internal endpoint but URLs must use
+	// a public-facing address (e.g. to preserve HTTPS signatures through a CDN).
+	PublicURL string
+
 	URLExpiresIn time.Duration
 
 	InitTimeout time.Duration
@@ -187,6 +192,14 @@ func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (mod
 
 	if err != nil {
 		return model.PresignedURL{}, fmt.Errorf("failed to generate presigned URL: %w", err)
+	}
+
+	if a.config.PublicURL != "" {
+		public, parseErr := url.Parse(a.config.PublicURL)
+		if parseErr == nil {
+			presignedURL.Scheme = public.Scheme
+			presignedURL.Host = public.Host
+		}
 	}
 
 	return model.PresignedURL{

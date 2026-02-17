@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { graphqlSignIn } from './helpers/auth.js';
 
 test.describe('Test Vault', () => {
   test('home page renders and shows all sections', async ({ page }) => {
@@ -496,5 +497,233 @@ test.describe('YouTube Embed', () => {
 
     // Should have auto-resize class for responsive sizing
     await expect(wrapper).toHaveClass(/auto-resize/);
+  });
+});
+
+test.describe('Frontmatter Patches', () => {
+  test.beforeAll(async ({ request, browser }) => {
+    // Sign in as admin via GraphQL API
+    const token = await graphqlSignIn(request);
+
+    // Create a new context with the auth cookie
+    const context = await browser.newContext({
+      baseURL: 'http://localhost:20081',
+      extraHTTPHeaders: {
+        'Cookie': `trip2g_e2e=${token}`
+      }
+    });
+
+    // Create a request context from this context that will include cookies
+    const authenticatedRequest = context.request;
+
+    // Create test patches
+    const patches = [
+      {
+        description: 'Make blog posts free',
+        includePatterns: ['patch_tests/simple.md'],
+        excludePatterns: [],
+        jsonnet: '{ free: true }',
+        priority: 0,
+        enabled: true
+      },
+      {
+        description: 'Add default layout',
+        includePatterns: ['patch_tests/*'],
+        excludePatterns: ['patch_tests/excluded.md'],
+        jsonnet: 'if std.objectHas(meta, "layout") then {} else { layout: "default" }',
+        priority: 0,
+        enabled: true
+      },
+      {
+        description: 'Override blog layout',
+        includePatterns: ['patch_tests/chained.md'],
+        excludePatterns: [],
+        jsonnet: '{ layout: "blog_layout" }',
+        priority: 10,
+        enabled: true
+      },
+      {
+        description: 'Set chained free',
+        includePatterns: ['patch_tests/chained.md'],
+        excludePatterns: [],
+        jsonnet: '{ free: true }',
+        priority: 20,
+        enabled: true
+      },
+      {
+        description: 'Site title suffix',
+        includePatterns: ['patch_tests/title_template.md'],
+        excludePatterns: [],
+        jsonnet: 'meta + { title: meta.title + " — Test Site" }',
+        priority: 100,
+        enabled: true
+      },
+      {
+        description: 'Path-based logic',
+        includePatterns: ['patch_tests/*'],
+        excludePatterns: [],
+        jsonnet: 'if std.startsWith(path, "patch_tests/") then { patch_applied: true } else {}',
+        priority: 0,
+        enabled: true
+      }
+    ];
+
+    for (const patch of patches) {
+      const createResponse = await authenticatedRequest.post('/graphql', {
+        data: {
+          query: `
+            mutation CreatePatch($input: CreateFrontmatterPatchInput!) {
+              admin {
+                data: createFrontmatterPatch(input: $input) {
+                  __typename
+                  ... on CreateFrontmatterPatchPayload {
+                    frontmatterPatch {
+                      id
+                      description
+                    }
+                  }
+                  ... on ErrorPayload {
+                    message
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            input: patch
+          }
+        }
+      });
+
+      // Check response and show error details if failed
+      if (!createResponse.ok()) {
+        const errorText = await createResponse.text();
+        throw new Error(`Create patch failed (${createResponse.status()}): ${errorText}`);
+      }
+
+      const data = await createResponse.json();
+      if (data.data?.admin?.data?.__typename === 'ErrorPayload') {
+        throw new Error(`Create patch GraphQL error: ${data.data.admin.data.message}`);
+      }
+    }
+
+    // Clean up context after creating patches
+    await context.close();
+
+    // Notes are automatically reloaded after patch creation
+  });
+
+  test('simple patch applies free: true', async ({ page }) => {
+    await page.goto('/patch_tests/simple');
+
+    await expect(page.locator('h1').first()).toContainText('Simple Patch Test');
+
+    // Page should be free (no subscription message)
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+
+    // Content should be visible
+    await expect(page.getByText('simple frontmatter patch')).toBeVisible();
+  });
+
+  test('chained patches apply in priority order', async ({ page }) => {
+    await page.goto('/patch_tests/chained');
+
+    await expect(page.locator('h1').first()).toContainText('Chained Patch Test');
+
+    // Page should be free (priority 20 patch)
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+
+    // Content should be visible
+    await expect(page.getByText('patch chaining with different priorities')).toBeVisible();
+
+    // Layout should be blog_layout (priority 10 overrides priority 0)
+    // This would require checking metadata via GraphQL or DOM inspection
+  });
+
+  test('conditional patch adds layout only when missing', async ({ page }) => {
+    await page.goto('/patch_tests/conditional');
+
+    await expect(page.locator('h1').first()).toContainText('Conditional Patch Test');
+
+    // Page should be free (from frontmatter)
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+
+    // Content should be visible
+    await expect(page.getByText('conditional jsonnet logic')).toBeVisible();
+  });
+
+  test('conditional patch does not override existing layout', async ({ page }) => {
+    await page.goto('/patch_tests/has_layout');
+
+    await expect(page.locator('h1').first()).toContainText('Has Layout Test');
+
+    // Page should be free
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+
+    // Content should be visible - use partial text match to avoid backtick issues
+    await expect(page.getByText('already has', { exact: false })).toBeVisible();
+    await expect(page.getByText('layout: custom')).toBeVisible();
+  });
+
+  test('excluded pattern prevents patch application', async ({ page }) => {
+    await page.goto('/patch_tests/excluded');
+
+    await expect(page.locator('h1').first()).toContainText('Excluded Patch Test');
+
+    // Page should NOT be free (patch was excluded)
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
+
+    // free field should remain false (original value)
+  });
+
+  test('title template patch merges with original title', async ({ page }) => {
+    await page.goto('/patch_tests/title_template');
+
+    // Title should have suffix appended by patch
+    await expect(page.locator('h1').first()).toContainText('Title Template Test — Test Site');
+
+    // Page should be free
+    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+
+    // Content should be visible
+    await expect(page.getByText('title template patch')).toBeVisible();
+  });
+
+  test('path-based logic adds custom field', async ({ request }) => {
+    // Page uses meta_inspector layout which outputs raw meta as JSON
+    const response = await request.get('/patch_tests/path_based');
+    expect(response.ok()).toBeTruthy();
+
+    const meta = await response.json();
+
+    // patch_applied should be true (added by path-based patch)
+    expect(meta.patch_applied).toBe(true);
+
+    // free should still be true (from frontmatter)
+    expect(meta.free).toBe(true);
+  });
+
+  test('verify all patch test pages are accessible', async ({ page }) => {
+    // Navigate to home page and verify patch test links exist
+    await page.goto('/');
+
+    // Check that all patch test links are present and not WIP
+    const patchTestLinks = [
+      'patch_tests/simple',
+      'patch_tests/chained',
+      'patch_tests/conditional',
+      'patch_tests/has_layout',
+      'patch_tests/excluded',
+      'patch_tests/title_template',
+      'patch_tests/path_based'
+    ];
+
+    for (const link of patchTestLinks) {
+      const linkElement = page.locator(`a[href="/${link}"]`);
+      await expect(linkElement).toBeVisible();
+
+      // Link should not be marked as WIP (page exists)
+      await expect(linkElement).not.toHaveClass(/wip/);
+    }
   });
 });

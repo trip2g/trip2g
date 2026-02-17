@@ -39,3 +39,81 @@ export async function signInAsAdmin(page) {
 
   return `${sessionCookie.name}=${sessionCookie.value}`;
 }
+
+/**
+ * Sign in via GraphQL API (for request fixture in beforeAll hooks)
+ * @param {import('@playwright/test').APIRequestContext} request
+ * @param {string} email - Email address (default: hello@example.com)
+ * @param {string} code - Auth code (default: 111111 dev code)
+ * @returns {Promise<string>} Bearer token for Authorization header
+ */
+export async function graphqlSignIn(request, email = 'hello@example.com', code = '111111') {
+  // 1. Request email code
+  const requestCodeResponse = await request.post('/graphql', {
+    data: {
+      query: `
+        mutation RequestCode($input: RequestEmailSignInCodeInput!) {
+          requestEmailSignInCode(input: $input) {
+            ... on RequestEmailSignInCodePayload {
+              success
+            }
+            ... on ErrorPayload {
+              message
+            }
+          }
+        }
+      `,
+      variables: {
+        input: { email }
+      }
+    }
+  });
+
+  if (!requestCodeResponse.ok()) {
+    throw new Error(`Request code failed: ${requestCodeResponse.status()}`);
+  }
+
+  const requestCodeData = await requestCodeResponse.json();
+  if (requestCodeData.data.requestEmailSignInCode.__typename === 'ErrorPayload') {
+    throw new Error(`Request code failed: ${requestCodeData.data.requestEmailSignInCode.message}`);
+  }
+
+  // 2. Sign in with code
+  const signInResponse = await request.post('/graphql', {
+    data: {
+      query: `
+        mutation SignIn($input: SignInByEmailInput!) {
+          signInByEmail(input: $input) {
+            ... on SignInPayload {
+              token
+            }
+            ... on ErrorPayload {
+              message
+            }
+          }
+        }
+      `,
+      variables: {
+        input: { email, code }
+      }
+    }
+  });
+
+  if (!signInResponse.ok()) {
+    throw new Error(`Sign in request failed: ${signInResponse.status()}`);
+  }
+
+  const signInData = await signInResponse.json();
+
+  // Check for error payload
+  if (signInData.data.signInByEmail.__typename === 'ErrorPayload') {
+    throw new Error(`Sign in failed: ${signInData.data.signInByEmail.message}`);
+  }
+
+  const token = signInData.data.signInByEmail.token;
+  if (!token) {
+    throw new Error('Sign in succeeded but no token returned');
+  }
+
+  return token;
+}

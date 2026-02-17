@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/admin/createfrontmatterpatch"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -19,6 +20,7 @@ import (
 type Env interface {
 	InsertFrontmatterPatch(ctx context.Context, arg db.InsertFrontmatterPatchParams) (db.NoteFrontmatterPatch, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 type envMock = EnvMock
@@ -55,6 +57,9 @@ func TestResolve(t *testing.T) {
 						CreatedAt:       time.Now(),
 						UpdatedAt:       time.Now(),
 					}, nil
+				},
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
 				},
 			},
 			args: args{
@@ -103,6 +108,9 @@ func TestResolve(t *testing.T) {
 						CreatedAt:       time.Now(),
 						UpdatedAt:       time.Now(),
 					}, nil
+				},
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
 				},
 			},
 			args: args{

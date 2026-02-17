@@ -907,7 +907,7 @@ cat > "$VAULT/_layouts/json-test.html.json" << 'EOF'
     {"type": "html", "html": "</h1>\n</header>\n"},
     {
       "type": "if",
-      "condition": "note.M().GetBool(\"show_sidebar\")",
+      "condition": "note.M().GetBool(\"show_sidebar\", false)",
       "content": [
         {"type": "html", "html": "<aside id=\"json-layout-sidebar\">"},
         {"type": "note_content", "path": "/_json_test_sidebar.md"},
@@ -932,6 +932,9 @@ cat > "$VAULT/_layouts/json-include-missing.html.json" << 'EOF'
     {"type": "html", "html": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>"},
     {"type": "expr", "expr": "note.Title()"},
     {"type": "html", "html": "</title>\n</head>\n<body>\n"},
+    {"type": "html", "html": "<h1>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</h1>\n"},
     {"type": "html", "html": "<div id=\"include-missing-test\">"},
     {"type": "include_note", "path": "/_nonexistent_file.md"},
     {"type": "html", "html": "</div>\n"},
@@ -1435,6 +1438,15 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages
 
+## Frontmatter Patches Tests
+30. [[patch_tests/simple]] - simple patch (free: true)
+31. [[patch_tests/chained]] - chained patches with priorities
+32. [[patch_tests/conditional]] - conditional logic (layout only if missing)
+33. [[patch_tests/has_layout]] - conditional no-op (layout exists)
+34. [[patch_tests/excluded]] - excluded by exclude_patterns
+35. [[patch_tests/title_template]] - title template with meta merge
+36. [[patch_tests/path_based]] - jsonnet path-based logic
+
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
 - `_sidebar.md` - global sidebar
@@ -1481,6 +1493,128 @@ From [[embedding]]:
 ![[_banner]]
 EOF
 
+# ============================================================================
+# Test 9: Frontmatter Patches
+# ============================================================================
+
+mkdir -p "$VAULT"/patch_tests
+
+cat > "$VAULT/patch_tests/simple.md" << 'EOF'
+---
+# Expected patches: "Make blog posts free" (priority 0)
+# Expected meta after patches: { free: true }
+# Original value BEFORE patch:
+free: false
+title: Simple Patch Test
+---
+
+This page tests a simple frontmatter patch that sets `free: true`.
+
+The patch should match pattern `patch_tests/simple.md` and apply `{ free: true }`.
+EOF
+
+cat > "$VAULT/patch_tests/chained.md" << 'EOF'
+---
+# Expected patches: "Add default layout" (priority 0), "Override blog layout" (priority 10)
+# Expected meta after patches: { layout: "blog_layout", free: true }
+# Original frontmatter has no layout field
+free: false
+title: Chained Patch Test
+---
+
+This page tests patch chaining with different priorities.
+
+Patch 1 (priority 0): Sets default layout
+Patch 2 (priority 10): Overrides with blog_layout
+Patch 3 (priority 20): Sets free: true
+
+Final result should have layout="blog_layout" and free=true.
+EOF
+
+cat > "$VAULT/patch_tests/conditional.md" << 'EOF'
+---
+# Expected patches: "Conditional default layout" (priority 0)
+# Expected meta after patches: { layout: "default", free: true }
+# Tests: if std.objectHas(meta, "layout") then {} else { layout: "default" }
+free: true
+title: Conditional Patch Test
+---
+
+This page tests conditional jsonnet logic.
+
+The patch checks `if std.objectHas(meta, "layout")` and only sets layout if missing.
+
+Since this note has no layout in frontmatter, patch should add `layout: "default"`.
+EOF
+
+cat > "$VAULT/patch_tests/has_layout.md" << 'EOF'
+---
+# Expected patches: "Conditional default layout" (priority 0)
+# Expected meta: { layout: "custom", free: true } - layout NOT overridden
+# Tests: conditional should return {} (no-op) when layout already exists
+layout: custom
+free: true
+title: Has Layout Test
+---
+
+This page already has `layout: custom` in frontmatter.
+
+The conditional patch should detect this and return `{}` (no-op).
+
+Final layout should remain "custom", not changed to "default".
+EOF
+
+cat > "$VAULT/patch_tests/excluded.md" << 'EOF'
+---
+# Expected patches: NONE (excluded by exclude_patterns)
+# Expected meta: unchanged from frontmatter
+# Tests: exclude patterns override include patterns
+free: false
+title: Excluded Patch Test
+---
+
+This page matches include pattern `patch_tests/*` BUT is excluded by `exclude_patterns: ["patch_tests/excluded.md"]`.
+
+No patches should be applied. The `free` field should remain `false`.
+EOF
+
+cat > "$VAULT/patch_tests/title_template.md" << 'EOF'
+---
+# Expected patches: "Site title suffix" (priority 100)
+# Expected meta: { title: "Title Template Test — Test Site", free: true }
+# Tests: meta + { title: meta.title + " — Test Site" }
+free: true
+title: Title Template Test
+---
+
+This page tests title template patch using jsonnet expression:
+`meta + { title: meta.title + " — Test Site" }`
+
+The patch should append " — Test Site" to the original title.
+
+Final title should be: "Title Template Test — Test Site"
+EOF
+
+cat > "$VAULT/patch_tests/path_based.md" << 'EOF'
+---
+# Expected patches: "Path-based logic" (priority 0)
+# Expected meta: { patch_applied: true, free: true }
+# Tests: if std.startsWith(path, "patch_tests/") then { patch_applied: true } else {}
+free: true
+layout: meta_inspector
+title: Path-Based Logic Test
+---
+
+This page tests jsonnet logic based on the path variable.
+
+Since path is "patch_tests/path_based.md", patch should add patch_applied: true.
+EOF
+
+# meta_inspector layout: outputs raw frontmatter as JSON (for e2e verification)
+cat > "$VAULT/_layouts/meta_inspector.html" << 'EOF'
+{{ note.M().Raw() | writeJson }}
+EOF
+
 echo ""
 echo "✅ Test vault created successfully!"
 echo ""
@@ -1504,6 +1638,7 @@ echo "   ✓ Redirects"
 echo "   ✓ Headers and block references"
 echo "   ✓ Complex markdown (tables, lists, quotes, tasks)"
 echo "   ✓ Custom slug URL override (relative, absolute, cyrillic, spaces)"
+echo "   ✓ Frontmatter patches (simple, chained, conditional, excluded, title template, path-based)"
 echo ""
 echo "📖 Open vault/_index.md to see all available tests"
 echo ""

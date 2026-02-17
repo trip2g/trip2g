@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -74,6 +73,7 @@ import (
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
@@ -205,8 +205,9 @@ type app struct {
 	timeLocation      *time.Location
 	timeLocationMutex sync.Mutex
 
-	liveNoteLoader   *noteloader.Loader
-	latestNoteLoader *noteloader.Loader
+	liveNoteLoader         *noteloader.Loader
+	latestNoteLoader       *noteloader.Loader
+	frontmatterPatchLoader *frontmatterpatch.Loader
 
 	patreonClientManager *patreon.ClientManager
 	boostyClientManager  *boosty.ClientManager
@@ -373,6 +374,7 @@ func main() {
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.frontmatterPatchLoader = frontmatterpatch.NewLoader(a)
 
 	a.gitAPI, err = gitapi.New(ctx, a.config.GitAPI, a)
 	if err != nil {
@@ -734,52 +736,18 @@ func (a *app) CalculateSha256(s string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func loadFrontmatterPatches(ctx context.Context, queries *db.Queries) ([]frontmatterpatch.CompiledPatch, error) {
-	patches, err := queries.ListEnabledFrontmatterPatches(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list frontmatter patches: %w", err)
-	}
-
-	compiled := make([]frontmatterpatch.CompiledPatch, len(patches))
-	for i, patch := range patches {
-		var includePatterns []string
-		err = json.Unmarshal([]byte(patch.IncludePatterns), &includePatterns)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal include patterns for patch %d: %w", patch.ID, err)
-		}
-
-		var excludePatterns []string
-		err = json.Unmarshal([]byte(patch.ExcludePatterns), &excludePatterns)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal exclude patterns for patch %d: %w", patch.ID, err)
-		}
-
-		compiled[i] = frontmatterpatch.Compile(
-			int(patch.ID),
-			includePatterns,
-			excludePatterns,
-			patch.Jsonnet,
-			int(patch.Priority),
-			patch.Description,
-		)
-	}
-
-	return compiled, nil
+// LoadFrontmatterPatches implements noteloader.Env interface.
+// It delegates to the frontmatterPatchLoader which handles loading and compilation.
+func (a *app) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error) {
+	return a.frontmatterPatchLoader.LoadFrontmatterPatches(ctx)
 }
 
 func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	patches, err := loadFrontmatterPatches(startCtx, a.queries)
-	if err != nil {
-		return fmt.Errorf("failed to load frontmatter patches: %w", err)
-	}
-
-	a.liveNoteLoader.SetFrontmatterPatches(patches)
-	a.latestNoteLoader.SetFrontmatterPatches(patches)
-
-	err = a.liveNoteLoader.Load(startCtx, options)
+	// Patches are now loaded automatically by noteloader.Load()
+	err := a.liveNoteLoader.Load(startCtx, options)
 	if err != nil {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}
@@ -1209,6 +1177,7 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 		options.SkipSearchIndex = true
 	}
 
+	// Patches are now loaded automatically by noteloader.Load()
 	err := a.latestNoteLoader.Load(ctx, options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load latest notes: %w", err)
@@ -2083,7 +2052,11 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 	// graphql.
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 
+	gqlMetrics := metrics.NewGraphQLMetrics()
+
 	gqlHandler := graph.NewHandler(a)
+	gqlHandler.Use(gqlMetrics)
+	gqlHandler.AroundOperations(gqlMetrics.Middleware())
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(gqlHandler)
 	compressedGraphqlHandler := fasthttp.CompressHandler(graphqlHandler)
 
@@ -2160,6 +2133,18 @@ func (a *app) startInternalServer() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	// Prometheus metrics endpoint
+	mux.Handle("/metrics", metrics.Setup())
+
+	// Start metrics updater
+	metricsUpdater := metrics.NewUpdater(a, a.config.Metrics.UpdateInterval)
+	go func() {
+		err := metricsUpdater.Run(a.ctx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			a.log.Error("metrics updater stopped", "error", err)
+		}
+	}()
 
 	// Register pprof endpoints
 	mux.HandleFunc("/debug/pprof/", pprof.Index)

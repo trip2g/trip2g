@@ -330,6 +330,7 @@ type Env interface {
 	deletefrontmatterpatch.Env
 	ListFrontmatterPatches(ctx context.Context) ([]db.NoteFrontmatterPatch, error)
 	FrontmatterPatchByID(ctx context.Context, id int64) (db.NoteFrontmatterPatch, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error)
 
 	// Webhook queries
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)

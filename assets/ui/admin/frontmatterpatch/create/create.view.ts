@@ -11,10 +11,7 @@ namespace $.$$ {
 							}
 						}
 						... on ErrorPayload {
-							error {
-								code
-								message
-							}
+							message
 						}
 					}
 				}
@@ -90,13 +87,13 @@ namespace $.$$ {
 					includePatterns,
 					excludePatterns,
 					jsonnet: this.jsonnet(),
-					priority: this.priority(),
+					priority: this.priority() || 0,
 					enabled: this.enabled(),
 				},
 			})
 
 			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.error.message)
+				this.result(res.admin.data.message)
 				return
 			}
 

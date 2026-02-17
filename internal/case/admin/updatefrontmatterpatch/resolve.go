@@ -10,12 +10,14 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	UpdateFrontmatterPatch(ctx context.Context, arg db.UpdateFrontmatterPatchParams) (db.NoteFrontmatterPatch, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 // Input is an alias for the GraphQL input type.
@@ -30,7 +32,7 @@ func validateRequest(r *Input) *model.ErrorPayload {
 		validation.Field(&r.ID, validation.Required),
 		validation.Field(&r.IncludePatterns, validation.Required, validation.Length(1, 0)),
 		validation.Field(&r.Jsonnet, validation.Required),
-		validation.Field(&r.Priority, validation.Required),
+		// Priority validation removed - 0 and negative values are valid
 		validation.Field(&r.Description, validation.Required),
 	))
 }
@@ -94,6 +96,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	patch, err := env.UpdateFrontmatterPatch(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update frontmatter patch: %w", err)
+	}
+
+	// Reload notes to apply the updated patch.
+	_, err = env.PrepareLatestNotes(ctx, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reload notes after patch update: %w", err)
 	}
 
 	// Define payload as separate variable.

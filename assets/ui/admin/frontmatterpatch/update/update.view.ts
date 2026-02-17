@@ -30,10 +30,7 @@ namespace $.$$ {
 							}
 						}
 						... on ErrorPayload {
-							error {
-								code
-								message
-							}
+							message
 						}
 					}
 				}
@@ -180,7 +177,7 @@ namespace $.$$ {
 			})
 
 			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.error.message)
+				this.result(res.admin.data.message)
 				return
 			}
 

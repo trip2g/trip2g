@@ -52,6 +52,15 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages
 
+## Frontmatter Patches Tests
+30. [[patch_tests/simple]] - simple patch (free: true)
+31. [[patch_tests/chained]] - chained patches with priorities
+32. [[patch_tests/conditional]] - conditional logic (layout only if missing)
+33. [[patch_tests/has_layout]] - conditional no-op (layout exists)
+34. [[patch_tests/excluded]] - excluded by exclude_patterns
+35. [[patch_tests/title_template]] - title template with meta merge
+36. [[patch_tests/path_based]] - jsonnet path-based logic
+
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
 - `_sidebar.md` - global sidebar

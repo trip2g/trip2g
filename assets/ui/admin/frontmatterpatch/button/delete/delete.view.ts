@@ -9,10 +9,7 @@ namespace $.$$ {
 							deletedId
 						}
 						... on ErrorPayload {
-							error {
-								code
-								message
-							}
+							message
 						}
 					}
 				}
@@ -32,7 +29,7 @@ namespace $.$$ {
 			});
 
 			if (res.admin.data.__typename === 'ErrorPayload') {
-				throw new Error(res.admin.data.error.message);
+				throw new Error(res.admin.data.message);
 			}
 
 			if (res.admin.data.__typename === 'DeleteFrontmatterPatchPayload') {

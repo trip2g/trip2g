@@ -109,6 +109,8 @@ type Config struct {
 
 	SimpleBackup SimpleBackupConfig
 
+	Metrics MetricsConfig
+
 	// Features configuration (parsed from JSON)
 	FeaturesJSON string            // Raw JSON from flag/env
 	Features     features.Features // Parsed features
@@ -162,6 +164,7 @@ func DefaultConfig() *Config {
 		LogLevel:     DefaultLogLevel,
 		AcmeDomains:  ArrayFlags{},
 		Storage:      DefaultStorageConfig(),
+		Metrics:      DefaultMetricsConfig(),
 	}
 }
 
@@ -377,6 +380,9 @@ func (c *Config) defineFlags() {
 		dataEncryptionDefaults.Key,
 		"32-byte key for encrypting sensitive data (AES-256)",
 	)
+
+	// Metrics
+	c.defineMetricsFlags()
 }
 
 func (c *Config) defineServerFlags() {
@@ -404,6 +410,7 @@ func (c *Config) defineMinioFlags() {
 	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
 	flag.StringVar(&c.Storage.Prefix, "minio-prefix", c.Storage.Prefix, "MinIO object key prefix")
 	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
+	flag.StringVar(&c.Storage.PublicURL, "minio-public-url", c.Storage.PublicURL, "Override scheme and host in presigned URLs (e.g. https://storage.example.com)")
 	flag.DurationVar(
 		&c.Storage.InitTimeout,
 		"minio-init-timeout",

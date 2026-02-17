@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/admin/createfrontmatterpatch"
 	"trip2g/internal/db"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
@@ -27,6 +28,9 @@ var _ createfrontmatterpatch.Env = &EnvMock{}
 //			InsertFrontmatterPatchFunc: func(ctx context.Context, arg db.InsertFrontmatterPatchParams) (db.NoteFrontmatterPatch, error) {
 //				panic("mock out the InsertFrontmatterPatch method")
 //			},
+//			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+//				panic("mock out the PrepareLatestNotes method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires createfrontmatterpatch.Env
@@ -39,6 +43,9 @@ type EnvMock struct {
 
 	// InsertFrontmatterPatchFunc mocks the InsertFrontmatterPatch method.
 	InsertFrontmatterPatchFunc func(ctx context.Context, arg db.InsertFrontmatterPatchParams) (db.NoteFrontmatterPatch, error)
+
+	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
+	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -54,9 +61,17 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertFrontmatterPatchParams
 		}
+		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
+		PrepareLatestNotes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Partial is the partial argument value.
+			Partial bool
+		}
 	}
 	lockCurrentAdminUserToken  sync.RWMutex
 	lockInsertFrontmatterPatch sync.RWMutex
+	lockPrepareLatestNotes     sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -124,5 +139,41 @@ func (mock *EnvMock) InsertFrontmatterPatchCalls() []struct {
 	mock.lockInsertFrontmatterPatch.RLock()
 	calls = mock.calls.InsertFrontmatterPatch
 	mock.lockInsertFrontmatterPatch.RUnlock()
+	return calls
+}
+
+// PrepareLatestNotes calls PrepareLatestNotesFunc.
+func (mock *EnvMock) PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+	if mock.PrepareLatestNotesFunc == nil {
+		panic("EnvMock.PrepareLatestNotesFunc: method is nil but Env.PrepareLatestNotes was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Partial bool
+	}{
+		Ctx:     ctx,
+		Partial: partial,
+	}
+	mock.lockPrepareLatestNotes.Lock()
+	mock.calls.PrepareLatestNotes = append(mock.calls.PrepareLatestNotes, callInfo)
+	mock.lockPrepareLatestNotes.Unlock()
+	return mock.PrepareLatestNotesFunc(ctx, partial)
+}
+
+// PrepareLatestNotesCalls gets all the calls that were made to PrepareLatestNotes.
+// Check the length with:
+//
+//	len(mockedEnv.PrepareLatestNotesCalls())
+func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
+	Ctx     context.Context
+	Partial bool
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Partial bool
+	}
+	mock.lockPrepareLatestNotes.RLock()
+	calls = mock.calls.PrepareLatestNotes
+	mock.lockPrepareLatestNotes.RUnlock()
 	return calls
 }

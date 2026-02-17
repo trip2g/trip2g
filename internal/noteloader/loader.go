@@ -50,6 +50,9 @@ type Env interface {
 	Logger() logger.Logger
 	Now() time.Time
 
+	// LoadFrontmatterPatches loads and compiles frontmatter patches from database
+	LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error)
+
 	layoutloader.Env
 }
 
@@ -93,6 +96,13 @@ type LoadOptions struct {
 
 //nolint:gocognit // complex loading logic with multiple data sources
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
+	// Load frontmatter patches from database before loading notes
+	patches, err := l.env.LoadFrontmatterPatches(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load frontmatter patches: %w", err)
+	}
+	l.frontmatterPatches = patches
+
 	notes, err := l.env.RawNotes(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get notes: %w", err)

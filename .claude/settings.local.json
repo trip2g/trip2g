@@ -54,7 +54,12 @@
       "Edit",
       "Bash(golangci-lint run:*)",
       "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page"
+      "mcp__chrome-devtools__navigate_page",
+      "Bash(internal/case/signinbyhat/resolve.go:*)",
+      "Bash(internal/case/signinbyhat/resolve_test.go:*)",
+      "Bash(docs/hat.md:*)",
+      "Bash(go mod edit:*)",
+      "Bash(go mod tidy:*)"
     ],
     "deny": []
   },

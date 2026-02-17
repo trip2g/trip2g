@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/case/admin/deletefrontmatterpatch"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -17,6 +18,7 @@ import (
 type Env interface {
 	DeleteFrontmatterPatch(ctx context.Context, id int64) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 type envMock = EnvMock
@@ -42,6 +44,9 @@ func TestResolve(t *testing.T) {
 				},
 				DeleteFrontmatterPatchFunc: func(ctx context.Context, id int64) error {
 					return nil
+				},
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
 				},
 			},
 			args: args{

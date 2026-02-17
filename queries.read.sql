@@ -1210,3 +1210,21 @@ select * from note_frontmatter_patches where enabled = true order by priority as
 
 -- name: FrontmatterPatchByID :one
 select * from note_frontmatter_patches where id = ?;
+
+-- name: CountNotePaths :one
+select count(*) from note_paths where hidden_by is null;
+
+-- name: CountAllNotePaths :one
+select count(*) from note_paths;
+
+-- name: CountVisibleNotePaths :one
+select count(*) from note_paths where hidden_by is null;
+
+-- name: CountNoteVersions :one
+select count(*) from note_versions;
+
+-- name: SumNoteAssetsSizes :one
+select cast(coalesce(sum(size), 0) as integer) from note_assets;
+
+-- name: CountNoteAssets :one
+select count(*) from note_assets;

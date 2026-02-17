@@ -22,6 +22,7 @@
       - { service_name: trip2g_founder, listen_addr: "localhost:8092", domain: "keeper.trip2g.com" }
       - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", domain: "internaldev.trip2g.com" }
       - { service_name: trip2g_ns, listen_addr: "localhost:8094", domain: "ns.trip2g.com" }
+      - { service_name: trip2g_yuriysann, listen_addr: "localhost:8095", domain: "yuriysann.trip2g.com" }
       # - { service_name: trip2g_sn, listen_addr: "localhost:8089", domain: "sn.trip2g.com" }
   tasks:
     - name: Create trip2g user
@@ -111,16 +112,16 @@
         state: directory
         mode: '0755'
 
-    - name: Upload app binary
-      notify:
-        - Reload systemd
-        - Restart service
-      copy:
-        src: ../tmp/amd64
-        dest: "{{ app_dir }}/bin/app"
-        owner: root
-        group: root
-        mode: '0755'
+    # - name: Upload app binary
+    #   notify:
+    #     - Reload systemd
+    #     - Restart service
+    #   copy:
+    #     src: ../tmp/amd64
+    #     dest: "{{ app_dir }}/bin/app"
+    #     owner: root
+    #     group: root
+    #     mode: '0755'
 
     - name: Generate systemd unit
       notify:

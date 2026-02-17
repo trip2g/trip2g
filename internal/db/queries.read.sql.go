@@ -1112,12 +1112,67 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	return count, err
 }
 
+const countAllNotePaths = `-- name: CountAllNotePaths :one
+select count(*) from note_paths
+`
+
+func (q *Queries) CountAllNotePaths(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAllNotePaths)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countNoteAssets = `-- name: CountNoteAssets :one
+select count(*) from note_assets
+`
+
+func (q *Queries) CountNoteAssets(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countNoteAssets)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countNotePaths = `-- name: CountNotePaths :one
+select count(*) from note_paths where hidden_by is null
+`
+
+func (q *Queries) CountNotePaths(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countNotePaths)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countNoteVersions = `-- name: CountNoteVersions :one
+select count(*) from note_versions
+`
+
+func (q *Queries) CountNoteVersions(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countNoteVersions)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countUserSubgraphAccessByPurchaseID = `-- name: CountUserSubgraphAccessByPurchaseID :one
 select count(*) from user_subgraph_accesses where purchase_id = ?
 `
 
 func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID *string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUserSubgraphAccessByPurchaseID, purchaseID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countVisibleNotePaths = `-- name: CountVisibleNotePaths :one
+select count(*) from note_paths where hidden_by is null
+`
+
+func (q *Queries) CountVisibleNotePaths(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countVisibleNotePaths)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -5744,6 +5799,17 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.ShowUnsubgraphNotesForPaidUsers,
 	)
 	return i, err
+}
+
+const sumNoteAssetsSizes = `-- name: SumNoteAssetsSizes :one
+select cast(coalesce(sum(size), 0) as integer) from note_assets
+`
+
+func (q *Queries) SumNoteAssetsSizes(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, sumNoteAssetsSizes)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const telegramPublishTagByLabel = `-- name: TelegramPublishTagByLabel :one

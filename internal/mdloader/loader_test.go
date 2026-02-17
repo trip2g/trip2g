@@ -3,6 +3,7 @@ package mdloader_test
 import (
 	"strings"
 	"testing"
+	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
@@ -1552,4 +1553,71 @@ func TestInLinksWithCachedAST(t *testing.T) {
 	}
 	require.Equal(t, expectedInLinks, pages2.Map["/note_a"].InLinks,
 		"note_a should have InLinks from both note_b and note_c after cached reload")
+}
+
+// TestFrontmatterPatchNotDoubledOnCacheHit verifies that a frontmatter patch
+// (e.g. title suffix) is applied exactly once even when NoteCache returns a
+// cached NoteView on subsequent loads.
+//
+// Regression: cached.RawMeta already contained the patched title, so the
+// patch was applied again on every reload — accumulating "— Site" N times.
+func TestFrontmatterPatchNotDoubledOnCacheHit(t *testing.T) {
+	log := logger.TestLogger{}
+
+	noteContent := []byte("---\ntitle: Original Title\nfree: true\n---\nContent")
+
+	source := mdloader.SourceFile{
+		Path:    "post.md",
+		Content: noteContent,
+	}
+
+	patch := frontmatterpatch.Compile(1, []string{"*"}, nil, `meta + { title: meta.title + " — Site" }`, 0, "title suffix")
+
+	makeNoteCache := func(prev *model.NoteViews) func(mdloader.SourceFile) *model.NoteView {
+		return func(src mdloader.SourceFile) *model.NoteView {
+			if prev == nil {
+				return nil
+			}
+			old, ok := prev.PathMap[src.Path]
+			if !ok {
+				return nil
+			}
+			if string(old.Content) == string(src.Content) {
+				return old
+			}
+			return nil
+		}
+	}
+
+	// First load — no cache
+	pages1, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{source},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Original Title — Site", pages1.PathMap["post.md"].Title,
+		"patch should be applied once on first load")
+
+	// Second load — same content, NoteCache will hit
+	pages2, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{source},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+		NoteCache:          makeNoteCache(pages1),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Original Title — Site", pages2.PathMap["post.md"].Title,
+		"patch must NOT be applied twice on cached reload")
+
+	// Third load — same content, NoteCache will hit again
+	pages3, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{source},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+		NoteCache:          makeNoteCache(pages2),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Original Title — Site", pages3.PathMap["post.md"].Title,
+		"patch must NOT accumulate on third cached reload")
 }

@@ -136,8 +136,9 @@ type NoteView struct {
 
 	Description *string // meta description for SEO
 
-	InLinks map[string]struct{} // permlinks of notes linking to this note
-	RawMeta map[string]interface{}
+	InLinks         map[string]struct{} // permlinks of notes linking to this note
+	RawMeta         map[string]interface{}
+	OriginalRawMeta map[string]interface{} // RawMeta before patches, used to re-apply patches correctly on cached reloads
 
 	ResolvedLinks map[string]string // local link to absolute link mapping
 
