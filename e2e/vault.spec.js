@@ -516,6 +516,23 @@ test.describe('Frontmatter Patches', () => {
     // Create a request context from this context that will include cookies
     const authenticatedRequest = context.request;
 
+    // Delete all existing patches to avoid accumulation across test runs
+    const listResponse = await authenticatedRequest.post('/graphql', {
+      data: {
+        query: `{ admin { allFrontmatterPatches { nodes { id } } } }`
+      }
+    });
+    const listData = await listResponse.json();
+    const existingIds = listData.data?.admin?.allFrontmatterPatches?.nodes?.map(n => n.id) ?? [];
+    for (const id of existingIds) {
+      await authenticatedRequest.post('/graphql', {
+        data: {
+          query: `mutation($input: DeleteFrontmatterPatchInput!) { admin { deleteFrontmatterPatch(input: $input) { __typename } } }`,
+          variables: { input: { id } }
+        }
+      });
+    }
+
     // Create test patches
     const patches = [
       {
