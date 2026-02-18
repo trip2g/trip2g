@@ -66,3 +66,57 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+// GenerateForDomain creates a sitemap for a specific custom domain.
+// Includes notes accessible on this domain (from RouteMap[domain]).
+// Only free notes are included.
+func GenerateForDomain(nvs *model.NoteViews, domain, baseURL string) ([]byte, error) {
+	routes, ok := nvs.RouteMap[domain]
+	if !ok {
+		return nil, nil
+	}
+
+	var urls []urlEntry
+
+	for path, note := range routes {
+		if !note.Free {
+			continue
+		}
+
+		if strings.Contains(path, "/_") {
+			continue
+		}
+
+		entry := urlEntry{
+			Loc: baseURL + path,
+		}
+
+		if !note.CreatedAt.IsZero() {
+			entry.LastMod = note.CreatedAt.Format(time.RFC3339)
+		}
+
+		urls = append(urls, entry)
+	}
+
+	if len(urls) == 0 {
+		return nil, nil
+	}
+
+	set := urlset{
+		XMLNS: xmlns,
+		URLs:  urls,
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
+
+	err := enc.Encode(set)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}

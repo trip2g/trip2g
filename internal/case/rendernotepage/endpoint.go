@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 
 	"github.com/CloudyKit/jet/v6"
@@ -25,10 +27,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	request := Request{
-		Path:     string(req.Req.URI().Path()),
-		Version:  string(req.Req.QueryArgs().Peek("version")),
-		Referrer: string(req.Req.Request.Header.Peek("Referer")),
-
+		Path:      string(req.Req.URI().Path()),
+		Version:   string(req.Req.QueryArgs().Peek("version")),
+		Referrer:  string(req.Req.Request.Header.Peek("Referer")),
+		Host:      string(req.Req.Host()),
 		UserToken: token,
 	}
 
@@ -46,18 +48,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
-
-		layoutParams.OGTags = map[string]string{
-			"og:url":  env.PublicURL() + resp.Note.Permalink,
-			"og:type": "article",
-		}
-
-		if resp.Note.FirstImage != nil {
-			assetReplace, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
-			if ok && assetReplace != nil {
-				layoutParams.OGTags["og:image"] = assetReplace.URL
-			}
-		}
+		layoutParams.OGTags = buildOGTags(req, env, resp)
 	}
 
 	if resp.Note != nil && resp.Note.Redirect != nil {
@@ -195,4 +186,77 @@ func renderLayout(
 	}
 
 	return true, nil
+}
+
+// buildOGTags constructs Open Graph metadata for a rendered note.
+// On custom domains it uses the domain-specific route URL rather than the canonical permalink.
+func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string {
+	ogBaseURL, ogPath := ogURLForNote(req, env, resp.Note)
+
+	tags := map[string]string{
+		"og:url":  ogBaseURL + ogPath,
+		"og:type": "article",
+	}
+
+	if resp.Note.FirstImage != nil {
+		assetReplace, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
+		if ok && assetReplace != nil {
+			tags["og:image"] = assetReplace.URL
+		}
+	}
+
+	return tags
+}
+
+// ogURLForNote returns the base URL and path to use for og:url.
+// On custom domains the domain-specific route URL is preferred over the canonical permalink.
+func ogURLForNote(req *appreq.Request, env Env, note *model.NoteView) (string, string) {
+	publicURL := env.PublicURL()
+	permalink := note.Permalink
+
+	requestHost := model.NormalizeDomain(string(req.Req.Host()))
+	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
+
+	if requestHost == mainHost || requestHost == "" {
+		return publicURL, permalink
+	}
+
+	// Custom domain request: find the best matching route.
+	r := findRouteForHost(note.Routes, requestHost, string(req.Req.URI().Path()))
+	if r == nil {
+		return publicURL, permalink
+	}
+
+	scheme := "https"
+	if strings.HasPrefix(publicURL, "http://") {
+		scheme = "http"
+	}
+
+	routePath := permalink
+	if r.Path != "" {
+		routePath = r.Path
+	}
+
+	return scheme + "://" + string(req.Req.Host()), routePath
+}
+
+// findRouteForHost finds the best ParsedRoute for a given host and request path.
+// Prefers an exact host+path match; falls back to the first host-only match.
+func findRouteForHost(routes []model.ParsedRoute, host, requestPath string) *model.ParsedRoute {
+	var firstMatch *model.ParsedRoute
+
+	for i := range routes {
+		r := &routes[i]
+		if r.Host != host {
+			continue
+		}
+		if firstMatch == nil {
+			firstMatch = r
+		}
+		if r.Path == requestPath {
+			return r
+		}
+	}
+
+	return firstMatch
 }

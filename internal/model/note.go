@@ -177,6 +177,11 @@ type NoteView struct {
 	RSSTitle       string
 	RSSDescription string
 
+	// Routes holds the parsed routes for this note.
+	// Populated from frontmatter "route" (string) or "routes" ([]string).
+	// Does NOT affect Permalink or nv.Map. Only populates RouteMap.
+	Routes []ParsedRoute
+
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`
 }
@@ -199,6 +204,16 @@ type NoteViews struct {
 	Sitemap []byte `json:"-"`
 
 	Subgraphs map[string]*NoteSubgraph `json:"-"`
+
+	// RouteMap indexes notes by host -> path -> *NoteView.
+	// host="" for main domain alias routes.
+	// host="foo.com" for custom domain routes.
+	// Only notes with explicit "route"/"routes" frontmatter are indexed here.
+	RouteMap map[string]map[string]*NoteView
+
+	// DomainSitemaps stores pre-generated sitemaps for each custom domain.
+	// Key = normalized domain (e.g., "foo.com").
+	DomainSitemaps map[string][]byte `json:"-"`
 
 	Version string
 }
@@ -423,6 +438,8 @@ func (n *NoteView) ExtractMetaData() error {
 	n.extractMCPFields()
 
 	n.extractRSSFields()
+
+	n.Routes = n.ExtractRoutes()
 
 	return nil
 }
@@ -777,11 +794,11 @@ func (n *NoteView) ExtractTitle() string {
 
 func NewNoteViews() *NoteViews {
 	return &NoteViews{
-		Map: make(map[string]*NoteView),
-
-		PathMap: make(map[string]*NoteView),
-
-		Subgraphs: make(map[string]*NoteSubgraph),
+		Map:            make(map[string]*NoteView),
+		PathMap:        make(map[string]*NoteView),
+		Subgraphs:      make(map[string]*NoteSubgraph),
+		RouteMap:       make(map[string]map[string]*NoteView),
+		DomainSitemaps: make(map[string][]byte),
 	}
 }
 
@@ -1035,6 +1052,50 @@ func (nv *NoteViews) RegisterNote(note *NoteView) {
 			nv.Map[note.Permalink+"/index"] = note
 		}
 	}
+
+	nv.RegisterNoteRoutes(note)
+}
+
+// GetByRoute looks up a note by host and path in RouteMap.
+func (nv *NoteViews) GetByRoute(host, path string) *NoteView {
+	routes, ok := nv.RouteMap[host]
+	if !ok {
+		return nil
+	}
+	return routes[path]
+}
+
+// RegisterNoteRoutes populates RouteMap for a note.
+// Nil-safe: initializes RouteMap if needed.
+func (nv *NoteViews) RegisterNoteRoutes(note *NoteView) {
+	if len(note.Routes) == 0 {
+		return
+	}
+	if nv.RouteMap == nil {
+		nv.RouteMap = make(map[string]map[string]*NoteView)
+	}
+	for _, r := range note.Routes {
+		if nv.RouteMap[r.Host] == nil {
+			nv.RouteMap[r.Host] = make(map[string]*NoteView)
+		}
+		// Empty Path means "use note's own Permalink" (set when user writes "foo.com" without path).
+		path := r.Path
+		if path == "" {
+			path = note.Permalink
+		}
+		nv.RouteMap[r.Host][path] = note
+	}
+}
+
+// CustomDomains returns all non-empty hosts declared in RouteMap.
+func (nv *NoteViews) CustomDomains() []string {
+	var domains []string
+	for host := range nv.RouteMap {
+		if host != "" {
+			domains = append(domains, host)
+		}
+	}
+	return domains
 }
 
 // countWordsForReadingTime counts words in a single pass, skipping code blocks.

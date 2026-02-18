@@ -384,6 +384,23 @@ func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
 
 	nvs.Sitemap = sitemapBytes
 
+	// Generate per-domain sitemaps.
+	scheme := "https"
+	if strings.HasPrefix(l.env.PublicURL(), "http://") {
+		scheme = "http"
+	}
+	for _, domain := range nvs.CustomDomains() {
+		domainURL := scheme + "://" + domain
+		domainSitemap, domainErr := sitemap.GenerateForDomain(nvs, domain, domainURL)
+		if domainErr != nil {
+			l.log.Warn("failed to generate domain sitemap", "domain", domain, "err", domainErr)
+			continue
+		}
+		if len(domainSitemap) > 0 {
+			nvs.DomainSitemaps[domain] = domainSitemap
+		}
+	}
+
 	return nil
 }
 

@@ -1615,6 +1615,50 @@ cat > "$VAULT/_layouts/meta_inspector.html" << 'EOF'
 {{ note.M().Raw() | writeJson }}
 EOF
 
+# ============================================================================
+# Multi-domain routing tests
+# ============================================================================
+
+mkdir -p "$VAULT/multidomain"
+
+cat > "$VAULT/multidomain/root.md" << 'EOF'
+---
+free: true
+title: Custom Domain Root
+route: customdomain.test/
+---
+This is the root page on the custom domain.
+EOF
+
+cat > "$VAULT/multidomain/about.md" << 'EOF'
+---
+free: true
+title: Custom Domain About
+route: customdomain.test/about
+---
+About page on the custom domain.
+EOF
+
+cat > "$VAULT/multidomain/multi_route.md" << 'EOF'
+---
+free: true
+title: Multi-Route Note
+routes:
+  - customdomain.test/multi
+  - /multi-alias
+---
+This note is accessible via two routes.
+EOF
+
+cat > "$VAULT/multidomain/no_route.md" << 'EOF'
+---
+free: true
+title: No Route — Patch Target
+---
+This note has no route in frontmatter.
+A frontmatter patch will add: route customdomain.test/patch-target
+EOF
+
 echo ""
 echo "✅ Test vault created successfully!"
 echo ""
@@ -1639,6 +1683,7 @@ echo "   ✓ Headers and block references"
 echo "   ✓ Complex markdown (tables, lists, quotes, tasks)"
 echo "   ✓ Custom slug URL override (relative, absolute, cyrillic, spaces)"
 echo "   ✓ Frontmatter patches (simple, chained, conditional, excluded, title template, path-based)"
+echo "   ✓ Multi-domain routing (route/routes frontmatter, custom domain)"
 echo ""
 echo "📖 Open vault/_index.md to see all available tests"
 echo ""

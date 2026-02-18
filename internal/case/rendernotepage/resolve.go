@@ -41,6 +41,8 @@ type Request struct {
 
 	Referrer string
 
+	Host string
+
 	UserToken *usertoken.Data
 }
 
@@ -148,7 +150,12 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return &response, nil
 	}
 
-	note := notes.GetByPath(path)
+	// Only resolve publicURL when host is present (avoids unnecessary call for main-domain requests).
+	var publicURL string
+	if request.Host != "" {
+		publicURL = env.PublicURL()
+	}
+	note := resolveNote(notes, request.Host, path, publicURL)
 	if note == nil {
 		return &response, ErrNotFound
 	}
@@ -319,4 +326,27 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
 // Template must contain %s which will be replaced with the note title.
 func formatTitle(noteTitle, template string) string {
 	return fmt.Sprintf(template, noteTitle)
+}
+
+// resolveNote looks up a note using domain-aware routing.
+// On the main domain: checks RouteMap[""] alias routes first, then nv.Map.
+// On a custom domain: checks RouteMap[host] only, then nv.Map.
+func resolveNote(notes *model.NoteViews, host, path, publicURL string) *model.NoteView {
+	normalizedHost := model.NormalizeDomain(host)
+	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
+
+	if normalizedHost == mainHost || normalizedHost == "" {
+		// Main domain: check RouteMap[""] first (alias routes), then nv.Map.
+		if note := notes.GetByRoute("", path); note != nil {
+			return note
+		}
+	} else {
+		// Custom domain: check RouteMap[host] only (no main domain alias fallback).
+		if note := notes.GetByRoute(normalizedHost, path); note != nil {
+			return note
+		}
+	}
+
+	// Fallback: permalink-based lookup (works for both main and custom domain).
+	return notes.GetByPath(path)
 }

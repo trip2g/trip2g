@@ -483,6 +483,208 @@ func TestNoteViewHeadings_Normalize(t *testing.T) {
 	}
 }
 
+func TestParseRoute(t *testing.T) {
+	cases := []struct {
+		input    string
+		wantHost string
+		wantPath string
+	}{
+		{"/about", "", "/about"},
+		{"/", "", "/"},
+		{"foo.com", "foo.com", ""},
+		{"foo.com/", "foo.com", "/"},
+		{"foo.com/hello", "foo.com", "/hello"},
+		{"www.foo.com/", "foo.com", "/"},
+		{"FOO.COM/", "foo.com", "/"},
+		{"localhost:8081/path", "localhost:8081", "/path"},
+		{"  /about  ", "", "/about"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			r := ParseRoute(tc.input)
+			require.Equal(t, tc.wantHost, r.Host)
+			require.Equal(t, tc.wantPath, r.Path)
+		})
+	}
+}
+
+func TestNormalizeDomain(t *testing.T) {
+	require.Equal(t, "foo.com", NormalizeDomain("www.foo.com"))
+	require.Equal(t, "foo.com", NormalizeDomain("FOO.COM"))
+	require.Equal(t, "foo.com", NormalizeDomain("  foo.com  "))
+	require.Equal(t, "foo.com", NormalizeDomain("www.FOO.COM"))
+}
+
+func TestExtractRoutes_Single(t *testing.T) {
+	note := &NoteView{
+		RawMeta: map[string]interface{}{
+			"route": "/about",
+		},
+	}
+	routes := note.ExtractRoutes()
+	require.Len(t, routes, 1)
+	require.Empty(t, routes[0].Host)
+	require.Equal(t, "/about", routes[0].Path)
+}
+
+func TestExtractRoutes_Multiple(t *testing.T) {
+	note := &NoteView{
+		RawMeta: map[string]interface{}{
+			"routes": []interface{}{"/alias", "foo.com/"},
+		},
+	}
+	routes := note.ExtractRoutes()
+	require.Len(t, routes, 2)
+	require.Empty(t, routes[0].Host)
+	require.Equal(t, "/alias", routes[0].Path)
+	require.Equal(t, "foo.com", routes[1].Host)
+	require.Equal(t, "/", routes[1].Path)
+}
+
+func TestExtractRoutes_Mixed(t *testing.T) {
+	note := &NoteView{
+		RawMeta: map[string]interface{}{
+			"route":  "/my-alias",
+			"routes": []interface{}{"foo.com/", "bar.com/landing"},
+		},
+	}
+	routes := note.ExtractRoutes()
+	require.Len(t, routes, 3)
+}
+
+func TestExtractRoutes_Empty(t *testing.T) {
+	note := &NoteView{
+		RawMeta: map[string]interface{}{},
+	}
+	routes := note.ExtractRoutes()
+	require.Empty(t, routes)
+}
+
+func TestExtractRoutes_Deduplication(t *testing.T) {
+	note := &NoteView{
+		RawMeta: map[string]interface{}{
+			"route":  "/about",
+			"routes": []interface{}{"/about"},
+		},
+	}
+	routes := note.ExtractRoutes()
+	require.Len(t, routes, 1)
+}
+
+func TestRouteMap_Registration(t *testing.T) {
+	nvs := NewNoteViews()
+	note := &NoteView{
+		Permalink:         "/my-note",
+		PermalinkOriginal: "/my-note",
+		Path:              "my-note.md",
+		Routes: []ParsedRoute{
+			{Host: "", Path: "/alias"},
+			{Host: "foo.com", Path: "/"},
+		},
+	}
+	nvs.RegisterNote(note)
+	require.Equal(t, note, nvs.RouteMap[""]["/alias"])
+	require.Equal(t, note, nvs.RouteMap["foo.com"]["/"])
+}
+
+func TestRouteMap_EmptyPath_UsesPermalink(t *testing.T) {
+	nvs := NewNoteViews()
+	note := &NoteView{
+		Permalink:         "/my-note",
+		PermalinkOriginal: "/my-note",
+		Path:              "my-note.md",
+		Routes: []ParsedRoute{
+			{Host: "foo.com", Path: ""},
+		},
+	}
+	nvs.RegisterNote(note)
+	// When Path is "", the note's Permalink is used as the key
+	require.Equal(t, note, nvs.RouteMap["foo.com"]["/my-note"])
+}
+
+func TestGetByRoute(t *testing.T) {
+	nvs := NewNoteViews()
+	note := &NoteView{
+		Permalink:         "/note",
+		PermalinkOriginal: "/note",
+		Path:              "note.md",
+		Routes:            []ParsedRoute{{Host: "foo.com", Path: "/"}},
+	}
+	nvs.RegisterNote(note)
+
+	require.Equal(t, note, nvs.GetByRoute("foo.com", "/"))
+	require.Nil(t, nvs.GetByRoute("bar.com", "/"))
+	require.Nil(t, nvs.GetByRoute("foo.com", "/other"))
+}
+
+func TestCustomDomains(t *testing.T) {
+	nvs := NewNoteViews()
+	note := &NoteView{
+		Permalink:         "/note",
+		PermalinkOriginal: "/note",
+		Path:              "note.md",
+		Routes: []ParsedRoute{
+			{Host: "", Path: "/alias"},   // main domain
+			{Host: "foo.com", Path: "/"}, // custom
+			{Host: "bar.com", Path: "/"}, // custom
+		},
+	}
+	nvs.RegisterNote(note)
+	domains := nvs.CustomDomains()
+	require.Len(t, domains, 2)
+	require.Contains(t, domains, "foo.com")
+	require.Contains(t, domains, "bar.com")
+}
+
+func TestSlugUnchanged(t *testing.T) {
+	// slug changes Permalink, route does NOT affect nv.Map
+	nvs := NewNoteViews()
+	note := &NoteView{
+		Path: "my-note.md",
+		Slug: "/custom-url",
+		RawMeta: map[string]interface{}{
+			"route": "/alias",
+		},
+	}
+	note.PreparePermalink()
+	note.Routes = note.ExtractRoutes()
+	nvs.RegisterNote(note)
+
+	// slug changed the permalink
+	require.Equal(t, "/custom-url", note.Permalink)
+	// note is in nv.Map under /custom-url
+	require.Equal(t, note, nvs.Map["/custom-url"])
+	// route alias is in RouteMap, not nv.Map
+	require.Equal(t, note, nvs.RouteMap[""]["/alias"])
+	require.Nil(t, nvs.Map["/alias"])
+}
+
+func TestNoCollision_IndexAndRouteRoot(t *testing.T) {
+	// A note with route: / does NOT overwrite nv.Map["/"] from _index.md
+	nvs := NewNoteViews()
+
+	indexNote := &NoteView{
+		Path:              "_index.md",
+		Permalink:         "/",
+		PermalinkOriginal: "/",
+		IsIndex:           true,
+	}
+	nvs.RegisterNote(indexNote)
+
+	routeNote := &NoteView{
+		Path:              "about.md",
+		Permalink:         "/about",
+		PermalinkOriginal: "/about",
+		Routes:            []ParsedRoute{{Host: "", Path: "/"}},
+	}
+	nvs.RegisterNote(routeNote)
+
+	// nv.Map["/"] is still _index.md (route doesn't touch Map)
+	require.Equal(t, indexNote, nvs.Map["/"])
+	// But RouteMap[""]["/"] = routeNote (route wins for RouteMap)
+	require.Equal(t, routeNote, nvs.RouteMap[""]["/"])
+}
+
 func TestNoteViewsRegisterRegularNote(t *testing.T) {
 	nv := NoteViews{
 		Map:     map[string]*NoteView{},

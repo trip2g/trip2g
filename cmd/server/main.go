@@ -1873,6 +1873,21 @@ func (a *app) handleSitemap(req *appreq.Request) bool {
 		return false
 	}
 
+	// Check if this is a custom domain request.
+	host := model.NormalizeDomain(string(req.Req.Host()))
+	mainHost := model.NormalizeDomain(model.ExtractHost(a.PublicURL()))
+	if host != mainHost && host != "" {
+		nvs := a.LiveNoteViews()
+		if nvs != nil {
+			if domainSitemap, ok := nvs.DomainSitemaps[host]; ok && len(domainSitemap) > 0 {
+				req.Req.SetContentType("application/xml; charset=utf-8")
+				req.Req.SetStatusCode(http.StatusOK)
+				req.Req.Response.SetBody(domainSitemap)
+				return true
+			}
+		}
+	}
+
 	nvs := a.LiveNoteViews()
 	if nvs == nil || len(nvs.Sitemap) == 0 {
 		return false

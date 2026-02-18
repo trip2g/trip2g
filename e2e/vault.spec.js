@@ -501,36 +501,27 @@ test.describe('YouTube Embed', () => {
 });
 
 test.describe('Frontmatter Patches', () => {
-  test.beforeAll(async ({ request, browser }) => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeAll(async ({ request }) => {
     // Sign in as admin via GraphQL API
     const token = await graphqlSignIn(request);
+    const authHeaders = { 'Cookie': `trip2g_e2e=${token}` };
 
-    // Create a new context with the auth cookie
-    const context = await browser.newContext({
-      baseURL: 'http://localhost:20081',
-      extraHTTPHeaders: {
-        'Cookie': `trip2g_e2e=${token}`
-      }
+    const authPost = (query, variables) => request.post('/graphql', {
+      headers: authHeaders,
+      data: variables ? { query, variables } : { query }
     });
-
-    // Create a request context from this context that will include cookies
-    const authenticatedRequest = context.request;
 
     // Delete all existing patches to avoid accumulation across test runs
-    const listResponse = await authenticatedRequest.post('/graphql', {
-      data: {
-        query: `{ admin { allFrontmatterPatches { nodes { id } } } }`
-      }
-    });
+    const listResponse = await authPost(`{ admin { allFrontmatterPatches { nodes { id } } } }`);
     const listData = await listResponse.json();
     const existingIds = listData.data?.admin?.allFrontmatterPatches?.nodes?.map(n => n.id) ?? [];
     for (const id of existingIds) {
-      await authenticatedRequest.post('/graphql', {
-        data: {
-          query: `mutation($input: DeleteFrontmatterPatchInput!) { admin { deleteFrontmatterPatch(input: $input) { __typename } } }`,
-          variables: { input: { id } }
-        }
-      });
+      await authPost(
+        `mutation($input: DeleteFrontmatterPatchInput!) { admin { deleteFrontmatterPatch(input: $input) { __typename } } }`,
+        { input: { id } }
+      );
     }
 
     // Create test patches
@@ -586,31 +577,18 @@ test.describe('Frontmatter Patches', () => {
     ];
 
     for (const patch of patches) {
-      const createResponse = await authenticatedRequest.post('/graphql', {
-        data: {
-          query: `
-            mutation CreatePatch($input: CreateFrontmatterPatchInput!) {
-              admin {
-                data: createFrontmatterPatch(input: $input) {
-                  __typename
-                  ... on CreateFrontmatterPatchPayload {
-                    frontmatterPatch {
-                      id
-                      description
-                    }
-                  }
-                  ... on ErrorPayload {
-                    message
-                  }
-                }
-              }
+      const createResponse = await authPost(
+        `mutation CreatePatch($input: CreateFrontmatterPatchInput!) {
+          admin {
+            data: createFrontmatterPatch(input: $input) {
+              __typename
+              ... on CreateFrontmatterPatchPayload { frontmatterPatch { id description } }
+              ... on ErrorPayload { message }
             }
-          `,
-          variables: {
-            input: patch
           }
-        }
-      });
+        }`,
+        { input: patch }
+      );
 
       // Check response and show error details if failed
       if (!createResponse.ok()) {
@@ -623,9 +601,6 @@ test.describe('Frontmatter Patches', () => {
         throw new Error(`Create patch GraphQL error: ${data.data.admin.data.message}`);
       }
     }
-
-    // Clean up context after creating patches
-    await context.close();
 
     // Notes are automatically reloaded after patch creation
   });
@@ -706,12 +681,13 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.getByText('title template patch')).toBeVisible();
   });
 
-  test('path-based logic adds custom field', async ({ request }) => {
+  test('path-based logic adds custom field', async ({ page }) => {
     // Page uses meta_inspector layout which outputs raw meta as JSON
-    const response = await request.get('/patch_tests/path_based');
+    const response = await page.goto('/patch_tests/path_based');
     expect(response.ok()).toBeTruthy();
 
-    const meta = await response.json();
+    const body = await response.text();
+    const meta = JSON.parse(body);
 
     // patch_applied should be true (added by path-based patch)
     expect(meta.patch_applied).toBe(true);

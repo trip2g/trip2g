@@ -740,6 +740,26 @@ expect(meta.free).toBe(true);
 
 ---
 
+## Маршруты (`route`/`routes`) и патчи
+
+Поля `route` и `routes` извлекаются из `RawMeta` после применения всех патчей (`ExtractMetaData()` вызывается после `applyFrontmatterPatches()`). Это означает:
+
+- **Патч может добавить маршрут** к заметке, у которой нет `route` во frontmatter:
+  ```
+  { "route": "mydomain.com/landing" }
+  ```
+- **Патч может переопределить маршрут** из frontmatter (по тем же правилам приоритета)
+- **Порядок выполнения:**
+  1. Парсинг YAML frontmatter → `rawMeta`
+  2. `applyFrontmatterPatches()` → patched `rawMeta`
+  3. `pp.RawMeta = rawMeta`
+  4. `ExtractMetaData()` → `ExtractRoutes()` читает `RawMeta` (уже патченный)
+  5. `RegisterNote()` → `RegisterNoteRoutes()` добавляет маршруты в `RouteMap`
+
+Это позволяет централизованно управлять маршрутами через патчи: например, все заметки в `blog/featured/*` автоматически получают маршрут на кастомном домене.
+
+---
+
 ## Открытые вопросы / Future
 
 1. **Deep merge mode** — опциональный флаг `deep_merge: true` на патче. Пока не нужен, shallow merge покрывает все текущие use cases.
