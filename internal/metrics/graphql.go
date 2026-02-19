@@ -120,6 +120,9 @@ func (m *GraphQLMetrics) Middleware() graphql.OperationMiddleware {
 
 		return func(ctx context.Context) *graphql.Response {
 			resp := rh(ctx)
+			if resp == nil {
+				return nil
+			}
 
 			status := "success"
 			if len(resp.Errors) > 0 {

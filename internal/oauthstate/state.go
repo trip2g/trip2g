@@ -11,6 +11,9 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// CookieName is shared across all OAuth providers.
+// TODO: refactor to accept cookieName as parameter to support concurrent OAuth flows
+// from multiple providers (e.g. Google + LinkedIn) without cookie collision.
 const CookieName = "oauth_state"
 
 var (

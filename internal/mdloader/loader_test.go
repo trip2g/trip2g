@@ -1555,6 +1555,87 @@ func TestInLinksWithCachedAST(t *testing.T) {
 		"note_a should have InLinks from both note_b and note_c after cached reload")
 }
 
+// TestPathBasedPatchApplied verifies that a patch using std.startsWith(path, ...)
+// correctly adds fields to the note's RawMeta.
+func TestPathBasedPatchApplied(t *testing.T) {
+	log := logger.TestLogger{}
+
+	patch := frontmatterpatch.Compile(
+		1,
+		[]string{"patch_tests/*"}, // includePatterns
+		nil,                        // excludePatterns
+		`if std.startsWith(path, "patch_tests/") then { patch_applied: true } else {}`,
+		0,
+		"path-based logic",
+	)
+
+	sources := []mdloader.SourceFile{{
+		Path: "patch_tests/path_based.md",
+		Content: []byte("---\nfree: true\nlayout: meta_inspector\ntitle: Path-Based Logic Test\n---\nContent"),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources:            sources,
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["patch_tests/path_based.md"]
+	require.NotNil(t, note, "note should exist")
+
+	// patch_applied should be true (added by path-based patch)
+	require.Equal(t, true, note.RawMeta["patch_applied"],
+		"path-based patch should add patch_applied: true to RawMeta")
+
+	// free should still be true (from frontmatter)
+	require.Equal(t, true, note.RawMeta["free"],
+		"free field should remain true from frontmatter")
+
+	// patch should be recorded as applied
+	require.Len(t, note.AppliedFrontmatterPatches, 1,
+		"one patch should be recorded as applied")
+}
+
+// TestPathBasedPatchNotAppliedToNonMatchingPath verifies that a path-based patch
+// does NOT apply to notes outside the matching path prefix.
+func TestPathBasedPatchNotAppliedToNonMatchingPath(t *testing.T) {
+	log := logger.TestLogger{}
+
+	patch := frontmatterpatch.Compile(
+		1,
+		[]string{"patch_tests/*"},
+		nil,
+		`if std.startsWith(path, "patch_tests/") then { patch_applied: true } else {}`,
+		0,
+		"path-based logic",
+	)
+
+	sources := []mdloader.SourceFile{{
+		Path:    "other_folder/note.md",
+		Content: []byte("---\nfree: true\n---\nContent"),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources:            sources,
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["other_folder/note.md"]
+	require.NotNil(t, note, "note should exist")
+
+	// patch_applied should NOT be present - patch only applies to patch_tests/*
+	_, hasPatchApplied := note.RawMeta["patch_applied"]
+	require.False(t, hasPatchApplied,
+		"patch_applied should NOT be in RawMeta for non-matching path")
+
+	// No patches should be applied
+	require.Empty(t, note.AppliedFrontmatterPatches,
+		"no patches should be applied for non-matching path")
+}
+
 // TestFrontmatterPatchNotDoubledOnCacheHit verifies that a frontmatter patch
 // (e.g. title suffix) is applied exactly once even when NoteCache returns a
 // cached NoteView on subsequent loads.
