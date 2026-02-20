@@ -14,11 +14,13 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/db"
+	"trip2g/internal/usertoken"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg checkapikey_test . Env
 
 type Env interface {
+	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	ApiKeyByValue(ctx context.Context, value string) (db.ApiKey, error)
 	InsertAPIKeyLog(ctx context.Context, arg db.InsertAPIKeyLogParams) error
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
@@ -77,6 +79,9 @@ func TestResolve(t *testing.T) {
 			action:      "test-action",
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ShortAPITokenSecretFunc: func() string {
 						return "test-secret"
 					},
@@ -93,6 +98,9 @@ func TestResolve(t *testing.T) {
 				hashedValue := hex.EncodeToString(hash[:])
 
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						if value == hashedValue {
 							return db.ApiKey{
@@ -127,6 +135,9 @@ func TestResolve(t *testing.T) {
 				hashedValue := hex.EncodeToString(hash[:])
 
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						// First call with hashed value - not found
 						if value == hashedValue {
@@ -163,6 +174,9 @@ func TestResolve(t *testing.T) {
 			action:      "test-action",
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						return db.ApiKey{}, sql.ErrNoRows
 					},
@@ -179,6 +193,9 @@ func TestResolve(t *testing.T) {
 			action:      "test-action",
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						return db.ApiKey{}, errors.New("database connection error")
 					},
@@ -198,6 +215,9 @@ func TestResolve(t *testing.T) {
 				hashedValue := hex.EncodeToString(hash[:])
 
 				return &EnvMock{
+					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+						return nil, nil
+					},
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						if value == hashedValue {
 							return db.ApiKey{
@@ -235,4 +255,98 @@ func TestResolve(t *testing.T) {
 			assertAPIKeyResult(t, apiKey, tt.wantKeyID)
 		})
 	}
+}
+
+func TestResolveAdminBypass(t *testing.T) {
+	t.Run("admin bypasses API key check without any header", func(t *testing.T) {
+		env := &EnvMock{
+			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+				return &usertoken.Data{ID: 42, Role: "admin"}, nil
+			},
+		}
+		ctx := setupRequestContext("") // no X-API-Key
+
+		apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
+
+		require.NoError(t, err)
+		require.NotNil(t, apiKey)
+		require.Equal(t, int64(0), apiKey.ID)
+		require.Equal(t, "admin", apiKey.Value)
+		require.Equal(t, "Admin user bypass", apiKey.Description)
+	})
+
+	t.Run("admin bypasses API key check even with X-API-Key header present", func(t *testing.T) {
+		apiKeyByValueCalled := false
+		env := &EnvMock{
+			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+				return &usertoken.Data{ID: 1, Role: "admin"}, nil
+			},
+			ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
+				apiKeyByValueCalled = true
+				return db.ApiKey{}, sql.ErrNoRows
+			},
+		}
+		ctx := setupRequestContext("some-key")
+
+		apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
+
+		require.NoError(t, err)
+		require.NotNil(t, apiKey)
+		require.Equal(t, "admin", apiKey.Value)
+		require.False(t, apiKeyByValueCalled, "ApiKeyByValue should not be called for admin")
+	})
+
+	t.Run("non-admin falls through to API key check", func(t *testing.T) {
+		env := &EnvMock{
+			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+				return &usertoken.Data{ID: 5, Role: "user"}, nil
+			},
+			ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
+				return db.ApiKey{}, sql.ErrNoRows
+			},
+			ShortAPITokenSecretFunc: func() string {
+				return "test-secret"
+			},
+		}
+		ctx := setupRequestContext("bad-key")
+
+		apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
+
+		require.Error(t, err)
+		require.ErrorIs(t, err, checkapikey.ErrInvalidKey)
+		require.Nil(t, apiKey)
+	})
+
+	t.Run("nil token (anonymous user) falls through to API key check", func(t *testing.T) {
+		env := &EnvMock{
+			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+				return nil, nil
+			},
+			ShortAPITokenSecretFunc: func() string {
+				return "test-secret"
+			},
+		}
+		ctx := setupRequestContext("") // no X-API-Key
+
+		apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
+
+		require.Error(t, err)
+		require.ErrorIs(t, err, checkapikey.ErrMissingKey)
+		require.Nil(t, apiKey)
+	})
+
+	t.Run("CurrentUserToken error propagates", func(t *testing.T) {
+		env := &EnvMock{
+			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+				return nil, errors.New("token store unavailable")
+			},
+		}
+		ctx := setupRequestContext("")
+
+		apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to get current user token")
+		require.Nil(t, apiKey)
+	})
 }

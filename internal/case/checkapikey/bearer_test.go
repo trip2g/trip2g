@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/db"
 	"trip2g/internal/shortapitoken"
+	"trip2g/internal/usertoken"
 )
 
 func setupRequestContextWithBearer(token string) (*fasthttp.RequestCtx, *appreq.Request) {
@@ -85,6 +86,9 @@ func TestResolveWithBearerToken(t *testing.T) {
 			require.NoError(t, err)
 
 			env := &EnvMock{
+				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return nil, nil
+				},
 				ShortAPITokenSecretFunc: func() string {
 					return testSecret
 				},
@@ -143,6 +147,9 @@ func TestResolvePrefersAPIKeyOverBearer(t *testing.T) {
 	// Mock environment that tracks which method was called.
 	apiKeyByValueCalled := false
 	env := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return nil, nil
+		},
 		ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 			apiKeyByValueCalled = true
 			// Return a real API key (not a virtual one).
@@ -188,6 +195,9 @@ func TestResolveInvalidBearerToken(t *testing.T) {
 	req.StoreInContext()
 
 	env := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return nil, nil
+		},
 		ShortAPITokenSecretFunc: func() string {
 			return "test-secret"
 		},

@@ -10,9 +10,11 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/shortapitoken"
+	"trip2g/internal/usertoken"
 )
 
 type Env interface {
+	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	ApiKeyByValue(ctx context.Context, value string) (db.ApiKey, error)
 	InsertAPIKeyLog(ctx context.Context, arg db.InsertAPIKeyLogParams) error
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
@@ -28,6 +30,19 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	token, err := env.CurrentUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	if token.IsAdmin() {
+		return &db.ApiKey{
+			ID:          0,
+			Value:       "admin",
+			Description: "Admin user bypass",
+		}, nil
 	}
 
 	apiKeyValue := req.Req.Request.Header.Peek("X-API-Key")

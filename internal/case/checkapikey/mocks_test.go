@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/db"
+	"trip2g/internal/usertoken"
 )
 
 // Ensure, that EnvMock does implement checkapikey.Env.
@@ -20,6 +21,9 @@ var _ checkapikey.Env = &EnvMock{}
 //
 //		// make and configure a mocked checkapikey.Env
 //		mockedEnv := &EnvMock{
+//			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+//				panic("mock out the CurrentUserToken method")
+//			},
 //			ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 //				panic("mock out the ApiKeyByValue method")
 //			},
@@ -42,6 +46,9 @@ var _ checkapikey.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CurrentUserTokenFunc mocks the CurrentUserToken method.
+	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
+
 	// ApiKeyByValueFunc mocks the ApiKeyByValue method.
 	ApiKeyByValueFunc func(ctx context.Context, value string) (db.ApiKey, error)
 
@@ -59,6 +66,11 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CurrentUserToken holds details about calls to the CurrentUserToken method.
+		CurrentUserToken []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// ApiKeyByValue holds details about calls to the ApiKeyByValue method.
 		ApiKeyByValue []struct {
 			// Ctx is the ctx argument value.
@@ -91,11 +103,44 @@ type EnvMock struct {
 			IP string
 		}
 	}
+	lockCurrentUserToken      sync.RWMutex
 	lockApiKeyByValue         sync.RWMutex
 	lockInsertAPIKeyLog       sync.RWMutex
 	lockShortAPITokenSecret   sync.RWMutex
 	lockUpsertAPIKeyLogAction sync.RWMutex
 	lockUpsertAPIKeyLogIP     sync.RWMutex
+}
+
+// CurrentUserToken calls CurrentUserTokenFunc.
+func (mock *EnvMock) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
+	if mock.CurrentUserTokenFunc == nil {
+		panic("EnvMock.CurrentUserTokenFunc: method is nil but Env.CurrentUserToken was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCurrentUserToken.Lock()
+	mock.calls.CurrentUserToken = append(mock.calls.CurrentUserToken, callInfo)
+	mock.lockCurrentUserToken.Unlock()
+	return mock.CurrentUserTokenFunc(ctx)
+}
+
+// CurrentUserTokenCalls gets all the calls that were made to CurrentUserToken.
+// Check the length with:
+//
+//	len(mockedEnv.CurrentUserTokenCalls())
+func (mock *EnvMock) CurrentUserTokenCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCurrentUserToken.RLock()
+	calls = mock.calls.CurrentUserToken
+	mock.lockCurrentUserToken.RUnlock()
+	return calls
 }
 
 // ApiKeyByValue calls ApiKeyByValueFunc.
