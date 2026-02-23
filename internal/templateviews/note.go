@@ -39,6 +39,11 @@ func (n *Note) PathID() int64 {
 	return n.nv.PathID
 }
 
+// Path returns the note path ID for data attributes.
+func (n *Note) Path() string {
+	return n.nv.Path
+}
+
 // Permalink returns the note URL path.
 func (n *Note) Permalink() string {
 	return n.nv.Permalink
