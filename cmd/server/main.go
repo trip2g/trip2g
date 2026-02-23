@@ -2024,6 +2024,7 @@ func (a *app) startServer() {
 	}
 
 	timeoutHandler := fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout")
+	compressedHandler := fasthttp.CompressHandler(timeoutHandler)
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
@@ -2032,7 +2033,7 @@ func (a *app) startServer() {
 				handler(ctx)
 				return
 			}
-			timeoutHandler(ctx)
+			compressedHandler(ctx)
 		},
 		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
 		ReadTimeout:        handlerTimeout,
