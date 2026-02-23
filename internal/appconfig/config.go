@@ -250,9 +250,6 @@ func (c *Config) defineFlags() {
 	// Mail
 	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
 
-	// MD Loader
-	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", false, "Automatically lower-case wikilinks")
-
 	// Patreon jobs configuration
 	patreonJobsDefaults := patreonjobs.DefaultConfig()
 

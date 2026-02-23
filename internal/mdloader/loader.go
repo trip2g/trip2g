@@ -62,9 +62,8 @@ type loader struct {
 }
 
 type Config struct {
-	AutoLowerWikilinks bool // Deprecated: will be removed
-	FreeParagraphs     int  // Default number of free paragraphs from config
-	SoftWraps          bool
+	FreeParagraphs int // Default number of free paragraphs from config
+	SoftWraps      bool
 }
 
 type Options struct {
@@ -512,12 +511,6 @@ func (ldr *loader) extractInLinks() error {
 
 func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	content := src.Content
-
-	if ldr.config.AutoLowerWikilinks {
-		// replace [[Wikilink]] with [[Wikilink|wikilink]]
-		// skip if . [[Wikilink]] has a dot before it
-		content = NormalizeWikilinks(content)
-	}
 
 	// Try to get cached AST and meta
 	var doc ast.Node
