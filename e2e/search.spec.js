@@ -26,17 +26,23 @@ const hasOpenAI = !!process.env.OPENAI_API_KEY;
 // These tests use full-text search only and do not require OPENAI_API_KEY.
 
 test.describe('Search: text (Bleve)', () => {
-  let authPost;
+  let apiContext;
+  let post;
 
-  test.beforeAll(async ({ request }) => {
-    const token = await graphqlSignIn(request);
-    const headers = { Cookie: `trip2g_e2e=${token}` };
-    authPost = (query, variables) =>
-      request.post('/graphql', { headers, data: variables ? { query, variables } : { query } });
+  test.beforeAll(async ({ playwright }) => {
+    apiContext = await playwright.request.newContext({
+      baseURL: process.env.APP_URL || 'http://localhost:20081',
+    });
+    post = (query, variables) =>
+      apiContext.post('/graphql', { data: variables ? { query, variables } : { query } });
+  });
+
+  test.afterAll(async () => {
+    await apiContext.dispose();
   });
 
   test('finds note by unique keyword', async () => {
-    const res = await authPost(SEARCH_QUERY, { input: { query: 'квантовый телескоп' } });
+    const res = await post(SEARCH_QUERY, { input: { query: 'квантовый телескоп' } });
     expect(res.ok()).toBeTruthy();
 
     const { data } = await res.json();
@@ -50,7 +56,7 @@ test.describe('Search: text (Bleve)', () => {
   });
 
   test('returns highlighted content for matched terms', async () => {
-    const res = await authPost(SEARCH_QUERY, { input: { query: 'экзопланет' } });
+    const res = await post(SEARCH_QUERY, { input: { query: 'экзопланет' } });
     const { data } = await res.json();
 
     const found = data.search.nodes.find((n) => n.url === '/search_keywords');
@@ -63,7 +69,7 @@ test.describe('Search: text (Bleve)', () => {
   });
 
   test('returns empty results for unknown term', async () => {
-    const res = await authPost(SEARCH_QUERY, {
+    const res = await post(SEARCH_QUERY, {
       input: { query: 'xyzzynonexistenttermqwerty' },
     });
     const { data } = await res.json();
@@ -89,13 +95,21 @@ test.describe('Search: text (Bleve)', () => {
 test.describe('Search: hybrid (text + vector)', () => {
   test.skip(!hasOpenAI, 'Requires OPENAI_API_KEY and vector_search enabled in FEATURES');
 
-  let authPost;
+  let post;
+  let apiContext;
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(async ({ playwright, request }) => {
     const token = await graphqlSignIn(request);
+    apiContext = await playwright.request.newContext({
+      baseURL: process.env.APP_URL || 'http://localhost:20081',
+    });
     const headers = { Cookie: `trip2g_e2e=${token}` };
-    authPost = (query, variables) =>
-      request.post('/graphql', { headers, data: variables ? { query, variables } : { query } });
+    post = (query, variables) =>
+      apiContext.post('/graphql', { headers, data: variables ? { query, variables } : { query } });
+  });
+
+  test.afterAll(async () => {
+    await apiContext.dispose();
   });
 
   test('semantic query finds thematically related note', async ({ request }) => {
@@ -106,7 +120,7 @@ test.describe('Search: hybrid (text + vector)', () => {
     // Phrase not present verbatim in any note, but semantically matches
     // search_astronomy.md ("планеты за пределами Солнечной системы") and
     // search_keywords.md ("экзопланет")
-    const res = await authPost(SEARCH_QUERY, {
+    const res = await post(SEARCH_QUERY, {
       input: { query: 'как учёные ищут планеты у других звёзд' },
     });
     const { data } = await res.json();
@@ -122,7 +136,7 @@ test.describe('Search: hybrid (text + vector)', () => {
     expect(waitRes.ok()).toBeTruthy();
 
     // "астрофизика" should match by text; semantically related notes should follow
-    const res = await authPost(SEARCH_QUERY, { input: { query: 'астрофизика' } });
+    const res = await post(SEARCH_QUERY, { input: { query: 'астрофизика' } });
     const { data } = await res.json();
 
     expect(data.search.nodes.length).toBeGreaterThan(0);
