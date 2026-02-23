@@ -30,10 +30,9 @@ type Env interface {
 	LiveNoteViews() *appmodel.NoteViews
 }
 
-const (
-	textWeight   = 0.6
-	vectorWeight = 0.4
-)
+// rrfK is the RRF rank constant. Higher values reduce the impact of top ranks.
+// Standard value is 60.
+const rrfK = 60
 
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
@@ -139,8 +138,8 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		return scores[i].score > scores[j].score
 	})
 
-	// Take top 20 results
-	limit := 20
+	// Take top 30 results (more candidates improve RRF quality)
+	limit := 30
 	if len(scores) < limit {
 		limit = len(scores)
 	}
@@ -158,73 +157,56 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	return results, nil
 }
 
+// mergeResults combines text and vector search results using Reciprocal Rank Fusion (RRF).
+// RRF score = Σ 1/(k + rank) across all result lists, using only ranks not raw scores.
+// This avoids score normalization issues when combining BM25 and cosine similarity scores.
 func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel.SearchResult {
 	if len(vectorResults) == 0 {
 		return textResults
 	}
 
-	// Normalize text scores (bleve scores can vary widely)
-	maxTextScore := 0.0
-	for _, r := range textResults {
-		if r.Score > maxTextScore {
-			maxTextScore = r.Score
-		}
+	type entry struct {
+		result   appmodel.SearchResult
+		rrfScore float64
 	}
 
-	// Build map for merging
-	type merged struct {
-		result      appmodel.SearchResult
-		textScore   float64
-		vectorScore float64
-	}
+	resultMap := make(map[string]*entry)
 
-	resultMap := make(map[string]*merged)
-
-	// Add text results
-	for _, r := range textResults {
-		normalizedScore := 0.0
-		if maxTextScore > 0 {
-			normalizedScore = r.Score / maxTextScore
-		}
-
-		resultMap[r.URL] = &merged{
-			result:    r,
-			textScore: normalizedScore,
-		}
-	}
-
-	// Merge vector results
-	for _, r := range vectorResults {
-		if existing, ok := resultMap[r.URL]; ok {
-			// Note exists in both - add vector score
-			existing.vectorScore = r.Score
+	// Add text results with rank-based RRF score (1-indexed ranks)
+	for rank, r := range textResults {
+		score := 1.0 / float64(rrfK+rank+1)
+		if e, ok := resultMap[r.URL]; ok {
+			e.rrfScore += score
 		} else {
-			// Vector-only result - generate snippet
+			resultMap[r.URL] = &entry{result: r, rrfScore: score}
+		}
+	}
+
+	// Add vector results with rank-based RRF score
+	for rank, r := range vectorResults {
+		score := 1.0 / float64(rrfK+rank+1)
+		if e, ok := resultMap[r.URL]; ok {
+			// Note exists in text results too — accumulate score, keep text highlights
+			e.rrfScore += score
+		} else {
+			// Vector-only result — generate snippet for display
 			title := r.NoteView.Title
 			r.HighlightedTitle = &title
 			r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
-
-			resultMap[r.URL] = &merged{
-				result:      r,
-				vectorScore: r.Score,
-			}
+			resultMap[r.URL] = &entry{result: r, rrfScore: score}
 		}
 	}
 
-	// Calculate combined scores and build final list
-	var finalResults []appmodel.SearchResult
-	for _, m := range resultMap {
-		// Combined score: weighted sum
-		m.result.Score = m.textScore*textWeight + m.vectorScore*vectorWeight
-		finalResults = append(finalResults, m.result)
+	finalResults := make([]appmodel.SearchResult, 0, len(resultMap))
+	for _, e := range resultMap {
+		e.result.Score = e.rrfScore
+		finalResults = append(finalResults, e.result)
 	}
 
-	// Sort by combined score (descending)
 	sort.Slice(finalResults, func(i, j int) bool {
 		return finalResults[i].Score > finalResults[j].Score
 	})
 
-	// Limit to 20 results
 	if len(finalResults) > 20 {
 		finalResults = finalResults[:20]
 	}

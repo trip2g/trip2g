@@ -8,6 +8,11 @@ VAULT="vault"
 # Helper function to download placeholder image
 # Usage: download_placeholder "path/to/file.png" "color"
 download_placeholder() {
+  if [[ -f "$VAULT/$1" && -n "$SKIP_IMAGES" ]]; then
+    echo "✓ Skipping existing image: $1"
+    return
+  fi
+
   local path="$1"
   local color="${2:-gray}"
   local file="$VAULT/$path"
@@ -1349,6 +1354,39 @@ This page uses a broken layout that has a parse error.
 
 For guests: should render with default layout (no error visible).
 For admins: should show the layout error message.
+EOF
+
+# ============================================================================
+# Search test notes
+# ============================================================================
+
+cat > "$VAULT/search_keywords.md" << 'EOF'
+---
+free: true
+title: Ключевые слова поиска
+---
+
+Эта страница используется для тестирования поиска.
+
+Уникальное слово: квантовый телескоп.
+
+Здесь описывается обнаружение экзопланет, астрофизика и спектроскопия.
+Также упоминается нейтронная звезда и гравитационные волны.
+EOF
+
+cat > "$VAULT/search_astronomy.md" << 'EOF'
+---
+free: true
+title: Астрономия и космос
+---
+
+Астрономия изучает планеты, звёзды и галактики.
+
+Экзопланеты — это планеты за пределами Солнечной системы.
+Их обнаруживают методом транзита и доплеровской спектроскопии.
+
+Нейтронные звёзды — сверхплотные объекты, возникающие после взрыва сверхновой.
+Гравитационные волны — рябь пространства-времени, предсказанная Эйнштейном.
 EOF
 
 # ============================================================================
