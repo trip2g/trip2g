@@ -101,6 +101,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to load frontmatter patches: %w", err)
 	}
+	// Bypass note cache if patches changed so cached notes get re-parsed with new patches applied.
+	patchesChanged := patchListChanged(l.frontmatterPatches, patches)
 	l.frontmatterPatches = patches
 
 	notes, err := l.env.RawNotes(ctx)
@@ -194,8 +196,11 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		// NOTE: If AutoLowerWikilinks is enabled, old.Content is normalized but
 		// source.Content is not, causing cache misses. This is acceptable since
 		// AutoLowerWikilinks is deprecated and will be removed.
+		// Bypass cache when patches changed: cached notes must be re-parsed so
+		// new/updated patches are applied (routes, etc. derived from patches would
+		// otherwise remain stale for content-unchanged notes).
 		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
-			if l.nvs == nil {
+			if patchesChanged || l.nvs == nil {
 				return nil
 			}
 			old, ok := l.nvs.PathMap[source.Path]
@@ -402,6 +407,20 @@ func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
 	}
 
 	return nil
+}
+
+// patchListChanged reports whether the new patch list differs from the old one
+// by comparing lengths, IDs, and compiled source of each patch.
+func patchListChanged(old, newPatches []frontmatterpatch.CompiledPatch) bool {
+	if len(old) != len(newPatches) {
+		return true
+	}
+	for i := range old {
+		if old[i].ID != newPatches[i].ID || old[i].WrappedSource != newPatches[i].WrappedSource {
+			return true
+		}
+	}
+	return false
 }
 
 // bytesToFloat32Slice converts []byte back to []float32.
