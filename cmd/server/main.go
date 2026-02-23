@@ -227,6 +227,7 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
 		Logger:       log,
 		LogQueries:   config.LogQueries,
 		ReadOnly:     true,
+		SkipDump:     true,
 		DevMode:      config.DevMode,
 	}
 
