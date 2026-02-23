@@ -1,6 +1,7 @@
 #!/bin/bash
 # End-to-end test runner
 # Usage: ./scripts/test-e2e.sh [--headed|--debug|--ui]
+# Set ENABLE_TG=1 to enable Telegram tests (disabled by default)
 #
 # Test Flow Overview:
 # ===================
@@ -123,9 +124,11 @@ rm -f "$DB_PATH"
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
 go run ./cmd/tge2e -db "$DB_PATH" patch-db
 
-# Cleanup telegram channels
-echo "🧹 Cleaning up Telegram channels..."
-go run ./cmd/tge2e -db "$DB_PATH" cleanup
+# Cleanup telegram channels (only if ENABLE_TG=1)
+if [ "${ENABLE_TG}" = "1" ]; then
+  echo "🧹 Cleaning up Telegram channels..."
+  go run ./cmd/tge2e -db "$DB_PATH" cleanup
+fi
 
 # Start services
 echo "🚀 Starting services..."
@@ -169,8 +172,10 @@ echo ""
 echo -e "${GREEN}✓ CLI sync tests passed${NC}"
 echo ""
 
-# Schedule send_scheduled_telegram_publishposts job
-run_telegram_cron
+# Schedule send_scheduled_telegram_publishposts job (only if ENABLE_TG=1)
+if [ "${ENABLE_TG}" = "1" ]; then
+  run_telegram_cron
+fi
 
 # Check for MANUAL mode
 if [ "$MANUAL" = "1" ] || [ "$MANUAL" = "true" ]; then
@@ -228,36 +233,38 @@ npx playwright test e2e/layoutcss.spec.js || {
 echo -e "${GREEN}✓ Layout CSS tests passed${NC}"
 echo ""
 
-# Wait for telegram messages to be sent
-wait_all_jobs
+if [ "${ENABLE_TG}" = "1" ]; then
+  # Wait for telegram messages to be sent
+  wait_all_jobs
 
-# Check channel snapshots
-echo "📷 Checking Telegram channel snapshots..."
-go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step0 check
+  # Check channel snapshots
+  echo "📷 Checking Telegram channel snapshots..."
+  go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step0 check
 
-# Update posts and re-sync
-echo "📝 Updating Telegram posts..."
+  # Update posts and re-sync
+  echo "📝 Updating Telegram posts..."
 
-# Add "Updated!" to all telegram posts
-for f in tmp/testvault0/telegram_*.md; do
-  echo -e "\n\nUpdated!" >> "$f"
-done
+  # Add "Updated!" to all telegram posts
+  for f in tmp/testvault0/telegram_*.md; do
+    echo -e "\n\nUpdated!" >> "$f"
+  done
 
-# Add photo embed to text post (account posting adds image)
-echo -e "\n![[telegram_photo.png]]" >> tmp/testvault0/telegram_text.md
+  # Add photo embed to text post (account posting adds image)
+  echo -e "\n![[telegram_photo.png]]" >> tmp/testvault0/telegram_text.md
 
-# Replace photo in one_photo post to test photo replacement
-sed -i 's/telegram_photo\.png/test.png/' tmp/testvault0/telegram_one_photo.md
+  # Replace photo in one_photo post to test photo replacement
+  sed -i 's/telegram_photo\.png/test.png/' tmp/testvault0/telegram_one_photo.md
 
-# Sync updated files
-sync_vault
+  # Sync updated files
+  sync_vault
 
-# Wait for telegram messages to be sent
-wait_all_jobs
+  # Wait for telegram messages to be sent
+  wait_all_jobs
 
-# Check channel snapshots after update
-echo "📷 Checking Telegram channel snapshots after update..."
-go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
+  # Check channel snapshots after update
+  echo "📷 Checking Telegram channel snapshots after update..."
+  go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
+fi
 
 # Run webhook E2E tests AFTER all other tests (when job queue is empty)
 echo ""

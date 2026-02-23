@@ -285,6 +285,16 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - Agent response: опциональный `changes[]` с `expected_hash` для optimistic concurrency
 - **X-Webhook-Chain-ID**: генерируется при depth=0, передаётся в headers всех вызовов в цепочке, записывается в delivery log для трейсинга полной цепочки обработки
 
+## [TODO] Рефакторинг: vectorMinSimilarity в конфиг
+
+### Контекст
+Порог cosine similarity для векторного поиска захардкожен в `internal/case/sitesearch/resolve.go` как `vectorMinSimilarity = 0.75`. Пользователь должен сам подбирать порог под свою базу заметок.
+
+### План
+- [ ] Добавить `VectorSearchMinSimilarity float64` в `features.VectorSearchConfig` (`internal/features/vector_search.go`)
+- [ ] Использовать из `sitesearch/resolve.go` вместо константы (default 0.75 если не задан)
+- [ ] Обновить документацию в `docs/vector_search.md` и `.env.example`
+
 ## [TODO] Рефакторинг: обработка ошибок doublestar.Match в templateviews
 
 ### Контекст

@@ -329,20 +329,23 @@ func formatTitle(noteTitle, template string) string {
 }
 
 // resolveNote looks up a note using domain-aware routing.
-// On the main domain: checks RouteMap[""] alias routes first, then nv.Map.
-// On a custom domain: checks RouteMap[host] only, then nv.Map.
+// On the main domain or an unknown host: checks RouteMap[""] alias routes first, then nv.Map.
+// On a known custom domain: checks RouteMap[host] only (no main domain alias fallback).
+// Unknown hosts (e.g. localhost in tests/dev) are treated as the main domain.
 func resolveNote(notes *model.NoteViews, host, path, publicURL string) *model.NoteView {
 	normalizedHost := model.NormalizeDomain(host)
 	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
 
-	if normalizedHost == mainHost || normalizedHost == "" {
-		// Main domain: check RouteMap[""] first (alias routes), then nv.Map.
-		if note := notes.GetByRoute("", path); note != nil {
+	isKnownCustomDomain := normalizedHost != mainHost && normalizedHost != "" && notes.IsCustomDomain(normalizedHost)
+
+	if isKnownCustomDomain {
+		// Known custom domain: only serve domain-specific routes, no main domain alias fallback.
+		if note := notes.GetByRoute(normalizedHost, path); note != nil {
 			return note
 		}
 	} else {
-		// Custom domain: check RouteMap[host] only (no main domain alias fallback).
-		if note := notes.GetByRoute(normalizedHost, path); note != nil {
+		// Main domain or unknown host: check RouteMap[""] first (alias routes), then nv.Map.
+		if note := notes.GetByRoute("", path); note != nil {
 			return note
 		}
 	}

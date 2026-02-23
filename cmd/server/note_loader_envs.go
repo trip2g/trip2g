@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"trip2g/internal/appreq"
+	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/noteloader"
 )
 
@@ -126,6 +127,13 @@ func (e *latestNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAs
 	}
 
 	return res, nil
+}
+
+// LoadFrontmatterPatches loads patches using the context-aware env so that
+// reads within an active GraphQL mutation transaction can see their own
+// uncommitted inserts (SQLite read-your-own-writes within a transaction).
+func (e *latestNoteLoaderEnv) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error) {
+	return frontmatterpatch.NewLoader(e.env(ctx)).LoadFrontmatterPatches(ctx)
 }
 
 func makeLatestNoteLoaderWrapper(a *app) *latestNoteLoaderEnv {

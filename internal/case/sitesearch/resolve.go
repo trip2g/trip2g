@@ -34,6 +34,12 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
+// vectorMinSimilarity is the minimum cosine similarity for a vector result to
+// be included in hybrid search. Results below this threshold are semantically
+// too distant and would pollute the ranking with irrelevant notes.
+// For text-embedding-3-small, ~0.75 filters noise well in practice.
+const vectorMinSimilarity = 0.75
+
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {
@@ -130,6 +136,10 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		}
 
 		similarity := cosineSimilarity(embedding.Vector, note.Embedding)
+		if similarity < vectorMinSimilarity {
+			continue
+		}
+
 		scores = append(scores, scored{note: note, score: similarity})
 	}
 

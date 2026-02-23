@@ -37,7 +37,7 @@ services:
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      - FEATURES='{"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
 
       # MinIO
       - MINIO_ENDPOINT=localhost:29000

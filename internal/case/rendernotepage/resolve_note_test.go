@@ -94,16 +94,35 @@ func TestResolveNote_MainDomain_Unchanged(t *testing.T) {
 }
 
 func TestResolveNote_MainDomainRoute_NotOnCustomDomain(t *testing.T) {
-	// A main domain alias route: /x is NOT served on foo.com/x
+	// A main domain alias route: /x is NOT served on foo.com/x when foo.com is a known custom domain.
 	nvs := makeTestNoteViews()
 	note := makeTestNote("/note", "note.md", []model.ParsedRoute{
 		{Host: "", Path: "/x"}, // main domain alias only
 	})
 	nvs.RegisterNote(note)
 
-	// On custom domain, /x is not found via RouteMap, and /x is not in nv.Map
+	// Register foo.com as a known custom domain so it gets isolated routing.
+	customNote := makeTestNote("/foo-home", "foo-home.md", []model.ParsedRoute{
+		{Host: "foo.com", Path: "/"},
+	})
+	nvs.RegisterNote(customNote)
+
+	// On custom domain, /x is not found via RouteMap[foo.com], and /x is not in nv.Map.
 	result := resolveNote(nvs, "foo.com", "/x", "https://example.com")
 	require.Nil(t, result)
+}
+
+func TestResolveNote_UnknownHost_ActsAsMainDomain(t *testing.T) {
+	// Unknown hosts (e.g. localhost in dev/test) fall back to main domain routing.
+	nvs := makeTestNoteViews()
+	note := makeTestNote("/note", "note.md", []model.ParsedRoute{
+		{Host: "", Path: "/multi-alias"},
+	})
+	nvs.RegisterNote(note)
+
+	// localhost:20081 is neither the configured main domain nor a known custom domain.
+	result := resolveNote(nvs, "localhost:20081", "/multi-alias", "https://example.com")
+	require.Equal(t, note, result)
 }
 
 func TestResolveNote_NotFound(t *testing.T) {

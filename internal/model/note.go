@@ -1098,6 +1098,15 @@ func (nv *NoteViews) CustomDomains() []string {
 	return domains
 }
 
+// IsCustomDomain reports whether host is a known custom domain (has explicit routes in RouteMap).
+func (nv *NoteViews) IsCustomDomain(host string) bool {
+	if host == "" {
+		return false
+	}
+	_, ok := nv.RouteMap[host]
+	return ok
+}
+
 // countWordsForReadingTime counts words in a single pass, skipping code blocks.
 // This is optimized for reading time calculation - exact accuracy is not required.
 // No allocations, no regex - just a simple state machine.
