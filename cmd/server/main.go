@@ -531,6 +531,44 @@ func (a *app) GitCommit() string {
 	return GitCommit
 }
 
+func (a *app) DatabaseFilePath() string {
+	return a.config.DatabaseFile
+}
+
+func (a *app) StorageDBLimit() int64 {
+	return int64(a.config.StorageDBLimit)
+}
+
+func (a *app) StorageAssetsLimit() int64 {
+	return int64(a.config.StorageAssetsLimit)
+}
+
+func (a *app) CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error) {
+	if limit := int64(a.config.StorageDBLimit); limit > 0 {
+		info, err := os.Stat(a.config.DatabaseFile)
+		if err != nil {
+			return "", fmt.Errorf("failed to stat database file: %w", err)
+		}
+
+		if info.Size() >= limit {
+			return "database storage limit exceeded", nil
+		}
+	}
+
+	if limit := int64(a.config.StorageAssetsLimit); limit > 0 {
+		currentSize, err := a.SumNoteAssetsSizes(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get current assets size: %w", err)
+		}
+
+		if currentSize+additionalAssetBytes > limit {
+			return "assets storage limit exceeded", nil
+		}
+	}
+
+	return "", nil
+}
+
 func (a *app) SiteTitleTemplate() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

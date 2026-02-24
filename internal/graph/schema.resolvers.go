@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"os"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -1755,7 +1755,7 @@ func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.Adm
 
 	return &model.AdminStorageUsage{
 		Db: &appmodel.AdminStorageEntry{
-			LimitBytes:   env.StorageDbLimit(),
+			LimitBytes:   env.StorageDBLimit(),
 			CurrentBytes: info.Size(),
 		},
 		Assets: &appmodel.AdminStorageEntry{
@@ -1801,18 +1801,20 @@ func (r *adminStorageEntryResolver) Current(ctx context.Context, obj *appmodel.A
 }
 
 func convertStorageSize(bytes int64, format *model.StorageSizeFormat) float64 {
-	if format == nil || *format == model.StorageSizeFormatBytes {
+	if format == nil {
 		return float64(bytes)
 	}
 
 	switch *format {
+	case model.StorageSizeFormatBytes:
+		return float64(bytes)
 	case model.StorageSizeFormatKb:
 		return float64(bytes) / 1024
 	case model.StorageSizeFormatMb:
 		return float64(bytes) / (1024 * 1024)
-	default:
-		return float64(bytes)
 	}
+
+	return float64(bytes)
 }
 
 // Nodes is the resolver for the nodes field.

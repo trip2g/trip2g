@@ -1058,6 +1058,22 @@ type AdminImportTelegramAccountChannelPayload {
 
 union AdminImportTelegramAccountChannelOrErrorPayload = AdminImportTelegramAccountChannelPayload | ErrorPayload
 
+enum StorageSizeFormat {
+  BYTES
+  KB
+  MB
+}
+
+type AdminStorageEntry {
+  limit(format: StorageSizeFormat = BYTES): Float!
+  current(format: StorageSizeFormat = BYTES): Float!
+}
+
+type AdminStorageUsage {
+  db: AdminStorageEntry!
+  assets: AdminStorageEntry!
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -1145,6 +1161,8 @@ type AdminQuery {
 
   allFrontmatterPatches: AdminFrontmatterPatchesConnection!
   frontmatterPatch(id: Int64!): AdminFrontmatterPatch
+
+  storageUsage: AdminStorageUsage!
 }
 
 # Block definition from Jet templates

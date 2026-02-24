@@ -26,6 +26,7 @@ type Env interface {
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }
 
 // for sanitize file names.
@@ -75,10 +76,18 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// v2: uploads asset B -> creates new note_assets record + new link
 	// v3: uploads asset A again -> asset already exists, just create new link to v3
 	// This allows the same asset (by path+hash) to be used in multiple note versions
-	if !alreadyUploaded {
-		err = uploadAndCreateAsset(ctx, env, input, fileName)
-		if err != nil {
-			return nil, err
+	if !alreadyUploaded { //nolint:nestif // two logical paths: new upload vs asset reuse
+		limitMsg, limitErr := env.CheckStorageLimits(ctx, input.File.Size)
+		if limitErr != nil {
+			return nil, limitErr
+		}
+
+		if limitMsg != "" {
+			return &model.ErrorPayload{Message: limitMsg}, nil
+		}
+
+		if uploadErr := uploadAndCreateAsset(ctx, env, input, fileName); uploadErr != nil {
+			return nil, uploadErr
 		}
 	} else {
 		// Asset already exists, just link it to this note version

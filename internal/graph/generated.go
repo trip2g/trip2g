@@ -102,6 +102,7 @@ type ResolverRoot interface {
 	AdminRedirectsConnection() AdminRedirectsConnectionResolver
 	AdminRelease() AdminReleaseResolver
 	AdminReleasesConnection() AdminReleasesConnectionResolver
+	AdminStorageEntry() AdminStorageEntryResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
 	AdminTelegramAccount() AdminTelegramAccountResolver
 	AdminTelegramAccountDialog() AdminTelegramAccountDialogResolver
@@ -528,6 +529,7 @@ type AdminQueryResolver interface {
 	LayoutBlocks(ctx context.Context, obj *model1.AdminQuery) ([]model1.LayoutBlock, error)
 	AllFrontmatterPatches(ctx context.Context, obj *model1.AdminQuery) (*model.AdminFrontmatterPatchesConnection, error)
 	FrontmatterPatch(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error)
+	StorageUsage(ctx context.Context, obj *model1.AdminQuery) (*model.AdminStorageUsage, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -542,6 +544,10 @@ type AdminReleaseResolver interface {
 }
 type AdminReleasesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error)
+}
+type AdminStorageEntryResolver interface {
+	Limit(ctx context.Context, obj *model1.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error)
+	Current(ctx context.Context, obj *model1.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error)
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
@@ -2315,6 +2321,28 @@ func (ec *executionContext) field_AdminQuery_user_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminStorageEntry_current_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "format", ec.unmarshalOStorageSizeFormat2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐStorageSizeFormat)
+	if err != nil {
+		return nil, err
+	}
+	args["format"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminStorageEntry_limit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "format", ec.unmarshalOStorageSizeFormat2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐStorageSizeFormat)
+	if err != nil {
+		return nil, err
+	}
+	args["format"] = arg0
 	return args, nil
 }
 
@@ -17969,6 +17997,41 @@ func (ec *executionContext) fieldContext_AdminQuery_frontmatterPatch(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_storageUsage(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_storageUsage,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().StorageUsage(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminStorageUsage2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminStorageUsage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_storageUsage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "db":
+				return ec.fieldContext_AdminStorageUsage_db(ctx, field)
+			case "assets":
+				return ec.fieldContext_AdminStorageUsage_assets(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminStorageUsage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18648,6 +18711,158 @@ func (ec *executionContext) fieldContext_AdminStartTelegramAccountAuthPayload_au
 				return ec.fieldContext_AdminTelegramAccountAuthState_passwordHint(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccountAuthState", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminStorageEntry_limit(ctx context.Context, field graphql.CollectedField, obj *model1.AdminStorageEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminStorageEntry_limit,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminStorageEntry().Limit(ctx, obj, fc.Args["format"].(*model.StorageSizeFormat))
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminStorageEntry_limit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminStorageEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminStorageEntry_limit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminStorageEntry_current(ctx context.Context, field graphql.CollectedField, obj *model1.AdminStorageEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminStorageEntry_current,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminStorageEntry().Current(ctx, obj, fc.Args["format"].(*model.StorageSizeFormat))
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminStorageEntry_current(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminStorageEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminStorageEntry_current_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminStorageUsage_db(ctx context.Context, field graphql.CollectedField, obj *model.AdminStorageUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminStorageUsage_db,
+		func(ctx context.Context) (any, error) {
+			return obj.Db, nil
+		},
+		nil,
+		ec.marshalNAdminStorageEntry2ᚖtrip2gᚋinternalᚋmodelᚐAdminStorageEntry,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminStorageUsage_db(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminStorageUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "limit":
+				return ec.fieldContext_AdminStorageEntry_limit(ctx, field)
+			case "current":
+				return ec.fieldContext_AdminStorageEntry_current(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminStorageEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminStorageUsage_assets(ctx context.Context, field graphql.CollectedField, obj *model.AdminStorageUsage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminStorageUsage_assets,
+		func(ctx context.Context) (any, error) {
+			return obj.Assets, nil
+		},
+		nil,
+		ec.marshalNAdminStorageEntry2ᚖtrip2gᚋinternalᚋmodelᚐAdminStorageEntry,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminStorageUsage_assets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminStorageUsage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "limit":
+				return ec.fieldContext_AdminStorageEntry_limit(ctx, field)
+			case "current":
+				return ec.fieldContext_AdminStorageEntry_current(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminStorageEntry", field.Name)
 		},
 	}
 	return fc, nil
@@ -28068,6 +28283,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allFrontmatterPatches(ctx, field)
 			case "frontmatterPatch":
 				return ec.fieldContext_AdminQuery_frontmatterPatch(ctx, field)
+			case "storageUsage":
+				return ec.fieldContext_AdminQuery_storageUsage(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -51742,6 +51959,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "storageUsage":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_storageUsage(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -52260,6 +52513,156 @@ func (ec *executionContext) _AdminStartTelegramAccountAuthPayload(ctx context.Co
 			out.Values[i] = graphql.MarshalString("AdminStartTelegramAccountAuthPayload")
 		case "authState":
 			out.Values[i] = ec._AdminStartTelegramAccountAuthPayload_authState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminStorageEntryImplementors = []string{"AdminStorageEntry"}
+
+func (ec *executionContext) _AdminStorageEntry(ctx context.Context, sel ast.SelectionSet, obj *model1.AdminStorageEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminStorageEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminStorageEntry")
+		case "limit":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminStorageEntry_limit(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "current":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminStorageEntry_current(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminStorageUsageImplementors = []string{"AdminStorageUsage"}
+
+func (ec *executionContext) _AdminStorageUsage(ctx context.Context, sel ast.SelectionSet, obj *model.AdminStorageUsage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminStorageUsageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminStorageUsage")
+		case "db":
+			out.Values[i] = ec._AdminStorageUsage_db(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assets":
+			out.Values[i] = ec._AdminStorageUsage_assets(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -64967,6 +65370,30 @@ func (ec *executionContext) marshalNAdminStartTelegramAccountAuthOrErrorPayload2
 	return ec._AdminStartTelegramAccountAuthOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminStorageEntry2ᚖtrip2gᚋinternalᚋmodelᚐAdminStorageEntry(ctx context.Context, sel ast.SelectionSet, v *model1.AdminStorageEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminStorageEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminStorageUsage2trip2gᚋinternalᚋgraphᚋmodelᚐAdminStorageUsage(ctx context.Context, sel ast.SelectionSet, v model.AdminStorageUsage) graphql.Marshaler {
+	return ec._AdminStorageUsage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminStorageUsage2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminStorageUsage(ctx context.Context, sel ast.SelectionSet, v *model.AdminStorageUsage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminStorageUsage(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v db.Subgraph) graphql.Marshaler {
 	return ec._AdminSubgraph(ctx, sel, &v)
 }
@@ -69430,6 +69857,22 @@ func (ec *executionContext) marshalOSearchResultDocument2trip2gᚋinternalᚋgra
 		return graphql.Null
 	}
 	return ec._SearchResultDocument(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOStorageSizeFormat2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐStorageSizeFormat(ctx context.Context, v any) (*model.StorageSizeFormat, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.StorageSizeFormat)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOStorageSizeFormat2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐStorageSizeFormat(ctx context.Context, sel ast.SelectionSet, v *model.StorageSizeFormat) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {

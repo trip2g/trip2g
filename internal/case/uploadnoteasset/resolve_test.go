@@ -31,6 +31,7 @@ type Env interface {
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }
 
 func calcHash(content []byte) string {
@@ -100,6 +101,7 @@ func TestResolve(t *testing.T) {
 					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{}, nil
 					},
+					CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
 				}
 			},
 			wantErr: false,
@@ -160,6 +162,7 @@ func TestResolve(t *testing.T) {
 					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
 						return nil
 					},
+					CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
 				}
 			},
 			wantErr: true,
@@ -221,6 +224,7 @@ func TestResolve(t *testing.T) {
 					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
 						return nil
 					},
+					CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
 				}
 			},
 			wantErr: true,
@@ -289,6 +293,46 @@ func TestResolve(t *testing.T) {
 				require.Len(t, env.UpsertNoteVersionAssetCalls(), 1)
 				// PrepareLatestNotes should be called to update views
 				require.Len(t, env.PrepareLatestNotesCalls(), 1)
+			},
+		},
+		{
+			name: "failure - storage limit exceeded",
+			input: model.UploadNoteAssetInput{
+				NoteID:       123,
+				Path:         "images/test.png",
+				AbsolutePath: "/absolute/path/test.png",
+				Sha256Hash:   testHash,
+				File: graphql.Upload{
+					File:     bytes.NewReader(testContent),
+					Filename: "test.png",
+					Size:     int64(len(testContent)),
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.TestLogger{}
+					},
+					NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
+						return map[string]struct{}{
+							"images/test.png": {},
+						}, nil
+					},
+					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
+						return db.NoteAsset{}, sql.ErrNoRows
+					},
+					CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) {
+						return "assets storage limit exceeded", nil
+					},
+				}
+			},
+			wantErr: false,
+			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
+				require.IsType(t, &model.ErrorPayload{}, payload)
+				p := payload.(*model.ErrorPayload)
+				require.Equal(t, "assets storage limit exceeded", p.Message)
+				require.Empty(t, env.CreateNoteAssetCalls())
+				require.Empty(t, env.PutAssetObjectCalls())
 			},
 		},
 	}

@@ -153,6 +153,9 @@ models:
   Int64:
     model:
       - github.com/99designs/gqlgen/graphql.Int64
+  AdminStorageEntry:
+    model:
+      - trip2g/internal/model.AdminStorageEntry
   NotePath:
     model:
       - trip2g/internal/db.NotePath

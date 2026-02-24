@@ -23,6 +23,16 @@ type Env interface {
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 	LatestNoteViews() *appmodel.NoteViews
+	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
+}
+
+// newEnvMock returns an EnvMock with safe defaults for all methods.
+// Individual tests override only the methods they care about.
+func newEnvMock(log logger.Logger) *EnvMock {
+	return &EnvMock{
+		LoggerFunc:             func() logger.Logger { return log },
+		CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
+	}
 }
 
 func TestResolve(t *testing.T) {
@@ -44,11 +54,7 @@ func TestResolve(t *testing.T) {
 				},
 			},
 			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LoggerFunc: func() logger.Logger {
-						return mockLogger
-					},
-				}
+				return newEnvMock(mockLogger)
 			},
 			wantErr: false,
 			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
@@ -65,33 +71,30 @@ func TestResolve(t *testing.T) {
 				},
 			},
 			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LoggerFunc: func() logger.Logger {
-						return mockLogger
-					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-						return 1, nil
-					},
-					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
-						return &appmodel.NoteViews{
-							List: []*appmodel.NoteView{
-								{
-									Path:      "test.md",
-									PathID:    1,
-									VersionID: 100,
-									Assets:    map[string]struct{}{},
-								},
-							},
-							Subgraphs: map[string]*appmodel.NoteSubgraph{},
-						}, nil
-					},
-					HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
-						return nil
-					},
-					LayoutsFunc: func() *appmodel.Layouts {
-						return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
-					},
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+					return 1, nil
 				}
+				env.PrepareLatestNotesFunc = func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return &appmodel.NoteViews{
+						List: []*appmodel.NoteView{
+							{
+								Path:      "test.md",
+								PathID:    1,
+								VersionID: 100,
+								Assets:    map[string]struct{}{},
+							},
+						},
+						Subgraphs: map[string]*appmodel.NoteSubgraph{},
+					}, nil
+				}
+				env.HandleLatestNotesAfterSaveFunc = func(ctx context.Context, changedPathIDs []int64) error {
+					return nil
+				}
+				env.LayoutsFunc = func() *appmodel.Layouts {
+					return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+				}
+				return env
 			},
 			wantErr: false,
 			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
@@ -109,16 +112,34 @@ func TestResolve(t *testing.T) {
 				},
 			},
 			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LoggerFunc: func() logger.Logger {
-						return mockLogger
-					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-						return 0, errors.New("database error")
-					},
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+					return 0, errors.New("database error")
 				}
+				return env
 			},
 			wantErr: true,
+		},
+		{
+			name: "storage limit exceeded",
+			input: model.PushNotesInput{
+				Updates: []model.PushNoteInput{
+					{Path: "test.md", Content: "# Hello"},
+				},
+			},
+			setupEnv: func() *EnvMock {
+				env := newEnvMock(mockLogger)
+				env.CheckStorageLimitsFunc = func(_ context.Context, _ int64) (string, error) {
+					return "database storage limit exceeded", nil
+				}
+				return env
+			},
+			wantErr: false,
+			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
+				errPayload, ok := result.(*model.ErrorPayload)
+				require.True(t, ok)
+				require.Equal(t, "database storage limit exceeded", errPayload.Message)
+			},
 		},
 		{
 			name: "prepare latest notes fails",
@@ -128,17 +149,14 @@ func TestResolve(t *testing.T) {
 				},
 			},
 			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LoggerFunc: func() logger.Logger {
-						return mockLogger
-					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-						return 1, nil
-					},
-					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
-						return nil, errors.New("prepare error")
-					},
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+					return 1, nil
 				}
+				env.PrepareLatestNotesFunc = func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, errors.New("prepare error")
+				}
+				return env
 			},
 			wantErr: true,
 		},

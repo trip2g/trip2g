@@ -54,20 +54,20 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Validate patterns.
 	err = frontmatterpatch.ValidatePatterns(input.IncludePatterns)
 	if err != nil {
-		return model.NewFieldError("includePatterns", "invalid glob pattern"), nil
+		return model.NewFieldError("includePatterns", "invalid glob pattern"), nil //nolint:nilerr // validation error → field error
 	}
 
 	if len(input.ExcludePatterns) > 0 {
 		err = frontmatterpatch.ValidatePatterns(input.ExcludePatterns)
 		if err != nil {
-			return model.NewFieldError("excludePatterns", "invalid glob pattern"), nil
+			return model.NewFieldError("excludePatterns", "invalid glob pattern"), nil //nolint:nilerr // validation error → field error
 		}
 	}
 
 	// Validate jsonnet.
 	err = frontmatterpatch.ValidateJsonnet(input.Jsonnet)
 	if err != nil {
-		return model.NewFieldError("jsonnet", "invalid jsonnet: "+err.Error()), nil
+		return model.NewFieldError("jsonnet", "invalid jsonnet: "+err.Error()), nil //nolint:nilerr // validation error → field error
 	}
 
 	// Marshal patterns to JSON.

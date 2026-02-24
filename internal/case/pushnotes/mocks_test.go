@@ -21,6 +21,9 @@ var _ pushnotes.Env = &EnvMock{}
 //
 //		// make and configure a mocked pushnotes.Env
 //		mockedEnv := &EnvMock{
+//			CheckStorageLimitsFunc: func(ctx context.Context, additionalAssetBytes int64) (string, error) {
+//				panic("mock out the CheckStorageLimits method")
+//			},
 //			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
 //				panic("mock out the HandleLatestNotesAfterSave method")
 //			},
@@ -49,6 +52,9 @@ var _ pushnotes.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CheckStorageLimitsFunc mocks the CheckStorageLimits method.
+	CheckStorageLimitsFunc func(ctx context.Context, additionalAssetBytes int64) (string, error)
+
 	// HandleLatestNotesAfterSaveFunc mocks the HandleLatestNotesAfterSave method.
 	HandleLatestNotesAfterSaveFunc func(ctx context.Context, changedPathIDs []int64) error
 
@@ -72,6 +78,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CheckStorageLimits holds details about calls to the CheckStorageLimits method.
+		CheckStorageLimits []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// AdditionalAssetBytes is the additionalAssetBytes argument value.
+			AdditionalAssetBytes int64
+		}
 		// HandleLatestNotesAfterSave holds details about calls to the HandleLatestNotesAfterSave method.
 		HandleLatestNotesAfterSave []struct {
 			// Ctx is the ctx argument value.
@@ -110,6 +123,7 @@ type EnvMock struct {
 			Partial bool
 		}
 	}
+	lockCheckStorageLimits         sync.RWMutex
 	lockHandleLatestNotesAfterSave sync.RWMutex
 	lockInsertNote                 sync.RWMutex
 	lockInsertUncommittedPath      sync.RWMutex
@@ -117,6 +131,42 @@ type EnvMock struct {
 	lockLayouts                    sync.RWMutex
 	lockLogger                     sync.RWMutex
 	lockPrepareLatestNotes         sync.RWMutex
+}
+
+// CheckStorageLimits calls CheckStorageLimitsFunc.
+func (mock *EnvMock) CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error) {
+	if mock.CheckStorageLimitsFunc == nil {
+		panic("EnvMock.CheckStorageLimitsFunc: method is nil but Env.CheckStorageLimits was just called")
+	}
+	callInfo := struct {
+		Ctx                  context.Context
+		AdditionalAssetBytes int64
+	}{
+		Ctx:                  ctx,
+		AdditionalAssetBytes: additionalAssetBytes,
+	}
+	mock.lockCheckStorageLimits.Lock()
+	mock.calls.CheckStorageLimits = append(mock.calls.CheckStorageLimits, callInfo)
+	mock.lockCheckStorageLimits.Unlock()
+	return mock.CheckStorageLimitsFunc(ctx, additionalAssetBytes)
+}
+
+// CheckStorageLimitsCalls gets all the calls that were made to CheckStorageLimits.
+// Check the length with:
+//
+//	len(mockedEnv.CheckStorageLimitsCalls())
+func (mock *EnvMock) CheckStorageLimitsCalls() []struct {
+	Ctx                  context.Context
+	AdditionalAssetBytes int64
+} {
+	var calls []struct {
+		Ctx                  context.Context
+		AdditionalAssetBytes int64
+	}
+	mock.lockCheckStorageLimits.RLock()
+	calls = mock.calls.CheckStorageLimits
+	mock.lockCheckStorageLimits.RUnlock()
+	return calls
 }
 
 // HandleLatestNotesAfterSave calls HandleLatestNotesAfterSaveFunc.

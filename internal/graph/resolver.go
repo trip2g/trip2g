@@ -413,4 +413,11 @@ type Env interface {
 	ListTelegramAccountDialogs(ctx context.Context, accountID int64, limit int) ([]model.TelegramAccountDialog, error)
 	GetTelegramAccountDialogPublishTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
 	GetTelegramAccountDialogPublishInstantTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
+
+	// Storage limits.
+	SumNoteAssetsSizes(ctx context.Context) (int64, error)
+	DatabaseFilePath() string
+	StorageDBLimit() int64
+	StorageAssetsLimit() int64
+	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }

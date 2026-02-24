@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/dataencryption"
+	"trip2g/internal/datasize"
 	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
@@ -108,6 +109,10 @@ type Config struct {
 	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
+
+	// Storage limits (0 = no limit). Accept human-readable sizes: "1GB", "500MB".
+	StorageDBLimit     datasize.Size
+	StorageAssetsLimit datasize.Size
 
 	Metrics MetricsConfig
 
@@ -395,6 +400,10 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 
+	// Storage limits.
+	datasize.FlagVar(flag.CommandLine, &c.StorageDBLimit, "storage-db-limit", 0, "SQLite database size limit, e.g. 1GB, 500MB (0 = no limit)")
+	datasize.FlagVar(flag.CommandLine, &c.StorageAssetsLimit, "storage-assets-limit", 0, "Total note assets size limit, e.g. 2GB (0 = no limit)")
+
 	// Features configuration
 	flag.StringVar(&c.FeaturesJSON, "features", "{}", "Features configuration as JSON")
 }
@@ -407,7 +416,12 @@ func (c *Config) defineMinioFlags() {
 	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
 	flag.StringVar(&c.Storage.Prefix, "minio-prefix", c.Storage.Prefix, "MinIO object key prefix")
 	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
-	flag.StringVar(&c.Storage.PublicURL, "minio-public-url", c.Storage.PublicURL, "Override scheme and host in presigned URLs (e.g. https://storage.example.com)")
+	flag.StringVar(
+		&c.Storage.PublicURL,
+		"minio-public-url",
+		c.Storage.PublicURL,
+		"Override scheme and host in presigned URLs (e.g. https://storage.example.com)",
+	)
 	flag.DurationVar(
 		&c.Storage.InitTimeout,
 		"minio-init-timeout",

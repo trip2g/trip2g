@@ -20,6 +20,7 @@ type Env interface {
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 	LatestNoteViews() *appmodel.NoteViews
+	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }
 
 var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
@@ -34,6 +35,16 @@ var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
 	log := logger.WithPrefix(env.Logger(), "pushNotes:")
+
+	// Check storage limits before writing.
+	limitMsg, checkErr := env.CheckStorageLimits(ctx, 0)
+	if checkErr != nil {
+		return nil, checkErr
+	}
+
+	if limitMsg != "" {
+		return &model.ErrorPayload{Message: limitMsg}, nil
+	}
 
 	// If no updates, just return current state without rebuilding
 	if len(input.Updates) == 0 {

@@ -714,6 +714,11 @@ type AdminStartTelegramAccountAuthPayload struct {
 
 func (AdminStartTelegramAccountAuthPayload) IsAdminStartTelegramAccountAuthOrErrorPayload() {}
 
+type AdminStorageUsage struct {
+	Db     *model.AdminStorageEntry `json:"db"`
+	Assets *model.AdminStorageEntry `json:"assets"`
+}
+
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }
@@ -2772,6 +2777,63 @@ func (e *Role) UnmarshalJSON(b []byte) error {
 }
 
 func (e Role) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type StorageSizeFormat string
+
+const (
+	StorageSizeFormatBytes StorageSizeFormat = "BYTES"
+	StorageSizeFormatKb    StorageSizeFormat = "KB"
+	StorageSizeFormatMb    StorageSizeFormat = "MB"
+)
+
+var AllStorageSizeFormat = []StorageSizeFormat{
+	StorageSizeFormatBytes,
+	StorageSizeFormatKb,
+	StorageSizeFormatMb,
+}
+
+func (e StorageSizeFormat) IsValid() bool {
+	switch e {
+	case StorageSizeFormatBytes, StorageSizeFormatKb, StorageSizeFormatMb:
+		return true
+	}
+	return false
+}
+
+func (e StorageSizeFormat) String() string {
+	return string(e)
+}
+
+func (e *StorageSizeFormat) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = StorageSizeFormat(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid StorageSizeFormat", str)
+	}
+	return nil
+}
+
+func (e StorageSizeFormat) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *StorageSizeFormat) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e StorageSizeFormat) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

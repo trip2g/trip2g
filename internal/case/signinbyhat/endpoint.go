@@ -75,17 +75,9 @@ func Resolve(ctx context.Context, env Env, token string) error {
 
 	// If AdminEnter flag is set, ensure user is admin.
 	if hotAuthToken.AdminEnter {
-		_, err = env.AdminByUserID(ctx, user.ID)
+		err = ensureUserIsAdmin(ctx, env, user.ID)
 		if err != nil {
-			if db.IsNoFound(err) {
-				// User is not admin, make them admin.
-				_, insertErr := env.InsertAdmin(ctx, db.InsertAdminParams{UserID: user.ID})
-				if insertErr != nil {
-					return fmt.Errorf("failed to make user admin: %w", insertErr)
-				}
-			} else {
-				return fmt.Errorf("failed to check admin status: %w", err)
-			}
+			return err
 		}
 	}
 
@@ -93,6 +85,24 @@ func Resolve(ctx context.Context, env Env, token string) error {
 	_, err = env.SetupUserToken(ctx, user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
+	}
+
+	return nil
+}
+
+func ensureUserIsAdmin(ctx context.Context, env Env, userID int64) error {
+	_, err := env.AdminByUserID(ctx, userID)
+	if err == nil {
+		return nil
+	}
+
+	if !db.IsNoFound(err) {
+		return fmt.Errorf("failed to check admin status: %w", err)
+	}
+
+	_, insertErr := env.InsertAdmin(ctx, db.InsertAdminParams{UserID: userID})
+	if insertErr != nil {
+		return fmt.Errorf("failed to make user admin: %w", insertErr)
 	}
 
 	return nil

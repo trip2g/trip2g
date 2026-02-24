@@ -23,6 +23,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //
 //		// make and configure a mocked uploadnoteasset.Env
 //		mockedEnv := &EnvMock{
+//			CheckStorageLimitsFunc: func(ctx context.Context, additionalAssetBytes int64) (string, error) {
+//				panic("mock out the CheckStorageLimits method")
+//			},
 //			CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error) {
 //				panic("mock out the CreateNoteAsset method")
 //			},
@@ -57,6 +60,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CheckStorageLimitsFunc mocks the CheckStorageLimits method.
+	CheckStorageLimitsFunc func(ctx context.Context, additionalAssetBytes int64) (string, error)
+
 	// CreateNoteAssetFunc mocks the CreateNoteAsset method.
 	CreateNoteAssetFunc func(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 
@@ -86,6 +92,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CheckStorageLimits holds details about calls to the CheckStorageLimits method.
+		CheckStorageLimits []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// AdditionalAssetBytes is the additionalAssetBytes argument value.
+			AdditionalAssetBytes int64
+		}
 		// CreateNoteAsset holds details about calls to the CreateNoteAsset method.
 		CreateNoteAsset []struct {
 			// Ctx is the ctx argument value.
@@ -148,6 +161,7 @@ type EnvMock struct {
 			Arg db.UpsertNoteVersionAssetParams
 		}
 	}
+	lockCheckStorageLimits     sync.RWMutex
 	lockCreateNoteAsset        sync.RWMutex
 	lockDeleteAssetObject      sync.RWMutex
 	lockDeleteNoteAsset        sync.RWMutex
@@ -157,6 +171,42 @@ type EnvMock struct {
 	lockPrepareLatestNotes     sync.RWMutex
 	lockPutAssetObject         sync.RWMutex
 	lockUpsertNoteVersionAsset sync.RWMutex
+}
+
+// CheckStorageLimits calls CheckStorageLimitsFunc.
+func (mock *EnvMock) CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error) {
+	if mock.CheckStorageLimitsFunc == nil {
+		panic("EnvMock.CheckStorageLimitsFunc: method is nil but Env.CheckStorageLimits was just called")
+	}
+	callInfo := struct {
+		Ctx                  context.Context
+		AdditionalAssetBytes int64
+	}{
+		Ctx:                  ctx,
+		AdditionalAssetBytes: additionalAssetBytes,
+	}
+	mock.lockCheckStorageLimits.Lock()
+	mock.calls.CheckStorageLimits = append(mock.calls.CheckStorageLimits, callInfo)
+	mock.lockCheckStorageLimits.Unlock()
+	return mock.CheckStorageLimitsFunc(ctx, additionalAssetBytes)
+}
+
+// CheckStorageLimitsCalls gets all the calls that were made to CheckStorageLimits.
+// Check the length with:
+//
+//	len(mockedEnv.CheckStorageLimitsCalls())
+func (mock *EnvMock) CheckStorageLimitsCalls() []struct {
+	Ctx                  context.Context
+	AdditionalAssetBytes int64
+} {
+	var calls []struct {
+		Ctx                  context.Context
+		AdditionalAssetBytes int64
+	}
+	mock.lockCheckStorageLimits.RLock()
+	calls = mock.calls.CheckStorageLimits
+	mock.lockCheckStorageLimits.RUnlock()
+	return calls
 }
 
 // CreateNoteAsset calls CreateNoteAssetFunc.

@@ -607,7 +607,11 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	return &pp, nil
 }
 
-func (ldr *loader) applyFrontmatterPatches(path string, rawMeta map[string]interface{}, pp *model.NoteView) (map[string]interface{}, []model.AppliedFrontmatterPatch) {
+func (ldr *loader) applyFrontmatterPatches(
+	path string,
+	rawMeta map[string]interface{},
+	pp *model.NoteView,
+) (map[string]interface{}, []model.AppliedFrontmatterPatch) {
 	if len(ldr.frontmatterPatches) == 0 {
 		return rawMeta, nil
 	}
