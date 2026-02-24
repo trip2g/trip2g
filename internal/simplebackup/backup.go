@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"trip2g/internal/miniostorage"
+	"trip2g/internal/model"
 )
 
 const (
@@ -88,35 +88,40 @@ func (m *Manager) enforceRetention(ctx context.Context) error {
 		return err
 	}
 
-	// Filter and sort backups by LastModified (newest first)
-	var backups []string
-	for _, obj := range objects {
-		if strings.HasPrefix(obj.Key, backupPrefix) && strings.HasSuffix(obj.Key, ".db.gz") {
-			backups = append(backups, obj.Key)
-		}
-	}
+	backups := filterAndSortBackups(objects)
 
-	// Sort by extracting timestamp from filename
-	sort.Slice(backups, func(i, j int) bool {
-		// Extract timestamps from filenames for comparison
-		// Format: db-backup-{timestamp}.db.gz
-		var ti, tj int64
-		_, _ = fmt.Sscanf(filepath.Base(backups[i]), backupPrefix+"%d.db.gz", &ti)
-		_, _ = fmt.Sscanf(filepath.Base(backups[j]), backupPrefix+"%d.db.gz", &tj)
-		return ti > tj // Descending (newest first)
-	})
-
-	// Delete old backups
 	if len(backups) > retentionCount {
 		toDelete := backups[retentionCount:]
-		for _, key := range toDelete {
-			m.env.Logger().Info("deleting old backup", "key", key)
-			deleteErr := m.env.DeletePrivateObject(ctx, key)
+		for _, obj := range toDelete {
+			m.env.Logger().Info("deleting old backup", "key", obj.Key)
+			deleteErr := m.env.DeletePrivateObject(ctx, obj.Key)
 			if deleteErr != nil {
-				// Log but continue
-				m.env.Logger().Error("failed to delete old backup", "key", key, "error", deleteErr)
+				m.env.Logger().Error("failed to delete old backup", "key", obj.Key, "error", deleteErr)
 			}
 		}
 	}
 	return nil
+}
+
+// filterAndSortBackups filters objects to valid backup files and sorts newest-first by filename timestamp.
+// Unparseable filenames sort to the end (treated as oldest, deleted by retention first).
+func filterAndSortBackups(objects []model.PrivateObject) []model.PrivateObject {
+	var backups []model.PrivateObject
+	for _, obj := range objects {
+		if strings.HasPrefix(obj.Key, backupPrefix) && strings.HasSuffix(obj.Key, ".db.gz") {
+			backups = append(backups, obj)
+		}
+	}
+
+	sort.Slice(backups, func(i, j int) bool {
+		var ti, tj int64
+		ni, _ := fmt.Sscanf(backups[i].Key, backupPrefix+"%d.db.gz", &ti)
+		nj, _ := fmt.Sscanf(backups[j].Key, backupPrefix+"%d.db.gz", &tj)
+		if ni == 0 || nj == 0 {
+			return ni > nj
+		}
+		return ti > tj
+	})
+
+	return backups
 }

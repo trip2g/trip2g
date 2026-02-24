@@ -276,27 +276,43 @@ Exit code: 1
 
 **Location:** `internal/simplebackup/backup_test.go`
 
+**Run:**
+```bash
+go test ./internal/simplebackup/...
+```
+
 **Test cases:**
-- `TestBackup_Success` - 10MB database backup completes in <5s
-- `TestBackup_Concurrent` - Second backup attempt returns error immediately
-- `TestBackup_MinIOFailure` - Upload failure returns error, cleans up temp files
-- `TestBackup_Cleanup` - Keeps 3 most recent, deletes older backups
-- `TestRestore_Success` - Selects latest backup, integrity check passes
-- `TestRestore_NoBackups` - Fatal error when no backups exist
-- `TestRestore_Corrupted` - Fatal error when integrity_check fails
-- `TestRestore_SkipWhenExists` - Skips restore if local DB already exists
+- `TestPerformBackup_Success` — Creates real SQLite DB, verifies backup uploads valid gzipped SQLite
+- `TestPerformBackup_ConcurrentBlocked` — Second concurrent backup returns "already in progress" error
+- `TestPerformBackup_NilDB` — Returns error when DB is nil
+- `TestPerformBackup_UploadFails` — Upload failure returns error, temp file cleaned up
+- `TestPerformBackup_RetentionDeletesOldest` — Verifies oldest backups deleted when over retention limit
+- `TestPerformBackup_RetentionNoDeleteWhenUnderLimit` — No deletion when under retention count
+- `TestRestoreOnStartup_SkipsWhenDBExists` — No storage calls when local DB already exists
+- `TestRestoreOnStartup_NoBackups` — Returns nil (fresh start) when no backups in storage
+- `TestRestoreOnStartup_Success` — Restores DB from gzipped backup, verifies data integrity
+- `TestRestoreOnStartup_IntegrityCheckFails` — Returns error when downloaded backup fails integrity check
 
-### Integration Tests
+### E2E Backup/Restore Test
 
-**Location:** `internal/simplebackup/integration_test.go`
+**Location:** `scripts/test-backup.sh`
 
-**Test scenario:** Full backup → restore → integrity check cycle
-1. Create test database with known data
-2. Run backup
-3. Delete local database
-4. Run restore
-5. Verify data matches original
-6. Run integrity check
+**Run after `scripts/test-e2e.sh`** (requires running containers):
+```bash
+# First run e2e suite (populates data, keeps containers running)
+./scripts/test-e2e.sh
+
+# Then run backup/restore test
+./scripts/test-backup.sh
+```
+
+**Test flow:**
+1. Verifies app container is running (from test-e2e.sh)
+2. Stops app gracefully (`docker compose stop` → SIGTERM → shutdown backup → MinIO)
+3. Deletes local database file
+4. Starts app again (startup restore → downloads from MinIO)
+5. Waits for health check
+6. Runs Playwright smoke/vault tests to verify all data is intact
 
 ### Manual Testing
 
@@ -365,6 +381,53 @@ http.Get("https://nosnch.in/xxxxxxxxxx")
 ```
 
 If backups stop, Dead Man's Snitch alerts you.
+
+## Nomad Deployment Considerations
+
+### Behavior During Restart
+
+| Scenario | Behavior | Notes |
+|----------|----------|-------|
+| **Restart on same allocation** (local DB exists) | Restore skipped | `os.Stat` check returns early — existing data preserved |
+| **Fresh allocation** (no local DB) | Downloads from MinIO | `RestoreOnStartup` fetches latest backup |
+| **First ever deployment** (no backups in MinIO) | Starts with empty DB | Logged as warning, not an error |
+
+### Shutdown Backup Timeout
+
+The graceful shutdown backup uses a **30-second context timeout** (`cmd/server/main.go`).
+
+**Risk:** For large databases (>100MB) on slow networks, 30 seconds may not be sufficient.
+
+**Recommendation:** Set Nomad `kill_timeout` to at least **45 seconds** to give the backup time to complete before Nomad sends SIGKILL:
+
+```hcl
+task "app" {
+  kill_timeout = "60s"
+  kill_signal  = "SIGTERM"
+}
+```
+
+The default Nomad `kill_timeout` is 5 seconds — too short for backup completion.
+
+### SIGKILL Behavior
+
+If Nomad sends SIGKILL after `kill_timeout`, any in-flight backup is **silently lost**. This is acceptable because:
+- Hourly cron backups provide a 1-hour safety net
+- The shutdown backup is best-effort, not guaranteed
+- The worst case is losing up to ~1 hour of data, not the entire database
+
+### SIGTERM During Backup Phases
+
+| Phase | Interrupted Behavior |
+|-------|---------------------|
+| **During VACUUM INTO** | Temp file left behind; source DB unharmed (VACUUM INTO is atomic). Temp file cleaned by `defer os.Remove()` on next run. |
+| **During gzip + upload** | Partial object NOT committed to S3 (MinIO requires full upload). No corrupt backup created. Cron backup provides recovery. |
+
+### Known Limitations
+
+1. **No automatic fallback to older backups** — if the latest backup fails integrity check, the app panics. Manual recovery required (see Troubleshooting).
+2. **No retry on restore failure** — transient MinIO errors cause startup failure. The app must be restarted.
+3. **No backup progress monitoring** — large backups show no progress logs during upload.
 
 ## Comparison: Simple Backup vs. Litestream
 
@@ -461,16 +524,16 @@ aws s3 rm s3://mybucket/backups/db-backup-1732435200.db.gz
 
 ## Implementation Checklist
 
-- [ ] `internal/simplebackup/backup.go` - Backup logic with cleanup
-- [ ] `internal/simplebackup/restore.go` - Restore logic with integrity check
-- [ ] `internal/simplebackup/manager.go` - Lifecycle orchestration
-- [ ] `internal/case/cronjob/simplebackup/` - Hourly cron job
-- [ ] `cmd/server/main.go` - CLI flag + startup restore + shutdown backup
-- [ ] Tests with mocked MinIO client
-- [ ] Integration test for full cycle
-- [ ] Logging at INFO level for all operations
-- [ ] Error handling with clear messages
-- [ ] Documentation (this file)
+- [x] `internal/simplebackup/backup.go` - Backup logic with cleanup
+- [x] `internal/simplebackup/restore.go` - Restore logic with integrity check
+- [x] `internal/simplebackup/manager.go` - Lifecycle orchestration
+- [x] `internal/case/cronjob/simplebackup/` - Hourly cron job
+- [x] `cmd/server/main.go` - CLI flag + startup restore + shutdown backup
+- [x] Tests with real SQLite databases (10 unit tests)
+- [x] E2E backup/restore test via `scripts/test-backup.sh`
+- [x] Logging at INFO level for all operations
+- [x] Error handling with clear messages
+- [x] Documentation (this file)
 
 ## See Also
 

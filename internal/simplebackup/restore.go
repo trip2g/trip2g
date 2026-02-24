@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"trip2g/internal/miniostorage"
 
@@ -38,17 +37,13 @@ func (m *Manager) RestoreOnStartup(ctx context.Context) error {
 		return fmt.Errorf("failed to list backups: %w", err)
 	}
 
-	if len(objects) == 0 {
-		log.Warn("no backups found, starting with fresh database")
+	backups := filterAndSortBackups(objects)
+	if len(backups) == 0 {
+		log.Warn("no valid backup files found, starting with fresh database")
 		return nil
 	}
 
-	// Sort by LastModified descending (newest first)
-	sort.Slice(objects, func(i, j int) bool {
-		return objects[i].LastModified.After(objects[j].LastModified)
-	})
-
-	latest := objects[0]
+	latest := backups[0]
 	log.Info("restoring backup", "key", latest.Key, "size", latest.Size, "modified", latest.LastModified)
 
 	// 3. Download & Decompress

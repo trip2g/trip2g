@@ -45,6 +45,7 @@ services:
       - MINIO_SECRET_KEY=testpassword
       - MINIO_BUCKET=test-bucket
       - MINIO_USE_SSL=false
+      - SIMPLE_BACKUP=true
 
       # Public URL
       # - PUBLIC_URL=http://localhost:20081
