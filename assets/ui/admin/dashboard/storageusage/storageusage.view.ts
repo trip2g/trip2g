@@ -16,7 +16,7 @@ namespace $.$$ {
 		}
 	`)
 
-	function formatEntry(label: string, current: number, limit: number): string {
+	function formatLabel(label: string, current: number, limit: number): string {
 		const curr = current.toFixed(2)
 		if (limit === 0) return `${label}: ${curr} MB`
 		return `${label}: ${curr} MB / ${limit.toFixed(2)} MB`
@@ -30,12 +30,24 @@ namespace $.$$ {
 
 		override db_label(): string {
 			const d = this.data().db
-			return formatEntry(super.db_label(), d.current, d.limit)
+			return formatLabel(super.db_label(), d.current, d.limit)
+		}
+
+		override db_portion(): number {
+			const d = this.data().db
+			if (d.limit === 0) return 0
+			return Math.min(d.current / d.limit, 1)
 		}
 
 		override assets_label(): string {
 			const d = this.data().assets
-			return formatEntry(super.assets_label(), d.current, d.limit)
+			return formatLabel(super.assets_label(), d.current, d.limit)
+		}
+
+		override assets_portion(): number {
+			const d = this.data().assets
+			if (d.limit === 0) return 0
+			return Math.min(d.current / d.limit, 1)
 		}
 	}
 }

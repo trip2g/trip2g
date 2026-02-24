@@ -5,8 +5,14 @@ $trip2g_admin_dashboard_storageusage $mol_view
 		<= DB $mol_view
 			style *
 				padding \.5rem .75rem
-			sub / <= db_label @ \Database
+			sub /
+				<= db_label @ \Database
+				<= DB_portion $mol_portion
+					portion <= db_portion 0
 		<= Assets $mol_view
 			style *
 				padding \.5rem .75rem
-			sub / <= assets_label @ \Assets
+			sub /
+				<= assets_label @ \Assets
+				<= Assets_portion $mol_portion
+					portion <= assets_portion 0
