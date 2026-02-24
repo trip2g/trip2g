@@ -5,6 +5,7 @@ $trip2g_admin_dashboard_storageusage $mol_view
 		<= DB $mol_view
 			style *
 				padding \.5rem .75rem
+				flexDirection \column
 			sub /
 				<= db_label @ \Database
 				<= DB_portion $mol_portion
@@ -12,6 +13,7 @@ $trip2g_admin_dashboard_storageusage $mol_view
 		<= Assets $mol_view
 			style *
 				padding \.5rem .75rem
+				flexDirection \column
 			sub /
 				<= assets_label @ \Assets
 				<= Assets_portion $mol_portion

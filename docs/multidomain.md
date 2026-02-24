@@ -99,13 +99,39 @@ Routes added via frontmatter patches work identically to static frontmatter. The
 
 ---
 
+## Domain-Aware Wikilink Resolution
+
+When a note on a custom domain links to another note via `[[wikilink]]`, the generated `<a href>` uses the domain-correct path, not the canonical permalink.
+
+**How it works:**
+
+At load time, after normal HTML rendering, notes with custom domain routes are re-rendered with domain-specific link resolution (`generateDomainHTMLs` in `internal/mdloader/domain_render.go`). The result is stored in `NoteView.DomainHTML[host]`. At serve time, `Response.NoteHTML()` returns `DomainHTML[host]` when the request is on a known custom domain.
+
+**Resolution rules per link target:**
+
+| Target has… | Behavior |
+|-------------|----------|
+| Route on the current domain | Use that route's path (e.g., `/custom-path`) |
+| Route on a different domain only | Use full URL (e.g., `https://bar.com/path`) |
+| No custom domain routes | Use canonical permalink (unchanged) |
+| Only main-domain alias (`route: /about`) | Use canonical permalink (not a custom domain) |
+
+**Known behavior — cross-domain full URLs:** When note A on `foo.com` links to note B that only has a route on `bar.com`, the generated href is `https://bar.com/path`. This is an absolute URL pointing to the other domain. If `bar.com` is an internal or private domain, this URL will be visible in the HTML of `foo.com`. Configure routes accordingly.
+
+**Not domain-aware (main-domain HTML used):** RSS feed, GraphQL API, MCP, Telegram posts. These always use canonical permalinks. `FreeHTML` (paywall preview) also uses the main-domain version.
+
+**Embed links** (`![[note]]`) are never domain-rewritten — they always use the canonical permalink so the embedded content renders correctly.
+
+---
+
 ## Key Files
 
 | File | Role |
 |------|------|
 | `internal/model/note_routes.go` | `ParsedRoute`, `ParseRoute`, `NormalizeDomain`, `ExtractRoutes` |
 | `internal/model/note.go` | `NoteViews.RouteMap`, `RegisterNoteRoutes`, `GetByRoute`, `IsCustomDomain` |
-| `internal/case/rendernotepage/resolve.go` | `resolveNote` — domain-aware lookup |
+| `internal/mdloader/domain_render.go` | `generateDomainHTMLs` — per-domain HTML re-render at load time |
+| `internal/case/rendernotepage/resolve.go` | `resolveNote`, `Response.NoteHTML()`, `Response.SidebarHTML()` |
 | `internal/case/rendernotepage/endpoint.go` | Extracts `Host` header into `Request`; OG URL for custom domains |
 | `internal/sitemap/sitemap.go` | `GenerateForDomain` |
 | `internal/noteloader/loader.go` | Generates `DomainSitemaps` after load |
@@ -124,6 +150,8 @@ Routes added via frontmatter patches work identically to static frontmatter. The
 | Main domain alias on custom domain | NOT served on custom domain (isolation) |
 | Unknown host (localhost in dev) | Treated as main domain |
 | Custom domain visitor and auth | Cookies are browser-scoped — use `free: true` for domain notes |
+| Wikilink to note on another domain | Full URL generated: `https://other.com/path` |
+| Embed `![[note]]` to domain-routed note | Uses main-domain HTML for embed content |
 
 ---
 
@@ -134,5 +162,6 @@ E2E tests: `e2e/multidomain.spec.js`
 Unit tests:
 - `internal/model/note_test.go` — ParseRoute, RouteMap registration
 - `internal/case/rendernotepage/resolve_note_test.go` — resolveNote scenarios
+- `internal/mdloader/domain_render_test.go` — domain HTML re-render (resolveForDomain, generateDomainHTML)
 
-Test vault: `testdata/vault/multidomain/` (four notes: root, about, multi_route, no_route)
+Test vault: `testdata/vault/multidomain/` (root, about, multi_route, no_route, domain-link-a, domain-link-b)
