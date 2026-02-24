@@ -5,6 +5,7 @@ $trip2g_admin_dashboard $mol_page
 		<= Editor $trip2g_editor
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
+		<= StorageUsage $trip2g_admin_dashboard_storageusage
 		<= Desk $mol_deck
 			items /
 				<= NoteWarningsItem $mol_view
