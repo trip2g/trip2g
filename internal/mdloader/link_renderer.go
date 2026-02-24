@@ -107,7 +107,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		r.hasDest.Store(n, struct{}{})
 		_, _ = w.WriteString(`<a`)
 
-		note := r.nvs.GetByPath(removeVersion(string(dest)))
+		note := r.resolveNoteForAttributes(string(dest))
 		if note != nil {
 			if !note.Free {
 				subgraphClasses := ""
@@ -200,6 +200,12 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatu
 	note := r.nvs.GetByPath(url)
 	if note == nil {
 		lr, ok := r.resolver.(*myLinkResolver)
+		if ok && lr.domainRenderNotes != nil {
+			note = lr.domainRenderNotes[url]
+		}
+	}
+	if note == nil {
+		lr, ok := r.resolver.(*myLinkResolver)
 		if ok {
 			lr.currentPage.AddWarning(model.NoteWarningInfo, "embedded note not found: %s", url)
 		}
@@ -229,6 +235,21 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 	if _, ok := r.hasDest.LoadAndDelete(n); ok {
 		_, _ = w.WriteString("</a>")
 	}
+}
+
+// resolveNoteForAttributes finds the target NoteView for writing class/data-pid attributes.
+// During domain re-render, dest may be a domain-specific path (e.g., "/page-b") or a
+// full cross-domain URL (e.g., "https://bar.com/path") that doesn't exist in nv.Map.
+// Falls back to domainRenderNotes on the resolver when GetByPath returns nil.
+func (r *linkRenderer) resolveNoteForAttributes(dest string) *model.NoteView {
+	note := r.nvs.GetByPath(removeVersion(dest))
+	if note == nil {
+		lr, ok := r.resolver.(*myLinkResolver)
+		if ok && lr.domainRenderNotes != nil {
+			note = lr.domainRenderNotes[removeVersion(dest)]
+		}
+	}
+	return note
 }
 
 // returns true if the wikilink should be resolved to an image node.

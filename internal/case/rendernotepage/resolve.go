@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/url"
 	"regexp"
 	"strings"
@@ -76,6 +77,11 @@ type Response struct {
 
 	IsAdmin        bool
 	OnboardingMode bool
+
+	// domainHost is the normalized custom domain host for this request.
+	// Empty string for main domain requests.
+	// Used by NoteHTML() to select domain-specific rendered HTML.
+	domainHost string
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -85,6 +91,32 @@ func (r *Response) NoteSubgraphsJSON() string {
 	}
 
 	return string(raw)
+}
+
+// NoteHTML returns the note's HTML, using domain-specific pre-rendered HTML if available.
+func (r *Response) NoteHTML() template.HTML {
+	if r.Note == nil {
+		return ""
+	}
+	if r.domainHost != "" && r.Note.DomainHTML != nil {
+		if domainHTML, ok := r.Note.DomainHTML[r.domainHost]; ok {
+			return domainHTML
+		}
+	}
+	return r.Note.HTML
+}
+
+// SidebarHTML returns domain-aware HTML for a sidebar note.
+func (r *Response) SidebarHTML(sidebar *model.NoteView) template.HTML {
+	if sidebar == nil {
+		return ""
+	}
+	if r.domainHost != "" && sidebar.DomainHTML != nil {
+		if domainHTML, ok := sidebar.DomainHTML[r.domainHost]; ok {
+			return domainHTML
+		}
+	}
+	return sidebar.HTML
 }
 
 var ErrNotFound = errors.New("page not found")
@@ -158,6 +190,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	note := resolveNote(notes, request.Host, path, publicURL)
 	if note == nil {
 		return &response, ErrNotFound
+	}
+
+	// Set domain context for domain-aware HTML rendering.
+	normalizedHost := model.NormalizeDomain(request.Host)
+	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
+	if normalizedHost != mainHost && normalizedHost != "" && notes.IsCustomDomain(normalizedHost) {
+		response.domainHost = normalizedHost
 	}
 
 	if isAdmin {

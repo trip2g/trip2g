@@ -53,7 +53,7 @@
     <div class="noteview__container">
       <div class="noteview__left-column">
         <div class="noteview__markup prose prose-stone prose-lg">
-        {%s= string(resp.Note.HTML) %}
+        {%s= string(resp.NoteHTML()) %}
         </div>
 
         {% if len(resp.Note.InLinks) > 0 %}
@@ -111,7 +111,7 @@
         <div class="sidebar__menus">
           {% for _, sidebar := range sidebars %}
           <div class="sidebar__menu">
-            {%s= string(sidebar.HTML) %}
+            {%s= string(resp.SidebarHTML(sidebar)) %}
           </div>
           {% endfor %}
         </div>
@@ -312,7 +312,7 @@
         </div>
 
         <div class="noteview__markup prose prose-stone prose-lg">
-          {%s= string(resp.Note.HTML) %}
+          {%s= string(resp.NoteHTML()) %}
         </div>
       </div>
     </div>

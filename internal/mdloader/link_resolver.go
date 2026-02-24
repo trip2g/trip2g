@@ -14,6 +14,12 @@ type myLinkResolver struct {
 	nvs *model.NoteViews
 
 	currentPage *model.NoteView
+
+	// domainRenderNotes maps domain-specific paths to NoteViews during
+	// domain re-render. Used by linkRenderer to find notes for data-pid
+	// and paywall classes when the href is a domain path (not a permalink).
+	// nil during normal rendering.
+	domainRenderNotes map[string]*model.NoteView
 }
 
 const _html = ".html"

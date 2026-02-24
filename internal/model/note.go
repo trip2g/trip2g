@@ -126,6 +126,12 @@ type NoteView struct {
 	// includes the first rendered paragraphs equal to this number.
 	FreeHTML template.HTML
 
+	// DomainHTML stores pre-rendered HTML for custom domain contexts.
+	// Key = normalized domain host (e.g., "foo.com").
+	// Lazily initialized: only populated for notes with custom domain routes
+	// whose wikilinks differ when rendered in domain context.
+	DomainHTML map[string]template.HTML `json:"-"`
+
 	Permalink string
 	IsIndex   bool
 

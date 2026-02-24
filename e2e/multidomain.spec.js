@@ -124,4 +124,21 @@ test.describe('Multi-domain routing', () => {
     // Main-domain-only routes should not appear
     expect(body).not.toContain('/multi-alias');
   });
+
+  test('domain-aware links: wikilink uses domain path, not permalink', async ({ request }) => {
+    // domain-link-a.md has route: customdomain.test/domain-link-a
+    // and links to domain-link-b.md which has route: customdomain.test/b-on-domain
+    // When served on custom domain, the link should use /b-on-domain (domain path),
+    // NOT /domain-link-b (permalink derived from filename).
+    const response = await domainGet(request, '/domain-link-a');
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+
+    // The link to domain-link-b should use the domain path
+    expect(body).toContain('href="/b-on-domain"');
+
+    // The permalink-based path should NOT appear in the rendered link.
+    // Note: "domain-link-b.md" gets permalink "/domain_link_b" (hyphens normalized to underscores).
+    expect(body).not.toContain('href="/domain_link_b"');
+  });
 });

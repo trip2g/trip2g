@@ -150,6 +150,8 @@ func Load(options Options) (*model.NoteViews, error) {
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
 	}
 
+	ldr.generateDomainHTMLs()
+
 	ldr.nvs.ExtractNoteList()
 	ldr.nvs.ExtractSubgraphs()
 

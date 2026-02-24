@@ -8,7 +8,8 @@ import (
 // Note wraps model.NoteView for template usage.
 // Provides a stable API that decouples templates from internal model changes.
 type Note struct {
-	nv *model.NoteView
+	nv         *model.NoteView
+	domainHost string
 }
 
 // NewNote creates a new template Note wrapper.
@@ -19,13 +20,28 @@ func NewNote(nv *model.NoteView) *Note {
 	return &Note{nv: nv}
 }
 
+// NewNoteWithDomain creates a Note wrapper with domain context for
+// domain-aware HTML rendering in custom layouts.
+func NewNoteWithDomain(nv *model.NoteView, domainHost string) *Note {
+	if nv == nil {
+		return nil
+	}
+	return &Note{nv: nv, domainHost: domainHost}
+}
+
 // Title returns the note title.
 func (n *Note) Title() string {
 	return n.nv.Title
 }
 
 // HTMLString returns the rendered HTML content.
+// When domain context is set, returns domain-specific HTML if available.
 func (n *Note) HTMLString() string {
+	if n.domainHost != "" && n.nv.DomainHTML != nil {
+		if domainHTML, ok := n.nv.DomainHTML[n.domainHost]; ok {
+			return string(domainHTML)
+		}
+	}
 	return string(n.nv.HTML)
 }
 

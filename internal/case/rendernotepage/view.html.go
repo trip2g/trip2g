@@ -204,7 +204,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
         <div class="noteview__markup prose prose-stone prose-lg">
         `)
 //line view.html:56
-	qw422016.N().S(string(resp.Note.HTML))
+	qw422016.N().S(string(resp.NoteHTML()))
 //line view.html:56
 	qw422016.N().S(`
         </div>
@@ -416,7 +416,7 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
           <div class="sidebar__menu">
             `)
 //line view.html:114
-			qw422016.N().S(string(sidebar.HTML))
+			qw422016.N().S(string(resp.SidebarHTML(sidebar)))
 //line view.html:114
 			qw422016.N().S(`
           </div>
@@ -944,7 +944,7 @@ func StreamLayoutError(qw422016 *qt422016.Writer, resp *Response, layoutName str
         <div class="noteview__markup prose prose-stone prose-lg">
           `)
 //line view.html:315
-	qw422016.N().S(string(resp.Note.HTML))
+	qw422016.N().S(string(resp.NoteHTML()))
 //line view.html:315
 	qw422016.N().S(`
         </div>

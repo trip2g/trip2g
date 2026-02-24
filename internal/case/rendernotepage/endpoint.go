@@ -172,7 +172,7 @@ func renderLayout(
 	}()
 
 	vars := make(jet.VarMap)
-	vars["note"] = reflect.ValueOf(templateviews.NewNote(resp.Note))
+	vars["note"] = reflect.ValueOf(templateviews.NewNoteWithDomain(resp.Note, resp.domainHost))
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
 
