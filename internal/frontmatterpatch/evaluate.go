@@ -43,6 +43,10 @@ func Evaluate(vm *jsonnet.VM, patch CompiledPatch, rawMeta map[string]interface{
 
 // ApplyPatches applies multiple patches to frontmatter in priority order.
 func ApplyPatches(vm *jsonnet.VM, patches []CompiledPatch, path string, rawMeta map[string]interface{}) ApplyResult {
+	if rawMeta == nil {
+		rawMeta = map[string]interface{}{}
+	}
+
 	result := ApplyResult{
 		RawMeta:        rawMeta,
 		AppliedPatches: []AppliedPatch{},
