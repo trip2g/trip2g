@@ -344,7 +344,7 @@ func main() {
 	a.initBoosty(ctx)
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
-		Limit:        5,
+		Limit:        10,
 		PollInterval: time.Second * 3,
 	})
 

@@ -1318,6 +1318,7 @@ type SearchResult {
   highlightedTitle: String
   highlightedContent: [String!]!
   url: String!
+  score: Float!
 
   document: SearchResultDocument
 }

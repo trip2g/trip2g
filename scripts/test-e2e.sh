@@ -128,6 +128,30 @@ go run ./cmd/tge2e -db "$DB_PATH" patch-db
 if [ "${ENABLE_TG}" = "1" ]; then
   echo "🧹 Cleaning up Telegram channels..."
   go run ./cmd/tge2e -db "$DB_PATH" cleanup
+else
+  echo "🧹 Removing Telegram accounts and bots (ENABLE_TG not set)..."
+  sqlite3 "$DB_PATH" "
+    PRAGMA foreign_keys = OFF;
+    delete from telegram_publish_sent_messages;
+    delete from telegram_publish_sent_account_messages;
+    delete from telegram_publish_note_tags;
+    delete from telegram_publish_notes;
+    delete from telegram_publish_chats;
+    delete from telegram_publish_instant_chats;
+    delete from telegram_publish_account_chats;
+    delete from telegram_publish_account_instant_chats;
+    delete from telegram_publish_tags;
+    delete from telegram_accounts;
+    delete from tg_user_states;
+    delete from tg_user_profiles;
+    delete from wait_list_tg_bot_requests;
+    delete from tg_attach_codes;
+    delete from tg_bot_chat_subgraph_accesses;
+    delete from tg_bot_chat_subgraph_invites;
+    delete from tg_bot_chats;
+    delete from tg_bots;
+    PRAGMA foreign_keys = ON;
+  "
 fi
 
 # Start services

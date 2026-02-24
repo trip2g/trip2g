@@ -57,6 +57,19 @@ demo/
 demo2/
 demo/.obsidian
 
+# Separate services (have their own Dockerfile)
+ce-bot/
+
+# Asset source/build files not needed in Go embed
+# embed.go only needs: tiptap/tiptap.js, ui/*/- built artifacts
+assets/milkdown/
+assets/tiptap/node_modules/
+assets/tiptap/src/
+
+# Misc dev files
+k6/
+thoughts/
+
 # CI/CD
 .github/
 

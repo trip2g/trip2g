@@ -43,7 +43,8 @@ test.describe.serial('Setup', () => {
 
     await page.goto('/admin');
 
-    // 8. Click API Keys
+    // 8. Click Integrations, then API Keys
+    await page.getByText('Integrations').click();
     await page.getByText('API Keys').click();
 
     // 9. Click '+ Add'

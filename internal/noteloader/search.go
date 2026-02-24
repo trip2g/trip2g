@@ -14,6 +14,7 @@ import (
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
 
 	"github.com/blevesearch/bleve/v2"
+	bleveQuery "github.com/blevesearch/bleve/v2/search/query"
 	"github.com/yuin/goldmark/ast"
 )
 
@@ -132,6 +133,7 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 	}
 
 	query := bleve.NewMatchQuery(queryString)
+	query.SetOperator(bleveQuery.MatchQueryOperatorAnd)
 
 	highlight := bleve.NewHighlightWithStyle(htmlFilter.Name)
 	highlight.AddField("Title")

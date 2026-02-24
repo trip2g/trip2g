@@ -29309,6 +29309,8 @@ func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Contex
 				return ec.fieldContext_SearchResult_highlightedContent(ctx, field)
 			case "url":
 				return ec.fieldContext_SearchResult_url(ctx, field)
+			case "score":
+				return ec.fieldContext_SearchResult_score(ctx, field)
 			case "document":
 				return ec.fieldContext_SearchResult_document(ctx, field)
 			}
@@ -29400,6 +29402,35 @@ func (ec *executionContext) fieldContext_SearchResult_url(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_score(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SearchResult_score,
+		func(ctx context.Context) (any, error) {
+			return obj.Score, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_score(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -60072,6 +60103,11 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 			}
 		case "url":
 			out.Values[i] = ec._SearchResult_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "score":
+			out.Values[i] = ec._SearchResult_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

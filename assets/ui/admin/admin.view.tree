@@ -1,8 +1,8 @@
 $trip2g_admin $trip2g_auth
 	AppView $trip2g_admin_app
 		title => title
-		ProfileEmail <= ProfileInfo $mol_button_major
-			title <= me_user_email
+		- ProfileEmail <= ProfileInfo $trip2g_admin_cell
+			content <= me_user_email
 		SignOutButton <= SignOut $mol_button_major
 			click? <=> signout
 
@@ -11,17 +11,24 @@ $trip2g_admin_app $trip2g_admin_catalog
 	menu_title @ \Admin Panel
 	plugins /
 		<= Theme $mol_theme_auto
-	menu_tools /
-		<= Languages $mol_locale_select
-			Filter null
-			dictionary *
-				ru \Русский
-				en \English
-		<= Lighter $mol_lights_toggle
 	menu_foot /
-		<= ProfileEmail $mol_view
-		<= SignOutButton $mol_button_minor
-			title @ \Sign out
+		<= Footer $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= FirstFooterRow $mol_view
+					sub /
+						<= Languages $mol_locale_select
+							Filter null
+							dictionary *
+								ru \Русский
+								en \English
+						<= Lighter $mol_lights_toggle
+				<= ProfileEmail $mol_view
+				<= SecondFooterRow $mol_view
+					sub /
+						<= SignOutButton $mol_button_minor
+							title \Sign out
 	Spread_default $trip2g_admin_dashboard
 	spreads *
 		dashboard <= Dashboard $trip2g_admin_dashboard

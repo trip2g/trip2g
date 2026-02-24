@@ -39,6 +39,8 @@ $trip2g_user_search_panel $mol_view
 					sub /
 						<= Title* $trip2g_user_search_dimmer
 							html <= result_title* \
+						<= Score* $mol_view
+							sub / <= result_score* @ \Score:
 						<= Content* $mol_view
 							sub <= result_content* /$mol_view
 

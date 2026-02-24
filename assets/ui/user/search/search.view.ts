@@ -6,6 +6,7 @@ namespace $.$$ {
 					highlightedTitle
 					highlightedContent
 					id: url
+					score
 				}
 			}
 		}
@@ -118,6 +119,15 @@ namespace $.$$ {
 
 		override result_link( id: any ): string {
 			return this.data().get(id).id
+		}
+
+		override result_score( id: any ): string {
+			const data = this.data()
+			const scores = data.map( ( itemId: any ) => data.get( itemId ).score )
+			const maxScore = Math.max( ...scores )
+			const score = data.get( id ).score
+			const normalized = maxScore > 0 ? Math.round( score / maxScore * 10 ) : 0
+			return `${ super.result_score(id) } ${ normalized }/10`
 		}
 	}
 
