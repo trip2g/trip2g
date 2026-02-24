@@ -401,8 +401,8 @@ func (c *Config) defineServerFlags() {
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 
 	// Storage limits.
-	datasize.FlagVar(flag.CommandLine, &c.StorageDBLimit, "storage-db-limit", 0, "SQLite database size limit, e.g. 1GB, 500MB (0 = no limit)")
-	datasize.FlagVar(flag.CommandLine, &c.StorageAssetsLimit, "storage-assets-limit", 0, "Total note assets size limit, e.g. 2GB (0 = no limit)")
+	datasize.FlagVar(flag.CommandLine, &c.StorageDBLimit, "storage-db-limit", 100*datasize.Megabyte, "SQLite database size limit, e.g. 1GB, 500MB (0 = no limit)")
+	datasize.FlagVar(flag.CommandLine, &c.StorageAssetsLimit, "storage-assets-limit", datasize.Gigabyte, "Total note assets size limit, e.g. 2GB (0 = no limit)")
 
 	// Features configuration
 	flag.StringVar(&c.FeaturesJSON, "features", "{}", "Features configuration as JSON")

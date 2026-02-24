@@ -16,12 +16,6 @@ namespace $.$$ {
 		}
 	`)
 
-	function formatLabel(label: string, current: number, limit: number): string {
-		const curr = current.toFixed(2)
-		if (limit === 0) return `${label}: ${curr} MB`
-		return `${label}: ${curr} MB / ${limit.toFixed(2)} MB`
-	}
-
 	export class $trip2g_admin_dashboard_storageusage extends $.$trip2g_admin_dashboard_storageusage {
 		@$mol_mem
 		data(reset?: null) {
@@ -30,7 +24,7 @@ namespace $.$$ {
 
 		override db_label(): string {
 			const d = this.data().db
-			return formatLabel(super.db_label(), d.current, d.limit)
+			return `${super.db_label()}: ${d.current.toFixed(2)} MB / ${d.limit.toFixed(2)} MB`
 		}
 
 		override db_portion(): number {
@@ -41,7 +35,7 @@ namespace $.$$ {
 
 		override assets_label(): string {
 			const d = this.data().assets
-			return formatLabel(super.assets_label(), d.current, d.limit)
+			return `${super.assets_label()}: ${d.current.toFixed(2)} MB / ${d.limit.toFixed(2)} MB`
 		}
 
 		override assets_portion(): number {
