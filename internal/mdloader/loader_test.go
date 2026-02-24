@@ -120,9 +120,7 @@ Hello [[Hidden]]`),
 	pages, err := mdloader.Load(mdloader.Options{
 		Sources: sourceFiles,
 		Log:     &log,
-		Config: mdloader.Config{
-			AutoLowerWikilinks: true,
-		},
+		Config:  mdloader.Config{},
 	})
 	require.NoError(t, err)
 
@@ -1563,14 +1561,14 @@ func TestPathBasedPatchApplied(t *testing.T) {
 	patch := frontmatterpatch.Compile(
 		1,
 		[]string{"patch_tests/*"}, // includePatterns
-		nil,                        // excludePatterns
+		nil,                       // excludePatterns
 		`if std.startsWith(path, "patch_tests/") then { patch_applied: true } else {}`,
 		0,
 		"path-based logic",
 	)
 
 	sources := []mdloader.SourceFile{{
-		Path: "patch_tests/path_based.md",
+		Path:    "patch_tests/path_based.md",
 		Content: []byte("---\nfree: true\nlayout: meta_inspector\ntitle: Path-Based Logic Test\n---\nContent"),
 	}}
 
