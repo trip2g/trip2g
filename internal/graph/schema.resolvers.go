@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"os"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -1738,6 +1739,32 @@ func (r *adminQueryResolver) FrontmatterPatch(ctx context.Context, obj *appmodel
 	return &patch, nil
 }
 
+// StorageUsage is the resolver for the storageUsage field.
+func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminStorageUsage, error) {
+	env := r.env(ctx)
+
+	assetsSize, err := env.SumNoteAssetsSizes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get assets size: %w", err)
+	}
+
+	info, err := os.Stat(env.DatabaseFilePath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat database file: %w", err)
+	}
+
+	return &model.AdminStorageUsage{
+		Db: &appmodel.AdminStorageEntry{
+			LimitBytes:   env.StorageDbLimit(),
+			CurrentBytes: info.Size(),
+		},
+		Assets: &appmodel.AdminStorageEntry{
+			LimitBytes:   env.StorageAssetsLimit(),
+			CurrentBytes: assetsSize,
+		},
+	}, nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1761,6 +1788,31 @@ func (r *adminReleaseResolver) HomeNote(ctx context.Context, obj *db.Release) (*
 // Nodes is the resolver for the nodes field.
 func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error) {
 	return r.env(ctx).ListAllReleases(ctx)
+}
+
+// Limit is the resolver for the limit field.
+func (r *adminStorageEntryResolver) Limit(ctx context.Context, obj *appmodel.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error) {
+	return convertStorageSize(obj.LimitBytes, format), nil
+}
+
+// Current is the resolver for the current field.
+func (r *adminStorageEntryResolver) Current(ctx context.Context, obj *appmodel.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error) {
+	return convertStorageSize(obj.CurrentBytes, format), nil
+}
+
+func convertStorageSize(bytes int64, format *model.StorageSizeFormat) float64 {
+	if format == nil || *format == model.StorageSizeFormatBytes {
+		return float64(bytes)
+	}
+
+	switch *format {
+	case model.StorageSizeFormatKb:
+		return float64(bytes) / 1024
+	case model.StorageSizeFormatMb:
+		return float64(bytes) / (1024 * 1024)
+	default:
+		return float64(bytes)
+	}
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2721,7 +2773,7 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				ch <- r.env(ctx).Now().Format(timeFormat)
+				ch <- r.DefaultEnv.Now().Format(timeFormat)
 			}
 		}
 	}()
@@ -3229,6 +3281,11 @@ func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
 	return &adminReleasesConnectionResolver{r}
 }
 
+// AdminStorageEntry returns AdminStorageEntryResolver implementation.
+func (r *Resolver) AdminStorageEntry() AdminStorageEntryResolver {
+	return &adminStorageEntryResolver{r}
+}
+
 // AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
 func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
@@ -3505,6 +3562,7 @@ type adminRedirectResolver struct{ *Resolver }
 type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
+type adminStorageEntryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminTelegramAccountResolver struct{ *Resolver }
 type adminTelegramAccountDialogResolver struct{ *Resolver }
