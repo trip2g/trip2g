@@ -1,0 +1,22 @@
+$trip2g_admin_menu_system $trip2g_admin_catalog
+	param \system_nav
+	menu_title @ \System
+	spreads *
+		cronjobs <= ListCronJobs $trip2g_admin_cronjob_catalog
+			close_icon <= Spread_close
+		backgroundqueues <= BackgroundQueues $trip2g_admin_backgroundqueue_catalog
+			close_icon <= Spread_close
+		config <= Config $trip2g_admin_config_catalog
+			close_icon <= Spread_close
+		healthchecks <= ListHealthChecks $trip2g_admin_healthchecks
+			close_icon <= Spread_close
+		releases <= ListReleases $trip2g_admin_release_catalog
+			close_icon <= Spread_close
+		admins <= Admins $trip2g_admin_admin_catalog
+			close_icon <= Spread_close
+		auditlogs <= AuditLogs $trip2g_admin_auditlog_catalog
+			tools / <= Spread_close
+		changewebhooks <= ListChangeWebhooks $trip2g_admin_changewebhook_catalog
+			close_icon <= Spread_close
+		cronwebhooks <= ListCronWebhooks $trip2g_admin_cronwebhook_catalog
+			close_icon <= Spread_close

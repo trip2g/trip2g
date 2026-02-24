@@ -1,0 +1,12 @@
+$trip2g_admin_menu_monetization $trip2g_admin_catalog
+	param \monetization_nav
+	menu_title @ \Monetization
+	spreads *
+		offers <= ListOffers $trip2g_admin_offer_catalog
+			close_icon <= Spread_close
+		purchases <= ListPurchases $trip2g_admin_purchase_catalog
+			close_icon <= Spread_close
+		patreoncredentials <= ListPatreonCredentials $trip2g_admin_patreoncredentials_catalog
+			close_icon <= Spread_close
+		boostycredentials <= ListBoostyCredentials $trip2g_admin_boostycredentials_catalog
+			close_icon <= Spread_close

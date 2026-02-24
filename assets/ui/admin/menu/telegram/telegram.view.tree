@@ -1,0 +1,10 @@
+$trip2g_admin_menu_telegram $trip2g_admin_catalog
+	param \telegram_nav
+	menu_title @ \Telegram
+	spreads *
+		tgbots <= ListTgBots $trip2g_admin_tgbot_catalog
+			close_icon <= Spread_close
+		telegramaccounts <= ListTelegramAccounts $trip2g_admin_telegramaccount_catalog
+			close_icon <= Spread_close
+		telegrampublishnotes <= TelegramPublishNotes $trip2g_admin_telegrampublishnote_catalog
+			close_icon <= Spread_close

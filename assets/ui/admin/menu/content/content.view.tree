@@ -1,0 +1,16 @@
+$trip2g_admin_menu_content $trip2g_admin_catalog
+	param \content_nav
+	menu_title @ \Notes & Content
+	spreads *
+		subgraphs <= ListSubgraphs $trip2g_admin_subgraph_catalog
+			close_icon <= Spread_close
+		noteviews <= ListNoteviews $trip2g_admin_noteview_catalog
+			close_icon <= Spread_close
+		noteassets <= ListNoteAssets $trip2g_admin_noteasset_catalog
+			close_icon <= Spread_close
+		note_graph <= NoteGraph $trip2g_admin_noteview_graph
+			close_icon <= Spread_close
+		layouteditor <= LayoutEditor $trip2g_admin_layout_editor
+			close_icon <= Spread_close
+		frontmatterpatches <= ListFrontmatterPatches $trip2g_admin_frontmatterpatch_catalog
+			close_icon <= Spread_close

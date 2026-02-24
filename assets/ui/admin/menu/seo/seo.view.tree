@@ -1,0 +1,12 @@
+$trip2g_admin_menu_seo $trip2g_admin_catalog
+	param \seo_nav
+	menu_title @ \SEO & URLs
+	spreads *
+		redirects <= ListRedirects $trip2g_admin_redirect_catalog
+			close_icon <= Spread_close
+		notfoundpaths <= ListNotFoundPaths $trip2g_admin_notfoundpath_catalog
+			close_icon <= Spread_close
+		notfoundpatterns <= ListNotFoundPatterns $trip2g_admin_notfoundpattern_catalog
+			close_icon <= Spread_close
+		htmlinjections <= ListHTMLInjections $trip2g_admin_htmlinjection_catalog
+			close_icon <= Spread_close

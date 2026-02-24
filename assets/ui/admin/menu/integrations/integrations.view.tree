@@ -1,0 +1,12 @@
+$trip2g_admin_menu_integrations $trip2g_admin_catalog
+	param \integrations_nav
+	menu_title @ \Integrations
+	spreads *
+		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
+			close_icon <= Spread_close
+		gittokens <= ListGitTokens $trip2g_admin_gittoken_catalog
+			close_icon <= Spread_close
+		googleoauth <= GoogleOAuth $trip2g_admin_oauth_google_catalog
+			close_icon <= Spread_close
+		githuboauth <= GitHubOAuth $trip2g_admin_oauth_github_catalog
+			close_icon <= Spread_close

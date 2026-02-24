@@ -1,0 +1,14 @@
+$trip2g_admin_menu_users $trip2g_admin_catalog
+	param \users_nav
+	menu_title @ \Users
+	spreads *
+		users <= ListUsers $trip2g_admin_user_catalog
+			close_icon <= Spread_close
+		userbans <= ListUserBans $trip2g_admin_user_bans
+			close_icon <= Spread_close
+		usersubgraphaccesses <= ListUsersSubgraphAccesses $trip2g_admin_usersubgraphaccesses_catalog
+			close_icon <= Spread_close
+		waitlistemailrequests <= WaitListEmailRequests $trip2g_admin_waitlistemailrequest_catalog
+			close_icon <= Spread_close
+		waitlisttgbotrequests <= WaitListTgBotRequests $trip2g_admin_waitlisttgbotrequest_catalog
+			close_icon <= Spread_close
