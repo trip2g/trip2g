@@ -2720,8 +2720,8 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 			select {
 			case <-ctx.Done():
 				return
-			case t := <-ticker.C:
-				ch <- t.Format(timeFormat)
+			case <-ticker.C:
+				ch <- r.env(ctx).Now().Format(timeFormat)
 			}
 		}
 	}()

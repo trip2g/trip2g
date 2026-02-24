@@ -1217,7 +1217,18 @@ func (a *app) LiveNoteViews() *model.NoteViews {
 }
 
 func (a *app) Now() time.Time {
-	return time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	timezone := a.SiteConfig(ctx).Timezone
+
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		loc = time.UTC
+		a.log.Error("failed to load timezone location", "timezone", timezone, "error", err)
+	}
+
+	return time.Now().In(loc)
 }
 
 func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
