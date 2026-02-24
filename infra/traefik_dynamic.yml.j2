@@ -8,6 +8,17 @@ http:
       service: {{ svc.service_name }}
       tls:
         certResolver: letsencrypt
+{% if svc.extra_domains is defined %}
+{% for extra in svc.extra_domains %}
+    {{ svc.service_name }}_extra_{{ loop.index }}:
+      rule: "Host(`{{ extra }}`)"
+      entryPoints:
+        - websecure
+      service: {{ svc.service_name }}
+      tls:
+        certResolver: letsencrypt
+{% endfor %}
+{% endif %}
 {% endfor %}
     lottie-converter:
       rule: "Host(`{{ lottie_domain | default('ce.trip2g.com') }}`)"
