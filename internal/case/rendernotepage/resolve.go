@@ -94,11 +94,14 @@ func (r *Response) NoteSubgraphsJSON() string {
 }
 
 // NoteHTML returns the note's HTML, using domain-specific pre-rendered HTML if available.
+// For custom domain requests, domainHost is the normalized host (e.g. "foo.com").
+// For main domain requests, domainHost is "" — DomainHTML[""] holds main-domain re-rendered
+// HTML where links to custom-domain-only notes use full URLs (https://foo.com/path).
 func (r *Response) NoteHTML() template.HTML {
 	if r.Note == nil {
 		return ""
 	}
-	if r.domainHost != "" && r.Note.DomainHTML != nil {
+	if r.Note.DomainHTML != nil {
 		if domainHTML, ok := r.Note.DomainHTML[r.domainHost]; ok {
 			return domainHTML
 		}
@@ -111,7 +114,7 @@ func (r *Response) SidebarHTML(sidebar *model.NoteView) template.HTML {
 	if sidebar == nil {
 		return ""
 	}
-	if r.domainHost != "" && sidebar.DomainHTML != nil {
+	if sidebar.DomainHTML != nil {
 		if domainHTML, ok := sidebar.DomainHTML[r.domainHost]; ok {
 			return domainHTML
 		}
@@ -368,9 +371,13 @@ func formatTitle(noteTitle, template string) string {
 }
 
 // resolveNote looks up a note using domain-aware routing.
-// On the main domain or an unknown host: checks RouteMap[""] alias routes first, then nv.Map.
-// On a known custom domain: checks RouteMap[host] only (no main domain alias fallback).
-// Unknown hosts (e.g. localhost in tests/dev) are treated as the main domain.
+//
+// Known custom domain: only notes with an explicit route for that domain are served.
+// No fallback to the global permalink map — isolation is strict.
+//
+// Main domain or unknown host: checks RouteMap[""] alias routes first, then nv.Map
+// (permalink-based lookup). Unknown hosts (e.g. localhost in dev/tests) are treated
+// as the main domain because they have no entries in RouteMap.
 func resolveNote(notes *model.NoteViews, host, path, publicURL string) *model.NoteView {
 	normalizedHost := model.NormalizeDomain(host)
 	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
@@ -378,17 +385,16 @@ func resolveNote(notes *model.NoteViews, host, path, publicURL string) *model.No
 	isKnownCustomDomain := normalizedHost != mainHost && normalizedHost != "" && notes.IsCustomDomain(normalizedHost)
 
 	if isKnownCustomDomain {
-		// Known custom domain: only serve domain-specific routes, no main domain alias fallback.
-		if note := notes.GetByRoute(normalizedHost, path); note != nil {
-			return note
-		}
-	} else {
-		// Main domain or unknown host: check RouteMap[""] first (alias routes), then nv.Map.
-		if note := notes.GetByRoute("", path); note != nil {
-			return note
-		}
+		// Known custom domain: only serve notes with an explicit route for this domain.
+		// No fallthrough to nv.Map — notes without an explicit route return nil (404).
+		return notes.GetByRoute(normalizedHost, path)
 	}
 
-	// Fallback: permalink-based lookup (works for both main and custom domain).
+	// Main domain or unknown host: check RouteMap[""] first (alias routes), then nv.Map.
+	if note := notes.GetByRoute("", path); note != nil {
+		return note
+	}
+
+	// Fallback: permalink-based lookup (main domain only).
 	return notes.GetByPath(path)
 }

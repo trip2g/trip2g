@@ -74,14 +74,24 @@ func TestResolveNote_CustomDomain_SubPage(t *testing.T) {
 	require.Equal(t, note, result)
 }
 
-func TestResolveNote_CustomDomain_Fallthrough(t *testing.T) {
-	// Unknown path on custom domain falls back to nv.Map
+func TestResolveNote_KnownCustomDomain_PermalinkNotAccessible(t *testing.T) {
+	// On a KNOWN custom domain, notes are NOT accessible by their permalink
+	// unless they have an explicit route for that domain.
 	nvs := makeTestNoteViews()
-	note := makeTestNote("/my-page", "my-page.md", nil)
-	nvs.RegisterNote(note)
 
+	// Make foo.com a known custom domain by registering a note with a foo.com route.
+	homeNote := makeTestNote("/foo-home", "foo-home.md", []model.ParsedRoute{
+		{Host: "foo.com", Path: "/"},
+	})
+	nvs.RegisterNote(homeNote)
+
+	// Register a plain note with no foo.com route.
+	mainNote := makeTestNote("/my-page", "my-page.md", nil)
+	nvs.RegisterNote(mainNote)
+
+	// On foo.com, /my-page is not in RouteMap["foo.com"] → 404, no fallthrough to nv.Map.
 	result := resolveNote(nvs, "foo.com", "/my-page", "https://example.com")
-	require.Equal(t, note, result)
+	require.Nil(t, result)
 }
 
 func TestResolveNote_MainDomain_Unchanged(t *testing.T) {

@@ -11,9 +11,16 @@ import (
 	"go.abhg.dev/goldmark/wikilink"
 )
 
-// generateDomainHTMLs re-renders notes that have custom domain routes
-// with domain-specific ResolvedLinks. Only notes with Routes containing
-// Host != "" are processed.
+// generateDomainHTMLs re-renders notes with domain-specific link resolution.
+//
+// Two passes:
+//  1. Custom domain pass: for each note with custom domain routes, re-render
+//     for each of its custom domain hosts. Links to notes on the same domain
+//     use relative paths; links to notes on other custom domains use full URLs.
+//  2. Main domain pass (host=""): for ALL notes, check whether any outgoing
+//     link points to a note whose primary home is a custom domain (i.e. the
+//     note has custom domain routes but no main-domain alias). If so,
+//     generate DomainHTML[""] so those links use full URLs on the main domain.
 func (ldr *loader) generateDomainHTMLs() {
 	// Short-circuit: if no custom domains configured, nothing to do.
 	domainHosts := ldr.nvs.CustomDomains()
@@ -22,20 +29,32 @@ func (ldr *loader) generateDomainHTMLs() {
 	}
 
 	for _, p := range ldr.nvs.PathMap {
-		if !hasCustomDomainRoutes(p) {
-			continue
+		// Pass 1: custom domain re-render for notes with explicit custom domain routes.
+		if hasCustomDomainRoutes(p) {
+			for _, host := range ldr.uniqueHostsForNote(p) {
+				domainLinks, domainNoteIndex := ldr.buildDomainResolvedLinks(p, host)
+				if domainLinks == nil {
+					// No differences from main domain -- skip re-render.
+					continue
+				}
+
+				if err := ldr.generateDomainHTML(p, host, domainLinks, domainNoteIndex); err != nil {
+					ldr.log.Warn("failed to generate domain HTML",
+						"path", p.Path, "host", host, "error", err)
+				}
+			}
 		}
 
-		for _, host := range ldr.uniqueHostsForNote(p) {
-			domainLinks, domainNoteIndex := ldr.buildDomainResolvedLinks(p, host)
-			if domainLinks == nil {
-				// No differences from main domain -- skip re-render.
-				continue
-			}
-
-			if err := ldr.generateDomainHTML(p, host, domainLinks, domainNoteIndex); err != nil {
-				ldr.log.Warn("failed to generate domain HTML",
-					"path", p.Path, "host", host, "error", err)
+		// Pass 2: main domain re-render (host="").
+		// Generates DomainHTML[""] when any linked note is "domain-only" (has custom
+		// domain routes but is not accessible via a main-domain alias).
+		// This makes [[wikilinks]] on the main domain use https://custom.com/path
+		// for such notes, instead of the canonical permalink.
+		mainLinks, mainNoteIndex := ldr.buildDomainResolvedLinks(p, "")
+		if mainLinks != nil {
+			if err := ldr.generateDomainHTML(p, "", mainLinks, mainNoteIndex); err != nil {
+				ldr.log.Warn("failed to generate main-domain HTML",
+					"path", p.Path, "error", err)
 			}
 		}
 	}

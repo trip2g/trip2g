@@ -95,12 +95,11 @@ test.describe('Multi-domain routing', () => {
     expect(response.status()).toBe(404);
   });
 
-  test('custom domain falls through to regular notes by permalink', async ({ request }) => {
-    // Notes without explicit custom-domain routes are still accessible by permalink
+  test('custom domain does not serve notes without explicit routes', async ({ request }) => {
+    // Notes without explicit custom-domain routes return 404 on known custom domains.
+    // Domain routing is strict: only notes with route: customdomain.test/... are served.
     const response = await domainGet(request, '/public');
-    expect(response.status()).toBe(200);
-    const body = await response.text();
-    expect(body).toContain('Public Content');
+    expect(response.status()).toBe(404);
   });
 
   test('route added via frontmatter patch is accessible', async ({ request }) => {
@@ -125,6 +124,19 @@ test.describe('Multi-domain routing', () => {
     expect(body).not.toContain('/multi-alias');
   });
 
+  test('main domain: link to custom-domain-only note uses full URL', async ({ request }) => {
+    // domain-link-a.md (in multidomain/ subfolder) has route: customdomain.test/domain-link-a
+    // and links to domain-link-b.md which has route: customdomain.test/b-on-domain (only).
+    // When accessed on the MAIN domain via canonical permalink, [[domain-link-b]]
+    // should use https://customdomain.test/b-on-domain, not the canonical permalink.
+    //
+    // Canonical permalink: /multidomain/domain_link_a (subfolder + hyphens → underscores).
+    const response = await request.get(`${APP_URL}/multidomain/domain_link_a`);
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toContain('href="https://customdomain.test/b-on-domain"');
+  });
+
   test('domain-aware links: wikilink uses domain path, not permalink', async ({ request }) => {
     // domain-link-a.md has route: customdomain.test/domain-link-a
     // and links to domain-link-b.md which has route: customdomain.test/b-on-domain
@@ -138,7 +150,8 @@ test.describe('Multi-domain routing', () => {
     expect(body).toContain('href="/b-on-domain"');
 
     // The permalink-based path should NOT appear in the rendered link.
-    // Note: "domain-link-b.md" gets permalink "/domain_link_b" (hyphens normalized to underscores).
-    expect(body).not.toContain('href="/domain_link_b"');
+    // domain-link-b.md is in multidomain/ subfolder, so canonical permalink is
+    // /multidomain/domain_link_b (hyphens normalized to underscores).
+    expect(body).not.toContain('href="/multidomain/domain_link_b"');
   });
 });

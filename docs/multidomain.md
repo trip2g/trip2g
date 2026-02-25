@@ -77,13 +77,20 @@ Request arrives with Host: foo.com, path: /hello
   1. NormalizeDomain(Host) = "foo.com"
   2. IsCustomDomain("foo.com")?  → checks RouteMap["foo.com"] exists
      YES → GetByRoute("foo.com", "/hello")
+           ↳ not found → 404  (no fallback to nv.Map)
      NO  → GetByRoute("", "/hello")  (main domain aliases)
-  3. Fallback: GetByPath("/hello")  (permalink map, always)
+           ↳ not found → GetByPath("/hello")  (permalink map)
 ```
 
 **Key property:** A host is treated as a custom domain *only if* it has explicit routes in `RouteMap`. Unknown hosts (e.g. `localhost` in development) fall through to main domain routing.
 
-Custom domain routing is **isolated**: main domain alias routes (`route: /x`) are NOT served on custom domains, and custom domain routes are NOT served on the main domain.
+Custom domain routing is **strictly isolated**: notes are accessible on a custom domain *only* if they have an explicit `route: customdomain.com/...` entry. There is no fallback to the global permalink map on custom domains. To serve a note on multiple domains, list all routes explicitly:
+
+```yaml
+routes:
+  - main.com/path      # accessible on main.com
+  - other.com/path     # accessible on other.com
+```
 
 ### Sitemap
 
@@ -109,12 +116,17 @@ At load time, after normal HTML rendering, notes with custom domain routes are r
 
 **Resolution rules per link target:**
 
-| Target has… | Behavior |
-|-------------|----------|
-| Route on the current domain | Use that route's path (e.g., `/custom-path`) |
-| Route on a different domain only | Use full URL (e.g., `https://bar.com/path`) |
-| No custom domain routes | Use canonical permalink (unchanged) |
-| Only main-domain alias (`route: /about`) | Use canonical permalink (not a custom domain) |
+| Context | Target has… | Generated href |
+|---------|-------------|----------------|
+| Custom domain `foo.com` | Route on `foo.com` | `/custom-path` (relative) |
+| Custom domain `foo.com` | Route on another domain only | `https://bar.com/path` (full URL) |
+| Custom domain `foo.com` | No custom domain routes | Canonical permalink |
+| Custom domain `foo.com` | Only main-domain alias (`route: /about`) | Canonical permalink |
+| **Main domain** | **Route on a custom domain only** | **`https://bar.com/path` (full URL)** |
+| Main domain | Main-domain alias (`route: /about`) | `/about` (alias path) |
+| Main domain | No routes | Canonical permalink (unchanged) |
+
+**Main domain wikilinks to "domain-only" notes** use the full URL of the first custom domain route. For example, if `extra.md` has `route: extra.trip2g.com/`, then `[[extra]]` on the main domain generates `href="https://extra.trip2g.com/"`, not `href="/extra"`. This applies whenever the target note has custom domain routes but no main-domain alias routes.
 
 **Known behavior — cross-domain full URLs:** When note A on `foo.com` links to note B that only has a route on `bar.com`, the generated href is `https://bar.com/path`. This is an absolute URL pointing to the other domain. If `bar.com` is an internal or private domain, this URL will be visible in the HTML of `foo.com`. Configure routes accordingly.
 
@@ -150,8 +162,11 @@ At load time, after normal HTML rendering, notes with custom domain routes are r
 | Main domain alias on custom domain | NOT served on custom domain (isolation) |
 | Unknown host (localhost in dev) | Treated as main domain |
 | Custom domain visitor and auth | Cookies are browser-scoped — use `free: true` for domain notes |
-| Wikilink to note on another domain | Full URL generated: `https://other.com/path` |
-| Embed `![[note]]` to domain-routed note | Uses main-domain HTML for embed content |
+| Note on custom domain accessed via canonical permalink on that domain | 404 — custom domains only serve explicitly routed notes |
+| Note needs to appear on two domains | Must declare both routes explicitly: `routes: [a.com/, b.com/]` |
+| Wikilink to note with only custom domain routes | Main domain: full URL `https://custom.com/path`; same domain: relative path |
+| Wikilink to note with main-domain alias (`route: /about`) | Main domain: `/about` (alias path); custom domain: canonical permalink |
+| Embed `![[note]]` to domain-routed note | Always uses canonical permalink (embed rendering requires nv.Map lookup) |
 
 ---
 
@@ -159,9 +174,17 @@ At load time, after normal HTML rendering, notes with custom domain routes are r
 
 E2E tests: `e2e/multidomain.spec.js`
 
+Key E2E scenarios:
+- Custom domain root/subpath/multi-route — serve correct notes
+- Main domain alias not served on custom domain
+- **Custom domain does not serve notes without explicit routes** (404, no fallthrough)
+- **Main domain: link to custom-domain-only note uses full URL**
+- Route via frontmatter patch is accessible
+- Domain-aware wikilinks use domain path on custom domain
+
 Unit tests:
 - `internal/model/note_test.go` — ParseRoute, RouteMap registration
-- `internal/case/rendernotepage/resolve_note_test.go` — resolveNote scenarios
-- `internal/mdloader/domain_render_test.go` — domain HTML re-render (resolveForDomain, generateDomainHTML)
+- `internal/case/rendernotepage/resolve_note_test.go` — resolveNote scenarios including `TestResolveNote_KnownCustomDomain_PermalinkNotAccessible`
+- `internal/mdloader/domain_render_test.go` — domain HTML re-render, including main domain pass (`DomainHTML[""]`)
 
 Test vault: `testdata/vault/multidomain/` (root, about, multi_route, no_route, domain-link-a, domain-link-b)
