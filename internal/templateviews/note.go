@@ -36,8 +36,10 @@ func (n *Note) Title() string {
 
 // HTMLString returns the rendered HTML content.
 // When domain context is set, returns domain-specific HTML if available.
+// domainHost is "" for main domain — DomainHTML[""] holds main-domain re-rendered
+// HTML where links to custom-domain-only notes use full URLs (https://foo.com/path).
 func (n *Note) HTMLString() string {
-	if n.domainHost != "" && n.nv.DomainHTML != nil {
+	if n.nv.DomainHTML != nil {
 		if domainHTML, ok := n.nv.DomainHTML[n.domainHost]; ok {
 			return string(domainHTML)
 		}

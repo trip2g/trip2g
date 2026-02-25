@@ -423,6 +423,48 @@ Page C content`),
 	}
 }
 
+// TestMainDomainRewriteFromSubfolder verifies that a note in a subfolder (docs/)
+// linking to a root-level note with a custom domain route gets DomainHTML[""]
+// with the full URL (https://custom.com/path).
+// Mirrors the production case: docs/multidomains.md → [[extra]] → extra.trip2g.com/.
+func TestMainDomainRewriteFromSubfolder(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{
+		{
+			Path: "docs/multidomains.md",
+			Content: []byte(`---
+free: true
+---
+[[extra]]`),
+		},
+		{
+			Path: "extra.md",
+			Content: []byte(`---
+free: true
+route: extra.trip2g.com/
+title: Extra main
+---
+Main page`),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["docs/multidomains.md"]
+	require.NotNil(t, note, "docs/multidomains.md must exist")
+
+	require.NotNil(t, note.DomainHTML, "DomainHTML must be generated")
+	mainDomainHTML, ok := note.DomainHTML[""]
+	require.True(t, ok, `DomainHTML[""] must exist for main domain re-render`)
+	require.Contains(t, string(mainDomainHTML), `href="https://extra.trip2g.com/"`,
+		"main domain link should use full URL for custom-domain-only note")
+}
+
 // TestDomainHTMLNotGeneratedWithoutCustomRoutes verifies that notes without
 // any custom domain routes in the vault never get DomainHTML (zero memory overhead).
 // Neither note has custom routes, and the linked target (other.md) has no custom domain
