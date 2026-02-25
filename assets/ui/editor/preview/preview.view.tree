@@ -5,4 +5,11 @@ $trip2g_editor_preview $mol_view
 			sub / <= head_title @ \Preview
 		<= Body $mol_view
 			dom_name \article
-			sub / <= preview_html
+			style *
+				justifyContent \center
+				alignItems \center
+				minHeight \500px
+			sub /
+				<= WIP $mol_view
+					sub / \WORK IN PROGRESS
+				<= preview_html
