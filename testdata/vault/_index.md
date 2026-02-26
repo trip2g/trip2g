@@ -7,6 +7,8 @@ sidebar: true
 
 Welcome to the comprehensive test vault for Obsidian publishing!
 
+[[root]]
+
 ## Link Resolution Tests
 1. [[unique]] - unique filename resolution
 2. [[folder/source]] - duplicate filename priority

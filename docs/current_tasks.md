@@ -285,6 +285,25 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - Agent response: опциональный `changes[]` с `expected_hash` для optimistic concurrency
 - **X-Webhook-Chain-ID**: генерируется при depth=0, передаётся в headers всех вызовов в цепочке, записывается в delivery log для трейсинга полной цепочки обработки
 
+## [TODO] Рефакторинг: стандартный шаблон через templateviews.Note
+
+### Контекст
+Стандартный шаблон (`view.html` + `view.html.go`) обращается к `resp.Note` напрямую вместо `templateviews.Note`. Из-за этого domain-aware логика (выбор `DomainHTML[""]`) дублируется в двух местах: `Response.NoteHTML()` и `templateviews.Note.HTMLString()` — что уже привело к багу (пропустили фикс в `HTMLString()`).
+
+Нужно переделать стандартный шаблон так, чтобы он использовал `templateviews.Note` (или аналогичный view-объект) как единую точку доступа к HTML заметки. Заодно убрать накопившееся легаси в `view.html`.
+
+### План
+- [ ] Проанализировать текущее использование `resp.Note` в `view.html` / `view.html.go`
+- [ ] Определить что нужно от view-объекта (HTML, Title, Permalink, метаданные)
+- [ ] Перейти на `templateviews.Note` (или расширить его) в стандартном шаблоне
+- [ ] Удалить `Response.NoteHTML()` / `Response.SidebarHTML()` — логика остаётся только в `templateviews`
+- [ ] Почистить легаси в `view.html`
+- [ ] make test && make lint
+
+### Заметки
+- Баг-сигнал: `NoteHTML()` в `resolve.go` и `HTMLString()` в `templateviews/note.go` имели одинаковый баг (`domainHost != ""`) — признак дублирования логики
+- Пока не делаем: запланировано вместе с общим рефакторингом стандартного шаблона
+
 ## [TODO] Рефакторинг: vectorMinSimilarity в конфиг
 
 ### Контекст

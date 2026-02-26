@@ -137,6 +137,17 @@ test.describe('Multi-domain routing', () => {
     expect(body).toContain('href="https://customdomain.test/b-on-domain"');
   });
 
+  test('custom domain: link to main-domain-only note uses full main-domain URL', async ({ request }) => {
+    // multidomain/root.md (on customdomain.test/) links to [[public]] which has
+    // no customdomain.test route. The link should be an absolute URL to the main domain,
+    // not a relative /public (which would 404 on the isolated custom domain).
+    const response = await domainGet(request, '/');
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    // Must contain an absolute URL link to /public (scheme://host/public).
+    expect(body).toMatch(/href="https?:\/\/[^"]+\/public"/);
+  });
+
   test('domain-aware links: wikilink uses domain path, not permalink', async ({ request }) => {
     // domain-link-a.md has route: customdomain.test/domain-link-a
     // and links to domain-link-b.md which has route: customdomain.test/b-on-domain

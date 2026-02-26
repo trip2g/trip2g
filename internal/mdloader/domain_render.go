@@ -84,6 +84,7 @@ func (ldr *loader) buildDomainResolvedLinks(
 	p *model.NoteView,
 	host string,
 ) (map[string]string, map[string]*model.NoteView) {
+	mainBaseURL := ldr.publicURL
 	// Find embed targets -- these must NOT be overridden so renderEmbed() works.
 	embedTargets := ldr.findEmbedTargets(p)
 
@@ -104,7 +105,7 @@ func (ldr *loader) buildDomainResolvedLinks(
 			continue
 		}
 
-		domainPath := resolveForDomain(targetNote, host)
+		domainPath := resolveForDomain(targetNote, host, mainBaseURL)
 		domainLinks[target] = domainPath
 
 		if domainPath != mainPermalink {
@@ -140,10 +141,13 @@ func (ldr *loader) findEmbedTargets(p *model.NoteView) map[string]struct{} {
 // resolveForDomain determines the correct href for a target note in domain context.
 //
 // Rules:
-//   - Target has route on this host -> use domain path.
+//   - Target has route on this host -> use domain path (relative).
 //   - Target has route on OTHER custom host -> full URL (https://other.com/path).
-//   - Target has no custom routes -> use permalink (unchanged).
-func resolveForDomain(target *model.NoteView, host string) string {
+//   - Target not accessible on this custom domain -> full main-domain URL if mainBaseURL
+//     is set (https://main.com/permalink), otherwise canonical permalink.
+//   - Main domain pass (host=="") behaves as before: custom-domain-only notes get full
+//     URL, main-domain alias notes get alias path, plain notes get permalink.
+func resolveForDomain(target *model.NoteView, host string, mainBaseURL string) string {
 	// Check if target has a route on the current domain.
 	for _, r := range target.Routes {
 		if r.Host == host {
@@ -163,6 +167,12 @@ func resolveForDomain(target *model.NoteView, host string) string {
 			}
 			return fmt.Sprintf("https://%s%s", r.Host, path)
 		}
+	}
+
+	// Target is not accessible on the current custom domain.
+	// Use full main-domain URL to avoid broken links on isolated custom domains.
+	if host != "" && mainBaseURL != "" {
+		return mainBaseURL + target.Permalink
 	}
 
 	// No custom domain routes -- use permalink (unchanged).

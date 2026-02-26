@@ -17,6 +17,7 @@ func TestResolveForDomain(t *testing.T) {
 	tests := []struct {
 		name        string
 		sources     []mdloader.SourceFile
+		publicURL   string // optional, passed to mdloader.Options.PublicURL
 		checkNote   string // PathMap key of the note to inspect
 		host        string // expected domain host in DomainHTML
 		wantInHTML  string // substring expected in DomainHTML
@@ -171,6 +172,56 @@ Page B`),
 			// Domain links are identical to main => DomainHTML["foo.com"] not generated.
 			wantInHTML: "",
 		},
+		// Custom domain → main-domain fallback (publicURL set).
+		{
+			name:      "custom domain: no routes on target uses full main-domain URL when publicURL set",
+			publicURL: "https://main.com",
+			sources: []mdloader.SourceFile{
+				{
+					Path: "page-a.md",
+					Content: []byte(`---
+free: true
+route: foo.com/a
+---
+Link: [[page-b]]`),
+				},
+				{
+					Path: "page-b.md",
+					Content: []byte(`---
+free: true
+---
+Page B`),
+				},
+			},
+			checkNote:  "page-a.md",
+			host:       "foo.com",
+			wantInHTML: `href="https://main.com/page_b"`,
+		},
+		{
+			name:      "custom domain: main-domain alias target uses full main-domain URL when publicURL set",
+			publicURL: "https://main.com",
+			sources: []mdloader.SourceFile{
+				{
+					Path: "page-a.md",
+					Content: []byte(`---
+free: true
+route: foo.com/a
+---
+Link: [[page-b]]`),
+				},
+				{
+					Path: "page-b.md",
+					Content: []byte(`---
+free: true
+route: /about
+---
+Page B`),
+				},
+			},
+			checkNote:  "page-a.md",
+			host:       "foo.com",
+			wantInHTML: `href="https://main.com/page_b"`,
+		},
 		// Main domain pass (host="") test cases.
 		{
 			name: "main domain: link to custom-domain-only note uses full URL",
@@ -308,8 +359,9 @@ Page B`),
 		t.Run(tt.name, func(t *testing.T) {
 			log := logger.TestLogger{}
 			pages, err := mdloader.Load(mdloader.Options{
-				Sources: tt.sources,
-				Log:     &log,
+				Sources:   tt.sources,
+				Log:       &log,
+				PublicURL: tt.publicURL,
 			})
 			require.NoError(t, err)
 

@@ -57,6 +57,9 @@ type loader struct {
 
 	noteCache func(source SourceFile) *model.NoteView
 
+	// publicURL is the main domain base URL used for cross-domain link resolution.
+	publicURL string
+
 	frontmatterPatches []frontmatterpatch.CompiledPatch
 	jsonnetVM          *jsonnet.VM
 }
@@ -72,6 +75,12 @@ type Options struct {
 	Version string
 	Config  Config
 
+	// PublicURL is the main domain base URL (e.g. "https://trip2g.com").
+	// Used by domain-aware link resolution: links from custom-domain notes to
+	// notes without a route on that domain are rendered as full main-domain URLs.
+	// Empty string disables this behavior (links fall back to canonical permalink).
+	PublicURL string
+
 	// NoteCache returns cached NoteView if content hasn't changed, nil otherwise
 	NoteCache func(source SourceFile) *model.NoteView
 
@@ -86,6 +95,7 @@ func Load(options Options) (*model.NoteViews, error) {
 
 		config:    options.Config,
 		noteCache: options.NoteCache,
+		publicURL: strings.TrimRight(options.PublicURL, "/"),
 
 		linkResolver: &myLinkResolver{},
 	}

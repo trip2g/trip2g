@@ -187,11 +187,11 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	mdOptions := mdloader.Options{
-		Sources: mdSources,
-		Log:     logger.WithPrefix(l.log, "mdloader:"),
-		Version: l.version,
-		Config:  l.config,
-
+		Sources:   mdSources,
+		Log:       logger.WithPrefix(l.log, "mdloader:"),
+		Version:   l.version,
+		Config:    l.config,
+		PublicURL: l.env.PublicURL(),
 		// NoteCache returns cached NoteView if content matches to skip parsing.
 		// NOTE: If AutoLowerWikilinks is enabled, old.Content is normalized but
 		// source.Content is not, causing cache misses. This is acceptable since

@@ -120,13 +120,15 @@ At load time, after normal HTML rendering, notes with custom domain routes are r
 |---------|-------------|----------------|
 | Custom domain `foo.com` | Route on `foo.com` | `/custom-path` (relative) |
 | Custom domain `foo.com` | Route on another domain only | `https://bar.com/path` (full URL) |
-| Custom domain `foo.com` | No custom domain routes | Canonical permalink |
-| Custom domain `foo.com` | Only main-domain alias (`route: /about`) | Canonical permalink |
+| Custom domain `foo.com` | No custom domain routes | `https://main.com/permalink` (full URL) |
+| Custom domain `foo.com` | Only main-domain alias (`route: /about`) | `https://main.com/permalink` (full URL) |
 | **Main domain** | **Route on a custom domain only** | **`https://bar.com/path` (full URL)** |
 | Main domain | Main-domain alias (`route: /about`) | `/about` (alias path) |
 | Main domain | No routes | Canonical permalink (unchanged) |
 
 **Main domain wikilinks to "domain-only" notes** use the full URL of the first custom domain route. For example, if `extra.md` has `route: extra.trip2g.com/`, then `[[extra]]` on the main domain generates `href="https://extra.trip2g.com/"`, not `href="/extra"`. This applies whenever the target note has custom domain routes but no main-domain alias routes.
+
+**Custom domain wikilinks to main-domain-only notes** use the full main-domain URL. For example, if `extra.md` on `extra.trip2g.com` links to `docs.md` (which has no `extra.trip2g.com` route), the link generates `href="https://trip2g.com/docs"`, not `href="/docs"` (which would 404 on the custom domain). Requires `PublicURL` to be configured on the server.
 
 **Known behavior — cross-domain full URLs:** When note A on `foo.com` links to note B that only has a route on `bar.com`, the generated href is `https://bar.com/path`. This is an absolute URL pointing to the other domain. If `bar.com` is an internal or private domain, this URL will be visible in the HTML of `foo.com`. Configure routes accordingly.
 
@@ -165,7 +167,8 @@ At load time, after normal HTML rendering, notes with custom domain routes are r
 | Note on custom domain accessed via canonical permalink on that domain | 404 — custom domains only serve explicitly routed notes |
 | Note needs to appear on two domains | Must declare both routes explicitly: `routes: [a.com/, b.com/]` |
 | Wikilink to note with only custom domain routes | Main domain: full URL `https://custom.com/path`; same domain: relative path |
-| Wikilink to note with main-domain alias (`route: /about`) | Main domain: `/about` (alias path); custom domain: canonical permalink |
+| Wikilink to note with main-domain alias (`route: /about`) | Main domain: `/about` (alias path); custom domain: full main-domain URL |
+| Wikilink from custom domain to main-domain-only note | Full main-domain URL `https://main.com/permalink` (avoids 404 on isolated domain) |
 | Embed `![[note]]` to domain-routed note | Always uses canonical permalink (embed rendering requires nv.Map lookup) |
 
 ---
