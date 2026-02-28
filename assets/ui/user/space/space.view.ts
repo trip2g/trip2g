@@ -13,6 +13,16 @@ namespace $.$$ {
 			return viewer.user ? this.OpenButton() : this.SignInButton()
 		}
 
+		override editor() {
+			const viewer = this.viewer()
+
+			if (viewer.role === $trip2g_graphql_role.Admin) {
+				return this.Editor()
+			}
+
+			return null
+		}
+
 		override admin_link() {
 			const viewer = this.viewer()
 
