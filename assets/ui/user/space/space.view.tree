@@ -14,6 +14,7 @@ $trip2g_user_space $mol_view
 		uri \/admin
 		target \_blank
 		title @ \Admin Panel
+	Editor $trip2g_editor
 	sub /
 		<= Name $trip2g_user_space_name
 			value <= user_email \
