@@ -60,7 +60,9 @@
       "Bash(docs/hat.md:*)",
       "Bash(go mod edit:*)",
       "Bash(go mod tidy:*)",
-      "mcp__chrome-devtools__take_screenshot"
+      "mcp__chrome-devtools__take_screenshot",
+      "WebFetch(domain:trip2g.com)",
+      "Bash(/home/alexes/projects2/trip2g/.omc/ralplan-state.json:*)"
     ],
     "deny": []
   },
