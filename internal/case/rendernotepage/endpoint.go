@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/langdetect"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 
@@ -19,6 +20,17 @@ import (
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
 
 type Endpoint struct{}
+
+func setLangCookie(ctx *fasthttp.RequestCtx, lang string) {
+	c := fasthttp.AcquireCookie()
+	defer fasthttp.ReleaseCookie(c)
+	c.SetKey("lang")
+	c.SetValue(lang)
+	c.SetPath("/")
+	c.SetMaxAge(365 * 24 * 60 * 60) // 1 year.
+	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+	ctx.Response.Header.SetCookie(c)
+}
 
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
@@ -49,12 +61,47 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
 		layoutParams.OGTags = buildOGTags(req, env, resp)
+		if resp.Note.Lang != "" {
+			layoutParams.HTMLLang = resp.Note.Lang
+		}
+		layoutParams.HrefLangs = buildHrefLangs(env, resp.Note)
 	}
 
 	if resp.Note != nil && resp.Note.Redirect != nil {
 		ctx.Response.Header.Set("Location", *resp.Note.Redirect)
 		ctx.SetStatusCode(http.StatusFound)
 		return nil, nil
+	}
+
+	// Language redirect: if note has lang_redirect targets, check user's preferred language.
+	// ?nolang param (any value) disables redirect for this request (for authors/SEO tools).
+	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 &&
+		!ctx.QueryArgs().Has("nolang") {
+
+		cookieLang := string(ctx.Request.Header.Cookie("lang"))
+		acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
+		preferred := langdetect.DetectPreferred(cookieLang, acceptLang)
+
+		if preferred != "" {
+			for _, lr := range resp.Note.LangRedirects {
+				if lr.Note == resp.Note {
+					continue
+				}
+				if lr.Lang == preferred {
+					setLangCookie(ctx, preferred)
+					ctx.Response.Header.Set("Location", lr.URL)
+					ctx.SetStatusCode(http.StatusFound)
+					return nil, nil
+				}
+			}
+		}
+	}
+
+	// Set lang cookie on any page that declares a language.
+	// Skipped when ?nolang is set (debug/SEO mode).
+	if resp.Note != nil && resp.Note.Lang != "" &&
+		!ctx.QueryArgs().Has("nolang") {
+		setLangCookie(ctx, resp.Note.Lang)
 	}
 
 	if resp.OnboardingMode {
@@ -186,6 +233,49 @@ func renderLayout(
 	}
 
 	return true, nil
+}
+
+// buildHrefLangs builds the list of hreflang alternate links for a note.
+// Returns nil if the note has no language group.
+func buildHrefLangs(env Env, note *model.NoteView) []renderlayout.HrefLang {
+	if note.LangGroup == nil {
+		return nil
+	}
+
+	publicURL := env.PublicURL()
+	group := note.LangGroup
+	var hrefLangs []renderlayout.HrefLang
+
+	// Add x-default (and lang tag if hub has a lang) for the hub page.
+	hubURL := publicURL + group.Hub.Permalink
+	if group.Hub.Lang == "" {
+		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
+			Lang: "x-default",
+			Href: hubURL,
+		})
+	} else {
+		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
+			Lang: group.Hub.Lang,
+			Href: hubURL,
+		})
+		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
+			Lang: "x-default",
+			Href: hubURL,
+		})
+	}
+
+	// Add each language version.
+	for _, lr := range group.Versions {
+		if lr.Note == group.Hub {
+			continue
+		}
+		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
+			Lang: lr.Lang,
+			Href: publicURL + lr.URL,
+		})
+	}
+
+	return hrefLangs
 }
 
 // buildOGTags constructs Open Graph metadata for a rendered note.

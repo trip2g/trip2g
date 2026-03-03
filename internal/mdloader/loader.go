@@ -155,6 +155,8 @@ func Load(options Options) (*model.NoteViews, error) {
 		return nil, fmt.Errorf("failed to extract in-links: %w", err)
 	}
 
+	ldr.resolveLangRedirects()
+
 	err = ldr.generatePageHTMLs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
@@ -645,4 +647,148 @@ func (ldr *loader) applyFrontmatterPatches(
 	}
 
 	return result.RawMeta, applied
+}
+
+// resolveWikilinkTarget resolves a wikilink target string to a NoteView.
+// Replicates the resolution logic from extractInLinks() without AST walking.
+// Returns nil if the target cannot be resolved.
+func (ldr *loader) resolveWikilinkTarget(source *model.NoteView, target string) *model.NoteView {
+	// Branch 1: Explicit relative paths (./file or ../file).
+	if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
+		dir := filepath.Dir(source.Path)
+		if dir == "." {
+			dir = ""
+		}
+		resolvedPath := filepath.Clean(filepath.Join(dir, target))
+		if pp, found := ldr.nvs.PathMap[resolvedPath+".md"]; found {
+			return pp
+		}
+		if pp, found := ldr.nvs.PathMap[resolvedPath]; found {
+			return pp
+		}
+		return nil
+	}
+
+	// Branch 2: Simple filename (no path separator) — global basename lookup.
+	if !strings.Contains(target, "/") {
+		targetBasename := strings.ToLower(target)
+		candidates := ldr.basenameIndex[targetBasename]
+		if len(candidates) == 1 {
+			return candidates[0]
+		}
+		if len(candidates) > 1 {
+			shortest := candidates[0]
+			shortestDepth := strings.Count(shortest.Path, "/")
+			for _, candidate := range candidates[1:] {
+				depth := strings.Count(candidate.Path, "/")
+				if depth < shortestDepth {
+					shortest = candidate
+					shortestDepth = depth
+				}
+			}
+			return shortest
+		}
+		return nil
+	}
+
+	// Branch 3: Path with "/" — relative path resolution (walk up directory tree).
+	dir := filepath.Dir(source.Path)
+	if dir == "." {
+		dir = ""
+	}
+	dirParts := strings.Split(dir, "/")
+	for i := len(dirParts); i >= 0; i-- {
+		targetParts := append([]string{}, dirParts[:i]...)
+		targetParts = append(targetParts, target)
+		targetPermalink := strings.Join(targetParts, "/")
+		if pp, found := ldr.nvs.PathMap[targetPermalink+".md"]; found {
+			return pp
+		}
+		if pp, found := ldr.nvs.PathMap[targetPermalink]; found {
+			return pp
+		}
+	}
+
+	return nil
+}
+
+func (ldr *loader) resolveLangRedirects() {
+	for _, p := range ldr.nvs.PathMap {
+		if len(p.LangRedirectTargets) == 0 {
+			continue
+		}
+
+		seen := make(map[string]struct{})
+
+		for _, target := range p.LangRedirectTargets {
+			resolved := ldr.resolveWikilinkTarget(p, target)
+			if resolved == nil {
+				p.AddWarning(model.NoteWarningWarning,
+					"lang_redirect target not found: %s", target)
+				continue
+			}
+			if resolved.Lang == "" {
+				p.AddWarning(model.NoteWarningWarning,
+					"lang_redirect target %s has no lang field", target)
+				continue
+			}
+			if _, dup := seen[resolved.Lang]; dup {
+				p.AddWarning(model.NoteWarningWarning,
+					"lang_redirect duplicate language: %s", resolved.Lang)
+				continue
+			}
+			seen[resolved.Lang] = struct{}{}
+
+			p.LangRedirects = append(p.LangRedirects, model.LangRedirect{
+				Lang: resolved.Lang,
+				Note: resolved,
+				URL:  resolved.Permalink,
+			})
+		}
+
+		if len(p.LangRedirects) > 0 {
+			ldr.buildLangGroup(p)
+		}
+	}
+}
+
+// buildLangGroup creates a LangGroup for a hub page and populates
+// LangAlternatives on both the hub and each target note.
+func (ldr *loader) buildLangGroup(hub *model.NoteView) {
+	group := &model.LangGroup{
+		Hub:      hub,
+		Versions: hub.LangRedirects,
+	}
+
+	hub.LangGroup = group
+
+	allAlts := make(map[string]*model.NoteView, len(hub.LangRedirects)+1)
+	for _, lr := range hub.LangRedirects {
+		allAlts[lr.Lang] = lr.Note
+	}
+	if hub.Lang != "" {
+		allAlts[hub.Lang] = hub
+	}
+
+	hub.LangAlternatives = make(map[string]*model.NoteView, len(allAlts))
+	for lang, note := range allAlts {
+		if note != hub {
+			hub.LangAlternatives[lang] = note
+		}
+	}
+
+	for _, lr := range hub.LangRedirects {
+		if lr.Note.LangGroup != nil {
+			hub.AddWarning(model.NoteWarningWarning,
+				"lang_redirect target %s already belongs to another lang group, skipping", lr.Note.Path)
+			continue
+		}
+		lr.Note.LangGroup = group
+		lr.Note.LangAlternatives = make(map[string]*model.NoteView, len(allAlts))
+		for lang, note := range allAlts {
+			if note != lr.Note {
+				lr.Note.LangAlternatives[lang] = note
+			}
+		}
+	}
 }

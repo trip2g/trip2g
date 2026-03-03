@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Obsidian Link Resolution Test Vault Generator
 # Creates minimal test structure for link resolution testing
 
@@ -1485,6 +1487,11 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 35. [[patch_tests/title_template]] - title template with meta merge
 36. [[patch_tests/path_based]] - jsonnet path-based logic
 
+## Multilangual
+37. [[lang_hub/index]] - should redirect to [[lang_hub/english]] or [[lang_hub/russian]]
+38. [[lang_hub/english]] - English content
+39. [[lang_hub/russian]] - Russian content
+
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
 - `_sidebar.md` - global sidebar
@@ -1529,6 +1536,37 @@ From [[embedding]]:
 | `slug` | `custom-url` or `/full/path` | Custom URL (relative or absolute) |
 
 ![[_banner]]
+EOF
+
+# ============================================================================
+# Test: Multilingual support (lang + lang_redirect)
+# ============================================================================
+mkdir -p "$VAULT"/lang_hub
+
+cat > "$VAULT/lang_hub/index.md" << 'EOF'
+---
+free: true
+lang_redirect:
+  - "[[lang_hub/english]]"
+  - "[[lang_hub/russian]]"
+---
+This is the language hub page.
+EOF
+
+cat > "$VAULT/lang_hub/english.md" << 'EOF'
+---
+free: true
+lang: en
+---
+English version of the page.
+EOF
+
+cat > "$VAULT/lang_hub/russian.md" << 'EOF'
+---
+free: true
+lang: ru
+---
+Русская версия страницы.
 EOF
 
 # ============================================================================

@@ -10,6 +10,12 @@ import (
 
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
 
+// HrefLang represents a single hreflang alternate link.
+type HrefLang struct {
+	Lang string // "en", "ru", "x-default"
+	Href string // full URL including scheme+host
+}
+
 type Params struct {
 	Title   string
 	JSURLs  []string
@@ -24,6 +30,16 @@ type Params struct {
 	Client string
 
 	HTMLInjections map[string][]db.HtmlInjection
+
+	HrefLangs []HrefLang
+	HTMLLang  string // for <html lang="xx">, defaults to "ru" in template
+}
+
+func htmlLang(params *Params) string {
+	if params.HTMLLang != "" {
+		return params.HTMLLang
+	}
+	return "ru"
 }
 
 type Env interface {

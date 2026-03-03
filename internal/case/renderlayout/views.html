@@ -1,7 +1,7 @@
 {% func BeginLayout(params *Params) %}
 
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{%s= htmlLang(params) %}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
@@ -30,6 +30,12 @@
 {% if params.OGTags != nil %}
 {% for property, value := range params.OGTags %}
 <meta property="{%s= property %}" content="{%s= value %}">
+{% endfor %}
+{% endif %}
+
+{% if len(params.HrefLangs) > 0 %}
+{% for _, hl := range params.HrefLangs %}
+<link rel="alternate" hreflang="{%s= hl.Lang %}" href="{%s= hl.Href %}">
 {% endfor %}
 {% endif %}
 

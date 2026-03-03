@@ -7,8 +7,6 @@ sidebar: true
 
 Welcome to the comprehensive test vault for Obsidian publishing!
 
-[[root]]
-
 ## Link Resolution Tests
 1. [[unique]] - unique filename resolution
 2. [[folder/source]] - duplicate filename priority
@@ -62,6 +60,11 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 34. [[patch_tests/excluded]] - excluded by exclude_patterns
 35. [[patch_tests/title_template]] - title template with meta merge
 36. [[patch_tests/path_based]] - jsonnet path-based logic
+
+## Multilangual
+37. [[lang_hub/index]] - should redirect to [[lang_hub/english]] or [[lang_hub/russian]]
+38. [[lang_hub/english]] - English content
+39. [[lang_hub/russian]] - Russian content
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])

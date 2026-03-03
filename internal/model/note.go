@@ -108,6 +108,20 @@ type AppliedFrontmatterPatch struct {
 	Description string
 }
 
+// LangRedirect represents a resolved language alternative for a note.
+type LangRedirect struct {
+	Lang string    // language code from the target note's lang field (e.g., "en", "ru")
+	Note *NoteView // resolved target note (populated post-load)
+	URL  string    // resolved permalink path for the target note (full URL built at render time)
+}
+
+// LangGroup links a hub page with all its language versions.
+// Shared by the hub and every target page so each can discover siblings.
+type LangGroup struct {
+	Hub      *NoteView      // the page that declared lang_redirect
+	Versions []LangRedirect // all resolved language versions (same slice as Hub.LangRedirects)
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -187,6 +201,29 @@ type NoteView struct {
 	// Populated from frontmatter "route" (string) or "routes" ([]string).
 	// Does NOT affect Permalink or nv.Map. Only populates RouteMap.
 	Routes []ParsedRoute
+
+	// Lang is the explicit language of this note (e.g., "en", "ru", "zh").
+	// Parsed from frontmatter "lang" field.
+	Lang string
+
+	// LangRedirectTargets are raw wikilink targets from frontmatter "lang_redirect".
+	// Intermediate values resolved to LangRedirects during post-load processing.
+	LangRedirectTargets []string
+
+	// LangRedirects are the resolved language alternatives for this note.
+	// Populated by the loader after all notes are registered.
+	// Only set on hub pages (pages that declare lang_redirect).
+	LangRedirects []LangRedirect
+
+	// LangGroup links this note to its language group (hub + all versions).
+	// Set on both hub page and each target page during post-load processing.
+	LangGroup *LangGroup
+
+	// LangAlternatives is a convenience map: lang code -> *NoteView.
+	// Built from LangGroup during post-load processing.
+	// Populated on both hub page and each target page.
+	// Does NOT include the current note itself.
+	LangAlternatives map[string]*NoteView
 
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`
@@ -447,6 +484,9 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.Routes = n.ExtractRoutes()
 
+	n.extractLang()
+	n.extractLangRedirectTargets()
+
 	return nil
 }
 
@@ -465,6 +505,44 @@ func (n *NoteView) extractRSSFields() {
 	}
 	if desc, ok := n.RawMeta["rss_description"].(string); ok {
 		n.RSSDescription = desc
+	}
+}
+
+func (n *NoteView) extractLang() {
+	if lang, ok := n.RawMeta["lang"].(string); ok {
+		n.Lang = strings.ToLower(strings.TrimSpace(lang))
+	}
+}
+
+func (n *NoteView) extractLangRedirectTargets() {
+	raw, ok := n.RawMeta["lang_redirect"]
+	if !ok {
+		return
+	}
+
+	strip := func(s string) string {
+		s = strings.TrimSpace(s)
+		s = strings.TrimPrefix(s, "[[")
+		s = strings.TrimSuffix(s, "]]")
+		return strings.TrimSpace(s)
+	}
+
+	switch val := raw.(type) {
+	case string:
+		if target := strip(val); target != "" {
+			n.LangRedirectTargets = append(n.LangRedirectTargets, target)
+		}
+	case []interface{}:
+		for _, item := range val {
+			if s, ok := item.(string); ok {
+				if target := strip(s); target != "" {
+					n.LangRedirectTargets = append(n.LangRedirectTargets, target)
+				}
+			}
+		}
+	default:
+		n.AddWarning(NoteWarningWarning,
+			"invalid lang_redirect type: %T, must be string or []string", raw)
 	}
 }
 

@@ -1,6 +1,7 @@
 package templateviews
 
 import (
+	"sort"
 	"time"
 	"trip2g/internal/model"
 )
@@ -113,4 +114,46 @@ func (n *Note) M() *Meta {
 // Unwrap returns the underlying NoteView (for internal use).
 func (n *Note) Unwrap() *model.NoteView {
 	return n.nv
+}
+
+// Lang returns the note's language code (e.g., "en", "ru").
+// Empty string if not set.
+func (n *Note) Lang() string {
+	return n.nv.Lang
+}
+
+// HasLangAlternatives returns true if this note has language alternative versions.
+func (n *Note) HasLangAlternatives() bool {
+	return len(n.nv.LangAlternatives) > 0
+}
+
+// LangAlternative returns the Note wrapper for a specific language code.
+// Returns nil if not found.
+func (n *Note) LangAlternative(lang string) *Note {
+	if n.nv.LangAlternatives == nil {
+		return nil
+	}
+	alt, ok := n.nv.LangAlternatives[lang]
+	if !ok {
+		return nil
+	}
+	return NewNote(alt)
+}
+
+// LangAlternativesList returns all language alternatives as a sorted slice
+// for template iteration (e.g., to render a language switcher).
+func (n *Note) LangAlternativesList() []*Note {
+	if len(n.nv.LangAlternatives) == 0 {
+		return nil
+	}
+	langs := make([]string, 0, len(n.nv.LangAlternatives))
+	for lang := range n.nv.LangAlternatives {
+		langs = append(langs, lang)
+	}
+	sort.Strings(langs)
+	result := make([]*Note, 0, len(langs))
+	for _, lang := range langs {
+		result = append(result, NewNote(n.nv.LangAlternatives[lang]))
+	}
+	return result
 }
