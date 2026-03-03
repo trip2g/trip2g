@@ -3,6 +3,24 @@ import { test, expect } from '@playwright/test';
 import { graphqlSignIn } from './helpers/auth.js';
 
 test.describe('Test Vault', () => {
+  test('multilangual hub redirect', async ({ page }) => {
+    await page.goto('/lang_hub');
+
+    await page.waitForURL(/\/lang_hub\/english/);
+    await expect(page.locator('.lang-switcher a[href="/lang_hub/russian"]')).toBeVisible();
+    await expect(page.locator('p').first()).toContainText('English version of the page.');
+
+    // press to switch language
+    await page.locator('.lang-switcher a[href="/lang_hub/russian"]').click();
+    await page.waitForURL(/\/lang_hub\/russian/);
+    await expect(page.locator('.lang-switcher a[href="/lang_hub/english"]')).toBeVisible();
+    await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
+
+    // shoud remeber last visited language and redirect there on hub visit
+    await page.goto('/lang_hub');
+    await page.waitForURL(/\/lang_hub\/russian/);
+  })
+
   test('home page renders and shows all sections', async ({ page }) => {
     await page.goto('/');
 
