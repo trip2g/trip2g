@@ -1,12 +1,17 @@
 {% func BeginLayout(params *Params) %}
 
 <!DOCTYPE html>
-<html lang="{%s= htmlLang(params) %}">
+<html{% if params.HTMLLang != "" %} lang="{%s= params.HTMLLang %}"{% endif %}>
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+
+{%- for _, hl := range params.HrefLangs -%}
+<link rel="alternate" hreflang="{%s= hl.Lang %}" href="{%s= hl.Href %}">
+{%- endfor -%}
 
 <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />

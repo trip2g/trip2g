@@ -35,13 +35,6 @@ type Params struct {
 	HTMLLang  string // for <html lang="xx">, defaults to "ru" in template
 }
 
-func htmlLang(params *Params) string {
-	if params.HTMLLang != "" {
-		return params.HTMLLang
-	}
-	return "ru"
-}
-
 type Env interface {
 	UserJSURLs() []string
 	UserCSSURLs() []string
