@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
 	"trip2g/internal/usertoken"
 )
 
@@ -56,6 +57,10 @@ type Response struct {
 	Title string
 	Note  *model.NoteView
 	Notes *model.NoteViews
+
+	NoteView *templateviews.Note
+
+	// add NoteView...
 
 	NoteSubgraphs []string
 	UserSubgraphs []string
@@ -215,6 +220,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Notes = notes
 	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
+	response.NoteView = templateviews.NewNoteWithDomain(note, response.domainHost)
 
 	// not sure if this is the right place to do this
 	for key := range note.InLinks {

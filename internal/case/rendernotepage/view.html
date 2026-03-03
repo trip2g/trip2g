@@ -39,6 +39,14 @@
       {% endfor %}
     </style>
 
+    {% if resp.NoteView.HasLangAlternatives() %}
+      <nav class="lang-switcher">
+        {% for _, alt := range resp.NoteView.LangAlternativesList() %}
+          <a href="{%s alt.Permalink() %}" class="lang-switcher__alt lang-switcher__alt--{%s alt.Lang() %}">{%s alt.Lang() %}</a>
+        {% endfor %}
+      </nav>
+    {% endif %}
+
     <div class="noteview__content-header">
       {% if !resp.Note.IsHomePage() %}
       <h1 class="noteview__main-title">

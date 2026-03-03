@@ -61,9 +61,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
 		layoutParams.OGTags = buildOGTags(req, env, resp)
+
 		if resp.Note.Lang != "" {
 			layoutParams.HTMLLang = resp.Note.Lang
 		}
+
 		layoutParams.HrefLangs = buildHrefLangs(env, resp.Note)
 	}
 
@@ -73,10 +75,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	nolang := ctx.QueryArgs().Has("nolang")
+
 	// Language redirect: if note has lang_redirect targets, check user's preferred language.
 	// ?nolang param (any value) disables redirect for this request (for authors/SEO tools).
-	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 &&
-		!ctx.QueryArgs().Has("nolang") {
+	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 && !nolang {
 
 		cookieLang := string(ctx.Request.Header.Cookie("lang"))
 		acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
@@ -99,8 +102,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// Set lang cookie on any page that declares a language.
 	// Skipped when ?nolang is set (debug/SEO mode).
-	if resp.Note != nil && resp.Note.Lang != "" &&
-		!ctx.QueryArgs().Has("nolang") {
+	if resp.Note != nil && resp.Note.Lang != "" && !nolang {
 		setLangCookie(ctx, resp.Note.Lang)
 	}
 
@@ -219,7 +221,7 @@ func renderLayout(
 	}()
 
 	vars := make(jet.VarMap)
-	vars["note"] = reflect.ValueOf(templateviews.NewNoteWithDomain(resp.Note, resp.domainHost))
+	vars["note"] = reflect.ValueOf(resp.NoteView)
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
 
@@ -286,6 +288,15 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 	tags := map[string]string{
 		"og:url":  ogBaseURL + ogPath,
 		"og:type": "article",
+
+		// https://bureau.ru/soviet/20221027/
+		"twitter:card": "summary_large_image",
+	}
+
+	// TODO: use a first paragraph as description
+	// if this note is free.
+	if resp.Note.Description != nil {
+		tags["og:description"] = *resp.Note.Description
 	}
 
 	if resp.Note.FirstImage != nil {
