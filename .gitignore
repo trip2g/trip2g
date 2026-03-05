@@ -21,6 +21,11 @@ demo/.obsidian
 /.bmad
 /.claude
 /.cursor
+CLAUDE.md
+
+/cmd/channelexport
+/cmd/testgoqite
+/cmd/tgconvert
 
 # Playwright
 /test-results/

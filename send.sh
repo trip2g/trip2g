@@ -1,5 +1,0 @@
-
-curl localhost:8081/graphql \
-  -F operations='{ "variables": {"input":{"file":null,"noteId":30,"sha256Hash":"7af6955bbf11e55de9bf9c4242905cc24717eb521291fcae93ef4d9fbe8ba70d","path":"/test.png","absolutePath":"/test.png"}}, "query": "mutation($input: UploadNoteAssetInput!) { uploadNoteAsset(input: $input) { ... on ErrorPayload { message } ... on UploadNoteAssetPayload { uploadSkipped } } }" }' \
-  -F map='{ "0": ["variables.input.file"] }' \
-  -F 0=@./scripts/test.png
