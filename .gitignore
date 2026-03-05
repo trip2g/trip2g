@@ -18,6 +18,10 @@ examples.json
 infra/hosts
 demo/.obsidian
 
+/.bmad
+/.claude
+/.cursor
+
 # Playwright
 /test-results/
 /playwright-report/
