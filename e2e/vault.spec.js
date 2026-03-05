@@ -16,9 +16,43 @@ test.describe('Test Vault', () => {
     await expect(page.locator('.lang-switcher a[href="/lang_hub/english"]')).toBeVisible();
     await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
 
-    // shoud remeber last visited language and redirect there on hub visit
+    // shoudn't remeber last visited language and redirect there on hub visit
     await page.goto('/lang_hub');
+    await page.waitForURL(/\/lang_hub\/english/);
+  })
+
+  test('multilangual hub redirect in Accept-Language', async ({ page, context }) => {
+    await context.route('**/*', (route, request) => {
+      route.continue({
+        headers: {
+          ...request.headers(),
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+    });
+
+    await page.goto('/lang_hub');
+
     await page.waitForURL(/\/lang_hub\/russian/);
+    await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
+
+    // press to switch language
+    await page.locator('.lang-switcher a[href="/lang_hub/english"]').click();
+    await page.waitForURL(/\/lang_hub\/english/);
+    await expect(page.locator('p').first()).toContainText('English version of the page.');
+  })
+
+  test('multilangual mixed hub redirect', async ({ page }) => {
+    await page.goto('/lang_hub/english_hub');
+
+    await page.waitForURL(/\/lang_hub\/english/);
+    await expect(page.locator('.lang-switcher a[href="/lang_hub/english_hub_russian"]')).toBeVisible();
+    await expect(page.locator('p').first()).toContainText('English version for English people.');
+
+    await page.locator('.lang-switcher a[href="/lang_hub/english_hub_russian"]').click();
+    await page.waitForURL(/\/lang_hub\/english_hub_russian/);
+    await expect(page.locator('.lang-switcher a[href="/lang_hub/english_hub"]')).toBeVisible();
+    await expect(page.locator('p').first()).toContainText('Русская версия страницы как дополнение');
   })
 
   test('home page renders and shows all sections', async ({ page }) => {

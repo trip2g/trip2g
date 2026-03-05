@@ -65,6 +65,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 37. [[lang_hub/index]] - should redirect to [[lang_hub/english]] or [[lang_hub/russian]]
 38. [[lang_hub/english]] - English content
 39. [[lang_hub/russian]] - Russian content
+40. [[lang_hub/german]] - German content
+42. [[lang_hub/english_hub]] - English content but
+43. [[lang_hub/english_hub_russian]] - Russian from english_hub
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])

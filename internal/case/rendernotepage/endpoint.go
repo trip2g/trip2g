@@ -21,17 +21,6 @@ import (
 
 type Endpoint struct{}
 
-func setLangCookie(ctx *fasthttp.RequestCtx, lang string) {
-	c := fasthttp.AcquireCookie()
-	defer fasthttp.ReleaseCookie(c)
-	c.SetKey("lang")
-	c.SetValue(lang)
-	c.SetPath("/")
-	c.SetMaxAge(365 * 24 * 60 * 60) // 1 year.
-	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
-	ctx.Response.Header.SetCookie(c)
-}
-
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
 	if err != nil {
@@ -75,35 +64,22 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	nolang := ctx.QueryArgs().Has("nolang")
-
-	// Language redirect: if note has lang_redirect targets, check user's preferred language.
-	// ?nolang param (any value) disables redirect for this request (for authors/SEO tools).
-	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 && !nolang {
-
-		cookieLang := string(ctx.Request.Header.Cookie("lang"))
+	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 && resp.Note.Lang == "" {
 		acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
-		preferred := langdetect.DetectPreferred(cookieLang, acceptLang)
+		preferred := langdetect.DetectPreferred("", acceptLang)
 
-		if preferred != "" {
+		if preferred != "" && preferred != resp.Note.Lang {
 			for _, lr := range resp.Note.LangRedirects {
 				if lr.Note == resp.Note {
 					continue
 				}
 				if lr.Lang == preferred {
-					setLangCookie(ctx, preferred)
 					ctx.Response.Header.Set("Location", lr.URL)
 					ctx.SetStatusCode(http.StatusFound)
 					return nil, nil
 				}
 			}
 		}
-	}
-
-	// Set lang cookie on any page that declares a language.
-	// Skipped when ?nolang is set (debug/SEO mode).
-	if resp.Note != nil && resp.Note.Lang != "" && !nolang {
-		setLangCookie(ctx, resp.Note.Lang)
 	}
 
 	if resp.OnboardingMode {

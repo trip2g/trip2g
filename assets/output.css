@@ -5430,6 +5430,54 @@ html {
   margin: 0;
   border-radius: 0;
 }
+.lang-switcher {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.lang-switcher__alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  color: #555;
+  background: #f0f0f0;
+  transition: background 0.2s, color 0.2s;
+}
+.lang-switcher__alt:hover {
+  background: #e0e0e0;
+  color: #222;
+}
+.lang-switcher__alt::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 14px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 2px;
+}
+.dark .lang-switcher__alt {
+  color: #aaa;
+  background: #2a2a2a;
+}
+.dark .lang-switcher__alt:hover {
+  background: #3a3a3a;
+  color: #eee;
+}
+.lang-switcher__alt--de::before {
+  background-image: url('https://flagcdn.com/w40/de.png');
+}
+.lang-switcher__alt--en::before {
+  background-image: url('https://flagcdn.com/w40/gb.png');
+}
+.lang-switcher__alt--ru::before {
+  background-image: url('https://flagcdn.com/w40/ru.png');
+}
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {
     color-scheme: light;
