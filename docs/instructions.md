@@ -272,12 +272,12 @@ Generate mocks for interfaces using `moq`:
 
 ```bash
 # Generate mocks for testing
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 ```
 
 Example mock generation comment:
 ```go
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type Env interface {
 	UserByEmail(ctx context.Context, email string) (db.User, error)
@@ -523,7 +523,7 @@ func TestPackageName(t *testing.T) {
 The Env interface pattern makes testing straightforward with mocks:
 
 ```go
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type Env interface {
 	GenerateApiKey() string

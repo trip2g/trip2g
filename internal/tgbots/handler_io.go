@@ -1,7 +1,5 @@
 package tgbots
 
-//go:generate go run github.com/matryer/moq -out handler_io_mock.go . HandlerIOInterface
-
 import (
 	"context"
 	"encoding/json"

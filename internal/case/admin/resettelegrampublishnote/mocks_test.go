@@ -41,10 +41,10 @@ var _ resettelegrampublishnote.Env = &EnvMock{}
 //			GetTelegramPublishNoteByNotePathIDFunc: func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error) {
 //				panic("mock out the GetTelegramPublishNoteByNotePathID method")
 //			},
-//			ListTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+//			ListTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentAccountMessageRow, error) {
 //				panic("mock out the ListTelegramPublishSentAccountMessagesByNotePathID method")
 //			},
-//			ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+//			ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentMessageRow, error) {
 //				panic("mock out the ListTelegramPublishSentMessagesByNotePathID method")
 //			},
 //			LoggerFunc: func() logger.Logger {
@@ -82,10 +82,10 @@ type EnvMock struct {
 	GetTelegramPublishNoteByNotePathIDFunc func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error)
 
 	// ListTelegramPublishSentAccountMessagesByNotePathIDFunc mocks the ListTelegramPublishSentAccountMessagesByNotePathID method.
-	ListTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentAccountMessageRow, error)
 
 	// ListTelegramPublishSentMessagesByNotePathIDFunc mocks the ListTelegramPublishSentMessagesByNotePathID method.
-	ListTelegramPublishSentMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentMessageRow, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -410,7 +410,7 @@ func (mock *EnvMock) GetTelegramPublishNoteByNotePathIDCalls() []struct {
 }
 
 // ListTelegramPublishSentAccountMessagesByNotePathID calls ListTelegramPublishSentAccountMessagesByNotePathIDFunc.
-func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentAccountMessageRow, error) {
 	if mock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc == nil {
 		panic("EnvMock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc: method is nil but Env.ListTelegramPublishSentAccountMessagesByNotePathID was just called")
 	}
@@ -446,7 +446,7 @@ func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathIDCalls() [
 }
 
 // ListTelegramPublishSentMessagesByNotePathID calls ListTelegramPublishSentMessagesByNotePathIDFunc.
-func (mock *EnvMock) ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+func (mock *EnvMock) ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]resettelegrampublishnote.SentMessageRow, error) {
 	if mock.ListTelegramPublishSentMessagesByNotePathIDFunc == nil {
 		panic("EnvMock.ListTelegramPublishSentMessagesByNotePathIDFunc: method is nil but Env.ListTelegramPublishSentMessagesByNotePathID was just called")
 	}

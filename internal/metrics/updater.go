@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-//go:generate moq -out test.go -pkg metrics . Env
+//go:generate go tool github.com/matryer/moq -out test.go -pkg metrics . Env
 
 // Env defines the environment interface for metrics updater.
 type Env interface {

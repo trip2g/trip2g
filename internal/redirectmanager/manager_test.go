@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 func TestNew(t *testing.T) {
 	tests := []struct {

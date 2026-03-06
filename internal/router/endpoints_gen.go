@@ -5,8 +5,6 @@
 package router
 
 import (
-	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
-	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
 	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
 	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
@@ -21,6 +19,8 @@ import (
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	rendersearchpagerendersearchpage "trip2g/internal/case/rendersearchpage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
+	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
+	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 )
 
 var endpoints = []Endpoint{
@@ -60,3 +60,4 @@ type RoutesEnv interface {
 	renderlayoutpreviewrenderlayoutpreview.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 }
+
