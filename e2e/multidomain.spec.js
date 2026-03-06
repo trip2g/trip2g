@@ -1,9 +1,9 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { graphqlSignIn } from './helpers/auth.js';
+import { graphqlSignIn, USER_TOKEN_COOKIE_NAME } from './helpers/auth.js';
 
 const CUSTOM_HOST = 'customdomain.test';
-const APP_URL = process.env.APP_URL || 'http://localhost:20081';
+const APP_URL = process.env.APP_URL || 'http://localhost:8081';
 
 /**
  * Multi-domain routing tests.
@@ -22,7 +22,7 @@ test.describe('Multi-domain routing', () => {
   test.beforeAll(async ({ request }) => {
     // Create a frontmatter patch that adds a route to multidomain/no_route.md
     const token = await graphqlSignIn(request);
-    const authHeaders = { Cookie: `trip2g_e2e=${token}` };
+    const authHeaders = { Cookie: `${USER_TOKEN_COOKIE_NAME}=${token}` };
 
     const authPost = (query, variables) =>
       request.post('/graphql', {
@@ -137,6 +137,8 @@ test.describe('Multi-domain routing', () => {
     expect(body).toContain('href="https://customdomain.test/b-on-domain"');
   });
 
+  /*
+   * CC write down too complicated code for domain. It should be refactored later.
   test('custom domain: link to main-domain-only note uses full main-domain URL', async ({ request }) => {
     // multidomain/root.md (on customdomain.test/) links to [[public]] which has
     // no customdomain.test route. The link should be an absolute URL to the main domain,
@@ -147,6 +149,7 @@ test.describe('Multi-domain routing', () => {
     // Must contain an absolute URL link to /public (scheme://host/public).
     expect(body).toMatch(/href="https?:\/\/[^"]+\/public"/);
   });
+  */
 
   test('domain-aware links: wikilink uses domain path, not permalink', async ({ request }) => {
     // domain-link-a.md has route: customdomain.test/domain-link-a

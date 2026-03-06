@@ -57,6 +57,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 export APP_URL="${APP_URL:-http://localhost:20081}"
+export USER_TOKEN_COOKIE_NAME=trip2g_e2e
 export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 
 # Success flag - set to 1 at the very end if all tests pass

@@ -64,22 +64,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	if resp.Note != nil && len(resp.Note.LangRedirects) > 0 && resp.Note.Lang == "" {
-		acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
-		preferred := langdetect.DetectPreferred("", acceptLang)
-
-		if preferred != "" && preferred != resp.Note.Lang {
-			for _, lr := range resp.Note.LangRedirects {
-				if lr.Note == resp.Note {
-					continue
-				}
-				if lr.Lang == preferred {
-					ctx.Response.Header.Set("Location", lr.URL)
-					ctx.SetStatusCode(http.StatusFound)
-					return nil, nil
-				}
-			}
-		}
+	if redirectToRightLang(ctx, resp) {
+		return nil, nil
 	}
 
 	if resp.OnboardingMode {
@@ -144,6 +130,30 @@ func (Endpoint) Path() string {
 
 func (Endpoint) Method() string {
 	return http.MethodGet
+}
+
+func redirectToRightLang(ctx *fasthttp.RequestCtx, resp *Response) bool {
+	if resp.Note == nil || len(resp.Note.LangRedirects) == 0 || len(resp.Note.Lang) > 0 {
+		return false
+	}
+
+	acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
+	preferred := langdetect.DetectPreferred("", acceptLang)
+
+	if preferred != "" && preferred != resp.Note.Lang {
+		for _, lr := range resp.Note.LangRedirects {
+			if lr.Note == resp.Note {
+				continue
+			}
+			if lr.Lang == preferred {
+				ctx.Response.Header.Set("Location", lr.URL)
+				ctx.SetStatusCode(http.StatusFound)
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 //nolint:nonamedreturns // named returns required for defer/recover to set return values

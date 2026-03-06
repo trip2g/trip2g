@@ -1,5 +1,7 @@
 // @ts-check
 
+export const USER_TOKEN_COOKIE_NAME = process.env.USER_TOKEN_COOKIE_NAME || 'trip2g_token';
+
 /**
  * Sign in as admin user (hello@example.com) using dev code 111111
  * @param {import('@playwright/test').Page} page
@@ -32,7 +34,7 @@ export async function signInAsAdmin(page) {
 
   // Extract session cookie (trip2g_e2e in E2E tests via USER_TOKEN_COOKIE_NAME)
   const cookies = await page.context().cookies();
-  const sessionCookie = cookies.find(c => c.name === 'trip2g_e2e');
+  const sessionCookie = cookies.find(c => c.name === USER_TOKEN_COOKIE_NAME);
   if (!sessionCookie) {
     throw new Error('Session cookie not found after sign in');
   }

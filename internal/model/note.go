@@ -111,14 +111,14 @@ type AppliedFrontmatterPatch struct {
 // LangRedirect represents a resolved language alternative for a note.
 type LangRedirect struct {
 	Lang string    // language code from the target note's lang field (e.g., "en", "ru")
-	Note *NoteView // resolved target note (populated post-load)
+	Note *NoteView `json:"-"` // resolved target note (populated post-load)
 	URL  string    // resolved permalink path for the target note (full URL built at render time)
 }
 
 // LangGroup links a hub page with all its language versions.
 // Shared by the hub and every target page so each can discover siblings.
 type LangGroup struct {
-	Hub      *NoteView      // the page that declared lang_redirect
+	Hub      *NoteView      `json:"-"` // the page that declared lang_redirect
 	Versions []LangRedirect // all resolved language versions (same slice as Hub.LangRedirects)
 }
 
@@ -223,7 +223,7 @@ type NoteView struct {
 	// Built from LangGroup during post-load processing.
 	// Populated on both hub page and each target page.
 	// Does NOT include the current note itself.
-	LangAlternatives map[string]*NoteView
+	LangAlternatives map[string]*NoteView `json:"-"`
 
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`
@@ -534,7 +534,7 @@ func (n *NoteView) extractLangRedirectTargets() {
 		}
 	case []interface{}:
 		for _, item := range val {
-			if s, ok := item.(string); ok {
+			if s, sOk := item.(string); sOk {
 				if target := strip(s); target != "" {
 					n.LangRedirectTargets = append(n.LangRedirectTargets, target)
 				}

@@ -5,8 +5,8 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/main"
-  cmd_all = "go generate ./... && go build -race -o ./tmp/main ./cmd/server"
-  cmd = "go build -o ./tmp/main -race -tags=dev ./cmd/server"
+  cmd_all = "go generate ./... && go build -o ./tmp/main ./cmd/server"
+  cmd = "go build -o ./tmp/main -tags=dev ./cmd/server"
   delay = 500
   exclude_dir = ["demo", "assets", "tmp", "vendor", "testdata", "node_modules", "out", "_demo", "obsidian-sync", "infra", "test-results", "playwright-report"]
   exclude_file = ["data.sqlite3"]
