@@ -89,3 +89,7 @@ Thumbs.db
 
 testdata/vault
 obsidian-sync
+
+/assets/ui/-
+/assets/ui/admin/-
+/assets/ui/user/-

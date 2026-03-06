@@ -4,7 +4,7 @@ LDFLAGS := -s -w -X main.GitCommit=$(GIT_COMMIT)
 test:
 	go test ./...
 
-build-amd64: test
+build-amd64: graphqlgen test
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="$(LDFLAGS)" ./cmd/server
 
 build:
