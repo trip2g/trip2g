@@ -8,4 +8,5 @@ import (
 	"os"
 )
 
+//nolint:gochecknoglobals // it's ok
 var FS fs.FS = os.DirFS("./assets")
