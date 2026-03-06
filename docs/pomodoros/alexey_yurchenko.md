@@ -7,3 +7,5 @@
 08:22 More CI fixes.
 
 12:57 Investigate a bug in multidomain logic. testdata/vault/multidomain/root.md should be rendered with full links to the main domain, but it doesn't. So hard do it without CC.
+
+14:59 Stop investigating a bug in multidomain logic. I will do it later. The code too complicated and I guess I should refactor it later. The main goal now is fixing the CI pipeline. Also I upgraded the Golang to 1.26.

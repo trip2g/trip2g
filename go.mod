@@ -1,8 +1,6 @@
 module trip2g
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.26.1
 
 require (
 	github.com/99designs/gqlgen v0.17.81

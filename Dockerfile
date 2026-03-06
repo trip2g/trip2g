@@ -27,7 +27,7 @@ RUN npm start trip2g && \
     npm start trip2g/admin
 
 # Build server binary
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 
 WORKDIR /app
 
