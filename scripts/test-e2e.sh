@@ -123,10 +123,10 @@ echo "🗄️  Preparing test database $DB_PATH"
 mkdir -p tmp/data
 rm -f "$DB_PATH"
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
-go run ./cmd/tge2e -db "$DB_PATH" patch-db
 
 # Cleanup telegram channels (only if ENABLE_TG=1)
 if [ "${ENABLE_TG}" = "1" ]; then
+  go run ./cmd/tge2e -db "$DB_PATH" patch-db
   echo "🧹 Cleaning up Telegram channels..."
   go run ./cmd/tge2e -db "$DB_PATH" cleanup
 else
