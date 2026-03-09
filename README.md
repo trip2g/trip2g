@@ -71,7 +71,7 @@ trip2g is a self-hosted publishing platform for knowledge creators. Write in Obs
 | Layer | Tech |
 |---|---|
 | Backend | Go 1.26, FastHTTP, gqlgen (GraphQL) |
-| Database | SQLite (default), PostgreSQL (optional) |
+| Database | SQLite + [Litestream](https://litestream.io) replication |
 | Migrations | dbmate |
 | Frontend | [mol.hyoo.ru](https://mol.hyoo.ru), TypeScript, Tiptap editor |
 | Search | bleve (FTS), pgvector / SQLite-vec (semantic) |
