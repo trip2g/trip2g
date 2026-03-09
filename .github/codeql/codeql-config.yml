@@ -1,0 +1,5 @@
+name: "CodeQL Config"
+
+paths-ignore:
+  - "assets/milkdown/milkdown.js"
+  - "assets/tiptap/tiptap.js"

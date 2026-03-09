@@ -67,7 +67,7 @@ test.describe.serial('Setup', () => {
     expect(apiKey).toBeTruthy();
     expect(apiKey.length).toBeGreaterThan(10);
 
-    console.log(`✓ API Key created via UI: ${apiKey.substring(0, 20)}...`);
+    console.log(`✓ API Key created via UI (length: ${apiKey.length})`);
 
     // Save API key to file for use in push_notes.py
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');

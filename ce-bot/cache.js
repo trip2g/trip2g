@@ -12,10 +12,19 @@ export class ThumbnailCache {
   }
 
   /**
+   * Validate that emojiId is a numeric string to prevent path traversal
+   */
+  _sanitize(emojiId) {
+    const id = String(emojiId);
+    if (!/^\d+$/.test(id)) throw new Error(`Invalid emojiId: ${emojiId}`);
+    return id;
+  }
+
+  /**
    * Get path for emoji cache file
    */
   _getPath(emojiId) {
-    return path.join(this.cacheDir, `${emojiId}.webp`);
+    return path.join(this.cacheDir, `${this._sanitize(emojiId)}.webp`);
   }
 
   /**

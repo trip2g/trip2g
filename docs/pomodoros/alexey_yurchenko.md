@@ -13,3 +13,7 @@
 ### 2026-03-08
 
 03:54 Built docker image in the clean repo and run e2e tests. I also should put OPENAI_API_KEY environment variable to CI pipeline.
+
+### 2026-03-07
+
+12:01 Fix a problem with .tg_e2e_session. I guess I should try to run all tests on a clean environment and stop commiting by steps.
