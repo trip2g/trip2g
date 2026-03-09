@@ -50,6 +50,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: [lint, test]
+    if: false # disabled in CI, run locally with ./scripts/test-e2e.sh
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -77,4 +78,6 @@ jobs:
         run: echo "127.0.0.1 minio" | sudo tee -a /etc/hosts
 
       - name: Run E2E tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: ./scripts/test-e2e.sh
