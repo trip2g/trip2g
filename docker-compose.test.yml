@@ -4,7 +4,9 @@ services:
   minio:
     image: minio/minio:latest
     container_name: trip2g-test-minio
-    network_mode: host
+    ports:
+      - "29000:29000"
+      - "29001:29001"
     environment:
       MINIO_ROOT_USER: testuser
       MINIO_ROOT_PASSWORD: testpassword
@@ -19,17 +21,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # На ARM Linux: нативно arm64
-      # На CI x64: нативно amd64
-      # Docker автоматически выбирает правильную архитектуру
     container_name: trip2g-test-app
     depends_on:
       minio:
         condition: service_healthy
-    network_mode: host
+    ports:
+      - "20081:20081"
+      - "20082:20082"
     environment:
       # Server
-      - LISTEN_ADDR=:20081
+      - LISTEN_ADDR=0.0.0.0:20081
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
       - DEV=true # sign in code 000000
@@ -40,7 +41,7 @@ services:
       - 'FEATURES={"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
 
       # MinIO
-      - MINIO_ENDPOINT=localhost:29000
+      - MINIO_ENDPOINT=minio:29000
       - MINIO_ACCESS_KEY_ID=testuser
       - MINIO_SECRET_KEY=testpassword
       - MINIO_BUCKET=test-bucket
@@ -69,7 +70,7 @@ services:
       - ./tmp/data:/data
       - ./testdata/vault:/app/testdata/vault:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20082/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20082/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10

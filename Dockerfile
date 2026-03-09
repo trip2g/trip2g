@@ -24,12 +24,15 @@ COPY ./assets/ui ./trip2g
 
 RUN npm start trip2g && \
     npm start trip2g/user && \
+    npm start trip2g/space && \
     npm start trip2g/admin
 
 # Build server binary
 FROM golang:1.26 AS builder
 
 WORKDIR /app
+
+RUN apt update && apt install -y zip && rm -rf /var/lib/apt/lists/*
 
 # Download dependencies first (better caching)
 COPY go.mod go.sum ./
@@ -39,14 +42,14 @@ RUN go mod download
 COPY . .
 
 # Copy built frontend
-COPY --from=frontend /mam/trip2g/- ./assets/ui/-
-COPY --from=frontend /mam/trip2g/admin/- ./assets/ui/admin/-/
-COPY --from=frontend /mam/trip2g/user/- ./assets/ui/user/-/
+COPY --from=frontend /mam/trip2g ./assets/ui
 
 # Build for target architecture
 # TARGETARCH is automatically set by Docker buildx (amd64, arm64, etc)
 ARG TARGETARCH
-RUN GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 go build \
+RUN go generate ./onboarding-vault && \
+    GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
+    go build \
     -o /trip2g \
     -ldflags="-s -w" \
     ./cmd/server

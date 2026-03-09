@@ -83,6 +83,10 @@ sync_vault() {
   npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
 }
 
+# NOTE: presigned MinIO URLs contain "minio:29000" hostname.
+# Add "127.0.0.1 minio" to /etc/hosts for local testing.
+# In CI this is done in the workflow file.
+
 echo "🧪 Starting E2E tests..."
 echo ""
 

@@ -23,7 +23,7 @@ This is \`inline code\` in text.
 
 ## External Image
 
-![External](https://via.placeholder.com/300x200)
+![External](https://upload.wikimedia.org/wikipedia/commons/1/17/Lipari-Obsidienne_%285%29.jpg)
 
 ## Local Image
 
