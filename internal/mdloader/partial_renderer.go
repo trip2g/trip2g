@@ -234,11 +234,14 @@ func (pr *PartialRenderer) Introduce() model.NoteViewSection {
 		allNodes = append(allNodes, child)
 	}
 
-	// Find the first heading of any level
+	// Find the first heading or thematic break of any level
 	var firstHeadingIndex = -1
 	for i, node := range allNodes {
-		if _, ok := node.(*ast.Heading); ok {
+		switch node.(type) {
+		case *ast.Heading, *ast.ThematicBreak:
 			firstHeadingIndex = i
+		}
+		if firstHeadingIndex == i {
 			break
 		}
 	}
@@ -256,6 +259,127 @@ func (pr *PartialRenderer) Introduce() model.NoteViewSection {
 		TitleHTML:   "",
 		ContentHTML: pr.renderNodeRange(allNodes, 0, firstHeadingIndex),
 	}
+}
+
+// extractLinkText builds the text content of a link node.
+func (pr *PartialRenderer) extractLinkText(link *ast.Link) string {
+	var buf bytes.Buffer
+	for t := link.FirstChild(); t != nil; t = t.NextSibling() {
+		extractTextFromNodeRecursive(pr.content, t, &buf)
+	}
+	return buf.String()
+}
+
+// applyInlineNode applies a single inline AST node's content to item.
+func (pr *PartialRenderer) applyInlineNode(item *model.NoteViewListItem, n ast.Node) {
+	switch c := n.(type) {
+	case *ast.Link:
+		item.URL = string(c.Destination)
+		item.Text = pr.extractLinkText(c)
+	case *ast.Text:
+		if item.Text == "" {
+			item.Text = string(c.Segment.Value(pr.content))
+		}
+	case *ast.String:
+		if item.Text == "" {
+			item.Text = string(c.Value)
+		}
+	}
+}
+
+// walkListItem recursively converts an ast.ListItem node into a model.NoteViewListItem.
+func (pr *PartialRenderer) walkListItem(node ast.Node) model.NoteViewListItem {
+	var item model.NoteViewListItem
+	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+		switch c := child.(type) {
+		case *ast.Link:
+			item.URL = string(c.Destination)
+			item.Text = pr.extractLinkText(c)
+		case *ast.Text:
+			if item.Text == "" {
+				item.Text = string(c.Segment.Value(pr.content))
+			}
+		case *ast.String:
+			if item.Text == "" {
+				item.Text = string(c.Value)
+			}
+		case *ast.List:
+			for subItem := c.FirstChild(); subItem != nil; subItem = subItem.NextSibling() {
+				item.Children = append(item.Children, pr.walkListItem(subItem))
+			}
+		default:
+			// For paragraph or other wrapper nodes, recurse into children.
+			for inner := child.FirstChild(); inner != nil; inner = inner.NextSibling() {
+				pr.applyInlineNode(&item, inner)
+			}
+		}
+	}
+	return item
+}
+
+// listMaxDepth calculates the maximum nesting depth of a NoteViewList's items.
+func listMaxDepth(items []model.NoteViewListItem, current int) int {
+	maxDepth := current
+	for _, item := range items {
+		if len(item.Children) > 0 {
+			d := listMaxDepth(item.Children, current+1)
+			if d > maxDepth {
+				maxDepth = d
+			}
+		}
+	}
+	return maxDepth
+}
+
+// convertList converts an ast.List top-level node to model.NoteViewList.
+func (pr *PartialRenderer) convertList(list *ast.List) model.NoteViewList {
+	var nvl model.NoteViewList
+	for child := list.FirstChild(); child != nil; child = child.NextSibling() {
+		nvl.Items = append(nvl.Items, pr.walkListItem(child))
+	}
+	nvl.MaxDepth = listMaxDepth(nvl.Items, 1)
+	return nvl
+}
+
+// FirstList returns the first top-level list, nil if none found.
+func (pr *PartialRenderer) FirstList() *model.NoteViewList {
+	for _, node := range pr.collectTopLevelNodes() {
+		if list, ok := node.(*ast.List); ok {
+			nvl := pr.convertList(list)
+			return &nvl
+		}
+	}
+	return nil
+}
+
+// Lists returns all top-level lists.
+func (pr *PartialRenderer) Lists() []model.NoteViewList {
+	var result []model.NoteViewList
+	for _, node := range pr.collectTopLevelNodes() {
+		if list, ok := node.(*ast.List); ok {
+			result = append(result, pr.convertList(list))
+		}
+	}
+	return result
+}
+
+// FirstImageURL returns the URL of the first image found at top level or inside the first paragraph.
+func (pr *PartialRenderer) FirstImageURL() string {
+	for _, node := range pr.collectTopLevelNodes() {
+		if img, ok := node.(*ast.Image); ok {
+			return string(img.Destination)
+		}
+		if _, ok := node.(*ast.Paragraph); ok {
+			for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+				if img, isImg := child.(*ast.Image); isImg {
+					return string(img.Destination)
+				}
+			}
+			// Only check the first paragraph
+			break
+		}
+	}
+	return ""
 }
 
 func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {

@@ -1,0 +1,417 @@
+{% import "encoding/json" %}
+{% import "trip2g/internal/templateviews" %}
+
+{% func Render(ctx *Ctx) %}
+<!DOCTYPE html>
+<html{% if ctx.HTMLLang != "" %} lang="{%s= ctx.HTMLLang %}"{% endif %}>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+{%- for _, hl := range ctx.HrefLangs -%}
+<link rel="alternate" hreflang="{%s= hl.Lang %}" href="{%s= hl.Href %}">
+{%- endfor -%}
+
+<link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<link rel="shortcut icon" href="/assets/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+<link rel="manifest" href="/assets/site.webmanifest" />
+
+{% if ctx.MetaDescription != nil %}
+<meta name="description" content="{%s= *ctx.MetaDescription %}">
+{% endif %}
+
+{% if len(ctx.MetaRobots) > 0 %}
+<meta name="robots" content="{%s= ctx.MetaRobots %}">
+{% endif %}
+
+<meta property="og:title" content="{%s ctx.Title %}">
+{% if ctx.MetaDescription != nil %}
+<meta property="og:description" content="{%s= *ctx.MetaDescription %}">
+{% endif %}
+
+{% if ctx.OGTags != nil %}
+{% for property, value := range ctx.OGTags %}
+<meta property="{%s= property %}" content="{%s= value %}">
+{% endfor %}
+{% endif %}
+
+<script>
+window.__trip2g_settings = {
+  is_dev_mode: {%s= ctx.DevMode %},
+  title: {%q= ctx.Title %},
+}
+</script>
+
+<title>{%s ctx.Title %}</title>
+
+{%s= InlineCSS() %}
+
+{% for _, url := range ctx.CSSURLs %}
+<link href="{%s url %}" rel="stylesheet">
+{% endfor %}
+
+{% for _, injection := range ctx.HTMLInjections[injectionPlaceholderHead] %}
+{%s= injection.Content %}
+{% endfor %}
+
+</head>
+<body>
+
+{% if ctx.PaywallError != nil %}
+  {%= PayWall(ctx) %}
+{% elseif ctx.OnboardingMode %}
+  {%= Onboarding(ctx) %}
+{% else %}
+  {%= NotePage(ctx) %}
+{% endif %}
+
+{% for _, url := range ctx.JSURLs %}
+<script src="{%s url %}"></script>
+{% endfor %}
+<script>
+(function(){
+  var header = document.querySelector('.site-header');
+  if (header) {
+    window.addEventListener('scroll', function(){ header.classList.toggle('is-scrolled', window.scrollY > 0); }, { passive: true });
+  }
+  var backdrop = document.getElementById('backdrop');
+  var leftSidebar = document.querySelector('.layout__sidebar--left');
+  var rightSidebar = document.querySelector('.layout__sidebar--right');
+  function openSidebar(s){ s.classList.add('is-open'); if(backdrop) backdrop.classList.add('is-visible'); document.body.style.overflow='hidden'; }
+  function closeAll(){ leftSidebar&&leftSidebar.classList.remove('is-open'); rightSidebar&&rightSidebar.classList.remove('is-open'); if(backdrop) backdrop.classList.remove('is-visible'); document.body.style.overflow=''; }
+  var btnLeft = document.getElementById('btn-left');
+  if (btnLeft && leftSidebar) btnLeft.addEventListener('click', function(){ leftSidebar.classList.contains('is-open') ? closeAll() : openSidebar(leftSidebar); });
+  var btnRight = document.getElementById('btn-right');
+  if (btnRight && rightSidebar) btnRight.addEventListener('click', function(){ rightSidebar.classList.contains('is-open') ? closeAll() : openSidebar(rightSidebar); });
+  if (backdrop) backdrop.addEventListener('click', closeAll);
+})();
+</script>
+
+{% for _, injection := range ctx.HTMLInjections[injectionPlaceholderBodyEnd] %}
+{%s= injection.Content %}
+{% endfor %}
+
+</body>
+</html>
+{% endfunc %}
+
+{% func NotePage(ctx *Ctx) %}
+{% code
+  headerRef := ctx.HeaderRef()
+  footerRef := ctx.FooterRef()
+  leftWidgets := ctx.SidebarWidgets("left")
+  rightWidgets := ctx.SidebarWidgets("right")
+  hasLeft := len(leftWidgets) > 0
+  hasRight := len(rightWidgets) > 0
+  layoutClass := "layout"
+  if !hasLeft && !hasRight {
+    layoutClass = "layout layout--no-sidebars"
+  } else if !hasLeft {
+    layoutClass = "layout layout--no-left"
+  } else if !hasRight {
+    layoutClass = "layout layout--no-right"
+  }
+%}
+
+{% code var headerNote *templateviews.Note %}
+{% if headerRef.Kind != ContentRefNone %}
+  {% code headerNote = ctx.resolveNoteRef(headerRef) %}
+{% endif %}
+{% code hasNavLinks := headerNote != nil && headerNote.FirstListHTML() != "" %}
+
+{% if headerNote != nil %}
+  {%= SiteHeader(ctx, headerNote, hasLeft || hasNavLinks, hasRight) %}
+{% endif %}
+
+<div class="sidebar-backdrop" id="backdrop"></div>
+
+<div class="{%s= layoutClass %}">
+  {% if hasLeft || hasNavLinks %}
+  {%= NoteSidebar(ctx, "left", leftWidgets, headerNote) %}
+  {% endif %}
+
+  {%= NoteContent(ctx) %}
+
+  {% if hasRight %}
+  {%= NoteSidebar(ctx, "right", rightWidgets, nil) %}
+  {% endif %}
+</div>
+
+{% if footerRef.Kind != ContentRefNone %}
+  {% code footerNote := ctx.resolveNoteRef(footerRef) %}
+  {% if footerNote != nil %}
+    {%= SiteFooter(ctx, footerNote) %}
+  {% endif %}
+{% endif %}
+{% endfunc %}
+
+{% func NoteSidebar(ctx *Ctx, position string, widgets []WidgetRef, headerNote *templateviews.Note) %}
+<aside class="layout__sidebar layout__sidebar--{%s= position %}">
+  {% if position == "left" && headerNote != nil %}
+  {% code navHTML := headerNote.FirstListHTML() %}
+  {% if navHTML != "" %}
+  <nav class="sidebar-nav">{%s= navHTML %}</nav>
+  {% endif %}
+  {% endif %}
+
+  {% for _, w := range widgets %}
+    {% switch w.Kind %}
+    {% case WidgetTOC %}
+      {%= TOCWidget(ctx) %}
+    {% case WidgetInLinks %}
+      {%= InLinksWidget(ctx) %}
+    {% case WidgetOutLinks %}
+      {%= OutLinksWidget(ctx) %}
+    {% case WidgetContent %}
+      {% code
+        ref := ContentRef{Kind: ContentRefWikiLink, Value: w.Value}
+        wNote := ctx.resolveNoteRef(ref)
+        if wNote == nil {
+          ref = ContentRef{Kind: ContentRefFile, Value: w.Value}
+          wNote = ctx.resolveNoteRef(ref)
+        }
+      %}
+      {% if wNote != nil %}
+      <div class="widget widget--content">
+        <div class="widget__content">{%s= wNote.HTMLString() %}</div>
+      </div>
+      {% endif %}
+    {% endswitch %}
+  {% endfor %}
+</aside>
+{% endfunc %}
+
+{% func TOCWidget(ctx *Ctx) %}
+{% if ctx.Note != nil %}
+{% code toc := ctx.Note.TOC() %}
+{% if len(toc) > 0 %}
+{% code tocJSON, _ := json.Marshal(toc) %}
+<div class="widget widget--toc">
+  <h3 class="widget__title">Table of Contents</h3>
+  <script type="application/json" class="widget__data">{%s= string(tocJSON) %}</script>
+  <nav class="widget__content widget__toc" id="dt-toc-nav">
+    {% for _, item := range toc %}
+    <div class="toc__item toc__item--level{%d item.Level %}">
+      <a href="#{%s= item.ID %}" class="toc__link">{%s= item.Text %}</a>
+    </div>
+    {% endfor %}
+  </nav>
+</div>
+{% endif %}
+{% endif %}
+{% endfunc %}
+
+{% func InLinksWidget(ctx *Ctx) %}
+{% if ctx.Note != nil && ctx.Notes != nil %}
+{% code backlinks := ctx.Notes.BackLinks(ctx.Note) %}
+{% if len(backlinks) > 0 %}
+<div class="widget widget--inlinks">
+  <h3 class="widget__title">Backlinks</h3>
+  <ul class="widget__list">
+    {% for _, bl := range backlinks %}
+    <li class="widget__item"><a class="widget__link" href="{%s= bl.Permalink() %}">{%s bl.Title() %}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endif %}
+{% endfunc %}
+
+{% func OutLinksWidget(ctx *Ctx) %}
+{%comment%}TODO: outlinks - needs access to note.nv.ResolvedLinks{%endcomment%}
+{% endfunc %}
+
+{% func NoteContent(ctx *Ctx) %}
+<main class="layout__main">
+  {% for _, ref := range ctx.ContentRefs() %}
+    {% switch ref.Kind %}
+    {% case ContentRefSelfContent %}
+      {%= SelfContent(ctx) %}
+    {% case ContentRefMagazine %}
+      {%= Magazine(ctx) %}
+    {% case ContentRefWikiLink %}
+      {% code refNote := ctx.resolveNoteRef(ref) %}
+      {% if refNote != nil %}
+      <div class="content__body">{%s= refNote.HTMLString() %}</div>
+      {% endif %}
+    {% case ContentRefFile %}
+      {% code refNote := ctx.resolveNoteRef(ref) %}
+      {% if refNote != nil %}
+      <div class="content__body">{%s= refNote.HTMLString() %}</div>
+      {% endif %}
+    {% endswitch %}
+  {% endfor %}
+</main>
+{% endfunc %}
+
+{% func SelfContent(ctx *Ctx) %}
+{% if ctx.Note != nil %}
+<article class="content">
+  <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
+  <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
+</article>
+{% endif %}
+{% endfunc %}
+
+{% func Magazine(ctx *Ctx) %}
+{% code items := ctx.MagazineItems() %}
+{% if len(items) > 0 %}
+<div class="magazine">
+  {%= MagazineCard(ctx, items[0], "") %}
+
+  {% if len(items) > 1 %}
+  {% code
+    gridEnd := len(items)
+    if gridEnd > 5 { gridEnd = 5 }
+  %}
+  <div class="magazine__grid">
+    {% for _, item := range items[1:gridEnd] %}
+    {%= MagazineCard(ctx, item, "magazine-item--grid") %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if len(items) > 5 %}
+  <div class="magazine__list">
+    {% for _, item := range items[5:] %}
+    {%= MagazineCard(ctx, item, "") %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endfunc %}
+
+{% func MagazineCard(ctx *Ctx, item MagazineItem, extraClass string) %}
+{% code
+  itemClass := "magazine-item magazine-item--list"
+  if item.Size == MagazineItemFeatured {
+    itemClass = "magazine-item magazine-item--featured"
+  } else if item.Size == MagazineItemSmall {
+    itemClass = "magazine-item magazine-item--small"
+  }
+  if extraClass != "" {
+    itemClass += " " + extraClass
+  }
+%}
+<article class="{%s= itemClass %}">
+  {% if item.ImageURL != "" %}
+  <img class="magazine-item__image" src="{%s= item.ImageURL %}" alt="{%s item.Note.Title() %}">
+  {% endif %}
+  {% if item.Size == MagazineItemFeatured %}
+  <h2 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h2>
+  {% else %}
+  <h3 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h3>
+  {% endif %}
+  {% code pr := item.Note.PartialRenderer() %}
+  {% if pr != nil %}
+  {% code intro := pr.Introduce() %}
+  {% if intro.ContentHTML != "" %}
+  <p class="magazine-item__excerpt">{%s= intro.ContentHTML %}</p>
+  {% endif %}
+  {% endif %}
+  <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
+</article>
+{% endfunc %}
+
+{% func SiteHeader(ctx *Ctx, headerNote *templateviews.Note, hasLeft bool, hasRight bool) %}
+<header class="site-header">
+  <div class="site-header__content">
+    {% if hasLeft %}
+    <button class="site-header__hamburger site-header__hamburger--left" aria-label="Open menu" id="btn-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    {% endif %}
+    {% code logoURL := headerNote.FirstImageURL() %}
+    {% if logoURL != "" %}
+    <a class="site-header__logo" href="/"><img src="{%s= logoURL %}" alt="Logo"></a>
+    {% endif %}
+    {% code navHTML := headerNote.FirstListHTML() %}
+    {% if navHTML != "" %}
+    <nav class="site-header__nav">{%s= navHTML %}</nav>
+    {% endif %}
+    <div class="site-header__search">
+      <input type="search" placeholder="Search…" aria-label="Search">
+    </div>
+    <div class="site-header__space" mol_view_root="$trip2g_user_space"></div>
+    {% if hasRight %}
+    <button class="site-header__hamburger site-header__hamburger--right" aria-label="Open related" id="btn-right">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </button>
+    {% endif %}
+  </div>
+</header>
+{% endfunc %}
+
+{% func SiteFooter(ctx *Ctx, footerNote *templateviews.Note) %}
+<footer class="site-footer">
+  <div class="site-footer__content">
+    <div class="site-footer__brand">
+      <a class="site-footer__name" href="/">{%s footerNote.Title() %}</a>
+      {% code tagline := footerNote.Description() %}
+      {% if tagline != "" %}
+      <p class="site-footer__tagline">{%s= tagline %}</p>
+      {% endif %}
+    </div>
+    {% code listHTML := footerNote.FirstListHTML() %}
+    {% if listHTML != "" %}
+    <div class="site-footer__links site-footer__links--inline">{%s= listHTML %}</div>
+    {% endif %}
+  </div>
+</footer>
+{% endfunc %}
+
+{% func PayWall(ctx *Ctx) %}
+<div class="paywall">
+  {% if ctx.Note != nil %}
+  <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
+
+  {% if ctx.Note.Description() != "" %}
+  <p>{%s ctx.Note.Description() %}</p>
+  {% endif %}
+
+  {% if ctx.PaywallError != nil %}
+  <script>
+    window.__trip2g_paywall = {
+      page_id: {%dl ctx.Note.PathID() %},
+    }
+  </script>
+  <div
+    id="paywall"
+    mol_view_root="$trip2g_user_paywall"
+    data-subgraphs="{%s= ctx.PaywallError.SubgraphsJSON %}"
+    data-path-id="{%dl ctx.Note.PathID() %}"
+  ></div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endfunc %}
+
+{% func Onboarding(ctx *Ctx) %}
+<div class="onboarding">
+  {% if ctx.UserToken.IsAdmin() %}
+  <h3>Welcome!</h3>
+  <p>
+    Download the starter archive and open it in Obsidian.
+    An API key will be created and packed into a ZIP archive with a demo vault.
+  </p>
+  <p>
+    Do not share this archive with anyone as it contains a private key.
+    The archive contains only a demo vault. If you already have data,
+    two-way sync will offer to download current content from the server.
+  </p>
+  <p>
+    <a href="/_system/onboarding-vault" class="onboarding__cta">
+      Download archive
+    </a>
+  </p>
+  {% else %}
+  <h3>Site is being set up</h3>
+  <p>Log in as administrator to get started.</p>
+  {% endif %}
+</div>
+{% endfunc %}

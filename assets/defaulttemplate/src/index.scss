@@ -1,0 +1,676 @@
+// Pico CSS ✨ v2.1.1 (https://picocss.com)
+// Copyright 2019-2025 - Licensed under MIT
+// Source: https://raw.githubusercontent.com/picocss/pico/refs/heads/main/css/pico.css
+//
+// Custom build: only modules needed for defaulttemplate are included.
+
+@use "@picocss/pico/scss/pico" with (
+  $modules: (
+    // Layout — all included
+    "layout/document":        true,
+    "layout/landmarks":       true,
+    "layout/container":       true,
+    "layout/section":         true,
+    "layout/grid":            true,
+    "layout/overflow-auto":   true,
+
+    // Content — all included
+    "content/link":           true,
+    "content/typography":     true,
+    "content/embedded":       true,
+    "content/button":         true,
+    "content/table":          true,
+    "content/code":           true,
+    "content/figure":         true,
+    "content/misc":           true,
+
+    // Forms — only basics
+    "forms/basics":                   true,
+    "forms/checkbox-radio-switch":    false,
+    "forms/input-color":              false,
+    "forms/input-date":               false,
+    "forms/input-file":               false,
+    "forms/input-range":              false,
+    "forms/input-search":             true,
+
+    // Components — minimal set
+    "components/accordion":   false,
+    "components/card":        false,
+    "components/dropdown":    false,
+    "components/group":       true,
+    "components/loading":     false,
+    "components/modal":       false,
+    "components/nav":         true,
+    "components/progress":    false,
+    "components/tooltip":     false,
+
+    // Utilities
+    "utilities/accessibility":    true,
+    "utilities/reduce-motion":    true,
+  )
+);
+
+// ============================================================
+// BEM layout for defaulttemplate
+// Builds on top of Pico's CSS custom properties and resets.
+// ============================================================
+
+// --- Site header ---
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 0;
+  margin-bottom: 0;
+  backdrop-filter: blur(1rem);
+  background-color: var(--pico-background-color);
+  border-bottom: var(--pico-border-width) solid transparent;
+  transition: border-color 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
+
+  &.is-scrolled {
+    border-bottom-color: var(--pico-muted-border-color);
+    box-shadow: var(--pico-card-box-shadow);
+  }
+}
+
+.site-header__content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--pico-spacing);
+  padding-block: 0.75rem;
+  min-height: 56px;
+}
+
+.site-header__logo {
+  flex-shrink: 0;
+  text-decoration: none;
+
+  img {
+    height: 40px;
+    display: block;
+  }
+}
+
+.site-header__nav {
+  flex: 1;
+
+  nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  nav a {
+    text-decoration: none;
+    color: var(--pico-contrast);
+    font-size: 0.9375rem;
+
+    &:hover {
+      color: var(--pico-primary);
+    }
+  }
+}
+
+.site-header__space {
+  margin-left: auto;
+}
+
+.site-header__search {
+  flex: 1 1 160px;
+  max-width: 240px;
+
+  input[type="search"] {
+    margin: 0;
+    padding-block: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+}
+
+// Sidebar nav: nav links shown inside drawer on mobile only
+.sidebar-nav {
+  display: none;
+  margin-bottom: calc(var(--pico-spacing) * 1.5);
+  padding-bottom: calc(var(--pico-spacing) * 1.5);
+  border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  a {
+    display: block;
+    padding: 0.375rem 0;
+    text-decoration: none;
+    font-size: 1rem;
+    color: var(--pico-color);
+    font-weight: 500;
+    text-align: left;
+
+    &:hover { color: var(--pico-primary); }
+  }
+
+  @media (max-width: 1023px) {
+    display: block;
+  }
+}
+
+// Override PicoCSS nav centering inside sidebars
+.layout__sidebar {
+  nav ul, nav ol {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+}
+
+// --- Page layout ---
+
+.layout {
+  display: grid;
+  grid-template-columns: 11rem 1fr 11rem;
+  grid-template-areas: "left main right";
+  column-gap: 3rem;
+  row-gap: 0;
+  max-width: 1440px;
+  margin-inline: auto;
+  margin-block-start: calc(var(--pico-spacing) * 3);
+  margin-block-end: calc(var(--pico-spacing) * 4);
+  padding-inline: var(--pico-spacing);
+  align-items: start;
+
+  &--no-sidebars {
+    grid-template-columns: 1fr;
+    grid-template-areas: "main";
+  }
+
+  &--no-left {
+    grid-template-columns: 1fr 11rem;
+    grid-template-areas: "main right";
+  }
+
+  &--no-right {
+    grid-template-columns: 11rem 1fr;
+    grid-template-areas: "left main";
+  }
+}
+
+.layout__sidebar {
+  min-width: 0;
+  font-size: 1rem; // picocss.com uses fixed 16px for aside
+
+  &--left  { grid-area: left; }
+  &--right { grid-area: right; }
+}
+
+.layout__main {
+  grid-area: main;
+  min-width: 0;
+}
+
+// --- Widgets ---
+// Styled after picocss.com sidebar: bold category title + border-left list
+
+.widget {
+  margin-bottom: calc(var(--pico-spacing) * 1.5);
+}
+
+.widget__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--pico-spacing) * 0.5);
+}
+
+.widget__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: var(--pico-border-width) solid var(--pico-muted-border-color);
+}
+
+.widget__item {
+  margin: 0;
+  padding: calc(var(--pico-nav-element-spacing-vertical) * 0.25) 0;
+}
+
+.widget__link {
+  display: block;
+  margin-left: calc(var(--pico-border-width) * -1);
+  padding: 0 0 0 calc(var(--pico-nav-element-spacing-horizontal) * 1.5);
+  border-left: var(--pico-border-width) solid transparent;
+  text-decoration: none;
+  font-weight: 400;
+  font-size: 1rem;
+  color: var(--pico-color);
+  transition: border-color var(--pico-transition), color var(--pico-transition);
+
+  &:hover {
+    border-color: var(--pico-secondary-underline);
+    text-decoration: none;
+  }
+
+  &.active, &[aria-current] {
+    border-color: var(--pico-primary);
+    color: var(--pico-primary-hover);
+    font-weight: 600;
+  }
+}
+
+// TOC nav — same border-left pattern as widget__list
+.widget__toc {
+  border-left: var(--pico-border-width) solid var(--pico-muted-border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.toc__link {
+  display: block;
+  margin-left: calc(var(--pico-border-width) * -1);
+  padding: calc(var(--pico-nav-element-spacing-vertical) * 0.25)
+           0
+           calc(var(--pico-nav-element-spacing-vertical) * 0.25)
+           calc(var(--pico-nav-element-spacing-horizontal) * 1.5);
+  border-left: var(--pico-border-width) solid transparent;
+  text-decoration: none;
+  font-size: 1rem;
+  color: var(--pico-color);
+  transition: border-color var(--pico-transition), color var(--pico-transition);
+
+  &:hover {
+    border-color: var(--pico-secondary-underline);
+  }
+
+  &.active, &[aria-current] {
+    border-color: var(--pico-primary);
+    color: var(--pico-primary-hover);
+    font-weight: 600;
+  }
+}
+
+.toc__item--level3 .toc__link {
+  padding-inline-start: calc(var(--pico-nav-element-spacing-horizontal) * 2.5);
+}
+
+// --- Note content ---
+
+// Reset PicoCSS default article card styling
+.content {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  border: none;
+}
+
+.content__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--pico-spacing);
+}
+
+.content__body {
+  // Fluid typography: 1rem (mobile) → 1.125rem (desktop)
+  font-size: clamp(1rem, 0.9rem + 0.25vw, 1.125rem);
+  line-height: 1.75;
+}
+
+// --- Magazine ---
+
+.magazine {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) * 2.5);
+}
+
+.magazine__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(var(--pico-spacing) * 2);
+}
+
+.magazine__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// --- Magazine items ---
+
+.magazine-item {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-bottom: 0;
+
+  &--grid {
+    .magazine-item__title {
+      font-size: 1rem;
+    }
+  }
+
+  &--list {
+    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+    padding-block: 0.75rem;
+
+    .magazine-item__title {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+.magazine-item__image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-bottom: 0.875rem;
+  display: block;
+
+  .magazine-item--featured & {
+    height: 300px;
+    margin-bottom: 1.25rem;
+  }
+}
+
+
+.magazine-item__title {
+  margin-bottom: 0.375rem;
+}
+
+.magazine-item__link {
+  text-decoration: none;
+  color: var(--pico-contrast);
+  font-weight: 600;
+
+  &:hover {
+    color: var(--pico-primary);
+  }
+}
+
+.magazine-item__excerpt {
+  color: var(--pico-muted-color);
+  font-size: 0.875rem;
+  margin-block: 0.375rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.magazine-item__date {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color);
+}
+
+// --- Site footer ---
+
+// Footer — styled after picocss.com footer layout
+.site-footer {
+  margin-top: calc(var(--pico-spacing) * 4);
+  font-size: 14px;
+}
+
+.site-footer__content {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--pico-spacing);
+  padding-block: calc(var(--pico-spacing) * 2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "brand links";
+  column-gap: calc(var(--pico-spacing) * 4);
+  row-gap: calc(var(--pico-spacing) * 2);
+  align-items: start;
+}
+
+.site-footer__brand {
+  grid-area: brand;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.site-footer__name {
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  color: var(--pico-contrast);
+}
+
+.site-footer__tagline {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+}
+
+.site-footer__links {
+  // Inline variant (simple flat list)
+  &--inline {
+    grid-area: links;
+
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 1.5rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        list-style: none;
+        &::marker { content: none; }
+      }
+
+      a {
+        text-decoration: none;
+        color: var(--pico-muted-color);
+
+        &:hover { color: var(--pico-primary); }
+      }
+    }
+  }
+
+  // Multi-column variant (picocss.com footer style)
+  &--columns {
+    grid-area: links;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    column-gap: calc(var(--pico-spacing) * 2);
+    row-gap: calc(var(--pico-spacing) * 2);
+    align-items: start;
+    justify-content: end;
+
+    > div {
+      > p, > strong {
+        display: block;
+        font-weight: 600;
+        margin-bottom: calc(var(--pico-spacing) * 0.5);
+        color: var(--pico-contrast);
+      }
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        display: block;
+        padding-block: 0.125rem;
+        list-style: none;
+
+        &::marker { content: none; }
+      }
+
+      a {
+        text-decoration: none;
+        color: var(--pico-muted-color);
+
+        &:hover { color: var(--pico-primary); }
+      }
+    }
+  }
+}
+
+// Copyright bar below footer content
+.site-footer__copyright {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--pico-spacing);
+  padding-block: calc(var(--pico-spacing) * 1.5);
+  border-top: var(--pico-border-width) solid var(--pico-muted-border-color);
+  font-size: 12px;
+  color: var(--pico-muted-color);
+}
+
+// --- Paywall ---
+
+.paywall {
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: var(--pico-spacing);
+  padding-block: calc(var(--pico-spacing) * 2);
+}
+
+// --- Onboarding ---
+
+.onboarding {
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: var(--pico-spacing);
+  padding-block: calc(var(--pico-spacing) * 2);
+}
+
+// --- Hamburger button (mobile only) ---
+
+// Hamburger buttons — one left, one right, hidden on desktop
+.site-header__hamburger {
+  display: none;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--pico-contrast);
+  flex-shrink: 0;
+
+  svg {
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  @media (max-width: 1023px) {
+    display: flex;
+  }
+}
+
+// --- Responsive ---
+
+// Shared drawer mixin — used at different breakpoints per sidebar
+@mixin sidebar-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: min(18rem, 85vw);
+  padding: var(--pico-spacing);
+  background: var(--pico-background-color);
+  overflow-y: auto;
+  transition: transform var(--pico-transition);
+  box-shadow: var(--pico-card-box-shadow);
+}
+
+// Overlay backdrop (always in DOM, shown via JS)
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.3);
+
+  &.is-visible {
+    display: block;
+  }
+}
+
+// Desktop: hide sidebars that have no grid column (nav-drawer-only on mobile)
+@media (min-width: 1024px) {
+  .layout--no-left .layout__sidebar--left,
+  .layout--no-sidebars .layout__sidebar--left { display: none; }
+}
+
+// Tablet (1024–1279px): 2-column, right sidebar → drawer
+@media (max-width: 1279px) {
+  .layout {
+    grid-template-columns: 11rem 1fr;
+    grid-template-areas: "left main";
+  }
+
+  .layout__sidebar--right {
+    @include sidebar-drawer;
+    right: 0;
+    transform: translateX(calc(100% + 1rem));
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+
+  // Show right hamburger on tablet
+  .site-header__hamburger--right {
+    display: flex;
+  }
+}
+
+// Mobile (<1024px): single column, both sidebars → drawers, nav hidden
+@media (max-width: 1023px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: "main";
+    margin-block-start: calc(var(--pico-spacing) * 1.5);
+  }
+
+  .layout__sidebar--left {
+    @include sidebar-drawer;
+    left: 0;
+    transform: translateX(calc(-100% - 1rem));
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+
+  .site-header__nav {
+    display: none;
+  }
+
+  .site-header__space {
+    margin-left: auto;
+  }
+
+  // Footer: stack brand + links
+  .site-footer__content {
+    grid-template-columns: 1fr;
+    grid-template-areas: "brand" "links";
+  }
+
+  .site-footer__links--columns {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

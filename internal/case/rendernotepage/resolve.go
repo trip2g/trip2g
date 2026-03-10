@@ -197,6 +197,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 	note := resolveNote(notes, request.Host, path, publicURL)
 	if note == nil {
+		if path == "/" {
+			// Root URL with no index note: render default magazine layout.
+			response.Notes = notes
+			response.UserToken = request.UserToken
+			response.Time = int(time.Now().Unix())
+			return &response, nil
+		}
 		return &response, ErrNotFound
 	}
 

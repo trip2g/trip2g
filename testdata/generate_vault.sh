@@ -5,6 +5,9 @@ set -e
 # Obsidian Link Resolution Test Vault Generator
 # Creates minimal test structure for link resolution testing
 
+# Always run from the script's own directory
+cd "$(dirname "$0")"
+
 VAULT="vault"
 
 # Helper function to download placeholder image
@@ -1423,12 +1426,19 @@ Available lessons:
 - [[paid_with_cut]]
 EOF
 
-cat > "$VAULT/_index.md" << 'EOF'
+cat > "$VAULT/all.md" << 'EOF'
 ---
 free: true
 title: Test Vault Home
 description: Comprehensive test vault for Obsidian publishing features
 sidebar: true
+content:
+  - selfcontent
+  - magazine
+magazine_property: magazine_priority
+magazine_include_files: "blog/**/*.md"
+header: "[[_navigation]]"
+footer: "[[_footer]]"
 ---
 
 Welcome to the comprehensive test vault for Obsidian publishing!
@@ -1766,6 +1776,183 @@ This note has no route in frontmatter.
 A frontmatter patch will add: route customdomain.test/patch-target
 EOF
 
+# ============================================================================
+# DefaultTemplate layout tests
+# ============================================================================
+
+mkdir -p "$VAULT/blog"
+
+cat > "$VAULT/blog/post1.md" << 'EOF'
+---
+title: "First Post"
+magazine_priority: 100
+header: "[[_navigation]]"
+footer: "[[_footer]]"
+free: true
+---
+
+The **introduce** section is the text that appears before the first heading (`##`) or before a `---` separator. This text is used as the excerpt in magazine cards and list views.
+
+Everything above the first `##` heading is considered the introduction.
+
+## Section 1
+
+This is section 1 content. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+## Section 2
+
+This is section 2 content. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+EOF
+
+cat > "$VAULT/blog/post2.md" << 'EOF'
+---
+title: "Second Post"
+magazine_priority: 90
+header: "[[_navigation]]"
+footer: "[[_footer]]"
+free: true
+---
+
+A shorter article demonstrating introduce text. This paragraph appears before any heading, so it becomes the excerpt shown in magazine cards.
+
+## Details
+
+More content below the heading cut-off.
+EOF
+
+cat > "$VAULT/blog/post3.md" << 'EOF'
+---
+title: "Third Post"
+magazine_priority: 80
+header: "[[_navigation]]"
+footer: "[[_footer]]"
+free: true
+---
+
+Third entry in the blog. The introduce section ends at the first `##` heading.
+Any number of paragraphs here become the excerpt.
+
+## More Content
+
+Body content after the heading is not shown in the excerpt.
+EOF
+
+# Note with left_sidebar: TOC + inlinks
+cat > "$VAULT/article-with-toc.md" << 'EOF'
+---
+title: "Article with TOC"
+left_sidebar:
+  - TOC
+  - inlinks
+content:
+  - selfcontent
+free: true
+---
+
+## Introduction
+
+This article has a Table of Contents widget in the left sidebar.
+
+## Main Section
+
+Main content goes here.
+
+### Subsection
+
+Nested subsection content.
+
+## Conclusion
+
+Wrapping up.
+EOF
+
+# Note with right sidebar outlinks
+cat > "$VAULT/article-with-outlinks.md" << 'EOF'
+---
+title: "Article with Outlinks"
+right_sidebar:
+  - outlinks
+content:
+  - selfcontent
+free: true
+---
+
+This article links to [[article-with-toc]] and [[blog/post1]].
+EOF
+
+# Header navigation note
+cat > "$VAULT/_navigation.md" << 'EOF'
+---
+title: Navigation
+free: true
+---
+![Logo](/assets/missed_image.png)
+
+- [Home](/)
+- [Blog](/blog)
+- [About](/about)
+EOF
+
+# Footer note — title used as site brand name in footer
+cat > "$VAULT/_footer.md" << 'EOF'
+---
+title: "My Site"
+description: "Built with trip2g"
+free: true
+---
+
+- [Privacy Policy](/privacy)
+- [Terms](/terms)
+- [Contact](/contact)
+EOF
+
+# Note with header and footer from wikilinks
+cat > "$VAULT/page-with-header-footer.md" << 'EOF'
+---
+title: "Page with Header and Footer"
+header: "[[_navigation]]"
+footer: "[[_footer]]"
+content:
+  - selfcontent
+free: true
+---
+
+This page has a site header (from Navigation note) and footer (from Footer note).
+EOF
+
+# Full layout: header + left sidebar + main content + right sidebar + footer
+cat > "$VAULT/full-layout.md" << 'EOF'
+---
+title: "Full Layout Page"
+header: "[[_navigation]]"
+footer: "[[_footer]]"
+left_sidebar:
+  - TOC
+  - inlinks
+right_sidebar:
+  - outlinks
+content:
+  - selfcontent
+free: true
+---
+
+## Overview
+
+This page demonstrates the full defaulttemplate layout with all regions.
+
+## Features
+
+- Header from Navigation note
+- Left sidebar with TOC and inlinks
+- Right sidebar with outlinks
+- Footer from Footer note
+
+## Conclusion
+
+All layout regions populated.
+EOF
+
 echo ""
 echo "✅ Test vault created successfully!"
 echo ""
@@ -1792,5 +1979,5 @@ echo "   ✓ Custom slug URL override (relative, absolute, cyrillic, spaces)"
 echo "   ✓ Frontmatter patches (simple, chained, conditional, excluded, title template, path-based)"
 echo "   ✓ Multi-domain routing (route/routes frontmatter, custom domain)"
 echo ""
-echo "📖 Open vault/_index.md to see all available tests"
+echo "📖 Open vault/all.md to see all available tests"
 echo ""

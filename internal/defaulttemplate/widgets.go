@@ -1,0 +1,109 @@
+package defaulttemplate
+
+import "strings"
+
+// ContentRefKind identifies the type of content block.
+type ContentRefKind int
+
+const (
+	ContentRefSelfContent ContentRefKind = iota
+	ContentRefMagazine
+	ContentRefWikiLink // [[Title]] - resolve via ctx.Notes.ByPermalink
+	ContentRefFile     // "path/file.md" - resolve via ctx.Notes.ByPath
+	ContentRefNone
+)
+
+// ContentRef represents a content block reference in frontmatter.
+type ContentRef struct {
+	Kind  ContentRefKind
+	Value string
+}
+
+// WidgetKind identifies the type of sidebar widget.
+type WidgetKind int
+
+const (
+	WidgetTOC WidgetKind = iota
+	WidgetInLinks
+	WidgetOutLinks
+	WidgetContent // wikilink or file path
+)
+
+// WidgetRef represents a sidebar widget reference.
+type WidgetRef struct {
+	Kind  WidgetKind
+	Value string
+}
+
+// parseContentRef parses a content string into a ContentRef.
+// Recognized values: "selfcontent", "magazine", "[[Title]]", "path.md", false.
+func parseContentRef(raw interface{}) ContentRef {
+	s, ok := raw.(string)
+	if !ok {
+		// Check for bool false
+		if b, isBool := raw.(bool); isBool && !b {
+			return ContentRef{Kind: ContentRefNone}
+		}
+		return ContentRef{Kind: ContentRefNone}
+	}
+
+	s = strings.TrimSpace(s)
+	lower := strings.ToLower(s)
+
+	switch lower {
+	case "selfcontent", "self_content", "self":
+		return ContentRef{Kind: ContentRefSelfContent}
+	case "magazine":
+		return ContentRef{Kind: ContentRefMagazine}
+	case "false", "none":
+		return ContentRef{Kind: ContentRefNone}
+	}
+
+	// Check for wikilink [[Title]]
+	if strings.HasPrefix(s, "[[") && strings.HasSuffix(s, "]]") {
+		title := strings.TrimPrefix(s, "[[")
+		title = strings.TrimSuffix(title, "]]")
+		title = strings.TrimSpace(title)
+		return ContentRef{Kind: ContentRefWikiLink, Value: title}
+	}
+
+	// Treat as file path
+	return ContentRef{Kind: ContentRefFile, Value: s}
+}
+
+// parseWidgetRef parses a widget string into a WidgetRef.
+// Recognized values: "TOC", "toc", "inlinks", "backlinks", "outlinks",
+// or a wikilink/file path for content widgets.
+func parseWidgetRef(raw interface{}) (WidgetRef, bool) {
+	s, ok := raw.(string)
+	if !ok {
+		return WidgetRef{}, false
+	}
+
+	s = strings.TrimSpace(s)
+	lower := strings.ToLower(s)
+
+	switch lower {
+	case "toc":
+		return WidgetRef{Kind: WidgetTOC}, true
+	case "inlinks", "backlinks":
+		return WidgetRef{Kind: WidgetInLinks}, true
+	case "outlinks":
+		return WidgetRef{Kind: WidgetOutLinks}, true
+	}
+
+	// Check for wikilink [[Title]]
+	if strings.HasPrefix(s, "[[") && strings.HasSuffix(s, "]]") {
+		title := strings.TrimPrefix(s, "[[")
+		title = strings.TrimSuffix(title, "]]")
+		title = strings.TrimSpace(title)
+		return WidgetRef{Kind: WidgetContent, Value: title}, true
+	}
+
+	// Treat as file path for content widget
+	if strings.HasSuffix(lower, ".md") || strings.Contains(s, "/") {
+		return WidgetRef{Kind: WidgetContent, Value: s}, true
+	}
+
+	return WidgetRef{}, false
+}

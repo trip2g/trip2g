@@ -3,6 +3,13 @@ free: true
 title: Test Vault Home
 description: Comprehensive test vault for Obsidian publishing features
 sidebar: true
+content:
+  - selfcontent
+  - magazine
+magazine_property: magazine_priority
+magazine_include_files: "blog/**/*.md"
+header: "[[_navigation]]"
+footer: "[[_footer]]"
 ---
 
 Welcome to the comprehensive test vault for Obsidian publishing!

@@ -8,7 +8,10 @@
     "preview": "vite preview",
     "test:e2e": "./scripts/test-e2e.sh",
     "test:e2e:ui": "./scripts/test-e2e.sh --ui",
-    "test:e2e:headed": "./scripts/test-e2e.sh --headed"
+    "test:e2e:headed": "./scripts/test-e2e.sh --headed",
+    "defaulttemplate-css": "node assets/defaulttemplate/esbuild.css.mjs",
+    "defaulttemplate-css:watch": "node assets/defaulttemplate/esbuild.css.mjs --watch",
+    "toc": "node assets/toc/esbuild.browser.mjs"
   },
   "dependencies": {
     "@types/change-case": "^0.0.30",
@@ -25,11 +28,14 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
+    "@picocss/pico": "^2.1.1",
     "@playwright/test": "^1.49.0",
     "@tailwindcss/cli": "^4.1.12",
     "@tailwindcss/typography": "^0.5.16",
     "daisyui": "^5.0.35",
+    "esbuild-sass-plugin": "^3.7.0",
     "graphql-codegen-persisted-query-ids": "^0.2.0",
+    "sass": "^1.97.3",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"

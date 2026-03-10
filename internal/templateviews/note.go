@@ -1,9 +1,14 @@
 package templateviews
 
 import (
+	"bytes"
+	"encoding/json"
 	"sort"
+	"strings"
 	"time"
 	"trip2g/internal/model"
+
+	"golang.org/x/net/html"
 )
 
 // Note wraps model.NoteView for template usage.
@@ -156,4 +161,64 @@ func (n *Note) LangAlternativesList() []*Note {
 		result = append(result, NewNote(n.nv.LangAlternatives[lang]))
 	}
 	return result
+}
+
+// FirstImageURL returns the URL of the first image asset.
+// Returns "" if no first image or no asset replace found.
+func (n *Note) FirstImageURL() string {
+	if n.nv.FirstImage == nil {
+		return ""
+	}
+	ar, ok := n.nv.AssetReplaces[*n.nv.FirstImage]
+	if !ok || ar == nil {
+		return ""
+	}
+	return ar.URL
+}
+
+// FirstListHTML returns the outer HTML of the first <ul> element in rendered HTML.
+// Returns "" if no <ul> found.
+func (n *Note) FirstListHTML() string {
+	htmlStr := n.HTMLString()
+	if htmlStr == "" {
+		return ""
+	}
+
+	doc, err := html.Parse(strings.NewReader(htmlStr))
+	if err != nil {
+		return ""
+	}
+
+	ul := findFirstElement(doc, "ul")
+	if ul == nil {
+		return ""
+	}
+
+	var buf bytes.Buffer
+	if renderErr := html.Render(&buf, ul); renderErr != nil {
+		return ""
+	}
+	return buf.String()
+}
+
+// findFirstElement finds the first element with the given tag name in the HTML tree.
+func findFirstElement(n *html.Node, tag string) *html.Node {
+	if n.Type == html.ElementNode && n.Data == tag {
+		return n
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if found := findFirstElement(c, tag); found != nil {
+			return found
+		}
+	}
+	return nil
+}
+
+// SubgraphNamesJSON returns JSON of note's SubgraphNames for paywall widget.
+func (n *Note) SubgraphNamesJSON() string {
+	raw, err := json.Marshal(n.nv.SubgraphNames)
+	if err != nil {
+		return "null"
+	}
+	return string(raw)
 }

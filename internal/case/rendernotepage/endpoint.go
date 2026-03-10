@@ -1,6 +1,7 @@
 package rendernotepage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/db"
+	"trip2g/internal/defaulttemplate"
 	"trip2g/internal/langdetect"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
@@ -72,9 +75,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.MetaRobots = "noindex"
 		ctx.Response.Header.Set("Cache-Control", "no-store")
 
-		return renderlayout.Handle(req, layoutParams, func() {
-			WriteOnboarding(ctx, resp)
-		})
+		dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+		dtCtx.OnboardingMode = true
+		defaulttemplate.WriteRender(ctx, dtCtx)
+		return nil, nil
 	}
 
 	if err != nil {
@@ -82,9 +86,13 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		if errors.As(err, &paywallErr) {
 			layoutParams.MetaRobots = "noindex, nofollow"
 
-			return renderlayout.Handle(req, layoutParams, func() {
-				WritePayWall(ctx, resp, paywallErr)
-			})
+			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+			dtCtx.PaywallError = &defaulttemplate.PaywallError{
+				Note:          resp.NoteView,
+				SubgraphsJSON: resp.NoteSubgraphsJSON(),
+			}
+			defaulttemplate.WriteRender(ctx, dtCtx)
+			return nil, nil
 		}
 
 		if errors.Is(err, ErrNotFound) {
@@ -96,14 +104,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	turbo := len(ctx.Request.Header.Peek("X-Turbo")) > 0
-	if turbo {
-		ctx.Response.Header.Set("X-Turbo-Response", "true")
-		WriteTurboNote(ctx, resp)
-		return nil, nil
+	var layout string
+	if resp.Note != nil {
+		layout = resp.Note.Layout
 	}
-
-	layout := resp.Note.Layout
 	if layout == "" && resp.Config.DefaultLayout != "" {
 		layout = resp.Config.DefaultLayout
 	}
@@ -119,9 +123,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 	}
 
-	return renderlayout.Handle(req, layoutParams, func() {
-		WriteNote(ctx, resp)
-	})
+	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+	defaulttemplate.WriteRender(ctx, dtCtx)
+	return nil, nil
 }
 
 func (Endpoint) Path() string {
@@ -346,4 +350,67 @@ func findRouteForHost(routes []model.ParsedRoute, host, requestPath string) *mod
 	}
 
 	return firstMatch
+}
+
+// buildDefaultTemplateCtx constructs a *defaulttemplate.Ctx from the request, layout params, and response.
+func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Params, resp *Response, env Env) *defaulttemplate.Ctx {
+	// Fetch JS/CSS URLs and dev mode from the renderlayout.Env interface.
+	rlEnv, ok := req.Env.(renderlayout.Env)
+
+	jsURLs := layoutParams.JSURLs
+	cssURLs := layoutParams.CSSURLs
+	devMode := "false"
+
+	if ok {
+		if len(jsURLs) == 0 {
+			jsURLs = rlEnv.UserJSURLs()
+		}
+		if len(cssURLs) == 0 {
+			cssURLs = rlEnv.UserCSSURLs()
+		}
+		if rlEnv.IsDevMode() {
+			devMode = "true"
+		}
+	}
+
+	// Build HTML injections map.
+	injections := map[string][]db.HtmlInjection{}
+	if ok {
+		active, err := rlEnv.ActiveHTMLInjections(context.Background())
+		if err == nil {
+			for _, inj := range active {
+				injections[inj.Placement] = append(injections[inj.Placement], inj)
+			}
+		} else {
+			env.Logger().Error("failed to get active HTML injections", "error", err)
+		}
+	}
+
+	// Convert hreflang slice.
+	var hrefLangs []defaulttemplate.HrefLang
+	for _, hl := range layoutParams.HrefLangs {
+		hrefLangs = append(hrefLangs, defaulttemplate.HrefLang{
+			Lang: hl.Lang,
+			Href: hl.Href,
+		})
+	}
+
+	dtCtx := &defaulttemplate.Ctx{
+		Note:            resp.NoteView,
+		Notes:           templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
+		Title:           layoutParams.Title,
+		JSURLs:          jsURLs,
+		CSSURLs:         cssURLs,
+		DevMode:         devMode,
+		MetaDescription: layoutParams.MetaDescription,
+		MetaRobots:      layoutParams.MetaRobots,
+		OGTags:          layoutParams.OGTags,
+		HTMLInjections:  injections,
+		HrefLangs:       hrefLangs,
+		HTMLLang:        layoutParams.HTMLLang,
+		UserToken:       resp.UserToken,
+		IsAdmin:         resp.IsAdmin,
+	}
+
+	return dtCtx
 }

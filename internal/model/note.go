@@ -85,6 +85,19 @@ func (s *NoteViewSection) Section(title string) *NoteViewSection {
 // NoteViewHeadingBlock is an alias for NoteViewSection (deprecated, use NoteViewSection).
 type NoteViewHeadingBlock = NoteViewSection
 
+// NoteViewListItem represents a single item in a markdown list.
+type NoteViewListItem struct {
+	Text     string
+	URL      string
+	Children []NoteViewListItem
+}
+
+// NoteViewList represents a top-level markdown list with recursive items.
+type NoteViewList struct {
+	Items    []NoteViewListItem
+	MaxDepth int
+}
+
 type NoteViewPartialRenderer interface {
 	Sections(level int) []NoteViewSection
 	Section(title string) *NoteViewSection
@@ -92,6 +105,13 @@ type NoteViewPartialRenderer interface {
 
 	// HeadingBlocks is deprecated, use Sections instead.
 	HeadingBlocks(level int) []NoteViewSection
+
+	// FirstList returns the first top-level list, nil if none found.
+	FirstList() *NoteViewList
+	// Lists returns all top-level lists.
+	Lists() []NoteViewList
+	// FirstImageURL returns the URL of the first image (top-level ast.Image or first paragraph).
+	FirstImageURL() string
 }
 
 type SearchResult struct {
