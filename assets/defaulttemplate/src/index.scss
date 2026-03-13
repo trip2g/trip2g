@@ -18,26 +18,26 @@
     "content/link":           true,
     "content/typography":     true,
     "content/embedded":       true,
-    "content/button":         true,
+    "content/button":         false,
     "content/table":          true,
     "content/code":           true,
     "content/figure":         true,
     "content/misc":           true,
 
-    // Forms — only basics
-    "forms/basics":                   true,
+    // Forms — all disabled (no form elements in template)
+    "forms/basics":                   false,
     "forms/checkbox-radio-switch":    false,
     "forms/input-color":              false,
     "forms/input-date":               false,
     "forms/input-file":               false,
     "forms/input-range":              false,
-    "forms/input-search":             true,
+    "forms/input-search":             false,
 
     // Components — minimal set
     "components/accordion":   false,
-    "components/card":        false,
+    "components/card":        true,
     "components/dropdown":    false,
-    "components/group":       true,
+    "components/group":       false,
     "components/loading":     false,
     "components/modal":       false,
     "components/nav":         true,
@@ -54,6 +54,7 @@
 // BEM layout for defaulttemplate
 // Builds on top of Pico's CSS custom properties and resets.
 // ============================================================
+
 
 // --- Site header ---
 
@@ -122,16 +123,61 @@
   margin-left: auto;
 }
 
-.site-header__search {
-  flex: 1 1 160px;
-  max-width: 240px;
+// --- Lang switcher ---
 
-  input[type="search"] {
-    margin: 0;
-    padding-block: 0.375rem;
-    font-size: 0.875rem;
+.lang-switcher {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0.75rem 0;
+
+  &__label {
+    font-size: 0.8125rem;
+    color: var(--pico-muted-color);
+    white-space: nowrap;
   }
 
+  &__alt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--pico-muted-color);
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    transition: border-color 0.15s, color 0.15s;
+
+    &:hover {
+      color: var(--pico-primary);
+      border-color: var(--pico-primary);
+    }
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 18px;
+      height: 13px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 2px;
+    }
+
+    &--de::before { background-image: url('/assets/langs/de.png'); }
+    &--en::before { background-image: url('/assets/langs/gb.png'); }
+    &--ru::before { background-image: url('/assets/langs/ru.png'); }
+    &--fr::before { background-image: url('/assets/langs/fr.png'); }
+    &--es::before { background-image: url('/assets/langs/es.png'); }
+    &--zh::before { background-image: url('/assets/langs/cn.png'); }
+    &--ja::before { background-image: url('/assets/langs/jp.png'); }
+    &--pt::before { background-image: url('/assets/langs/pt.png'); }
+    &--ar::before { background-image: url('/assets/langs/sa.png'); }
+    &--ko::before { background-image: url('/assets/langs/kr.png'); }
+  }
 }
 
 // Sidebar nav: nav links shown inside drawer on mobile only
@@ -321,9 +367,41 @@
 }
 
 .content__body {
-  // Fluid typography: 1rem (mobile) → 1.125rem (desktop)
-  font-size: clamp(1rem, 0.9rem + 0.25vw, 1.125rem);
+  // Fluid typography: 1rem (mobile) → 1.0125rem (desktop, -10%)
+  font-size: clamp(0.9rem, 0.81rem + 0.225vw, 1.0125rem);
   line-height: 1.75;
+}
+
+// Sidebar nav rendered from _sidebar.md (### headings + ul lists)
+.layout__sidebar .widget--content {
+  h3 {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--pico-muted-color);
+    margin: calc(var(--pico-spacing) * 1.25) 0 0.2rem 0;
+    &:first-child { margin-top: 0; }
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  li { margin: 0.1rem 0; padding: 0; }
+
+  a {
+    display: block;
+    padding: 0.2rem 0.25rem 0.2rem 0.5rem;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    color: var(--pico-color);
+    border-left: 2px solid transparent;
+    &:hover, &.is-active { color: var(--pico-primary); border-left-color: var(--pico-primary); }
+    &.is-active { font-weight: 600; }
+  }
 }
 
 // --- Magazine ---
@@ -349,11 +427,6 @@
 // --- Magazine items ---
 
 .magazine-item {
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  background: transparent !important;
-  box-shadow: none !important;
   margin-bottom: 0;
 
   &--grid {
@@ -410,6 +483,13 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.magazine-item__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
 }
 
 .magazine-item__date {
@@ -562,12 +642,15 @@
 .site-header__hamburger {
   display: none;
   align-items: center;
+  appearance: none;
   background: none;
   border: none;
   padding: 0.25rem;
   cursor: pointer;
   color: var(--pico-contrast);
   flex-shrink: 0;
+  box-shadow: none;
+  outline: none;
 
   svg {
     display: block;
@@ -620,6 +703,11 @@
   .layout {
     grid-template-columns: 11rem 1fr;
     grid-template-areas: "left main";
+  }
+  .layout--no-left,
+  .layout--no-sidebars {
+    grid-template-columns: 1fr;
+    grid-template-areas: "main";
   }
 
   .layout__sidebar--right {

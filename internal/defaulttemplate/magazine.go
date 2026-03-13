@@ -1,6 +1,21 @@
 package defaulttemplate
 
-import "trip2g/internal/templateviews"
+import (
+	"path/filepath"
+	"strings"
+
+	"trip2g/internal/templateviews"
+)
+
+// isSystemNote returns true if any component of the note path starts with "_".
+func isSystemNote(path string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(path), "/") {
+		if strings.HasPrefix(part, "_") {
+			return true
+		}
+	}
+	return false
+}
 
 // MagazineItemSize represents the visual size tier of a magazine card.
 type MagazineItemSize int
@@ -18,25 +33,43 @@ type MagazineItem struct {
 	ImageURL string
 }
 
-// MagazineItems returns magazine items sorted by magazine_property meta field, descending.
-// Excludes the current note. Only includes notes with the magazine_property set.
+// MagazineItems returns magazine items for the current page.
+// Sorting: if magazine_sort_property is set, notes with that property come first
+// (sorted by its value desc); remaining notes follow sorted by created_at desc.
+// Filtering: if magazine_include_property is set, only notes with that property are included.
+// Excludes the current note.
 func (ctx *Ctx) MagazineItems() []MagazineItem {
 	if ctx.Notes == nil {
 		return nil
 	}
 
-	prop := ctx.MagazineProperty()
 	glob := ctx.MagazineIncludeFiles()
+	sortProp := ctx.MagazineSortProperty()
+	includeProp := ctx.MagazineIncludeProperty()
 
-	all := ctx.Notes.ByGlob(glob).SortByMeta(prop).Desc().All()
+	q := ctx.Notes.ByGlob(glob)
+	if sortProp != "" {
+		// Notes with the property sort first (desc), then the rest by date desc.
+		// compareValues returns -1 for nil, so nil sorts last in desc order,
+		// and the secondary created_at sort handles their relative order.
+		q = q.SortByMeta(sortProp).Desc().SortBy("created_at").Desc().SortBy("path_id").Desc()
+	} else {
+		q = q.SortBy("created_at").Desc().SortBy("path_id").Desc()
+	}
+
+	all := q.All()
 
 	var items []MagazineItem
 	for _, note := range all {
 		if ctx.Note != nil && note.Path() == ctx.Note.Path() {
-			continue // exclude current note
+			continue
 		}
-		if note.M().Get(prop) == nil {
-			continue // only include notes with the property set
+		// Skip system notes (any path component starting with _).
+		if isSystemNote(note.Path()) {
+			continue
+		}
+		if includeProp != "" && note.M().Get(includeProp) == nil {
+			continue
 		}
 		size := MagazineItemList
 		if len(items) == 0 {

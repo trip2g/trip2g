@@ -67,6 +67,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	if handleSetLang(ctx, resp) {
+		return nil, nil
+	}
+
 	if redirectToRightLang(ctx, resp) {
 		return nil, nil
 	}
@@ -136,13 +140,56 @@ func (Endpoint) Method() string {
 	return http.MethodGet
 }
 
+const langCookieName = "trip2g_lang"
+const langCookieMaxAge = 365 * 24 * 60 * 60 // 1 year in seconds
+
+// handleSetLang processes the ?setlang=xxx query parameter.
+// Sets the trip2g_lang cookie and redirects:
+//   - to the language alternative if the current note has one for that lang
+//   - otherwise to the current note's permalink (strips query params)
+//
+// Returns true if a redirect was sent.
+func handleSetLang(ctx *fasthttp.RequestCtx, resp *Response) bool {
+	setLang := strings.ToLower(strings.TrimSpace(string(ctx.QueryArgs().Peek("setlang"))))
+	if setLang == "" {
+		return false
+	}
+
+	c := fasthttp.AcquireCookie()
+	c.SetKey(langCookieName)
+	c.SetValue(setLang)
+	c.SetPath("/")
+	c.SetMaxAge(langCookieMaxAge)
+	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+	ctx.Response.Header.SetCookie(c)
+	fasthttp.ReleaseCookie(c)
+
+	redirectTo := ""
+	if resp.Note != nil && resp.Note.Lang != setLang {
+		if alt, ok := resp.Note.LangAlternatives[setLang]; ok && alt != nil {
+			redirectTo = alt.Permalink
+		}
+	}
+	if redirectTo == "" && resp.Note != nil {
+		redirectTo = resp.Note.Permalink
+	}
+	if redirectTo == "" {
+		redirectTo = "/"
+	}
+
+	ctx.Response.Header.Set("Location", redirectTo)
+	ctx.SetStatusCode(http.StatusFound)
+	return true
+}
+
 func redirectToRightLang(ctx *fasthttp.RequestCtx, resp *Response) bool {
 	if resp.Note == nil || len(resp.Note.LangRedirects) == 0 || len(resp.Note.Lang) > 0 {
 		return false
 	}
 
+	cookieVal := string(ctx.Request.Header.Cookie(langCookieName))
 	acceptLang := string(ctx.Request.Header.Peek("Accept-Language"))
-	preferred := langdetect.DetectPreferred("", acceptLang)
+	preferred := langdetect.DetectPreferred(cookieVal, acceptLang)
 
 	if preferred != "" && preferred != resp.Note.Lang {
 		for _, lr := range resp.Note.LangRedirects {
@@ -408,6 +455,10 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 		HTMLInjections:  injections,
 		HrefLangs:       hrefLangs,
 		HTMLLang:        layoutParams.HTMLLang,
+		UILang: langdetect.DetectPreferred(
+			string(req.Req.Request.Header.Cookie(langCookieName)),
+			string(req.Req.Request.Header.Peek("Accept-Language")),
+		),
 		UserToken:       resp.UserToken,
 		IsAdmin:         resp.IsAdmin,
 	}

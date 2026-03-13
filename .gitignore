@@ -51,3 +51,5 @@ onboarding-vault/vault.zip
 db.sqlite
 .omc
 .mcp.json
+
+docs/.obsidian

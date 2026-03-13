@@ -161,6 +161,8 @@ func normalizeFieldName(field string) string {
 		return "CreatedAt"
 	case "permalink", "path":
 		return "Permalink"
+	case "path_id", "id":
+		return "PathID"
 	default:
 		return field
 	}

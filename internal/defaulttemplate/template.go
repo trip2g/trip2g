@@ -46,7 +46,8 @@ type Ctx struct {
 	HTMLInjections map[string][]db.HtmlInjection
 
 	HrefLangs []HrefLang
-	HTMLLang  string // for <html lang="xx">
+	HTMLLang  string // for <html lang="xx">, set from note.Lang
+	UILang    string // user's preferred interface language, set from trip2g_lang cookie
 
 	OnboardingMode bool
 	PaywallError   *PaywallError
@@ -55,26 +56,47 @@ type Ctx struct {
 	IsAdmin        bool
 }
 
+// noteExists returns true if a note with the given wikilink name exists in ctx.Notes.
+func (ctx *Ctx) noteExists(name string) bool {
+	if ctx.Notes == nil {
+		return false
+	}
+	permalink := "/" + strings.ToLower(strings.ReplaceAll(name, " ", "_"))
+	return ctx.Notes.ByPermalink(permalink) != nil
+}
+
 // SidebarWidgets returns widgets for the given position ("left" or "right").
-// Returns nil if not configured or explicitly set to false.
+// If no frontmatter key is set, falls back to _left_sidebar.md / _right_sidebar.md if they exist.
+// Returns nil if explicitly set to false or no default file found.
 func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
+	key := position + "_sidebar"
+	defaultName := "_" + key
+
 	if ctx.Note == nil {
+		// No current note: use default file if it exists.
+		if ctx.noteExists(defaultName) {
+			return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
+		}
 		return nil
 	}
 
 	m := ctx.Note.M()
-	key := position + "_sidebar"
 	raw := m.Get(key)
+
 	if raw == nil {
+		// No frontmatter key: use default file if it exists.
+		if ctx.noteExists(defaultName) {
+			return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
+		}
 		return nil
 	}
 
-	// Check for bool false (sidebar disabled)
+	// Check for bool false (sidebar explicitly disabled).
 	if b, ok := raw.(bool); ok && !b {
 		return nil
 	}
 
-	// Parse as slice
+	// Parse as slice.
 	var items []interface{}
 	switch v := raw.(type) {
 	case []interface{}:
@@ -150,8 +172,8 @@ func (ctx *Ctx) ContentRefs() []ContentRef {
 }
 
 // HeaderRef returns the header reference from frontmatter.
-// Falls back to _navigation wikilink as site-wide default when not explicitly set.
-// Returns ContentRefNone only if explicitly set to false/none.
+// If not set, falls back to _header.md if it exists in the vault.
+// Returns ContentRefNone if explicitly set to false/none or no default file found.
 func (ctx *Ctx) HeaderRef() ContentRef {
 	if ctx.Note != nil {
 		raw := ctx.Note.M().Get("header")
@@ -159,12 +181,15 @@ func (ctx *Ctx) HeaderRef() ContentRef {
 			return parseContentRef(raw)
 		}
 	}
-	return ContentRef{Kind: ContentRefWikiLink, Value: "_navigation"}
+	if ctx.noteExists("_header") {
+		return ContentRef{Kind: ContentRefWikiLink, Value: "_header"}
+	}
+	return ContentRef{Kind: ContentRefNone}
 }
 
 // FooterRef returns the footer reference from frontmatter.
-// Falls back to _footer wikilink as site-wide default when not explicitly set.
-// Returns ContentRefNone only if explicitly set to false/none.
+// If not set, falls back to _footer.md if it exists in the vault.
+// Returns ContentRefNone if explicitly set to false/none or no default file found.
 func (ctx *Ctx) FooterRef() ContentRef {
 	if ctx.Note != nil {
 		raw := ctx.Note.M().Get("footer")
@@ -172,16 +197,31 @@ func (ctx *Ctx) FooterRef() ContentRef {
 			return parseContentRef(raw)
 		}
 	}
-	return ContentRef{Kind: ContentRefWikiLink, Value: "_footer"}
+	if ctx.noteExists("_footer") {
+		return ContentRef{Kind: ContentRefWikiLink, Value: "_footer"}
+	}
+	return ContentRef{Kind: ContentRefNone}
 }
 
-// MagazineProperty returns the frontmatter key used for magazine sorting.
-// Defaults to "magazine_priority".
-func (ctx *Ctx) MagazineProperty() string {
+// MagazineSortProperty returns the frontmatter key used for magazine sorting.
+// Notes with this property are listed first (sorted by its value desc),
+// followed by the rest sorted by created_at desc.
+// Returns "" when not set — all notes are sorted by created_at desc.
+func (ctx *Ctx) MagazineSortProperty() string {
 	if ctx.Note == nil {
-		return "magazine_priority"
+		return ""
 	}
-	return ctx.Note.M().GetString("magazine_property", "magazine_priority")
+	return ctx.Note.M().GetString("magazine_sort_property", "")
+}
+
+// MagazineIncludeProperty returns the frontmatter key used to filter magazine notes.
+// When set, only notes that have this property are included.
+// Returns "" when not set — all notes matched by the glob are included.
+func (ctx *Ctx) MagazineIncludeProperty() string {
+	if ctx.Note == nil {
+		return ""
+	}
+	return ctx.Note.M().GetString("magazine_include_property", "")
 }
 
 // MagazineIncludeFiles returns the glob pattern for magazine note inclusion.

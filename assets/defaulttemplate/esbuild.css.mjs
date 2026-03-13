@@ -5,8 +5,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Output goes directly into the Go package for //go:embed
-const outfile = path.resolve(__dirname, "../../internal/defaulttemplate/defaulttemplate.css");
+const outfile = path.resolve(__dirname, "../defaulttemplate.css");
 
 await esbuild.build({
   entryPoints: [path.resolve(__dirname, "src/index.scss")],
@@ -18,7 +17,8 @@ await esbuild.build({
       type: "css",
     }),
   ],
-  loader: { ".css": "css" },
+  loader: { ".css": "css", ".png": "file" },
+  external: ["/assets/*"],
   logLevel: "info",
 });
 

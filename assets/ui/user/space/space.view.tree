@@ -4,25 +4,30 @@ $trip2g_user_space $mol_view
 	plugins /
 		<= Theme $mol_theme_auto
 		<= SiteTheme $trip2g_theme
+		<= SiteLanguage $trip2g_lang
 	SignInButton $mol_button_minor
 		click <= open null
 		sub / <= SignInIcon $mol_icon_login
-	OpenButton $mol_button_major
-		title \Личнный кабинет
+	OpenButton $mol_button_minor
 		click <= open null
+		sub / <= OpenDialogIcon $mol_icon_account
 	AdminLink $mol_link
 		uri \/admin
 		target \_blank
-		title @ \Admin Panel
+		hint @ \Open Admin Panel
+		sub / <= AdminIcon $mol_icon_cog
 	Editor $trip2g_editor
 	sub /
-		<= Name $trip2g_user_space_name
-			value <= user_email \
+		<= List_of_languages $mol_locale_select
+			Filter null
+			dictionary *
+				ru \Русский
+				en \English
 		<= admin_link null $mol_view
 		<= open_button null $mol_view
 		<= Lighter $mol_lights_toggle
 		<= Search $trip2g_user_search_toggle
-		<= editor null $mol_view
+		- <= editor null $mol_view
 		<= Dialog $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string
@@ -42,11 +47,6 @@ $trip2g_user_space $mol_view
 		param \un
 		menu_title \Личный кабинет
 		menu_foot /
-			<= List_of_languages $mol_locale_select
-				Filter null
-				dictionary *
-					ru \Русский
-					en \English
 			<= Email $mol_view
 				sub / <= user_email
 			<= SignOut $mol_button_major

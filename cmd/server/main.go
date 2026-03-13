@@ -986,7 +986,7 @@ func (a *app) UserJSURLs() []string {
 }
 
 func (a *app) UserCSSURLs() []string {
-	return []string{a.assetURL("/assets/output.css")}
+	return []string{a.assetURL("/assets/defaulttemplate.css")}
 }
 
 func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.NoteView, error) {

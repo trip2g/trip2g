@@ -3,7 +3,9 @@ namespace $.$$ {
 		override render() {
 			super.render()
 
-			document.documentElement.classList.toggle('dark', !this.$.$mol_lights())
+			const dark = !this.$.$mol_lights()
+			document.documentElement.classList.toggle('dark', dark)
+			document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
 		}
 	}
 }

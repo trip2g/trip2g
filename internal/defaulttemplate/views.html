@@ -43,12 +43,12 @@
 window.__trip2g_settings = {
   is_dev_mode: {%s= ctx.DevMode %},
   title: {%q= ctx.Title %},
-}
+  ui_lang: {%q= ctx.UILang %},
+{% if ctx.Note != nil %}  note_lang: {%q= ctx.Note.Lang() %},
+{% endif %}}
 </script>
 
 <title>{%s ctx.Title %}</title>
-
-{%s= InlineCSS() %}
 
 {% for _, url := range ctx.CSSURLs %}
 <link href="{%s url %}" rel="stylesheet">
@@ -70,7 +70,7 @@ window.__trip2g_settings = {
 {% endif %}
 
 {% for _, url := range ctx.JSURLs %}
-<script src="{%s url %}"></script>
+<script src="{%s url %}" defer></script>
 {% endfor %}
 <script>
 (function(){
@@ -88,6 +88,9 @@ window.__trip2g_settings = {
   var btnRight = document.getElementById('btn-right');
   if (btnRight && rightSidebar) btnRight.addEventListener('click', function(){ rightSidebar.classList.contains('is-open') ? closeAll() : openSidebar(rightSidebar); });
   if (backdrop) backdrop.addEventListener('click', closeAll);
+  document.querySelectorAll('.layout__sidebar a[href]').forEach(function(a){
+    if (a.pathname === location.pathname) a.classList.add('is-active');
+  });
 })();
 </script>
 
@@ -251,6 +254,14 @@ window.__trip2g_settings = {
 {% func SelfContent(ctx *Ctx) %}
 {% if ctx.Note != nil %}
 <article class="content">
+  {% if ctx.Note != nil && ctx.Note.HasLangAlternatives() %}
+  <nav class="lang-switcher">
+    <span class="lang-switcher__label">Read in:</span>
+    {% for _, alt := range ctx.Note.LangAlternativesList() %}
+    <a href="{%s= alt.Permalink() %}" class="lang-switcher__alt lang-switcher__alt--{%s= alt.Lang() %}">{%s= alt.Lang() %}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
   <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
 </article>
@@ -314,7 +325,10 @@ window.__trip2g_settings = {
   <p class="magazine-item__excerpt">{%s= intro.ContentHTML %}</p>
   {% endif %}
   {% endif %}
-  <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
+  <div class="magazine-item__footer">
+    <a class="magazine-item__readmore" href="{%s= item.Note.Permalink() %}">Read more →</a>
+    <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
+  </div>
 </article>
 {% endfunc %}
 
@@ -334,9 +348,7 @@ window.__trip2g_settings = {
     {% if navHTML != "" %}
     <nav class="site-header__nav">{%s= navHTML %}</nav>
     {% endif %}
-    <div class="site-header__search">
-      <input type="search" placeholder="Search…" aria-label="Search">
-    </div>
+
     <div class="site-header__space" mol_view_root="$trip2g_user_space"></div>
     {% if hasRight %}
     <button class="site-header__hamburger site-header__hamburger--right" aria-label="Open related" id="btn-right">
