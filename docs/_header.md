@@ -3,8 +3,7 @@ title: Navigation
 free: true
 ---
 
-![Logo](/assets/missed_image.png)
-
-- [Home](/)
-- [[user/_index|Docs]]
-- [Try it for free](https://simplecloud.2pub.me)
+- [[_index|Home]]
+- [[user/_index|Documentation]]
+- [[user/use-cases|Use Cases]]
+- [Try free](https://simplecloud.2pub.me)

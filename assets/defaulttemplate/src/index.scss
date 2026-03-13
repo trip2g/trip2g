@@ -232,7 +232,7 @@
   row-gap: 0;
   max-width: 1440px;
   margin-inline: auto;
-  margin-block-start: calc(var(--pico-spacing) * 3);
+  margin-block-start: var(--pico-spacing);
   margin-block-end: calc(var(--pico-spacing) * 4);
   padding-inline: var(--pico-spacing);
   align-items: start;
@@ -421,7 +421,7 @@
 .magazine__list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 1rem;
 }
 
 // --- Magazine items ---
@@ -634,6 +634,39 @@
   margin-inline: auto;
   padding-inline: var(--pico-spacing);
   padding-block: calc(var(--pico-spacing) * 2);
+}
+
+// --- 404 page ---
+
+.notfound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  gap: 0.75rem;
+
+  &__code {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--pico-muted-color);
+    opacity: 0.4;
+  }
+
+  &__message {
+    font-size: 1.25rem;
+    color: var(--pico-color);
+    margin: 0;
+  }
+
+  &__home {
+    font-size: 0.9375rem;
+    color: var(--pico-primary);
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
 }
 
 // --- Hamburger button (mobile only) ---

@@ -28,9 +28,8 @@ const (
 
 // MagazineItem represents a single item in the magazine layout.
 type MagazineItem struct {
-	Note     *templateviews.Note
-	Size     MagazineItemSize
-	ImageURL string
+	Note *templateviews.Note
+	Size MagazineItemSize
 }
 
 // MagazineItems returns magazine items for the current page.
@@ -78,9 +77,8 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 			size = MagazineItemSmall
 		}
 		items = append(items, MagazineItem{
-			Note:     note,
-			Size:     size,
-			ImageURL: note.FirstImageURL(),
+			Note: note,
+			Size: size,
 		})
 	}
 	return items

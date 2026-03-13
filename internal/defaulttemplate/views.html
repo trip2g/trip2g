@@ -65,6 +65,8 @@ window.__trip2g_settings = {
   {%= PayWall(ctx) %}
 {% elseif ctx.OnboardingMode %}
   {%= Onboarding(ctx) %}
+{% elseif ctx.NotFoundMode %}
+  {%= NotFound(ctx) %}
 {% else %}
   {%= NotePage(ctx) %}
 {% endif %}
@@ -194,7 +196,7 @@ window.__trip2g_settings = {
 {% if len(toc) > 0 %}
 {% code tocJSON, _ := json.Marshal(toc) %}
 <div class="widget widget--toc">
-  <h3 class="widget__title">Table of Contents</h3>
+  <h3 class="widget__title">{%s ctx.T("toc_title") %}</h3>
   <script type="application/json" class="widget__data">{%s= string(tocJSON) %}</script>
   <nav class="widget__content widget__toc" id="dt-toc-nav">
     {% for _, item := range toc %}
@@ -213,7 +215,7 @@ window.__trip2g_settings = {
 {% code backlinks := ctx.Notes.BackLinks(ctx.Note) %}
 {% if len(backlinks) > 0 %}
 <div class="widget widget--inlinks">
-  <h3 class="widget__title">Backlinks</h3>
+  <h3 class="widget__title">{%s ctx.T("backlinks_title") %}</h3>
   <ul class="widget__list">
     {% for _, bl := range backlinks %}
     <li class="widget__item"><a class="widget__link" href="{%s= bl.Permalink() %}">{%s bl.Title() %}</a></li>
@@ -310,10 +312,7 @@ window.__trip2g_settings = {
   }
 %}
 <article class="{%s= itemClass %}">
-  {% if item.ImageURL != "" %}
-  <img class="magazine-item__image" src="{%s= item.ImageURL %}" alt="{%s item.Note.Title() %}">
-  {% endif %}
-  {% if item.Size == MagazineItemFeatured %}
+{% if item.Size == MagazineItemFeatured %}
   <h2 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h2>
   {% else %}
   <h3 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h3>
@@ -326,7 +325,7 @@ window.__trip2g_settings = {
   {% endif %}
   {% endif %}
   <div class="magazine-item__footer">
-    <a class="magazine-item__readmore" href="{%s= item.Note.Permalink() %}">Read more →</a>
+    <a class="magazine-item__readmore" href="{%s= item.Note.Permalink() %}">{%s ctx.T("readmore") %}</a>
     <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
   </div>
 </article>
@@ -401,6 +400,33 @@ window.__trip2g_settings = {
   {% endif %}
   {% endif %}
 </div>
+{% endfunc %}
+
+{% func NotFound(ctx *Ctx) %}
+{% code
+  headerRef := ctx.HeaderRef()
+  footerRef := ctx.FooterRef()
+%}
+{% code var headerNote *templateviews.Note %}
+{% if headerRef.Kind != ContentRefNone %}
+  {% code headerNote = ctx.resolveNoteRef(headerRef) %}
+{% endif %}
+{% if headerNote != nil %}
+  {%= SiteHeader(ctx, headerNote, false, false) %}
+{% endif %}
+<div class="layout layout--no-sidebars">
+  <main class="notfound">
+    <div class="notfound__code">404</div>
+    <p class="notfound__message">Page not found</p>
+    <a class="notfound__home" href="/">← Home</a>
+  </main>
+</div>
+{% if footerRef.Kind != ContentRefNone %}
+  {% code footerNote := ctx.resolveNoteRef(footerRef) %}
+  {% if footerNote != nil %}
+    {%= SiteFooter(ctx, footerNote) %}
+  {% endif %}
+{% endif %}
 {% endfunc %}
 
 {% func Onboarding(ctx *Ctx) %}

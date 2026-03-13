@@ -1,6 +1,8 @@
 ---
 lang: ru
 title: trip2g
+content: [self, magazine]
+magazine_include_files: ru/**/*.md
 ---
 
 Создайте сайт с Obsidian за секунды:

@@ -1,3 +1,4 @@
-- [Главная](/)
-- [[user/_index|Документация]]
+- [[_index|Главная]]
+- [[ru/user/_index|Документация]]
+- [[ru/user/use-cases|Примеры]]
 - [Попробовать бесплатно](https://simplecloud.2pub.me)

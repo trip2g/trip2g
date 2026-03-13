@@ -50,6 +50,7 @@ type Ctx struct {
 	UILang    string // user's preferred interface language, set from trip2g_lang cookie
 
 	OnboardingMode bool
+	NotFoundMode   bool
 	PaywallError   *PaywallError
 	UserToken      *usertoken.Data
 	Lang           string
