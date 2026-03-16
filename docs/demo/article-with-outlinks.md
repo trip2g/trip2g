@@ -7,4 +7,4 @@ content:
 free: true
 ---
 
-This article links to [[article-with-toc]] and [[blog/post1]].
+This article links to [[article-with-toc]].

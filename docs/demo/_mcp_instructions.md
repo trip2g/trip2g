@@ -41,5 +41,5 @@ Notes are organized hierarchically:
 
 1. Start broad, then narrow down
 2. Combine search + similar for comprehensive results
-3. Follow [[wikilinks]] to discover connections
+3. Follow wikilinks to discover connections
 4. Check related notes for context

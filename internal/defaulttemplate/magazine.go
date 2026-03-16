@@ -48,7 +48,7 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 
 	q := ctx.Notes.ByGlob(glob)
 	if sortProp != "" {
-		// Notes with the property sort first (desc), then the rest by date desc.
+		// Notes with the property sort first (desc = higher number first), then the rest by date desc.
 		// compareValues returns -1 for nil, so nil sorts last in desc order,
 		// and the secondary created_at sort handles their relative order.
 		q = q.SortByMeta(sortProp).Desc().SortBy("created_at").Desc().SortBy("path_id").Desc()

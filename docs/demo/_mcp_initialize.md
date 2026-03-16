@@ -16,4 +16,4 @@ Personal knowledge base with notes on programming, projects, and ideas.
 
 1. Use search for specific topics
 2. Use similar to explore related content
-3. Notes link to each other via [[wikilinks]]
+3. Notes link to each other via wikilinks

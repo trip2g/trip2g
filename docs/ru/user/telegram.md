@@ -1,5 +1,6 @@
 ---
 free: true
+home_position: 7
 title: Telegram
 ---
 

@@ -121,6 +121,7 @@
 
 .site-header__space {
   margin-left: auto;
+  min-height: 46px;
 }
 
 // --- Lang switcher ---
@@ -130,7 +131,7 @@
   gap: 0.375rem;
   align-items: center;
   justify-content: flex-start;
-  margin: 0.75rem 0;
+  margin: 0 0 0.75rem 0;
 
   &__label {
     font-size: 0.8125rem;
@@ -569,20 +570,11 @@
   &--columns {
     grid-area: links;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, auto);
     column-gap: calc(var(--pico-spacing) * 2);
     row-gap: calc(var(--pico-spacing) * 2);
     align-items: start;
     justify-content: end;
-
-    > div {
-      > p, > strong {
-        display: block;
-        font-weight: 600;
-        margin-bottom: calc(var(--pico-spacing) * 0.5);
-        color: var(--pico-contrast);
-      }
-    }
 
     ul {
       list-style: none;
@@ -605,6 +597,14 @@
       }
     }
   }
+}
+
+.site-footer__column-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: calc(var(--pico-spacing) * 0.5);
+  margin-top: 0;
+  color: var(--pico-contrast);
 }
 
 // Copyright bar below footer content
@@ -794,4 +794,20 @@
   .site-footer__links--columns {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .magazine__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// --- Enclave objects ---
+
+.enclave-object-wrapper {
+  max-width: 900px;
+}
+
+.search-wrapper {
+  margin-block-start: var(--pico-spacing);
+  margin-block-end: calc(var(--pico-spacing) * 4);
+  padding-inline: var(--pico-spacing);
 }

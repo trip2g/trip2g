@@ -1,5 +1,6 @@
 ---
 free: true
+home_position: 6
 title: Дополнительно
 slug: /docs/advanced
 ---

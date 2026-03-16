@@ -3,6 +3,8 @@ lang: ru
 title: trip2g
 content: [self, magazine]
 magazine_include_files: ru/**/*.md
+magazine_include_property: home_position
+magazine_sort_property: home_position
 ---
 
 Создайте сайт с Obsidian за секунды:

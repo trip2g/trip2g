@@ -1,3 +1,7 @@
+---
+title: "Мультидомены: технические детали"
+---
+
 # Multi-Domain Routing
 
 ## Overview

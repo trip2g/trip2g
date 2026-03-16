@@ -6,6 +6,7 @@
 <html{% if ctx.HTMLLang != "" %} lang="{%s= ctx.HTMLLang %}"{% endif %}>
 <head>
 <meta charset="UTF-8">
+<script>try{if(localStorage.getItem('$mol_lights')!=='true')document.documentElement.classList.add('dark')}catch(e){}</script>
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -356,21 +357,36 @@ window.__trip2g_settings = {
     {% endif %}
   </div>
 </header>
+
+<div class="search-wrapper">
+  <div mol_view_root="$trip2g_user_search"></div>
+</div>
 {% endfunc %}
 
 {% func SiteFooter(ctx *Ctx, footerNote *templateviews.Note) %}
 <footer class="site-footer">
   <div class="site-footer__content">
+    {% code intro := footerNote.PartialRenderer().Introduce() %}
+    {% if intro.ContentHTML != "" %}
     <div class="site-footer__brand">
-      <a class="site-footer__name" href="/">{%s footerNote.Title() %}</a>
-      {% code tagline := footerNote.Description() %}
-      {% if tagline != "" %}
-      <p class="site-footer__tagline">{%s= tagline %}</p>
-      {% endif %}
+      {%s= intro.ContentHTML %}
     </div>
+    {% endif %}
+    {% code sections := footerNote.PartialRenderer().Sections(3) %}
+    {% if len(sections) > 1 %}
+    <div class="site-footer__links site-footer__links--columns">
+      {% for _, sec := range sections %}
+      <div class="site-footer__column">
+        <p class="site-footer__column-title">{%s= sec.TitleHTML %}</p>
+        {%s= sec.ContentHTML %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
     {% code listHTML := footerNote.FirstListHTML() %}
     {% if listHTML != "" %}
     <div class="site-footer__links site-footer__links--inline">{%s= listHTML %}</div>
+    {% endif %}
     {% endif %}
   </div>
 </footer>

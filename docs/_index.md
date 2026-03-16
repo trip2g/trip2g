@@ -1,6 +1,10 @@
 ---
-content: [self, magazine]
+content:
+  - magazine
+  - self
+magazine_include_files: en/**/*.md
 magazine_include_property: home_position
+magazine_sort_property: home_position
 lang_redirect: "[[ru/_index]]"
 lang: en
 title: trip2g
