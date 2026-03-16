@@ -15,8 +15,22 @@ namespace $.$$ {
 
 		ResultItem: {
 			flexDirection: 'column',
-			marginBottom: '1em',
+			marginBottom: '2em',
 			textDecoration: 'none',
+		},
+
+		ItemHeader: {
+			// space between
+			justifyContent: 'space-between',
+			marginBottom: '0.5em',
+		},
+
+		Content: {
+			whiteSpace: 'pre-line',
+		},
+
+		Title: {
+			fontSize: '1.5em',
 		},
 	})
 }

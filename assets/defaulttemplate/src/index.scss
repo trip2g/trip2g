@@ -807,6 +807,11 @@
 }
 
 .search-wrapper {
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+.search-wrapper trip2g_user_search_panel {
   margin-block-start: var(--pico-spacing);
   margin-block-end: calc(var(--pico-spacing) * 4);
   padding-inline: var(--pico-spacing);

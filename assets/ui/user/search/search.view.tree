@@ -37,12 +37,21 @@ $trip2g_user_search_panel $mol_view
 					attr *
 						href <= result_link* \
 					sub /
-						<= Title* $trip2g_user_search_dimmer
-							html <= result_title* \
-						<= Score* $mol_view
-							sub / <= result_score* @ \Score:
+						<= ItemHeader* $mol_view
+							sub /
+								<= Title* $trip2g_user_search_dimmer
+									html <= result_title* \
+								<= Score* $mol_view
+									sub / <= result_score* @ \Score:
 						<= Content* $mol_view
 							sub <= result_content* /$mol_view
+						<= ItemFooter* $mol_view
+							sub /
+								<= ShowPageButton* $mol_view
+									dom_name \a
+									attr *
+										href <= result_link* \
+									sub / <= ReadMore @ \Read more
 
 $trip2g_user_search_dimmer $mol_dimmer
 	html \

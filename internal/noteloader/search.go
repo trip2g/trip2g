@@ -207,12 +207,12 @@ func extractText(doc ast.Node, src []byte) string {
 
 	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
-			// Add a space after certain block-level nodes to prevent words from merging.
+			// Add a newline after block-level nodes so snippets stay readable.
 			switch n.Kind() {
 			case ast.KindHeading, ast.KindParagraph, ast.KindBlockquote, ast.KindListItem:
 				if lastNode != nil {
 					if lastNode.Kind() == ast.KindText || lastNode.Kind() == ast.KindCodeSpan {
-						buf.WriteString(" ")
+						buf.WriteString("\n")
 					}
 				}
 			}
