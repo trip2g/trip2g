@@ -82,6 +82,10 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
+			if res.NoteView.IsSystem() {
+				continue
+			}
+
 			canRead, readErr := env.CanReadNote(ctx, res.NoteView)
 			if readErr != nil {
 				return nil, fmt.Errorf("failed to check CanReadNote: %w", readErr)

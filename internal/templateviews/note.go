@@ -68,6 +68,11 @@ func (n *Note) Path() string {
 	return n.nv.Path
 }
 
+// IsSystem returns true if the note is a system note (any path component starts with "_").
+func (n *Note) IsSystem() bool {
+	return n.nv.IsSystem()
+}
+
 // Permalink returns the note URL path.
 func (n *Note) Permalink() string {
 	return n.nv.Permalink

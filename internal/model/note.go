@@ -1256,3 +1256,15 @@ func countWordsForReadingTime(content string) int {
 
 	return wordCount
 }
+
+// IsSystem returns true if any component of the note path starts with "_".
+// Such notes (e.g. _footer.md, _layouts/) are internal and hidden from listings and search.
+func (n *NoteView) IsSystem() bool {
+	for _, part := range strings.Split(filepath.ToSlash(n.Path), "/") {
+		if strings.HasPrefix(part, "_") {
+			return true
+		}
+	}
+	return false
+}
+

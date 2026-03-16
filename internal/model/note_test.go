@@ -725,3 +725,23 @@ func TestNoteViewsRegisterIndexNote(t *testing.T) {
 		"/hello_world/index": note,
 	}, nv.Map)
 }
+
+func TestNoteView_IsSystem(t *testing.T) {
+	cases := []struct {
+		path   string
+		expect bool
+	}{
+		{"_footer.md", true},
+		{"_layouts/base.html", true},
+		{"docs/_internal/note.md", true},
+		{"docs/note.md", false},
+		{"notes/public.md", false},
+		{"index.md", false},
+		{"prefix_word/note.md", false}, // underscore not at start of component
+	}
+
+	for _, c := range cases {
+		n := &NoteView{Path: c.path}
+		require.Equal(t, c.expect, n.IsSystem(), "path: %s", c.path)
+	}
+}

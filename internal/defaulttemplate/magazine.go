@@ -1,21 +1,8 @@
 package defaulttemplate
 
 import (
-	"path/filepath"
-	"strings"
-
 	"trip2g/internal/templateviews"
 )
-
-// isSystemNote returns true if any component of the note path starts with "_".
-func isSystemNote(path string) bool {
-	for _, part := range strings.Split(filepath.ToSlash(path), "/") {
-		if strings.HasPrefix(part, "_") {
-			return true
-		}
-	}
-	return false
-}
 
 // MagazineItemSize represents the visual size tier of a magazine card.
 type MagazineItemSize int
@@ -64,7 +51,7 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 			continue
 		}
 		// Skip system notes (any path component starting with _).
-		if isSystemNote(note.Path()) {
+		if note.IsSystem() {
 			continue
 		}
 		if includeProp != "" && note.M().Get(includeProp) == nil {
