@@ -26,5 +26,5 @@ free: true
 
 ### Contact
 
-- [GitHub](https://github.com/trip2g/trip2g)
+- [Open Source](https://github.com/trip2g/trip2g)
 - [alexes.dev@gmail.com](mailto:alexes.dev@gmail.com)

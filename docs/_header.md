@@ -2,6 +2,7 @@
 title: Navigation
 free: true
 ---
+![[logo.svg|250]]
 
 - [[_index|Home]]
 - [[en/user/_index|Documentation]]

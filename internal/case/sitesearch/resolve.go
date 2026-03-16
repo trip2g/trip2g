@@ -82,7 +82,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
-			if res.NoteView.IsSystem() {
+			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
 				continue
 			}
 

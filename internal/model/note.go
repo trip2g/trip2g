@@ -171,7 +171,8 @@ type NoteView struct {
 
 	PermalinkOriginal string
 
-	Free     bool // without the paywall
+	Free          bool // without the paywall
+	ExcludeSearch bool // search: false in frontmatter
 	Redirect *string
 
 	Description *string // meta description for SEO
@@ -506,6 +507,10 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.extractLang()
 	n.extractLangRedirectTargets()
+
+	if v, ok := n.RawMeta["search"].(bool); ok && !v {
+		n.ExcludeSearch = true
+	}
 
 	return nil
 }

@@ -218,7 +218,7 @@ if [ "$MANUAL" = "1" ] || [ "$MANUAL" = "true" ]; then
   echo "API Key: ${API_KEY}"
   echo ""
   echo "Push notes command:"
-  echo "  ENDPOINT=\"${ENDPOINT}\" API_KEY=\"${API_KEY}\" npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/vault"
+  echo "  ENDPOINT=\"${ENDPOINT}\" API_KEY=\"${API_KEY}\" npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder docs/demo"
   echo ""
   echo "Press ENTER to stop services and cleanup..."
   read -r

@@ -91,6 +91,10 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 			continue
 		}
 
+		if note.ExcludeSearch {
+			continue
+		}
+
 		content := noteContent{
 			Title: note.Title,
 			Body:  extractText(note.Ast(), note.Content),

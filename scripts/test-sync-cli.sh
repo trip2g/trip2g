@@ -200,9 +200,9 @@ setup() {
     rm -rf "$VAULT0" "$VAULT1"
     mkdir -p "$TMP_DIR"
 
-    # Copy testdata/vault to testvault0
-    log_info "Copying testdata/vault → tmp/testvault0"
-    cp -r "$PROJECT_ROOT/testdata/vault" "$VAULT0"
+    # Copy docs/demo to testvault0
+    log_info "Copying docs/demo → tmp/testvault0"
+    cp -r "$PROJECT_ROOT/docs/demo" "$VAULT0"
     rm -f "$VAULT0/.sync-state.json"
 
     # Create empty testvault1

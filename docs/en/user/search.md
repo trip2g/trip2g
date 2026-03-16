@@ -19,6 +19,29 @@ The final ranking is built with RRF (Reciprocal Rank Fusion): results from both 
 - Short queries with common words still work because text search anchors the results
 - Both Russian and English content is indexed; semantic search works across languages
 
+### Excluding notes from search
+
+Some notes are excluded from search automatically:
+
+- Notes whose filename or any folder in the path starts with `_` (for example `_footer.md` or `_layouts/base.md`) are treated as system notes and never appear in search results.
+
+To hide any other note, add `search: false` to its frontmatter:
+
+```yaml
+---
+search: false
+---
+```
+
+To exclude a whole section at once, use [[en/user/frontmatter-patches|frontmatter patches]]. For example, to hide all developer docs from search:
+
+```yaml
+# frontmatter-patches.yaml
+- glob: "dev/**/*.md"
+  patch:
+    search: false
+```
+
 ### MCP server search
 
 The [[en/user/mcp|MCP server]] uses the same semantic search to let AI assistants query your knowledge base. The `search(query)` method runs a vector search and returns the most relevant notes.
