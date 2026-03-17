@@ -21,25 +21,26 @@ test.describe('Test Vault', () => {
     await page.waitForURL(/\/lang_hub\/english/);
   })
 
-  test('multilangual hub redirect in Accept-Language', async ({ page, context }) => {
-    await context.route('**/*', (route, request) => {
-      route.continue({
-        headers: {
-          ...request.headers(),
-          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
-      });
+  test('multilangual hub redirect in Accept-Language', async ({ browser }) => {
+    const context = await browser.newContext({
+      locale: 'ru-RU',
+      baseURL: process.env.APP_URL || 'http://localhost:8081',
     });
+    const page = await context.newPage();
 
-    await page.goto('/lang_hub');
+    try {
+      await page.goto('/lang_hub');
 
-    await page.waitForURL(/\/lang_hub\/russian/);
-    await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
+      await page.waitForURL(/\/lang_hub\/russian/);
+      await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
 
-    // press to switch language
-    await page.locator('.lang-switcher a[href="/lang_hub/english"]').click();
-    await page.waitForURL(/\/lang_hub\/english/);
-    await expect(page.locator('p').first()).toContainText('English version of the page.');
+      // press to switch language
+      await page.locator('.lang-switcher a[href="/lang_hub/english"]').click();
+      await page.waitForURL(/\/lang_hub\/english/);
+      await expect(page.locator('p').first()).toContainText('English version of the page.');
+    } finally {
+      await context.close();
+    }
   })
 
   test('multilangual mixed hub redirect', async ({ page }) => {
@@ -95,7 +96,7 @@ test.describe('Test Vault', () => {
     await page.goto('/paid_with_preview');
 
     // Check title is visible
-    await expect(page.locator('#noteview-content h1').first()).toContainText('Premium Content with Preview');
+    await expect(page.locator('h1.content__title').first()).toContainText('Premium Content with Preview');
 
     // Page without free flag should show subscription message
     await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
@@ -142,7 +143,7 @@ test.describe('Test Vault', () => {
     await page.goto('/complex_content');
 
     // Check title is visible
-    await expect(page.locator('#noteview-content h1').first()).toContainText('Complex Content Example');
+    await expect(page.locator('h1.content__title').first()).toContainText('Complex Content Example');
 
     // Page without free flag should show subscription message
     await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
@@ -163,7 +164,7 @@ test.describe('Test Vault', () => {
     await page.goto('/premium');
 
     // Check title is visible
-    await expect(page.locator('.sidebar__homepage a').first()).toContainText('Premium Course Home');
+    await expect(page.locator('h1').first()).toContainText('Premium Course Home');
 
     // Page without free flag should show subscription message
     await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
@@ -283,7 +284,7 @@ test.describe('Regression Tests', () => {
     await expect(page.locator('h1').first()).toContainText('Software Page');
 
     // The image should be rendered as <img>, not cause a render error
-    const image = page.locator('#noteview-content img');
+    const image = page.locator('.content__body img');
     await expect(image).toHaveCount(1);
     await expect(image).toBeVisible();
 
@@ -304,11 +305,11 @@ test.describe('Regression Tests', () => {
     await expect(page.getByText('Курсы')).toBeVisible();
 
     // Links should NOT be marked as wip since target pages exist
-    const wipLinks = page.locator('#noteview-content a.wip');
+    const wipLinks = page.locator('.content__body a.wip');
     await expect(wipLinks).toHaveCount(0);
 
     // Links should have data-pid (proving pages were found)
-    const links = page.locator('#noteview-content a[data-pid]');
+    const links = page.locator('.content__body a[data-pid]');
     await expect(links).toHaveCount(2);
   });
 
@@ -343,7 +344,7 @@ test.describe('Image Resolution', () => {
     await expect(page.locator('h1').first()).toContainText('img-test');
 
     // Check all images are loaded
-    const images = page.locator('#noteview-content img');
+    const images = page.locator('.content__body img');
     await expect(images).toHaveCount(3);
 
     // Wait for images to load
@@ -372,7 +373,7 @@ test.describe('Image Resolution', () => {
     await expect(page.locator('h1').first()).toContainText('img-formats');
 
     // Check all 4 format images are loaded
-    const images = page.locator('#noteview-content img');
+    const images = page.locator('.content__body img');
     await expect(images).toHaveCount(4);
 
     // Wait for images to load
@@ -398,7 +399,7 @@ test.describe('Image Resolution', () => {
     await expect(page.locator('h1').first()).toContainText('imgs');
 
     // Check all images are loaded (4 root + 2 folder = 6)
-    const images = page.locator('#noteview-content img');
+    const images = page.locator('.content__body img');
     await expect(images).toHaveCount(6);
 
     await images.first().waitFor({ state: 'visible' });
@@ -426,7 +427,7 @@ test.describe('Image Resolution', () => {
     await expect(page.locator('h1').first()).toContainText('imgs');
 
     // Check both images are loaded
-    const images = page.locator('#noteview-content img');
+    const images = page.locator('.content__body img');
     await expect(images).toHaveCount(2);
 
     await images.first().waitFor({ state: 'visible' });
@@ -516,8 +517,8 @@ test.describe('Custom Telegram Emoji', () => {
     await page.goto('/telegram_image_with_emoji');
 
     // The main photo should not have custom-emoji class
-    const allImgs = page.locator('#noteview-content img');
-    const regularImgs = page.locator('#noteview-content img:not(.custom-emoji)');
+    const allImgs = page.locator('.content__body img');
+    const regularImgs = page.locator('.content__body img:not(.custom-emoji)');
 
     // Total images: 1 regular photo + 2 custom emoji = 3
     await expect(allImgs).toHaveCount(3);

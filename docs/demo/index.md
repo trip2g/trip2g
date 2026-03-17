@@ -2,6 +2,7 @@
 free: true
 title: Test Vault Home
 description: Comprehensive test vault for Obsidian publishing features
+header: "[[_header]]"
 ---
 
 Welcome to the comprehensive test vault for Obsidian publishing!

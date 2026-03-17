@@ -51,6 +51,9 @@ window.__trip2g_settings = {
 
 <title>{%s ctx.Title %}</title>
 
+{% if ctx.InlineCSS != "" %}
+<style>{%s= ctx.InlineCSS %}</style>
+{% endif %}
 {% for _, url := range ctx.CSSURLs %}
 <link href="{%s url %}" rel="stylesheet">
 {% endfor %}
@@ -393,9 +396,9 @@ window.__trip2g_settings = {
 {% endfunc %}
 
 {% func PayWall(ctx *Ctx) %}
-<div class="paywall">
-  <div class="paywall__header">
-    <a class="paywall__home" href="/">{%s ctx.T("paywall_home") %}</a>
+<div class="paywall-page">
+  <div class="paywall-page__header">
+    <a class="paywall-page__home" href="/">{%s ctx.T("paywall_home") %}</a>
     <div mol_view_root="$trip2g_user_space"></div>
   </div>
 
