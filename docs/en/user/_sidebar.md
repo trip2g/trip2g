@@ -32,3 +32,4 @@ title: "Navigation"
 
 **Use Cases**
 - [[en/user/use-cases|Examples by role]]
+- [[en/user/digital-garden|Digital garden]]

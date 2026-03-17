@@ -6,3 +6,12 @@ other = "Backlinks"
 
 [readmore]
 other = "Read more →"
+
+[onboarding_title]
+other = "Site is being set up"
+
+[onboarding_subtitle]
+other = "Log in as administrator to get started."
+
+[paywall_home]
+other = "← Home"

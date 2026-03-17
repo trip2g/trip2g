@@ -11,6 +11,7 @@ namespace $.$$ {
 			if (!el.dataset.subgraphs) {
 				return []
 			}
+			console.log(el.dataset.subgraphs)
 
 			return this.$.$mol_json_from_string(el.dataset.subgraphs) as string[]
 		}

@@ -52,9 +52,8 @@ type Ctx struct {
 	OnboardingMode bool
 	NotFoundMode   bool
 	PaywallError   *PaywallError
-	UserToken      *usertoken.Data
-	Lang           string
-	IsAdmin        bool
+	UserToken *usertoken.Data
+	Lang      string
 }
 
 // noteExists returns true if a note with the given wikilink name exists in ctx.Notes.

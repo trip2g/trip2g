@@ -244,7 +244,7 @@
       <div class="noteview__left-column">
         <div class="noteview__markup prose prose-stone prose-lg">
 
-          {% if resp.IsAdmin %}
+          {% if resp.UserToken.IsAdmin() %}
           <h3>Добро пожаловать!</h3>
           <p>
             Скачайте стартовый архив и откройте его в Obsidian.

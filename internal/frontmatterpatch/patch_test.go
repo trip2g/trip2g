@@ -242,6 +242,28 @@ func TestMatchPath(t *testing.T) {
 			path:     "blog/2024/01/post.md",
 			expected: true,
 		},
+		// demo/**/*.md exclude: file directly in demo/ (no subdirectory)
+		{
+			name:     "exclude demo nested md — direct child of demo",
+			include:  []string{"**/*.md"},
+			exclude:  []string{"demo/**/*.md"},
+			path:     "demo/note.md",
+			expected: false,
+		},
+		{
+			name:     "exclude demo nested md — in subdirectory",
+			include:  []string{"**/*.md"},
+			exclude:  []string{"demo/**/*.md"},
+			path:     "demo/sub/note.md",
+			expected: false,
+		},
+		{
+			name:     "non-demo file not excluded",
+			include:  []string{"**/*.md"},
+			exclude:  []string{"demo/**/*.md"},
+			path:     "docs/note.md",
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

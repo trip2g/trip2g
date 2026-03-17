@@ -234,7 +234,7 @@ func renderLayout(
 	// Layout has parse error - show error to admin, fallback to default for others
 	if layout.View == nil && len(layout.Warnings) > 0 {
 		env.Logger().Error("layout has parse error", "name", layoutName, "warnings", layout.Warnings)
-		if resp.IsAdmin {
+		if resp.UserToken.IsAdmin() {
 			WriteLayoutError(ctx, resp, layoutName, layout.Warnings)
 			return true, nil
 		}
@@ -246,7 +246,7 @@ func renderLayout(
 	defer func() {
 		if r := recover(); r != nil {
 			env.Logger().Error("template panic", "layout", layoutName, "error", r)
-			if resp.IsAdmin {
+			if resp.UserToken.IsAdmin() {
 				_, _ = fmt.Fprintf(ctx, "Template error: %v", r)
 				processed = true
 				err = nil
@@ -264,7 +264,7 @@ func renderLayout(
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
-		if resp.IsAdmin {
+		if resp.UserToken.IsAdmin() {
 			_, _ = ctx.WriteString(viewErr.Error())
 			return true, nil
 		}
@@ -459,8 +459,7 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			string(req.Req.Request.Header.Cookie(langCookieName)),
 			string(req.Req.Request.Header.Peek("Accept-Language")),
 		),
-		UserToken:       resp.UserToken,
-		IsAdmin:         resp.IsAdmin,
+		UserToken: resp.UserToken,
 	}
 
 	return dtCtx

@@ -16,7 +16,6 @@ test.describe.serial('Setup', () => {
 
     // Should show onboarding, not 404
     await expect(page.locator('[data-onboarding]')).toBeVisible();
-    await expect(page.getByText('Сайт в процессе настройки')).toBeVisible();
     await expect(page.getByText('Site is being set up')).toBeVisible();
   });
 
@@ -32,7 +31,6 @@ test.describe.serial('Setup', () => {
     // Verify onboarding page shows download link for admin
     await page.goto('/');
     await expect(page.locator('[data-onboarding]')).toBeVisible();
-    await expect(page.getByText('Добро пожаловать!')).toBeVisible();
     await expect(page.getByText('Welcome!')).toBeVisible();
     await expect(page.locator('a[href="/_system/onboarding-vault"]').first()).toBeVisible();
 

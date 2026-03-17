@@ -80,7 +80,6 @@ type Response struct {
 		DefaultLayout     string
 	}
 
-	IsAdmin        bool
 	OnboardingMode bool
 
 	// domainHost is the normalized custom domain host for this request.
@@ -152,9 +151,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		UserRole:       "guest",
 	}
 
-	isAdmin := request.UserToken.IsAdmin()
+	response.UserToken = request.UserToken
 
-	response.IsAdmin = isAdmin
+	isAdmin := request.UserToken.IsAdmin()
 
 	siteConfig := env.SiteConfig(ctx)
 	response.Config.ShowDraftVersions = siteConfig.ShowDraftVersions
@@ -200,7 +199,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		if path == "/" {
 			// Root URL with no index note: render default magazine layout.
 			response.Notes = notes
-			response.UserToken = request.UserToken
 			response.Time = int(time.Now().Unix())
 			return &response, nil
 		}
@@ -225,7 +223,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Title = formatTitle(note.Title, env.SiteTitleTemplate())
 	response.Note = note
 	response.Notes = notes
-	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
 	response.NoteView = templateviews.NewNoteWithDomain(note, response.domainHost)
 

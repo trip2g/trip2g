@@ -841,7 +841,7 @@ func StreamOnboarding(qw422016 *qt422016.Writer, resp *Response) {
 
           `)
 //line view.html:247
-	if resp.IsAdmin {
+	if resp.UserToken.IsAdmin() {
 //line view.html:247
 		qw422016.N().S(`
           <h3>Добро пожаловать!</h3>

@@ -234,7 +234,7 @@ test_empty_vault_pulls_all() {
     sync_vault "$VAULT1"
 
     assert_file_exists "$VAULT1/.sync-state.json" "Sync state created for vault1"
-    assert_file_exists "$VAULT1/_index.md" "Index file pulled to vault1"
+    assert_file_exists "$VAULT1/index.md" "Index file pulled to vault1"
     assert_dirs_equal "$VAULT0" "$VAULT1" "Both vaults have identical content"
 }
 

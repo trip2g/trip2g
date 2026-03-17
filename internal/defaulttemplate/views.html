@@ -394,6 +394,11 @@ window.__trip2g_settings = {
 
 {% func PayWall(ctx *Ctx) %}
 <div class="paywall">
+  <div class="paywall__header">
+    <a class="paywall__home" href="/">{%s ctx.T("paywall_home") %}</a>
+    <div mol_view_root="$trip2g_user_space"></div>
+  </div>
+
   {% if ctx.Note != nil %}
   <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
 
@@ -410,7 +415,7 @@ window.__trip2g_settings = {
   <div
     id="paywall"
     mol_view_root="$trip2g_user_paywall"
-    data-subgraphs="{%s= ctx.PaywallError.SubgraphsJSON %}"
+    data-subgraphs="{%s ctx.PaywallError.SubgraphsJSON %}"
     data-path-id="{%dl ctx.Note.PathID() %}"
   ></div>
   {% endif %}
@@ -446,7 +451,7 @@ window.__trip2g_settings = {
 {% endfunc %}
 
 {% func Onboarding(ctx *Ctx) %}
-<div class="onboarding">
+<div class="onboarding" data-onboarding>
   {% if ctx.UserToken.IsAdmin() %}
   <h3>Welcome!</h3>
   <p>
@@ -464,8 +469,9 @@ window.__trip2g_settings = {
     </a>
   </p>
   {% else %}
-  <h3>Site is being set up</h3>
-  <p>Log in as administrator to get started.</p>
+  <h3>{%s ctx.T("onboarding_title") %}</h3>
+  <p>{%s ctx.T("onboarding_subtitle") %}</p>
+  <div mol_view_root="$trip2g_user_space"></div>
   {% endif %}
 </div>
 {% endfunc %}

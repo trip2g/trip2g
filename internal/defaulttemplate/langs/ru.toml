@@ -6,3 +6,12 @@ other = "Ссылки сюда"
 
 [readmore]
 other = "Читать далее →"
+
+[onboarding_title]
+other = "Сайт настраивается"
+
+[onboarding_subtitle]
+other = "Войдите как администратор, чтобы начать."
+
+[paywall_home]
+other = "← Главная"

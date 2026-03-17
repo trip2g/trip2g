@@ -625,6 +625,23 @@
   margin-inline: auto;
   padding-inline: var(--pico-spacing);
   padding-block: calc(var(--pico-spacing) * 2);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: calc(var(--pico-spacing) * 1.5);
+  }
+
+  &__home {
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.7;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }
 
 // --- Onboarding ---

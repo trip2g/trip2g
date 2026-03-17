@@ -2,9 +2,16 @@
 title: Use cases
 free: true
 home_position: 9
+lang_redirect: "[[ru/user/use-cases]]"
 ---
 
-Four ways people use trip2g to publish from Obsidian.
+Five ways people use trip2g to publish from Obsidian.
+
+### Digital garden
+
+Someone builds a personal knowledge site in Obsidian — interconnected notes, bidirectional links, ideas that grow over months. The vault stays on their computer. trip2g publishes it as a website. Readers navigate by connection, not by date. The graph Obsidian builds for the author becomes the structure readers explore.
+
+→ See [[en/user/digital-garden|Digital garden]]
 
 ### YouTuber
 

@@ -9,6 +9,9 @@ namespace $.$$ {
 	})
 
 	$mol_style_define( $trip2g_user_paywall_offers_list, {
+		flex: {
+			shrink: 1,
+		},
 		Item: {
 			flexDirection: 'column',
 			padding: '20px',
