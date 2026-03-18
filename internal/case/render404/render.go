@@ -42,13 +42,13 @@ func Handle(req *appreq.Request) (interface{}, error) {
 	devMode := "false"
 	injections := map[string][]db.HtmlInjection{}
 
-	if rlEnv, ok := req.Env.(renderlayout.Env); ok {
+	if rlEnv, rlOk := req.Env.(renderlayout.Env); rlOk {
 		jsURLs = rlEnv.UserJSURLs()
 		cssURLs = rlEnv.UserCSSURLs()
 		if rlEnv.IsDevMode() {
 			devMode = "true"
 		}
-		if active, err := rlEnv.ActiveHTMLInjections(context.Background()); err == nil {
+		if active, injErr := rlEnv.ActiveHTMLInjections(context.Background()); injErr == nil {
 			for _, inj := range active {
 				injections[inj.Placement] = append(injections[inj.Placement], inj)
 			}

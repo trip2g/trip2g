@@ -11,9 +11,10 @@ import (
 //go:embed langs/*.toml
 var langFiles embed.FS
 
-var bundle *i18n.Bundle
+var bundle *i18n.Bundle //nolint:gochecknoglobals // package-level i18n bundle initialized once at startup
 
-func init() {
+// TODO: refactor to Init() error
+func init() { //nolint:gochecknoinits // required for embedding and registering translation files at startup
 	bundle = i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
