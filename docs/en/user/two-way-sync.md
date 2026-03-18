@@ -2,7 +2,6 @@
 home_position: 5
 title: Two-Way Sync
 free: true
-slug: two-way-sync
 lang_redirect: "[[ru/user/Двухсторонняя синхронизация]]"
 ---
 

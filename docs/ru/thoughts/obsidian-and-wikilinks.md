@@ -1,6 +1,5 @@
 ---
 title: "Obsidian и связи между заметками"
-slug: obsidian
 order: 8
 free: true
 ---

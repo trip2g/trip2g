@@ -1,6 +1,5 @@
 ---
 title: "Multilingual sites"
-slug: multilingual
 free: true
 lang_redirect: "[[ru/user/multilingual]]"
 ---

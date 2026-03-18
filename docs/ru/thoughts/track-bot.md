@@ -1,6 +1,5 @@
 ---
 title: "Трек-бот: управляемые маршруты через знания"
-slug: track-bot
 order: 12
 layout: trip2g/content-first
 free: true

@@ -1,7 +1,6 @@
 ---
 free: true
 title: Интеграции
-slug: /docs/integrations
 ---
 
 Подключите trip2g к другим инструментам.

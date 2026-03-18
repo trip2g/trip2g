@@ -1,6 +1,5 @@
 ---
 title: "Dogfooding"
-slug: dogfooding
 order: 10
 free: true
 lang_redirect: "[[ru/thoughts/dogfooding]]"

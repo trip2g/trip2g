@@ -1,6 +1,5 @@
 ---
 title: "Three Zones: Private, Public, Paid"
-slug: three-zones
 order: 2
 free: true
 lang_redirect: "[[ru/thoughts/three-zones]]"

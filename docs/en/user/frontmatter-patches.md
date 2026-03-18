@@ -1,7 +1,6 @@
 ---
 title: Frontmatter Patches
 free: true
-slug: frontmatter-patches
 lang_redirect: "[[ru/user/frontmatter_patches]]"
 ---
 

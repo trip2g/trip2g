@@ -1,7 +1,6 @@
 ---
 free: true
 title: "Шаблоны: API"
-slug: templates-advanced
 ---
 
 Техническая документация для разработчиков шаблонов. Описывает API `internal/templateviews` — обёртки моделей для Jet-шаблонов.

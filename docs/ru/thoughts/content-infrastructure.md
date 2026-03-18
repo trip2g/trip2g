@@ -1,6 +1,5 @@
 ---
 title: Контент-инфраструктура для совместной работы людей и AI
-slug: content-infrastructure
 order: 11
 layout: trip2g/content-first
 free: true

@@ -1,6 +1,5 @@
 ---
 title: "Obsidian and Note Connections"
-slug: obsidian
 order: 8
 free: true
 lang_redirect: "[[ru/thoughts/obsidian-and-wikilinks]]"

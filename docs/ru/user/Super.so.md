@@ -1,7 +1,6 @@
 ---
 free: true
 title: Super.so
-slug: alternative_super_so
 ---
 Super.so превращает страницы Notion в быстрые сайты. Пишете в Notion — получаете сайт на своём домене.
 

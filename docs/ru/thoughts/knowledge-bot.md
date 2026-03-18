@@ -1,6 +1,5 @@
 ---
 title: "Бот-визитка: база знаний вместо резюме"
-slug: knowledge-bot
 order: 14
 layout: trip2g/content-first
 free: true

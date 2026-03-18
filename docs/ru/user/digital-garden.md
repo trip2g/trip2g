@@ -1,6 +1,5 @@
 ---
 title: "Цифровой сад"
-slug: digital-garden
 free: true
 ---
 

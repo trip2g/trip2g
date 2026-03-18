@@ -1,6 +1,5 @@
 ---
 title: "Track Bot"
-slug: track-bot
 order: 12
 layout: trip2g/content-first
 free: true

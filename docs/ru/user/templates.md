@@ -1,7 +1,6 @@
 ---
 free: true
 title: Шаблоны
-slug: templates
 home_position: 994
 ---
 

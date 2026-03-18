@@ -1,6 +1,5 @@
 ---
 title: "Для кого это"
-slug: for-whom
 order: 7
 free: true
 ---

@@ -1,7 +1,6 @@
 ---
 home_position: 4
 title: "Hosting"
-slug: hosting
 lang_redirect: "[[ru/user/hosting]]"
 free: true
 ---

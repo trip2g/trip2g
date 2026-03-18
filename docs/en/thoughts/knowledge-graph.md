@@ -1,6 +1,5 @@
 ---
 title: "What Is a Knowledge Graph"
-slug: knowledge-graph
 order: 1
 free: true
 lang_redirect: "[[ru/thoughts/knowledge-graph]]"

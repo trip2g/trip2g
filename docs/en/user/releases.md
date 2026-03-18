@@ -1,7 +1,6 @@
 ---
 title: Releases
 free: true
-slug: releases
 lang_redirect: "[[ru/user/releases]]"
 ---
 

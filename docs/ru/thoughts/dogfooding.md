@@ -1,6 +1,5 @@
 ---
 title: "Dogfooding: ешь свою собачью еду"
-slug: dogfooding
 order: 10
 free: true
 ---

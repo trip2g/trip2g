@@ -1,6 +1,5 @@
 ---
 title: "Personal Navigation"
-slug: personal-navigation
 order: 13
 layout: trip2g/content-first
 free: true

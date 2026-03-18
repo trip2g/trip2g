@@ -1,6 +1,5 @@
 ---
 title: "Knowledge Bot"
-slug: knowledge-bot
 order: 14
 layout: trip2g/content-first
 free: true

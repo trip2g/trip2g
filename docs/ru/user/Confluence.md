@@ -1,7 +1,6 @@
 ---
 free: true
 title: Confluence
-slug: alternative_confluence
 ---
 
 Корпоративный стандарт для баз знаний. Интеграция с Jira, знакомый интерфейс, но цена растёт с каждым сотрудником.

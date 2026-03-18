@@ -1,6 +1,5 @@
 ---
 title: "Хостинг"
-slug: hosting
 free: true
 ---
 

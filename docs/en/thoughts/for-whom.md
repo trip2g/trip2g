@@ -1,6 +1,5 @@
 ---
 title: "Who This Is For"
-slug: for-whom
 order: 7
 free: true
 lang_redirect: "[[ru/thoughts/for-whom]]"

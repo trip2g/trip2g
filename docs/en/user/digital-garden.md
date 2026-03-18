@@ -1,6 +1,5 @@
 ---
 title: "Digital Garden"
-slug: digital-garden
 free: true
 lang_redirect: "[[ru/user/digital-garden]]"
 ---

@@ -1,7 +1,6 @@
 ---
 title: RSS Feeds
 free: true
-slug: rss
 lang_redirect: "[[ru/user/rss-feeds]]"
 ---
 

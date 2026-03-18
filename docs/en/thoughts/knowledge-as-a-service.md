@@ -1,6 +1,5 @@
 ---
 title: "Knowledge-as-a-Service"
-slug: knowledge-as-a-service
 order: 5
 free: true
 lang_redirect: "[[ru/thoughts/knowledge-as-a-service]]"

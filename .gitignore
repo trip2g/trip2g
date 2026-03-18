@@ -53,3 +53,4 @@ db.sqlite
 .mcp.json
 
 docs/.obsidian
+docs/.sync-state.json

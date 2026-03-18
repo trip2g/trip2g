@@ -1,6 +1,5 @@
 ---
 title: "Три зоны: приватное, публичное, платное"
-slug: three-zones
 order: 2
 free: true
 ---

@@ -1,6 +1,5 @@
 ---
 title: "CLI для синхронизации"
-slug: cli
 free: true
 ---
 

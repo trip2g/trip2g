@@ -1,6 +1,5 @@
 ---
 title: "AI меняет правила"
-slug: ai-changes-rules
 order: 4
 free: true
 ---

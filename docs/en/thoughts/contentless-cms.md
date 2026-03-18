@@ -1,6 +1,5 @@
 ---
 title: "Contentless CMS"
-slug: contentless-cms
 order: 7
 free: true
 lang_redirect: "[[ru/thoughts/contentless-cms]]"

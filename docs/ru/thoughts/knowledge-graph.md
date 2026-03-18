@@ -1,6 +1,5 @@
 ---
 title: "Что такое граф знаний"
-slug: knowledge-graph
 order: 1
 free: true
 ---

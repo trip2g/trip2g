@@ -1,6 +1,5 @@
 ---
 title: "Markdown: основы синтаксиса"
-slug: markdown
 free: true
 layout: trip2g/page
 ---
@@ -130,7 +129,6 @@ function hello() {
 ---
 title: "Название заметки"
 free: true
-slug: custom-url
 ---
 
 Текст заметки начинается после второго ---

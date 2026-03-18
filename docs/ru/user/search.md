@@ -1,6 +1,5 @@
 ---
 title: "Как работает поиск"
-slug: search
 free: true
 ---
 

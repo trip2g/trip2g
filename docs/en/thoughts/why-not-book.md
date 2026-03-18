@@ -1,6 +1,5 @@
 ---
 title: "Why Not a Book, Course, or Channel"
-slug: why-not-book
 order: 3
 free: true
 lang_redirect: "[[ru/thoughts/why-not-book]]"

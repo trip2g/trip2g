@@ -1,6 +1,5 @@
 ---
 title: "Почему не книга, курс или канал"
-slug: why-not-book
 order: 3
 free: true
 ---

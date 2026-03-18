@@ -1,6 +1,5 @@
 ---
 title: Мультиязычный сайт
-slug: multilingual
 free: true
 home_position: 996
 ---

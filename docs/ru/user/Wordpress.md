@@ -1,7 +1,6 @@
 ---
 free: true
 title: WordPress
-slug: alternative_wordpress
 ---
 
 «Друг поставил WordPress, сделал визитку за вечер — всё работает». Да, для визитки WordPress подходит. Но база знаний — не визитка.

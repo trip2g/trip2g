@@ -1,7 +1,6 @@
 ---
 title: Дефолтный шаблон
 free: true
-slug: default-template
 ---
 
 Этот сайт сделан на дефолтном шаблоне — то, что вы видите прямо сейчас, и есть он.
@@ -236,7 +235,6 @@ featured: true
 ```yaml
 ---
 title: Блог
-slug: blog
 content:
   - magazine
 magazine_include_files: "blog/**/*.md"
@@ -257,7 +255,6 @@ footer: [[_footer]]
 ```yaml
 ---
 title: Мой первый пост
-slug: first-post
 published: true
 featured_priority: 100
 description: Краткое резюме поста
@@ -290,6 +287,8 @@ title: Навигация документации
 
 Каждая страница автоматически загрузит эту панель (если вы не установите `left_sidebar: false` на конкретной странице).
 
+Для заголовков групп в сайдбаре используйте `###` (заголовок h3), а не жирный текст (`**текст**`). Интерфейс отображает `###` как полноценные метки секций; жирный текст такого визуального оформления не получает.
+
 ### Использование изображений в шапке и подвале
 
 **Логотип в шапке:**
@@ -314,7 +313,6 @@ title: Навигация документации
 ```yaml
 ---
 title: Главная
-slug: ""
 content:
   - self
   - magazine
@@ -343,7 +341,6 @@ featured_on_home: true
 ```yaml
 ---
 title: Документация
-slug: docs
 content:
   - self
 left_sidebar:
@@ -359,7 +356,6 @@ right_sidebar:
 ```yaml
 ---
 title: Блог
-slug: blog
 content:
   - magazine
 magazine_include_files: "blog/**/*.md"

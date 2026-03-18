@@ -1,6 +1,5 @@
 ---
 title: "AI Changes the Rules"
-slug: ai-changes-rules
 order: 4
 free: true
 lang_redirect: "[[ru/thoughts/ai-changes-rules]]"

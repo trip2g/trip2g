@@ -1,7 +1,6 @@
 ---
 free: true
 title: OAuth авторизация
-slug: oauth
 ---
 
 # Авторизация через Google и GitHub

@@ -1,6 +1,5 @@
 ---
 title: "Цифровой суверенитет"
-slug: digital-sovereignty
 order: 6
 free: true
 ---

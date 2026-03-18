@@ -1,7 +1,6 @@
 ---
 free: true
 title: Obsidian Publish
-slug: alternative_obsidian_publish
 ---
 Официальный сервис от команды Obsidian для публикации заметок. Простой в использовании, но с ограничениями.
 

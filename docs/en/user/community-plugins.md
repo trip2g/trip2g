@@ -1,7 +1,6 @@
 ---
 title: Community Plugins
 free: true
-slug: community-plugins
 lang_redirect: "[[ru/user/community_plugins]]"
 ---
 

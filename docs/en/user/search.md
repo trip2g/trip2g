@@ -1,6 +1,5 @@
 ---
 title: "How search works"
-slug: search
 lang_redirect: "[[ru/user/search]]"
 free: true
 ---

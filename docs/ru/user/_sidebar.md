@@ -2,56 +2,64 @@
 title: "Навигация"
 ---
 
-**Начало работы**
-- [[Начало работы]]
-- [[hosting|Хостинг]]
-- [[Свойства заметок]]
-- [[markdown|Markdown]]
-- [[Двухсторонняя синхронизация|Синхронизация]]
+### Начало работы
 
-**Telegram**
-- [[telegram|Публикация]]
-- [[telegram_syntax|Разметка постов]]
-- [[Публикация через аккаунты]]
-- [[Импорт из Telegram]]
-- [[Кастомные эмодзи]]
-- [[telegram_limits|Ограничения]]
+- [[ru/user/Начало работы]]
+- [[ru/user/hosting|Хостинг]]
+- [[ru/user/Свойства заметок]]
+- [[ru/user/markdown|Markdown]]
+- [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
 
-**Монетизация**
-- [[advanced|Платный доступ]]
+### Telegram
 
-**Шаблоны**
-- [[default-template|Дефолтный шаблон]]
-- [[templates|Основы]]
-- [[templates-advanced|API и запросы]]
-- [[templates-best-practices|Лучшие практики]]
+- [[ru/user/telegram|Публикация]]
+- [[ru/user/telegram_syntax|Разметка постов]]
+- [[ru/user/Публикация через аккаунты]]
+- [[ru/user/Импорт из Telegram]]
+- [[ru/user/Кастомные эмодзи]]
+- [[ru/user/telegram_limits|Ограничения]]
 
-**Автоматизация**
-- [[mcp|MCP-сервер]]
-- [[change_webhooks|Вебхуки при изменении]]
-- [[cron_webhooks|Вебхуки по расписанию]]
-- [[frontmatter_patches|Frontmatter-патчи]]
-- [[rss-feeds|RSS-ленты]]
-- [[oauth|OAuth]]
-- [[youtube_embed|YouTube]]
+### Монетизация
 
-**Дополнительно**
-- [[multidomains|Мультидомены]]
-- [[multilingual|Мультиязычность]]
-- [[search|Как работает поиск]]
-- [[seo|SEO]]
-- [[Бекапы]]
-- [[cli|CLI]]
-- [[releases|Релизы]]
+- [[ru/user/advanced|Платный доступ]]
 
-**Примеры**
-- [[use-cases|Все примеры]]
-- [[digital-garden|Цифровой сад]]
-- [[Пример. Ютубер]]
-- [[Пример. Курсы]]
-- [[Пример. AI консультант]]
-- [[Пример. Telegram канал]]
-- [[Пример. Вики сообщества]]
-- [[Пример. Документация проекта]]
-- [[Пример. Корпоративная база]]
-- [[Пример. Книга без оглавления]]
+### Шаблоны
+
+- [[ru/user/default-template|Дефолтный шаблон]]
+- [[ru/user/templates|Основы]]
+- [[ru/user/templates-advanced|API и запросы]]
+- [[ru/user/templates-best-practices|Лучшие практики]]
+
+### Автоматизация
+
+- [[ru/user/mcp|MCP-сервер]]
+- [[ru/user/change_webhooks|Вебхуки при изменении]]
+- [[ru/user/cron_webhooks|Вебхуки по расписанию]]
+- [[ru/user/frontmatter_patches|Frontmatter-патчи]]
+- [[ru/user/rss-feeds|RSS-ленты]]
+- [[ru/user/oauth|OAuth]]
+- [[ru/user/youtube_embed|YouTube]]
+
+### Дополнительно
+
+- [[ru/typography|Типографика и Markdown]]
+- [[ru/user/multidomains|Мультидомены]]
+- [[ru/user/multilingual|Мультиязычность]]
+- [[ru/user/search|Как работает поиск]]
+- [[ru/user/seo|SEO]]
+- [[ru/user/Бекапы]]
+- [[ru/user/cli|CLI]]
+- [[ru/user/releases|Релизы]]
+
+### Примеры
+
+- [[ru/user/use-cases|Все примеры]]
+- [[ru/user/digital-garden|Цифровой сад]]
+- [[ru/user/Пример. Ютубер]]
+- [[ru/user/Пример. Курсы]]
+- [[ru/user/Пример. AI консультант]]
+- [[ru/user/Пример. Telegram канал]]
+- [[ru/user/Пример. Вики сообщества]]
+- [[ru/user/Пример. Документация проекта]]
+- [[ru/user/Пример. Корпоративная база]]
+- [[ru/user/Пример. Книга без оглавления]]

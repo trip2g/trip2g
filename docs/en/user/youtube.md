@@ -1,7 +1,6 @@
 ---
 title: Embedding YouTube Videos
 free: true
-slug: youtube
 lang_redirect: "[[ru/user/youtube_embed]]"
 ---
 

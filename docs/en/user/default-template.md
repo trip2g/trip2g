@@ -1,7 +1,6 @@
 ---
 title: Default Template
 free: true
-slug: default-template
 lang_redirect: "[[ru/user/default-template]]"
 ---
 
@@ -237,7 +236,6 @@ A typical blog index page might look like:
 ```yaml
 ---
 title: Blog
-slug: blog
 content:
   - magazine
 magazine_include_files: "blog/**/*.md"
@@ -258,7 +256,6 @@ Then each blog post:
 ```yaml
 ---
 title: My First Post
-slug: first-post
 published: true
 featured_priority: 100
 description: A quick overview of this post
@@ -291,6 +288,8 @@ title: Docs Navigation
 
 Every page will auto-load this sidebar (unless you explicitly set `left_sidebar: false` in a note's frontmatter).
 
+Use `###` (h3) headings for section group labels, not bold text (`**text**`). The sidebar UI renders `###` headings as proper section labels; bold text does not receive the same visual treatment.
+
 ### Using images in header and footer
 
 **Header logo:**
@@ -315,7 +314,6 @@ Images in footer notes are rendered normally as part of the content.
 ```yaml
 ---
 title: Home
-slug: ""
 content:
   - self
   - magazine
@@ -344,7 +342,6 @@ featured_on_home: true
 ```yaml
 ---
 title: Documentation
-slug: docs
 content:
   - self
 left_sidebar:
@@ -360,7 +357,6 @@ right_sidebar:
 ```yaml
 ---
 title: Blog
-slug: blog
 content:
   - magazine
 magazine_include_files: "blog/**/*.md"

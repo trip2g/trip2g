@@ -1,7 +1,6 @@
 ---
 title: MCP Server
 free: true
-slug: mcp
 lang_redirect: "[[ru/user/mcp]]"
 ---
 

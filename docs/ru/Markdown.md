@@ -142,7 +142,6 @@ Frontmatter — блок YAML в самом начале Markdown-файла, о
 ```yaml
 ---
 title: "Моя заметка"
-slug: my-note
 free: true
 ---
 ```

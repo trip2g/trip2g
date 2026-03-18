@@ -1,6 +1,5 @@
 ---
 title: "Digital Sovereignty"
-slug: digital-sovereignty
 order: 6
 free: true
 lang_redirect: "[[ru/thoughts/digital-sovereignty]]"

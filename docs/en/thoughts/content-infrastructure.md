@@ -1,6 +1,5 @@
 ---
 title: Content Infrastructure for Human-AI Workflows
-slug: content-infrastructure
 order: 11
 layout: trip2g/content-first
 free: true
