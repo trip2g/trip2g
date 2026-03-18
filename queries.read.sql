@@ -1126,6 +1126,25 @@ select * from note_version_embeddings where version_id = ?;
 -- name: GetNoteVersionEmbeddingsByVersionIDs :many
 select * from note_version_embeddings where version_id in (sqlc.slice('version_ids'));
 
+-- name: GetNoteVersionChunks :many
+select * from note_version_chunks where version_id = ? order by chunk_index;
+
+-- name: GetAllLatestNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id and np.version_count = nv.version
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and np.hidden_by is null;
+
+-- name: GetAllLiveNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id
+join release_note_versions rnv on nv.id = rnv.note_version_id
+join releases r on rnv.release_id = r.id
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and r.is_live = true;
+
 -- name: GetActiveGoogleOAuthCredentials :one
 select * from google_oauth_credentials where active = true limit 1;
 

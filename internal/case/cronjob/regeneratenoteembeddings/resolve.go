@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 )
 
@@ -62,7 +63,7 @@ func Resolve(ctx context.Context, env Env) (*Result, error) {
 
 	// Check each note and enqueue if needed
 	for _, note := range noteViews.List {
-		currentHash := sha256.Sum256([]byte(note.Title + string(note.Content)))
+		currentHash := sha256.Sum256([]byte(note.Title + mdchunk.StripFrontmatter(string(note.Content))))
 
 		existingHash, hasEmbedding := embeddingHashes[note.VersionID]
 		if hasEmbedding && bytesEqual(existingHash, currentHash[:]) {

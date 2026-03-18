@@ -1,3 +1,16 @@
+-- name: UpsertNoteVersionChunk :exec
+insert into note_version_chunks (version_id, chunk_index, content, embedding, model_id, content_hash, tokens)
+values (?, ?, ?, ?, ?, ?, ?)
+on conflict(version_id, chunk_index) do update set
+    content      = excluded.content,
+    embedding    = excluded.embedding,
+    model_id     = excluded.model_id,
+    content_hash = excluded.content_hash,
+    tokens       = excluded.tokens;
+
+-- name: DeleteNoteVersionChunksBeyond :exec
+delete from note_version_chunks where version_id = ? and chunk_index > ?;
+
 -- name: InsertNotePath :one
 insert into note_paths (value, value_hash, latest_content_hash)
 values (?, ?, ?)

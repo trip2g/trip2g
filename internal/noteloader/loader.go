@@ -3,9 +3,7 @@ package noteloader
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
-	"math"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -32,6 +30,15 @@ type RawNote struct {
 	Embedding []byte // raw embedding bytes, converted to []float32 later
 }
 
+// RawNoteChunk is a chunk row as returned by the DB query (Embedding as raw bytes).
+type RawNoteChunk struct {
+	VersionID  int64
+	ChunkIndex int64
+	Content    string
+	Embedding  []byte
+	Path       string
+}
+
 type RawAsset struct {
 	VersionID int64
 	Path      string
@@ -43,6 +50,7 @@ type RawAsset struct {
 type Env interface {
 	RawNotes(ctx context.Context) ([]RawNote, error)
 	RawAssets(ctx context.Context) ([]RawAsset, error)
+	RawNoteChunks(ctx context.Context) ([]RawNoteChunk, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetPath(asset db.NoteAsset) string
@@ -66,6 +74,8 @@ type Loader struct {
 
 	searchIndex   bleve.Index
 	contentHashes map[int64][32]byte // PathID -> content hash for incremental indexing
+
+	chunks []model.NoteChunk // per-chunk embeddings for vector search
 
 	version            string
 	config             mdloader.Config
@@ -94,7 +104,7 @@ type LoadOptions struct {
 	ForceRefreshURLs bool // bypass URL cache, regenerate all presigned URLs
 }
 
-//nolint:gocognit // complex loading logic with multiple data sources
+//nolint:gocognit,funlen // complex loading logic with multiple data sources
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	// Load frontmatter patches from database before loading notes
 	patches, err := l.env.LoadFrontmatterPatches(ctx)
@@ -244,6 +254,13 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	l.assignEmbeddings(nvs, embeddingMap)
 
+	chunks, err := l.loadChunks(ctx)
+	if err != nil {
+		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
+		l.log.Warn("failed to load note chunks", "err", err)
+		chunks = nil
+	}
+
 	err = l.generateSitemap(nvs)
 	if err != nil {
 		return err
@@ -255,6 +272,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	l.nvs = nvs
 	l.searchIndex = searchIndex
 	l.layouts = layouts
+	l.chunks = chunks
 	l.Unlock()
 
 	return nil
@@ -373,7 +391,7 @@ func (l *Loader) assignEmbeddings(nvs *model.NoteViews, embeddingMap map[int64][
 	count := 0
 	for _, nv := range nvs.List {
 		if rawEmb, ok := embeddingMap[nv.VersionID]; ok {
-			nv.Embedding = bytesToFloat32Slice(rawEmb)
+			nv.Embedding = model.BytesToFloat32Slice(rawEmb)
 			count++
 		}
 	}
@@ -409,6 +427,39 @@ func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
 	return nil
 }
 
+// NoteChunks returns the in-memory chunk list for vector search.
+func (l *Loader) NoteChunks() []model.NoteChunk {
+	l.Lock()
+	defer l.Unlock()
+	return l.chunks
+}
+
+// loadChunks fetches all chunk rows from the DB via the Env and converts them
+// to model.NoteChunk (deserializing raw float32 LE bytes into []float32).
+func (l *Loader) loadChunks(ctx context.Context) ([]model.NoteChunk, error) {
+	rawChunks, err := l.env.RawNoteChunks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	chunks := make([]model.NoteChunk, 0, len(rawChunks))
+	for _, rc := range rawChunks {
+		if len(rc.Embedding) == 0 {
+			continue
+		}
+		chunks = append(chunks, model.NoteChunk{
+			VersionID:  rc.VersionID,
+			ChunkIndex: int(rc.ChunkIndex),
+			Content:    rc.Content,
+			Embedding:  model.BytesToFloat32Slice(rc.Embedding),
+			NotePath:   rc.Path,
+		})
+	}
+
+	l.log.Debug("chunks loaded", "count", len(chunks))
+	return chunks, nil
+}
+
 // patchListChanged reports whether the new patch list differs from the old one
 // by comparing lengths, IDs, and compiled source of each patch.
 func patchListChanged(old, newPatches []frontmatterpatch.CompiledPatch) bool {
@@ -421,16 +472,4 @@ func patchListChanged(old, newPatches []frontmatterpatch.CompiledPatch) bool {
 		}
 	}
 	return false
-}
-
-// bytesToFloat32Slice converts []byte back to []float32.
-func bytesToFloat32Slice(data []byte) []float32 {
-	if len(data) == 0 {
-		return nil
-	}
-	floats := make([]float32, len(data)/4)
-	for i := range floats {
-		floats[i] = math.Float32frombits(binary.LittleEndian.Uint32(data[i*4:]))
-	}
-	return floats
 }

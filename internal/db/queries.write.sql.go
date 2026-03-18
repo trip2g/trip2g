@@ -319,6 +319,20 @@ func (q *WriteQueries) DeleteNoteAsset(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteNoteVersionChunksBeyond = `-- name: DeleteNoteVersionChunksBeyond :exec
+delete from note_version_chunks where version_id = ? and chunk_index > ?
+`
+
+type DeleteNoteVersionChunksBeyondParams struct {
+	VersionID  int64 `json:"version_id"`
+	ChunkIndex int64 `json:"chunk_index"`
+}
+
+func (q *WriteQueries) DeleteNoteVersionChunksBeyond(ctx context.Context, arg DeleteNoteVersionChunksBeyondParams) error {
+	_, err := q.db.ExecContext(ctx, deleteNoteVersionChunksBeyond, arg.VersionID, arg.ChunkIndex)
+	return err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -3768,6 +3782,40 @@ func (q *WriteQueries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNot
 	return err
 }
 
+const upsertNoteVersionChunk = `-- name: UpsertNoteVersionChunk :exec
+insert into note_version_chunks (version_id, chunk_index, content, embedding, model_id, content_hash, tokens)
+values (?, ?, ?, ?, ?, ?, ?)
+on conflict(version_id, chunk_index) do update set
+    content      = excluded.content,
+    embedding    = excluded.embedding,
+    model_id     = excluded.model_id,
+    content_hash = excluded.content_hash,
+    tokens       = excluded.tokens
+`
+
+type UpsertNoteVersionChunkParams struct {
+	VersionID   int64  `json:"version_id"`
+	ChunkIndex  int64  `json:"chunk_index"`
+	Content     string `json:"content"`
+	Embedding   []byte `json:"embedding"`
+	ModelID     *int64 `json:"model_id"`
+	ContentHash []byte `json:"content_hash"`
+	Tokens      *int64 `json:"tokens"`
+}
+
+func (q *WriteQueries) UpsertNoteVersionChunk(ctx context.Context, arg UpsertNoteVersionChunkParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNoteVersionChunk,
+		arg.VersionID,
+		arg.ChunkIndex,
+		arg.Content,
+		arg.Embedding,
+		arg.ModelID,
+		arg.ContentHash,
+		arg.Tokens,
+	)
+	return err
+}
+
 const upsertNoteVersionEmbedding = `-- name: UpsertNoteVersionEmbedding :exec
 insert into note_version_embeddings (version_id, embedding, model_id, content_hash, tokens)
 values (?, ?, ?, ?, ?)
@@ -3984,11 +4032,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

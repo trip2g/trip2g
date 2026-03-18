@@ -1351,6 +1351,98 @@ func (q *Queries) GetActiveGoogleOAuthCredentials(ctx context.Context) (GoogleOa
 	return i, err
 }
 
+const getAllLatestNoteChunksWithEmbeddings = `-- name: GetAllLatestNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id and np.version_count = nv.version
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and np.hidden_by is null
+`
+
+type GetAllLatestNoteChunksWithEmbeddingsRow struct {
+	VersionID  int64  `json:"version_id"`
+	ChunkIndex int64  `json:"chunk_index"`
+	Content    string `json:"content"`
+	Embedding  []byte `json:"embedding"`
+	Path       string `json:"path"`
+}
+
+func (q *Queries) GetAllLatestNoteChunksWithEmbeddings(ctx context.Context) ([]GetAllLatestNoteChunksWithEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllLatestNoteChunksWithEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllLatestNoteChunksWithEmbeddingsRow
+	for rows.Next() {
+		var i GetAllLatestNoteChunksWithEmbeddingsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllLiveNoteChunksWithEmbeddings = `-- name: GetAllLiveNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id
+join release_note_versions rnv on nv.id = rnv.note_version_id
+join releases r on rnv.release_id = r.id
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and r.is_live = true
+`
+
+type GetAllLiveNoteChunksWithEmbeddingsRow struct {
+	VersionID  int64  `json:"version_id"`
+	ChunkIndex int64  `json:"chunk_index"`
+	Content    string `json:"content"`
+	Embedding  []byte `json:"embedding"`
+	Path       string `json:"path"`
+}
+
+func (q *Queries) GetAllLiveNoteChunksWithEmbeddings(ctx context.Context) ([]GetAllLiveNoteChunksWithEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllLiveNoteChunksWithEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllLiveNoteChunksWithEmbeddingsRow
+	for rows.Next() {
+		var i GetAllLiveNoteChunksWithEmbeddingsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getBoostyMemberByEmail = `-- name: GetBoostyMemberByEmail :one
 select id, credentials_id, boosty_id, created_at, missed_at, email, status, data, current_tier_id, user_id from boosty_members
 where email = ? and status = 'active'
@@ -1636,6 +1728,43 @@ func (q *Queries) GetLatestConfigString(ctx context.Context, valueID string) (Ge
 		&i.Value,
 	)
 	return i, err
+}
+
+const getNoteVersionChunks = `-- name: GetNoteVersionChunks :many
+select id, version_id, chunk_index, content, embedding, model_id, content_hash, tokens, created_at from note_version_chunks where version_id = ? order by chunk_index
+`
+
+func (q *Queries) GetNoteVersionChunks(ctx context.Context, versionID int64) ([]NoteVersionChunk, error) {
+	rows, err := q.db.QueryContext(ctx, getNoteVersionChunks, versionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersionChunk
+	for rows.Next() {
+		var i NoteVersionChunk
+		if err := rows.Scan(
+			&i.ID,
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.ModelID,
+			&i.ContentHash,
+			&i.Tokens,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getNoteVersionEmbedding = `-- name: GetNoteVersionEmbedding :one

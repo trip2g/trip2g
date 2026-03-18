@@ -173,7 +173,7 @@ type NoteView struct {
 
 	Free          bool // without the paywall
 	ExcludeSearch bool // search: false in frontmatter
-	Redirect *string
+	Redirect      *string
 
 	Description *string // meta description for SEO
 
@@ -1268,4 +1268,3 @@ func (n *NoteView) IsSystem() bool {
 	p := filepath.ToSlash(n.Path)
 	return len(p) > 0 && p[0] == '_' || strings.Contains(p, "/_")
 }
-

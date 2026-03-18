@@ -361,6 +361,18 @@ type NoteVersionAsset struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type NoteVersionChunk struct {
+	ID          int64     `json:"id"`
+	VersionID   int64     `json:"version_id"`
+	ChunkIndex  int64     `json:"chunk_index"`
+	Content     string    `json:"content"`
+	Embedding   []byte    `json:"embedding"`
+	ModelID     *int64    `json:"model_id"`
+	ContentHash []byte    `json:"content_hash"`
+	Tokens      *int64    `json:"tokens"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type NoteVersionEmbedding struct {
 	VersionID   int64     `json:"version_id"`
 	Embedding   []byte    `json:"embedding"`

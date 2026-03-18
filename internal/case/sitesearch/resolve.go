@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"trip2g/internal/features"
 	"trip2g/internal/graph/model"
@@ -28,6 +29,8 @@ type Env interface {
 	OpenAI() *openai.Client
 	LatestNoteViews() *appmodel.NoteViews
 	LiveNoteViews() *appmodel.NoteViews
+	LatestNoteChunks() []appmodel.NoteChunk
+	LiveNoteChunks() []appmodel.NoteChunk
 }
 
 // rrfK is the RRF rank constant. Higher values reduce the impact of top ranks.
@@ -83,9 +86,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
-			// if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
-			// 	continue
-			// }
+			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
+				continue
+			}
 
 			canRead, readErr := env.CanReadNote(ctx, res.NoteView)
 			if readErr != nil {
@@ -114,13 +117,35 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 }
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
-	// Generate query embedding
 	embedding, err := env.OpenAI().CreateEmbedding(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}
 
-	// Get note views
+	var chunks []appmodel.NoteChunk
+	if useLatest {
+		chunks = env.LatestNoteChunks()
+	} else {
+		chunks = env.LiveNoteChunks()
+	}
+
+	type scored struct {
+		path  string
+		chunk appmodel.NoteChunk
+		sim   float64
+	}
+
+	var candidates []scored
+	for _, c := range chunks {
+		sim := cosineSimilarity(embedding.Vector, c.Embedding)
+		if sim < vectorMinSimilarity {
+			continue
+		}
+		candidates = append(candidates, scored{c.NotePath, c, sim})
+	}
+
+	sort.Slice(candidates, func(i, j int) bool { return candidates[i].sim > candidates[j].sim })
+
 	var noteViews *appmodel.NoteViews
 	if useLatest {
 		noteViews = env.LatestNoteViews()
@@ -128,48 +153,49 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		noteViews = env.LiveNoteViews()
 	}
 
-	// Calculate similarity for all notes with embeddings
-	type scored struct {
-		note  *appmodel.NoteView
-		score float64
-	}
-
-	var scores []scored
-	for _, note := range noteViews.List {
-		if len(note.Embedding) == 0 {
+	seen := map[string]bool{}
+	var results []appmodel.SearchResult
+	for _, c := range candidates {
+		if seen[c.path] {
 			continue
 		}
-
-		similarity := cosineSimilarity(embedding.Vector, note.Embedding)
-		if similarity < vectorMinSimilarity {
+		seen[c.path] = true
+		note := noteViews.Map[c.path]
+		if note == nil {
 			continue
 		}
-
-		scores = append(scores, scored{note: note, score: similarity})
-	}
-
-	// Sort by similarity (descending)
-	sort.Slice(scores, func(i, j int) bool {
-		return scores[i].score > scores[j].score
-	})
-
-	// Take top 30 results (more candidates improve RRF quality)
-	limit := 30
-	if len(scores) < limit {
-		limit = len(scores)
-	}
-
-	results := make([]appmodel.SearchResult, 0, limit)
-	for i := range limit {
-		s := scores[i]
+		title := note.Title
 		results = append(results, appmodel.SearchResult{
-			NoteView: s.note,
-			URL:      s.note.Permalink,
-			Score:    s.score,
+			NoteView:           note,
+			URL:                note.Permalink,
+			Score:              c.sim,
+			HighlightedTitle:   &title,
+			HighlightedContent: []string{snippetFromChunk(c.chunk.Content, 200)},
 		})
+		if len(results) >= 30 {
+			break
+		}
 	}
 
 	return results, nil
+}
+
+// snippetFromChunk extracts a display snippet from chunk content.
+// Chunks have the format "{title}\n\n{body}", so we skip the title prefix.
+func snippetFromChunk(content string, maxLen int) string {
+	if idx := strings.Index(content, "\n\n"); idx >= 0 {
+		content = content[idx+2:]
+	}
+	content = trimWhitespace(content)
+	runes := []rune(content)
+	if len(runes) > maxLen {
+		content = string(runes[:maxLen])
+		if lastSpace := lastIndexByte(content, ' '); lastSpace > maxLen/2 {
+			content = content[:lastSpace]
+		}
+		content += "..."
+	}
+	return content
 }
 
 // mergeResults combines text and vector search results using Reciprocal Rank Fusion (RRF).
@@ -204,10 +230,12 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 			// Note exists in text results too — accumulate score, keep text highlights
 			e.rrfScore += score
 		} else {
-			// Vector-only result — generate snippet for display
-			title := r.NoteView.Title
-			r.HighlightedTitle = &title
-			r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
+			// Vector-only result — use chunk snippet if pre-set, else fall back to note snippet
+			if len(r.HighlightedContent) == 0 {
+				title := r.NoteView.Title
+				r.HighlightedTitle = &title
+				r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
+			}
 			resultMap[r.URL] = &entry{result: r, rrfScore: score}
 		}
 	}
@@ -246,9 +274,9 @@ func generateSnippet(note *appmodel.NoteView, maxLen int) string {
 
 	// Trim and limit length
 	text = trimWhitespace(text)
-	if len(text) > maxLen {
-		// Try to break at word boundary
-		text = text[:maxLen]
+	runes := []rune(text)
+	if len(runes) > maxLen {
+		text = string(runes[:maxLen])
 		if lastSpace := lastIndexByte(text, ' '); lastSpace > maxLen/2 {
 			text = text[:lastSpace]
 		}

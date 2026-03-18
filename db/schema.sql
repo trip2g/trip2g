@@ -537,6 +537,19 @@ CREATE TABLE note_version_embeddings (
     tokens integer not null,
     created_at datetime not null default (datetime('now'))
 );
+CREATE TABLE note_version_chunks (
+    id           integer primary key autoincrement,
+    version_id   integer not null references note_versions(id) on delete cascade,
+    chunk_index  integer not null,
+    content      text    not null,
+    embedding    blob,
+    model_id     integer,
+    content_hash blob,
+    tokens       integer,
+    created_at   datetime not null default (datetime('now')),
+    unique(version_id, chunk_index)
+);
+CREATE INDEX note_version_chunks_version_id ON note_version_chunks(version_id);
 CREATE TABLE google_oauth_credentials (
     id integer primary key,
     name text not null,

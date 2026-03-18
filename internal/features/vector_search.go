@@ -61,7 +61,8 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 type VectorSearchConfig struct {
 	Enabled   bool           `json:"enabled"`
 	ModelName string         `json:"model"`
-	Model     EmbeddingModel `json:"-"` // Parsed from ModelName
+	Model     EmbeddingModel `json:"-"`        // Parsed from ModelName
+	BaseURL   string         `json:"base_url"` // optional; empty = OpenAI default; set to Ollama base URL for local embeddings
 }
 
 // Validate validates vector search configuration.

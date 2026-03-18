@@ -33,7 +33,7 @@ type Ctx struct {
 	Note  *templateviews.Note
 	Notes *templateviews.NVS
 
-	Title   string
+	Title     string
 	JSURLs    []string
 	CSSURLs   []string
 	InlineCSS string
@@ -53,8 +53,8 @@ type Ctx struct {
 	OnboardingMode bool
 	NotFoundMode   bool
 	PaywallError   *PaywallError
-	UserToken *usertoken.Data
-	Lang      string
+	UserToken      *usertoken.Data
+	Lang           string
 }
 
 // noteExists returns true if a note with the given wikilink name exists in ctx.Notes.
