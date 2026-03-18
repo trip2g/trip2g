@@ -1,7 +1,6 @@
 ---
 title: "Хостинг"
 slug: hosting
-lang_redirect: "[[en/user/hosting]]"
 free: true
 ---
 

@@ -1,7 +1,6 @@
 ---
 title: "Как работает поиск"
 slug: search
-lang_redirect: "[[en/user/search]]"
 free: true
 ---
 

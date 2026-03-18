@@ -2,6 +2,7 @@
 title: Monetization
 free: true
 home_position: 6
+lang_redirect: "[[ru/user/monetization]]"
 ---
 
 Restrict notes to paying subscribers by leaving `free: true` off.
@@ -14,15 +15,15 @@ This means you can publish two tiers of content in the same vault: public notes 
 
 ### Patreon integration
 
-<!-- TODO: verify with product — exact Patreon setup steps -->
-
 Connecting Patreon allows your existing Patreon subscribers to authenticate on your site and access subscriber-only notes automatically. Once configured, access is granted based on active subscription status.
 
 ### Boosty integration
 
-<!-- TODO: verify with product — exact Boosty setup steps -->
-
 Boosty integration works similarly to Patreon: subscribers authenticate via Boosty and receive access to gated content based on their subscription tier.
+
+### Crypto payments
+
+Accept cryptocurrency payments directly. Once a reader pays, they receive access to gated notes without any third-party subscription platform.
 
 ### Telegram group access
 
@@ -36,8 +37,6 @@ You can gate content by membership in a Telegram group instead of (or in additio
 This lets you monetize through a paid Telegram group without a third-party payment platform.
 
 ### Paywall preview
-
-<!-- TODO: verify with product — confirm whether partial content preview is supported and how many characters are shown -->
 
 Visitors may see a preview of the note before being asked to authenticate. The rest of the content is hidden until they sign in with an active subscription.
 

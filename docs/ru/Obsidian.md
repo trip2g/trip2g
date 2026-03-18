@@ -1,7 +1,6 @@
 ---
 title: Obsidian
 free: true
-lang_redirect: "[[Obsidian]]"
 ---
 
 ![[Obsidian.png]]
