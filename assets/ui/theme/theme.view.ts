@@ -5,6 +5,7 @@ namespace $.$$ {
 
 			const dark = !this.$.$mol_lights()
 			document.documentElement.classList.toggle('dark', dark)
+			document.documentElement.classList.toggle('light', !dark)
 			document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
 		}
 	}
