@@ -33,6 +33,6 @@ jobs:
         run: |
           node trip2g-sync.mjs \
             --folder ./docs \
-            --api-url https://internaldev.trip2g.com/graphql \
+            --api-url https://trip2g.com/graphql \
             --conflict-resolution local \
             --verbose
