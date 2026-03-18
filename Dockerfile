@@ -47,11 +47,12 @@ COPY --from=frontend /mam/trip2g ./assets/ui
 # Build for target architecture
 # TARGETARCH is automatically set by Docker buildx (amd64, arm64, etc)
 ARG TARGETARCH
+ARG GIT_COMMIT=dev
 RUN go generate ./onboarding-vault && \
     GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
     go build \
     -o /trip2g \
-    -ldflags="-s -w" \
+    -ldflags="-s -w -X main.GitCommit=${GIT_COMMIT}" \
     ./cmd/server
 
 # Build final image
