@@ -989,6 +989,15 @@ func (a *app) UserCSSURLs() []string {
 	return []string{a.assetURL("/assets/defaulttemplate.css")}
 }
 
+func (a *app) UserInlineCSS() string {
+	b, err := fs.ReadFile(assets.FS, "defaulttemplate.css")
+	if err != nil {
+		a.log.Error("failed to read defaulttemplate.css", "error", err)
+		return "/* failed to load CSS: " + err.Error() + " */"
+	}
+	return string(b)
+}
+
 func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.NoteView, error) {
 	wrapper := makeSingleNoteLoaderWrapper(a, id)
 	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)

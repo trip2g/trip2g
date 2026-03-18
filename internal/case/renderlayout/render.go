@@ -38,6 +38,7 @@ type Params struct {
 type Env interface {
 	UserJSURLs() []string
 	UserCSSURLs() []string
+	UserInlineCSS() string
 	IsDevMode() bool
 	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 }

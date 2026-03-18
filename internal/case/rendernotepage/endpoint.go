@@ -406,6 +406,7 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 
 	jsURLs := layoutParams.JSURLs
 	cssURLs := layoutParams.CSSURLs
+	inlineCSS := ""
 	devMode := "false"
 
 	if ok {
@@ -413,7 +414,7 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			jsURLs = rlEnv.UserJSURLs()
 		}
 		if len(cssURLs) == 0 {
-			cssURLs = rlEnv.UserCSSURLs()
+			inlineCSS = rlEnv.UserInlineCSS()
 		}
 		if rlEnv.IsDevMode() {
 			devMode = "true"
@@ -448,6 +449,7 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 		Title:           layoutParams.Title,
 		JSURLs:          jsURLs,
 		CSSURLs:         cssURLs,
+		InlineCSS:       inlineCSS,
 		DevMode:         devMode,
 		MetaDescription: layoutParams.MetaDescription,
 		MetaRobots:      layoutParams.MetaRobots,

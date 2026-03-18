@@ -34,9 +34,10 @@ type Ctx struct {
 	Notes *templateviews.NVS
 
 	Title   string
-	JSURLs  []string
-	CSSURLs []string
-	DevMode string
+	JSURLs    []string
+	CSSURLs   []string
+	InlineCSS string
+	DevMode   string
 
 	MetaDescription *string
 	MetaRobots      string
