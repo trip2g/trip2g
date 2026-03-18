@@ -55,12 +55,24 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	// Check if embedding already exists with same content hash
 	existing, err := env.GetNoteVersionEmbedding(ctx, params.VersionID)
 	if err == nil && bytes.Equal(existing.ContentHash, contentHash[:]) {
-		env.Logger().Debug("embedding already up to date", "version_id", params.VersionID)
-		return nil
+		// Hash matches — skip whole-note embedding regeneration.
+		// But still check if chunk embeddings are missing (e.g. first deploy after chunk feature).
+		if noteView.ExcludeSearch || noteView.IsSystem() {
+			env.Logger().Debug("embedding already up to date, skipping", "version_id", params.VersionID)
+			return nil
+		}
+		existingChunks, chunkErr := env.GetNoteVersionChunks(ctx, params.VersionID)
+		if chunkErr == nil && len(existingChunks) > 0 {
+			env.Logger().Debug("embedding and chunks already up to date, skipping", "version_id", params.VersionID)
+			return nil
+		}
+		env.Logger().Debug("embedding up to date but chunks missing, generating", "version_id", params.VersionID, "title", noteView.Title)
+		return generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("failed to check existing embedding: %w", err)
 	}
+	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
 	// Prepare text for embedding (title + stripped content)
 	text := noteView.Title + "\n\n" + strippedContent
@@ -105,6 +117,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 // upserts them, and deletes any orphan chunks from previous versions.
 func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, title string, rawContent []byte) error {
 	chunks := mdchunk.Split(title, rawContent)
+	env.Logger().Debug("chunk split done", "version_id", versionID, "title", title, "total_chunks", len(chunks))
 
 	// Load existing chunk hashes to skip unchanged chunks.
 	existingChunks, err := env.GetNoteVersionChunks(ctx, versionID)
@@ -130,6 +143,8 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 		toEmbed = append(toEmbed, pendingChunk{chunk: c, hash: h})
 	}
 
+	env.Logger().Debug("chunks to embed", "version_id", versionID, "to_embed", len(toEmbed), "skipped", len(chunks)-len(toEmbed))
+
 	if len(toEmbed) > 0 {
 		texts := make([]string, len(toEmbed))
 		for i, pe := range toEmbed {
@@ -143,6 +158,11 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 
 		modelID := int64(env.Features().VectorSearch.Model)
 		for i, pe := range toEmbed {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			tokens := int64(results[i].Tokens)
 			if upsertErr := env.UpsertNoteVersionChunk(ctx, db.UpsertNoteVersionChunkParams{
 				VersionID:   versionID,
@@ -156,6 +176,8 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 				return fmt.Errorf("failed to upsert chunk %d: %w", pe.chunk.Index, upsertErr)
 			}
 		}
+
+		env.Logger().Debug("chunk embeddings saved", "version_id", versionID, "saved", len(toEmbed))
 	}
 
 	// Delete orphan chunks from a previous version that had more chunks.
