@@ -2,6 +2,7 @@
 free: true
 title: Шаблоны
 slug: templates
+home_position: 994
 ---
 
 Шаблон — HTML-файл, который определяет внешний вид страницы. Один файл в папке `_layouts/` — и готово.
