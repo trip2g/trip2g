@@ -6,7 +6,7 @@
 <html{% if ctx.HTMLLang != "" %} lang="{%s= ctx.HTMLLang %}"{% endif %}>
 <head>
 <meta charset="UTF-8">
-<script>try{if(localStorage.getItem('$mol_lights')!=='true')document.documentElement.classList.add('dark')}catch(e){}</script>
+<script>try{var d=localStorage.getItem('$mol_lights')!=='true',r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.setAttribute('data-theme',d?'dark':'light')}catch(e){}</script>
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
