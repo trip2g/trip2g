@@ -524,6 +524,9 @@ func (a *app) setFileStorageExpiringCallback() {
 }
 
 func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
+	if a.gitAPI == nil {
+		return nil, nil
+	}
 	return a.gitAPI.ApplyChanges(ctx)
 }
 
@@ -1976,7 +1979,7 @@ func (a *app) prepareMiddlewares() []Middleware {
 			return a.handleDebugAPI(req.Req)
 		},
 		func(req *appreq.Request) bool {
-			return a.gitAPI.HandleRequest(req.Req)
+			return a.gitAPI != nil && a.gitAPI.HandleRequest(req.Req)
 		},
 		func(req *appreq.Request) bool {
 			return a.handleAdminAssets(req, req.Path)

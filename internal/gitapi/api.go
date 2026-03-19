@@ -76,11 +76,6 @@ func DefaultConfig() Config {
 }
 
 func New(ctx context.Context, config Config, env Env) (*API, error) {
-	err := os.MkdirAll(config.RepoPath, os.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create repo path: %w", err)
-	}
-
 	requiredBins := []string{
 		"git",
 		"git-upload-pack",
@@ -88,9 +83,15 @@ func New(ctx context.Context, config Config, env Env) (*API, error) {
 		"tar",
 	}
 
-	err = checkBins(requiredBins)
+	err := checkBins(requiredBins)
 	if err != nil {
-		return nil, err
+		env.Logger().Warn("git API disabled", "reason", err)
+		return nil, nil
+	}
+
+	err = os.MkdirAll(config.RepoPath, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repo path: %w", err)
 	}
 
 	api := API{
