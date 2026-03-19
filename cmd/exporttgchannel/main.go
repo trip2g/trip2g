@@ -11,6 +11,7 @@ import (
 
 func main() {
 	sessionPath := flag.String("session", defaultSessionPath(), "session file path")
+	timeOffset := flag.Duration("time-offset", 0, "correct system clock skew (e.g. +1h or -30m); use if auth hangs due to wrong system time")
 	flag.Usage = func() { printUsage() }
 	flag.Parse()
 
@@ -26,7 +27,7 @@ func main() {
 	var err error
 	switch args[0] {
 	case "auth":
-		err = runAuth(ctx, *sessionPath, args[1:])
+		err = runAuth(ctx, *sessionPath, *timeOffset, args[1:])
 	case "channels":
 		err = runChannels(ctx, *sessionPath, args[1:])
 	case "export":
@@ -81,8 +82,10 @@ COMMANDS
       telegram_import_allow_override: true
 
 GLOBAL FLAGS
-  --session FILE   path to session file
-                   (default: ~/.config/exporttgchannel/session.json)
+  --session FILE         path to session file
+                         (default: ~/.config/exporttgchannel/session.json)
+  --time-offset DURATION correct system clock skew, e.g. +1h or -30m
+                         (use if 'auth' hangs — symptom: wrong system time)
 
 ENVIRONMENT (read during 'auth')
   TELEGRAM_API_ID    integer API ID from https://my.telegram.org/apps

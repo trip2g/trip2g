@@ -9,18 +9,24 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-faster/errors"
+	tdclock "github.com/gotd/td/clock"
 	tdsession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 )
 
-func runAuth(ctx context.Context, sessionPath string, args []string) error {
+// stdin is a single shared reader so bufio doesn't lose buffered bytes between calls.
+var stdin = bufio.NewReader(os.Stdin)
+
+func runAuth(ctx context.Context, sessionPath string, timeOffset time.Duration, args []string) error {
 	fs := flag.NewFlagSet("auth", flag.ExitOnError)
+	debug := fs.Bool("debug", false, "enable gotd debug logging")
 	fs.Usage = func() {
-		fmt.Println("usage: exporttgchannel auth\n\nReads TELEGRAM_API_ID and TELEGRAM_API_HASH from environment,\nthen runs an interactive login flow and saves the session.")
+		fmt.Println("usage: exporttgchannel [--time-offset +1h] auth [--debug]\n\nReads TELEGRAM_API_ID and TELEGRAM_API_HASH from environment,\nthen runs an interactive login flow and saves the session.\n\nUse --time-offset if auth hangs with 'created too far in future' errors.")
 	}
 	_ = fs.Parse(args)
 
@@ -29,26 +35,36 @@ func runAuth(ctx context.Context, sessionPath string, args []string) error {
 		return err
 	}
 
+	var clk tdclock.Clock
+	if timeOffset != 0 {
+		fmt.Printf("Applying time offset: %+v\n", timeOffset)
+		clk = offsetClock{offset: timeOffset}
+	}
+
 	storage := &tdsession.StorageMemory{}
 	client := telegram.NewClient(apiID, apiHash, telegram.Options{
 		SessionStorage: storage,
+		Logger:         buildLogger(*debug),
+		Clock:          clk,
 	})
 
 	var phone string
 
+	fmt.Println("Connecting to Telegram...")
 	err = client.Run(ctx, func(ctx context.Context) error {
+		fmt.Println("Connected.")
+
 		status, statusErr := client.Auth().Status(ctx)
 		if statusErr == nil && status.Authorized {
 			self, selfErr := client.Self(ctx)
 			if selfErr == nil {
 				phone = self.Phone
-				fmt.Printf("already logged in as %s\n", displayName(self))
+				fmt.Printf("Already logged in as %s\n", displayName(self))
 				return nil
 			}
 		}
 
 		phone = readLine("Phone number (e.g. +79001234567): ")
-		phone = strings.TrimSpace(phone)
 		if phone == "" {
 			return errors.New("phone number is required")
 		}
@@ -79,7 +95,6 @@ func runAuth(ctx context.Context, sessionPath string, args []string) error {
 		}
 
 		code := readLine("Code: ")
-		code = strings.TrimSpace(code)
 		if code == "" {
 			return errors.New("code is required")
 		}
@@ -89,7 +104,7 @@ func runAuth(ctx context.Context, sessionPath string, args []string) error {
 			if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
 				fmt.Println("2FA required.")
 				pwd := readLine("2FA password: ")
-				if _, pwdErr := client.Auth().Password(ctx, strings.TrimSpace(pwd)); pwdErr != nil {
+				if _, pwdErr := client.Auth().Password(ctx, pwd); pwdErr != nil {
 					return fmt.Errorf("2FA: %w", pwdErr)
 				}
 			} else {
@@ -138,10 +153,10 @@ func getAPICredentials() (int, string, error) {
 	apiHash := os.Getenv("TELEGRAM_API_HASH")
 
 	if apiIDStr == "" {
-		apiIDStr = strings.TrimSpace(readLine("TELEGRAM_API_ID: "))
+		apiIDStr = readLine("TELEGRAM_API_ID: ")
 	}
 	if apiHash == "" {
-		apiHash = strings.TrimSpace(readLine("TELEGRAM_API_HASH: "))
+		apiHash = readLine("TELEGRAM_API_HASH: ")
 	}
 
 	apiID, err := strconv.Atoi(strings.TrimSpace(apiIDStr))
@@ -151,13 +166,12 @@ func getAPICredentials() (int, string, error) {
 	if apiHash == "" {
 		return 0, "", errors.New("TELEGRAM_API_HASH is required")
 	}
-	return apiID, apiHash, nil
+	return apiID, strings.TrimSpace(apiHash), nil
 }
 
 func readLine(prompt string) string {
 	fmt.Print(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	line, _ := reader.ReadString('\n')
+	line, _ := stdin.ReadString('\n')
 	return strings.TrimSpace(line)
 }
 
