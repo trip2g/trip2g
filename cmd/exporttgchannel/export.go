@@ -64,7 +64,7 @@ Output structure:
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	client := tgtd.NewClient(&cliEnv{}, 0, sess.APIID, sess.APIHash)
+	client := tgtd.NewClient(&cliEnv{}, 0, sess.APIID, sess.APIHash).WithClock(globalClock)
 
 	// Phase 1: fetch all messages via a single API session.
 	fmt.Println("Fetching messages...")

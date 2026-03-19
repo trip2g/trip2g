@@ -9,10 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
 	"github.com/go-faster/errors"
-	tdclock "github.com/gotd/td/clock"
 	tdsession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -22,7 +19,7 @@ import (
 // stdin is a single shared reader so bufio doesn't lose buffered bytes between calls.
 var stdin = bufio.NewReader(os.Stdin)
 
-func runAuth(ctx context.Context, sessionPath string, timeOffset time.Duration, args []string) error {
+func runAuth(ctx context.Context, sessionPath string, args []string) error {
 	fs := flag.NewFlagSet("auth", flag.ExitOnError)
 	debug := fs.Bool("debug", false, "enable gotd debug logging")
 	fs.Usage = func() {
@@ -35,17 +32,11 @@ func runAuth(ctx context.Context, sessionPath string, timeOffset time.Duration, 
 		return err
 	}
 
-	var clk tdclock.Clock
-	if timeOffset != 0 {
-		fmt.Printf("Applying time offset: %+v\n", timeOffset)
-		clk = offsetClock{offset: timeOffset}
-	}
-
 	storage := &tdsession.StorageMemory{}
 	client := telegram.NewClient(apiID, apiHash, telegram.Options{
 		SessionStorage: storage,
 		Logger:         buildLogger(*debug),
-		Clock:          clk,
+		Clock:          globalClock,
 	})
 
 	var phone string

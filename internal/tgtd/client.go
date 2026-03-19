@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gotd/td/clock"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/downloader"
@@ -147,6 +148,7 @@ type Client struct {
 	accountID int64
 	env       ClientEnv
 	log       logger.Logger
+	clock     clock.Clock // optional; nil = system clock
 }
 
 // NewClient creates a new Client.
@@ -157,6 +159,25 @@ func NewClient(env ClientEnv, accountID int64, apiID int, apiHash string) *Clien
 		accountID: accountID,
 		env:       env,
 		log:       logger.WithPrefix(env.Logger(), "tgtd:client:"),
+	}
+}
+
+// WithClock returns a copy of the client that uses clk for time.
+// Pass an offset clock to correct for system clock skew (MTProto requires
+// message timestamps to be within ~30 s of the server clock).
+func (c *Client) WithClock(clk clock.Clock) *Client {
+	cp := *c
+	cp.clock = clk
+	return &cp
+}
+
+// telegramOpts builds telegram.Options with the given session storage, applying
+// the logger and optional clock override from this client's configuration.
+func (c *Client) telegramOpts(storage *session.StorageMemory) telegram.Options {
+	return telegram.Options{
+		SessionStorage: storage,
+		Logger:         createGotdLogger(c.env.LogLevel()),
+		Clock:          c.clock, // nil is fine — gotd falls back to system clock
 	}
 }
 
@@ -221,10 +242,7 @@ func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo,
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var chats []ChatInfo
 
@@ -292,10 +310,7 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte, limit int)
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var dialogs []DialogInfo
 
@@ -394,10 +409,7 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var result *SendMessageResult
 
@@ -484,10 +496,7 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var result *SendMessageResult
 
@@ -559,10 +568,7 @@ func (c *Client) SendMediaGroup(ctx context.Context, sessionData []byte, params 
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var result *SendMessageResult
 
@@ -793,10 +799,7 @@ func (c *Client) EditMessage(ctx context.Context, sessionData []byte, params Edi
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
@@ -838,10 +841,7 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
@@ -907,10 +907,7 @@ func (c *Client) EditMessageCaption(ctx context.Context, sessionData []byte, par
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
@@ -960,10 +957,7 @@ func (c *Client) DeleteMessage(ctx context.Context, sessionData []byte, params D
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
@@ -1306,10 +1300,7 @@ func (c *Client) GetAppConfig(ctx context.Context, sessionData []byte) (*AppConf
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var result *AppConfig
 
@@ -1416,10 +1407,7 @@ func (c *Client) GetUserInfo(ctx context.Context, sessionData []byte) (*UserInfo
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	var result *UserInfo
 
@@ -1459,10 +1447,7 @@ func (c *Client) RunWithAPI(ctx context.Context, sessionData []byte, f APIFunc) 
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
-		SessionStorage: storage,
-		Logger:         createGotdLogger(c.env.LogLevel()),
-	})
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		return f(ctx, client.API())

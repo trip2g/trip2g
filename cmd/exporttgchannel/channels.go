@@ -26,7 +26,7 @@ func runChannels(ctx context.Context, sessionPath string, args []string) error {
 		return err
 	}
 
-	client := tgtd.NewClient(&cliEnv{}, 0, sess.APIID, sess.APIHash)
+	client := tgtd.NewClient(&cliEnv{}, 0, sess.APIID, sess.APIHash).WithClock(globalClock)
 
 	fmt.Println("Fetching dialogs...")
 	dialogs, err := client.ListDialogs(ctx, sessionData, 0)
