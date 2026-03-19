@@ -13,12 +13,12 @@ $trip2g_admin_telegramaccount_create_step0 $mol_view
 					name \API ID
 					bid <= api_id_bid \
 					Content <= api_id_control $mol_string
-						value? <=> api_id? \35561633
+						value? <=> api_id? \
 				<= ApiHash_field $mol_form_field
 					name \API Hash
 					bid <= api_hash_bid \
 					Content <= api_hash_control $mol_string
-						value? <=> api_hash? \28d5910127c3a4ac45ec4e0d884fe593
+						value? <=> api_hash? \
 				<= CreateAppLink $mol_link
 					external true
 					title \Manage Apps
