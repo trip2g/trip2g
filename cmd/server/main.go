@@ -2248,12 +2248,18 @@ func (a *app) startInternalServer() {
 	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
 
+	// Embedding debug endpoint — step-by-step pipeline: split → embed → JSON result.
+	// Only registered when vector search is enabled.
+	if a.openaiClient != nil {
+		mux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
+	}
+
 	server := &http.Server{
 		Addr:    a.config.InternalListenAddr,
 		Handler: mux,
 
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 2 * time.Minute, // allow for slow Ollama first-load
 	}
 
 	go func() {

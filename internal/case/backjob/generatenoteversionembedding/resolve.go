@@ -74,8 +74,9 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	}
 	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
-	// Prepare text for embedding (title + stripped content)
-	text := noteView.Title + "\n\n" + strippedContent
+	// Prepare text for embedding (title + stripped content, with model-specific passage prefix).
+	passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
+	text := passagePrefix + noteView.Title + "\n\n" + strippedContent
 
 	// Generate embedding
 	result, err := env.OpenAI().CreateEmbedding(ctx, text)
@@ -146,9 +147,10 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	env.Logger().Debug("chunks to embed", "version_id", versionID, "to_embed", len(toEmbed), "skipped", len(chunks)-len(toEmbed))
 
 	if len(toEmbed) > 0 {
+		passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
 		texts := make([]string, len(toEmbed))
 		for i, pe := range toEmbed {
-			texts[i] = pe.chunk.Content
+			texts[i] = passagePrefix + pe.chunk.Content
 		}
 
 		results, embErr := env.OpenAI().CreateEmbeddings(ctx, texts)

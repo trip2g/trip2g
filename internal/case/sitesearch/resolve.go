@@ -117,7 +117,8 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 }
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, query)
+	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
+	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}

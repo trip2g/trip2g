@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Ollama runs multilingual-e5-base for local embeddings (no OpenAI key needed).
+  # First start pulls the model (~280 MB) — subsequent starts reuse the volume cache.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: trip2g-test-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["ollama serve & sleep 5 && ollama pull multilingual-e5-base && wait"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags | grep -q multilingual-e5-base"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 120s
+
   app:
     build:
       context: .
@@ -24,6 +42,8 @@ services:
     container_name: trip2g-test-app
     depends_on:
       minio:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     ports:
       - "20081:20081"
@@ -38,7 +58,7 @@ services:
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      - 'FEATURES={"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "multilingual-e5-base", "base_url": "http://ollama:11434/v1"}}'
 
       # MinIO
       - MINIO_ENDPOINT=minio:29000
@@ -64,7 +84,7 @@ services:
       - RESEND_API_KEY=test-key
       - MAIL_FROM=test@example.com
 
-      # OpenAI (optional — passed through from host if set, enables vector search in tests)
+      # OpenAI key (optional — pass through if you need to switch back to text-embedding-3-small)
       - OPENAI_API_KEY
     volumes:
       - ./tmp/data:/data
@@ -78,3 +98,4 @@ services:
 
 volumes:
   test-data:
+  ollama-models:
