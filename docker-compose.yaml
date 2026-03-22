@@ -9,19 +9,19 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
 
-  # Ollama — local embedding model for vector search (no OpenAI key needed).
-  # First start pulls multilingual-e5-base (~280 MB), cached in ollama-models volume.
-  ollama:
-    image: ollama/ollama:latest
+  # Local embedding server — multilingual-e5-base via sentence-transformers.
+  # First start downloads the model (~1 GB), cached in embedding-models volume.
+  embedding:
+    build: ./embedding-server
     ports:
-      - "11434:11434"
+      - "11434:8000"
     volumes:
-      - ollama-models:/root/.ollama
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["ollama serve & sleep 5 && ollama pull multilingual-e5-base && wait"]
+      - embedding-models:/data
+    environment:
+      - MODEL_NAME=intfloat/multilingual-e5-base
 
 volumes:
-  ollama-models:
+  embedding-models:
 
   # lottie-converter:
   #   build: ./lottie-converter

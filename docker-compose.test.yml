@@ -17,23 +17,23 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ollama runs multilingual-e5-base for local embeddings (no OpenAI key needed).
-  # First start pulls the model (~280 MB) — subsequent starts reuse the volume cache.
-  ollama:
-    image: ollama/ollama:latest
-    container_name: trip2g-test-ollama
+  # Local embedding server — multilingual-e5-base via sentence-transformers.
+  # First start downloads the model (~1 GB) — subsequent starts reuse the volume cache.
+  embedding:
+    build: ./embedding-server
+    container_name: trip2g-test-embedding
     ports:
-      - "11434:11434"
+      - "11434:8000"
     volumes:
-      - ollama-models:/root/.ollama
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["ollama serve & sleep 5 && ollama pull multilingual-e5-base && wait"]
+      - embedding-models:/data
+    environment:
+      - MODEL_NAME=intfloat/multilingual-e5-base
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags | grep -q multilingual-e5-base"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 30
-      start_period: 120s
+      start_period: 300s
 
   app:
     build:
@@ -43,7 +43,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      ollama:
+      embedding:
         condition: service_healthy
     ports:
       - "20081:20081"
@@ -58,7 +58,7 @@ services:
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      - 'FEATURES={"vector_search": {"enabled": true, "model": "multilingual-e5-base", "base_url": "http://ollama:11434/v1"}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "multilingual-e5-base", "base_url": "http://embedding:8000/v1"}}'
 
       # MinIO
       - MINIO_ENDPOINT=minio:29000
@@ -98,4 +98,4 @@ services:
 
 volumes:
   test-data:
-  ollama-models:
+  embedding-models:

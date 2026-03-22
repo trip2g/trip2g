@@ -13,7 +13,7 @@ const (
 	EmbeddingModelSmall              EmbeddingModel = 1 // text-embedding-3-small, 1536 dims
 	EmbeddingModelLarge              EmbeddingModel = 2 // text-embedding-3-large, 3072 dims
 	EmbeddingModelAda                EmbeddingModel = 3 // text-embedding-ada-002, 1536 dims (legacy)
-	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (Ollama)
+	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (HuggingFace TEI)
 )
 
 // String returns the API model name.
@@ -65,7 +65,8 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 }
 
 // QueryPrefix returns the prefix to prepend to search queries before embedding.
-// Returns empty string for models that don't require prefixes (e.g. OpenAI).
+// Some models (e.g. intfloat/multilingual-e5-*) require "query: " prefix.
+// Returns empty string for models that don't require it.
 func (m EmbeddingModel) QueryPrefix() string {
 	switch m {
 	case EmbeddingModelMultilingualE5Base:
@@ -76,7 +77,8 @@ func (m EmbeddingModel) QueryPrefix() string {
 }
 
 // PassagePrefix returns the prefix to prepend to document passages before embedding.
-// Returns empty string for models that don't require prefixes (e.g. OpenAI).
+// Some models (e.g. intfloat/multilingual-e5-*) require "passage: " prefix.
+// Returns empty string for models that don't require it.
 func (m EmbeddingModel) PassagePrefix() string {
 	switch m {
 	case EmbeddingModelMultilingualE5Base:

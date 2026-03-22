@@ -37,12 +37,19 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
-// vectorMinSimilarity is the minimum cosine similarity for a vector result to
-// be included in hybrid search. Results below this threshold are semantically
-// too distant and would pollute the ranking with irrelevant notes.
-// Calibrated on real data: text-embedding-3-small gives ~0.40-0.55 for
-// semantically related Russian question-document pairs.
-const vectorMinSimilarity = 0.40
+// vectorMinSimilarity returns the minimum cosine similarity threshold for vector
+// search results. Model-specific: normalized models (e5) produce higher baseline
+// similarities than unnormalized (OpenAI), so thresholds differ.
+func vectorMinSimilarity(m features.EmbeddingModel) float64 {
+	switch m {
+	case features.EmbeddingModelMultilingualE5Base:
+		// Calibrated: related pairs ~0.83-0.85, unrelated ~0.77-0.79
+		return 0.82
+	default:
+		// text-embedding-3-small: related pairs ~0.40-0.55
+		return 0.40
+	}
+}
 
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
@@ -139,7 +146,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	var candidates []scored
 	for _, c := range chunks {
 		sim := cosineSimilarity(embedding.Vector, c.Embedding)
-		if sim < vectorMinSimilarity {
+		if sim < vectorMinSimilarity(env.Features().VectorSearch.Model) {
 			continue
 		}
 		candidates = append(candidates, scored{c.NotePath, c, sim})
@@ -161,7 +168,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 			continue
 		}
 		seen[c.path] = true
-		note := noteViews.Map[c.path]
+		note := noteViews.PathMap[c.path]
 		if note == nil {
 			continue
 		}
