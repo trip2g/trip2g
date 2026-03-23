@@ -670,6 +670,10 @@ values (?, ?);
 insert into config_bool_values (change_id, value)
 values (?, ?);
 
+-- name: InsertConfigIntValue :exec
+insert into config_int_values (change_id, value)
+values (?, ?);
+
 -- name: InsertTelegramPublishTags :exec
 insert into telegram_publish_tags (label)
 values (?)

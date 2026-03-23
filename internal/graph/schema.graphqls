@@ -784,6 +784,13 @@ type AdminConfigBoolEntry {
   createdBy: AdminUser! @goField(forceResolver: true)
 }
 
+type AdminConfigIntEntry {
+  id: Int64!
+  value: Int!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
 # Interface for all config values
 interface AdminConfigValue {
   id: String!
@@ -811,6 +818,15 @@ type AdminConfigBoolValue implements AdminConfigValue {
   history: [AdminConfigBoolEntry!]! @goField(forceResolver: true)
 }
 
+type AdminConfigIntValue implements AdminConfigValue {
+  id: String!
+  description: String
+  updatedAt: Time
+  updatedBy: AdminUser @goField(forceResolver: true)
+  value: Int!
+  history: [AdminConfigIntEntry!]! @goField(forceResolver: true)
+}
+
 # Mutation payloads
 type SetConfigStringValueSuccess {
   configValue: AdminConfigStringValue!
@@ -821,6 +837,11 @@ type SetConfigBoolValueSuccess {
   configValue: AdminConfigBoolValue!
 }
 union SetConfigBoolValuePayload = SetConfigBoolValueSuccess | ErrorPayload
+
+type SetConfigIntValueSuccess {
+  configValue: AdminConfigIntValue!
+}
+union SetConfigIntValuePayload = SetConfigIntValueSuccess | ErrorPayload
 
 type AdminTelegramPublishTagsConnection {
   nodes: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
@@ -1310,6 +1331,12 @@ type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.No
 
 union SearchResultDocument = PublicNote
 
+enum SearchMatchOrigin {
+  TEXT
+  VECTOR
+  HYBRID
+}
+
 input SearchInput {
   query: String!
 }
@@ -1319,6 +1346,7 @@ type SearchResult {
   highlightedContent: [String!]!
   url: String!
   score: Float!
+  matchOrigin: SearchMatchOrigin!
 
   document: SearchResultDocument
 }
@@ -2535,6 +2563,11 @@ input SetConfigBoolValueInput {
   value: Boolean!
 }
 
+input SetConfigIntValueInput {
+  id: String!
+  value: Int!
+}
+
 #
 # resetTelegramPublishNote
 #
@@ -2698,6 +2731,7 @@ type AdminMutation {
   # Atomic config mutations
   setConfigStringValue(input: SetConfigStringValueInput!): SetConfigStringValuePayload!
   setConfigBoolValue(input: SetConfigBoolValueInput!): SetConfigBoolValuePayload!
+  setConfigIntValue(input: SetConfigIntValueInput!): SetConfigIntValuePayload!
 
   # Background Queue mutations
   stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!

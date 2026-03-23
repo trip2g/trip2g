@@ -584,11 +584,12 @@ func (a *app) SiteTitleTemplate() string {
 
 func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 	cfg := model.SiteConfig{
-		SiteTitleTemplate: "%s",
-		Timezone:          "UTC",
-		RobotsTxt:         "opened",
-		ShowDraftVersions: true,
-		EnableRSS:         true,
+		SiteTitleTemplate:   "%s",
+		Timezone:            "UTC",
+		RobotsTxt:           "opened",
+		ShowDraftVersions:   true,
+		EnableRSS:           true,
+		VectorMinSimilarity: 820,
 	}
 
 	strings, err := a.AllLatestConfigStrings(ctx)
@@ -615,6 +616,15 @@ func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 			}
 			if b.ValueID == "enable_rss" {
 				cfg.EnableRSS = b.Value
+			}
+		}
+	}
+
+	ints, err := a.AllLatestConfigInts(ctx)
+	if err == nil {
+		for _, i := range ints {
+			if i.ValueID == "vector_min_similarity" {
+				cfg.VectorMinSimilarity = int(i.Value)
 			}
 		}
 	}

@@ -114,11 +114,21 @@ type NoteViewPartialRenderer interface {
 	FirstImageURL() string
 }
 
+// SearchMatchOrigin indicates how a search result was found.
+type SearchMatchOrigin string
+
+const (
+	SearchMatchText   SearchMatchOrigin = "TEXT"
+	SearchMatchVector SearchMatchOrigin = "VECTOR"
+	SearchMatchHybrid SearchMatchOrigin = "HYBRID"
+)
+
 type SearchResult struct {
 	HighlightedTitle   *string
 	HighlightedContent []string
 	URL                string
-	Score              float64 // Combined score for ranking (higher is better)
+	Score              float64           // Combined score for ranking (higher is better)
+	MatchOrigin        SearchMatchOrigin // How this result was found
 
 	NoteView *NoteView
 }

@@ -930,6 +930,21 @@ func (q *WriteQueries) InsertConfigChange(ctx context.Context, arg InsertConfigC
 	return i, err
 }
 
+const insertConfigIntValue = `-- name: InsertConfigIntValue :exec
+insert into config_int_values (change_id, value)
+values (?, ?)
+`
+
+type InsertConfigIntValueParams struct {
+	ChangeID int64 `json:"change_id"`
+	Value    int64 `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigIntValue(ctx context.Context, arg InsertConfigIntValueParams) error {
+	_, err := q.db.ExecContext(ctx, insertConfigIntValue, arg.ChangeID, arg.Value)
+	return err
+}
+
 const insertConfigStringValue = `-- name: InsertConfigStringValue :exec
 insert into config_string_values (change_id, value)
 values (?, ?)

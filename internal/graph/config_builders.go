@@ -18,6 +18,8 @@ func (r *adminQueryResolver) buildConfigValue(ctx context.Context, id string) (m
 		return r.buildStringConfigValue(ctx, id, meta), nil
 	case configregistry.ConfigTypeBool:
 		return r.buildBoolConfigValue(ctx, id, meta), nil
+	case configregistry.ConfigTypeInt:
+		return r.buildIntConfigValue(ctx, id, meta), nil
 	default:
 		return nil, fmt.Errorf("unknown config type: %s", meta.Type)
 	}
@@ -60,5 +62,25 @@ func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string
 		Description: &meta.Description,
 		UpdatedAt:   &entry.CreatedAt,
 		Value:       entry.Value,
+	}
+}
+
+func (r *adminQueryResolver) buildIntConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) *model.AdminConfigIntValue {
+	defaultValue, _ := meta.Default.(int)
+
+	entry, err := r.env(ctx).GetLatestConfigInt(ctx, id)
+	if err != nil {
+		return &model.AdminConfigIntValue{
+			ID:          id,
+			Description: &meta.Description,
+			Value:       int32(defaultValue),
+		}
+	}
+
+	return &model.AdminConfigIntValue{
+		ID:          id,
+		Description: &meta.Description,
+		UpdatedAt:   &entry.CreatedAt,
+		Value:       int32(entry.Value),
 	}
 }

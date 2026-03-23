@@ -70,6 +70,7 @@ import (
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
+	"trip2g/internal/case/admin/setconfigintvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -436,6 +437,46 @@ func (r *adminConfigBoolValueResolver) History(ctx context.Context, obj *model.A
 		result[i] = model.AdminConfigBoolEntry{
 			ID:        e.ID,
 			Value:     e.Value,
+			CreatedAt: e.CreatedAt,
+			CreatedBy: &user,
+		}
+	}
+	return result, nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminConfigIntEntryResolver) CreatedBy(ctx context.Context, obj *model.AdminConfigIntEntry) (*db.User, error) {
+	if obj.CreatedBy == nil {
+		return nil, nil
+	}
+	return obj.CreatedBy, nil
+}
+
+// UpdatedBy is the resolver for the updatedBy field.
+func (r *adminConfigIntValueResolver) UpdatedBy(ctx context.Context, obj *model.AdminConfigIntValue) (*db.User, error) {
+	entry, err := r.env(ctx).GetLatestConfigInt(ctx, obj.ID)
+	if err != nil {
+		//nolint:nilerr // no entry means no updatedBy, not an error.
+		return nil, nil
+	}
+	return resolveOne[db.User](ctx, entry.CreatedBy, r.env(ctx).UserByID)
+}
+
+// History is the resolver for the history field.
+func (r *adminConfigIntValueResolver) History(ctx context.Context, obj *model.AdminConfigIntValue) ([]model.AdminConfigIntEntry, error) {
+	entries, err := r.env(ctx).ListConfigIntHistory(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.AdminConfigIntEntry, len(entries))
+	for i, e := range entries {
+		user, userErr := r.env(ctx).UserByID(ctx, e.CreatedBy)
+		if userErr != nil {
+			return nil, fmt.Errorf("failed to get user %d: %w", e.CreatedBy, userErr)
+		}
+		result[i] = model.AdminConfigIntEntry{
+			ID:        e.ID,
+			Value:     int32(e.Value),
 			CreatedAt: e.CreatedAt,
 			CreatedBy: &user,
 		}
@@ -1061,6 +1102,11 @@ func (r *adminMutationResolver) SetConfigStringValue(ctx context.Context, obj *a
 // SetConfigBoolValue is the resolver for the setConfigBoolValue field.
 func (r *adminMutationResolver) SetConfigBoolValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigBoolValueInput) (model.SetConfigBoolValuePayload, error) {
 	return setconfigboolvalue.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetConfigIntValue is the resolver for the setConfigIntValue field.
+func (r *adminMutationResolver) SetConfigIntValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigIntValueInput) (model.SetConfigIntValuePayload, error) {
+	return setconfigintvalue.Resolve(ctx, r.env(ctx), input)
 }
 
 // StopBackgroundQueue is the resolver for the stopBackgroundQueue field.
@@ -3098,6 +3144,16 @@ func (r *Resolver) AdminConfigBoolValue() AdminConfigBoolValueResolver {
 	return &adminConfigBoolValueResolver{r}
 }
 
+// AdminConfigIntEntry returns AdminConfigIntEntryResolver implementation.
+func (r *Resolver) AdminConfigIntEntry() AdminConfigIntEntryResolver {
+	return &adminConfigIntEntryResolver{r}
+}
+
+// AdminConfigIntValue returns AdminConfigIntValueResolver implementation.
+func (r *Resolver) AdminConfigIntValue() AdminConfigIntValueResolver {
+	return &adminConfigIntValueResolver{r}
+}
+
 // AdminConfigStringEntry returns AdminConfigStringEntryResolver implementation.
 func (r *Resolver) AdminConfigStringEntry() AdminConfigStringEntryResolver {
 	return &adminConfigStringEntryResolver{r}
@@ -3509,6 +3565,8 @@ type adminChangeWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminChangeWebhooksConnectionResolver struct{ *Resolver }
 type adminConfigBoolEntryResolver struct{ *Resolver }
 type adminConfigBoolValueResolver struct{ *Resolver }
+type adminConfigIntEntryResolver struct{ *Resolver }
+type adminConfigIntValueResolver struct{ *Resolver }
 type adminConfigStringEntryResolver struct{ *Resolver }
 type adminConfigStringValueResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }

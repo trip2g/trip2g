@@ -175,6 +175,11 @@ type ConfigChange struct {
 	CreatedBy int64     `json:"created_by"`
 }
 
+type ConfigIntValue struct {
+	ChangeID int64 `json:"change_id"`
+	Value    int64 `json:"value"`
+}
+
 type ConfigStringValue struct {
 	ChangeID int64  `json:"change_id"`
 	Value    string `json:"value"`

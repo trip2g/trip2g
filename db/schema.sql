@@ -582,6 +582,10 @@ CREATE TABLE config_bool_values (
   change_id integer primary key references config_changes(id) on delete cascade,
   value boolean not null
 );
+CREATE TABLE config_int_values (
+  change_id integer primary key references config_changes(id) on delete cascade,
+  value integer not null
+);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);

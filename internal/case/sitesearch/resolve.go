@@ -37,20 +37,6 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
-// vectorMinSimilarity returns the minimum cosine similarity threshold for vector
-// search results. Model-specific: normalized models (e5) produce higher baseline
-// similarities than unnormalized (OpenAI), so thresholds differ.
-func vectorMinSimilarity(m features.EmbeddingModel) float64 {
-	switch m {
-	case features.EmbeddingModelMultilingualE5Base:
-		// Calibrated: related pairs ~0.83-0.85, unrelated ~0.77-0.79
-		return 0.82
-	default:
-		// text-embedding-3-small: related pairs ~0.40-0.55
-		return 0.40
-	}
-}
-
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {
@@ -74,6 +60,11 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		if err != nil {
 			return nil, fmt.Errorf("failed to SearchLiveNotes: %w", err)
 		}
+	}
+
+	// Mark text results
+	for i := range results {
+		results[i].MatchOrigin = appmodel.SearchMatchText
 	}
 
 	// Hybrid search: add vector results if enabled
@@ -123,6 +114,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	return &conn, nil
 }
 
+// vectorTopK is the maximum number of vector-only results to return.
+const vectorTopK = 5
+
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
 	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
 	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
@@ -143,12 +137,11 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		sim   float64
 	}
 
+	// Score all chunks, no absolute threshold — E5 models compress scores
+	// into 0.7–1.0 range, making absolute thresholds unreliable.
 	var candidates []scored
 	for _, c := range chunks {
 		sim := cosineSimilarity(embedding.Vector, c.Embedding)
-		if sim < vectorMinSimilarity(env.Features().VectorSearch.Model) {
-			continue
-		}
 		candidates = append(candidates, scored{c.NotePath, c, sim})
 	}
 
@@ -161,6 +154,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		noteViews = env.LiveNoteViews()
 	}
 
+	// Deduplicate by note path, take top-K unique notes.
 	seen := map[string]bool{}
 	var results []appmodel.SearchResult
 	for _, c := range candidates {
@@ -177,10 +171,11 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 			NoteView:           note,
 			URL:                note.Permalink,
 			Score:              c.sim,
+			MatchOrigin:        appmodel.SearchMatchVector,
 			HighlightedTitle:   &title,
 			HighlightedContent: []string{snippetFromChunk(c.chunk.Content, 200)},
 		})
-		if len(results) >= 30 {
+		if len(results) >= vectorTopK {
 			break
 		}
 	}
@@ -235,8 +230,9 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 	for rank, r := range vectorResults {
 		score := 1.0 / float64(rrfK+rank+1)
 		if e, ok := resultMap[r.URL]; ok {
-			// Note exists in text results too — accumulate score, keep text highlights
+			// Note exists in text results too — accumulate score, mark as hybrid
 			e.rrfScore += score
+			e.result.MatchOrigin = appmodel.SearchMatchHybrid
 		} else {
 			// Vector-only result — use chunk snippet if pre-set, else fall back to note snippet
 			if len(r.HighlightedContent) == 0 {

@@ -16,8 +16,13 @@ $trip2g_user_search_toggle $mol_check_icon
 $trip2g_user_search_panel $mol_view
 	plugins /
 		<= Theme $mol_theme_auto
+	messages *
+		no_results @ \No results found.
+		results_count @ \Results found:
 	ResultCount $mol_view
 		sub / <= result_count \
+	VectorWarning $mol_status
+		message @ \No exact matches found. Showing loosely related results.
 	CloseButton $mol_view
 		sub /
 			<= CloseButtonButton $mol_button_major
