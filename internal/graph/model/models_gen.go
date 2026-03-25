@@ -298,6 +298,10 @@ type SetConfigBoolValuePayload interface {
 	IsSetConfigBoolValuePayload()
 }
 
+type SetConfigIntValuePayload interface {
+	IsSetConfigIntValuePayload()
+}
+
 type SetConfigStringValuePayload interface {
 	IsSetConfigStringValuePayload()
 }
@@ -536,6 +540,28 @@ func (this AdminConfigBoolValue) GetID() string            { return this.ID }
 func (this AdminConfigBoolValue) GetDescription() *string  { return this.Description }
 func (this AdminConfigBoolValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
 func (this AdminConfigBoolValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
+
+type AdminConfigIntEntry struct {
+	ID        int64     `json:"id"`
+	Value     int32     `json:"value"`
+	CreatedAt time.Time `json:"createdAt"`
+	CreatedBy *db.User  `json:"createdBy"`
+}
+
+type AdminConfigIntValue struct {
+	ID          string                `json:"id"`
+	Description *string               `json:"description,omitempty"`
+	UpdatedAt   *time.Time            `json:"updatedAt,omitempty"`
+	UpdatedBy   *db.User              `json:"updatedBy,omitempty"`
+	Value       int32                 `json:"value"`
+	History     []AdminConfigIntEntry `json:"history"`
+}
+
+func (AdminConfigIntValue) IsAdminConfigValue()           {}
+func (this AdminConfigIntValue) GetID() string            { return this.ID }
+func (this AdminConfigIntValue) GetDescription() *string  { return this.Description }
+func (this AdminConfigIntValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
+func (this AdminConfigIntValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
 type AdminConfigStringEntry struct {
 	ID        int64     `json:"id"`
@@ -1310,6 +1336,8 @@ func (ErrorPayload) IsSetConfigStringValuePayload() {}
 
 func (ErrorPayload) IsSetConfigBoolValuePayload() {}
 
+func (ErrorPayload) IsSetConfigIntValuePayload() {}
+
 func (ErrorPayload) IsAdminStartTelegramAccountAuthOrErrorPayload() {}
 
 func (ErrorPayload) IsAdminCompleteTelegramAccountAuthOrErrorPayload() {}
@@ -1824,6 +1852,17 @@ type SetConfigBoolValueSuccess struct {
 }
 
 func (SetConfigBoolValueSuccess) IsSetConfigBoolValuePayload() {}
+
+type SetConfigIntValueInput struct {
+	ID    string `json:"id"`
+	Value int32  `json:"value"`
+}
+
+type SetConfigIntValueSuccess struct {
+	ConfigValue *AdminConfigIntValue `json:"configValue"`
+}
+
+func (SetConfigIntValueSuccess) IsSetConfigIntValuePayload() {}
 
 type SetConfigStringValueInput struct {
 	ID    string `json:"id"`

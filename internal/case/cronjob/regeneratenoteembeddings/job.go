@@ -11,7 +11,7 @@ func (j *Job) Name() string {
 }
 
 func (j *Job) Schedule() string {
-	return "0 0 3 * * *" // daily at 3:00 AM
+	return "0 0 3 * * 0" // weekly on Sunday at 3:00 AM
 }
 
 func (j *Job) ExecuteAfterStart() bool {

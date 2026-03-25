@@ -333,6 +333,46 @@ func (q *Queries) AllLatestConfigBools(ctx context.Context) ([]AllLatestConfigBo
 	return items, nil
 }
 
+const allLatestConfigInts = `-- name: AllLatestConfigInts :many
+select c.value_id, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_int_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ )
+`
+
+type AllLatestConfigIntsRow struct {
+	ValueID string `json:"value_id"`
+	Value   int64  `json:"value"`
+}
+
+func (q *Queries) AllLatestConfigInts(ctx context.Context) ([]AllLatestConfigIntsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestConfigInts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestConfigIntsRow
+	for rows.Next() {
+		var i AllLatestConfigIntsRow
+		if err := rows.Scan(&i.ValueID, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestConfigStrings = `-- name: AllLatestConfigStrings :many
 select c.value_id, v.value
   from config_changes c
@@ -1351,6 +1391,98 @@ func (q *Queries) GetActiveGoogleOAuthCredentials(ctx context.Context) (GoogleOa
 	return i, err
 }
 
+const getAllLatestNoteChunksWithEmbeddings = `-- name: GetAllLatestNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id and np.version_count = nv.version
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and np.hidden_by is null
+`
+
+type GetAllLatestNoteChunksWithEmbeddingsRow struct {
+	VersionID  int64  `json:"version_id"`
+	ChunkIndex int64  `json:"chunk_index"`
+	Content    string `json:"content"`
+	Embedding  []byte `json:"embedding"`
+	Path       string `json:"path"`
+}
+
+func (q *Queries) GetAllLatestNoteChunksWithEmbeddings(ctx context.Context) ([]GetAllLatestNoteChunksWithEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllLatestNoteChunksWithEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllLatestNoteChunksWithEmbeddingsRow
+	for rows.Next() {
+		var i GetAllLatestNoteChunksWithEmbeddingsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllLiveNoteChunksWithEmbeddings = `-- name: GetAllLiveNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id
+join release_note_versions rnv on nv.id = rnv.note_version_id
+join releases r on rnv.release_id = r.id
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and r.is_live = true
+`
+
+type GetAllLiveNoteChunksWithEmbeddingsRow struct {
+	VersionID  int64  `json:"version_id"`
+	ChunkIndex int64  `json:"chunk_index"`
+	Content    string `json:"content"`
+	Embedding  []byte `json:"embedding"`
+	Path       string `json:"path"`
+}
+
+func (q *Queries) GetAllLiveNoteChunksWithEmbeddings(ctx context.Context) ([]GetAllLiveNoteChunksWithEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllLiveNoteChunksWithEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllLiveNoteChunksWithEmbeddingsRow
+	for rows.Next() {
+		var i GetAllLiveNoteChunksWithEmbeddingsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getBoostyMemberByEmail = `-- name: GetBoostyMemberByEmail :one
 select id, credentials_id, boosty_id, created_at, missed_at, email, status, data, current_tier_id, user_id from boosty_members
 where email = ? and status = 'active'
@@ -1608,6 +1740,36 @@ func (q *Queries) GetLatestConfigBool(ctx context.Context, valueID string) (GetL
 	return i, err
 }
 
+const getLatestConfigInt = `-- name: GetLatestConfigInt :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
+ limit 1
+`
+
+type GetLatestConfigIntRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     int64     `json:"value"`
+}
+
+func (q *Queries) GetLatestConfigInt(ctx context.Context, valueID string) (GetLatestConfigIntRow, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigInt, valueID)
+	var i GetLatestConfigIntRow
+	err := row.Scan(
+		&i.ID,
+		&i.ValueID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
 const getLatestConfigString = `-- name: GetLatestConfigString :one
 select c.id, c.value_id, c.created_at, c.created_by, v.value
   from config_changes c
@@ -1636,6 +1798,43 @@ func (q *Queries) GetLatestConfigString(ctx context.Context, valueID string) (Ge
 		&i.Value,
 	)
 	return i, err
+}
+
+const getNoteVersionChunks = `-- name: GetNoteVersionChunks :many
+select id, version_id, chunk_index, content, embedding, model_id, content_hash, tokens, created_at from note_version_chunks where version_id = ? order by chunk_index
+`
+
+func (q *Queries) GetNoteVersionChunks(ctx context.Context, versionID int64) ([]NoteVersionChunk, error) {
+	rows, err := q.db.QueryContext(ctx, getNoteVersionChunks, versionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersionChunk
+	for rows.Next() {
+		var i NoteVersionChunk
+		if err := rows.Scan(
+			&i.ID,
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.Content,
+			&i.Embedding,
+			&i.ModelID,
+			&i.ContentHash,
+			&i.Tokens,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getNoteVersionEmbedding = `-- name: GetNoteVersionEmbedding :one
@@ -3470,6 +3669,52 @@ func (q *Queries) ListConfigBoolHistory(ctx context.Context, valueID string) ([]
 	var items []ListConfigBoolHistoryRow
 	for rows.Next() {
 		var i ListConfigBoolHistoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ValueID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConfigIntHistory = `-- name: ListConfigIntHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
+ limit 50
+`
+
+type ListConfigIntHistoryRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     int64     `json:"value"`
+}
+
+func (q *Queries) ListConfigIntHistory(ctx context.Context, valueID string) ([]ListConfigIntHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigIntHistory, valueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListConfigIntHistoryRow
+	for rows.Next() {
+		var i ListConfigIntHistoryRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ValueID,

@@ -16,6 +16,9 @@ namespace $.$$ {
 					... on AdminConfigBoolValue {
 						boolValue: value
 					}
+					... on AdminConfigIntValue {
+						intValue: value
+					}
 				}
 			}
 		}
@@ -48,6 +51,8 @@ namespace $.$$ {
 			let value: string
 			if (row.__typename === 'AdminConfigBoolValue') {
 				value = row.boolValue ? 'true' : 'false'
+			} else if (row.__typename === 'AdminConfigIntValue') {
+				value = String(row.intValue)
 			} else {
 				value = row.stringValue || ''
 			}

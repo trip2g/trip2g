@@ -24,8 +24,14 @@ var _ generatenoteversionembedding.Env = &EnvMock{}
 //
 //		// make and configure a mocked generatenoteversionembedding.Env
 //		mockedEnv := &EnvMock{
+//			DeleteNoteVersionChunksBeyondFunc: func(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error {
+//				panic("mock out the DeleteNoteVersionChunksBeyond method")
+//			},
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
+//			},
+//			GetNoteVersionChunksFunc: func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+//				panic("mock out the GetNoteVersionChunks method")
 //			},
 //			GetNoteVersionEmbeddingFunc: func(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error) {
 //				panic("mock out the GetNoteVersionEmbedding method")
@@ -39,6 +45,9 @@ var _ generatenoteversionembedding.Env = &EnvMock{}
 //			OpenAIFunc: func() *openai.Client {
 //				panic("mock out the OpenAI method")
 //			},
+//			UpsertNoteVersionChunkFunc: func(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error {
+//				panic("mock out the UpsertNoteVersionChunk method")
+//			},
 //			UpsertNoteVersionEmbeddingFunc: func(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error {
 //				panic("mock out the UpsertNoteVersionEmbedding method")
 //			},
@@ -49,8 +58,14 @@ var _ generatenoteversionembedding.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// DeleteNoteVersionChunksBeyondFunc mocks the DeleteNoteVersionChunksBeyond method.
+	DeleteNoteVersionChunksBeyondFunc func(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error
+
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
+
+	// GetNoteVersionChunksFunc mocks the GetNoteVersionChunks method.
+	GetNoteVersionChunksFunc func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error)
 
 	// GetNoteVersionEmbeddingFunc mocks the GetNoteVersionEmbedding method.
 	GetNoteVersionEmbeddingFunc func(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error)
@@ -64,13 +79,30 @@ type EnvMock struct {
 	// OpenAIFunc mocks the OpenAI method.
 	OpenAIFunc func() *openai.Client
 
+	// UpsertNoteVersionChunkFunc mocks the UpsertNoteVersionChunk method.
+	UpsertNoteVersionChunkFunc func(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error
+
 	// UpsertNoteVersionEmbeddingFunc mocks the UpsertNoteVersionEmbedding method.
 	UpsertNoteVersionEmbeddingFunc func(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// DeleteNoteVersionChunksBeyond holds details about calls to the DeleteNoteVersionChunksBeyond method.
+		DeleteNoteVersionChunksBeyond []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.DeleteNoteVersionChunksBeyondParams
+		}
 		// Features holds details about calls to the Features method.
 		Features []struct {
+		}
+		// GetNoteVersionChunks holds details about calls to the GetNoteVersionChunks method.
+		GetNoteVersionChunks []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// VersionID is the versionID argument value.
+			VersionID int64
 		}
 		// GetNoteVersionEmbedding holds details about calls to the GetNoteVersionEmbedding method.
 		GetNoteVersionEmbedding []struct {
@@ -88,6 +120,13 @@ type EnvMock struct {
 		// OpenAI holds details about calls to the OpenAI method.
 		OpenAI []struct {
 		}
+		// UpsertNoteVersionChunk holds details about calls to the UpsertNoteVersionChunk method.
+		UpsertNoteVersionChunk []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertNoteVersionChunkParams
+		}
 		// UpsertNoteVersionEmbedding holds details about calls to the UpsertNoteVersionEmbedding method.
 		UpsertNoteVersionEmbedding []struct {
 			// Ctx is the ctx argument value.
@@ -96,12 +135,51 @@ type EnvMock struct {
 			Arg db.UpsertNoteVersionEmbeddingParams
 		}
 	}
-	lockFeatures                   sync.RWMutex
-	lockGetNoteVersionEmbedding    sync.RWMutex
-	lockLatestNoteViews            sync.RWMutex
-	lockLogger                     sync.RWMutex
-	lockOpenAI                     sync.RWMutex
-	lockUpsertNoteVersionEmbedding sync.RWMutex
+	lockDeleteNoteVersionChunksBeyond sync.RWMutex
+	lockFeatures                      sync.RWMutex
+	lockGetNoteVersionChunks          sync.RWMutex
+	lockGetNoteVersionEmbedding       sync.RWMutex
+	lockLatestNoteViews               sync.RWMutex
+	lockLogger                        sync.RWMutex
+	lockOpenAI                        sync.RWMutex
+	lockUpsertNoteVersionChunk        sync.RWMutex
+	lockUpsertNoteVersionEmbedding    sync.RWMutex
+}
+
+// DeleteNoteVersionChunksBeyond calls DeleteNoteVersionChunksBeyondFunc.
+func (mock *EnvMock) DeleteNoteVersionChunksBeyond(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error {
+	if mock.DeleteNoteVersionChunksBeyondFunc == nil {
+		panic("EnvMock.DeleteNoteVersionChunksBeyondFunc: method is nil but Env.DeleteNoteVersionChunksBeyond was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.DeleteNoteVersionChunksBeyondParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockDeleteNoteVersionChunksBeyond.Lock()
+	mock.calls.DeleteNoteVersionChunksBeyond = append(mock.calls.DeleteNoteVersionChunksBeyond, callInfo)
+	mock.lockDeleteNoteVersionChunksBeyond.Unlock()
+	return mock.DeleteNoteVersionChunksBeyondFunc(ctx, arg)
+}
+
+// DeleteNoteVersionChunksBeyondCalls gets all the calls that were made to DeleteNoteVersionChunksBeyond.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteNoteVersionChunksBeyondCalls())
+func (mock *EnvMock) DeleteNoteVersionChunksBeyondCalls() []struct {
+	Ctx context.Context
+	Arg db.DeleteNoteVersionChunksBeyondParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.DeleteNoteVersionChunksBeyondParams
+	}
+	mock.lockDeleteNoteVersionChunksBeyond.RLock()
+	calls = mock.calls.DeleteNoteVersionChunksBeyond
+	mock.lockDeleteNoteVersionChunksBeyond.RUnlock()
+	return calls
 }
 
 // Features calls FeaturesFunc.
@@ -128,6 +206,42 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// GetNoteVersionChunks calls GetNoteVersionChunksFunc.
+func (mock *EnvMock) GetNoteVersionChunks(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+	if mock.GetNoteVersionChunksFunc == nil {
+		panic("EnvMock.GetNoteVersionChunksFunc: method is nil but Env.GetNoteVersionChunks was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		VersionID int64
+	}{
+		Ctx:       ctx,
+		VersionID: versionID,
+	}
+	mock.lockGetNoteVersionChunks.Lock()
+	mock.calls.GetNoteVersionChunks = append(mock.calls.GetNoteVersionChunks, callInfo)
+	mock.lockGetNoteVersionChunks.Unlock()
+	return mock.GetNoteVersionChunksFunc(ctx, versionID)
+}
+
+// GetNoteVersionChunksCalls gets all the calls that were made to GetNoteVersionChunks.
+// Check the length with:
+//
+//	len(mockedEnv.GetNoteVersionChunksCalls())
+func (mock *EnvMock) GetNoteVersionChunksCalls() []struct {
+	Ctx       context.Context
+	VersionID int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		VersionID int64
+	}
+	mock.lockGetNoteVersionChunks.RLock()
+	calls = mock.calls.GetNoteVersionChunks
+	mock.lockGetNoteVersionChunks.RUnlock()
 	return calls
 }
 
@@ -245,6 +359,42 @@ func (mock *EnvMock) OpenAICalls() []struct {
 	mock.lockOpenAI.RLock()
 	calls = mock.calls.OpenAI
 	mock.lockOpenAI.RUnlock()
+	return calls
+}
+
+// UpsertNoteVersionChunk calls UpsertNoteVersionChunkFunc.
+func (mock *EnvMock) UpsertNoteVersionChunk(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error {
+	if mock.UpsertNoteVersionChunkFunc == nil {
+		panic("EnvMock.UpsertNoteVersionChunkFunc: method is nil but Env.UpsertNoteVersionChunk was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertNoteVersionChunkParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertNoteVersionChunk.Lock()
+	mock.calls.UpsertNoteVersionChunk = append(mock.calls.UpsertNoteVersionChunk, callInfo)
+	mock.lockUpsertNoteVersionChunk.Unlock()
+	return mock.UpsertNoteVersionChunkFunc(ctx, arg)
+}
+
+// UpsertNoteVersionChunkCalls gets all the calls that were made to UpsertNoteVersionChunk.
+// Check the length with:
+//
+//	len(mockedEnv.UpsertNoteVersionChunkCalls())
+func (mock *EnvMock) UpsertNoteVersionChunkCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertNoteVersionChunkParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertNoteVersionChunkParams
+	}
+	mock.lockUpsertNoteVersionChunk.RLock()
+	calls = mock.calls.UpsertNoteVersionChunk
+	mock.lockUpsertNoteVersionChunk.RUnlock()
 	return calls
 }
 

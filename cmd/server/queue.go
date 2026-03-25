@@ -23,8 +23,9 @@ type appQueue struct {
 
 	rootCtx context.Context
 
-	cancel context.CancelFunc
-	runner *jobs.Runner
+	cancel   context.CancelFunc
+	runner   *jobs.Runner
+	runnerWg sync.WaitGroup // tracks the runner goroutine; Done when runner.Start returns
 
 	logger logger.Logger
 
@@ -86,8 +87,17 @@ func (a *appQueue) stop() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.cancel()
-	a.cancel = nil
+	if a.cancel != nil {
+		a.cancel()
+		a.cancel = nil
+	}
+}
+
+// stopAndWait cancels the runner and blocks until the runner goroutine exits
+// (i.e. all in-flight jobs have finished). Safe to call multiple times.
+func (a *appQueue) stopAndWait() {
+	a.stop()
+	a.runnerWg.Wait()
 }
 
 func (a *appQueue) start() {
@@ -97,7 +107,11 @@ func (a *appQueue) start() {
 	ctx, cancel := context.WithCancel(a.rootCtx)
 	a.cancel = cancel
 
-	go a.runner.Start(ctx)
+	a.runnerWg.Add(1)
+	go func() {
+		defer a.runnerWg.Done()
+		a.runner.Start(ctx)
+	}()
 }
 
 func (a *appQueue) isStopped() bool {
@@ -194,9 +208,9 @@ func (a *app) ClearBackgroundQueue(ctx context.Context, name string) (int64, err
 	// Remember if queue was running
 	wasRunning := !q.isStopped()
 
-	// Stop queue if running
+	// Stop queue and wait for in-flight jobs to finish before touching the DB.
 	if wasRunning {
-		q.stop()
+		q.stopAndWait()
 	}
 
 	// Delete all jobs from this queue

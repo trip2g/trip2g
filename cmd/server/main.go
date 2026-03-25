@@ -63,6 +63,7 @@ import (
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
+	"trip2g/internal/defaulttemplate"
 	"trip2g/internal/fastgql"
 	"trip2g/internal/features"
 	"trip2g/internal/frontmatterpatch"
@@ -256,6 +257,10 @@ func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager
 }
 
 func main() {
+	if err := defaulttemplate.Init(); err != nil {
+		panic(fmt.Errorf("failed to init default template i18n: %w", err))
+	}
+
 	config, err := appconfig.Get()
 	if err != nil {
 		panic(fmt.Errorf("failed to load configuration: %w", err))
@@ -358,6 +363,7 @@ func main() {
 		a.openaiClient = openai.New(
 			os.Getenv("OPENAI_API_KEY"),
 			a.config.Features.VectorSearch.Model,
+			a.config.Features.VectorSearch.BaseURL,
 		)
 	}
 
@@ -581,11 +587,12 @@ func (a *app) SiteTitleTemplate() string {
 
 func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 	cfg := model.SiteConfig{
-		SiteTitleTemplate: "%s",
-		Timezone:          "UTC",
-		RobotsTxt:         "opened",
-		ShowDraftVersions: true,
-		EnableRSS:         true,
+		SiteTitleTemplate:   "%s",
+		Timezone:            "UTC",
+		RobotsTxt:           "opened",
+		ShowDraftVersions:   true,
+		EnableRSS:           true,
+		VectorMinSimilarity: 820,
 	}
 
 	strings, err := a.AllLatestConfigStrings(ctx)
@@ -612,6 +619,15 @@ func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 			}
 			if b.ValueID == "enable_rss" {
 				cfg.EnableRSS = b.Value
+			}
+		}
+	}
+
+	ints, err := a.AllLatestConfigInts(ctx)
+	if err == nil {
+		for _, i := range ints {
+			if i.ValueID == "vector_min_similarity" {
+				cfg.VectorMinSimilarity = int(i.Value)
 			}
 		}
 	}
@@ -1252,6 +1268,14 @@ func (a *app) Layouts() *model.Layouts {
 
 func (a *app) LatestNoteViews() *model.NoteViews {
 	return a.latestNoteLoader.NoteViews()
+}
+
+func (a *app) LatestNoteChunks() []model.NoteChunk {
+	return a.latestNoteLoader.NoteChunks()
+}
+
+func (a *app) LiveNoteChunks() []model.NoteChunk {
+	return a.liveNoteLoader.NoteChunks()
 }
 
 func (a *app) LiveNoteViews() *model.NoteViews {
@@ -2237,12 +2261,18 @@ func (a *app) startInternalServer() {
 	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
 
+	// Embedding debug endpoint — step-by-step pipeline: split → embed → JSON result.
+	// Only registered when vector search is enabled.
+	if a.openaiClient != nil {
+		mux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
+	}
+
 	server := &http.Server{
 		Addr:    a.config.InternalListenAddr,
 		Handler: mux,
 
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 2 * time.Minute, // allow for slow Ollama first-load
 	}
 
 	go func() {

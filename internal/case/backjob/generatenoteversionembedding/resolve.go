@@ -7,14 +7,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 )
@@ -30,6 +29,9 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	GetNoteVersionEmbedding(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error)
 	UpsertNoteVersionEmbedding(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error
+	GetNoteVersionChunks(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error)
+	UpsertNoteVersionChunk(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error
+	DeleteNoteVersionChunksBeyond(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error
 }
 
 func Resolve(ctx context.Context, env Env, params Params) error {
@@ -45,21 +47,36 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 		return nil // Note might have been deleted, skip silently
 	}
 
-	// Calculate content hash
-	contentHash := sha256.Sum256([]byte(noteView.Title + string(noteView.Content)))
+	strippedContent := mdchunk.StripFrontmatter(string(noteView.Content))
+
+	// Calculate content hash (uses stripped content to avoid noise from frontmatter changes)
+	contentHash := sha256.Sum256([]byte(noteView.Title + strippedContent))
 
 	// Check if embedding already exists with same content hash
 	existing, err := env.GetNoteVersionEmbedding(ctx, params.VersionID)
 	if err == nil && bytes.Equal(existing.ContentHash, contentHash[:]) {
-		env.Logger().Debug("embedding already up to date", "version_id", params.VersionID)
-		return nil
+		// Hash matches — skip whole-note embedding regeneration.
+		// But still check if chunk embeddings are missing (e.g. first deploy after chunk feature).
+		if noteView.ExcludeSearch || noteView.IsSystem() {
+			env.Logger().Debug("embedding already up to date, skipping", "version_id", params.VersionID)
+			return nil
+		}
+		existingChunks, chunkErr := env.GetNoteVersionChunks(ctx, params.VersionID)
+		if chunkErr == nil && len(existingChunks) > 0 {
+			env.Logger().Debug("embedding and chunks already up to date, skipping", "version_id", params.VersionID)
+			return nil
+		}
+		env.Logger().Debug("embedding up to date but chunks missing, generating", "version_id", params.VersionID, "title", noteView.Title)
+		return generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("failed to check existing embedding: %w", err)
 	}
+	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
-	// Prepare text for embedding (title + content)
-	text := noteView.Title + "\n\n" + string(noteView.Content)
+	// Prepare text for embedding (title + stripped content, with model-specific passage prefix).
+	passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
+	text := passagePrefix + noteView.Title + "\n\n" + strippedContent
 
 	// Generate embedding
 	result, err := env.OpenAI().CreateEmbedding(ctx, text)
@@ -70,7 +87,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	// Save embedding
 	err = env.UpsertNoteVersionEmbedding(ctx, db.UpsertNoteVersionEmbeddingParams{
 		VersionID:   params.VersionID,
-		Embedding:   Float32SliceToBytes(result.Vector),
+		Embedding:   model.Float32SliceToBytes(result.Vector),
 		ModelID:     int64(env.Features().VectorSearch.Model),
 		ContentHash: contentHash[:],
 		Tokens:      int64(result.Tokens),
@@ -85,23 +102,93 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 		"dimensions", len(result.Vector),
 	)
 
+	// Generate chunk embeddings (skip search-excluded and system notes)
+	if noteView.ExcludeSearch || noteView.IsSystem() {
+		return nil
+	}
+
+	if err = generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// Float32SliceToBytes converts []float32 to []byte for storage.
-func Float32SliceToBytes(floats []float32) []byte {
-	buf := make([]byte, len(floats)*4)
-	for i, f := range floats {
-		binary.LittleEndian.PutUint32(buf[i*4:], math.Float32bits(f))
-	}
-	return buf
-}
+// generateChunkEmbeddings splits the note into chunks, batch-embeds changed chunks,
+// upserts them, and deletes any orphan chunks from previous versions.
+func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, title string, rawContent []byte) error {
+	chunks := mdchunk.Split(title, rawContent)
+	env.Logger().Debug("chunk split done", "version_id", versionID, "title", title, "total_chunks", len(chunks))
 
-// BytesToFloat32Slice converts []byte back to []float32.
-func BytesToFloat32Slice(data []byte) []float32 {
-	floats := make([]float32, len(data)/4)
-	for i := range floats {
-		floats[i] = math.Float32frombits(binary.LittleEndian.Uint32(data[i*4:]))
+	// Load existing chunk hashes to skip unchanged chunks.
+	existingChunks, err := env.GetNoteVersionChunks(ctx, versionID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("failed to get existing chunks: %w", err)
 	}
-	return floats
+	existingHashes := make(map[int64][]byte, len(existingChunks))
+	for _, ec := range existingChunks {
+		existingHashes[ec.ChunkIndex] = ec.ContentHash
+	}
+
+	// Identify chunks that need re-embedding.
+	type pendingChunk struct {
+		chunk mdchunk.Chunk
+		hash  [32]byte
+	}
+	var toEmbed []pendingChunk
+	for _, c := range chunks {
+		h := sha256.Sum256([]byte(c.Content))
+		if existing, ok := existingHashes[int64(c.Index)]; ok && bytes.Equal(existing, h[:]) {
+			continue // content unchanged, skip
+		}
+		toEmbed = append(toEmbed, pendingChunk{chunk: c, hash: h})
+	}
+
+	env.Logger().Debug("chunks to embed", "version_id", versionID, "to_embed", len(toEmbed), "skipped", len(chunks)-len(toEmbed))
+
+	if len(toEmbed) > 0 {
+		passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
+		texts := make([]string, len(toEmbed))
+		for i, pe := range toEmbed {
+			texts[i] = passagePrefix + pe.chunk.Content
+		}
+
+		results, embErr := env.OpenAI().CreateEmbeddings(ctx, texts)
+		if embErr != nil {
+			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
+		}
+
+		modelID := int64(env.Features().VectorSearch.Model)
+		for i, pe := range toEmbed {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+			tokens := int64(results[i].Tokens)
+			if upsertErr := env.UpsertNoteVersionChunk(ctx, db.UpsertNoteVersionChunkParams{
+				VersionID:   versionID,
+				ChunkIndex:  int64(pe.chunk.Index),
+				Content:     pe.chunk.Content,
+				Embedding:   model.Float32SliceToBytes(results[i].Vector),
+				ModelID:     &modelID,
+				ContentHash: pe.hash[:],
+				Tokens:      &tokens,
+			}); upsertErr != nil {
+				return fmt.Errorf("failed to upsert chunk %d: %w", pe.chunk.Index, upsertErr)
+			}
+		}
+
+		env.Logger().Debug("chunk embeddings saved", "version_id", versionID, "saved", len(toEmbed))
+	}
+
+	// Delete orphan chunks from a previous version that had more chunks.
+	if delErr := env.DeleteNoteVersionChunksBeyond(ctx, db.DeleteNoteVersionChunksBeyondParams{
+		VersionID:  versionID,
+		ChunkIndex: int64(len(chunks) - 1),
+	}); delErr != nil {
+		return fmt.Errorf("failed to delete orphan chunks: %w", delErr)
+	}
+
+	return nil
 }

@@ -1,12 +1,15 @@
 // Package configregistry provides metadata for atomic config values.
 package configregistry
 
+import "fmt"
+
 // ConfigType represents the type of a config value.
 type ConfigType string
 
 const (
 	ConfigTypeString ConfigType = "string"
 	ConfigTypeBool   ConfigType = "bool"
+	ConfigTypeInt    ConfigType = "int"
 )
 
 // ConfigMeta contains metadata for a config value.
@@ -30,6 +33,11 @@ const (
 const (
 	ConfigShowDraftVersions = "show_draft_versions"
 	ConfigEnableRSS         = "enable_rss"
+)
+
+// Int config IDs.
+const (
+	ConfigVectorMinSimilarity = "vector_min_similarity"
 )
 
 // Registry contains all config metadata.
@@ -78,6 +86,13 @@ var Registry = map[string]ConfigMeta{
 		Default:     true,
 		Validate:    nil,
 	},
+	ConfigVectorMinSimilarity: {
+		ID:          ConfigVectorMinSimilarity,
+		Description: "Минимальная похожесть для векторного поиска (1–1000, делится на 1000).",
+		Type:        ConfigTypeInt,
+		Default:     820,
+		Validate:    validateIntRange(1, 1000),
+	},
 }
 
 // StringConfigs returns all string config IDs.
@@ -102,8 +117,32 @@ func BoolConfigs() []string {
 	return result
 }
 
+// IntConfigs returns all int config IDs.
+func IntConfigs() []string {
+	var result []string
+	for id, meta := range Registry {
+		if meta.Type == ConfigTypeInt {
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
 // Get returns config metadata by ID.
 func Get(id string) (ConfigMeta, bool) {
 	meta, ok := Registry[id]
 	return meta, ok
+}
+
+func validateIntRange(min, max int) func(interface{}) error {
+	return func(value interface{}) error {
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("expected int, got %T", value)
+		}
+		if v < min || v > max {
+			return fmt.Errorf("value must be between %d and %d", min, max)
+		}
+		return nil
+	}
 }

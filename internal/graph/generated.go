@@ -64,6 +64,8 @@ type ResolverRoot interface {
 	AdminChangeWebhooksConnection() AdminChangeWebhooksConnectionResolver
 	AdminConfigBoolEntry() AdminConfigBoolEntryResolver
 	AdminConfigBoolValue() AdminConfigBoolValueResolver
+	AdminConfigIntEntry() AdminConfigIntEntryResolver
+	AdminConfigIntValue() AdminConfigIntValueResolver
 	AdminConfigStringEntry() AdminConfigStringEntryResolver
 	AdminConfigStringValue() AdminConfigStringValueResolver
 	AdminCronJob() AdminCronJobResolver
@@ -250,6 +252,14 @@ type AdminConfigBoolValueResolver interface {
 
 	History(ctx context.Context, obj *model.AdminConfigBoolValue) ([]model.AdminConfigBoolEntry, error)
 }
+type AdminConfigIntEntryResolver interface {
+	CreatedBy(ctx context.Context, obj *model.AdminConfigIntEntry) (*db.User, error)
+}
+type AdminConfigIntValueResolver interface {
+	UpdatedBy(ctx context.Context, obj *model.AdminConfigIntValue) (*db.User, error)
+
+	History(ctx context.Context, obj *model.AdminConfigIntValue) ([]model.AdminConfigIntEntry, error)
+}
 type AdminConfigStringEntryResolver interface {
 	CreatedBy(ctx context.Context, obj *model.AdminConfigStringEntry) (*db.User, error)
 }
@@ -396,6 +406,7 @@ type AdminMutationResolver interface {
 	RunCronJob(ctx context.Context, obj *model1.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error)
 	SetConfigStringValue(ctx context.Context, obj *model1.AdminMutation, input model.SetConfigStringValueInput) (model.SetConfigStringValuePayload, error)
 	SetConfigBoolValue(ctx context.Context, obj *model1.AdminMutation, input model.SetConfigBoolValueInput) (model.SetConfigBoolValuePayload, error)
+	SetConfigIntValue(ctx context.Context, obj *model1.AdminMutation, input model.SetConfigIntValueInput) (model.SetConfigIntValuePayload, error)
 	StopBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error)
 	StartBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StartBackgroundQueueInput) (model.StartBackgroundQueueOrErrorPayload, error)
 	ClearBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.ClearBackgroundQueueInput) (model.ClearBackgroundQueueOrErrorPayload, error)
@@ -885,6 +896,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetConfigBoolValueInput,
+		ec.unmarshalInputSetConfigIntValueInput,
 		ec.unmarshalInputSetConfigStringValueInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatPublishInstantTagsInput,
@@ -1624,6 +1636,17 @@ func (ec *executionContext) field_AdminMutation_setConfigBoolValue_args(ctx cont
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetConfigBoolValueInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigBoolValueInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setConfigIntValue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetConfigIntValueInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigIntValueInput)
 	if err != nil {
 		return nil, err
 	}
@@ -6055,6 +6078,330 @@ func (ec *executionContext) fieldContext_AdminConfigBoolValue_history(_ context.
 				return ec.fieldContext_AdminConfigBoolEntry_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigBoolEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntEntry_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntEntry_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntEntry_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntEntry_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntEntry_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntEntry_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntEntry_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntEntry_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntEntry_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminConfigIntEntry().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntEntry_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_description(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_updatedBy(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_updatedBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminConfigIntValue().UpdatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_updatedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminConfigIntValue_history(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminConfigIntValue_history,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminConfigIntValue().History(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminConfigIntEntry2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntEntryᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigIntValue_history(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigIntValue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminConfigIntEntry_id(ctx, field)
+			case "value":
+				return ec.fieldContext_AdminConfigIntEntry_value(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminConfigIntEntry_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminConfigIntEntry_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminConfigIntEntry", field.Name)
 		},
 	}
 	return fc, nil
@@ -12037,6 +12384,47 @@ func (ec *executionContext) fieldContext_AdminMutation_setConfigBoolValue(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_setConfigBoolValue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setConfigIntValue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setConfigIntValue,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetConfigIntValue(ctx, obj, fc.Args["input"].(model.SetConfigIntValueInput))
+		},
+		nil,
+		ec.marshalNSetConfigIntValuePayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigIntValuePayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setConfigIntValue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetConfigIntValuePayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setConfigIntValue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26010,6 +26398,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setConfigStringValue(ctx, field)
 			case "setConfigBoolValue":
 				return ec.fieldContext_AdminMutation_setConfigBoolValue(ctx, field)
+			case "setConfigIntValue":
+				return ec.fieldContext_AdminMutation_setConfigIntValue(ctx, field)
 			case "stopBackgroundQueue":
 				return ec.fieldContext_AdminMutation_stopBackgroundQueue(ctx, field)
 			case "startBackgroundQueue":
@@ -29311,6 +29701,8 @@ func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Contex
 				return ec.fieldContext_SearchResult_url(ctx, field)
 			case "score":
 				return ec.fieldContext_SearchResult_score(ctx, field)
+			case "matchOrigin":
+				return ec.fieldContext_SearchResult_matchOrigin(ctx, field)
 			case "document":
 				return ec.fieldContext_SearchResult_document(ctx, field)
 			}
@@ -29431,6 +29823,35 @@ func (ec *executionContext) fieldContext_SearchResult_score(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_matchOrigin(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SearchResult_matchOrigin,
+		func(ctx context.Context) (any, error) {
+			return obj.MatchOrigin, nil
+		},
+		nil,
+		ec.marshalNSearchMatchOrigin2trip2gᚋinternalᚋmodelᚐSearchMatchOrigin,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_matchOrigin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SearchMatchOrigin does not have child fields")
 		},
 	}
 	return fc, nil
@@ -29720,6 +30141,49 @@ func (ec *executionContext) fieldContext_SetConfigBoolValueSuccess_configValue(_
 				return ec.fieldContext_AdminConfigBoolValue_history(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigBoolValue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetConfigIntValueSuccess_configValue(ctx context.Context, field graphql.CollectedField, obj *model.SetConfigIntValueSuccess) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetConfigIntValueSuccess_configValue,
+		func(ctx context.Context) (any, error) {
+			return obj.ConfigValue, nil
+		},
+		nil,
+		ec.marshalNAdminConfigIntValue2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntValue,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetConfigIntValueSuccess_configValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetConfigIntValueSuccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminConfigIntValue_id(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminConfigIntValue_description(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_AdminConfigIntValue_updatedAt(ctx, field)
+			case "updatedBy":
+				return ec.fieldContext_AdminConfigIntValue_updatedBy(ctx, field)
+			case "value":
+				return ec.fieldContext_AdminConfigIntValue_value(ctx, field)
+			case "history":
+				return ec.fieldContext_AdminConfigIntValue_history(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminConfigIntValue", field.Name)
 		},
 	}
 	return fc, nil
@@ -36859,6 +37323,40 @@ func (ec *executionContext) unmarshalInputSetConfigBoolValueInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSetConfigIntValueInput(ctx context.Context, obj any) (model.SetConfigIntValueInput, error) {
+	var it model.SetConfigIntValueInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetConfigStringValueInput(ctx context.Context, obj any) (model.SetConfigStringValueInput, error) {
 	var it model.SetConfigStringValueInput
 	asMap := map[string]any{}
@@ -38164,6 +38662,13 @@ func (ec *executionContext) _AdminConfigValue(ctx context.Context, sel ast.Selec
 			return graphql.Null
 		}
 		return ec._AdminConfigStringValue(ctx, sel, obj)
+	case model.AdminConfigIntValue:
+		return ec._AdminConfigIntValue(ctx, sel, &obj)
+	case *model.AdminConfigIntValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminConfigIntValue(ctx, sel, obj)
 	case model.AdminConfigBoolValue:
 		return ec._AdminConfigBoolValue(ctx, sel, &obj)
 	case *model.AdminConfigBoolValue:
@@ -39712,6 +40217,29 @@ func (ec *executionContext) _SetConfigBoolValuePayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._SetConfigBoolValueSuccess(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetConfigIntValuePayload(ctx context.Context, sel ast.SelectionSet, obj model.SetConfigIntValuePayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetConfigIntValueSuccess:
+		return ec._SetConfigIntValueSuccess(ctx, sel, &obj)
+	case *model.SetConfigIntValueSuccess:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetConfigIntValueSuccess(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -42890,6 +43418,208 @@ func (ec *executionContext) _AdminConfigBoolValue(ctx context.Context, sel ast.S
 					}
 				}()
 				res = ec._AdminConfigBoolValue_history(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminConfigIntEntryImplementors = []string{"AdminConfigIntEntry"}
+
+func (ec *executionContext) _AdminConfigIntEntry(ctx context.Context, sel ast.SelectionSet, obj *model.AdminConfigIntEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminConfigIntEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminConfigIntEntry")
+		case "id":
+			out.Values[i] = ec._AdminConfigIntEntry_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "value":
+			out.Values[i] = ec._AdminConfigIntEntry_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminConfigIntEntry_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminConfigIntEntry_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminConfigIntValueImplementors = []string{"AdminConfigIntValue", "AdminConfigValue"}
+
+func (ec *executionContext) _AdminConfigIntValue(ctx context.Context, sel ast.SelectionSet, obj *model.AdminConfigIntValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminConfigIntValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminConfigIntValue")
+		case "id":
+			out.Values[i] = ec._AdminConfigIntValue_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._AdminConfigIntValue_description(ctx, field, obj)
+		case "updatedAt":
+			out.Values[i] = ec._AdminConfigIntValue_updatedAt(ctx, field, obj)
+		case "updatedBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminConfigIntValue_updatedBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "value":
+			out.Values[i] = ec._AdminConfigIntValue_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "history":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminConfigIntValue_history(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -47525,6 +48255,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_setConfigBoolValue(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setConfigIntValue":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setConfigIntValue(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -57437,7 +58203,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -60111,6 +60877,11 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "matchOrigin":
+			out.Values[i] = ec._SearchResult_matchOrigin(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "document":
 			field := field
 
@@ -60341,6 +61112,45 @@ func (ec *executionContext) _SetConfigBoolValueSuccess(ctx context.Context, sel 
 			out.Values[i] = graphql.MarshalString("SetConfigBoolValueSuccess")
 		case "configValue":
 			out.Values[i] = ec._SetConfigBoolValueSuccess_configValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setConfigIntValueSuccessImplementors = []string{"SetConfigIntValueSuccess", "SetConfigIntValuePayload"}
+
+func (ec *executionContext) _SetConfigIntValueSuccess(ctx context.Context, sel ast.SelectionSet, obj *model.SetConfigIntValueSuccess) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setConfigIntValueSuccessImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetConfigIntValueSuccess")
+		case "configValue":
+			out.Values[i] = ec._SetConfigIntValueSuccess_configValue(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -63856,6 +64666,64 @@ func (ec *executionContext) marshalNAdminConfigBoolValue2ᚖtrip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._AdminConfigBoolValue(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminConfigIntEntry2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntEntry(ctx context.Context, sel ast.SelectionSet, v model.AdminConfigIntEntry) graphql.Marshaler {
+	return ec._AdminConfigIntEntry(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminConfigIntEntry2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminConfigIntEntry) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminConfigIntEntry2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntEntry(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminConfigIntValue2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigIntValue(ctx context.Context, sel ast.SelectionSet, v *model.AdminConfigIntValue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminConfigIntValue(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminConfigStringEntry2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigStringEntry(ctx context.Context, sel ast.SelectionSet, v model.AdminConfigStringEntry) graphql.Marshaler {
@@ -68294,6 +69162,23 @@ func (ec *executionContext) unmarshalNSearchInput2trip2gᚋinternalᚋgraphᚋmo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNSearchMatchOrigin2trip2gᚋinternalᚋmodelᚐSearchMatchOrigin(ctx context.Context, v any) (model1.SearchMatchOrigin, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := model1.SearchMatchOrigin(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSearchMatchOrigin2trip2gᚋinternalᚋmodelᚐSearchMatchOrigin(ctx context.Context, sel ast.SelectionSet, v model1.SearchMatchOrigin) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNSearchResult2trip2gᚋinternalᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model1.SearchResult) graphql.Marshaler {
 	return ec._SearchResult(ctx, sel, &v)
 }
@@ -68415,6 +69300,21 @@ func (ec *executionContext) marshalNSetConfigBoolValuePayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._SetConfigBoolValuePayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetConfigIntValueInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigIntValueInput(ctx context.Context, v any) (model.SetConfigIntValueInput, error) {
+	res, err := ec.unmarshalInputSetConfigIntValueInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetConfigIntValuePayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigIntValuePayload(ctx context.Context, sel ast.SelectionSet, v model.SetConfigIntValuePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetConfigIntValuePayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetConfigStringValueInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigStringValueInput(ctx context.Context, v any) (model.SetConfigStringValueInput, error) {

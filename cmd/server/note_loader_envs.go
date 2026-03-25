@@ -9,6 +9,42 @@ import (
 	"trip2g/internal/noteloader"
 )
 
+func rawNoteChunksFromLatest(ctx context.Context, a *app) ([]noteloader.RawNoteChunk, error) {
+	rows, err := a.GetAllLatestNoteChunksWithEmbeddings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest note chunks: %w", err)
+	}
+	res := make([]noteloader.RawNoteChunk, len(rows))
+	for i, r := range rows {
+		res[i] = noteloader.RawNoteChunk{
+			VersionID:  r.VersionID,
+			ChunkIndex: r.ChunkIndex,
+			Content:    r.Content,
+			Embedding:  r.Embedding,
+			Path:       r.Path,
+		}
+	}
+	return res, nil
+}
+
+func rawNoteChunksFromLive(ctx context.Context, a *app) ([]noteloader.RawNoteChunk, error) {
+	rows, err := a.GetAllLiveNoteChunksWithEmbeddings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get live note chunks: %w", err)
+	}
+	res := make([]noteloader.RawNoteChunk, len(rows))
+	for i, r := range rows {
+		res[i] = noteloader.RawNoteChunk{
+			VersionID:  r.VersionID,
+			ChunkIndex: r.ChunkIndex,
+			Content:    r.Content,
+			Embedding:  r.Embedding,
+			Path:       r.Path,
+		}
+	}
+	return res, nil
+}
+
 type liveNoteLoaderEnv struct {
 	*app
 }
@@ -64,6 +100,10 @@ func (e *liveNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAsse
 	}
 
 	return res, nil
+}
+
+func (e *liveNoteLoaderEnv) RawNoteChunks(ctx context.Context) ([]noteloader.RawNoteChunk, error) {
+	return rawNoteChunksFromLive(ctx, e.env(ctx))
 }
 
 // just copy-paste the same code for latest notes loader
@@ -136,6 +176,10 @@ func (e *latestNoteLoaderEnv) LoadFrontmatterPatches(ctx context.Context) ([]fro
 	return frontmatterpatch.NewLoader(e.env(ctx)).LoadFrontmatterPatches(ctx)
 }
 
+func (e *latestNoteLoaderEnv) RawNoteChunks(ctx context.Context) ([]noteloader.RawNoteChunk, error) {
+	return rawNoteChunksFromLatest(ctx, e.env(ctx))
+}
+
 func makeLatestNoteLoaderWrapper(a *app) *latestNoteLoaderEnv {
 	return &latestNoteLoaderEnv{app: a}
 }
@@ -198,6 +242,10 @@ func (e *singleNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAs
 	}
 
 	return res, nil
+}
+
+func (e *singleNoteLoaderEnv) RawNoteChunks(_ context.Context) ([]noteloader.RawNoteChunk, error) {
+	return nil, nil // single-note loader is used for preview rendering, not vector search
 }
 
 func makeSingleNoteLoaderWrapper(a *app, versionID int64) *singleNoteLoaderEnv {

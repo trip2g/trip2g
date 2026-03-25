@@ -7,6 +7,7 @@ namespace $.$$ {
 					highlightedContent
 					id: url
 					score
+					matchOrigin
 				}
 			}
 		}
@@ -79,17 +80,26 @@ namespace $.$$ {
 			return this.$.$mol_state_arg.value('q', next) || ''
 		}
 
+		is_vector_only(): boolean {
+			const data = this.data()
+			if (data.size() === 0) return false
+			const origins = data.map((id: any) => data.get(id).matchOrigin)
+			return !origins.some((o: string) => o !== 'VECTOR')
+		}
+
 		override results() {
 			const data = this.data()
 			if (this.is_too_short()) {
 				return []
 			}
 
-			return [
-				this.ResultCount(),
-				...data.map(id => this.ResultItem(id)),
-				this.CloseButton(),
-			]
+			const items: any[] = [this.ResultCount()]
+			if (this.is_vector_only()) {
+				items.push(this.VectorWarning())
+			}
+			items.push(...data.map(id => this.ResultItem(id)))
+			items.push(this.CloseButton())
+			return items
 		}
 
 		override close() {
@@ -99,10 +109,10 @@ namespace $.$$ {
 		override result_count() {
 			const size = this.data().size()
 			if (size === 0) {
-				return 'Результаты не найдены'
+				return this.messages().no_results
 			}
 
-			return `Найдено результатов: ${size}`
+			return `${ this.messages().results_count } ${size}`
 		}
 
 		override result_title( id: any ) {
@@ -122,12 +132,15 @@ namespace $.$$ {
 		}
 
 		override result_score( id: any ): string {
+			const item = this.data().get(id)
 			const data = this.data()
 			const scores = data.map( ( itemId: any ) => data.get( itemId ).score )
 			const maxScore = Math.max( ...scores )
-			const score = data.get( id ).score
-			const normalized = maxScore > 0 ? Math.round( score / maxScore * 10 ) : 0
-			return `${ super.result_score(id) } ${ normalized }/10`
+			const normalized = maxScore > 0 ? Math.round( item.score / maxScore * 10 ) : 0
+
+			const origin = item.matchOrigin
+			const badge = origin === 'VECTOR' ? ' V' : origin === 'HYBRID' ? ' M' : ''
+			return `${ super.result_score(id) } ${ normalized }/10${ badge }`
 		}
 	}
 

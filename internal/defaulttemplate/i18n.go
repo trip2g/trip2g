@@ -2,6 +2,7 @@ package defaulttemplate
 
 import (
 	"embed"
+	"fmt"
 
 	"github.com/BurntSushi/toml"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -11,22 +12,31 @@ import (
 //go:embed langs/*.toml
 var langFiles embed.FS
 
-var bundle *i18n.Bundle //nolint:gochecknoglobals // package-level i18n bundle initialized once at startup
+//nolint:gochecknoglobals // package-level bundle initialized via Init()
+var bundle *i18n.Bundle
 
-// TODO: refactor to Init() error
-func init() { //nolint:gochecknoinits // required for embedding and registering translation files at startup
-	bundle = i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+// Init loads all translation files. Must be called once at startup before T is used.
+func Init() error {
+	b := i18n.NewBundle(language.English)
+	b.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
-	entries, _ := langFiles.ReadDir("langs")
+	entries, err := langFiles.ReadDir("langs")
+	if err != nil {
+		return fmt.Errorf("failed to read lang files: %w", err)
+	}
 	for _, e := range entries {
 		if !e.IsDir() {
-			data, err := langFiles.ReadFile("langs/" + e.Name())
-			if err == nil {
-				_, _ = bundle.ParseMessageFileBytes(data, e.Name())
+			data, readErr := langFiles.ReadFile("langs/" + e.Name())
+			if readErr != nil {
+				return fmt.Errorf("failed to read lang file %s: %w", e.Name(), readErr)
+			}
+			if _, parseErr := b.ParseMessageFileBytes(data, e.Name()); parseErr != nil {
+				return fmt.Errorf("failed to parse lang file %s: %w", e.Name(), parseErr)
 			}
 		}
 	}
+	bundle = b
+	return nil
 }
 
 // T returns the translation for the given message ID in the given language.

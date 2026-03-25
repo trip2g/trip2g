@@ -537,6 +537,19 @@ CREATE TABLE note_version_embeddings (
     tokens integer not null,
     created_at datetime not null default (datetime('now'))
 );
+CREATE TABLE note_version_chunks (
+    id           integer primary key autoincrement,
+    version_id   integer not null references note_versions(id) on delete cascade,
+    chunk_index  integer not null,
+    content      text    not null,
+    embedding    blob,
+    model_id     integer,
+    content_hash blob,
+    tokens       integer,
+    created_at   datetime not null default (datetime('now')),
+    unique(version_id, chunk_index)
+);
+CREATE INDEX note_version_chunks_version_id ON note_version_chunks(version_id);
 CREATE TABLE google_oauth_credentials (
     id integer primary key,
     name text not null,
@@ -568,6 +581,10 @@ CREATE TABLE config_string_values (
 CREATE TABLE config_bool_values (
   change_id integer primary key references config_changes(id) on delete cascade,
   value boolean not null
+);
+CREATE TABLE config_int_values (
+  change_id integer primary key references config_changes(id) on delete cascade,
+  value integer not null
 );
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;

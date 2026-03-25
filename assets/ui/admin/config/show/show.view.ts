@@ -29,6 +29,17 @@ namespace $.$$ {
 							}
 						}
 					}
+					... on AdminConfigIntValue {
+						intValue: value
+						intHistory: history {
+							id
+							value
+							createdAt
+							createdBy {
+								email
+							}
+						}
+					}
 				}
 			}
 		}
@@ -74,6 +85,26 @@ namespace $.$$ {
 		}
 	`)
 
+	const set_int_value = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminSetConfigIntValue($input: SetConfigIntValueInput!) {
+			admin {
+				setConfigIntValue(input: $input) {
+					__typename
+					... on SetConfigIntValueSuccess {
+						configValue {
+							id
+							value
+							updatedAt
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	const TIMEZONE_SUGGESTS = [
 		'UTC',
 		'America/New_York',
@@ -105,6 +136,10 @@ namespace $.$$ {
 			return this.data().__typename === 'AdminConfigBoolValue'
 		}
 
+		is_int_config(): boolean {
+			return this.data().__typename === 'AdminConfigIntValue'
+		}
+
 		is_timezone_config(): boolean {
 			return this.config_id() === 'timezone'
 		}
@@ -126,6 +161,9 @@ namespace $.$$ {
 			if (data.__typename === 'AdminConfigBoolValue') {
 				return data.boolValue ? 'true' : 'false'
 			}
+			if (data.__typename === 'AdminConfigIntValue') {
+				return String(data.intValue)
+			}
 			return data.stringValue || ''
 		}
 
@@ -134,6 +172,11 @@ namespace $.$$ {
 			if (this.is_bool_config()) {
 				const control = new this.$.$mol_check_box()
 				control.checked = (next?: boolean) => this.edit_value_bool(next)
+				return control
+			}
+			if (this.is_int_config()) {
+				const control = new this.$.$mol_number()
+				control.value = (next?: number) => this.edit_value_int(next)
 				return control
 			}
 			if (this.is_timezone_config()) {
@@ -204,6 +247,19 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
+		edit_value_int(next?: number): number {
+			if (next !== undefined) return next
+
+			const data = this.data()
+
+			if (data.__typename !== 'AdminConfigIntValue') {
+				throw new Error('Not an int config')
+			}
+
+			return data.intValue || 0
+		}
+
+		@$mol_mem
 		result_message(next?: string): string {
 			return next ?? ''
 		}
@@ -215,6 +271,16 @@ namespace $.$$ {
 				const value = this.edit_value_bool()
 				const res = set_bool_value({ input: { id: configId, value } })
 				const result = res.admin.setConfigBoolValue
+				if (result.__typename === 'ErrorPayload') {
+					this.result_message(result.message)
+					return
+				}
+				this.result_message('Saved')
+				this.data(null)
+			} else if (this.is_int_config()) {
+				const value = this.edit_value_int()
+				const res = set_int_value({ input: { id: configId, value } })
+				const result = res.admin.setConfigIntValue
 				if (result.__typename === 'ErrorPayload') {
 					this.result_message(result.message)
 					return
@@ -238,6 +304,9 @@ namespace $.$$ {
 			const data = this.data()
 			if (data.__typename === 'AdminConfigBoolValue') {
 				return data.boolHistory || []
+			}
+			if (data.__typename === 'AdminConfigIntValue') {
+				return data.intHistory || []
 			}
 			return data.history || []
 		}

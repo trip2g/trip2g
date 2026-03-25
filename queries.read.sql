@@ -807,6 +807,33 @@ select c.value_id, v.value
     group by c2.value_id
  );
 
+-- name: GetLatestConfigInt :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
+ limit 1;
+
+-- name: ListConfigIntHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
+ limit 50;
+
+-- name: AllLatestConfigInts :many
+select c.value_id, v.value
+  from config_changes c
+  join config_int_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_int_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ );
+
 -- name: ListNotePathsLike :many
 select * from note_paths
  where value like ?
@@ -1125,6 +1152,25 @@ select * from note_version_embeddings where version_id = ?;
 
 -- name: GetNoteVersionEmbeddingsByVersionIDs :many
 select * from note_version_embeddings where version_id in (sqlc.slice('version_ids'));
+
+-- name: GetNoteVersionChunks :many
+select * from note_version_chunks where version_id = ? order by chunk_index;
+
+-- name: GetAllLatestNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id and np.version_count = nv.version
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and np.hidden_by is null;
+
+-- name: GetAllLiveNoteChunksWithEmbeddings :many
+select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
+from note_paths np
+join note_versions nv on np.id = nv.path_id
+join release_note_versions rnv on nv.id = rnv.note_version_id
+join releases r on rnv.release_id = r.id
+join note_version_chunks nc on nv.id = nc.version_id
+where nc.embedding is not null and r.is_live = true;
 
 -- name: GetActiveGoogleOAuthCredentials :one
 select * from google_oauth_credentials where active = true limit 1;

@@ -10,12 +10,14 @@ import (
 type EmbeddingModel int
 
 const (
-	EmbeddingModelSmall EmbeddingModel = 1 // text-embedding-3-small, 1536 dims
-	EmbeddingModelLarge EmbeddingModel = 2 // text-embedding-3-large, 3072 dims
-	EmbeddingModelAda   EmbeddingModel = 3 // text-embedding-ada-002, 1536 dims (legacy)
+	EmbeddingModelSmall              EmbeddingModel = 1 // text-embedding-3-small, 1536 dims
+	EmbeddingModelLarge              EmbeddingModel = 2 // text-embedding-3-large, 3072 dims
+	EmbeddingModelAda                EmbeddingModel = 3 // text-embedding-ada-002, 1536 dims (legacy)
+	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (HuggingFace)
+	EmbeddingModelBGEM3             EmbeddingModel = 5 // bge-m3, 1024 dims (HuggingFace)
 )
 
-// String returns the OpenAI API model name.
+// String returns the API model name.
 func (m EmbeddingModel) String() string {
 	switch m {
 	case EmbeddingModelSmall:
@@ -24,6 +26,10 @@ func (m EmbeddingModel) String() string {
 		return "text-embedding-3-large"
 	case EmbeddingModelAda:
 		return "text-embedding-ada-002"
+	case EmbeddingModelMultilingualE5Base:
+		return "multilingual-e5-base"
+	case EmbeddingModelBGEM3:
+		return "bge-m3"
 	default:
 		return ""
 	}
@@ -38,6 +44,10 @@ func (m EmbeddingModel) Dimensions() int {
 		return 3072
 	case EmbeddingModelAda:
 		return 1536
+	case EmbeddingModelMultilingualE5Base:
+		return 768
+	case EmbeddingModelBGEM3:
+		return 1024
 	default:
 		return 0
 	}
@@ -52,8 +62,36 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 		return EmbeddingModelLarge, nil
 	case "text-embedding-ada-002", "ada":
 		return EmbeddingModelAda, nil
+	case "multilingual-e5-base":
+		return EmbeddingModelMultilingualE5Base, nil
+	case "bge-m3":
+		return EmbeddingModelBGEM3, nil
 	default:
 		return 0, fmt.Errorf("unknown embedding model: %s", s)
+	}
+}
+
+// QueryPrefix returns the prefix to prepend to search queries before embedding.
+// Some models (e.g. intfloat/multilingual-e5-*) require "query: " prefix.
+// Returns empty string for models that don't require it.
+func (m EmbeddingModel) QueryPrefix() string {
+	switch m {
+	case EmbeddingModelMultilingualE5Base:
+		return "query: "
+	default:
+		return ""
+	}
+}
+
+// PassagePrefix returns the prefix to prepend to document passages before embedding.
+// Some models (e.g. intfloat/multilingual-e5-*) require "passage: " prefix.
+// Returns empty string for models that don't require it.
+func (m EmbeddingModel) PassagePrefix() string {
+	switch m {
+	case EmbeddingModelMultilingualE5Base:
+		return "passage: "
+	default:
+		return ""
 	}
 }
 
@@ -61,7 +99,8 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 type VectorSearchConfig struct {
 	Enabled   bool           `json:"enabled"`
 	ModelName string         `json:"model"`
-	Model     EmbeddingModel `json:"-"` // Parsed from ModelName
+	Model     EmbeddingModel `json:"-"`        // Parsed from ModelName
+	BaseURL   string         `json:"base_url"` // optional; empty = OpenAI default; set to Ollama base URL for local embeddings
 }
 
 // Validate validates vector search configuration.

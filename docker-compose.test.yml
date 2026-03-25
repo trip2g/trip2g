@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Local embedding server — bge-m3 via sentence-transformers.
+  # First start downloads the model (~2.3 GB) — subsequent starts reuse the volume cache.
+  embedding:
+    build: ./embedding-server
+    container_name: trip2g-test-embedding
+    ports:
+      - "11434:8000"
+    volumes:
+      - embedding-models:/data
+    environment:
+      - MODEL_NAME=BAAI/bge-m3
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+
   app:
     build:
       context: .
@@ -24,6 +42,8 @@ services:
     container_name: trip2g-test-app
     depends_on:
       minio:
+        condition: service_healthy
+      embedding:
         condition: service_healthy
     ports:
       - "20081:20081"
@@ -38,7 +58,7 @@ services:
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      - 'FEATURES={"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
 
       # MinIO
       - MINIO_ENDPOINT=minio:29000
@@ -64,7 +84,7 @@ services:
       - RESEND_API_KEY=test-key
       - MAIL_FROM=test@example.com
 
-      # OpenAI (optional — passed through from host if set, enables vector search in tests)
+      # OpenAI key (optional — pass through if you need to switch back to text-embedding-3-small)
       - OPENAI_API_KEY
     volumes:
       - ./tmp/data:/data
@@ -78,3 +98,4 @@ services:
 
 volumes:
   test-data:
+  embedding-models:
