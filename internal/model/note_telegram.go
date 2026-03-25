@@ -144,6 +144,26 @@ func (note *NoteView) ExtractTelegramPublishMessageID() (int, bool) {
 	return 0, false
 }
 
+// ExtractTelegramPublishMessageLink returns the t.me link if present in metadata.
+func (note *NoteView) ExtractTelegramPublishMessageLink() (string, bool) {
+	raw, ok := note.RawMeta["telegram_publish_message_link"]
+	if !ok {
+		return "", false
+	}
+	s, ok := raw.(string)
+	return s, ok && s != ""
+}
+
+// ExtractTelegramPublishChannelName returns the channel name if present in metadata.
+func (note *NoteView) ExtractTelegramPublishChannelName() (string, bool) {
+	raw, ok := note.RawMeta["telegram_publish_channel_name"]
+	if !ok {
+		return "", false
+	}
+	s, ok := raw.(string)
+	return s, ok && s != ""
+}
+
 // BuildImportedNotesMap builds a map of imported notes keyed by "channelID:messageID".
 func BuildImportedNotesMap(nvs *NoteViews) map[string]*NoteView {
 	result := make(map[string]*NoteView)

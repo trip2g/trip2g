@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 	"trip2g/internal/usertoken"
 )
@@ -55,6 +56,57 @@ type Ctx struct {
 	PaywallError   *PaywallError
 	UserToken      *usertoken.Data
 	Lang           string
+
+	TelegramLinks []model.TelegramPostLink
+}
+
+// AllTelegramLinks returns TelegramLinks from DB/frontmatter (Source 1+2)
+// merged with links resolved from frontmatter alternatives (Source 3).
+func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
+	result := append([]model.TelegramPostLink{}, ctx.TelegramLinks...)
+
+	if ctx.Note == nil || ctx.Notes == nil {
+		return result
+	}
+
+	raw := ctx.Note.M().Get("alternatives")
+	if raw == nil {
+		return result
+	}
+
+	altList, ok := raw.([]interface{})
+	if !ok {
+		return result
+	}
+
+	for _, alt := range altList {
+		altStr, ok := alt.(string)
+		if !ok {
+			continue
+		}
+		// Strip [[ and ]] from wikilink syntax.
+		target := strings.TrimPrefix(strings.TrimSuffix(strings.TrimSpace(altStr), "]]"), "[[")
+		if target == "" {
+			continue
+		}
+
+		resolved := ctx.Notes.ByWikilink(target)
+		if resolved == nil {
+			continue
+		}
+
+		link, ok := resolved.Unwrap().ExtractTelegramPublishMessageLink()
+		if !ok {
+			continue
+		}
+
+		result = append(result, model.TelegramPostLink{
+			ChatTitle: model.ExtractChannelFromTelegramLink(link),
+			URL:       link,
+		})
+	}
+
+	return result
 }
 
 // noteExists returns true if a note with the given wikilink name exists in ctx.Notes.

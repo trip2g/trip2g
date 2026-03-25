@@ -2210,6 +2210,64 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 	return i, err
 }
 
+const getTelegramPostLinksByNoteVersionID = `-- name: GetTelegramPostLinksByNoteVersionID :many
+select c.chat_title
+     , c.telegram_id as telegram_chat_id
+     , m.message_id
+  from telegram_publish_sent_messages m
+  join tg_bot_chats c on c.id = m.chat_id
+  join note_versions nv on nv.path_id = m.note_path_id
+ where nv.id = ?
+   and m.instant = 0
+
+ union all
+
+select '' as chat_title
+     , am.telegram_chat_id
+     , am.message_id
+  from telegram_publish_sent_account_messages am
+  join note_versions nv on nv.path_id = am.note_path_id
+ where nv.id = ?
+   and am.instant = 0
+`
+
+type GetTelegramPostLinksByNoteVersionIDParams struct {
+	ID   int64 `json:"id"`
+	ID_2 int64 `json:"id_2"`
+}
+
+type GetTelegramPostLinksByNoteVersionIDRow struct {
+	ChatTitle      string `json:"chat_title"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+	MessageID      int64  `json:"message_id"`
+}
+
+// Returns all Telegram channels where this note version's path was published.
+// Joins through note_versions to bridge version_id to note_path_id.
+// TODO: consider caching results per version_id to avoid per-request DB query.
+func (q *Queries) GetTelegramPostLinksByNoteVersionID(ctx context.Context, arg GetTelegramPostLinksByNoteVersionIDParams) ([]GetTelegramPostLinksByNoteVersionIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTelegramPostLinksByNoteVersionID, arg.ID, arg.ID_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTelegramPostLinksByNoteVersionIDRow
+	for rows.Next() {
+		var i GetTelegramPostLinksByNoteVersionIDRow
+		if err := rows.Scan(&i.ChatTitle, &i.TelegramChatID, &i.MessageID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTelegramPublishAccountChatAccessHash = `-- name: GetTelegramPublishAccountChatAccessHash :one
 select access_hash
   from telegram_publish_account_chats

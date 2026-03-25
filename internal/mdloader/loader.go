@@ -328,13 +328,15 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 
 // buildBasenameIndex creates a map from lowercase basename to notes
 // for O(1) lookup in extractInLinks instead of O(n) iteration per link.
+// Also exposes it on NoteViews.BasenameMap for use by the template layer.
 func (ldr *loader) buildBasenameIndex() {
-	ldr.basenameIndex = make(map[string][]*model.NoteView, len(ldr.nvs.PathMap))
+	ldr.nvs.BasenameMap = make(map[string][]*model.NoteView, len(ldr.nvs.PathMap))
 	for path, note := range ldr.nvs.PathMap {
 		filename := strings.TrimSuffix(filepath.Base(path), ".md")
 		key := strings.ToLower(filename)
-		ldr.basenameIndex[key] = append(ldr.basenameIndex[key], note)
+		ldr.nvs.BasenameMap[key] = append(ldr.nvs.BasenameMap[key], note)
 	}
+	ldr.basenameIndex = ldr.nvs.BasenameMap
 }
 
 func (ldr *loader) extractInLinks() error {

@@ -34,6 +34,7 @@ type Env interface {
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	GetTelegramPostLinksByNoteVersionID(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
 }
 
 type Request struct {
@@ -81,6 +82,8 @@ type Response struct {
 	}
 
 	OnboardingMode bool
+
+	TelegramLinks []model.TelegramPostLink
 
 	// domainHost is the normalized custom domain host for this request.
 	// Empty string for main domain requests.
@@ -254,6 +257,33 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	if !hasAccess {
 		return &response, &PaywallError{Message: "Need subscription"}
+	}
+
+	// Fetch Telegram post links for this note (DB query, not cached).
+	if note.VersionID > 0 {
+		rows, err := env.GetTelegramPostLinksByNoteVersionID(ctx, db.GetTelegramPostLinksByNoteVersionIDParams{
+			ID:   note.VersionID,
+			ID_2: note.VersionID,
+		})
+		if err == nil {
+			for _, row := range rows {
+				chatID := model.NormalizeTelegramChatID(row.TelegramChatID)
+				response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
+					ChatTitle: row.ChatTitle,
+					URL:       fmt.Sprintf("https://t.me/c/%d/%d", chatID, row.MessageID),
+				})
+			}
+		}
+	}
+
+	// Fallback: frontmatter telegram_publish_message_link (for imported notes).
+	if len(response.TelegramLinks) == 0 {
+		if link, ok := note.ExtractTelegramPublishMessageLink(); ok {
+			response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
+				ChatTitle: model.ExtractChannelFromTelegramLink(link),
+				URL:       link,
+			})
+		}
 	}
 
 	return &response, nil

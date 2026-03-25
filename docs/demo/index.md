@@ -69,6 +69,10 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 42. [[lang_hub/english_hub]] - English content but
 43. [[lang_hub/english_hub_russian]] - Russian from english_hub
 
+## Telegram Post Links
+44. [[telegram_publish_message_link]] - note with telegram_publish_message_link (shows TG button)
+45. [[telegram_publish_message_link_parent]] - parent with alternatives pointing to TG note
+
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
 - `_sidebar.md` - global sidebar

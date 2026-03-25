@@ -268,6 +268,17 @@ window.__trip2g_settings = {
     {% endfor %}
   </nav>
   {% endif %}
+  {% code tgLinks := ctx.AllTelegramLinks() %}
+  {% if len(tgLinks) > 0 %}
+  <div class="tg-buttons">
+    {% for _, link := range tgLinks %}
+    <a href="{%s= link.URL %}" class="tg-button" target="_blank" rel="noopener">
+      <span class="tg-button__icon"></span>
+      {% if link.ChatTitle != "" %}{%s ctx.T("tg_read_on") %} @{%s link.ChatTitle %}{% else %}{%s ctx.T("tg_read") %}{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
   <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
 </article>

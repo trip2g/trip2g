@@ -461,7 +461,8 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			string(req.Req.Request.Header.Cookie(langCookieName)),
 			string(req.Req.Request.Header.Peek("Accept-Language")),
 		),
-		UserToken: resp.UserToken,
+		UserToken:     resp.UserToken,
+		TelegramLinks: resp.TelegramLinks,
 	}
 
 	return dtCtx

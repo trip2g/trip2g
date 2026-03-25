@@ -963,6 +963,29 @@ select tsam.account_id
    and p.hidden_at is null
  order by tsam.created_at asc;
 
+-- name: GetTelegramPostLinksByNoteVersionID :many
+-- Returns all Telegram channels where this note version's path was published.
+-- Joins through note_versions to bridge version_id to note_path_id.
+-- TODO: consider caching results per version_id to avoid per-request DB query.
+select c.chat_title
+     , c.telegram_id as telegram_chat_id
+     , m.message_id
+  from telegram_publish_sent_messages m
+  join tg_bot_chats c on c.id = m.chat_id
+  join note_versions nv on nv.path_id = m.note_path_id
+ where nv.id = ?
+   and m.instant = 0
+
+ union all
+
+select '' as chat_title
+     , am.telegram_chat_id
+     , am.message_id
+  from telegram_publish_sent_account_messages am
+  join note_versions nv on nv.path_id = am.note_path_id
+ where nv.id = ?
+   and am.instant = 0;
+
 -- name: GetTelegramPublishNoteByNotePathID :one
 select *
   from telegram_publish_notes

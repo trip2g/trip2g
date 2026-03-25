@@ -57,6 +57,51 @@ func (n *NVS) ByPermalink(permalink string) *Note {
 	return NewNote(nv)
 }
 
+// ByWikilink resolves a wikilink target using Obsidian's algorithm:
+// 1. If target contains "/" — explicit path lookup
+// 2. Otherwise — global basename lookup (shortest path from root wins)
+// See docs/dev/obsidian_links.md for the full algorithm.
+func (n *NVS) ByWikilink(target string) *Note {
+	if n.nvs == nil || target == "" {
+		return nil
+	}
+
+	// Explicit path: try permalink and PathMap.
+	if strings.Contains(target, "/") {
+		permalink := "/" + strings.ToLower(strings.ReplaceAll(target, " ", "_"))
+		if nv, ok := n.nvs.Map[permalink]; ok {
+			return NewNote(nv)
+		}
+		pathKey := strings.ReplaceAll(target, " ", "_") + ".md"
+		if nv, ok := n.nvs.PathMap[pathKey]; ok {
+			return NewNote(nv)
+		}
+		return nil
+	}
+
+	// Global basename lookup via BasenameMap (O(1)).
+	key := strings.ToLower(strings.ReplaceAll(target, " ", "_"))
+	candidates := n.nvs.BasenameMap[key]
+	if len(candidates) == 1 {
+		return NewNote(candidates[0])
+	}
+	if len(candidates) > 1 {
+		// Shortest path from root wins (Obsidian priority).
+		shortest := candidates[0]
+		shortestDepth := strings.Count(shortest.Path, "/")
+		for _, c := range candidates[1:] {
+			depth := strings.Count(c.Path, "/")
+			if depth < shortestDepth {
+				shortest = c
+				shortestDepth = depth
+			}
+		}
+		return NewNote(shortest)
+	}
+
+	return nil
+}
+
 // Sidebars returns sidebar notes for a given note.
 func (n *NVS) Sidebars(note *Note) []*Note {
 	if n.nvs == nil || note == nil {

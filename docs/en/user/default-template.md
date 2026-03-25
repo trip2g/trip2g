@@ -407,3 +407,56 @@ ru/**/*.md → {header: "[[ru/_header]]", footer: "[[ru/_footer]]"}
 No individual note knows about the template — everything is injected from outside via patches.
 
 → [[en/user/frontmatter-patches|Full frontmatter patches documentation]]
+
+---
+
+## Telegram post links
+
+If a note has been published to a Telegram channel, the template shows a blue "Read in Telegram" button above the title. Clicking it opens the Telegram post directly.
+
+The button appears automatically in three cases:
+
+### 1. Published via trip2g
+
+When you publish a note to Telegram through trip2g's publishing system, the button appears automatically. If the note was published to multiple channels, each channel gets its own button with the channel name.
+
+No frontmatter needed — trip2g tracks sent messages in the database.
+
+### 2. Imported from Telegram
+
+Notes imported from a Telegram channel already have the link in frontmatter:
+
+```yaml
+---
+telegram_publish_channel_id: "1234567890"
+telegram_publish_message_id: 42
+telegram_publish_message_link: https://t.me/c/1234567890/42
+---
+```
+
+The `telegram_publish_message_link` field is set automatically during import. The button uses this URL directly.
+
+For public channels the link format is `https://t.me/channelname/42` — in this case the button shows the channel name: "Read on @channelname".
+
+### 3. Alternatives (cross-linking to Telegram version)
+
+If you have a web version and a separate Telegram version of the same content, use the `alternatives` frontmatter field:
+
+```yaml
+---
+title: My Article
+alternatives:
+  - "[[My Article. Telegram]]"
+---
+```
+
+The linked note (`My Article. Telegram`) must either have `telegram_publish_message_link` in its frontmatter or be published via trip2g's publishing system. The template resolves the wikilink, extracts the Telegram link, and shows the button on the parent page.
+
+This is useful when you publish a shorter or differently formatted version to Telegram and want to link between the two.
+
+### Priority
+
+The template checks sources in this order:
+1. **Database** (published via trip2g) — checked first, supports multiple channels
+2. **Frontmatter `telegram_publish_message_link`** — fallback for imported notes
+3. **Alternatives** — resolved from linked notes

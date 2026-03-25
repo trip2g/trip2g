@@ -15,3 +15,9 @@ other = "Войдите как администратор, чтобы начат
 
 [paywall_home]
 other = "← Главная"
+
+[tg_read_on]
+other = "Читать на"
+
+[tg_read]
+other = "Читать в Telegram"

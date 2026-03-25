@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 type TelegramPost struct {
 	MessageID  *int64 `json:"message_id,omitempty"`
 	NotePathID int64  `json:"note_path_id"`
@@ -17,6 +19,38 @@ type TelegramPost struct {
 	ExternalLinkCount   int64 `json:"external_link_count"`
 
 	DisableWebPagePreview bool `json:"disable_web_page_preview"`
+}
+
+// TelegramPostLink represents a link to a published Telegram post.
+// Used by the default template to render "Read in Telegram" links.
+type TelegramPostLink struct {
+	ChatTitle string // Channel name (from tg_bot_chats.chat_title, may be empty for account messages).
+	URL       string // Full t.me URL, e.g. https://t.me/c/1234567890/123
+}
+
+// NormalizeTelegramChatID converts Telegram chat ID to channel ID format.
+// For channels, removes the -100 prefix (e.g., -1001234567890 -> 1234567890).
+// For other chat types, returns the absolute value.
+func NormalizeTelegramChatID(chatID int64) int64 {
+	if chatID > -1000000000000 && chatID < 0 {
+		return -chatID
+	}
+	// Channel IDs: -100XXXXXXXXXX → strip -100
+	if chatID <= -1000000000000 {
+		return -(chatID + 1000000000000)
+	}
+	return chatID
+}
+
+// ExtractChannelFromTelegramLink extracts a readable channel identifier from a t.me URL.
+// "https://t.me/mychannel/123" -> "mychannel"
+// "https://t.me/c/1234567890/123" -> "" (private channel, no readable name)
+func ExtractChannelFromTelegramLink(link string) string {
+	parts := strings.Split(strings.TrimPrefix(link, "https://t.me/"), "/")
+	if len(parts) >= 2 && parts[0] != "c" {
+		return parts[0]
+	}
+	return ""
 }
 
 type TelegramPostSource struct {
