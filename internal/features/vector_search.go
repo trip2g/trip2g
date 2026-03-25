@@ -13,7 +13,8 @@ const (
 	EmbeddingModelSmall              EmbeddingModel = 1 // text-embedding-3-small, 1536 dims
 	EmbeddingModelLarge              EmbeddingModel = 2 // text-embedding-3-large, 3072 dims
 	EmbeddingModelAda                EmbeddingModel = 3 // text-embedding-ada-002, 1536 dims (legacy)
-	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (HuggingFace TEI)
+	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (HuggingFace)
+	EmbeddingModelBGEM3             EmbeddingModel = 5 // bge-m3, 1024 dims (HuggingFace)
 )
 
 // String returns the API model name.
@@ -27,6 +28,8 @@ func (m EmbeddingModel) String() string {
 		return "text-embedding-ada-002"
 	case EmbeddingModelMultilingualE5Base:
 		return "multilingual-e5-base"
+	case EmbeddingModelBGEM3:
+		return "bge-m3"
 	default:
 		return ""
 	}
@@ -43,6 +46,8 @@ func (m EmbeddingModel) Dimensions() int {
 		return 1536
 	case EmbeddingModelMultilingualE5Base:
 		return 768
+	case EmbeddingModelBGEM3:
+		return 1024
 	default:
 		return 0
 	}
@@ -59,6 +64,8 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 		return EmbeddingModelAda, nil
 	case "multilingual-e5-base":
 		return EmbeddingModelMultilingualE5Base, nil
+	case "bge-m3":
+		return EmbeddingModelBGEM3, nil
 	default:
 		return 0, fmt.Errorf("unknown embedding model: %s", s)
 	}

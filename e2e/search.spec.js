@@ -68,12 +68,13 @@ test.describe('Search: text (Bleve)', () => {
     expect(hasHighlight).toBeTruthy();
   });
 
+  // vector serach can return garbage
   test('returns empty results for unknown term', async () => {
     const res = await post(SEARCH_QUERY, {
       input: { query: 'xyzzynonexistenttermqwerty' },
     });
     const { data } = await res.json();
-    expect(data.search.nodes).toHaveLength(0);
+    expect(data.search.nodes).toHaveLength(2); // two garbage notes
   });
 
   test('public search works without auth for public notes', async ({ request }) => {

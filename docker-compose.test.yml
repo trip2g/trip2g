@@ -17,8 +17,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # Local embedding server — multilingual-e5-base via sentence-transformers.
-  # First start downloads the model (~1 GB) — subsequent starts reuse the volume cache.
+  # Local embedding server — bge-m3 via sentence-transformers.
+  # First start downloads the model (~2.3 GB) — subsequent starts reuse the volume cache.
   embedding:
     build: ./embedding-server
     container_name: trip2g-test-embedding
@@ -27,7 +27,7 @@ services:
     volumes:
       - embedding-models:/data
     environment:
-      - MODEL_NAME=intfloat/multilingual-e5-base
+      - MODEL_NAME=BAAI/bge-m3
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
       interval: 10s
@@ -58,7 +58,7 @@ services:
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      - 'FEATURES={"vector_search": {"enabled": true, "model": "multilingual-e5-base", "base_url": "http://embedding:8000/v1"}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
 
       # MinIO
       - MINIO_ENDPOINT=minio:29000
