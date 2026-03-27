@@ -222,7 +222,7 @@ window.__trip2g_settings = {
   <h3 class="widget__title">{%s ctx.T("backlinks_title") %}</h3>
   <ul class="widget__list">
     {% for _, bl := range backlinks %}
-    <li class="widget__item"><a class="widget__link" href="{%s= bl.Permalink() %}">{%s bl.Title() %}</a></li>
+    <li class="widget__item"><a class="widget__link" href="{%s= bl.PermalinkEncoded() %}">{%s bl.Title() %}</a></li>
     {% endfor %}
   </ul>
 </div>
@@ -264,7 +264,7 @@ window.__trip2g_settings = {
   <nav class="lang-switcher">
     <span class="lang-switcher__label">Read in:</span>
     {% for _, alt := range ctx.Note.LangAlternativesList() %}
-    <a href="{%s= alt.Permalink() %}" class="lang-switcher__alt lang-switcher__alt--{%s= alt.Lang() %}">{%s= alt.Lang() %}</a>
+    <a href="{%s= alt.PermalinkEncoded() %}" class="lang-switcher__alt lang-switcher__alt--{%s= alt.Lang() %}">{%s= alt.Lang() %}</a>
     {% endfor %}
   </nav>
   {% endif %}
@@ -328,9 +328,9 @@ window.__trip2g_settings = {
 %}
 <article class="{%s= itemClass %}">
 {% if item.Size == MagazineItemFeatured %}
-  <h2 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h2>
+  <h2 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.PermalinkEncoded() %}">{%s item.Note.Title() %}</a></h2>
   {% else %}
-  <h3 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.Permalink() %}">{%s item.Note.Title() %}</a></h3>
+  <h3 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.PermalinkEncoded() %}">{%s item.Note.Title() %}</a></h3>
   {% endif %}
   {% code pr := item.Note.PartialRenderer() %}
   {% if pr != nil %}
@@ -340,7 +340,7 @@ window.__trip2g_settings = {
   {% endif %}
   {% endif %}
   <div class="magazine-item__footer">
-    <a class="magazine-item__readmore" href="{%s= item.Note.Permalink() %}">{%s ctx.T("readmore") %}</a>
+    <a class="magazine-item__readmore" href="{%s= item.Note.PermalinkEncoded() %}">{%s ctx.T("readmore") %}</a>
     <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
   </div>
 </article>

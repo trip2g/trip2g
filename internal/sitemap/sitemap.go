@@ -38,7 +38,7 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 		}
 
 		entry := urlEntry{
-			Loc: publicURL + note.Permalink,
+			Loc: publicURL + note.PermalinkEncoded(),
 		}
 
 		if !note.CreatedAt.IsZero() {

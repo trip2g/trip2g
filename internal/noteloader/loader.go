@@ -61,6 +61,9 @@ type Env interface {
 	// LoadFrontmatterPatches loads and compiles frontmatter patches from database
 	LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error)
 
+	// LoadSiteConfig loads site-wide configuration from database (hot-reloadable)
+	LoadSiteConfig(ctx context.Context) (model.SiteConfig, error)
+
 	layoutloader.Env
 }
 
@@ -106,6 +109,15 @@ type LoadOptions struct {
 
 //nolint:gocognit,funlen // complex loading logic with multiple data sources
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
+	// Load site config from database (hot-reloadable URL normalization method, etc.)
+	siteConfig, err := l.env.LoadSiteConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load site config: %w", err)
+	}
+	if siteConfig.URLNormalizationMethod.Valid() {
+		l.config.URLNormalizationMethod = siteConfig.URLNormalizationMethod
+	}
+
 	// Load frontmatter patches from database before loading notes
 	patches, err := l.env.LoadFrontmatterPatches(ctx)
 	if err != nil {

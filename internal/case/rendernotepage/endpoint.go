@@ -61,6 +61,17 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.HrefLangs = buildHrefLangs(env, resp.Note)
 	}
 
+	// 301 redirect for non-canonical URL variants (alternate transliteration methods).
+	if resp.Note != nil && resp.Note.AlternatePermalinks != nil && request.Path != resp.Note.Permalink {
+		redirectURL := resp.Note.PermalinkEncoded()
+		if qs := req.Req.URI().QueryString(); len(qs) > 0 {
+			redirectURL += "?" + string(qs)
+		}
+		ctx.Response.Header.Set("Location", redirectURL)
+		ctx.SetStatusCode(http.StatusMovedPermanently)
+		return nil, nil
+	}
+
 	if resp.Note != nil && resp.Note.Redirect != nil {
 		ctx.Response.Header.Set("Location", *resp.Note.Redirect)
 		ctx.SetStatusCode(http.StatusFound)

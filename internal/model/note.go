@@ -3,13 +3,12 @@ package model
 import (
 	"fmt"
 	"html/template"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
-	"trip2g/internal/russkayalatinica"
+	rl2 "trip2g/internal/russkayalatinica2"
 	"unicode"
 
 	"github.com/yuin/goldmark/ast"
@@ -181,6 +180,11 @@ type NoteView struct {
 
 	PermalinkOriginal string
 
+	// AlternatePermalinks holds non-canonical URL variants for redirect support.
+	// Keys are URLNormalizationMethod values, values are the transliterated paths.
+	// nil for slug-based notes (no transliteration variants).
+	AlternatePermalinks map[URLNormalizationMethod]string `json:"-"`
+
 	Free          bool // without the paywall
 	ExcludeSearch bool // search: false in frontmatter
 	Redirect      *string
@@ -347,25 +351,20 @@ func normalizeURLPart(s string) string {
 	return res
 }
 
-// escapeAndJoinPath escapes each segment of a path and joins them.
-func escapeAndJoinPath(path string) string {
-	parts := strings.Split(path, "/")
-	escapedParts := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-		escapedParts = append(escapedParts, url.PathEscape(part))
-	}
-	return "/" + strings.Join(escapedParts, "/")
+// PermalinkEncoded returns percent-encoded Permalink for HTTP output
+// (Location headers, sitemap, template hrefs).
+func (n *NoteView) PermalinkEncoded() string {
+	return PermalinkEncode(n.Permalink)
 }
 
 // preparePermalinkFromSlug handles custom slug URL override.
+// Slug-based notes store Permalink as decoded unicode (no percent-encoding).
+// No AlternatePermalinks — slugs bypass transliteration entirely.
 func (n *NoteView) preparePermalinkFromSlug() {
 	if strings.HasPrefix(n.Slug, "/") {
 		// Absolute slug - use as full path
 		n.IsIndex = strings.HasSuffix(n.Slug, "/index") || strings.HasSuffix(n.Slug, "/_index")
-		n.Permalink = escapeAndJoinPath(n.Slug)
+		n.Permalink = n.Slug
 		n.PermalinkOriginal = n.Slug
 		return
 	}
@@ -384,11 +383,13 @@ func (n *NoteView) preparePermalinkFromSlug() {
 	}
 
 	n.IsIndex = strings.HasSuffix(n.Slug, "/index") || strings.HasSuffix(n.Slug, "/_index")
-	n.Permalink = escapeAndJoinPath(fullPath)
+	n.Permalink = fullPath
 	n.PermalinkOriginal = fullPath
 }
 
-func (n *NoteView) PreparePermalink() {
+// PreparePermalink normalizes the note path into a canonical URL using the given method.
+// It also computes AlternatePermalinks for all other transliteration methods (for redirect support).
+func (n *NoteView) PreparePermalink(method URLNormalizationMethod) {
 	// If slug is set in metadata, use it instead of normalizing path
 	if n.Slug != "" {
 		n.preparePermalinkFromSlug()
@@ -428,7 +429,20 @@ func (n *NoteView) PreparePermalink() {
 	}
 
 	n.PermalinkOriginal = "/" + strings.Join(newParts, "/")
-	n.Permalink = russkayalatinica.Translit(n.PermalinkOriginal)
+	n.Permalink = method.Apply(n.PermalinkOriginal)
+
+	// Compute alternate URL variants for redirect support.
+	// Only store variants that differ from the canonical Permalink and PermalinkOriginal.
+	allVariants := AllURLVariants(n.PermalinkOriginal)
+	alternates := make(map[URLNormalizationMethod]string)
+	for m, v := range allVariants {
+		if v != n.Permalink && v != n.PermalinkOriginal {
+			alternates[m] = v
+		}
+	}
+	if len(alternates) > 0 {
+		n.AlternatePermalinks = alternates
+	}
 }
 
 func (n *NoteView) IsHomePage() bool {
@@ -745,7 +759,7 @@ func (n *NoteView) extractTOCDisplay() {
 var onlyCharsRE = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
 func (n *NoteView) generateHeadingID(headingText string) string {
-	id := russkayalatinica.Translit(headingText)
+	id := rl2.Translit(headingText)
 	id = onlyCharsRE.ReplaceAllString(id, "_")
 	id = strings.ToLower(id)
 	id = fmt.Sprintf("%s_%d", id, n.PathID)
@@ -1172,6 +1186,16 @@ func (nv *NoteViews) RegisterNote(note *NoteView) {
 	nv.Map[note.Permalink] = note
 	nv.Map[note.PermalinkOriginal] = note
 	nv.PathMap[note.Path] = note
+
+	// Register alternate permalink variants for redirect support.
+	for _, v := range note.AlternatePermalinks {
+		if existing, ok := nv.Map[v]; ok && existing != note {
+			// Collision: two different notes produce the same alternate URL.
+			// Last-writer-wins; log would go here if logger were available.
+			_ = existing
+		}
+		nv.Map[v] = note
+	}
 
 	if note.IsIndex {
 		if note.Permalink == "/" {

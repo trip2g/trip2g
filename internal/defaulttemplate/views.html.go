@@ -842,7 +842,7 @@ func StreamInLinksWidget(qw422016 *qt422016.Writer, ctx *Ctx) {
 				qw422016.N().S(`
     <li class="widget__item"><a class="widget__link" href="`)
 //line views.html:225
-				qw422016.N().S(bl.Permalink())
+				qw422016.N().S(bl.PermalinkEncoded())
 //line views.html:225
 				qw422016.N().S(`">`)
 //line views.html:225
@@ -1082,7 +1082,7 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 				qw422016.N().S(`
     <a href="`)
 //line views.html:267
-				qw422016.N().S(alt.Permalink())
+				qw422016.N().S(alt.PermalinkEncoded())
 //line views.html:267
 				qw422016.N().S(`" class="lang-switcher__alt lang-switcher__alt--`)
 //line views.html:267
@@ -1354,7 +1354,7 @@ func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, 
 		qw422016.N().S(`
   <h2 class="magazine-item__title"><a class="magazine-item__link" href="`)
 //line views.html:331
-		qw422016.N().S(item.Note.Permalink())
+		qw422016.N().S(item.Note.PermalinkEncoded())
 //line views.html:331
 		qw422016.N().S(`">`)
 //line views.html:331
@@ -1368,7 +1368,7 @@ func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, 
 		qw422016.N().S(`
   <h3 class="magazine-item__title"><a class="magazine-item__link" href="`)
 //line views.html:333
-		qw422016.N().S(item.Note.Permalink())
+		qw422016.N().S(item.Note.PermalinkEncoded())
 //line views.html:333
 		qw422016.N().S(`">`)
 //line views.html:333
@@ -1420,7 +1420,7 @@ func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, 
   <div class="magazine-item__footer">
     <a class="magazine-item__readmore" href="`)
 //line views.html:343
-	qw422016.N().S(item.Note.Permalink())
+	qw422016.N().S(item.Note.PermalinkEncoded())
 //line views.html:343
 	qw422016.N().S(`">`)
 //line views.html:343

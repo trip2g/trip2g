@@ -10,29 +10,29 @@ import (
 
 func TestPerparePermalink(t *testing.T) {
 	n := NoteView{Path: "/Моя заметка + другая заметка.md"}
-	n.PreparePermalink()
+	n.PreparePermalink(DefaultURLNormalizationMethod)
 
 	require.Equal(t, "/moya_zametka_drugaya_zametka", n.Permalink)
 
 	n.Path = "Моя особая + страница"
-	n.PreparePermalink()
+	n.PreparePermalink(DefaultURLNormalizationMethod)
 
 	require.Equal(t, "/moya_osobaya_stranica", n.Permalink)
 
 	n.Path = "_banner.md"
-	n.PreparePermalink()
+	n.PreparePermalink(DefaultURLNormalizationMethod)
 
 	require.Equal(t, "/_banner", n.Permalink)
 	require.False(t, n.IsIndex)
 
 	n.Path = "/nested/index.md"
-	n.PreparePermalink()
+	n.PreparePermalink(DefaultURLNormalizationMethod)
 
 	require.Equal(t, "/nested", n.Permalink)
 	require.True(t, n.IsIndex)
 
 	n.Path = "/nested/_index.md"
-	n.PreparePermalink()
+	n.PreparePermalink(DefaultURLNormalizationMethod)
 
 	require.Equal(t, "/nested", n.Permalink)
 	require.True(t, n.IsIndex)
@@ -83,15 +83,15 @@ func TestPreparePermalinkWithSlug(t *testing.T) {
 			name:              "cyrillic slug no transliteration",
 			path:              "file.md",
 			slug:              "моя-страница",
-			expectedPermalink: "/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0",
+			expectedPermalink: "/моя-страница",
 			expectedOriginal:  "/моя-страница",
 			expectedIsIndex:   false,
 		},
 		{
-			name:              "slug with spaces URL encoded",
+			name:              "slug with spaces stored as unicode",
 			path:              "file.md",
 			slug:              "page with spaces",
-			expectedPermalink: "/page%20with%20spaces",
+			expectedPermalink: "/page with spaces",
 			expectedOriginal:  "/page with spaces",
 			expectedIsIndex:   false,
 		},
@@ -128,7 +128,7 @@ func TestPreparePermalinkWithSlug(t *testing.T) {
 				Slug: tt.slug,
 			}
 
-			n.PreparePermalink()
+			n.PreparePermalink(DefaultURLNormalizationMethod)
 
 			require.Equal(t, tt.expectedPermalink, n.Permalink)
 			require.Equal(t, tt.expectedOriginal, n.PermalinkOriginal)
@@ -646,7 +646,7 @@ func TestSlugUnchanged(t *testing.T) {
 			"route": "/alias",
 		},
 	}
-	note.PreparePermalink()
+	note.PreparePermalink(DefaultURLNormalizationMethod)
 	note.Routes = note.ExtractRoutes()
 	nvs.RegisterNote(note)
 

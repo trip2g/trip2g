@@ -78,6 +78,11 @@ func (n *Note) Permalink() string {
 	return n.nv.Permalink
 }
 
+// PermalinkEncoded returns the percent-encoded permalink for use in HTML href attributes.
+func (n *Note) PermalinkEncoded() string {
+	return n.nv.PermalinkEncoded()
+}
+
 // CreatedAt returns the note creation time.
 func (n *Note) CreatedAt() time.Time {
 	return n.nv.CreatedAt

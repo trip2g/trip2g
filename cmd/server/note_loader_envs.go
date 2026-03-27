@@ -6,6 +6,7 @@ import (
 	"strings"
 	"trip2g/internal/appreq"
 	"trip2g/internal/frontmatterpatch"
+	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
 )
 
@@ -174,6 +175,11 @@ func (e *latestNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAs
 // uncommitted inserts (SQLite read-your-own-writes within a transaction).
 func (e *latestNoteLoaderEnv) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error) {
 	return frontmatterpatch.NewLoader(e.env(ctx)).LoadFrontmatterPatches(ctx)
+}
+
+// LoadSiteConfig uses context-aware env for transaction visibility.
+func (e *latestNoteLoaderEnv) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
+	return e.env(ctx).SiteConfig(ctx), nil
 }
 
 func (e *latestNoteLoaderEnv) RawNoteChunks(ctx context.Context) ([]noteloader.RawNoteChunk, error) {

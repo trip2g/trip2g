@@ -65,8 +65,9 @@ type loader struct {
 }
 
 type Config struct {
-	FreeParagraphs int // Default number of free paragraphs from config
-	SoftWraps      bool
+	FreeParagraphs         int // Default number of free paragraphs from config
+	SoftWraps              bool
+	URLNormalizationMethod model.URLNormalizationMethod
 }
 
 type Options struct {
@@ -596,7 +597,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		}
 	}
 
-	pp.PreparePermalink()
+	pp.PreparePermalink(ldr.config.URLNormalizationMethod)
 	pp.SetAst(doc)
 
 	// Set content and page for partial renderer.

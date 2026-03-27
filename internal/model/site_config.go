@@ -8,5 +8,6 @@ type SiteConfig struct {
 	RobotsTxt            string
 	ShowDraftVersions    bool
 	EnableRSS            bool
-	VectorMinSimilarity  int // 1–1000, divide by 1000 to get float threshold
+	VectorMinSimilarity      int // 1–1000, divide by 1000 to get float threshold
+	URLNormalizationMethod   URLNormalizationMethod
 }

@@ -607,6 +607,11 @@ func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 				cfg.DefaultLayout = s.Value
 			case "robots_txt":
 				cfg.RobotsTxt = s.Value
+			case "url_normalization_method":
+				m := model.URLNormalizationMethod(s.Value)
+				if m.Valid() {
+					cfg.URLNormalizationMethod = m
+				}
 			}
 		}
 	}
@@ -798,6 +803,11 @@ func (a *app) CalculateSha256(s string) string {
 // It delegates to the frontmatterPatchLoader which handles loading and compilation.
 func (a *app) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error) {
 	return a.frontmatterPatchLoader.LoadFrontmatterPatches(ctx)
+}
+
+// LoadSiteConfig implements noteloader.Env interface.
+func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
+	return a.SiteConfig(ctx), nil
 }
 
 func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
