@@ -104,6 +104,31 @@ func (a *appQueue) start() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	// Don't start if rootCtx is already cancelled — the runner would exit
+	// immediately but the queue would look "running" (cancel != nil).
+	if a.rootCtx.Err() != nil {
+		return
+	}
+
+	// If already running, stop the current goroutine first to avoid leaking
+	// it (the old cancel would be overwritten and the goroutine unstoppable).
+	if a.cancel != nil {
+		a.cancel()
+		a.cancel = nil
+
+		// Unlock while waiting so other goroutines (e.g. the runner itself)
+		// can proceed. Re-lock after wait returns.
+		a.mu.Unlock()
+		a.runnerWg.Wait()
+		a.mu.Lock()
+
+		// Re-check rootCtx after re-acquiring lock — it may have been
+		// cancelled while we were waiting.
+		if a.rootCtx.Err() != nil {
+			return
+		}
+	}
+
 	ctx, cancel := context.WithCancel(a.rootCtx)
 	a.cancel = cancel
 
