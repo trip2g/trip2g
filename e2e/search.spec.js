@@ -74,7 +74,7 @@ test.describe('Search: text (Bleve)', () => {
       input: { query: 'xyzzynonexistenttermqwerty' },
     });
     const { data } = await res.json();
-    expect(data.search.nodes).toHaveLength(2); // two garbage notes
+    expect(data.search.nodes).toHaveLength(5); // five garbage notes
   });
 
   test('public search works without auth for public notes', async ({ request }) => {
