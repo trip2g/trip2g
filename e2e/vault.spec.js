@@ -3,6 +3,21 @@ import { test, expect } from '@playwright/test';
 import { graphqlSignIn } from './helpers/auth.js';
 
 test.describe('Test Vault', () => {
+  test('telegram_publish_message_link shows TG button', async ({ page }) => {
+    await page.goto('/telegram_publish_message_link');
+    const tgLink = page.locator('.tg-buttons .tg-button');
+    await expect(tgLink).toBeVisible();
+    await expect(tgLink).toHaveAttribute('href', 'https://t.me/c/1234567890/42');
+    await expect(tgLink).toHaveAttribute('target', '_blank');
+  });
+
+  test('telegram_publish_message_link_parent shows TG button from alternatives', async ({ page }) => {
+    await page.goto('/telegram_publish_message_link_parent');
+    const tgLink = page.locator('.tg-buttons .tg-button');
+    await expect(tgLink).toBeVisible();
+    await expect(tgLink).toHaveAttribute('href', 'https://t.me/c/1234567890/42');
+  });
+
   test('multilangual hub redirect', async ({ page }) => {
     await page.goto('/lang_hub');
 
@@ -771,20 +786,5 @@ test.describe('Frontmatter Patches', () => {
       // Link should not be marked as WIP (page exists)
       await expect(linkElement).not.toHaveClass(/wip/);
     }
-  });
-
-  test('telegram_publish_message_link shows TG button', async ({ page }) => {
-    await page.goto('/telegram_publish_message_link');
-    const tgLink = page.locator('.lang-switcher__alt--tg');
-    await expect(tgLink).toBeVisible();
-    await expect(tgLink).toHaveAttribute('href', 'https://t.me/c/1234567890/42');
-    await expect(tgLink).toHaveAttribute('target', '_blank');
-  });
-
-  test('telegram_publish_message_link_parent shows TG button from alternatives', async ({ page }) => {
-    await page.goto('/telegram_publish_message_link_parent');
-    const tgLink = page.locator('.lang-switcher__alt--tg');
-    await expect(tgLink).toBeVisible();
-    await expect(tgLink).toHaveAttribute('href', 'https://t.me/c/1234567890/42');
   });
 });
