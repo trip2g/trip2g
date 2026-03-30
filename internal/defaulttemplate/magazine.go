@@ -35,6 +35,7 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 	excludeGlob := ctx.MagazineExcludeFiles()
 	sortProp := ctx.MagazineSortProperty()
 	includeProp := ctx.MagazineIncludeProperty()
+	excludeProp := ctx.MagazineExcludeProperty()
 
 	q := ctx.Notes.ByGlob(glob)
 	if sortProp != "" {
@@ -63,6 +64,9 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 			}
 		}
 		if includeProp != "" && note.M().Get(includeProp) == nil {
+			continue
+		}
+		if excludeProp != "" && note.M().Get(excludeProp) != nil {
 			continue
 		}
 		size := MagazineItemList

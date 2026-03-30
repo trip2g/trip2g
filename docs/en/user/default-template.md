@@ -189,12 +189,30 @@ Default: `**/*.md` (all notes)
 **`magazine_exclude_files`** — Glob pattern for which notes to exclude from the magazine
 
 ```yaml
-magazine_exclude_files: "reports/telegram/**"   # Exclude Telegram reports
+magazine_exclude_files: "**/*Telegram.md"       # Exclude Telegram versions by name
 magazine_exclude_files: "drafts/**"             # Exclude drafts folder
 magazine_exclude_files: "archive/*.md"          # Exclude archived posts
 ```
 
-Applied after `magazine_include_files` — first notes are included by the include glob, then matches of the exclude glob are removed. Useful when include and exclude paths overlap:
+Applied after `magazine_include_files` — first notes are included by the include glob, then matches of the exclude glob are removed.
+
+Not set by default — no notes are excluded.
+
+**`magazine_exclude_property`** — Exclude notes that have a specific frontmatter field
+
+```yaml
+magazine_exclude_property: telegram_publish_at
+```
+
+Notes with this field in their frontmatter will be hidden from the magazine. Useful when Telegram versions of notes live alongside web versions in the same folder.
+
+Not set by default — no notes are excluded by property.
+
+#### Excluding Telegram notes from magazine
+
+When you publish to both web and Telegram, the Telegram versions often sit in the same folder. Two ways to exclude them:
+
+**By filename pattern** — if Telegram notes follow a naming convention (e.g. `My Post. Telegram.md`):
 
 ```yaml
 ---
@@ -202,13 +220,23 @@ title: Daily Reports
 content:
   - magazine
 magazine_include_files: "reports/**/*.md"
-magazine_exclude_files: "reports/telegram/**"
+magazine_exclude_files: "**/*Telegram.md"
 ---
 ```
 
-This shows all daily reports from the `reports/` folder but hides the Telegram-specific notes that live alongside them.
+**By frontmatter property** — if Telegram notes have `telegram_publish_at` (or similar) in frontmatter:
 
-Not set by default — no notes are excluded.
+```yaml
+---
+title: Daily Reports
+content:
+  - magazine
+magazine_include_files: "reports/**/*.md"
+magazine_exclude_property: telegram_publish_at
+---
+```
+
+Both approaches can be combined.
 
 **`magazine_sort_property`** — Sort cards by a custom frontmatter field
 

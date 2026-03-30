@@ -188,12 +188,30 @@ magazine_include_files: "docs/**/README.md"  # Все README.md файлы
 **`magazine_exclude_files`** — Glob-паттерн для исключения заметок из сетки
 
 ```yaml
-magazine_exclude_files: "reports/telegram/**"   # Исключить Telegram-отчёты
+magazine_exclude_files: "**/*Telegram.md"       # Исключить Telegram-версии по имени
 magazine_exclude_files: "drafts/**"             # Исключить черновики
 magazine_exclude_files: "archive/*.md"          # Исключить архивные посты
 ```
 
-Применяется после `magazine_include_files` — сначала заметки отбираются по include-паттерну, затем совпадения с exclude-паттерном убираются. Полезно, когда include и exclude пересекаются:
+Применяется после `magazine_include_files` — сначала заметки отбираются по include-паттерну, затем совпадения с exclude-паттерном убираются.
+
+По умолчанию не задан — ничего не исключается.
+
+**`magazine_exclude_property`** — Исключить заметки с определённым полем frontmatter
+
+```yaml
+magazine_exclude_property: telegram_publish_at
+```
+
+Заметки с этим полем во frontmatter не появятся в сетке. Полезно, когда Telegram-версии заметок лежат рядом с веб-версиями в той же папке.
+
+По умолчанию не задан — ничего не исключается по свойству.
+
+#### Исключение Telegram-заметок из сетки
+
+Когда вы публикуете и на сайт, и в Telegram, Telegram-версии часто лежат в той же папке. Два способа исключить их:
+
+**По имени файла** — если Telegram-заметки следуют соглашению (например, `Мой пост. Telegram.md`):
 
 ```yaml
 ---
@@ -201,13 +219,23 @@ title: Ежедневные отчёты
 content:
   - magazine
 magazine_include_files: "reports/**/*.md"
-magazine_exclude_files: "reports/telegram/**"
+magazine_exclude_files: "**/*Telegram.md"
 ---
 ```
 
-Покажет все отчёты из папки `reports/`, но скроет Telegram-заметки, которые лежат рядом с ними.
+**По свойству frontmatter** — если у Telegram-заметок есть `telegram_publish_at` (или подобное):
 
-По умолчанию не задан — ничего не исключается.
+```yaml
+---
+title: Ежедневные отчёты
+content:
+  - magazine
+magazine_include_files: "reports/**/*.md"
+magazine_exclude_property: telegram_publish_at
+---
+```
+
+Оба способа можно комбинировать.
 
 **`magazine_sort_property`** — Сортировать карточки по полю frontmatter
 

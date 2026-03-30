@@ -296,6 +296,16 @@ func (ctx *Ctx) MagazineExcludeFiles() string {
 	return ctx.Note.M().GetString("magazine_exclude_files", "")
 }
 
+// MagazineExcludeProperty returns the frontmatter key used to exclude magazine notes.
+// When set, notes that have this property are excluded.
+// Returns "" when not set — no notes are excluded by property.
+func (ctx *Ctx) MagazineExcludeProperty() string {
+	if ctx.Note == nil {
+		return ""
+	}
+	return ctx.Note.M().GetString("magazine_exclude_property", "")
+}
+
 // resolveNoteRef resolves a ContentRef to a *templateviews.Note.
 // Returns nil if the note cannot be found.
 func (ctx *Ctx) resolveNoteRef(ref ContentRef) *templateviews.Note {
