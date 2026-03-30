@@ -185,6 +185,30 @@ magazine_include_files: "docs/**/README.md"  # Все README.md файлы
 
 По умолчанию: `**/*.md` (все заметки)
 
+**`magazine_exclude_files`** — Glob-паттерн для исключения заметок из сетки
+
+```yaml
+magazine_exclude_files: "reports/telegram/**"   # Исключить Telegram-отчёты
+magazine_exclude_files: "drafts/**"             # Исключить черновики
+magazine_exclude_files: "archive/*.md"          # Исключить архивные посты
+```
+
+Применяется после `magazine_include_files` — сначала заметки отбираются по include-паттерну, затем совпадения с exclude-паттерном убираются. Полезно, когда include и exclude пересекаются:
+
+```yaml
+---
+title: Ежедневные отчёты
+content:
+  - magazine
+magazine_include_files: "reports/**/*.md"
+magazine_exclude_files: "reports/telegram/**"
+---
+```
+
+Покажет все отчёты из папки `reports/`, но скроет Telegram-заметки, которые лежат рядом с ними.
+
+По умолчанию не задан — ничего не исключается.
+
 **`magazine_sort_property`** — Сортировать карточки по полю frontmatter
 
 ```yaml

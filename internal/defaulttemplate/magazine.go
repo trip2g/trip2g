@@ -2,6 +2,8 @@ package defaulttemplate
 
 import (
 	"trip2g/internal/templateviews"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 // MagazineItemSize represents the visual size tier of a magazine card.
@@ -30,6 +32,7 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 	}
 
 	glob := ctx.MagazineIncludeFiles()
+	excludeGlob := ctx.MagazineExcludeFiles()
 	sortProp := ctx.MagazineSortProperty()
 	includeProp := ctx.MagazineIncludeProperty()
 
@@ -53,6 +56,11 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 		// Skip system notes (any path component starting with _).
 		if note.IsSystem() {
 			continue
+		}
+		if excludeGlob != "" {
+			if matched, _ := doublestar.Match(excludeGlob, note.Path()); matched {
+				continue
+			}
 		}
 		if includeProp != "" && note.M().Get(includeProp) == nil {
 			continue

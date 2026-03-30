@@ -286,6 +286,16 @@ func (ctx *Ctx) MagazineIncludeFiles() string {
 	return ctx.Note.M().GetString("magazine_include_files", "**/*.md")
 }
 
+// MagazineExcludeFiles returns the glob pattern for magazine note exclusion.
+// Notes matching this pattern are removed from the magazine.
+// Returns "" when not set — no notes are excluded.
+func (ctx *Ctx) MagazineExcludeFiles() string {
+	if ctx.Note == nil {
+		return ""
+	}
+	return ctx.Note.M().GetString("magazine_exclude_files", "")
+}
+
 // resolveNoteRef resolves a ContentRef to a *templateviews.Note.
 // Returns nil if the note cannot be found.
 func (ctx *Ctx) resolveNoteRef(ref ContentRef) *templateviews.Note {

@@ -186,6 +186,30 @@ magazine_include_files: "docs/**/README.md"  # All README.md files
 
 Default: `**/*.md` (all notes)
 
+**`magazine_exclude_files`** — Glob pattern for which notes to exclude from the magazine
+
+```yaml
+magazine_exclude_files: "reports/telegram/**"   # Exclude Telegram reports
+magazine_exclude_files: "drafts/**"             # Exclude drafts folder
+magazine_exclude_files: "archive/*.md"          # Exclude archived posts
+```
+
+Applied after `magazine_include_files` — first notes are included by the include glob, then matches of the exclude glob are removed. Useful when include and exclude paths overlap:
+
+```yaml
+---
+title: Daily Reports
+content:
+  - magazine
+magazine_include_files: "reports/**/*.md"
+magazine_exclude_files: "reports/telegram/**"
+---
+```
+
+This shows all daily reports from the `reports/` folder but hides the Telegram-specific notes that live alongside them.
+
+Not set by default — no notes are excluded.
+
 **`magazine_sort_property`** — Sort cards by a custom frontmatter field
 
 ```yaml
