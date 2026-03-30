@@ -55,6 +55,12 @@
 // Builds on top of Pico's CSS custom properties and resets.
 // ============================================================
 
+// Override mol_theme's :root background-color (dark by default)
+// so Pico's light/dark theme handles the page background.
+:root {
+  background-color: var(--pico-background-color);
+}
+
 
 // --- Site header ---
 
