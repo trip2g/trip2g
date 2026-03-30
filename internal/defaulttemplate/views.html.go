@@ -1969,12 +1969,12 @@ func StreamOnboarding(qw422016 *qt422016.Writer, ctx *Ctx) {
 		qw422016.E().S(ctx.T("onboarding_subtitle"))
 //line views.html:487
 		qw422016.N().S(`</p>
-  <div mol_view_root="$trip2g_user_space"></div>
   `)
-//line views.html:489
+//line views.html:488
 	}
-//line views.html:489
+//line views.html:488
 	qw422016.N().S(`
+  <div mol_view_root="$trip2g_user_space"></div>
 </div>
 `)
 //line views.html:491
