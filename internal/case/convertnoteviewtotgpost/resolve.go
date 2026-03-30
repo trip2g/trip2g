@@ -144,10 +144,13 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 		msg, ok := sentMap[linkedNV.PathID]
 		if ok {
-			// Already published - return telegram link
+			// Already published - return telegram link.
+			// Don't set Label here — let the AST children render the original
+			// wikilink label (e.g. [[note|Вчера]] → "Вчера"). If the wikilink
+			// has no custom label, the children will contain the target text.
 			chatID := strings.TrimPrefix(strconv.FormatInt(msg.TelegramChatID, 10), "-100")
 			url := fmt.Sprintf("https://t.me/c/%s/%d", chatID, msg.MessageID)
-			return &markdownv2.LinkResolverResult{URL: url, Label: linkedNV.Title}, nil
+			return &markdownv2.LinkResolverResult{URL: url}, nil
 		}
 
 		// Not published yet

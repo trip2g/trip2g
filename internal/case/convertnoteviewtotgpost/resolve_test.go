@@ -96,6 +96,77 @@ hello`),
 	require.Equal(t, "hello", post.Content)
 }
 
+func TestPublishedLinkPreservesWikilinkLabel(t *testing.T) {
+	// Bug: [[Day 2026-02-08. Telegram|Вчера]] renders "Day 2026-02-08. Telegram"
+	// instead of "Вчера" when the linked note is already published in Telegram.
+	// The resolver was overriding the wikilink label with linkedNV.Title.
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+---
+Читайте [[day_report. Telegram|Вчера]] и [[day_report. Telegram]].`),
+			},
+			{
+				Path: "day_report. Telegram.md",
+				Content: []byte(`---
+free: true
+title: "Day 2026-02-08. Telegram"
+telegram_publish_tags: ["tag1"]
+---
+Report content`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Find the linked note and set a PathID for sentMap lookup
+	linkedNote := nvs.Map["/day_report_telegram"]
+	require.NotNil(t, linkedNote, "linked note should be resolved")
+	linkedNote.PathID = 42
+
+	// Main note is in Map but not in List (no telegram_publish_tags)
+	mainNote := nvs.Map["/main"]
+	require.NotNil(t, mainNote)
+
+	env := &testEnv{
+		nvs:    nvs,
+		logger: &logger.TestLogger{},
+		sentMsgs: []db.ListTelegramPublishSentMessagesByChatIDRow{
+			{
+				NotePathID:     42,
+				TelegramChatID: -1001234567890,
+				MessageID:      100,
+			},
+		},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   -1001234567890,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	// The custom label "Вчера" must be preserved, not replaced with the note title
+	require.Contains(t, post.Content, "Вчера", "custom wikilink label should be preserved")
+	require.NotContains(t, post.Content, "Day 2026-02-08. Telegram",
+		"note title should NOT override the custom wikilink label")
+
+	// The second link [[day_report. Telegram]] has no custom label,
+	// so it should use the note title
+	require.Contains(t, post.Content, `<a href="https://t.me/c/1234567890/100">`)
+}
+
 func TestUnpublishedLinkUsesTitle(t *testing.T) {
 	// Current time: 2025-11-05 14:00:00
 	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
