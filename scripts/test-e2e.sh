@@ -125,7 +125,7 @@ export DB_PATH="tmp/data/test.sqlite3"
 echo "🗄️  Preparing test database $DB_PATH"
 
 mkdir -p tmp/data
-rm -f "$DB_PATH"
+rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
 
 # Cleanup telegram channels (only if ENABLE_TG=1)
