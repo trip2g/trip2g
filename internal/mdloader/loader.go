@@ -355,6 +355,12 @@ func (ldr *loader) extractInLinks() error {
 
 			target := string(link.Target)
 
+			// Strip trailing backslash from target: inside GFM table cells,
+			// Obsidian escapes the pipe as \| so it's not treated as a column
+			// separator. The goldmark wikilink parser splits on | but leaves
+			// the backslash in the target (e.g. "page\" instead of "page").
+			target = strings.TrimSuffix(target, `\`)
+
 			// Skip image/video links - they should not be resolved as note links
 			if resolveAsImage(link) {
 				return ast.WalkContinue, nil
@@ -383,9 +389,9 @@ func (ldr *loader) extractInLinks() error {
 					// Use Permalink for regular pages (already transliterated)
 					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if pp.Slug != "" {
-						p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
+						p.ResolvedLinks[target] = pp.PermalinkOriginal
 					} else {
-						p.ResolvedLinks[string(link.Target)] = pp.Permalink
+						p.ResolvedLinks[target] = pp.Permalink
 					}
 					pp.InLinks[p.Permalink] = struct{}{}
 
@@ -425,9 +431,9 @@ func (ldr *loader) extractInLinks() error {
 					// Use Permalink for regular pages (already transliterated)
 					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if pp.Slug != "" {
-						p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
+						p.ResolvedLinks[target] = pp.PermalinkOriginal
 					} else {
-						p.ResolvedLinks[string(link.Target)] = pp.Permalink
+						p.ResolvedLinks[target] = pp.Permalink
 					}
 					pp.InLinks[p.Permalink] = struct{}{}
 
@@ -451,9 +457,9 @@ func (ldr *loader) extractInLinks() error {
 					// Use Permalink for regular pages (already transliterated)
 					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if shortest.Slug != "" {
-						p.ResolvedLinks[string(link.Target)] = shortest.PermalinkOriginal
+						p.ResolvedLinks[target] = shortest.PermalinkOriginal
 					} else {
-						p.ResolvedLinks[string(link.Target)] = shortest.Permalink
+						p.ResolvedLinks[target] = shortest.Permalink
 					}
 					shortest.InLinks[p.Permalink] = struct{}{}
 
@@ -495,9 +501,9 @@ func (ldr *loader) extractInLinks() error {
 						// Use Permalink for regular pages (already transliterated)
 						// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 						if pp.Slug != "" {
-							p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
+							p.ResolvedLinks[target] = pp.PermalinkOriginal
 						} else {
-							p.ResolvedLinks[string(link.Target)] = pp.Permalink
+							p.ResolvedLinks[target] = pp.Permalink
 						}
 						pp.InLinks[p.Permalink] = struct{}{}
 

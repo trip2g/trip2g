@@ -26,15 +26,19 @@ const _html = ".html"
 const _hash = "#"
 
 func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
-	assetReplace, ok := r.currentPage.AssetReplaces[string(n.Target)]
+	// Strip trailing backslash: inside GFM table cells, Obsidian escapes the
+	// pipe as \| and the wikilink parser leaves the \ in the target.
+	rawTarget := bytes.TrimSuffix(n.Target, []byte(`\`))
+
+	assetReplace, ok := r.currentPage.AssetReplaces[string(rawTarget)]
 	if ok && assetReplace != nil {
 		return []byte(assetReplace.URL), nil
 	}
 
 	// Check if this link was resolved in extractInLinks
 	// This allows us to avoid mutating the AST, which breaks caching
-	target := n.Target
-	if resolved, found := r.currentPage.ResolvedLinks[string(n.Target)]; found {
+	target := rawTarget
+	if resolved, found := r.currentPage.ResolvedLinks[string(rawTarget)]; found {
 		target = []byte(resolved)
 	}
 

@@ -1700,3 +1700,38 @@ func TestFrontmatterPatchNotDoubledOnCacheHit(t *testing.T) {
 	require.Equal(t, "Original Title — Site", pages3.PathMap["post.md"].Title,
 		"patch must NOT accumulate on third cached reload")
 }
+
+func TestWikilinkEscapedPipeInTable(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`| col |
+| --- |
+| [[target\|custom label]] |`),
+	}, {
+		Path:    "target.md",
+		Content: []byte(`Target page`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// The wikilink inside table cell uses \| to escape the pipe.
+	// The target should resolve to "target", not "target\".
+	indexHTML := string(pages.Map["/"].HTML)
+	t.Logf("index HTML: %s", indexHTML)
+
+	// Target page should have an inlink from index
+	require.Contains(t, pages.Map["/target"].InLinks, "/",
+		"target page should have inlink from index — escaped pipe must not break resolution")
+
+	// HTML should contain the link with custom label
+	require.Contains(t, indexHTML, "custom label",
+		"label after escaped pipe should render")
+	require.NotContains(t, indexHTML, `target\`,
+		"backslash should not appear in href")
+}
