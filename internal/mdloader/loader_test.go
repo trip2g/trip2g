@@ -644,6 +644,76 @@ Another video: ![[movie.webm]]`),
 	require.NotContains(t, html, `<img src="movie.webm"`)
 }
 
+// TestAudioRendering tests that audio files are rendered as <audio> tags, not <img>.
+func TestAudioRendering(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "media.md",
+		Content: []byte(`Image: ![[photo.png]]
+
+Audio: ![[song.mp3]]
+
+Another audio: ![[track.ogg]]
+
+WAV audio: ![[sound.wav]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/media"].HTML)
+
+	// Images should use <img> tag
+	require.Contains(t, html, `<img src="photo.png">`)
+
+	// Audio should use <audio> tag with controls
+	require.Contains(t, html, `<audio controls src="song.mp3">`)
+	require.Contains(t, html, `<audio controls src="track.ogg">`)
+	require.Contains(t, html, `<audio controls src="sound.wav">`)
+
+	// Audio should NOT use <img> tag
+	require.NotContains(t, html, `<img src="song.mp3"`)
+	require.NotContains(t, html, `<img src="track.ogg"`)
+	require.NotContains(t, html, `<img src="sound.wav"`)
+}
+
+// TestDocRendering tests that document files are rendered as links, not <img>.
+func TestDocRendering(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "media.md",
+		Content: []byte(`Image: ![[photo.png]]
+
+PDF: ![[report.pdf]]
+
+Word: ![[notes.doc]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/media"].HTML)
+
+	// Images should use <img> tag
+	require.Contains(t, html, `<img src="photo.png">`)
+
+	// Documents should use <a> link with file-link class
+	require.Contains(t, html, `<a href="report.pdf" class="file-link">report.pdf</a>`)
+	require.Contains(t, html, `<a href="notes.doc" class="file-link">notes.doc</a>`)
+
+	// Documents should NOT use <img> tag
+	require.NotContains(t, html, `<img src="report.pdf"`)
+	require.NotContains(t, html, `<img src="notes.doc"`)
+}
+
 // TestVersionedLinks tests that links with version parameter preserve slashes in paths.
 // Bug: url.PathEscape encodes "/" as "%2F", breaking paths like "/folder/source".
 func TestVersionedLinks(t *testing.T) {

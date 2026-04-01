@@ -570,6 +570,27 @@ test.describe('YouTube Embed', () => {
   });
 });
 
+test.describe('Audio Rendering', () => {
+  test('mp3 wikilink renders as audio player', async ({ page }) => {
+    await page.goto('/mp3');
+
+    await expect(page.locator('h1').first()).toContainText('Audio Player Test');
+
+    // Audio should render as <audio> tag, not <img>
+    const audio = page.locator('.content__body audio');
+    await expect(audio).toHaveCount(2);
+
+    // Both should have controls attribute
+    for (let i = 0; i < 2; i++) {
+      await expect(audio.nth(i)).toHaveAttribute('controls', '');
+    }
+
+    // No <img> tags for mp3 files
+    const imgs = page.locator('.content__body img[src$=".mp3"]');
+    await expect(imgs).toHaveCount(0);
+  });
+});
+
 test.describe('Frontmatter Patches', () => {
   test.describe.configure({ mode: 'serial' });
 

@@ -31,6 +31,16 @@ var videoExts = map[string]struct{}{
 }
 
 //nolint:gochecknoglobals // readonly constant map
+var audioExts = map[string]struct{}{
+	".mp3":  {},
+	".wav":  {},
+	".ogg":  {},
+	".flac": {},
+	".m4a":  {},
+	".aac":  {},
+}
+
+//nolint:gochecknoglobals // readonly constant map
 var docExts = map[string]struct{}{
 	".pdf":  {},
 	".doc":  {},
@@ -48,12 +58,6 @@ var docExts = map[string]struct{}{
 	".zip":  {},
 	".rar":  {},
 	".7z":   {},
-	".mp3":  {},
-	".wav":  {},
-	".ogg":  {},
-	".flac": {},
-	".m4a":  {},
-	".aac":  {},
 }
 
 func GetExtensions() map[string]struct{} {
@@ -72,6 +76,12 @@ func IsVideoExtension(target string) bool {
 	return ok
 }
 
+func IsAudioExtension(target string) bool {
+	ext := strings.ToLower(filepath.Ext(target))
+	_, ok := audioExts[ext]
+	return ok
+}
+
 func IsDocExtension(target string) bool {
 	ext := strings.ToLower(filepath.Ext(target))
 	_, ok := docExts[ext]
@@ -79,5 +89,5 @@ func IsDocExtension(target string) bool {
 }
 
 func IsMediaExtension(target string) bool {
-	return IsRightExtension(target) || IsVideoExtension(target) || IsDocExtension(target)
+	return IsRightExtension(target) || IsVideoExtension(target) || IsAudioExtension(target) || IsDocExtension(target)
 }

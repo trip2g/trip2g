@@ -17,6 +17,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 7. [[software]] - image with same name as note (regression)
 8. [[scenarios_test]] - links with dots in filenames (regression)
 
+## Media Rendering Tests
+46. [[mp3]] - audio player (mp3 wikilink and markdown embed)
+
 ## Publishing Features Tests
 7. [[public]] - free public page (no paywall)
 8. [[paid_with_preview]] - paid content with 2 paragraph preview
@@ -51,6 +54,7 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages
+30. [[signin_wall]] - sign-in wall test page (free but gated by `require_signin` subgraph flag)
 
 ## Frontmatter Patches Tests
 30. [[patch_tests/simple]] - simple patch (free: true)

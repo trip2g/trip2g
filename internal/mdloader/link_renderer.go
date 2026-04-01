@@ -147,6 +147,25 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		return ast.WalkSkipChildren, nil
 	}
 
+	// Check if it's an audio file
+	if image.IsAudioExtension(string(n.Target)) {
+		_, _ = w.WriteString(`<audio controls src="`)
+		_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+		_, _ = w.WriteString(`">`)
+		_, _ = w.WriteString(`</audio>`)
+		return ast.WalkSkipChildren, nil
+	}
+
+	// Check if it's a document file — render as download link
+	if image.IsDocExtension(string(n.Target)) {
+		_, _ = w.WriteString(`<a href="`)
+		_, _ = w.Write(util.URLEscape(dest, true))
+		_, _ = w.WriteString(`" class="file-link">`)
+		_, _ = w.Write(util.EscapeHTML(n.Target))
+		_, _ = w.WriteString(`</a>`)
+		return ast.WalkSkipChildren, nil
+	}
+
 	// Render as <img> tag for images
 	_, _ = w.WriteString(`<img src="`)
 	_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))

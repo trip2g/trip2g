@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"trip2g/internal/image"
 
 	"github.com/google/uuid"
 	"github.com/quailyquaily/goldmark-enclave/core"
@@ -196,8 +197,7 @@ func (a *astTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 			}
 			theme = u.Query().Get("theme")
 
-		} else if strings.HasSuffix(strings.ToLower(u.Path), ".mp3") {
-			// this is a mp3 file
+		} else if image.IsAudioExtension(u.Path) {
 			provider = core.EnclaveHtml5Audio
 			oid = string(img.Destination)
 
