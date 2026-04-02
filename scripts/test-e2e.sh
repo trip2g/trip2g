@@ -229,8 +229,6 @@ fi
 echo "🎭 Running main Playwright tests..."
 echo ""
 
-exit 1
-
 if [ "$1" = "--headed" ]; then
   npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --headed
 elif [ "$1" = "--debug" ]; then
