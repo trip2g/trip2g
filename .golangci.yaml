@@ -441,9 +441,15 @@ linters:
       - path: 'internal/case/rendernotepage/resolve\.go'
         linters:
           - gocognit
+          - cyclop
+          - gocyclo
       - path: 'internal/mdloader/loader\.go'
         linters:
           - gocognit
+      - path: 'internal/noteloader/loader\.go'
+        linters:
+          - cyclop
+          - gocyclo
       - path: 'internal/mdloader/normalizers\.go'
         linters:
           - gocognit
@@ -451,6 +457,7 @@ linters:
       - path: 'internal/mdloader/link_renderer\.go'
         linters:
           - nestif
+          - gocognit
       - path: 'internal/russkayalatinica/latinica\.go'
         linters:
           - gocognit  # Complex transliteration algorithm
@@ -463,6 +470,14 @@ linters:
       - path: 'internal/russkayalatinica/latinica_test\.go'
         linters:
           - intrange  # Classic for loops are clearer in test benchmarks
+      - path: 'internal/russkayalatinica2/'
+        linters:
+          - gocognit      # Complex transliteration algorithm
+          - nestif        # Complex nested conditions for transliteration
+          - intrange      # Classic for loops are clearer in transliteration
+          - nolintlint    # Existing nolint directives
+          - gochecknoglobals  # Lookup tables
+          - govet         # Variable shadowing in complex algorithm
       - path: 'internal/gitapi/'
         linters:
           - gosec  # Git operations require subprocess calls which are legitimate
@@ -489,5 +504,7 @@ linters:
       # One-off CLI tools for channel export/conversion
       - cmd/channelexport/
       - cmd/tgconvert/
+      # CLI tool that legitimately uses fmt.Print for interactive output
+      - cmd/exporttgchannel/
       # E2E test environment setup tool
       - cmd/tge2e/

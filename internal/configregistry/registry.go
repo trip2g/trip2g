@@ -142,14 +142,14 @@ func Get(id string) (ConfigMeta, bool) {
 	return meta, ok
 }
 
-func validateIntRange(min, max int) func(interface{}) error {
+func validateIntRange(minVal, maxVal int) func(interface{}) error {
 	return func(value interface{}) error {
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("expected int, got %T", value)
 		}
-		if v < min || v > max {
-			return fmt.Errorf("value must be between %d and %d", min, max)
+		if v < minVal || v > maxVal {
+			return fmt.Errorf("value must be between %d and %d", minVal, maxVal)
 		}
 		return nil
 	}

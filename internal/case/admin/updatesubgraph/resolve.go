@@ -34,7 +34,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Reload notes so noteloader re-enriches NoteSubgraph.RequireSignin from DB.
-	if _, err := env.PrepareLatestNotes(ctx, true); err != nil {
+	if _, err = env.PrepareLatestNotes(ctx, true); err != nil {
 		return nil, fmt.Errorf("failed to reload notes after subgraph update: %w", err)
 	}
 

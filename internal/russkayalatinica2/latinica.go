@@ -30,15 +30,15 @@ const (
 type contextType uint8
 
 const (
-	ctxAny         contextType = iota // matches everything (zero value)
-	ctxConsonant                      // == consonant
-	ctxVowel                          // == vowel
-	ctxOther                          // == other
-	ctxNonLetter                      // == nonLetter
-	ctxNonConsonant                   // != consonant
-	ctxNonVowel                       // != vowel
-	ctxNonOther                       // != other
-	ctxLetter                         // != nonLetter
+	ctxAny          contextType = iota // matches everything (zero value)
+	ctxConsonant                       // == consonant
+	ctxVowel                           // == vowel
+	ctxOther                           // == other
+	ctxNonLetter                       // == nonLetter
+	ctxNonConsonant                    // != consonant
+	ctxNonVowel                        // != vowel
+	ctxNonOther                        // != other
+	ctxLetter                          // != nonLetter
 )
 
 func (c contextType) matches(et elementType) bool {
@@ -70,12 +70,12 @@ func (c contextType) matches(et elementType) bool {
 // ---------------------------------------------------------------------------
 
 type engine struct {
-	cyrlCells map[rune][]cell   // lowercase Cyrillic rune → cells (forward)
+	cyrlCells map[rune][]cell      // lowercase Cyrillic rune → cells (forward)
 	cyrlTypes map[rune]elementType // Cyrillic rune → type (first cell wins)
 
-	latnCells  map[string][]cell       // lowercase Latin key → cells (reverse)
-	latnTypes  map[string]elementType  // Latin key → type (first cell wins)
-	maxLatnLen int                     // longest Latin key (for greedy match)
+	latnCells  map[string][]cell      // lowercase Latin key → cells (reverse)
+	latnTypes  map[string]elementType // Latin key → type (first cell wins)
+	maxLatnLen int                    // longest Latin key (for greedy match)
 }
 
 //nolint:gochecknoglobals
@@ -376,7 +376,7 @@ func resolveCases(cases []charCase) {
 			// leave ambiguous
 		case caseLower:
 			cases[i] = caseCapital
-		default:
+		case caseUpper, caseCapital, caseAmbig:
 			cases[i] = caseUpper
 		}
 	}
@@ -438,9 +438,10 @@ func applyCaseStr(s string, c charCase) string {
 			runes[0] = unicode.ToUpper(runes[0])
 		}
 		return string(runes)
-	default:
-		return s // already lowercase or uncased
+	case caseLower, caseAmbig, caseUncased:
+		// no-op: already lowercase or uncased
 	}
+	return s
 }
 
 func applyCaseFwd(elems []fwdElem) {

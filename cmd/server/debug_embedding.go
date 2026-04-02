@@ -35,12 +35,12 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type chunkResult struct {
-		Index     int       `json:"index"`
+		Index          int       `json:"index"`
 		ContentPreview string    `json:"content_preview"` // first 120 chars
-		Chars     int       `json:"chars"`
-		DimCount  int       `json:"dim_count,omitempty"`
-		FirstDims []float32 `json:"first_dims,omitempty"`
-		EmbedErr  string    `json:"embed_err,omitempty"`
+		Chars          int       `json:"chars"`
+		DimCount       int       `json:"dim_count,omitempty"`
+		FirstDims      []float32 `json:"first_dims,omitempty"`
+		EmbedErr       string    `json:"embed_err,omitempty"`
 	}
 	type response struct {
 		Model         string        `json:"model"`
@@ -77,7 +77,9 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 	passagePrefix := a.config.Features.VectorSearch.Model.PassagePrefix()
 	var embedMs int64
 	var embedErrStr string
-	if a.openaiClient != nil {
+	if a.openaiClient == nil { //nolint:nestif // embedding branch complexity is inherent to the debug handler
+		embedErrStr = "vector search not enabled (openaiClient is nil)"
+	} else {
 		texts := make([]string, len(chunks))
 		for i, c := range chunks {
 			texts[i] = passagePrefix + c.Content
@@ -100,8 +102,6 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	} else {
-		embedErrStr = "vector search not enabled (openaiClient is nil)"
 	}
 
 	resp := response{
@@ -109,11 +109,11 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 		BaseURL:       a.config.Features.VectorSearch.BaseURL,
 		PassagePrefix: passagePrefix,
 		ChunkCount:    len(chunks),
-		Chunks:     results,
-		SplitMs:    splitMs,
-		EmbedMs:    embedMs,
-		TotalMs:    time.Since(t0).Milliseconds(),
-		EmbedErr:   embedErrStr,
+		Chunks:        results,
+		SplitMs:       splitMs,
+		EmbedMs:       embedMs,
+		TotalMs:       time.Since(t0).Milliseconds(),
+		EmbedErr:      embedErrStr,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

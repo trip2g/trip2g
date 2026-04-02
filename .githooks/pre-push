@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+echo "Running tests..."
+make test
+
+echo "Running lint..."
+make lint
+
+echo "All checks passed."

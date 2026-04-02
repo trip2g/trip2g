@@ -43,8 +43,8 @@ func NormalizeTelegramChatID(chatID int64) int64 {
 }
 
 // ExtractChannelFromTelegramLink extracts a readable channel identifier from a t.me URL.
-// "https://t.me/mychannel/123" -> "mychannel"
-// "https://t.me/c/1234567890/123" -> "" (private channel, no readable name)
+// "https://t.me/mychannel/123" -> "mychannel".
+// "https://t.me/c/1234567890/123" -> "" (private channel, no readable name).
 func ExtractChannelFromTelegramLink(link string) string {
 	parts := strings.Split(strings.TrimPrefix(link, "https://t.me/"), "/")
 	if len(parts) >= 2 && parts[0] != "c" {

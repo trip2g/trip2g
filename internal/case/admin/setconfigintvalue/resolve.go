@@ -34,7 +34,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	if meta.Validate != nil {
 		if err := meta.Validate(int(input.Value)); err != nil {
-			return &model.ErrorPayload{Message: err.Error()}, nil
+			return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // business error returned as payload
 		}
 	}
 

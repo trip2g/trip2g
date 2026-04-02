@@ -61,6 +61,7 @@ import (
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/case/updatesubgraphs"
 	"trip2g/internal/case/uploadnoteasset"
+	"trip2g/internal/configregistry"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
@@ -94,11 +95,10 @@ import (
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
+	"trip2g/internal/turnstile"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
-	"trip2g/internal/configregistry"
-	"trip2g/internal/turnstile"
 	"trip2g/internal/zerologger"
 
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -815,7 +815,7 @@ func (a *app) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.Co
 }
 
 // LoadSiteConfig implements noteloader.Env interface.
-func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
+func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) { //nolint:unparam // may return error in future
 	return a.SiteConfig(ctx), nil
 }
 
@@ -840,7 +840,6 @@ func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) 
 
 	return nil
 }
-
 
 func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx

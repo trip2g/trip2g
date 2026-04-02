@@ -108,7 +108,7 @@ func TestMagazineExcludeFiles_ExcludeMultipleWithInclude(t *testing.T) {
 
 func TestMagazineExcludeFiles_DefaultEmpty(t *testing.T) {
 	ctx := &Ctx{}
-	require.Equal(t, "", ctx.MagazineExcludeFiles())
+	require.Empty(t, ctx.MagazineExcludeFiles())
 }
 
 func TestMagazineExcludeFiles_ReturnsValue(t *testing.T) {
@@ -142,7 +142,7 @@ func TestMagazineExcludeFiles_TelegramGlob(t *testing.T) {
 
 func TestMagazineExcludeProperty_NoExclude(t *testing.T) {
 	ctx := &Ctx{}
-	require.Equal(t, "", ctx.MagazineExcludeProperty())
+	require.Empty(t, ctx.MagazineExcludeProperty())
 }
 
 func TestMagazineExcludeProperty_ReturnsValue(t *testing.T) {

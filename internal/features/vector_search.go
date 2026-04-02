@@ -14,7 +14,7 @@ const (
 	EmbeddingModelLarge              EmbeddingModel = 2 // text-embedding-3-large, 3072 dims
 	EmbeddingModelAda                EmbeddingModel = 3 // text-embedding-ada-002, 1536 dims (legacy)
 	EmbeddingModelMultilingualE5Base EmbeddingModel = 4 // multilingual-e5-base, 768 dims (HuggingFace)
-	EmbeddingModelBGEM3             EmbeddingModel = 5 // bge-m3, 1024 dims (HuggingFace)
+	EmbeddingModelBGEM3              EmbeddingModel = 5 // bge-m3, 1024 dims (HuggingFace)
 )
 
 // String returns the API model name.
@@ -76,11 +76,12 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 // Returns empty string for models that don't require it.
 func (m EmbeddingModel) QueryPrefix() string {
 	switch m {
+	case EmbeddingModelSmall, EmbeddingModelLarge, EmbeddingModelAda, EmbeddingModelBGEM3:
+		// no-op: these models don't require a query prefix
 	case EmbeddingModelMultilingualE5Base:
 		return "query: "
-	default:
-		return ""
 	}
+	return ""
 }
 
 // PassagePrefix returns the prefix to prepend to document passages before embedding.
@@ -88,11 +89,12 @@ func (m EmbeddingModel) QueryPrefix() string {
 // Returns empty string for models that don't require it.
 func (m EmbeddingModel) PassagePrefix() string {
 	switch m {
+	case EmbeddingModelSmall, EmbeddingModelLarge, EmbeddingModelAda, EmbeddingModelBGEM3:
+		// no-op: these models don't require a passage prefix
 	case EmbeddingModelMultilingualE5Base:
 		return "passage: "
-	default:
-		return ""
 	}
+	return ""
 }
 
 // VectorSearchConfig holds configuration for vector search feature.

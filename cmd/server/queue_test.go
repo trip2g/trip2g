@@ -8,10 +8,10 @@ import (
 	"time"
 	"trip2g/internal/logger"
 
-	"maragu.dev/goqite"
-	"maragu.dev/goqite/jobs"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
+	"maragu.dev/goqite"
+	"maragu.dev/goqite/jobs"
 )
 
 //go:embed testdata/goqite_schema.sql

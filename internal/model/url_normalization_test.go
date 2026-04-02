@@ -138,7 +138,10 @@ func TestRegisterNote_AlternatePermalinksInMap(t *testing.T) {
 		Permalink:         "/poisk",
 		PermalinkOriginal: "/поиск",
 		AlternatePermalinks: map[URLNormalizationMethod]string{
-			URLNormSimpleTranslit: "/poisk_simple",
+			URLNormCyrillic:          "/поиск_cyrillic",
+			URLNormSimpleTranslit:    "/poisk_simple",
+			URLNormRusskayaLatinica:  "/poisk_rl1",
+			URLNormRusskayaLatinica2: "/poisk_rl2",
 		},
 	}
 	nvs.RegisterNote(note)
@@ -157,7 +160,10 @@ func TestRegisterNote_AlternateCollisionLastWriterWins(t *testing.T) {
 		Permalink:         "/note1",
 		PermalinkOriginal: "/note1",
 		AlternatePermalinks: map[URLNormalizationMethod]string{
-			URLNormSimpleTranslit: "/collision",
+			URLNormCyrillic:          "/note1_cyrillic",
+			URLNormSimpleTranslit:    "/collision",
+			URLNormRusskayaLatinica:  "/note1_rl1",
+			URLNormRusskayaLatinica2: "/note1_rl2",
 		},
 	}
 	nvs.RegisterNote(note1)
@@ -167,7 +173,10 @@ func TestRegisterNote_AlternateCollisionLastWriterWins(t *testing.T) {
 		Permalink:         "/note2",
 		PermalinkOriginal: "/note2",
 		AlternatePermalinks: map[URLNormalizationMethod]string{
-			URLNormSimpleTranslit: "/collision",
+			URLNormCyrillic:          "/note2_cyrillic",
+			URLNormSimpleTranslit:    "/collision",
+			URLNormRusskayaLatinica:  "/note2_rl1",
+			URLNormRusskayaLatinica2: "/note2_rl2",
 		},
 	}
 	nvs.RegisterNote(note2)

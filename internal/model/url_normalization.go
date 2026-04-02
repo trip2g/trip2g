@@ -36,6 +36,8 @@ func (m URLNormalizationMethod) Valid() bool {
 	switch m {
 	case URLNormCyrillic, URLNormSimpleTranslit, URLNormRusskayaLatinica2:
 		return true
+	case URLNormRusskayaLatinica:
+		// no-op: deprecated, not user-selectable
 	}
 	return false
 }
