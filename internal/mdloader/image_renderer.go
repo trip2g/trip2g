@@ -182,16 +182,26 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveHtml5Audio:
-		html, err := object.GetAudioHtml(enc)
-		if err != nil || html == "" {
-			html = wrapEnclaveErrorHTML("audio", enc.ObjectID)
-		} else {
-			html = wrapEnclaveHTML("audio", html, true, false)
-		}
-		_, _ = w.Write([]byte(html))
+		r.renderAudio(w, enc)
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// renderAudio renders audio enclaves with asset replacement.
+func (r *imageRenderer) renderAudio(w util.BufWriter, enc *enclavecore.Enclave) {
+	originalURL := enc.ObjectID
+	resolvedURL := originalURL
+	if r.resolver != nil && r.resolver.currentPage != nil {
+		assetReplace, found := r.resolver.currentPage.AssetReplaces[originalURL]
+		if found && assetReplace != nil {
+			resolvedURL = assetReplace.URL
+		}
+	}
+
+	html := fmt.Sprintf(`<audio controls src="%s"></audio>`, resolvedURL)
+	html = wrapEnclaveHTML("audio", html, true, false)
+	_, _ = w.Write([]byte(html))
 }
 
 // renderImage renders regular images and quail images with asset replacement.

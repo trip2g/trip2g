@@ -681,6 +681,45 @@ WAV audio: ![[sound.wav]]`),
 	require.NotContains(t, html, `<img src="sound.wav"`)
 }
 
+// TestAudioMarkdownAssetReplace tests that standard markdown audio ![](file.mp3)
+// gets its src replaced with the URL from AssetReplaces.
+func TestAudioMarkdownAssetReplace(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "note.md",
+		Content: []byte(`![](demo.mp3)`),
+		Assets: map[string]*model.NoteAssetReplace{
+			"demo.mp3": {
+				ID:           1,
+				URL:          "http://example.com/replaced-audio.mp3",
+				Hash:         "abc123",
+				AbsolutePath: "vault/demo.mp3",
+			},
+		},
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/note"].HTML)
+
+	// Should render as <audio>, not <img>
+	require.Contains(t, html, `<audio`)
+	require.NotContains(t, html, `<img`)
+
+	// The audio src should be replaced with the URL from AssetReplaces
+	require.Contains(t, html, `http://example.com/replaced-audio.mp3`,
+		"Markdown audio src should be replaced with AssetReplaces URL")
+
+	// Should NOT contain the original relative path
+	require.NotContains(t, html, `src="demo.mp3"`,
+		"Original relative path should be replaced")
+}
+
 // TestDocRendering tests that document files are rendered as links, not <img>.
 func TestDocRendering(t *testing.T) {
 	log := logger.TestLogger{}
