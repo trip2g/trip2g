@@ -24,6 +24,12 @@ type PaywallError struct {
 	SubgraphsJSON string // JSON of SubgraphNames for paywall widget
 }
 
+// SigninWallError holds data needed to render the sign-in wall page.
+// Defined here (not imported from rendernotepage) to avoid import cycles.
+type SigninWallError struct {
+	Note *templateviews.Note
+}
+
 const (
 	injectionPlaceholderHead    = "head"
 	injectionPlaceholderBodyEnd = "body_end"
@@ -51,11 +57,12 @@ type Ctx struct {
 	HTMLLang  string // for <html lang="xx">, set from note.Lang
 	UILang    string // user's preferred interface language, set from trip2g_lang cookie
 
-	OnboardingMode bool
-	NotFoundMode   bool
-	PaywallError   *PaywallError
-	UserToken      *usertoken.Data
-	Lang           string
+	OnboardingMode  bool
+	NotFoundMode    bool
+	PaywallError    *PaywallError
+	SigninWallError *SigninWallError
+	UserToken       *usertoken.Data
+	Lang            string
 
 	TelegramLinks []model.TelegramPostLink
 }
@@ -80,8 +87,8 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 	}
 
 	for _, alt := range altList {
-		altStr, ok := alt.(string)
-		if !ok {
+		altStr, isStr := alt.(string)
+		if !isStr {
 			continue
 		}
 		// Strip [[ and ]] from wikilink syntax.
@@ -95,8 +102,8 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 			continue
 		}
 
-		link, ok := resolved.Unwrap().ExtractTelegramPublishMessageLink()
-		if !ok {
+		link, hasLink := resolved.Unwrap().ExtractTelegramPublishMessageLink()
+		if !hasLink {
 			continue
 		}
 

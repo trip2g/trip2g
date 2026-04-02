@@ -522,6 +522,7 @@ type Subgraph struct {
 	CreatedAt                       time.Time `json:"created_at"`
 	Hidden                          bool      `json:"hidden"`
 	ShowUnsubgraphNotesForPaidUsers *bool     `json:"show_unsubgraph_notes_for_paid_users"`
+	RequireSignin                   bool      `json:"require_signin"`
 }
 
 type TelegramAccount struct {

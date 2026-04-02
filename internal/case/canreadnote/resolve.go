@@ -35,6 +35,12 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return note.Free, nil
 	}
 
+	// Notes in require_signin subgraphs: any authenticated user can read.
+	// The sign-in wall already blocked guests in rendernotepage.
+	if anySubgraphRequiresSignin(note) {
+		return true, nil
+	}
+
 	// if user has no active subscriptions, they can't see anything
 	if len(userSubgraphs) == 0 {
 		return false, nil
@@ -55,4 +61,15 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// anySubgraphRequiresSignin returns true if any of the note's subgraphs
+// has RequireSignin=true (auth-only access, no subscription needed).
+func anySubgraphRequiresSignin(note *model.NoteView) bool {
+	for _, sg := range note.Subgraphs {
+		if sg != nil && sg.RequireSignin {
+			return true
+		}
+	}
+	return false
 }

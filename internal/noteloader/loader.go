@@ -64,6 +64,8 @@ type Env interface {
 	// LoadSiteConfig loads site-wide configuration from database (hot-reloadable)
 	LoadSiteConfig(ctx context.Context) (model.SiteConfig, error)
 
+	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
+
 	layoutloader.Env
 }
 
@@ -240,6 +242,21 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	nvs, err := mdloader.Load(mdOptions)
 	if err != nil {
 		return fmt.Errorf("failed to load pages: %w", err)
+	}
+
+	// Enrich NoteSubgraphs with DB flags (require_signin).
+	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list subgraphs: %w", err)
+	}
+	dbSubgraphMap := make(map[string]db.Subgraph, len(dbSubgraphs))
+	for _, sg := range dbSubgraphs {
+		dbSubgraphMap[sg.Name] = sg
+	}
+	for name, noteSg := range nvs.Subgraphs {
+		if dbSg, ok := dbSubgraphMap[name]; ok {
+			noteSg.RequireSignin = dbSg.RequireSignin
+		}
 	}
 
 	l.log.Debug("load layouts")

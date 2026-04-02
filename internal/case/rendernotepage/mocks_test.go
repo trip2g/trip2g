@@ -25,6 +25,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
+//			GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+//				panic("mock out the GetTelegramPostLinksByNoteVersionID method")
+//			},
 //			IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 //				panic("mock out the IncreaseUserNoteViewCount method")
 //			},
@@ -74,6 +77,9 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
+	// GetTelegramPostLinksByNoteVersionIDFunc mocks the GetTelegramPostLinksByNoteVersionID method.
+	GetTelegramPostLinksByNoteVersionIDFunc func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
+
 	// IncreaseUserNoteViewCountFunc mocks the IncreaseUserNoteViewCount method.
 	IncreaseUserNoteViewCountFunc func(ctx context.Context, userID int64) error
 
@@ -121,6 +127,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Note is the note argument value.
 			Note *model.NoteView
+		}
+		// GetTelegramPostLinksByNoteVersionID holds details about calls to the GetTelegramPostLinksByNoteVersionID method.
+		GetTelegramPostLinksByNoteVersionID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetTelegramPostLinksByNoteVersionIDParams
 		}
 		// IncreaseUserNoteViewCount holds details about calls to the IncreaseUserNoteViewCount method.
 		IncreaseUserNoteViewCount []struct {
@@ -192,20 +205,21 @@ type EnvMock struct {
 			Params db.UpsertUserNoteDailyViewParams
 		}
 	}
-	lockCanReadNote               sync.RWMutex
-	lockIncreaseUserNoteViewCount sync.RWMutex
-	lockInsertUserNoteView        sync.RWMutex
-	lockLastUserNoteView          sync.RWMutex
-	lockLatestNoteViews           sync.RWMutex
-	lockLayouts                   sync.RWMutex
-	lockListActiveUserSubgraphs   sync.RWMutex
-	lockLiveNoteViews             sync.RWMutex
-	lockLogger                    sync.RWMutex
-	lockPublicURL                 sync.RWMutex
-	lockRecordUserNoteView        sync.RWMutex
-	lockSiteConfig                sync.RWMutex
-	lockSiteTitleTemplate         sync.RWMutex
-	lockUpsertUserNoteDailyView   sync.RWMutex
+	lockCanReadNote                         sync.RWMutex
+	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
+	lockIncreaseUserNoteViewCount           sync.RWMutex
+	lockInsertUserNoteView                  sync.RWMutex
+	lockLastUserNoteView                    sync.RWMutex
+	lockLatestNoteViews                     sync.RWMutex
+	lockLayouts                             sync.RWMutex
+	lockListActiveUserSubgraphs             sync.RWMutex
+	lockLiveNoteViews                       sync.RWMutex
+	lockLogger                              sync.RWMutex
+	lockPublicURL                           sync.RWMutex
+	lockRecordUserNoteView                  sync.RWMutex
+	lockSiteConfig                          sync.RWMutex
+	lockSiteTitleTemplate                   sync.RWMutex
+	lockUpsertUserNoteDailyView             sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -241,6 +255,42 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
+	return calls
+}
+
+// GetTelegramPostLinksByNoteVersionID calls GetTelegramPostLinksByNoteVersionIDFunc.
+func (mock *EnvMock) GetTelegramPostLinksByNoteVersionID(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+	if mock.GetTelegramPostLinksByNoteVersionIDFunc == nil {
+		panic("EnvMock.GetTelegramPostLinksByNoteVersionIDFunc: method is nil but Env.GetTelegramPostLinksByNoteVersionID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetTelegramPostLinksByNoteVersionIDParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetTelegramPostLinksByNoteVersionID.Lock()
+	mock.calls.GetTelegramPostLinksByNoteVersionID = append(mock.calls.GetTelegramPostLinksByNoteVersionID, callInfo)
+	mock.lockGetTelegramPostLinksByNoteVersionID.Unlock()
+	return mock.GetTelegramPostLinksByNoteVersionIDFunc(ctx, arg)
+}
+
+// GetTelegramPostLinksByNoteVersionIDCalls gets all the calls that were made to GetTelegramPostLinksByNoteVersionID.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramPostLinksByNoteVersionIDCalls())
+func (mock *EnvMock) GetTelegramPostLinksByNoteVersionIDCalls() []struct {
+	Ctx context.Context
+	Arg db.GetTelegramPostLinksByNoteVersionIDParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetTelegramPostLinksByNoteVersionIDParams
+	}
+	mock.lockGetTelegramPostLinksByNoteVersionID.RLock()
+	calls = mock.calls.GetTelegramPostLinksByNoteVersionID
+	mock.lockGetTelegramPostLinksByNoteVersionID.RUnlock()
 	return calls
 }
 

@@ -97,6 +97,20 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if err != nil {
+		var signinWallErr *SigninWallError
+		if errors.As(err, &signinWallErr) {
+			// Sign-in wall: render auth form instead of content
+			layoutParams.MetaRobots = "noindex, nofollow"
+			ctx.Response.Header.Set("Cache-Control", "no-store")
+
+			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+			dtCtx.SigninWallError = &defaulttemplate.SigninWallError{
+				Note: resp.NoteView,
+			}
+			defaulttemplate.WriteRender(ctx, dtCtx)
+			return nil, nil
+		}
+
 		var paywallErr *PaywallError
 		if errors.As(err, &paywallErr) {
 			layoutParams.MetaRobots = "noindex, nofollow"

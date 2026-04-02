@@ -26,15 +26,29 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
-	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
+	UpsertUserNoteDailyView(
+		ctx context.Context,
+		params db.UpsertUserNoteDailyViewParams,
+	) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
-	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
-	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+	RecordUserNoteView(
+		ctx context.Context,
+		userID int64,
+		note *model.NoteView,
+		referrerVersionID *int64,
+	)
+	LastUserNoteView(
+		ctx context.Context,
+		arg db.LastUserNoteViewParams,
+	) (db.LastUserNoteViewRow, error)
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
-	GetTelegramPostLinksByNoteVersionID(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
+	GetTelegramPostLinksByNoteVersionID(
+		ctx context.Context,
+		arg db.GetTelegramPostLinksByNoteVersionIDParams,
+	) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
 }
 
 type Request struct {
@@ -144,6 +158,15 @@ func (e *PaywallError) Error() string {
 	return fmt.Sprintf("paywall: %s", e.Message)
 }
 
+// SigninWallError is returned when a guest visits a page that requires sign-in.
+type SigninWallError struct {
+	Message string
+}
+
+func (e *SigninWallError) Error() string {
+	return e.Message
+}
+
 var systemRE = regexp.MustCompile(`\/_`)
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
@@ -236,6 +259,16 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
+	// Check sign-in wall before paywall.
+	// Uses RequireSignin preloaded into NoteSubgraph by noteloader enrichment.
+	if request.UserToken == nil {
+		for _, sg := range note.Subgraphs {
+			if sg != nil && sg.RequireSignin {
+				return &response, &SigninWallError{Message: "Sign in required"}
+			}
+		}
+	}
+
 	// hide all non-free pages from guests
 	if !note.Free && request.UserToken == nil {
 		return &response, &PaywallError{Message: "Need auth"}
@@ -244,7 +277,15 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	if request.UserToken != nil {
 		response.UserRole = request.UserToken.Role
 
-		err := handleUserToken(ctx, env, request.UserToken, &response, note, notes, request.Referrer)
+		err := handleUserToken(
+			ctx,
+			env,
+			request.UserToken,
+			&response,
+			note,
+			notes,
+			request.Referrer,
+		)
 		if err != nil {
 			return &response, err
 		}
@@ -261,11 +302,14 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	// Fetch Telegram post links for this note (DB query, not cached).
 	if note.VersionID > 0 {
-		rows, err := env.GetTelegramPostLinksByNoteVersionID(ctx, db.GetTelegramPostLinksByNoteVersionIDParams{
-			ID:   note.VersionID,
-			ID_2: note.VersionID,
-		})
-		if err == nil {
+		rows, telegramErr := env.GetTelegramPostLinksByNoteVersionID(
+			ctx,
+			db.GetTelegramPostLinksByNoteVersionIDParams{
+				ID:   note.VersionID,
+				ID_2: note.VersionID,
+			},
+		)
+		if telegramErr == nil {
 			for _, row := range rows {
 				chatID := model.NormalizeTelegramChatID(row.TelegramChatID)
 				response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
@@ -289,7 +333,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	return &response, nil
 }
 
-func checkLatestBanner(env Env, response *Response, isLatest bool, path string, note *model.NoteView) {
+func checkLatestBanner(
+	env Env,
+	response *Response,
+	isLatest bool,
+	path string,
+	note *model.NoteView,
+) {
 	var alternativeNotes *model.NoteViews
 	var alternativeVersion string
 
@@ -422,7 +472,8 @@ func resolveNote(notes *model.NoteViews, host, path, publicURL string) *model.No
 	normalizedHost := model.NormalizeDomain(host)
 	mainHost := model.NormalizeDomain(model.ExtractHost(publicURL))
 
-	isKnownCustomDomain := normalizedHost != mainHost && normalizedHost != "" && notes.IsCustomDomain(normalizedHost)
+	isKnownCustomDomain := normalizedHost != mainHost && normalizedHost != "" &&
+		notes.IsCustomDomain(normalizedHost)
 
 	if isKnownCustomDomain {
 		// Known custom domain: only serve notes with an explicit route for this domain.

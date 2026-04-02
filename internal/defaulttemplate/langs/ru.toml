@@ -16,6 +16,12 @@ other = "Войдите как администратор, чтобы начат
 [paywall_home]
 other = "← Главная"
 
+[signinwall_home]
+other = "Главная"
+
+[signinwall_message]
+other = "Войдите, чтобы просмотреть этот контент"
+
 [tg_read_on]
 other = "Читать на"
 

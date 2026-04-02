@@ -1,0 +1,13 @@
+$trip2g_user_signinwall $mol_view
+	sub /
+		<= Container $mol_view
+			sub /
+				<= Message $mol_paragraph
+					title @ \Sign in to view this content
+				<= Auth $trip2g_auth
+					signout => signout
+					reload_me <= reload_page null
+					AppView <= Content $mol_view
+						sub /
+							<= Success_message $mol_paragraph
+								title @ \You are signed in. Reloading...

@@ -16,6 +16,7 @@ namespace $.$$ {
 				reader: this.Reader(),
 				favorite: this.Favorite(),
 				search: this.Search(),
+				signinwall: this.SignInPaywall(),
 			}
 		}
 

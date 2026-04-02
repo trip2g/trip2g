@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
 )
@@ -16,66 +17,58 @@ import (
 
 type Env interface {
 	UpdateAdminSubgraph(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 type envMock = EnvMock
 
-func TestRequest_Resolve(t *testing.T) {
-	type fields struct {
-		ID    int64
-		Color string
-	}
-	type args struct {
-		ctx context.Context
-	}
+func TestResolve(t *testing.T) {
 	tests := []struct {
 		name        string
-		fields      fields
+		input       model.UpdateSubgraphInput
 		env         updatesubgraph.Env
-		args        args
-		want        model.UpdateSubgraphOrErrorPayload
 		wantErr     bool
 		wantErrText string
+		want        model.UpdateSubgraphOrErrorPayload
 	}{
 		{
 			name: "successful update with color",
-			fields: fields{
-				ID:    123,
-				Color: "#ff0000",
+			input: model.UpdateSubgraphInput{
+				ID:            123,
+				Color:         "#ff0000",
+				RequireSignin: true,
 			},
 			env: &envMock{
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{
-						ID:    123,
-						Color: stringPtr("#ff0000"),
+						ID:            123,
+						Color:         stringPtr("#ff0000"),
+						RequireSignin: true,
 					}, nil
 				},
 			},
-			args: args{
-				ctx: context.Background(),
-			},
 			want: &model.UpdateSubgraphPayload{
 				Subgraph: &db.Subgraph{
-					ID:    123,
-					Color: stringPtr("#ff0000"),
+					ID:            123,
+					Color:         stringPtr("#ff0000"),
+					RequireSignin: true,
 				},
 			},
 		},
 		{
 			name: "successful update without color",
-			fields: fields{
+			input: model.UpdateSubgraphInput{
 				ID:    456,
 				Color: "",
 			},
 			env: &envMock{
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{
 						ID: 456,
 					}, nil
 				},
-			},
-			args: args{
-				ctx: context.Background(),
 			},
 			want: &model.UpdateSubgraphPayload{
 				Subgraph: &db.Subgraph{
@@ -85,17 +78,15 @@ func TestRequest_Resolve(t *testing.T) {
 		},
 		{
 			name: "database error",
-			fields: fields{
+			input: model.UpdateSubgraphInput{
 				ID:    789,
 				Color: "#00ff00",
 			},
 			env: &envMock{
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{}, errors.New("database error")
 				},
-			},
-			args: args{
-				ctx: context.Background(),
 			},
 			wantErr:     true,
 			wantErrText: "failed to update subgraph",
@@ -104,11 +95,7 @@ func TestRequest_Resolve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &updatesubgraph.Request{
-				ID:    tt.fields.ID,
-				Color: tt.fields.Color,
-			}
-			got, err := req.Resolve(tt.args.ctx, tt.env)
+			got, err := updatesubgraph.Resolve(context.Background(), tt.env, tt.input)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -122,11 +109,11 @@ func TestRequest_Resolve(t *testing.T) {
 			if env, ok := tt.env.(*envMock); ok {
 				require.Len(t, env.UpdateAdminSubgraphCalls(), 1)
 				call := env.UpdateAdminSubgraphCalls()[0]
-				require.Equal(t, tt.fields.ID, call.Arg.ID)
+				require.Equal(t, tt.input.ID, call.Arg.ID)
 
-				if tt.fields.Color != "" {
+				if tt.input.Color != "" {
 					require.NotNil(t, call.Arg.Color)
-					require.Equal(t, tt.fields.Color, *call.Arg.Color)
+					require.Equal(t, tt.input.Color, *call.Arg.Color)
 				} else {
 					require.Nil(t, call.Arg.Color)
 				}

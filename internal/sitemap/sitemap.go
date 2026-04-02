@@ -33,6 +33,18 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 			continue
 		}
 
+		// Skip notes that require sign-in (they have noindex).
+		requiresSignin := false
+		for _, sgName := range note.SubgraphNames {
+			if sg, found := nvs.Subgraphs[sgName]; found && sg.RequireSignin {
+				requiresSignin = true
+				break
+			}
+		}
+		if requiresSignin {
+			continue
+		}
+
 		if strings.Contains(note.Permalink, "/_") {
 			continue
 		}
@@ -80,6 +92,18 @@ func GenerateForDomain(nvs *model.NoteViews, domain, baseURL string) ([]byte, er
 
 	for path, note := range routes {
 		if !note.Free {
+			continue
+		}
+
+		// Skip notes that require sign-in (they have noindex).
+		requiresSignin := false
+		for _, sgName := range note.SubgraphNames {
+			if sg, found := nvs.Subgraphs[sgName]; found && sg.RequireSignin {
+				requiresSignin = true
+				break
+			}
+		}
+		if requiresSignin {
 			continue
 		}
 

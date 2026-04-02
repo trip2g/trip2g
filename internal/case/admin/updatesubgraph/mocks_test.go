@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/db"
+	appmodel "trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement updatesubgraph.Env.
@@ -20,6 +21,9 @@ var _ updatesubgraph.Env = &EnvMock{}
 //
 //		// make and configure a mocked updatesubgraph.Env
 //		mockedEnv := &EnvMock{
+//			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+//				panic("mock out the PrepareLatestNotes method")
+//			},
 //			UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 //				panic("mock out the UpdateAdminSubgraph method")
 //			},
@@ -30,11 +34,21 @@ var _ updatesubgraph.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
+	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+
 	// UpdateAdminSubgraphFunc mocks the UpdateAdminSubgraph method.
 	UpdateAdminSubgraphFunc func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
+		PrepareLatestNotes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Partial is the partial argument value.
+			Partial bool
+		}
 		// UpdateAdminSubgraph holds details about calls to the UpdateAdminSubgraph method.
 		UpdateAdminSubgraph []struct {
 			// Ctx is the ctx argument value.
@@ -43,7 +57,44 @@ type EnvMock struct {
 			Arg db.UpdateAdminSubgraphParams
 		}
 	}
+	lockPrepareLatestNotes  sync.RWMutex
 	lockUpdateAdminSubgraph sync.RWMutex
+}
+
+// PrepareLatestNotes calls PrepareLatestNotesFunc.
+func (mock *EnvMock) PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+	if mock.PrepareLatestNotesFunc == nil {
+		panic("EnvMock.PrepareLatestNotesFunc: method is nil but Env.PrepareLatestNotes was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Partial bool
+	}{
+		Ctx:     ctx,
+		Partial: partial,
+	}
+	mock.lockPrepareLatestNotes.Lock()
+	mock.calls.PrepareLatestNotes = append(mock.calls.PrepareLatestNotes, callInfo)
+	mock.lockPrepareLatestNotes.Unlock()
+	return mock.PrepareLatestNotesFunc(ctx, partial)
+}
+
+// PrepareLatestNotesCalls gets all the calls that were made to PrepareLatestNotes.
+// Check the length with:
+//
+//	len(mockedEnv.PrepareLatestNotesCalls())
+func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
+	Ctx     context.Context
+	Partial bool
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Partial bool
+	}
+	mock.lockPrepareLatestNotes.RLock()
+	calls = mock.calls.PrepareLatestNotes
+	mock.lockPrepareLatestNotes.RUnlock()
+	return calls
 }
 
 // UpdateAdminSubgraph calls UpdateAdminSubgraphFunc.

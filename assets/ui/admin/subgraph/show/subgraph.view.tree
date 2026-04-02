@@ -18,6 +18,11 @@ $trip2g_admin_subgraph_show $mol_page
 					bid <= hidden_bid \
 					Content <= hidden_control $mol_check_box
 						checked? <=> subgraph_hidden? false
+				<= Require_signin_field $mol_form_field
+					name @ \Require sign-in
+					bid <= require_signin_bid \
+					Content <= require_signin_control $mol_check_box
+						checked? <=> subgraph_require_signin? false
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit

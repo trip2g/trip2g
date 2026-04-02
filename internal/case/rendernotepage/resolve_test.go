@@ -38,7 +38,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 		Path:          "/test-free-note",
 		Title:         "Test Free Note",
 		PathID:        1,
-		VersionID:     100,
+		VersionID:     0,
 		Content:       []byte("# Test Free Note Content"),
 		HTML:          "<h1>Test Free Note Content</h1>",
 		Permalink:     "/test-free-note",
@@ -108,6 +108,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -171,6 +174,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -233,6 +239,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -294,6 +303,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -440,6 +452,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -497,6 +512,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -557,6 +575,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -616,6 +637,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -674,6 +698,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -710,6 +737,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -852,6 +882,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr:            false,
@@ -905,6 +938,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -987,6 +1023,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr:      false,
@@ -1039,6 +1078,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -1167,6 +1209,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			expectErrNF: true,
@@ -1200,6 +1245,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -1325,6 +1373,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			expectErrNF: false,
@@ -1381,6 +1432,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -1444,6 +1498,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
+					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
 					},
 				}
 			},
@@ -1661,6 +1718,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
+					GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+						return nil, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -1754,6 +1814,9 @@ func TestResolve_SiteTitleTemplate(t *testing.T) {
 				CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 					return true, nil
 				},
+				GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+					return nil, nil
+				},
 			}
 
 			resp, err := rendernotepage.Resolve(context.Background(), env, rendernotepage.Request{
@@ -1765,6 +1828,191 @@ func TestResolve_SiteTitleTemplate(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, resp)
 			require.Equal(t, tt.expectedTitle, resp.Title)
+		})
+	}
+}
+
+func TestResolve_SigninWall(t *testing.T) {
+	// makeNote builds a NoteView with the given subgraphs.
+	// VersionID=0 so GetTelegramPostLinksByNoteVersionID is never called.
+	makeNote := func(free bool, subgraphs map[string]*model.NoteSubgraph) *model.NoteView {
+		names := make([]string, 0, len(subgraphs))
+		for n := range subgraphs {
+			names = append(names, n)
+		}
+		return &model.NoteView{
+			Path:          "/test-note",
+			Title:         "Test Note",
+			PathID:        1,
+			VersionID:     0,
+			Content:       []byte("# Test"),
+			HTML:          "<h1>Test</h1>",
+			Permalink:     "/test-note",
+			Free:          free,
+			SubgraphNames: names,
+			Subgraphs:     subgraphs,
+			InLinks:       map[string]struct{}{},
+			RawMeta:       map[string]interface{}{},
+			Assets:        map[string]struct{}{},
+			AssetReplaces: map[string]*model.NoteAssetReplace{},
+		}
+	}
+
+	// makeNoteViews wraps a note in a NoteViews.
+	makeNoteViews := func(note *model.NoteView) *model.NoteViews {
+		return &model.NoteViews{
+			Map:       map[string]*model.NoteView{"/test-note": note},
+			List:      []*model.NoteView{note},
+			Subgraphs: map[string]*model.NoteSubgraph{},
+			Version:   "live",
+		}
+	}
+
+	// baseEnv returns a minimal EnvMock for a guest hitting a free note.
+	// Override fields as needed per test case.
+	baseEnv := func(nv *model.NoteViews) *EnvMock {
+		return &EnvMock{
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+				return model.SiteConfig{}
+			},
+			SiteTitleTemplateFunc: func() string {
+				return "%s"
+			},
+			LiveNoteViewsFunc: func() *model.NoteViews {
+				return nv
+			},
+			LatestNoteViewsFunc: func() *model.NoteViews {
+				return nv
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+				return true, nil
+			},
+			GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+				return nil, nil
+			},
+		}
+	}
+
+	// authedEnv returns a base env extended with methods needed when a UserToken is present.
+	authedEnv := func(nv *model.NoteViews, canRead bool) *EnvMock {
+		env := baseEnv(nv)
+		env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
+			return []string{}, nil
+		}
+		env.RecordUserNoteViewFunc = func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {}
+		env.LastUserNoteViewFunc = func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+			return db.LastUserNoteViewRow{}, sql.ErrNoRows
+		}
+		env.CanReadNoteFunc = func(ctx context.Context, note *model.NoteView) (bool, error) {
+			return canRead, nil
+		}
+		return env
+	}
+
+	tests := []struct {
+		name        string
+		note        *model.NoteView
+		userToken   *usertoken.Data
+		envFunc     func(nv *model.NoteViews) *EnvMock
+		wantSignin  bool // expect *SigninWallError
+		wantPaywall bool // expect *PaywallError
+		wantNoError bool // expect nil error
+	}{
+		{
+			name: "guest + require_signin subgraph -> SigninWallError",
+			note: makeNote(true, map[string]*model.NoteSubgraph{
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:  nil,
+			envFunc:    func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
+			wantSignin: true,
+		},
+		{
+			name: "authenticated user + require_signin -> normal render",
+			note: makeNote(true, map[string]*model.NoteSubgraph{
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:   &usertoken.Data{ID: 1, Role: "user"},
+			envFunc:     func(nv *model.NoteViews) *EnvMock { return authedEnv(nv, true) },
+			wantNoError: true,
+		},
+		{
+			name: "admin user + require_signin -> normal render",
+			note: makeNote(true, map[string]*model.NoteSubgraph{
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:   &usertoken.Data{ID: 2, Role: "admin"},
+			envFunc:     func(nv *model.NoteViews) *EnvMock { return authedEnv(nv, true) },
+			wantNoError: true,
+		},
+		{
+			name: "guest + require_signin + non-free -> SigninWallError not PaywallError",
+			note: makeNote(false, map[string]*model.NoteSubgraph{
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:  nil,
+			envFunc:    func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
+			wantSignin: true,
+		},
+		{
+			name: "authenticated user without subscription + non-free + require_signin -> PaywallError",
+			note: makeNote(false, map[string]*model.NoteSubgraph{
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:   &usertoken.Data{ID: 3, Role: "user"},
+			envFunc:     func(nv *model.NoteViews) *EnvMock { return authedEnv(nv, false) },
+			wantPaywall: true,
+		},
+		{
+			name: "guest + mixed subgraphs one require_signin one not -> SigninWallError",
+			note: makeNote(true, map[string]*model.NoteSubgraph{
+				"public":  {Name: "public", RequireSignin: false},
+				"members": {Name: "members", RequireSignin: true},
+			}),
+			userToken:  nil,
+			envFunc:    func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
+			wantSignin: true,
+		},
+		{
+			name: "guest + no require_signin subgraph + free note -> normal render",
+			note: makeNote(true, map[string]*model.NoteSubgraph{
+				"public": {Name: "public", RequireSignin: false},
+			}),
+			userToken:   nil,
+			envFunc:     func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
+			wantNoError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nv := makeNoteViews(tt.note)
+			env := tt.envFunc(nv)
+
+			resp, err := rendernotepage.Resolve(context.Background(), env, rendernotepage.Request{
+				Path:      "/test-note",
+				UserToken: tt.userToken,
+			})
+
+			require.NotNil(t, resp)
+
+			switch {
+			case tt.wantSignin:
+				require.Error(t, err)
+				var signinErr *rendernotepage.SigninWallError
+				require.ErrorAs(t, err, &signinErr, "expected *SigninWallError, got %T: %v", err, err)
+				var paywallErr *rendernotepage.PaywallError
+				require.NotErrorAs(t, err, &paywallErr, "expected SigninWallError, not PaywallError")
+			case tt.wantPaywall:
+				require.Error(t, err)
+				var paywallErr *rendernotepage.PaywallError
+				require.ErrorAs(t, err, &paywallErr, "expected *PaywallError, got %T: %v", err, err)
+			case tt.wantNoError:
+				require.NoError(t, err)
+			}
 		})
 	}
 }

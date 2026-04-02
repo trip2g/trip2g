@@ -265,9 +265,10 @@ type NoteView struct {
 }
 
 type NoteSubgraph struct {
-	Name    string
-	Home    *NoteView
-	Sidebar *NoteView
+	Name          string
+	Home          *NoteView
+	Sidebar       *NoteView
+	RequireSignin bool
 }
 
 type NoteViews struct {

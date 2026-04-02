@@ -22,6 +22,11 @@ type Env interface {
 
 	// patreon, boosty, etc
 	TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error)
+
+	// Captcha / Turnstile
+	TurnstileSiteKey() string
+	IncrementAndCheckSigninCounter() bool
+	VerifyCaptcha(ctx context.Context, token, remoteIP string) error
 }
 
 func NormalizeInput(input *model.RequestEmailSignInCodeInput) {
@@ -36,12 +41,27 @@ func ValidateInput(req *model.RequestEmailSignInCodeInput) *model.ErrorPayload {
 
 type Input = model.RequestEmailSignInCodeInput
 
-func Resolve(ctx context.Context, env Env, input Input) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+func Resolve(ctx context.Context, env Env, input Input, remoteIP string) (model.RequestEmailSignInCodeOrErrorPayload, error) {
 	NormalizeInput(&input)
 
 	errPayload := ValidateInput(&input)
 	if errPayload != nil {
 		return errPayload, nil
+	}
+
+	siteKey := env.TurnstileSiteKey()
+	turnstileEnabled := siteKey != ""
+
+	// If captchaToken is provided, verify it immediately.
+	if input.CaptchaToken != nil && *input.CaptchaToken != "" {
+		if err := env.VerifyCaptcha(ctx, *input.CaptchaToken, remoteIP); err != nil {
+			return &model.ErrorPayload{Message: "captcha_invalid"}, nil //nolint:nilerr // business error as payload
+		}
+	} else if turnstileEnabled {
+		// No token provided; check global counter.
+		if env.IncrementAndCheckSigninCounter() {
+			return &model.RequestCaptchaPayload{SiteKey: siteKey}, nil
+		}
 	}
 
 	user, err := env.UserByEmail(ctx, input.Email)

@@ -77,6 +77,9 @@ func TestResolve(t *testing.T) {
 					ContentHash: contentHash[:],
 				}, nil
 			},
+			GetNoteVersionChunksFunc: func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+				return []db.NoteVersionChunk{{VersionID: 1}}, nil
+			},
 		}
 
 		err := generatenoteversionembedding.Resolve(ctx, env, generatenoteversionembedding.Params{VersionID: 1})

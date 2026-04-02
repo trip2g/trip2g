@@ -5,30 +5,23 @@ import (
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 )
 
 type Env interface {
 	UpdateAdminSubgraph(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
-type Request struct {
-	ID     int64
-	Color  string
-	Hidden bool
-}
-
-type Input = Request
+type Input = model.UpdateSubgraphInput
 type Payload = model.UpdateSubgraphOrErrorPayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	return input.Resolve(ctx, env)
-}
-
-func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	params := db.UpdateAdminSubgraphParams{
 		ID: input.ID,
 
-		Hidden: input.Hidden,
+		Hidden:        input.Hidden,
+		RequireSignin: input.RequireSignin,
 	}
 
 	if input.Color != "" {
@@ -38,6 +31,11 @@ func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	subgraph, err := env.UpdateAdminSubgraph(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update subgraph: %w", err)
+	}
+
+	// Reload notes so noteloader re-enriches NoteSubgraph.RequireSignin from DB.
+	if _, err := env.PrepareLatestNotes(ctx, true); err != nil {
+		return nil, fmt.Errorf("failed to reload notes after subgraph update: %w", err)
 	}
 
 	response := model.UpdateSubgraphPayload{

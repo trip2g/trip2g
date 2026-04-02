@@ -24,6 +24,7 @@ import (
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/tgauthtoken"
+	"trip2g/internal/turnstile"
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -119,6 +120,9 @@ type Config struct {
 	// Features configuration (parsed from JSON)
 	FeaturesJSON string            // Raw JSON from flag/env
 	Features     features.Features // Parsed features
+
+	// Cloudflare Turnstile captcha
+	Turnstile turnstile.Config
 }
 
 // SimpleBackupConfig holds simple backup system configuration.
@@ -382,6 +386,10 @@ func (c *Config) defineFlags() {
 		dataEncryptionDefaults.Key,
 		"32-byte key for encrypting sensitive data (AES-256)",
 	)
+
+	// Cloudflare Turnstile captcha
+	flag.StringVar(&c.Turnstile.SiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key")
+	flag.StringVar(&c.Turnstile.SecretKey, "turnstile-secret-key", "", "Cloudflare Turnstile secret key")
 
 	// Metrics
 	c.defineMetricsFlags()

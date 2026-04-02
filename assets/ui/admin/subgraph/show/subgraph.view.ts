@@ -7,6 +7,7 @@ namespace $.$$ {
 					name
 					color
 					hidden
+					requireSignin
 				}
 			}
 		}
@@ -65,12 +66,22 @@ namespace $.$$ {
 			return this.data().hidden
 		}
 
+		@$mol_mem
+		override subgraph_require_signin(next?: boolean): boolean {
+			if (next !== undefined) {
+				return next
+			}
+
+			return this.data().requireSignin
+		}
+
 		submit() {
 			const res = mutate({
 				input: {
 					id: this.subgraph_id(),
 					color: this.subgraph_color(),
 					hidden: this.subgraph_hidden(),
+					requireSignin: this.subgraph_require_signin(),
 				},
 			})
 

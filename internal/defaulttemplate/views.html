@@ -65,7 +65,9 @@ window.__trip2g_settings = {
 </head>
 <body>
 
-{% if ctx.PaywallError != nil %}
+{% if ctx.SigninWallError != nil %}
+  {%= SignInWall(ctx) %}
+{% elseif ctx.PaywallError != nil %}
   {%= PayWall(ctx) %}
 {% elseif ctx.OnboardingMode %}
   {%= Onboarding(ctx) %}
@@ -404,6 +406,24 @@ window.__trip2g_settings = {
     {% endif %}
   </div>
 </footer>
+{% endfunc %}
+
+{% func SignInWall(ctx *Ctx) %}
+<div class="paywall-page">
+  <div class="paywall-page__header">
+    <a class="paywall-page__home" href="/">{%s ctx.T("signinwall_home") %}</a>
+    <div mol_view_root="$trip2g_user_space"></div>
+  </div>
+
+  {% if ctx.SigninWallError != nil && ctx.SigninWallError.Note != nil %}
+  <h1 class="content__title">{%s ctx.SigninWallError.Note.Title() %}</h1>
+  {% if ctx.SigninWallError.Note.Description() != "" %}
+  <p>{%s ctx.SigninWallError.Note.Description() %}</p>
+  {% endif %}
+  {% endif %}
+
+  <div id="signinwall" mol_view_root="$trip2g_user_signinwall"></div>
+</div>
 {% endfunc %}
 
 {% func PayWall(ctx *Ctx) %}

@@ -74,6 +74,7 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   name: String!
   color: String
   hidden: Boolean!
+  requireSignin: Boolean!
   createdAt: Time!
 }
 
@@ -1469,13 +1470,18 @@ type ErrorPayload {
 
 input RequestEmailSignInCodeInput {
   email: String!
+  captchaToken: String
 }
 
 type RequestEmailSignInCodePayload {
   success: Boolean!
 }
 
-union RequestEmailSignInCodeOrErrorPayload = RequestEmailSignInCodePayload | ErrorPayload
+type RequestCaptchaPayload {
+  siteKey: String!
+}
+
+union RequestEmailSignInCodeOrErrorPayload = RequestEmailSignInCodePayload | ErrorPayload | RequestCaptchaPayload
 
 #
 # signInByEmail
@@ -1688,10 +1694,11 @@ type Mutation {
 # updateSubgraph
 #
 
-input UpdateSubgraphInput @goModel(model: "trip2g/internal/case/admin/updatesubgraph.Request") {
+input UpdateSubgraphInput {
   id: Int64!
   color: String!
   hidden: Boolean!
+  requireSignin: Boolean!
 }
 
 type UpdateSubgraphPayload {

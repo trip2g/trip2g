@@ -16,6 +16,12 @@ other = "Log in as administrator to get started."
 [paywall_home]
 other = "← Home"
 
+[signinwall_home]
+other = "Home"
+
+[signinwall_message]
+other = "Sign in to view this content"
+
 [tg_read_on]
 other = "Read on"
 

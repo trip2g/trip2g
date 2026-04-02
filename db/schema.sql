@@ -44,7 +44,7 @@ CREATE TABLE subgraphs (
   name text not null unique,
   color text,
   created_at datetime not null default current_timestamp
-, hidden boolean not null default false, show_unsubgraph_notes_for_paid_users boolean default true);
+, hidden boolean not null default false, show_unsubgraph_notes_for_paid_users boolean default true, require_signin boolean not null default false);
 CREATE TABLE revokes (
   id integer primary key autoincrement,
   target_type text not null,

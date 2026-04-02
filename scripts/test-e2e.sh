@@ -229,14 +229,16 @@ fi
 echo "🎭 Running main Playwright tests..."
 echo ""
 
+exit 1
+
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --ui
 else
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook"
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot"
 fi
 
 TEST_EXIT_CODE=$?
@@ -247,6 +249,15 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
   echo "Run with --ui for interactive debugging: ./scripts/test-e2e.sh --ui"
   exit $TEST_EXIT_CODE
 fi
+
+# Screenshot regression tests
+echo ""
+echo "📸 Running screenshot tests..."
+npx playwright test e2e/screenshots.spec.js || {
+  echo -e "${RED}✗ Screenshot tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Screenshot tests passed${NC}"
 
 # Test CSS hot-reload: update layout CSS and verify change
 echo ""

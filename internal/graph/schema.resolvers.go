@@ -739,8 +739,8 @@ func (r *adminMutationResolver) UpdateUser(ctx context.Context, obj *appmodel.Ad
 }
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
-func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
-	return input.Resolve(ctx, r.env(ctx))
+func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateSubgraphInput) (model.UpdateSubgraphOrErrorPayload, error) {
+	return updatesubgraph.Resolve(ctx, r.env(ctx), input)
 }
 
 // UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
@@ -2286,7 +2286,11 @@ func (r *layoutBlockParamResolver) Value(ctx context.Context, obj *appmodel.Layo
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
 func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error) {
-	return requestemailsignin.Resolve(ctx, r.env(ctx), input)
+	var remoteIP string
+	if req, err := appreq.FromCtx(ctx); err == nil && req.Req != nil {
+		remoteIP = req.Req.RemoteIP().String()
+	}
+	return requestemailsignin.Resolve(ctx, r.env(ctx), input, remoteIP)
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.

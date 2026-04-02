@@ -1730,8 +1730,15 @@ type RemoveExpiredTgChatMembersPayload struct {
 
 func (RemoveExpiredTgChatMembersPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
 
+type RequestCaptchaPayload struct {
+	SiteKey string `json:"siteKey"`
+}
+
+func (RequestCaptchaPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
+
 type RequestEmailSignInCodeInput struct {
-	Email string `json:"email"`
+	Email        string  `json:"email"`
+	CaptchaToken *string `json:"captchaToken,omitempty"`
 }
 
 type RequestEmailSignInCodePayload struct {
@@ -2188,6 +2195,13 @@ type UpdateRedirectPayload struct {
 }
 
 func (UpdateRedirectPayload) IsUpdateRedirectOrErrorPayload() {}
+
+type UpdateSubgraphInput struct {
+	ID            int64  `json:"id"`
+	Color         string `json:"color"`
+	Hidden        bool   `json:"hidden"`
+	RequireSignin bool   `json:"requireSignin"`
+}
 
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`

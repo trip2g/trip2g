@@ -13,6 +13,7 @@ demo2
 *easyjson-bootstrap*
 .aider*
 .env
+*.pem
 run.sh
 examples.json
 infra/hosts

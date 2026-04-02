@@ -12,7 +12,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -340,7 +339,7 @@ type AdminLatestNoteViewsConnectionResolver interface {
 type AdminMutationResolver interface {
 	CreateUser(ctx context.Context, obj *model1.AdminMutation, input model.CreateUserInput) (model.CreateUserOrErrorPayload, error)
 	UpdateUser(ctx context.Context, obj *model1.AdminMutation, input model.UpdateUserInput) (model.UpdateUserOrErrorPayload, error)
-	UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error)
+	UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.UpdateSubgraphInput) (model.UpdateSubgraphOrErrorPayload, error)
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	CreateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.CreateUserSubgraphAccessInput) (model.CreateUserSubgraphAccessOrErrorPayload, error)
 	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
@@ -1921,7 +1920,7 @@ func (ec *executionContext) field_AdminMutation_updateRedirect_args(ctx context.
 func (ec *executionContext) field_AdminMutation_updateSubgraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphInput)
 	if err != nil {
 		return nil, err
 	}
@@ -4625,6 +4624,8 @@ func (ec *executionContext) fieldContext_AdminBoostyTier_subgraphs(_ context.Con
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -9716,7 +9717,7 @@ func (ec *executionContext) _AdminMutation_updateSubgraph(ctx context.Context, f
 		ec.fieldContext_AdminMutation_updateSubgraph,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().UpdateSubgraph(ctx, obj, fc.Args["input"].(updatesubgraph.Request))
+			return ec.resolvers.AdminMutation().UpdateSubgraph(ctx, obj, fc.Args["input"].(model.UpdateSubgraphInput))
 		},
 		nil,
 		ec.marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload,
@@ -13847,6 +13848,8 @@ func (ec *executionContext) fieldContext_AdminOffer_subgraphs(_ context.Context,
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -14984,6 +14987,8 @@ func (ec *executionContext) fieldContext_AdminPatreonTier_subgraphs(_ context.Co
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -17048,6 +17053,8 @@ func (ec *executionContext) fieldContext_AdminQuery_subgraph(ctx context.Context
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -19372,6 +19379,35 @@ func (ec *executionContext) fieldContext_AdminSubgraph_hidden(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminSubgraph_requireSignin(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminSubgraph_requireSignin,
+		func(ctx context.Context) (any, error) {
+			return obj.RequireSignin, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminSubgraph_requireSignin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminSubgraph",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminSubgraph_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19433,6 +19469,8 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -21447,6 +21485,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChatSubgraphInvite_subgraph(_
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -21924,6 +21964,8 @@ func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_subgraph(_ co
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -22652,6 +22694,8 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_subgraph(_ cont
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -29366,6 +29410,35 @@ func (ec *executionContext) fieldContext_RemoveExpiredTgChatMembersPayload_error
 	return fc, nil
 }
 
+func (ec *executionContext) _RequestCaptchaPayload_siteKey(ctx context.Context, field graphql.CollectedField, obj *model.RequestCaptchaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RequestCaptchaPayload_siteKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SiteKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RequestCaptchaPayload_siteKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RequestCaptchaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RequestEmailSignInCodePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32030,6 +32103,8 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 				return ec.fieldContext_AdminSubgraph_color(ctx, field)
 			case "hidden":
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
+			case "requireSignin":
+				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -36992,7 +37067,7 @@ func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email"}
+	fieldsInOrder := [...]string{"email", "captchaToken"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -37006,6 +37081,13 @@ func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx contex
 				return it, err
 			}
 			it.Email = data
+		case "captchaToken":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("captchaToken"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CaptchaToken = data
 		}
 	}
 
@@ -38355,14 +38437,14 @@ func (ec *executionContext) unmarshalInputUpdateRedirectInput(ctx context.Contex
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Context, obj any) (updatesubgraph.Request, error) {
-	var it updatesubgraph.Request
+func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Context, obj any) (model.UpdateSubgraphInput, error) {
+	var it model.UpdateSubgraphInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "color", "hidden"}
+	fieldsInOrder := [...]string{"id", "color", "hidden", "requireSignin"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -38390,6 +38472,13 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 				return it, err
 			}
 			it.Hidden = data
+		case "requireSignin":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requireSignin"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequireSignin = data
 		}
 	}
 
@@ -39971,6 +40060,13 @@ func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Co
 			return graphql.Null
 		}
 		return ec._RequestEmailSignInCodePayload(ctx, sel, obj)
+	case model.RequestCaptchaPayload:
+		return ec._RequestCaptchaPayload(ctx, sel, &obj)
+	case *model.RequestCaptchaPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RequestCaptchaPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -53514,6 +53610,11 @@ func (ec *executionContext) _AdminSubgraph(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "requireSignin":
+			out.Values[i] = ec._AdminSubgraph_requireSignin(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createdAt":
 			out.Values[i] = ec._AdminSubgraph_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -60545,6 +60646,45 @@ func (ec *executionContext) _RemoveExpiredTgChatMembersPayload(ctx context.Conte
 			}
 		case "errors":
 			out.Values[i] = ec._RemoveExpiredTgChatMembersPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var requestCaptchaPayloadImplementors = []string{"RequestCaptchaPayload", "RequestEmailSignInCodeOrErrorPayload"}
+
+func (ec *executionContext) _RequestCaptchaPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestCaptchaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, requestCaptchaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RequestCaptchaPayload")
+		case "siteKey":
+			out.Values[i] = ec._RequestCaptchaPayload_siteKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -69912,7 +70052,7 @@ func (ec *executionContext) marshalNUpdateRedirectOrErrorPayload2trip2gᚋintern
 	return ec._UpdateRedirectOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx context.Context, v any) (updatesubgraph.Request, error) {
+func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphInput(ctx context.Context, v any) (model.UpdateSubgraphInput, error) {
 	res, err := ec.unmarshalInputUpdateSubgraphInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }

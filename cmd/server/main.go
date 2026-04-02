@@ -56,6 +56,7 @@ import (
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/case/updatesubgraphs"
@@ -96,6 +97,8 @@ import (
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
+	"trip2g/internal/configregistry"
+	"trip2g/internal/turnstile"
 	"trip2g/internal/zerologger"
 
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -220,6 +223,9 @@ type app struct {
 	simpleBackup *simplebackup.Manager
 
 	telegramAuthManager *tgtd.AuthManager
+
+	*turnstile.Client
+	signinCounter *requestemailsignin.SignInCounter
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
@@ -335,6 +341,9 @@ func main() {
 		UserBans: userbans.New(queries),
 
 		nowpaymentsClient: nowpaymentsClient,
+
+		Client:        turnstile.New(config.Turnstile),
+		signinCounter: &requestemailsignin.SignInCounter{},
 	}
 
 	a.ctx = ctx
@@ -831,6 +840,7 @@ func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) 
 
 	return nil
 }
+
 
 func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx
@@ -1842,6 +1852,23 @@ func (a *app) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User
 	// etc
 
 	return user, nil
+}
+
+func (a *app) TurnstileSiteKey() string {
+	return a.config.Turnstile.SiteKey
+}
+
+func (a *app) IncrementAndCheckSigninCounter() bool {
+	threshold := a.CaptchaSigninThreshold()
+	return a.signinCounter.IncrementAndCheck(threshold)
+}
+
+func (a *app) CaptchaSigninThreshold() int64 {
+	row, err := a.queries.GetLatestConfigInt(context.Background(), configregistry.ConfigCaptchaSigninThreshold)
+	if err != nil {
+		return 5 // default
+	}
+	return row.Value
 }
 
 func (a *app) RequestIP(ctx context.Context) string {

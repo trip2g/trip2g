@@ -47,6 +47,9 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			GeneratePurchaseIDFunc: func() string {
 //				panic("mock out the GeneratePurchaseID method")
 //			},
+//			IncrementAndCheckSigninCounterFunc: func() bool {
+//				panic("mock out the IncrementAndCheckSigninCounter method")
+//			},
 //			InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
 //				panic("mock out the InsertPurchase method")
 //			},
@@ -59,6 +62,9 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
 //				panic("mock out the TryToAutoRegisterUser method")
 //			},
+//			TurnstileSiteKeyFunc: func() string {
+//				panic("mock out the TurnstileSiteKey method")
+//			},
 //			UserBanByUserIDFunc: func(ctx context.Context, userID int64) (*db.UserBan, error) {
 //				panic("mock out the UserBanByUserID method")
 //			},
@@ -67,6 +73,9 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			},
 //			UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 //				panic("mock out the UserByID method")
+//			},
+//			VerifyCaptchaFunc: func(ctx context.Context, token string, remoteIP string) error {
+//				panic("mock out the VerifyCaptcha method")
 //			},
 //		}
 //
@@ -99,6 +108,9 @@ type EnvMock struct {
 	// GeneratePurchaseIDFunc mocks the GeneratePurchaseID method.
 	GeneratePurchaseIDFunc func() string
 
+	// IncrementAndCheckSigninCounterFunc mocks the IncrementAndCheckSigninCounter method.
+	IncrementAndCheckSigninCounterFunc func() bool
+
 	// InsertPurchaseFunc mocks the InsertPurchase method.
 	InsertPurchaseFunc func(ctx context.Context, arg db.InsertPurchaseParams) error
 
@@ -111,6 +123,9 @@ type EnvMock struct {
 	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
 	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
 
+	// TurnstileSiteKeyFunc mocks the TurnstileSiteKey method.
+	TurnstileSiteKeyFunc func() string
+
 	// UserBanByUserIDFunc mocks the UserBanByUserID method.
 	UserBanByUserIDFunc func(ctx context.Context, userID int64) (*db.UserBan, error)
 
@@ -119,6 +134,9 @@ type EnvMock struct {
 
 	// UserByIDFunc mocks the UserByID method.
 	UserByIDFunc func(ctx context.Context, id int64) (db.User, error)
+
+	// VerifyCaptchaFunc mocks the VerifyCaptcha method.
+	VerifyCaptchaFunc func(ctx context.Context, token string, remoteIP string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -172,6 +190,9 @@ type EnvMock struct {
 		// GeneratePurchaseID holds details about calls to the GeneratePurchaseID method.
 		GeneratePurchaseID []struct {
 		}
+		// IncrementAndCheckSigninCounter holds details about calls to the IncrementAndCheckSigninCounter method.
+		IncrementAndCheckSigninCounter []struct {
+		}
 		// InsertPurchase holds details about calls to the InsertPurchase method.
 		InsertPurchase []struct {
 			// Ctx is the ctx argument value.
@@ -196,6 +217,9 @@ type EnvMock struct {
 			// Email is the email argument value.
 			Email string
 		}
+		// TurnstileSiteKey holds details about calls to the TurnstileSiteKey method.
+		TurnstileSiteKey []struct {
+		}
 		// UserBanByUserID holds details about calls to the UserBanByUserID method.
 		UserBanByUserID []struct {
 			// Ctx is the ctx argument value.
@@ -217,22 +241,34 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
+		// VerifyCaptcha holds details about calls to the VerifyCaptcha method.
+		VerifyCaptcha []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Token is the token argument value.
+			Token string
+			// RemoteIP is the remoteIP argument value.
+			RemoteIP string
+		}
 	}
-	lockActiveOfferByPublicID     sync.RWMutex
-	lockCountActiveSignInCodes    sync.RWMutex
-	lockCreateNowpaymentsInvoice  sync.RWMutex
-	lockCreateSignInCode          sync.RWMutex
-	lockCurrentUserToken          sync.RWMutex
-	lockEnqueueRequestSignInEmail sync.RWMutex
-	lockGenerateHotAuthToken      sync.RWMutex
-	lockGeneratePurchaseID        sync.RWMutex
-	lockInsertPurchase            sync.RWMutex
-	lockPublicURL                 sync.RWMutex
-	lockStorePurchaseToken        sync.RWMutex
-	lockTryToAutoRegisterUser     sync.RWMutex
-	lockUserBanByUserID           sync.RWMutex
-	lockUserByEmail               sync.RWMutex
-	lockUserByID                  sync.RWMutex
+	lockActiveOfferByPublicID          sync.RWMutex
+	lockCountActiveSignInCodes         sync.RWMutex
+	lockCreateNowpaymentsInvoice       sync.RWMutex
+	lockCreateSignInCode               sync.RWMutex
+	lockCurrentUserToken               sync.RWMutex
+	lockEnqueueRequestSignInEmail      sync.RWMutex
+	lockGenerateHotAuthToken           sync.RWMutex
+	lockGeneratePurchaseID             sync.RWMutex
+	lockIncrementAndCheckSigninCounter sync.RWMutex
+	lockInsertPurchase                 sync.RWMutex
+	lockPublicURL                      sync.RWMutex
+	lockStorePurchaseToken             sync.RWMutex
+	lockTryToAutoRegisterUser          sync.RWMutex
+	lockTurnstileSiteKey               sync.RWMutex
+	lockUserBanByUserID                sync.RWMutex
+	lockUserByEmail                    sync.RWMutex
+	lockUserByID                       sync.RWMutex
+	lockVerifyCaptcha                  sync.RWMutex
 }
 
 // ActiveOfferByPublicID calls ActiveOfferByPublicIDFunc.
@@ -510,6 +546,33 @@ func (mock *EnvMock) GeneratePurchaseIDCalls() []struct {
 	return calls
 }
 
+// IncrementAndCheckSigninCounter calls IncrementAndCheckSigninCounterFunc.
+func (mock *EnvMock) IncrementAndCheckSigninCounter() bool {
+	if mock.IncrementAndCheckSigninCounterFunc == nil {
+		panic("EnvMock.IncrementAndCheckSigninCounterFunc: method is nil but Env.IncrementAndCheckSigninCounter was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockIncrementAndCheckSigninCounter.Lock()
+	mock.calls.IncrementAndCheckSigninCounter = append(mock.calls.IncrementAndCheckSigninCounter, callInfo)
+	mock.lockIncrementAndCheckSigninCounter.Unlock()
+	return mock.IncrementAndCheckSigninCounterFunc()
+}
+
+// IncrementAndCheckSigninCounterCalls gets all the calls that were made to IncrementAndCheckSigninCounter.
+// Check the length with:
+//
+//	len(mockedEnv.IncrementAndCheckSigninCounterCalls())
+func (mock *EnvMock) IncrementAndCheckSigninCounterCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIncrementAndCheckSigninCounter.RLock()
+	calls = mock.calls.IncrementAndCheckSigninCounter
+	mock.lockIncrementAndCheckSigninCounter.RUnlock()
+	return calls
+}
+
 // InsertPurchase calls InsertPurchaseFunc.
 func (mock *EnvMock) InsertPurchase(ctx context.Context, arg db.InsertPurchaseParams) error {
 	if mock.InsertPurchaseFunc == nil {
@@ -645,6 +708,33 @@ func (mock *EnvMock) TryToAutoRegisterUserCalls() []struct {
 	return calls
 }
 
+// TurnstileSiteKey calls TurnstileSiteKeyFunc.
+func (mock *EnvMock) TurnstileSiteKey() string {
+	if mock.TurnstileSiteKeyFunc == nil {
+		panic("EnvMock.TurnstileSiteKeyFunc: method is nil but Env.TurnstileSiteKey was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTurnstileSiteKey.Lock()
+	mock.calls.TurnstileSiteKey = append(mock.calls.TurnstileSiteKey, callInfo)
+	mock.lockTurnstileSiteKey.Unlock()
+	return mock.TurnstileSiteKeyFunc()
+}
+
+// TurnstileSiteKeyCalls gets all the calls that were made to TurnstileSiteKey.
+// Check the length with:
+//
+//	len(mockedEnv.TurnstileSiteKeyCalls())
+func (mock *EnvMock) TurnstileSiteKeyCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTurnstileSiteKey.RLock()
+	calls = mock.calls.TurnstileSiteKey
+	mock.lockTurnstileSiteKey.RUnlock()
+	return calls
+}
+
 // UserBanByUserID calls UserBanByUserIDFunc.
 func (mock *EnvMock) UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error) {
 	if mock.UserBanByUserIDFunc == nil {
@@ -750,5 +840,45 @@ func (mock *EnvMock) UserByIDCalls() []struct {
 	mock.lockUserByID.RLock()
 	calls = mock.calls.UserByID
 	mock.lockUserByID.RUnlock()
+	return calls
+}
+
+// VerifyCaptcha calls VerifyCaptchaFunc.
+func (mock *EnvMock) VerifyCaptcha(ctx context.Context, token string, remoteIP string) error {
+	if mock.VerifyCaptchaFunc == nil {
+		panic("EnvMock.VerifyCaptchaFunc: method is nil but Env.VerifyCaptcha was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		Token    string
+		RemoteIP string
+	}{
+		Ctx:      ctx,
+		Token:    token,
+		RemoteIP: remoteIP,
+	}
+	mock.lockVerifyCaptcha.Lock()
+	mock.calls.VerifyCaptcha = append(mock.calls.VerifyCaptcha, callInfo)
+	mock.lockVerifyCaptcha.Unlock()
+	return mock.VerifyCaptchaFunc(ctx, token, remoteIP)
+}
+
+// VerifyCaptchaCalls gets all the calls that were made to VerifyCaptcha.
+// Check the length with:
+//
+//	len(mockedEnv.VerifyCaptchaCalls())
+func (mock *EnvMock) VerifyCaptchaCalls() []struct {
+	Ctx      context.Context
+	Token    string
+	RemoteIP string
+} {
+	var calls []struct {
+		Ctx      context.Context
+		Token    string
+		RemoteIP string
+	}
+	mock.lockVerifyCaptcha.RLock()
+	calls = mock.calls.VerifyCaptcha
+	mock.lockVerifyCaptcha.RUnlock()
 	return calls
 }

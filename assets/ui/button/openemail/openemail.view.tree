@@ -1,0 +1,10 @@
+$trip2g_button_openemail $mol_view
+	email \
+	sub /
+		<= Link $mol_link
+			uri <= email_url \
+			target \_blank
+			sub /
+				<= Icon $mol_icon_email_open
+				<= Title $mol_view
+					sub / <= link_title @ \Open email

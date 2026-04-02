@@ -27,6 +27,10 @@ namespace $.$$ {
 					__typename
 					success
 				}
+				... on RequestCaptchaPayload {
+					__typename
+					siteKey
+				}
 			}
 		}
 	`)
@@ -76,9 +80,9 @@ namespace $.$$ {
 
 		@$mol_mem
 		override entered_email( next?: string ): string {
-			this.$.$mol_state_arg.value( 'email', next || null )
+			// this.$.$mol_state_arg.value( 'email', next || null )
 
-			return next || this.$.$mol_state_arg.value( 'email' ) || ''
+			return next || '' // || this.$.$mol_state_arg.value( 'email' ) || ''
 		}
 
 		sub() {
@@ -118,17 +122,41 @@ namespace $.$$ {
 			return this.request_error() || ''
 		}
 
-		static mutate( email: string ) {
-			return request_email_mutate({
-				input: { email },
-			})
+		@$mol_mem
+		captcha_site_key( next?: string ): string {
+			return next ?? ''
+		}
+
+		@$mol_mem
+		show_captcha( next?: boolean ): boolean {
+			return next ?? false
+		}
+
+		@$mol_mem
+		captcha_token( next?: string | null ): string | null {
+			return next ?? null
+		}
+
+		static mutate( email: string, captchaToken?: string | null ) {
+			const input: { email: string; captchaToken?: string } = { email }
+			if( captchaToken ) {
+				input.captchaToken = captchaToken
+			}
+			return request_email_mutate({ input })
 		}
 
 		submit() {
-			const res = this.$.$trip2g_auth_email_form.mutate( this.email() )
+			const captchaToken = this.captcha_token()
+			const res = this.$.$trip2g_auth_email_form.mutate( this.email(), captchaToken )
 
 			if( res.data.__typename === 'ErrorPayload' ) {
 				this.request_error( res.data.message )
+				return
+			}
+
+			if( res.data.__typename === 'RequestCaptchaPayload' ) {
+				this.captcha_site_key( res.data.siteKey )
+				this.show_captcha( true )
 				return
 			}
 
@@ -144,6 +172,30 @@ namespace $.$$ {
 			this.request_error( 'Unknown error' )
 		}
 
+		@$mol_mem
+		turnstile_loaded(): boolean {
+			if( !this.show_captcha() ) return false
+			$mol_import.script( 'https://challenges.cloudflare.com/turnstile/v0/api.js' )
+			return true
+		}
+
+		@$mol_mem
+		renderTurnstile() {
+			const siteKey = this.captcha_site_key()
+			if( !siteKey ) return
+
+			const container = document.getElementById( 'turnstile-container' )
+			if( !container ) return
+
+			;( window as any ).turnstile.render( container, {
+				sitekey: siteKey,
+				callback: ( token: string ) => {
+					this.captcha_token( token )
+					this.submit()
+				},
+			} )
+		}
+
 		override oauth_error() {
 			return this.$.$mol_state_arg.value( 'berror' ) || ''
 		}
@@ -156,11 +208,21 @@ namespace $.$$ {
 
 		override body() {
 			const items = [ ...super.body() ]
+
 			// Remove OAuth_error if no error
-			if( !this.oauth_error() ) {
-				return items.filter( item => item !== this.OAuth_error() )
+			const filtered = this.oauth_error()
+				? items
+				: items.filter( item => item !== this.OAuth_error() )
+
+			// Show captcha container when captcha is required
+			if( this.show_captcha() ) {
+				this.turnstile_loaded()
+				// Schedule renderTurnstile after DOM update
+				setTimeout( () => this.renderTurnstile(), 0 )
+				return [ ...filtered, this.Captcha_container() ]
 			}
-			return items
+
+			return filtered
 		}
 	}
 

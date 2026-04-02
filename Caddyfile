@@ -1,21 +1,36 @@
-:9081
+# Generate certs: mkcert -install && mkcert localhost 127.0.0.1
 
-handle /api/* {
-	reverse_proxy http://localhost:8081
+{
+	auto_https disable_redirects
 }
 
-handle /_system/* {
-	reverse_proxy http://localhost:8081
+# HTTP (dev) — mol dev server for /* catch-all
+http://localhost:9081 {
+	handle /api/* {
+		reverse_proxy http://localhost:8081
+	}
+
+	handle /_system/* {
+		reverse_proxy http://localhost:8081
+	}
+
+	handle /graphql {
+		reverse_proxy http://localhost:8081
+	}
+
+	handle /assets/* {
+		reverse_proxy http://localhost:8081
+	}
+
+	handle /* {
+		reverse_proxy http://localhost:9080
+	}
 }
 
-handle /graphql {
+# HTTPS (dev, for Cloudflare Turnstile etc.)
+# Access via https://localhost:7081
+# All traffic goes to Go server (no mol dev server)
+localhost:7081 {
+	tls localhost+1.pem localhost+1-key.pem
 	reverse_proxy http://localhost:8081
-}
-
-handle /assets/* {
-	reverse_proxy http://localhost:8081
-}
-
-handle /* {
-	reverse_proxy http://localhost:9080
 }

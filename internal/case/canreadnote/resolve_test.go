@@ -252,6 +252,96 @@ func TestResolve_AuthenticatedUserWithSubscriptions(t *testing.T) {
 	}
 }
 
+func TestResolve_RequireSigninSubgraph(t *testing.T) {
+	tests := []struct {
+		name           string
+		note           *model.NoteView
+		userToken      *usertoken.Data
+		userSubgraphs  []string
+		expectedAccess bool
+		description    string
+	}{
+		{
+			name: "authenticated user can read note in require_signin subgraph without subscription",
+			note: &model.NoteView{
+				Title:         "Signin-Gated Note",
+				Free:          false,
+				SubgraphNames: []string{"members"},
+				Subgraphs: map[string]*model.NoteSubgraph{
+					"members": {Name: "members", RequireSignin: true},
+				},
+			},
+			userToken:      &usertoken.Data{ID: 123, Role: "user"},
+			userSubgraphs:  []string{},
+			expectedAccess: true,
+			description:    "require_signin subgraph grants access to any authenticated user",
+		},
+		{
+			name: "guest cannot read note in require_signin subgraph",
+			note: &model.NoteView{
+				Title:         "Signin-Gated Note",
+				Free:          false,
+				SubgraphNames: []string{"members"},
+				Subgraphs: map[string]*model.NoteSubgraph{
+					"members": {Name: "members", RequireSignin: true},
+				},
+			},
+			userToken:      nil,
+			expectedAccess: false,
+			description:    "guests still can't read require_signin notes (sign-in wall handles them)",
+		},
+		{
+			name: "note in mixed subgraphs: one require_signin grants access",
+			note: &model.NoteView{
+				Title:         "Mixed Subgraph Note",
+				Free:          false,
+				SubgraphNames: []string{"members", "premium"},
+				Subgraphs: map[string]*model.NoteSubgraph{
+					"members": {Name: "members", RequireSignin: true},
+					"premium": {Name: "premium", RequireSignin: false},
+				},
+			},
+			userToken:      &usertoken.Data{ID: 123, Role: "user"},
+			userSubgraphs:  []string{},
+			expectedAccess: true,
+			description:    "any subgraph with require_signin grants access",
+		},
+		{
+			name: "note in subgraph without require_signin still needs subscription",
+			note: &model.NoteView{
+				Title:         "Premium Note",
+				Free:          false,
+				SubgraphNames: []string{"premium"},
+				Subgraphs: map[string]*model.NoteSubgraph{
+					"premium": {Name: "premium", RequireSignin: false},
+				},
+			},
+			userToken:      &usertoken.Data{ID: 123, Role: "user"},
+			userSubgraphs:  []string{},
+			expectedAccess: false,
+			description:    "non-require_signin subgraphs still need subscription",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{
+				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return tt.userToken, nil
+				},
+				ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
+					return tt.userSubgraphs, nil
+				},
+			}
+
+			hasAccess, err := canreadnote.Resolve(context.Background(), env, tt.note)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedAccess, hasAccess, tt.description)
+		})
+	}
+}
+
 func TestResolve_ErrorHandling(t *testing.T) {
 	tests := []struct {
 		name        string

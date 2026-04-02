@@ -14,7 +14,7 @@ $trip2g_auth $mol_view
 	AppView $mol_view
 		sub / \TODO: Replace AppView
 
-$trip2g_auth_email_form $mol_form
+$trip2g_auth_email_form $trip2g_form
 	code_sent? false
 	entered_email? \
 	oauth_error \
@@ -28,6 +28,11 @@ $trip2g_auth_email_form $mol_form
 			Content <= email_control $mol_string
 				hint \name@example.com
 				value? <=> email? \
+				focused true
+	Captcha_container $mol_view
+		dom_name \div
+		attr *
+			id \turnstile-container
 	buttons /
 		<= RequestCode $mol_button_major
 			dom_name \button
@@ -37,20 +42,26 @@ $trip2g_auth_email_form $mol_form
 			message <= result? \
 		<= OAuth_buttons $trip2g_auth_oauth_buttons
 
-$trip2g_auth_code_form $mol_form
+$trip2g_auth_code_form $trip2g_form
 	reload_me null
 	email? \
 	code_sent? false
 	body /
+		<= Code_hint $mol_paragraph
+			title @ \We sent a code to your email. Please enter it below.
+		<= Open_email $trip2g_button_openemail
+			email <= email?
 		<= Code_field $mol_form_field
-			name \Code
+			name @ \Code
 			bid <= code_bid \
 			Content <= code_control $mol_string
 				hint \000000
 				value? <=> code? \
+				focused true
 	buttons /
 		<= Signup $mol_button_major
 			title \Enter
 			click? <=> submit? null
 		<= Result $mol_status
 			message <= result? \
+

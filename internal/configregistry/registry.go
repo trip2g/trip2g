@@ -37,7 +37,8 @@ const (
 
 // Int config IDs.
 const (
-	ConfigVectorMinSimilarity = "vector_min_similarity"
+	ConfigVectorMinSimilarity    = "vector_min_similarity"
+	ConfigCaptchaSigninThreshold = "captcha_signin_threshold"
 )
 
 // Registry contains all config metadata.
@@ -92,6 +93,13 @@ var Registry = map[string]ConfigMeta{
 		Type:        ConfigTypeInt,
 		Default:     820,
 		Validate:    validateIntRange(1, 1000),
+	},
+	ConfigCaptchaSigninThreshold: {
+		ID:          ConfigCaptchaSigninThreshold,
+		Description: "Maximum sign-in code requests per hour before captcha is required.",
+		Type:        ConfigTypeInt,
+		Default:     5,
+		Validate:    validateIntRange(1, 10000),
 	},
 }
 
