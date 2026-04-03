@@ -1601,8 +1601,24 @@ func (r *adminQueryResolver) AuditLogs(ctx context.Context, obj *appmodel.AdminQ
 func (r *adminQueryResolver) ConfigValues(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminConfigValue, error) {
 	var result []model.AdminConfigValue
 
-	// Build config values from registry.
-	for _, meta := range configregistry.Registry {
+	// Build config values from registries.
+	for _, meta := range configregistry.StringRegistry {
+		configValue, err := r.buildConfigValue(ctx, meta.ID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, configValue)
+	}
+
+	for _, meta := range configregistry.BoolRegistry {
+		configValue, err := r.buildConfigValue(ctx, meta.ID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, configValue)
+	}
+
+	for _, meta := range configregistry.IntRegistry {
 		configValue, err := r.buildConfigValue(ctx, meta.ID)
 		if err != nil {
 			return nil, err

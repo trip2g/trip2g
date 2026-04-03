@@ -5,30 +5,31 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"trip2g/internal/model"
 )
 
-func validateSiteTitleTemplate(value interface{}) error {
-	s, ok := value.(string)
-	if !ok {
-		return errors.New("value must be a string")
-	}
-
-	if !strings.Contains(s, "%s") {
+func validateSiteTitleTemplate(value string) error {
+	if !strings.Contains(value, "%s") {
 		return errors.New("site title template must contain %s placeholder")
 	}
 
 	return nil
 }
 
-func validateTimezone(value interface{}) error {
-	s, ok := value.(string)
-	if !ok {
-		return errors.New("value must be a string")
-	}
-
-	_, err := time.LoadLocation(s)
+func validateTimezone(value string) error {
+	_, err := time.LoadLocation(value)
 	if err != nil {
 		return fmt.Errorf("invalid timezone: %w", err)
+	}
+
+	return nil
+}
+
+func validateURLNormalizationMethod(value string) error {
+	m := model.URLNormalizationMethod(value)
+	if !m.Valid() {
+		return fmt.Errorf("unknown URL normalization method: %s", value)
 	}
 
 	return nil

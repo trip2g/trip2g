@@ -1,6 +1,9 @@
 package model
 
-// SiteConfig contains all site-wide configuration values with defaults.
+import "time"
+
+// SiteConfig contains all site-wide configuration values.
+// Defaults and DB→field mapping are defined in configregistry via SetupFunc.
 type SiteConfig struct {
 	SiteTitleTemplate      string
 	Timezone               string
@@ -10,4 +13,5 @@ type SiteConfig struct {
 	EnableRSS              bool
 	VectorMinSimilarity    int // 1–1000, divide by 1000 to get float threshold
 	URLNormalizationMethod URLNormalizationMethod
+	TimeLocation           *time.Location // computed from Timezone, not stored in DB
 }

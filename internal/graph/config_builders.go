@@ -8,32 +8,28 @@ import (
 )
 
 func (r *adminQueryResolver) buildConfigValue(ctx context.Context, id string) (model.AdminConfigValue, error) {
-	meta, ok := configregistry.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("unknown config: %s", id)
+	if meta, ok := configregistry.GetString(id); ok {
+		return r.buildStringConfigValue(ctx, id, meta), nil
 	}
 
-	switch meta.Type {
-	case configregistry.ConfigTypeString:
-		return r.buildStringConfigValue(ctx, id, meta), nil
-	case configregistry.ConfigTypeBool:
+	if meta, ok := configregistry.GetBool(id); ok {
 		return r.buildBoolConfigValue(ctx, id, meta), nil
-	case configregistry.ConfigTypeInt:
-		return r.buildIntConfigValue(ctx, id, meta), nil
-	default:
-		return nil, fmt.Errorf("unknown config type: %s", meta.Type)
 	}
+
+	if meta, ok := configregistry.GetInt(id); ok {
+		return r.buildIntConfigValue(ctx, id, meta), nil
+	}
+
+	return nil, fmt.Errorf("unknown config: %s", id)
 }
 
-func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) *model.AdminConfigStringValue {
-	defaultValue, _ := meta.Default.(string)
-
+func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id string, meta configregistry.StringConfigMeta) *model.AdminConfigStringValue {
 	entry, err := r.env(ctx).GetLatestConfigString(ctx, id)
 	if err != nil {
 		return &model.AdminConfigStringValue{
 			ID:          id,
 			Description: &meta.Description,
-			Value:       defaultValue,
+			Value:       meta.Default,
 		}
 	}
 
@@ -45,15 +41,13 @@ func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id stri
 	}
 }
 
-func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) *model.AdminConfigBoolValue {
-	defaultValue, _ := meta.Default.(bool)
-
+func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string, meta configregistry.BoolConfigMeta) *model.AdminConfigBoolValue {
 	entry, err := r.env(ctx).GetLatestConfigBool(ctx, id)
 	if err != nil {
 		return &model.AdminConfigBoolValue{
 			ID:          id,
 			Description: &meta.Description,
-			Value:       defaultValue,
+			Value:       meta.Default,
 		}
 	}
 
@@ -65,15 +59,13 @@ func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string
 	}
 }
 
-func (r *adminQueryResolver) buildIntConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) *model.AdminConfigIntValue {
-	defaultValue, _ := meta.Default.(int)
-
+func (r *adminQueryResolver) buildIntConfigValue(ctx context.Context, id string, meta configregistry.IntConfigMeta) *model.AdminConfigIntValue {
 	entry, err := r.env(ctx).GetLatestConfigInt(ctx, id)
 	if err != nil {
 		return &model.AdminConfigIntValue{
 			ID:          id,
 			Description: &meta.Description,
-			Value:       int32(defaultValue),
+			Value:       int32(meta.Default),
 		}
 	}
 

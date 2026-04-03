@@ -17,19 +17,17 @@ type Env interface {
 
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
+
+	InvalidateSiteConfig()
 }
 
 type Input = model.SetConfigIntValueInput
 type Payload = model.SetConfigIntValuePayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	meta, ok := configregistry.Get(input.ID)
+	meta, ok := configregistry.GetInt(input.ID)
 	if !ok {
-		return &model.ErrorPayload{Message: fmt.Sprintf("unknown config: %s", input.ID)}, nil
-	}
-
-	if meta.Type != configregistry.ConfigTypeInt {
-		return &model.ErrorPayload{Message: fmt.Sprintf("config %s is not an int config", input.ID)}, nil
+		return &model.ErrorPayload{Message: fmt.Sprintf("unknown int config: %s", input.ID)}, nil
 	}
 
 	if meta.Validate != nil {
@@ -74,6 +72,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		UpdatedAt:   &entry.CreatedAt,
 		Value:       int32(entry.Value),
 	}
+
+	env.InvalidateSiteConfig()
 
 	return &model.SetConfigIntValueSuccess{
 		ConfigValue: configValue,

@@ -20,19 +20,24 @@ type Env interface {
 
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
+
+	InvalidateSiteConfig()
 }
 
 type Input = model.SetConfigBoolValueInput
 type Payload = model.SetConfigBoolValuePayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	meta, ok := configregistry.Get(input.ID)
+	meta, ok := configregistry.GetBool(input.ID)
 	if !ok {
-		return &model.ErrorPayload{Message: fmt.Sprintf("unknown config: %s", input.ID)}, nil
+		return &model.ErrorPayload{Message: fmt.Sprintf("unknown bool config: %s", input.ID)}, nil
 	}
 
-	if meta.Type != configregistry.ConfigTypeBool {
-		return &model.ErrorPayload{Message: fmt.Sprintf("config %s is not a bool config", input.ID)}, nil
+	if meta.Validate != nil {
+		if err := meta.Validate(input.Value); err != nil {
+			//nolint:nilerr // validation error returned as payload, not as error.
+			return &model.ErrorPayload{Message: err.Error()}, nil
+		}
 	}
 
 	token, err := env.CurrentAdminUserToken(ctx)
@@ -40,11 +45,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	return insertConfigBool(ctx, env, token, input.ID, input.Value)
+	result, err := insertConfigBool(ctx, env, token, input.ID, input.Value)
+	if err == nil {
+		env.InvalidateSiteConfig()
+	}
+
+	return result, err
 }
 
 func insertConfigBool(ctx context.Context, env Env, token *usertoken.Data, valueID string, value bool) (Payload, error) {
-	// 1. Insert config change to get the change ID.
 	changeParams := db.InsertConfigChangeParams{
 		ValueID:   valueID,
 		CreatedBy: int64(token.ID),
@@ -55,7 +64,6 @@ func insertConfigBool(ctx context.Context, env Env, token *usertoken.Data, value
 		return nil, fmt.Errorf("failed to insert config change: %w", err)
 	}
 
-	// 2. Insert bool value with the change ID.
 	valueParams := db.InsertConfigBoolValueParams{
 		ChangeID: change.ID,
 		Value:    value,
@@ -66,13 +74,12 @@ func insertConfigBool(ctx context.Context, env Env, token *usertoken.Data, value
 		return nil, fmt.Errorf("failed to insert config bool value: %w", err)
 	}
 
-	// 3. Build the response using the new unified query.
 	entry, err := env.GetLatestConfigBool(ctx, valueID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest config bool: %w", err)
 	}
 
-	meta, ok := configregistry.Get(valueID)
+	meta, ok := configregistry.GetBool(valueID)
 	if !ok {
 		return nil, fmt.Errorf("config metadata not found: %s", valueID)
 	}

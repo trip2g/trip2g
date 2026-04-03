@@ -1,32 +1,49 @@
 // Package configregistry provides metadata for atomic config values.
 package configregistry
 
-import "fmt"
+import (
+	"fmt"
 
-// ConfigType represents the type of a config value.
-type ConfigType string
-
-const (
-	ConfigTypeString ConfigType = "string"
-	ConfigTypeBool   ConfigType = "bool"
-	ConfigTypeInt    ConfigType = "int"
+	"trip2g/internal/model"
 )
 
-// ConfigMeta contains metadata for a config value.
+// ConfigMeta contains base metadata shared by all config types.
 type ConfigMeta struct {
 	ID          string
 	Description string
-	Type        ConfigType
-	Default     interface{}
-	Validate    func(value interface{}) error
+}
+
+// StringConfigMeta is metadata for a string config value.
+type StringConfigMeta struct {
+	ConfigMeta
+	Default   string
+	Validate  func(value string) error
+	SetupFunc func(cfg *model.SiteConfig, value string)
+}
+
+// BoolConfigMeta is metadata for a bool config value.
+type BoolConfigMeta struct {
+	ConfigMeta
+	Default   bool
+	Validate  func(value bool) error
+	SetupFunc func(cfg *model.SiteConfig, value bool)
+}
+
+// IntConfigMeta is metadata for an int config value.
+type IntConfigMeta struct {
+	ConfigMeta
+	Default   int
+	Validate  func(value int) error
+	SetupFunc func(cfg *model.SiteConfig, value int)
 }
 
 // String config IDs.
 const (
-	ConfigSiteTitleTemplate = "site_title_template"
-	ConfigTimezone          = "timezone"
-	ConfigDefaultLayout     = "default_layout"
-	ConfigRobotsTxt         = "robots_txt"
+	ConfigSiteTitleTemplate      = "site_title_template"
+	ConfigTimezone               = "timezone"
+	ConfigDefaultLayout          = "default_layout"
+	ConfigRobotsTxt              = "robots_txt"
+	ConfigURLNormalizationMethod = "url_normalization_method"
 )
 
 // Bool config IDs.
@@ -41,114 +58,109 @@ const (
 	ConfigCaptchaSigninThreshold = "captcha_signin_threshold"
 )
 
-// Registry contains all config metadata.
+// Typed registries.
 //
-//nolint:gochecknoglobals // intentional global registry for config metadata.
-var Registry = map[string]ConfigMeta{
-	ConfigSiteTitleTemplate: {
-		ID:          ConfigSiteTitleTemplate,
-		Description: "Формат заголовка страницы. %s заменяется на название страницы.",
-		Type:        ConfigTypeString,
-		Default:     "%s",
-		Validate:    validateSiteTitleTemplate,
-	},
-	ConfigTimezone: {
-		ID:          ConfigTimezone,
-		Description: "Часовой пояс для отображения дат.",
-		Type:        ConfigTypeString,
-		Default:     "UTC",
-		Validate:    validateTimezone,
-	},
-	ConfigDefaultLayout: {
-		ID:          ConfigDefaultLayout,
-		Description: "Layout по умолчанию для страниц.",
-		Type:        ConfigTypeString,
-		Default:     "",
-		Validate:    nil,
-	},
-	ConfigRobotsTxt: {
-		ID:          ConfigRobotsTxt,
-		Description: "Содержимое robots.txt. Значения: opened, closed или произвольный текст.",
-		Type:        ConfigTypeString,
-		Default:     "opened",
-		Validate:    nil,
-	},
-	ConfigShowDraftVersions: {
-		ID:          ConfigShowDraftVersions,
-		Description: "Показывать черновики админам.",
-		Type:        ConfigTypeBool,
-		Default:     true,
-		Validate:    nil,
-	},
-	ConfigEnableRSS: {
-		ID:          ConfigEnableRSS,
-		Description: "Включить RSS-ленту для заметок.",
-		Type:        ConfigTypeBool,
-		Default:     true,
-		Validate:    nil,
-	},
-	ConfigVectorMinSimilarity: {
-		ID:          ConfigVectorMinSimilarity,
-		Description: "Минимальная похожесть для векторного поиска (1–1000, делится на 1000).",
-		Type:        ConfigTypeInt,
-		Default:     820,
-		Validate:    validateIntRange(1, 1000),
-	},
-	ConfigCaptchaSigninThreshold: {
-		ID:          ConfigCaptchaSigninThreshold,
-		Description: "Maximum sign-in code requests per hour before captcha is required.",
-		Type:        ConfigTypeInt,
-		Default:     5,
-		Validate:    validateIntRange(1, 10000),
-	},
-}
-
-// StringConfigs returns all string config IDs.
-func StringConfigs() []string {
-	var result []string
-	for id, meta := range Registry {
-		if meta.Type == ConfigTypeString {
-			result = append(result, id)
-		}
+//nolint:gochecknoglobals // intentional global registries for config metadata.
+var (
+	StringRegistry = map[string]StringConfigMeta{
+		ConfigSiteTitleTemplate: {
+			ConfigMeta: ConfigMeta{ID: ConfigSiteTitleTemplate, Description: "Page title format. %s is replaced with the page name."},
+			Default:    "%s",
+			Validate:   validateSiteTitleTemplate,
+			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.SiteTitleTemplate = v },
+		},
+		ConfigTimezone: {
+			ConfigMeta: ConfigMeta{ID: ConfigTimezone, Description: "Timezone for displaying dates."},
+			Default:    "UTC",
+			Validate:   validateTimezone,
+			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.Timezone = v },
+		},
+		ConfigDefaultLayout: {
+			ConfigMeta: ConfigMeta{ID: ConfigDefaultLayout, Description: "Default layout for pages."},
+			Default:    "",
+			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.DefaultLayout = v },
+		},
+		ConfigRobotsTxt: {
+			ConfigMeta: ConfigMeta{ID: ConfigRobotsTxt, Description: "robots.txt content. Values: opened, closed, or custom text."},
+			Default:    "opened",
+			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.RobotsTxt = v },
+		},
+		ConfigURLNormalizationMethod: {
+			ConfigMeta: ConfigMeta{ID: ConfigURLNormalizationMethod, Description: "URL normalization method for note permalinks."},
+			Default:    string(model.DefaultURLNormalizationMethod),
+			Validate:   validateURLNormalizationMethod,
+			SetupFunc: func(cfg *model.SiteConfig, v string) {
+				cfg.URLNormalizationMethod = model.URLNormalizationMethod(v)
+			},
+		},
 	}
-	return result
-}
 
-// BoolConfigs returns all bool config IDs.
-func BoolConfigs() []string {
-	var result []string
-	for id, meta := range Registry {
-		if meta.Type == ConfigTypeBool {
-			result = append(result, id)
-		}
+	BoolRegistry = map[string]BoolConfigMeta{
+		ConfigShowDraftVersions: {
+			ConfigMeta: ConfigMeta{ID: ConfigShowDraftVersions, Description: "Show draft versions to admins."},
+			Default:    true,
+			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.ShowDraftVersions = v },
+		},
+		ConfigEnableRSS: {
+			ConfigMeta: ConfigMeta{ID: ConfigEnableRSS, Description: "Enable RSS feed for notes."},
+			Default:    true,
+			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.EnableRSS = v },
+		},
 	}
-	return result
-}
 
-// IntConfigs returns all int config IDs.
-func IntConfigs() []string {
-	var result []string
-	for id, meta := range Registry {
-		if meta.Type == ConfigTypeInt {
-			result = append(result, id)
-		}
+	IntRegistry = map[string]IntConfigMeta{
+		ConfigVectorMinSimilarity: {
+			ConfigMeta: ConfigMeta{ID: ConfigVectorMinSimilarity, Description: "Minimum similarity for vector search (1–1000, divided by 1000)."},
+			Default:    820,
+			Validate:   validateIntRange(1, 1000),
+			SetupFunc:  func(cfg *model.SiteConfig, v int) { cfg.VectorMinSimilarity = v },
+		},
+		ConfigCaptchaSigninThreshold: {
+			ConfigMeta: ConfigMeta{ID: ConfigCaptchaSigninThreshold, Description: "Maximum sign-in code requests per hour before captcha is required."},
+			Default:    5,
+			Validate:   validateIntRange(1, 10000),
+		},
 	}
-	return result
-}
+)
 
-// Get returns config metadata by ID.
+// Get returns base config metadata by ID (looks up all registries).
 func Get(id string) (ConfigMeta, bool) {
-	meta, ok := Registry[id]
-	return meta, ok
+	if m, ok := StringRegistry[id]; ok {
+		return m.ConfigMeta, true
+	}
+
+	if m, ok := BoolRegistry[id]; ok {
+		return m.ConfigMeta, true
+	}
+
+	if m, ok := IntRegistry[id]; ok {
+		return m.ConfigMeta, true
+	}
+
+	return ConfigMeta{}, false
 }
 
-func validateIntRange(minVal, maxVal int) func(interface{}) error {
-	return func(value interface{}) error {
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("expected int, got %T", value)
-		}
-		if v < minVal || v > maxVal {
+// GetString returns string config metadata by ID.
+func GetString(id string) (StringConfigMeta, bool) {
+	m, ok := StringRegistry[id]
+	return m, ok
+}
+
+// GetBool returns bool config metadata by ID.
+func GetBool(id string) (BoolConfigMeta, bool) {
+	m, ok := BoolRegistry[id]
+	return m, ok
+}
+
+// GetInt returns int config metadata by ID.
+func GetInt(id string) (IntConfigMeta, bool) {
+	m, ok := IntRegistry[id]
+	return m, ok
+}
+
+func validateIntRange(minVal, maxVal int) func(int) error {
+	return func(value int) error {
+		if value < minVal || value > maxVal {
 			return fmt.Errorf("value must be between %d and %d", minVal, maxVal)
 		}
 		return nil

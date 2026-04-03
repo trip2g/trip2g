@@ -206,8 +206,7 @@ type app struct {
 	assetHashes map[string]string
 	assetsMu    sync.Mutex
 
-	timeLocation      *time.Location
-	timeLocationMutex sync.Mutex
+	*configregistry.SiteConfigBuilder
 
 	liveNoteLoader         *noteloader.Loader
 	latestNoteLoader       *noteloader.Loader
@@ -262,6 +261,7 @@ func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager
 	return manager
 }
 
+//nolint:funlen // 151 lines, trivially over limit
 func main() {
 	if err := defaulttemplate.Init(); err != nil {
 		panic(fmt.Errorf("failed to init default template i18n: %w", err))
@@ -347,6 +347,7 @@ func main() {
 	}
 
 	a.ctx = ctx
+	a.SiteConfigBuilder = configregistry.NewSiteConfigBuilder(a)
 	a.sigChan = make(chan os.Signal, 1)
 	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -592,85 +593,6 @@ func (a *app) SiteTitleTemplate() string {
 	defer cancel()
 
 	return a.SiteConfig(ctx).SiteTitleTemplate
-}
-
-func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
-	cfg := model.SiteConfig{
-		SiteTitleTemplate:   "%s",
-		Timezone:            "UTC",
-		RobotsTxt:           "opened",
-		ShowDraftVersions:   true,
-		EnableRSS:           true,
-		VectorMinSimilarity: 820,
-	}
-
-	strings, err := a.AllLatestConfigStrings(ctx)
-	if err == nil {
-		for _, s := range strings {
-			switch s.ValueID {
-			case "site_title_template":
-				cfg.SiteTitleTemplate = s.Value
-			case "timezone":
-				cfg.Timezone = s.Value
-			case "default_layout":
-				cfg.DefaultLayout = s.Value
-			case "robots_txt":
-				cfg.RobotsTxt = s.Value
-			case "url_normalization_method":
-				m := model.URLNormalizationMethod(s.Value)
-				if m.Valid() {
-					cfg.URLNormalizationMethod = m
-				}
-			}
-		}
-	}
-
-	bools, err := a.AllLatestConfigBools(ctx)
-	if err == nil {
-		for _, b := range bools {
-			if b.ValueID == "show_draft_versions" {
-				cfg.ShowDraftVersions = b.Value
-			}
-			if b.ValueID == "enable_rss" {
-				cfg.EnableRSS = b.Value
-			}
-		}
-	}
-
-	ints, err := a.AllLatestConfigInts(ctx)
-	if err == nil {
-		for _, i := range ints {
-			if i.ValueID == "vector_min_similarity" {
-				cfg.VectorMinSimilarity = int(i.Value)
-			}
-		}
-	}
-
-	return cfg
-}
-
-func (a *app) TimeLocation() *time.Location {
-	a.timeLocationMutex.Lock()
-	defer a.timeLocationMutex.Unlock()
-
-	if a.timeLocation != nil {
-		return a.timeLocation
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	timezone := a.SiteConfig(ctx).Timezone
-
-	var loadErr error
-
-	a.timeLocation, loadErr = time.LoadLocation(timezone)
-	if loadErr != nil {
-		a.timeLocation = time.UTC
-		a.log.Error("failed to load timezone location", "timezone", timezone, "error", loadErr)
-	}
-
-	return a.timeLocation
 }
 
 func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
@@ -2156,6 +2078,16 @@ func (a *app) startServer() {
 				return
 			}
 			compressedHandler(ctx)
+		},
+		ErrorHandler: func(ctx *fasthttp.RequestCtx, err error) {
+			if errors.Is(err, fasthttp.ErrBodyTooLarge) {
+				ctx.SetStatusCode(http.StatusRequestEntityTooLarge)
+				ctx.SetContentType("application/json")
+				ctx.SetBodyString(`{"errors":[{"message":"request body size exceeds the limit"}]}`)
+				return
+			}
+			// Default behavior for other errors.
+			ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
 		},
 		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
 		ReadTimeout:        handlerTimeout,

@@ -33,6 +33,9 @@ var _ setconfigboolvalue.Env = &EnvMock{}
 //			InsertConfigChangeFunc: func(ctx context.Context, arg db.InsertConfigChangeParams) (db.ConfigChange, error) {
 //				panic("mock out the InsertConfigChange method")
 //			},
+//			InvalidateSiteConfigFunc: func()  {
+//				panic("mock out the InvalidateSiteConfig method")
+//			},
 //			ListConfigBoolHistoryFunc: func(ctx context.Context, valueID string) ([]db.ListConfigBoolHistoryRow, error) {
 //				panic("mock out the ListConfigBoolHistory method")
 //			},
@@ -57,6 +60,9 @@ type EnvMock struct {
 
 	// InsertConfigChangeFunc mocks the InsertConfigChange method.
 	InsertConfigChangeFunc func(ctx context.Context, arg db.InsertConfigChangeParams) (db.ConfigChange, error)
+
+	// InvalidateSiteConfigFunc mocks the InvalidateSiteConfig method.
+	InvalidateSiteConfigFunc func()
 
 	// ListConfigBoolHistoryFunc mocks the ListConfigBoolHistory method.
 	ListConfigBoolHistoryFunc func(ctx context.Context, valueID string) ([]db.ListConfigBoolHistoryRow, error)
@@ -92,6 +98,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertConfigChangeParams
 		}
+		// InvalidateSiteConfig holds details about calls to the InvalidateSiteConfig method.
+		InvalidateSiteConfig []struct {
+		}
 		// ListConfigBoolHistory holds details about calls to the ListConfigBoolHistory method.
 		ListConfigBoolHistory []struct {
 			// Ctx is the ctx argument value.
@@ -111,6 +120,7 @@ type EnvMock struct {
 	lockGetLatestConfigBool   sync.RWMutex
 	lockInsertConfigBoolValue sync.RWMutex
 	lockInsertConfigChange    sync.RWMutex
+	lockInvalidateSiteConfig  sync.RWMutex
 	lockListConfigBoolHistory sync.RWMutex
 	lockUserByID              sync.RWMutex
 }
@@ -252,6 +262,33 @@ func (mock *EnvMock) InsertConfigChangeCalls() []struct {
 	mock.lockInsertConfigChange.RLock()
 	calls = mock.calls.InsertConfigChange
 	mock.lockInsertConfigChange.RUnlock()
+	return calls
+}
+
+// InvalidateSiteConfig calls InvalidateSiteConfigFunc.
+func (mock *EnvMock) InvalidateSiteConfig() {
+	if mock.InvalidateSiteConfigFunc == nil {
+		panic("EnvMock.InvalidateSiteConfigFunc: method is nil but Env.InvalidateSiteConfig was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockInvalidateSiteConfig.Lock()
+	mock.calls.InvalidateSiteConfig = append(mock.calls.InvalidateSiteConfig, callInfo)
+	mock.lockInvalidateSiteConfig.Unlock()
+	mock.InvalidateSiteConfigFunc()
+}
+
+// InvalidateSiteConfigCalls gets all the calls that were made to InvalidateSiteConfig.
+// Check the length with:
+//
+//	len(mockedEnv.InvalidateSiteConfigCalls())
+func (mock *EnvMock) InvalidateSiteConfigCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockInvalidateSiteConfig.RLock()
+	calls = mock.calls.InvalidateSiteConfig
+	mock.lockInvalidateSiteConfig.RUnlock()
 	return calls
 }
 
