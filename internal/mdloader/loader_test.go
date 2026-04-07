@@ -1810,6 +1810,255 @@ func TestFrontmatterPatchNotDoubledOnCacheHit(t *testing.T) {
 		"patch must NOT accumulate on third cached reload")
 }
 
+// TestVaultPatchApplies verifies that a vault patch file (type: frontmatter-patch)
+// with a matching include pattern applies its jsonnet block to target notes.
+func TestVaultPatchApplies(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\npriority: 10\n---\n\nMakes blog posts free.\n\n```jsonnet\n{ free: true }\n```"),
+		},
+		{
+			Path:    "blog/hello.md",
+			Content: []byte("---\ntitle: Hello\n---\nContent"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["blog/hello.md"]
+	require.NotNil(t, note, "blog/hello.md should exist")
+	require.Equal(t, true, note.RawMeta["free"], "vault patch should set free: true on matching note")
+}
+
+// TestVaultPatchDoesNotApplyToNonMatching verifies that a vault patch with a
+// specific include pattern does not affect notes outside that pattern.
+func TestVaultPatchDoesNotApplyToNonMatching(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\n```jsonnet\n{ free: true }\n```"),
+		},
+		{
+			Path:    "blog/hello.md",
+			Content: []byte("---\ntitle: Hello\n---\nContent"),
+		},
+		{
+			Path:    "other/note.md",
+			Content: []byte("---\ntitle: Other\n---\nContent"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	other := pages.PathMap["other/note.md"]
+	require.NotNil(t, other, "other/note.md should exist")
+	_, hasFree := other.RawMeta["free"]
+	require.False(t, hasFree, "vault patch should NOT apply to non-matching note")
+}
+
+// TestVaultPatchAppliesAfterDBPatch verifies that vault patches chain after
+// DB patches — the vault patch sees the already-patched meta via `meta +`.
+func TestVaultPatchAppliesAfterDBPatch(t *testing.T) {
+	log := logger.TestLogger{}
+
+	dbPatch := frontmatterpatch.Compile(
+		1,
+		[]string{"notes/*"},
+		nil,
+		`{ category: "blog" }`,
+		0,
+		"db patch: set category",
+	)
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - notes/*\npriority: 100\n---\n\n```jsonnet\nmeta + { vault_applied: true }\n```"),
+		},
+		{
+			Path:    "notes/post.md",
+			Content: []byte("---\ntitle: Post\n---\nContent"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources:            sources,
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{dbPatch},
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["notes/post.md"]
+	require.NotNil(t, note)
+	require.Equal(t, "blog", note.RawMeta["category"], "DB patch should set category")
+	require.Equal(t, true, note.RawMeta["vault_applied"], "vault patch should apply after DB patch")
+}
+
+// TestVaultPatchFileIsInNoteViews verifies that a vault patch file is itself
+// registered as a regular note in NoteViews.
+func TestVaultPatchFileIsInNoteViews(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\nMakes blog posts free.\n\n```jsonnet\n{ free: true }\n```"),
+		},
+		{
+			Path:    "blog/post.md",
+			Content: []byte("Content"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["_rules.md"]
+	require.NotNil(t, note, "vault patch file should itself be in NoteViews as a regular note")
+}
+
+// TestVaultPatchMalformedNoJsonnet verifies that a vault patch file with
+// type: frontmatter-patch but no jsonnet code block results in a warning
+// on that note, while other notes still load fine.
+func TestVaultPatchMalformedNoJsonnet(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path:    "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\nNo code block here."),
+		},
+		{
+			Path:    "blog/post.md",
+			Content: []byte("---\ntitle: Post\n---\nContent"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	patchNote := pages.PathMap["_rules.md"]
+	require.NotNil(t, patchNote)
+
+	hasWarning := false
+	for _, w := range patchNote.Warnings {
+		if strings.Contains(w.Message, "vault patch") {
+			hasWarning = true
+			break
+		}
+	}
+	require.True(t, hasWarning, "vault patch file without jsonnet block should have a warning")
+
+	// Other notes still load fine
+	post := pages.PathMap["blog/post.md"]
+	require.NotNil(t, post, "blog/post.md should still be loaded despite malformed patch file")
+}
+
+// TestVaultPatchMalformedMissingInclude verifies that a vault patch file with
+// jsonnet but missing include field results in a warning on that note.
+func TestVaultPatchMalformedMissingInclude(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path:    "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\n---\n\n```jsonnet\n{ free: true }\n```"),
+		},
+		{
+			Path:    "blog/post.md",
+			Content: []byte("Content"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	patchNote := pages.PathMap["_rules.md"]
+	require.NotNil(t, patchNote)
+
+	hasWarning := false
+	for _, w := range patchNote.Warnings {
+		if strings.Contains(w.Message, "vault patch") {
+			hasWarning = true
+			break
+		}
+	}
+	require.True(t, hasWarning, "vault patch file with missing include should have a warning")
+}
+
+// TestVaultPatchMultipleBlocks verifies that a vault patch file with two
+// jsonnet code blocks generates two separate patches, both applied.
+func TestVaultPatchMultipleBlocks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - notes/*\n---\n\n```jsonnet\n{ free: true }\n```\n\nAnother rule.\n\n```jsonnet\nmeta + { tagged: true }\n```"),
+		},
+		{
+			Path:    "notes/post.md",
+			Content: []byte("---\ntitle: Post\n---\nContent"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["notes/post.md"]
+	require.NotNil(t, note)
+	require.Equal(t, true, note.RawMeta["free"], "first jsonnet block should set free: true")
+	require.Equal(t, true, note.RawMeta["tagged"], "second jsonnet block should set tagged: true")
+}
+
+// TestVaultPatchIsSystemWithUnderscore verifies that a vault patch file whose
+// path starts with "_" is considered a system note via IsSystem().
+func TestVaultPatchIsSystemWithUnderscore(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sources := []mdloader.SourceFile{
+		{
+			Path: "_rules.md",
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\n```jsonnet\n{ free: true }\n```"),
+		},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["_rules.md"]
+	require.NotNil(t, note)
+	require.True(t, note.IsSystem(), "vault patch file at _rules.md should be a system note")
+}
+
 func TestWikilinkEscapedPipeInTable(t *testing.T) {
 	log := logger.TestLogger{}
 

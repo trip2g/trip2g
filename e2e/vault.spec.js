@@ -810,4 +810,66 @@ test.describe('Frontmatter Patches', () => {
       await expect(linkElement).not.toHaveClass(/wip/);
     }
   });
+
+  test('vault patch applies to target note', async ({ page }) => {
+    // _vault-patch-free.md targets vault_target.md with { vault_patched: true }
+    // vault_target.md uses meta_inspector layout which outputs raw JSON
+    const response = await page.goto('/patch_tests/vault_target');
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.text();
+    const meta = JSON.parse(body);
+
+    // vault_patched proves the vault patch was applied
+    expect(meta.vault_patched).toBe(true);
+  });
+
+  test('hidden vault patch file is not accessible as page', async ({ page }) => {
+    // _vault-patch-free.md has _ prefix so IsSystem() = true, should not be routable
+    const response = await page.goto('/patch_tests/_vault_patch_free');
+    expect(response.status()).toBe(404);
+  });
+
+  test('visible vault patch renders as note AND applies patch', async ({ page }) => {
+    // vault-patch-visible.md should be viewable as a page
+    await page.goto('/patch_tests/vault_patch_visible');
+    await expect(page.locator('h1').first()).toContainText('Visible Vault Patch');
+
+    // AND its target note should have the patch applied
+    const response = await page.goto('/patch_tests/vault_target2');
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.text();
+    const meta = JSON.parse(body);
+    expect(meta.vault_patched).toBe(true);
+  });
+
+  test('multiple jsonnet blocks in vault patch all apply', async ({ page }) => {
+    // _vault-patch-multi.md has two jsonnet blocks targeting vault_target.md
+    // Applied after _vault-patch-free.md (priority 10 > 0)
+    const response = await page.goto('/patch_tests/vault_target');
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.text();
+    const meta = JSON.parse(body);
+
+    // From _vault-patch-free.md (priority 0)
+    expect(meta.vault_patched).toBe(true);
+    // From _vault-patch-multi.md block 1 (priority 10)
+    expect(meta.multi_block).toBe('first');
+    // From _vault-patch-multi.md block 2 (priority 10)
+    expect(meta.multi_block_second).toBe(true);
+  });
+
+  test('malformed vault patch does not break loading', async ({ page }) => {
+    // _vault-patch-malformed.md has type: frontmatter-patch but no jsonnet block
+    // Other patches and notes should still load fine
+    const response = await page.goto('/patch_tests/vault_target');
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.text();
+    const meta = JSON.parse(body);
+    // Vault patches from other files still applied
+    expect(meta.vault_patched).toBe(true);
+  });
 });

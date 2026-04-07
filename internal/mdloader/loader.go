@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 	"trip2g/internal/enclavefix"
@@ -106,9 +107,6 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.linkResolver.log = options.Log
 
 	ldr.frontmatterPatches = options.FrontmatterPatches
-	if len(ldr.frontmatterPatches) > 0 {
-		ldr.jsonnetVM = frontmatterpatch.NewVM()
-	}
 
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
@@ -135,15 +133,70 @@ func Load(options Options) (*model.NoteViews, error) {
 		),
 	)
 
+	// Step 1: parse all sources → AST + rawMeta.
+	parsed := make([]*parsedSource, 0, len(options.Sources))
 	for _, src := range options.Sources {
-		page, err := ldr.parsePage(src)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load page: %w (%s)", err, src.Path)
+		ps := ldr.parseSource(src)
+		parsed = append(parsed, ps)
+	}
+
+	// Step 2: collect vault patches from sources with type: frontmatter-patch.
+	var vaultPatches []frontmatterpatch.CompiledPatch
+	for _, ps := range parsed {
+		typ, _ := ps.rawMeta["type"].(string)
+		if typ != "frontmatter-patch" {
+			continue
 		}
 
-		page.PathID = src.PathID
-		page.VersionID = src.VersionID
-		page.CreatedAt = src.CreatedAt
+		bodies, err := extractJsonnetBlocks(ps.doc, ps.src.Content)
+		if err != nil {
+			ps.patchError = err.Error()
+			continue
+		}
+
+		patches, err := frontmatterpatch.CompileVaultPatches(
+			ps.src.Path,
+			toStringSlice(ps.rawMeta["include"]),
+			toStringSlice(ps.rawMeta["exclude"]),
+			bodies,
+			toInt(ps.rawMeta["priority"]),
+		)
+		if err != nil {
+			ps.patchError = err.Error()
+			continue
+		}
+
+		vaultPatches = append(vaultPatches, patches...)
+	}
+
+	// Sort vault patches by priority, then description (path).
+	sort.Slice(vaultPatches, func(i, j int) bool {
+		if vaultPatches[i].Priority != vaultPatches[j].Priority {
+			return vaultPatches[i].Priority < vaultPatches[j].Priority
+		}
+		return vaultPatches[i].Description < vaultPatches[j].Description
+	})
+
+	// Merge: DB patches first, then vault patches.
+	ldr.frontmatterPatches = append(ldr.frontmatterPatches, vaultPatches...)
+	if len(ldr.frontmatterPatches) > 0 {
+		ldr.jsonnetVM = frontmatterpatch.NewVM()
+	}
+
+	// Step 3: finish all pages (apply patches, render, extract metadata).
+	for _, ps := range parsed {
+		page, err := ldr.finishPage(ps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load page: %w (%s)", err, ps.src.Path)
+		}
+
+		if ps.patchError != "" {
+			page.AddWarning(model.NoteWarningWarning, "vault patch: %s", ps.patchError)
+		}
+
+		page.PathID = ps.src.PathID
+		page.VersionID = ps.src.VersionID
+		page.CreatedAt = ps.src.CreatedAt
 		page.ExtractCreatedAt(time.UTC)
 
 		ldr.nvs.RegisterNote(page)
@@ -532,10 +585,18 @@ func (ldr *loader) extractInLinks() error {
 	return nil
 }
 
-func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
-	content := src.Content
+// parsedSource holds the intermediate result from parsing markdown source.
+// Used between parseSource (AST extraction) and finishPage (patch application + rendering).
+type parsedSource struct {
+	src        SourceFile
+	doc        ast.Node
+	rawMeta    map[string]interface{}
+	patchError string // set if vault patch compilation failed
+}
 
-	// Try to get cached AST and meta
+// parseSource parses markdown into AST and extracts frontmatter.
+// This is the first phase of note loading, before patches are applied.
+func (ldr *loader) parseSource(src SourceFile) *parsedSource {
 	var doc ast.Node
 	var rawMeta map[string]interface{}
 
@@ -549,17 +610,22 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		}
 	}
 
-	// Parse if not cached
 	if doc == nil {
 		context := parser.NewContext()
-		doc = ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
+		doc = ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))
 		rawMeta = meta.Get(context)
 	}
 
+	return &parsedSource{src: src, doc: doc, rawMeta: rawMeta}
+}
+
+// finishPage applies frontmatter patches, extracts metadata, and prepares
+// the NoteView for rendering. This is the second phase of note loading.
+func (ldr *loader) finishPage(ps *parsedSource) (*model.NoteView, error) {
 	pp := model.NoteView{
-		Path:      src.Path,
-		PathID:    src.PathID,
-		Content:   content,
+		Path:      ps.src.Path,
+		PathID:    ps.src.PathID,
+		Content:   ps.src.Content,
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
 		Assets:    make(map[string]struct{}),
@@ -568,13 +634,12 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 
 		ResolvedLinks: make(map[string]string),
 
-		AssetReplaces: src.Assets,
+		AssetReplaces: ps.src.Assets,
 	}
 
-	for k, v := range src.Assets {
+	for k, v := range ps.src.Assets {
 		if v == nil {
 			pp.AddWarning(model.NoteWarningInfo, "asset %s is missing in the storage", k)
-			// TODO: add a placeholder
 		}
 	}
 
@@ -582,6 +647,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	// original values rather than the already-patched ones.  We must make a
 	// shallow copy because ApplyPatches mutates the map in-place; without a copy,
 	// OriginalRawMeta would point to the same map and end up patched too.
+	rawMeta := ps.rawMeta
 	origRawMeta := make(map[string]interface{}, len(rawMeta))
 	for k, v := range rawMeta {
 		origRawMeta[k] = v
@@ -590,9 +656,8 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 
 	// Apply frontmatter patches.
 	var appliedPatches []model.AppliedFrontmatterPatch
-	rawMeta, appliedPatches = ldr.applyFrontmatterPatches(src.Path, rawMeta, &pp)
+	rawMeta, appliedPatches = ldr.applyFrontmatterPatches(ps.src.Path, rawMeta, &pp)
 
-	// Use cached or freshly parsed meta
 	pp.RawMeta = rawMeta
 	pp.AppliedFrontmatterPatches = appliedPatches
 
@@ -604,11 +669,11 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	}
 
 	pp.PreparePermalink(ldr.config.URLNormalizationMethod)
-	pp.SetAst(doc)
+	pp.SetAst(ps.doc)
 
 	// Set content and page for partial renderer.
 	if partialRenderer, ok := pp.PartialRenderer.(*PartialRenderer); ok {
-		partialRenderer.SetContent(doc, content)
+		partialRenderer.SetContent(ps.doc, ps.src.Content)
 		partialRenderer.SetPage(&pp)
 	}
 
@@ -624,8 +689,6 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract metadata: %w", err)
 	}
-
-	// ldr.log.Debug("read page", "path", pp.Path)
 
 	return &pp, nil
 }

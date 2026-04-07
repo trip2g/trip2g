@@ -760,6 +760,184 @@ expect(meta.free).toBe(true);
 
 ---
 
+## Vault-based patches (из заметок)
+
+### Цель
+
+Альтернатива DB-патчам: патчи определяются как markdown-файлы в волте, рядом с контентом. Это позволяет управлять метаданными без админ-панели — заметки о патчах живут в том же хранилище что и контент.
+
+### Формат файла
+
+Файл имеет YAML frontmatter с полями конфигурации и один или несколько блоков ```jsonnet:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - blog/*
+  - articles/**
+exclude:
+  - blog/premium/*
+priority: 10
+---
+
+Делает все blog-посты бесплатными, кроме premium-раздела.
+
+```jsonnet
+{ free: true }
+```
+
+Дополнительное описание для human/AI.
+```
+
+**Поля frontmatter:**
+
+| Поле | Тип | Обязательно | По умолчанию | Описание |
+|------|-----|-------------|--------------|---------|
+| `type` | string | да | — | Должно быть `"frontmatter-patch"` |
+| `include` | string[] | да | — | Glob-паттерны (doublestar) для заметок |
+| `exclude` | string[] | нет | `[]` | Glob-паттерны для исключения |
+| `priority` | int | нет | `0` | Меньше = раньше применяется (внутри vault-патчей) |
+
+Нет поля `enabled` — просто удалите или переименуйте файл, чтобы отключить патч.
+
+### Обнаружение
+
+Файл считается патчем, если в frontmatter стоит `type: frontmatter-patch`. Такой файл может лежать в любом месте волта. Обнаруживается при парсинге YAML всех заметок.
+
+### Видимость
+
+Файлы с префиксом `_` (например `_vault-patch-rules.md`) скрывают от листинга через существующий механизм `IsSystem()`. Без префикса патч отображается как обычная заметка — его можно открыть, прочитать описание, отредактировать jsonnet.
+
+### Несколько патчей в файле
+
+Каждый блок ` ```jsonnet ` в markdown-body становится отдельным патчем. Все блоки в одном файле наследуют `include`, `exclude`, `priority` из frontmatter:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - docs/**
+priority: 5
+---
+
+Два патча для документации:
+
+```jsonnet
+{ layout: "doc" }
+```
+
+```jsonnet
+{ free: true }
+```
+```
+
+Получится два `CompiledPatch` с ID: `fnv32a("docs/_rules.md#0")` и `fnv32a("docs/_rules.md#1")`, оба с `priority=5`, `include=["docs/**"]`.
+
+### Порядок применения
+
+1. **DB-патчи** применяются первыми (в порядке приоритета)
+2. **Vault-патчи** применяются после всех DB-патчей (в порядке: приоритет, затем путь файла)
+
+Это позволяет vault-патчам переопределять DB-правила.
+
+### ID и отличимость
+
+Vault-патчи получают **отрицательные детерминированные ID**: `int(-fnv32a(path + "#" + index))`. Например:
+
+- `_vault-rules.md#0` → ID = `-fnv32a("_vault-rules.md#0")`
+- `_vault-rules.md#1` → ID = `-fnv32a("_vault-rules.md#1")`
+
+Отрицательные ID отличимы от DB-патчей (autoincrement, всегда > 0) и стабильны между перезагрузками.
+
+### Self-matching (совпадение своего пути)
+
+Vault-патч может совпасть с путём своего собственного файла — это нормально. Например, `_rules.md` с `include: ["_rules.md"]` создаст патч, который потенциально может примениться к собственной заметке. **Это не проблема**: определения патчей извлекаются на этапе 2 (перед применением), поэтому при применении на этапе 3 изменяются только метаданные rendered заметки, а не сама логика патча.
+
+### Обработка ошибок
+
+Если файл объявляет `type: frontmatter-patch` но некорректен, загрузка не ломается:
+
+| Ситуация | Действие |
+|----------|----------|
+| Нет jsonnet-блока | `AddWarning` на заметке: `"vault patch: no jsonnet block found"`. Файл рендерится как обычная заметка с предупреждением. |
+| Пустой jsonnet-блок | `AddWarning`: `"vault patch: empty jsonnet block"` |
+| Отсутствует `include` | `AddWarning`: `"vault patch: include patterns required"` |
+| Невалидный glob-паттерн | `AddWarning`: `"vault patch: invalid pattern: ..."` |
+| Невалидный jsonnet-синтаксис | `AddWarning`: `"vault patch: invalid jsonnet: ..."` |
+
+Файл всё равно загружается и отображается с предупреждением, чтобы пользователь увидел проблему и смог исправить. Остальные патчи продолжают работать.
+
+### Пример файла
+
+`docs/_publish-rules.md`:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - docs/**
+  - guides/**
+exclude:
+  - docs/draft/*
+priority: 20
+---
+
+Правила публикации для документации и гайдов.
+
+## Поведение
+
+- Все доки становятся бесплатными
+- Гайды по умолчанию получают layout "guide"
+- Draft-заметки не попадают под патч (явное исключение)
+
+```jsonnet
+{ free: true }
+```
+
+```jsonnet
+if std.startsWith(path, "guides/")
+then { layout: "guide" }
+else {}
+```
+```
+
+При загрузке создаст два патча:
+- `docs/_publish-rules.md#0` с ID `-fnv32a("docs/_publish-rules.md#0")` → `{ free: true }`
+- `docs/_publish-rules.md#1` с ID `-fnv32a("docs/_publish-rules.md#1")` → conditional layout
+
+### Архитектура
+
+`Load()` в `internal/mdloader/loader.go` разбивается на **3 шага**:
+
+1. **parseSource()** — парсинг markdown, извлечение YAML frontmatter и AST. Нет применения патчей.
+2. **collectVaultPatches()** — для каждого parsed source с `type: frontmatter-patch`: извлечение jsonnet-блоков из AST, компиляция патчей, добавление в очередь. Ошибки сохраняются для warning на этапе 3.
+3. **finishPage()** — применение всех патчей (DB + vault), извлечение метаданных, рендеринг HTML.
+
+```
+parseSource(src)
+  → doc (AST), rawMeta
+  
+[повторить для всех sources]
+
+collectVaultPatches(parsed_sources)
+  → vaultPatches + errors per source
+  
+sort(vaultPatches) + merge(dbPatches + vaultPatches)
+
+finishPage(parsed_source)
+  → apply patches, render, extract metadata
+  → if error from step 2: AddWarning
+```
+
+Такой подход позволяет:
+- Извлечь все vault-патчи один раз ДО применения
+- Определения недвижны во время финализации страниц
+- Self-matching безопасен
+- Ошибки gracefully обрабатываются
+
+---
+
 ## Открытые вопросы / Future
 
 1. **Deep merge mode** — опциональный флаг `deep_merge: true` на патче. Пока не нужен, shallow merge покрывает все текущие use cases.

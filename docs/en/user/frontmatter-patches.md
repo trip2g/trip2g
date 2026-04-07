@@ -146,6 +146,120 @@ then { free: false }
 else {}
 ```
 
+### Vault-based patches
+
+Instead of creating patches in the admin panel, you can define them as markdown files directly in your vault. The patch rules live next to your content, under version control, editable in Obsidian.
+
+#### File format
+
+Create a markdown file anywhere in your vault. Give it a frontmatter with `type: frontmatter-patch`, the patterns you want to match, and write the Jsonnet expression in a fenced code block in the body:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - blog/*
+  - articles/**
+exclude:
+  - blog/premium/*
+priority: 10
+---
+
+Makes all blog posts free, except the premium section.
+
+```jsonnet
+{ free: true }
+```
+```
+
+**Frontmatter fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `type` | yes | — | Must be `"frontmatter-patch"` |
+| `include` | yes | — | Glob patterns for notes to match |
+| `exclude` | no | `[]` | Glob patterns for notes to skip |
+| `priority` | no | `0` | Lower numbers apply first (within vault patches) |
+
+There is no `enabled` field. To disable a patch, delete or rename the file.
+
+#### Visibility
+
+Files with a `_` prefix — such as `_rules.md` or `_publish-rules.md` — are hidden from the published site but still work as patches. Files without the prefix appear as regular notes on the site and also work as patches. This lets you write the patch description in plain prose, link to it from other notes, and keep it visible as documentation.
+
+#### Multiple patches in one file
+
+Each fenced `jsonnet` block in the body becomes a separate patch. All blocks in a single file share the same `include`, `exclude`, and `priority` from the frontmatter:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - docs/**
+priority: 5
+---
+
+Two rules for the docs section:
+
+```jsonnet
+{ layout: "doc" }
+```
+
+```jsonnet
+{ free: true }
+```
+```
+
+This creates two patches, both with `priority: 5` and `include: ["docs/**"]`.
+
+#### Order of application
+
+Admin panel patches apply first, then vault patches. Within each group, patches apply in priority order. This means vault patches can override admin panel rules.
+
+#### Complete example
+
+`docs/_publish-rules.md`:
+
+```markdown
+---
+type: frontmatter-patch
+include:
+  - docs/**
+  - guides/**
+exclude:
+  - docs/draft/*
+priority: 20
+---
+
+Publishing rules for docs and guides.
+
+All docs become free. Guides get the "guide" layout by default.
+Draft notes are excluded.
+
+```jsonnet
+{ free: true }
+```
+
+```jsonnet
+if std.startsWith(path, "guides/")
+then { layout: "guide" }
+else {}
+```
+```
+
+#### Errors
+
+If a patch file has problems, the site keeps working. The note displays a warning so you can see and fix the issue.
+
+| Situation | What happens |
+|-----------|-------------|
+| No jsonnet block in the body | Warning on the note; file still renders normally |
+| `include` patterns missing | Warning on the note |
+| Invalid glob pattern | Warning on the note |
+| Invalid Jsonnet syntax | Warning on the note |
+
+The warning appears when you open the note in the published site. Other patches continue to apply normally.
+
 ### Troubleshooting
 
 **Patch doesn't apply** — check your pattern: `blog/*` won't match `blog/drafts/post.md`. Use `blog/**` for nested folders.
