@@ -183,6 +183,14 @@ func Load(options Options) (*model.NoteViews, error) {
 		ldr.jsonnetVM = frontmatterpatch.NewVM()
 	}
 
+	// Step 2b: collect layout section files (header/footer/sidebar with glob patterns).
+	for _, ps := range parsed {
+		entries := parseLayoutSections(ps.rawMeta, ps.src.Path)
+		if len(entries) > 0 {
+			ldr.nvs.LayoutSections = append(ldr.nvs.LayoutSections, entries...)
+		}
+	}
+
 	// Step 3: finish all pages (apply patches, render, extract metadata).
 	for _, ps := range parsed {
 		page, err := ldr.finishPage(ps)

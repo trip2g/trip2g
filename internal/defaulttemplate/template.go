@@ -7,6 +7,8 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 	"trip2g/internal/usertoken"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
@@ -65,6 +67,10 @@ type Ctx struct {
 	Lang            string
 
 	TelegramLinks []model.TelegramPostLink
+
+	// LayoutSections holds vault-based layout section files for glob-based
+	// header/footer/sidebar resolution. Populated from NoteViews.LayoutSections.
+	LayoutSections []model.LayoutSectionEntry
 }
 
 // AllTelegramLinks returns TelegramLinks from DB/frontmatter (Source 1+2)
@@ -126,14 +132,13 @@ func (ctx *Ctx) noteExists(name string) bool {
 }
 
 // SidebarWidgets returns widgets for the given position ("left" or "right").
-// If no frontmatter key is set, falls back to _left_sidebar.md / _right_sidebar.md if they exist.
-// Returns nil if explicitly set to false or no default file found.
+// Priority: 1) per-note key, 2) glob-matched layout section, 3) _left_sidebar/_right_sidebar fallback.
+// Returns nil if explicitly set to false or no match found.
 func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 	key := position + "_sidebar"
 	defaultName := "_" + key
 
 	if ctx.Note == nil {
-		// No current note: use default file if it exists.
 		if ctx.noteExists(defaultName) {
 			return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
 		}
@@ -144,7 +149,10 @@ func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 	raw := m.Get(key)
 
 	if raw == nil {
-		// No frontmatter key: use default file if it exists.
+		// Check glob-matched layout section before fallback.
+		if match := ctx.resolveLayoutSection(key); match != nil {
+			return []WidgetRef{{Kind: WidgetContent, Value: match.NotePath}}
+		}
 		if ctx.noteExists(defaultName) {
 			return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
 		}
@@ -232,14 +240,16 @@ func (ctx *Ctx) ContentRefs() []ContentRef {
 }
 
 // HeaderRef returns the header reference from frontmatter.
-// If not set, falls back to _header.md if it exists in the vault.
-// Returns ContentRefNone if explicitly set to false/none or no default file found.
+// Priority: 1) per-note header: key, 2) glob-matched layout section, 3) _header fallback.
 func (ctx *Ctx) HeaderRef() ContentRef {
 	if ctx.Note != nil {
 		raw := ctx.Note.M().Get("header")
 		if raw != nil {
 			return parseContentRef(raw)
 		}
+	}
+	if match := ctx.resolveLayoutSection("header"); match != nil {
+		return ContentRef{Kind: ContentRefFile, Value: match.NotePath}
 	}
 	if ctx.noteExists("_header") {
 		return ContentRef{Kind: ContentRefWikiLink, Value: "_header"}
@@ -248,14 +258,16 @@ func (ctx *Ctx) HeaderRef() ContentRef {
 }
 
 // FooterRef returns the footer reference from frontmatter.
-// If not set, falls back to _footer.md if it exists in the vault.
-// Returns ContentRefNone if explicitly set to false/none or no default file found.
+// Priority: 1) per-note footer: key, 2) glob-matched layout section, 3) _footer fallback.
 func (ctx *Ctx) FooterRef() ContentRef {
 	if ctx.Note != nil {
 		raw := ctx.Note.M().Get("footer")
 		if raw != nil {
 			return parseContentRef(raw)
 		}
+	}
+	if match := ctx.resolveLayoutSection("footer"); match != nil {
+		return ContentRef{Kind: ContentRefFile, Value: match.NotePath}
 	}
 	if ctx.noteExists("_footer") {
 		return ContentRef{Kind: ContentRefWikiLink, Value: "_footer"}
@@ -311,6 +323,62 @@ func (ctx *Ctx) MagazineExcludeProperty() string {
 		return ""
 	}
 	return ctx.Note.M().GetString("magazine_exclude_property", "")
+}
+
+// resolveLayoutSection finds the best matching layout section file for the given section type.
+// Returns nil if no layout section matches the current note.
+func (ctx *Ctx) resolveLayoutSection(section string) *model.LayoutSectionEntry {
+	if ctx.Note == nil || len(ctx.LayoutSections) == 0 {
+		return nil
+	}
+
+	notePath := ctx.Note.Path()
+	noteMeta := ctx.Note.M()
+
+	var best *model.LayoutSectionEntry
+	for i := range ctx.LayoutSections {
+		entry := &ctx.LayoutSections[i]
+		if entry.Section != section {
+			continue
+		}
+
+		// Check include patterns.
+		if !matchAnyGlob(entry.Includes, notePath) {
+			continue
+		}
+
+		// Check exclude patterns.
+		if matchAnyGlob(entry.Excludes, notePath) {
+			continue
+		}
+
+		// Check include property.
+		if entry.IncludeProperty != "" && noteMeta.Get(entry.IncludeProperty) == nil {
+			continue
+		}
+
+		// Check exclude property.
+		if entry.ExcludeProperty != "" && noteMeta.Get(entry.ExcludeProperty) != nil {
+			continue
+		}
+
+		// Higher priority wins.
+		if best == nil || entry.Priority > best.Priority {
+			best = entry
+		}
+	}
+
+	return best
+}
+
+// matchAnyGlob returns true if any pattern matches the path.
+func matchAnyGlob(patterns []string, path string) bool {
+	for _, pattern := range patterns {
+		if matched, _ := doublestar.Match(pattern, path); matched {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveNoteRef resolves a ContentRef to a *templateviews.Note.

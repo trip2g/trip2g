@@ -872,4 +872,32 @@ test.describe('Frontmatter Patches', () => {
     // Vault patches from other files still applied
     expect(meta.vault_patched).toBe(true);
   });
+
+  test('glob-matched header appears on blog post', async ({ page }) => {
+    await page.goto('/blog/layout_test');
+    // The blog header note's first markdown list is rendered in the site-header nav.
+    // BHN42 is the unique marker in the _blog-header.md nav list.
+    await expect(page.locator('header')).toContainText('BHN42');
+  });
+
+  test('glob-matched footer appears on blog post', async ({ page }) => {
+    await page.goto('/blog/layout_test');
+    // BFN42 is the unique marker in the _blog-footer.md content.
+    await expect(page.locator('footer')).toContainText('BFN42');
+  });
+
+  test('per-note header override wins over glob match', async ({ page }) => {
+    await page.goto('/blog/custom_header_test');
+    // Should have the custom header (CHN99), not the blog header (BHN42)
+    await expect(page.locator('header')).toContainText('CHN99');
+    await expect(page.locator('header')).not.toContainText('BHN42');
+  });
+
+  test('non-blog page does not get blog header', async ({ page }) => {
+    const response = await page.goto('/');
+    expect(response.ok()).toBeTruthy();
+    // The page header should not contain blog header markers
+    const headerText = await page.locator('header').textContent();
+    expect(headerText).not.toContain('BHN42');
+  });
 });

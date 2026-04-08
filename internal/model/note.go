@@ -304,6 +304,23 @@ type NoteViews struct {
 	DomainSitemaps map[string][]byte `json:"-"`
 
 	Version string
+
+	// LayoutSections holds vault-based layout section files (header/footer/sidebar)
+	// that declare glob patterns for automatic matching.
+	// Collected during Load() from notes with {section}_includes frontmatter fields.
+	LayoutSections []LayoutSectionEntry `json:"-"`
+}
+
+// LayoutSectionEntry represents a vault note that acts as a layout section
+// (header, footer, left_sidebar, or right_sidebar) for matching notes.
+type LayoutSectionEntry struct {
+	NotePath        string   // path to the layout note file
+	Section         string   // "header", "footer", "left_sidebar", "right_sidebar"
+	Includes        []string // glob patterns for matching
+	Excludes        []string // glob patterns for exclusion
+	IncludeProperty string   // only match notes with this frontmatter key
+	ExcludeProperty string   // skip notes with this frontmatter key
+	Priority        int      // higher wins when multiple files match
 }
 
 func (n *NoteView) HTMLString() string {

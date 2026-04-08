@@ -129,6 +129,149 @@ right_sidebar:
 
 **Auto-load sidebar from file:** If you don't set `right_sidebar` in frontmatter, trip2g automatically loads `_right_sidebar.md` if it exists.
 
+### Vault-based layout sections
+
+The auto-load mechanism (`_header.md`, `_left_sidebar.md`, etc.) applies a single file to every page in the vault. When you need different headers or sidebars for different sections of your site, vault-based layout sections let you define the matching rules inside the layout file itself.
+
+A layout section file is a regular vault note with glob-matching fields in its frontmatter. It declares which notes it applies to, and trip2g resolves it automatically — no changes needed to individual notes.
+
+#### How it works
+
+Add `{section}_includes` to any note's frontmatter to make it a layout section:
+
+```yaml
+---
+header_includes:
+  - blog/*
+  - articles/**
+header_excludes:
+  - blog/premium/*
+header_include_property: published
+header_exclude_property: draft
+header_priority: 10
+content: [self]
+free: true
+---
+
+# Blog Header
+
+- [[Blog Home]]
+- [[Categories]]
+- [[Archive]]
+```
+
+This file will serve as the header for any note whose path matches `blog/*` or `articles/**`, unless the note is in `blog/premium/*`, lacks a `published` key in frontmatter, or has a `draft` key.
+
+#### Frontmatter fields
+
+Replace `{section}` with one of: `header`, `footer`, `left_sidebar`, `right_sidebar`.
+
+| Field | Type | Required | Default | Notes |
+|-------|------|----------|---------|-------|
+| `{section}_includes` | string or array | yes (to activate) | — | Glob patterns (doublestar). A single string or a list. |
+| `{section}_excludes` | string or array | no | none | Glob patterns to exclude. Applied after includes. |
+| `{section}_include_property` | string | no | — | Only match notes that **have** this frontmatter key |
+| `{section}_exclude_property` | string | no | — | Skip notes that **have** this frontmatter key |
+| `{section}_priority` | integer | no | `0` | Higher number wins when multiple files match |
+
+The `content` field works exactly as on any other note: `self` renders the file's own markdown body, `[[Link]]` embeds another note, `toc` renders a table of contents, etc.
+
+#### One file, multiple roles
+
+A single file can serve as header and footer simultaneously:
+
+```yaml
+---
+header_includes: "**"
+footer_includes: "**"
+content: [self]
+free: true
+---
+
+Default header and footer for all pages.
+```
+
+#### Priority resolution
+
+For each page, trip2g resolves the header (and footer, and sidebars) in this order:
+
+1. **Per-note frontmatter** — `header: [[x]]` on the note itself wins unconditionally
+2. **Glob-matched layout files** — the highest-priority match wins; ties are broken alphabetically by file path
+3. **Auto-load fallback** — `_header.md`, `_footer.md`, `_left_sidebar.md`, `_right_sidebar.md`
+4. No header/footer/sidebar
+
+This means you can have a sitewide `_header.md` as a fallback, section-specific layout files for folders, and still override individual pages via their own frontmatter — all three levels coexist.
+
+#### Hiding layout files from listings
+
+Prefix the filename with `_` to hide it from the site's magazine and note listings while still using it as a layout section:
+
+```
+_blog-header.md     ← hidden from listings, active as layout section
+blog-header.md      ← visible as a regular note AND active as layout section
+```
+
+Both work as layout sections. The underscore prefix only affects visibility.
+
+#### Complete example
+
+A documentation site with a shared default header and a separate sidebar for the API section:
+
+**`_header.md`** — applies to all pages (fallback):
+
+```yaml
+---
+content: [self]
+free: true
+---
+
+![Logo](/logo.png)
+
+- [Home](/)
+- [Docs](/docs)
+- [Blog](/blog)
+```
+
+**`_api-sidebar.md`** — left sidebar only for the API section:
+
+```yaml
+---
+left_sidebar_includes: "docs/api/**"
+left_sidebar_priority: 10
+content: [self]
+free: true
+---
+
+### API Reference
+
+- [[Authentication]]
+- [[Endpoints]]
+- [[Rate Limits]]
+```
+
+**`docs/api/endpoints.md`** — a regular note, no layout frontmatter needed:
+
+```yaml
+---
+title: Endpoints
+---
+
+API endpoint documentation...
+```
+
+Result: `docs/api/endpoints.md` gets the sitewide `_header.md` as its header (from the auto-load fallback) and `_api-sidebar.md` as its left sidebar (from the glob match). Notes outside `docs/api/` are unaffected.
+
+#### Relationship to frontmatter patches
+
+Both frontmatter patches and vault layout sections can assign headers and sidebars across multiple notes. The difference:
+
+- **Frontmatter patches** inject frontmatter fields into notes at load time. The note ends up with `header: [[x]]` as if you'd written it yourself.
+- **Vault layout sections** are resolved at render time from the layout file's own frontmatter. Individual notes stay untouched.
+
+For most use cases, vault layout sections are simpler: define the matching rules once in the layout file and you're done. Frontmatter patches remain useful when you need to set other properties alongside the layout (e.g., `free: true` and `header:` together on a whole folder).
+
+→ [[en/user/frontmatter-patches|Frontmatter patches documentation]]
+
 ### Content blocks
 
 The `content` property controls which sections appear in the main content area:
