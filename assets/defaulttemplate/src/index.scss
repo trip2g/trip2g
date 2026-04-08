@@ -59,6 +59,7 @@
 // Must use `background` (shorthand) to beat mol's `:root { background: var(--mol_theme_back) }`.
 :root {
   background: var(--pico-background-color) !important;
+  --site-max-width: 1440px;
 }
 
 
@@ -85,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  max-width: 1440px;
+  max-width: var(--site-max-width);
   margin-inline: auto;
   padding-inline: var(--pico-spacing);
   padding-block: 0.75rem;
@@ -282,7 +283,7 @@
   grid-template-areas: "left main right";
   column-gap: 3rem;
   row-gap: 0;
-  max-width: 1440px;
+  max-width: var(--site-max-width);
   margin-inline: auto;
   margin-block-start: var(--pico-spacing);
   margin-block-end: calc(var(--pico-spacing) * 4);
@@ -561,7 +562,7 @@
 }
 
 .site-footer__content {
-  max-width: 1440px;
+  max-width: var(--site-max-width);
   margin-inline: auto;
   padding-inline: var(--pico-spacing);
   padding-block: calc(var(--pico-spacing) * 2);
@@ -663,7 +664,7 @@
 
 // Copyright bar below footer content
 .site-footer__copyright {
-  max-width: 1440px;
+  max-width: var(--site-max-width);
   margin-inline: auto;
   padding-inline: var(--pico-spacing);
   padding-block: calc(var(--pico-spacing) * 1.5);
@@ -898,7 +899,7 @@
 }
 
 .search-wrapper {
-  max-width: 1440px;
+  max-width: var(--site-max-width);
   margin-inline: auto;
 }
 
