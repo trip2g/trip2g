@@ -431,6 +431,10 @@ body {
   // Fluid typography: 1rem (mobile) → 1.0125rem (desktop, -10%)
   font-size: clamp(0.9rem, 0.81rem + 0.225vw, 1.0125rem);
   line-height: 1.75;
+
+  h1, h2, h3, h4, h5, h6 {
+    scroll-margin-top: 4.5rem; // compensate sticky header (~56px + gap)
+  }
 }
 
 // Sidebar nav rendered from _sidebar.md (### headings + ul lists)
