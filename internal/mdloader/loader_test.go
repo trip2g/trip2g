@@ -238,6 +238,48 @@ Links: [[existing]] [[nonexistent]] [[another_missing]]`),
 	cupaloy.SnapshotT(t, htmlSources)
 }
 
+// TestAnchorLinks tests that [[slug#anchor]] links to existing pages are not marked as WIP.
+// Regression: resolveNoteForAttributes received "/slug#anchor" and looked up the map with the
+// fragment included, causing a miss → class="wip".
+func TestAnchorLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+See [[page#section]] and [[free-page#heading]] for details.`),
+	}, {
+		Path:    "page.md",
+		Content: []byte(`## section\nPaid content.`),
+	}, {
+		Path: "free-page.md",
+		Content: []byte(`---
+free: true
+---
+## heading\nFree content.`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/index"].HTML)
+
+	// Neither anchor link should be marked as WIP
+	require.NotContains(t, html, `class="wip"`, "anchor link to existing page must not be WIP")
+
+	// Paid page with anchor: paywall class + correct href
+	require.Contains(t, html, `href="/page#section"`, "anchor link must keep fragment in href")
+	require.Contains(t, html, `class="paywall`, "anchor link to paid page must have paywall class")
+
+	// Free page with anchor: no paywall class, just an <a> with correct href
+	require.Contains(t, html, `href="/free_page#heading"`, "anchor link to free page must keep fragment in href")
+}
+
 // TestHardWraps tests that hard wraps are rendered correctly.
 // Obsidian by default uses hard wraps when you press Enter,
 // which means each line is a separate line in the markdown file,

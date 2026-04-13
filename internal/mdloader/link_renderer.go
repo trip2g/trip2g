@@ -261,11 +261,16 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 // full cross-domain URL (e.g., "https://bar.com/path") that doesn't exist in nv.Map.
 // Falls back to domainRenderNotes on the resolver when GetByPath returns nil.
 func (r *linkRenderer) resolveNoteForAttributes(dest string) *model.NoteView {
-	note := r.nvs.GetByPath(removeVersion(dest))
+	path := removeVersion(dest)
+	// Strip anchor fragment — the map is keyed by path only, not path#anchor.
+	if idx := strings.Index(path, "#"); idx != -1 {
+		path = path[:idx]
+	}
+	note := r.nvs.GetByPath(path)
 	if note == nil {
 		lr, ok := r.resolver.(*myLinkResolver)
 		if ok && lr.domainRenderNotes != nil {
-			note = lr.domainRenderNotes[removeVersion(dest)]
+			note = lr.domainRenderNotes[path]
 		}
 	}
 	return note
