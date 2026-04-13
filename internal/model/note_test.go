@@ -340,7 +340,7 @@ func TestExtractHeadings(t *testing.T) {
 			content: `# Main Title
 Some content here.`,
 			expectedHeadings: NoteViewHeadings{
-				{Text: "Main Title", Level: 1, ID: "main_title_0"},
+				{Text: "Main Title", Level: 1, ID: "main_title"},
 			},
 		},
 		{
@@ -357,10 +357,10 @@ Even more content.
 ## Section 1.2
 Final content.`,
 			expectedHeadings: NoteViewHeadings{
-				{Text: "Chapter 1", Level: 1, ID: "chapter_1_0"},
-				{Text: "Section 1.1", Level: 2, ID: "section_1_1_0"},
-				{Text: "Subsection 1.1.1", Level: 3, ID: "subsection_1_1_1_0"},
-				{Text: "Section 1.2", Level: 2, ID: "section_1_2_0"},
+				{Text: "Chapter 1", Level: 1, ID: "chapter_1"},
+				{Text: "Section 1.1", Level: 2, ID: "section_1_1"},
+				{Text: "Subsection 1.1.1", Level: 3, ID: "subsection_1_1_1"},
+				{Text: "Section 1.2", Level: 2, ID: "section_1_2"},
 			},
 		},
 		{
@@ -369,9 +369,9 @@ Final content.`,
 ## *Italic* Heading
 ### [Link](http://example.com) Heading`,
 			expectedHeadings: NoteViewHeadings{
-				{Text: "Bold Heading", Level: 1, ID: "bold_heading_0"},
-				{Text: "Italic Heading", Level: 2, ID: "italic_heading_0"},
-				{Text: "Link Heading", Level: 3, ID: "link_heading_0"},
+				{Text: "Bold Heading", Level: 1, ID: "bold_heading"},
+				{Text: "Italic Heading", Level: 2, ID: "italic_heading"},
+				{Text: "Link Heading", Level: 3, ID: "link_heading"},
 			},
 		},
 		{
@@ -380,9 +380,9 @@ Final content.`,
 #### Fourth Level
 ###### Sixth Level`,
 			expectedHeadings: NoteViewHeadings{
-				{Text: "Second Level", Level: 1, ID: "second_level_0"},
-				{Text: "Fourth Level", Level: 2, ID: "fourth_level_0"},
-				{Text: "Sixth Level", Level: 3, ID: "sixth_level_0"},
+				{Text: "Second Level", Level: 1, ID: "second_level"},
+				{Text: "Fourth Level", Level: 2, ID: "fourth_level"},
+				{Text: "Sixth Level", Level: 3, ID: "sixth_level"},
 			},
 		},
 	}

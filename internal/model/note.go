@@ -780,7 +780,6 @@ func (n *NoteView) generateHeadingID(headingText string) string {
 	id := rl2.Translit(headingText)
 	id = onlyCharsRE.ReplaceAllString(id, "_")
 	id = strings.ToLower(id)
-	id = fmt.Sprintf("%s_%d", id, n.PathID)
 
 	if n.HeadingCount == nil {
 		n.HeadingCount = make(map[string]int)
