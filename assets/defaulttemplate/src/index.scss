@@ -433,7 +433,15 @@ body {
   line-height: 1.75;
 
   h1, h2, h3, h4, h5, h6 {
-    scroll-margin-top: 4.5rem; // compensate sticky header (~56px + gap)
+    scroll-margin-top: 4.5rem;
+
+    @media (min-width: 1024px) {
+      scroll-margin-top: 5rem;
+    }
+
+    @media (min-width: 1280px) {
+      scroll-margin-top: 5.5rem;
+    }
   }
 }
 
