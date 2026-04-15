@@ -8,7 +8,7 @@ This site is built with the default template — what you're looking at right no
 
 The default template is the built-in page layout that trip2g uses when you don't specify a custom template. It provides a complete publishing setup with header, footer, sidebar navigation, table of contents, backlinks, and a magazine-style grid for displaying related notes.
 
-You control the layout entirely through frontmatter—no HTML coding required.
+You control the layout entirely through frontmatter — no HTML required.
 
 ### What the default template includes
 
@@ -21,123 +21,61 @@ Every page rendered with the default template has these optional sections:
 - **Magazine grid** — cards showing related notes (featured, grid, or list layout)
 - **Footer** — site footer with columns (pulled from a markdown note)
 
-You choose which sections appear on each page by setting frontmatter properties.
+### Functional notes: header, footer, and sidebars
 
-### Controlling layout with frontmatter
+The header, footer, and sidebars are ordinary markdown notes from your vault. You write them like any other note, and trip2g places them in the right position on each page.
 
-#### Header
+Trip2g resolves which note to show in each section in this order:
 
-Reference a markdown note to use as your site header:
+1. **Per-note frontmatter** — `header: [[my-header]]` on a note wins unconditionally
+2. **Glob sections** — a note declares which paths it acts as header/footer/sidebar for
+3. **Auto-load fallback** — `_header.md`, `_footer.md`, `_left_sidebar.md`, `_right_sidebar.md`
+4. Section absent
 
-```yaml
----
-header: [[_nav]]
----
-```
+#### Auto-load (recommended for most sites)
 
-The header template extracts:
-- The **first image** as the logo
-- The **first list** as navigation links
+If your vault contains a note named `_header.md`, trip2g automatically uses it as the header on every page — no configuration needed in individual notes.
 
-Example header note `_nav.md`:
+The same applies to:
+- `_footer.md` — footer for all pages
+- `_left_sidebar.md` — left sidebar for all pages
+- `_right_sidebar.md` — right sidebar for all pages
+
+Example `_header.md`:
 
 ```markdown
----
-title: Navigation
----
-
-![Logo](/logo.png)
+![Logo](/assets/logo.png)
 
 - [Home](/)
 - [Docs](/docs)
 - [About](/about)
 ```
 
-**To hide the header:** Set `header: false`
+No frontmatter is required. The header extracts:
+- **First image** — becomes the site logo
+- **First list** — becomes the navigation links
 
-#### Footer
-
-Reference a markdown note to use as your site footer:
-
-```yaml
----
-footer: [[_footer]]
----
-```
-
-The footer can be a simple list or a nested list (which becomes columns):
+Example `_left_sidebar.md`:
 
 ```markdown
----
-title: Footer
----
+### Getting Started
 
-- [Home](/)
-- [Docs](/docs)
+- [Quick Start](/docs/quick-start)
+- [Installation](/docs/install)
 
-### Company
+### Advanced
 
-- [About](/about)
-- [Contact](/contact)
-
-### Legal
-
-- [Terms](/terms)
-- [Privacy](/privacy)
+- [Custom Templates](/docs/templates)
+- [API Reference](/docs/api)
 ```
 
-Top-level items ("Company", "Legal") become column headings. Items under them become links in that column.
+Use `###` (h3) headings for group labels in sidebars, not bold text. The sidebar UI renders `###` headings as proper section labels; bold text does not receive the same visual treatment.
 
-**To hide the footer:** Set `footer: false`
+#### Glob sections (different headers for different site sections)
 
-#### Left sidebar
+When you need different headers or sidebars for different parts of your site, add glob fields to a note's frontmatter — and it will automatically apply to the matching pages.
 
-The left sidebar typically shows table of contents and backlinks:
-
-```yaml
----
-left_sidebar:
-  - TOC
-  - Backlinks
----
-```
-
-**Available sidebar widgets:**
-
-- `TOC` — interactive table of contents (headings from the current note)
-- `Backlinks` or `inlinks` — notes that link to this note
-- `outlinks` — links from this note to other notes
-- `[[PageName]]` — embed another note by its title
-- `path/to/file.md` — embed a note by file path
-
-**Hide the left sidebar:** Set `left_sidebar: false` or omit it
-
-**Auto-load sidebar from file:** If you don't set `left_sidebar` in frontmatter, trip2g automatically loads `_left_sidebar.md` if it exists. This is useful for shared navigation across all pages.
-
-#### Right sidebar
-
-The right sidebar is often used for extra information or links:
-
-```yaml
----
-right_sidebar:
-  - outlinks
----
-```
-
-**Hide the right sidebar:** Set `right_sidebar: false` or omit it
-
-**Auto-load sidebar from file:** If you don't set `right_sidebar` in frontmatter, trip2g automatically loads `_right_sidebar.md` if it exists.
-
-### Vault-based layout sections
-
-The auto-load mechanism (`_header.md`, `_left_sidebar.md`, etc.) applies a single file to every page in the vault. When you need different headers or sidebars for different sections of your site, vault-based layout sections let you define the matching rules inside the layout file itself.
-
-A layout section file is a regular vault note with glob-matching fields in its frontmatter. It declares which notes it applies to, and trip2g resolves it automatically — no changes needed to individual notes.
-
-#### How it works
-
-Add `{section}_includes` to any note's frontmatter to make it a layout section:
+Add `{section}_includes` to any note's frontmatter to make it a glob section:
 
 ```yaml
 ---
@@ -160,9 +98,9 @@ free: true
 - [[Archive]]
 ```
 
-This file will serve as the header for any note whose path matches `blog/*` or `articles/**`, unless the note is in `blog/premium/*`, lacks a `published` key in frontmatter, or has a `draft` key.
+This file serves as the header for any note whose path matches `blog/*` or `articles/**`, unless the note is in `blog/premium/*`, lacks a `published` frontmatter key, or has a `draft` key.
 
-#### Frontmatter fields
+**Glob section frontmatter fields**
 
 Replace `{section}` with one of: `header`, `footer`, `left_sidebar`, `right_sidebar`.
 
@@ -174,9 +112,9 @@ Replace `{section}` with one of: `header`, `footer`, `left_sidebar`, `right_side
 | `{section}_exclude_property` | string | no | — | Skip notes that **have** this frontmatter key |
 | `{section}_priority` | integer | no | `0` | Higher number wins when multiple files match |
 
-The `content` field works exactly as on any other note: `self` renders the file's own markdown body, `[[Link]]` embeds another note, `toc` renders a table of contents, etc.
+The `content` field works exactly as on any note: `self` renders the file's own markdown body, `[[Link]]` embeds another note, etc.
 
-#### One file, multiple roles
+**One file, multiple roles**
 
 A single file can serve as header and footer simultaneously:
 
@@ -191,40 +129,52 @@ free: true
 Default header and footer for all pages.
 ```
 
-#### Priority resolution
+**Hiding glob sections from listings**
 
-For each page, trip2g resolves the header (and footer, and sidebars) in this order:
-
-1. **Per-note frontmatter** — `header: [[x]]` on the note itself wins unconditionally
-2. **Glob-matched layout files** — the highest-priority match wins; ties are broken alphabetically by file path
-3. **Auto-load fallback** — `_header.md`, `_footer.md`, `_left_sidebar.md`, `_right_sidebar.md`
-4. No header/footer/sidebar
-
-This means you can have a sitewide `_header.md` as a fallback, section-specific layout files for folders, and still override individual pages via their own frontmatter — all three levels coexist.
-
-#### Hiding layout files from listings
-
-Prefix the filename with `_` to hide it from the site's magazine and note listings while still using it as a layout section:
+Prefix the filename with `_` to hide it from the site's magazine and note listings:
 
 ```
-_blog-header.md     ← hidden from listings, active as layout section
-blog-header.md      ← visible as a regular note AND active as layout section
+_blog-header.md     ← hidden from listings, active as glob section
+blog-header.md      ← visible as a regular note AND active as glob section
 ```
 
-Both work as layout sections. The underscore prefix only affects visibility.
+Both work as glob sections. The underscore prefix only affects listing visibility.
 
-#### Complete example
+#### Per-note frontmatter override
 
-A documentation site with a shared default header and a separate sidebar for the API section:
-
-**`_header.md`** — applies to all pages (fallback):
+To set the header, footer, or sidebar for a specific page, reference it directly in that note's frontmatter:
 
 ```yaml
 ---
-content: [self]
-free: true
+header: [[_header]]
+footer: [[_footer]]
+left_sidebar:
+  - TOC
+  - Backlinks
+right_sidebar: false
 ---
+```
 
+**Hide the header:** `header: false`
+**Hide the footer:** `footer: false`
+**Hide the left sidebar:** `left_sidebar: false`
+**Hide the right sidebar:** `right_sidebar: false`
+
+**Available sidebar widgets:**
+
+- `TOC` — interactive table of contents (headings from the current note)
+- `Backlinks` or `inlinks` — notes that link to this note
+- `outlinks` — links from this note to other notes
+- `[[PageName]]` — embed another note by title
+- `path/to/file.md` — embed a note by file path
+
+#### Complete example: documentation site
+
+A site with a shared default header and a separate sidebar for the API section.
+
+**`_header.md`** — applies to all pages (auto-load):
+
+```markdown
 ![Logo](/logo.png)
 
 - [Home](/)
@@ -232,7 +182,7 @@ free: true
 - [Blog](/blog)
 ```
 
-**`_api-sidebar.md`** — left sidebar only for the API section:
+**`_api-sidebar.md`** — left sidebar only for the API section (glob section):
 
 ```yaml
 ---
@@ -259,16 +209,16 @@ title: Endpoints
 API endpoint documentation...
 ```
 
-Result: `docs/api/endpoints.md` gets the sitewide `_header.md` as its header (from the auto-load fallback) and `_api-sidebar.md` as its left sidebar (from the glob match). Notes outside `docs/api/` are unaffected.
+Result: `docs/api/endpoints.md` gets `_header.md` as its header (from auto-load) and `_api-sidebar.md` as its left sidebar (from the glob match). Notes outside `docs/api/` get only the header.
 
 #### Relationship to frontmatter patches
 
-Both frontmatter patches and vault layout sections can assign headers and sidebars across multiple notes. The difference:
+Both frontmatter patches and glob sections can assign headers and sidebars across many notes. The difference:
 
 - **Frontmatter patches** inject frontmatter fields into notes at load time. The note ends up with `header: [[x]]` as if you'd written it yourself.
-- **Vault layout sections** are resolved at render time from the layout file's own frontmatter. Individual notes stay untouched.
+- **Glob sections** are resolved at render time from the section file's own frontmatter. Individual notes stay untouched.
 
-For most use cases, vault layout sections are simpler: define the matching rules once in the layout file and you're done. Frontmatter patches remain useful when you need to set other properties alongside the layout (e.g., `free: true` and `header:` together on a whole folder).
+For most use cases, glob sections are simpler: define the matching rules once in the section file and you're done. Frontmatter patches remain useful when you need to set other properties alongside the layout (e.g., `free: true` and `header:` together on a whole folder).
 
 → [[en/user/frontmatter-patches|Frontmatter patches documentation]]
 
@@ -293,7 +243,7 @@ content:
 
 **Default behavior:**
 - If you don't set `content`, only the note itself is shown (`self`)
-- If the note is the site root (no index page), `magazine` is shown by default
+- If the note is the site root with no index page, `magazine` is shown
 
 ### Magazine layout
 
@@ -332,14 +282,12 @@ Default: `**/*.md` (all notes)
 **`magazine_exclude_files`** — Glob pattern for which notes to exclude from the magazine
 
 ```yaml
-magazine_exclude_files: "**/*Telegram.md"       # Exclude Telegram versions by name
-magazine_exclude_files: "drafts/**"             # Exclude drafts folder
-magazine_exclude_files: "archive/*.md"          # Exclude archived posts
+magazine_exclude_files: "**/*Telegram.md"   # Exclude Telegram versions by name
+magazine_exclude_files: "drafts/**"         # Exclude drafts folder
+magazine_exclude_files: "archive/*.md"      # Exclude archived posts
 ```
 
-Applied after `magazine_include_files` — first notes are included by the include glob, then matches of the exclude glob are removed.
-
-Not set by default — no notes are excluded.
+Applied after `magazine_include_files`. Not set by default — no notes are excluded.
 
 **`magazine_exclude_property`** — Exclude notes that have a specific frontmatter field
 
@@ -347,11 +295,34 @@ Not set by default — no notes are excluded.
 magazine_exclude_property: telegram_publish_at
 ```
 
-Notes with this field in their frontmatter will be hidden from the magazine. Useful when Telegram versions of notes live alongside web versions in the same folder.
+Notes with this field are hidden from the magazine. Useful when Telegram versions of notes live alongside web versions in the same folder.
 
-Not set by default — no notes are excluded by property.
+**`magazine_sort_property`** — Sort cards by a custom frontmatter field
 
-#### Excluding Telegram notes from magazine
+```yaml
+magazine_sort_property: priority
+```
+
+Notes that have this field are listed first (sorted by value descending), then the rest sorted by creation date descending.
+
+Example:
+
+```yaml
+---
+title: Featured Post
+priority: 100
+---
+```
+
+**`magazine_include_property`** — Only show notes with a specific frontmatter field
+
+```yaml
+magazine_include_property: featured
+```
+
+Only notes with `featured: true` (or any truthy value) in their frontmatter will appear.
+
+#### Excluding Telegram notes from the magazine
 
 When you publish to both web and Telegram, the Telegram versions often sit in the same folder. Two ways to exclude them:
 
@@ -367,7 +338,7 @@ magazine_exclude_files: "**/*Telegram.md"
 ---
 ```
 
-**By frontmatter property** — if Telegram notes have `telegram_publish_at` (or similar) in frontmatter:
+**By frontmatter property** — if Telegram notes have `telegram_publish_at` in frontmatter:
 
 ```yaml
 ---
@@ -381,40 +352,6 @@ magazine_exclude_property: telegram_publish_at
 
 Both approaches can be combined.
 
-**`magazine_sort_property`** — Sort cards by a custom frontmatter field
-
-```yaml
-magazine_sort_property: priority
-```
-
-Notes that have this frontmatter field are listed first (sorted by value descending), then the rest sorted by creation date descending.
-
-Example:
-
-```yaml
----
-title: Featured Post
-priority: 100
----
-```
-
-**`magazine_include_property`** — Filter cards: only show notes with a specific frontmatter field
-
-```yaml
-magazine_include_property: featured
-```
-
-Only notes with `featured: true` (or any truthy value) in their frontmatter will appear.
-
-Example note:
-
-```yaml
----
-title: A Great Post
-featured: true
----
-```
-
 #### Magazine cards
 
 Each magazine card shows:
@@ -423,84 +360,6 @@ Each magazine card shows:
 - **Title** — from frontmatter
 - **Description** — from the `description` frontmatter field (or the first paragraph if no description is set)
 - **Link** — to the full note
-
-### Complete example
-
-A typical blog index page might look like:
-
-```yaml
----
-title: Blog
-content:
-  - magazine
-magazine_include_files: "blog/**/*.md"
-magazine_sort_property: featured_priority
-magazine_include_property: published
-left_sidebar:
-  - [[Blog Categories]]
-right_sidebar: false
-header: [[_nav]]
-footer: [[_footer]]
----
-
-Welcome to the blog. Browse recent posts below.
-```
-
-Then each blog post:
-
-```yaml
----
-title: My First Post
-published: true
-featured_priority: 100
-description: A quick overview of this post
----
-
-Full article content in markdown...
-```
-
-### Sidebar as navigation
-
-You can create a reusable sidebar by storing navigation in a separate markdown file:
-
-**`_left_sidebar.md`:**
-
-```markdown
----
-title: Docs Navigation
----
-
-### Getting Started
-
-- [Quick Start](/docs/quick-start)
-- [Installation](/docs/install)
-
-### Advanced
-
-- [Custom Templates](/docs/templates)
-- [API Reference](/docs/api)
-```
-
-Every page will auto-load this sidebar (unless you explicitly set `left_sidebar: false` in a note's frontmatter).
-
-Use `###` (h3) headings for section group labels, not bold text (`**text**`). The sidebar UI renders `###` headings as proper section labels; bold text does not receive the same visual treatment.
-
-### Using images in header and footer
-
-**Header logo:**
-
-The first image in the header note becomes the site logo:
-
-```markdown
-![Site Logo](/assets/logo.png)
-
-- [Home](/)
-- [Docs](/docs)
-```
-
-**Footer images:**
-
-Images in footer notes are rendered normally as part of the content.
 
 ### Examples
 
@@ -523,7 +382,7 @@ right_sidebar: false
 Explore our latest content below.
 ```
 
-Then mark notes to show on the homepage:
+Mark notes to feature on the homepage:
 
 ```yaml
 ---
@@ -569,19 +428,6 @@ description: Summary of recent updates
 ---
 ```
 
-### Switching to a custom template
-
-If you need more control than frontmatter provides, you can create a custom template. See [[templates]] for the full template system.
-
-```yaml
----
-layout: my-custom-template
-title: My Page
----
-```
-
-Any note can use either the default template (by omitting `layout`) or a custom one.
-
 ### Flexibility through frontmatter patches
 
 Manually adding `header`, `footer`, `left_sidebar`, and `lang` to every note doesn't scale. Frontmatter patches let you set those properties once for an entire folder.
@@ -603,13 +449,26 @@ No individual note knows about the template — everything is injected from outs
 
 → [[en/user/frontmatter-patches|Full frontmatter patches documentation]]
 
+### Switching to a custom template
+
+If you need more control than frontmatter provides, create a custom template. See [[templates]] for the full template system.
+
+```yaml
+---
+layout: my-custom-template
+title: My Page
+---
+```
+
+Any note can use either the default template (by omitting `layout`) or a custom one.
+
 ---
 
 ## Telegram post links
 
 If a note has been published to a Telegram channel, the template shows a blue "Read in Telegram" button above the title. Clicking it opens the Telegram post directly.
 
-The button appears automatically in three cases:
+The button appears automatically in three cases.
 
 ### 1. Published via trip2g
 

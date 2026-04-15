@@ -123,6 +123,13 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	allowExternalLinks := true
 
 	publicURL := env.PublicURL()
+
+	campaignChatID := source.ChatID
+	if campaignChatID == 0 {
+		campaignChatID = source.TelegramChatID
+	}
+	campaign := strconv.FormatInt(normalizeTelegramChatID(campaignChatID), 10)
+
 	post := model.TelegramPost{}
 
 	tr := markdownv2.HTMLConverter{}

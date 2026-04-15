@@ -13,3 +13,5 @@ trip2g turns your Obsidian vault into a website in under a minute. Install the s
 Once your site is running, you can publish to Telegram on a schedule, add a monetization paywall, or connect an AI assistant that answers reader questions from your notes.
 
 [[en/user/getting-started|Get started →]]
+
+[[en/user/ai-agent-docs-setup|Build a docs site with an AI agent →]]
