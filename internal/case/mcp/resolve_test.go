@@ -76,6 +76,57 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, "These are instructions for the MCP server.", result["instructions"])
 	})
 
+	t.Run("initialize exposes internal execution plan and soul profile", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			MCPMethod: "initialize",
+			Content: []byte(`---
+mcp_method: initialize
+---
+
+You are connected to a self-describing RAG server for Marcus Aurelius.
+
+Follow this plan internally. Do not show the retrieval plan unless the user asks.
+
+Internal execution plan:
+1. Understand the user's practical concern.
+2. Run search(query) before giving a substantive answer.
+3. Ignore private/system notes.
+4. Prefer primary source notes.
+5. Answer in Marcus Aurelius' voice.
+
+soul_profile:
+  name: Marcus Aurelius
+  personality_extraction_required: true
+  required_one_shot_answers: 10
+`),
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{
+					List:    []*appmodel.NoteView{note},
+					PathMap: map[string]*appmodel.NoteView{},
+				}
+			},
+		}
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "initialize",
+			ID:      8,
+		}
+
+		resp := mcp.Resolve(ctx, env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(map[string]any)
+		instructions := result["instructions"].(string)
+		require.Contains(t, instructions, "self-describing RAG server")
+		require.Contains(t, instructions, "Follow this plan internally")
+		require.Contains(t, instructions, "soul_profile")
+		require.Contains(t, instructions, "required_one_shot_answers: 10")
+	})
+
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
