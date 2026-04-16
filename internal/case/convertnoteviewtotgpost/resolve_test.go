@@ -680,3 +680,149 @@ func (e *testEnvWithTracking) ListTelegramPublishSentMessagesByChatID(
 	}
 	return e.testEnv.ListTelegramPublishSentMessagesByChatID(ctx, chatID)
 }
+
+func TestUnpublishedExternalLinkHasUTMTags(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+telegram_publish_tags: ["tag1"]
+---
+See [[other_note]] for details.`),
+			},
+			{
+				Path: "other_note.md",
+				Content: []byte(`---
+free: true
+title: "Other Note"
+---
+Plain site-only note.`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	other := nvs.Map["/other_note"]
+	require.NotNil(t, other, "linked note should be resolved")
+	other.Permalink = "/other_note"
+	other.PathID = 99
+
+	var mainNote *model.NoteView
+	for _, nv := range nvs.List {
+		if nv.Path == "main.md" {
+			mainNote = nv
+			break
+		}
+	}
+	require.NotNil(t, mainNote)
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   -1001234567890,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	require.Contains(t, post.Content,
+		`utm_campaign=1234567890`,
+		"unpublished external link should carry utm_campaign")
+	require.Contains(t, post.Content,
+		`utm_content=note_99`,
+		"unpublished external link should carry utm_content with note PathID")
+	require.Contains(t, post.Content,
+		`utm_source=telegram`,
+		"unpublished external link should carry utm_source=telegram")
+}
+
+func TestUnresolvedLinkGetsHomepageUTM(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path: "main.md",
+			Content: []byte(`---
+free: true
+title: "Main Note"
+telegram_publish_tags: ["tag1"]
+---
+See [[nonexistent_target]] for details.`),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{
+		NoteView: nvs.List[0],
+		ChatID:   -1001234567890,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	require.Contains(t, post.Content, `utm_campaign=1234567890`)
+	require.Contains(t, post.Content, `utm_source=telegram`)
+	require.NotContains(t, post.Content, "utm_content",
+		"unresolved-link homepage fallback must not emit utm_content")
+	require.Greater(t, post.UnresolvedLinkCount, int64(0))
+}
+
+func TestCampaignFromTelegramChatIDWhenChatIDZero(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path: "main.md",
+			Content: []byte(`---
+free: true
+title: "Main Note"
+telegram_publish_tags: ["tag1"]
+---
+See [[nonexistent_target]].`),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{
+		NoteView:       nvs.List[0],
+		ChatID:         0,
+		TelegramChatID: -1002222222222,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	require.Contains(t, post.Content, "utm_campaign=2222222222",
+		"campaign should derive from source.TelegramChatID when source.ChatID is 0")
+}

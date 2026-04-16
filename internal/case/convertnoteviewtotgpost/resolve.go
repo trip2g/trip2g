@@ -145,7 +145,9 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		linkedNV, ok := nvs.Map[resolvedTarget]
 		if !ok {
 			post.UnresolvedLinkCount++
-			return &markdownv2.LinkResolverResult{URL: publicURL}, nil
+			return &markdownv2.LinkResolverResult{
+				URL: publicURL + "?utm_source=telegram&utm_campaign=" + campaign,
+			}, nil
 			// return "", fmt.Errorf("note not found for target: %s", target)
 		}
 
@@ -191,7 +193,9 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 			post.ExternalLinkCount++
 
-			externalURL := publicURL + linkedNV.Permalink
+			externalURL := publicURL + linkedNV.Permalink +
+				"?utm_source=telegram&utm_campaign=" + campaign +
+				"&utm_content=note_" + strconv.FormatInt(linkedNV.PathID, 10)
 			return &markdownv2.LinkResolverResult{URL: externalURL}, nil
 		}
 
