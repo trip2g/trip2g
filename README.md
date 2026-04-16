@@ -7,7 +7,7 @@ trip2g is a self-hosted publishing platform for knowledge creators. Write in Obs
 ## Get started
 
 - **Cloud** — [simplecloud.2pub.me](https://simplecloud.2pub.me) (hosted, no setup)
-- **Self-hosted** — run on your own server (docs coming soon)
+- **Self-hosted** — run on your own server ([guide](docs/en/user/selfhosted.md))
 
 ## What it does
 

@@ -23,8 +23,11 @@ Good for: people who want their own instance without dealing with setup.
 
 ### Self-hosting
 
-Read the README and set it up yourself: [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
+Use the minimal self-hosting guide with `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend, and optional vector search:
 
-trip2g is a single Go binary with SQLite. No external dependencies. Runs on any Linux server. The README covers installation, reverse proxy setup, and configuration.
+- [[en/user/selfhosted|Deploy on your own server]]
+- [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
+
+trip2g is a single Go binary with SQLite. For a simple production deployment, Docker, MinIO, and one `.env` file are enough.
 
 Good for: developers who want full control.

@@ -6,6 +6,7 @@ title: "Навигация"
 
 - [[ru/user/Начало работы|Начало работы]]
 - [[ru/user/hosting|Хостинг]]
+- [[ru/user/selfhosted|Self-hosted]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
 - [[ru/user/Двухсторонняя синхронизация|Синхронизация]]

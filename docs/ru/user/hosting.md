@@ -21,8 +21,11 @@ free: true
 
 ### Самостоятельная установка
 
-Прочитайте README и настройте сами: [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
+Минимальная инструкция с `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend и optional vector search:
 
-trip2g — это один бинарник на Go с SQLite. Никаких внешних зависимостей. Работает на любом Linux-сервере. В README описана установка, настройка обратного прокси и конфигурация.
+- [[ru/user/selfhosted|Развернуть у себя на сервере]]
+- [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
+
+trip2g — это один бинарник на Go с SQLite. Для простого production-развертывания достаточно Docker, MinIO и одного `.env`.
 
 Подходит для: разработчиков, которым важен полный контроль.

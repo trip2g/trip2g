@@ -6,6 +6,7 @@ title: "Navigation"
 
 - [[en/user/getting-started|Install & first sync]]
 - [[en/user/hosting|Hosting options]]
+- [[en/user/selfhosted|Self-hosted deployment]]
 - [[en/user/publishing|Publishing notes]]
 - [[en/user/two-way-sync|Two-way sync]]
 - [[en/user/releases|Releases]]
