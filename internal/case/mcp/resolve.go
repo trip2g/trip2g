@@ -254,7 +254,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
-	return successResponse(id, structuredToolResult(sb.String(), buildSearchPayload(args.Query, results, env.PublicURL())))
+	return successResponse(id, structuredToolResult(sb.String(), buildSearchPayload(args.Query, results, env.PublicURL(), env.LatestNoteChunks())))
 }
 
 func filterSearchResults(results []model.SearchResult) []model.SearchResult {
@@ -271,7 +271,7 @@ func filterSearchResults(results []model.SearchResult) []model.SearchResult {
 	return filtered
 }
 
-func buildSearchPayload(query string, results []model.SearchResult, publicURL string) SearchResultPayload {
+func buildSearchPayload(query string, results []model.SearchResult, publicURL string, chunks []model.NoteChunk) SearchResultPayload {
 	payload := SearchResultPayload{Query: query}
 	for _, r := range results {
 		if r.NoteView == nil {
@@ -284,6 +284,10 @@ func buildSearchPayload(query string, results []model.SearchResult, publicURL st
 			chunkIndex := 0
 			if r.ChunkIndex != nil {
 				chunkIndex = *r.ChunkIndex
+			} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, snippet, chunks); ok {
+				chunkIndex = nearest
+			}
+			if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
 				matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
 			}
 			item.Matches = append(item.Matches, SearchMatch{
@@ -296,6 +300,85 @@ func buildSearchPayload(query string, results []model.SearchResult, publicURL st
 		payload.Results = append(payload.Results, item)
 	}
 	return payload
+}
+
+func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []model.NoteChunk) (int, bool) {
+	normalizedSnippet := normalizeSearchSnippet(snippet)
+	if normalizedSnippet == "" {
+		return 0, false
+	}
+
+	bestIndex := -1
+	bestScore := 0
+	secondScore := 0
+
+	for _, chunk := range chunks {
+		if chunk.NotePath != note.Path {
+			continue
+		}
+		normalizedChunk := normalizeSearchSnippet(snippetFromChunk(chunk.Content, 400))
+		if normalizedChunk == "" {
+			continue
+		}
+
+		score := 0
+		if strings.Contains(normalizedChunk, normalizedSnippet) || strings.Contains(normalizedSnippet, normalizedChunk) {
+			score = 1000 + len(normalizedSnippet)
+		} else {
+			score = overlapTokenScore(normalizedSnippet, normalizedChunk)
+		}
+
+		if score > bestScore {
+			secondScore = bestScore
+			bestScore = score
+			bestIndex = chunk.ChunkIndex
+		} else if score > secondScore {
+			secondScore = score
+		}
+	}
+
+	if bestIndex < 0 {
+		return 0, false
+	}
+	// Conservative gate: require a clear winner and non-trivial overlap.
+	if bestScore < 3 || bestScore-secondScore < 2 {
+		return 0, false
+	}
+	return bestIndex, true
+}
+
+func normalizeSearchSnippet(s string) string {
+	replacer := strings.NewReplacer("<mark>", "", "</mark>", "")
+	s = replacer.Replace(s)
+	s = trimWhitespace(strings.ToLower(s))
+	return s
+}
+
+func overlapTokenScore(a string, b string) int {
+	wordsA := strings.Fields(a)
+	wordsB := strings.Fields(b)
+	if len(wordsA) == 0 || len(wordsB) == 0 {
+		return 0
+	}
+
+	setB := make(map[string]struct{}, len(wordsB))
+	for _, word := range wordsB {
+		if len([]rune(word)) < 4 {
+			continue
+		}
+		setB[word] = struct{}{}
+	}
+
+	score := 0
+	for _, word := range wordsA {
+		if len([]rune(word)) < 4 {
+			continue
+		}
+		if _, ok := setB[word]; ok {
+			score++
+		}
+	}
+	return score
 }
 
 func searchResultItemFromNote(note *model.NoteView, score float64, publicURL string) SearchResultItem {

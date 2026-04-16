@@ -271,6 +271,9 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 				HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
 			}}, nil
 		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
 		FeaturesFunc: func() features.Features {
 			return features.Features{}
 		},
@@ -344,6 +347,9 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 				{NoteView: excludedNote, URL: excludedNote.Permalink, Score: 2},
 				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
 			}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
 		},
 		FeaturesFunc: func() features.Features {
 			return features.Features{}

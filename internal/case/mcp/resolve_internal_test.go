@@ -71,12 +71,73 @@ func TestBuildSearchPayloadUsesChunkBasedMatchIDs(t *testing.T) {
 		MatchOrigin:        model.SearchMatchVector,
 		ChunkIndex:         &chunkIndex,
 		HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
-	}}, "https://markavrelii.2pub.me")
+	}}, "https://markavrelii.2pub.me", nil)
 
 	require.Len(t, payload.Results, 1)
 	require.Len(t, payload.Results[0].Matches, 1)
 	require.Equal(t, "p32:c4", payload.Results[0].Matches[0].MatchID)
 	require.Equal(t, 4, payload.Results[0].Matches[0].ChunkIndex)
+}
+
+func TestBuildSearchPayloadMapsTextSnippetToNearestChunkWhenClear(t *testing.T) {
+	note := &model.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+	}
+
+	payload := buildSearchPayload("обида", []model.SearchResult{{
+		NoteView:           note,
+		URL:                note.Permalink,
+		Score:              1,
+		MatchOrigin:        model.SearchMatchText,
+		HighlightedContent: []string{"Лучший способ <mark>отомстить</mark> - не уподобляться обидчику."},
+	}}, "https://markavrelii.2pub.me", []model.NoteChunk{
+		{
+			NotePath:   note.Path,
+			ChunkIndex: 1,
+			Content:    "Книга 06\n\nЛучший способ отомстить - не уподобляться обидчику.",
+		},
+		{
+			NotePath:   note.Path,
+			ChunkIndex: 2,
+			Content:    "Книга 06\n\nСовсем другой фрагмент.",
+		},
+	})
+
+	require.Len(t, payload.Results, 1)
+	require.Len(t, payload.Results[0].Matches, 1)
+	require.Equal(t, "p32:c1", payload.Results[0].Matches[0].MatchID)
+	require.Equal(t, 1, payload.Results[0].Matches[0].ChunkIndex)
+}
+
+func TestBuildSearchPayloadLeavesTextMatchAsGenericWhenNoClearChunk(t *testing.T) {
+	note := &model.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+	}
+
+	payload := buildSearchPayload("обида", []model.SearchResult{{
+		NoteView:           note,
+		URL:                note.Permalink,
+		Score:              1,
+		MatchOrigin:        model.SearchMatchText,
+		HighlightedContent: []string{"Фрагмент, которого нет в чанках."},
+	}}, "https://markavrelii.2pub.me", []model.NoteChunk{
+		{
+			NotePath:   note.Path,
+			ChunkIndex: 1,
+			Content:    "Книга 06\n\nЛучший способ отомстить - не уподобляться обидчику.",
+		},
+	})
+
+	require.Len(t, payload.Results, 1)
+	require.Len(t, payload.Results[0].Matches, 1)
+	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
+	require.Equal(t, 0, payload.Results[0].Matches[0].ChunkIndex)
 }
 
 func TestMergeResultsUsesRRF(t *testing.T) {
