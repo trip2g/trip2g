@@ -26,9 +26,8 @@ const (
 	MaxSimilarLimit          = 100
 	MaxMergedResults         = 20
 
-	// Hybrid search weights.
-	TextSearchWeight   = 0.6
-	VectorSearchWeight = 0.4
+	// Hybrid search rank constant.
+	rrfK = 60
 
 	// MCP method names.
 	MCPMethodInitialize = "initialize"
@@ -37,6 +36,7 @@ const (
 type Env interface {
 	similarnotes.Env
 	SearchLatestNotes(query string) ([]model.SearchResult, error)
+	LatestNoteChunks() []model.NoteChunk
 	OpenAI() *openai.Client
 	PublicURL() string
 	Logger() logger.Logger
@@ -67,6 +67,13 @@ func successResponse(id any, result any) Response {
 func textToolResult(text string) CallToolResult {
 	return CallToolResult{
 		Content: []Content{{Type: "text", Text: text}},
+	}
+}
+
+func structuredToolResult(text string, structured any) CallToolResult {
+	return CallToolResult{
+		Content:           []Content{{Type: "text", Text: text}},
+		StructuredContent: structured,
 	}
 }
 
@@ -213,6 +220,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 			log.Warn("vector search failed", "error", vecErr, "query", args.Query)
 		}
 	}
+	results = filterSearchResults(results)
 
 	// Format response
 	var sb strings.Builder
@@ -239,7 +247,64 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
-	return successResponse(id, textToolResult(sb.String()))
+	return successResponse(id, structuredToolResult(sb.String(), buildSearchPayload(args.Query, results, env.PublicURL())))
+}
+
+func filterSearchResults(results []model.SearchResult) []model.SearchResult {
+	filtered := make([]model.SearchResult, 0, len(results))
+	for _, r := range results {
+		if r.NoteView == nil {
+			continue
+		}
+		if r.NoteView.IsSystem() || r.NoteView.ExcludeSearch {
+			continue
+		}
+		filtered = append(filtered, r)
+	}
+	return filtered
+}
+
+func buildSearchPayload(query string, results []model.SearchResult, publicURL string) SearchResultPayload {
+	payload := SearchResultPayload{Query: query}
+	for _, r := range results {
+		if r.NoteView == nil {
+			continue
+		}
+
+		item := searchResultItemFromNote(r.NoteView, r.Score, publicURL)
+		for i, snippet := range r.HighlightedContent {
+			item.Matches = append(item.Matches, SearchMatch{
+				MatchID:      fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1),
+				Snippet:      snippet,
+				ContextWords: 10,
+			})
+		}
+		payload.Results = append(payload.Results, item)
+	}
+	return payload
+}
+
+func searchResultItemFromNote(note *model.NoteView, score float64, publicURL string) SearchResultItem {
+	return SearchResultItem{
+		Title:    note.Title,
+		NoteID:   note.PathID,
+		NotePath: note.Path,
+		Href:     note.Permalink,
+		URL:      publicURL + note.Permalink,
+		Kind:     noteKind(note),
+		Score:    score,
+	}
+}
+
+func noteKind(note *model.NoteView) string {
+	path := strings.ToLower(note.Path)
+	if strings.Contains(note.Path, "Книги/") || strings.Contains(path, "meditations") {
+		return "source"
+	}
+	if note.IsIndex {
+		return "index"
+	}
+	return "note"
 }
 
 func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
@@ -250,8 +315,15 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		return *errResp
 	}
 
-	if args.Path == "" {
-		return errorResponse(id, ErrCodeInvalidParams, "path is required")
+	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
+	}
+
+	noteViews := env.LatestNoteViews()
+	sourceNote := resolveSimilarReference(noteViews, *args)
+	if sourceNote == nil {
+		log.Warn("source note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Source note not found")
 	}
 
 	// Validate and normalize limit
@@ -264,13 +336,13 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 	}
 
 	input := graphmodel.SimilarNotesInput{
-		Path:  args.Path,
+		Path:  similarSourcePath(sourceNote),
 		Limit: ptr.To(int32(limit)),
 	}
 
 	results, err := similarnotes.Resolve(ctx, env, input)
 	if err != nil {
-		log.Error("similar search failed", "error", err, "path", args.Path)
+		log.Error("similar search failed", "error", err, "path", input.Path)
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
 
@@ -281,13 +353,54 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 	} else {
 		sb.WriteString(fmt.Sprintf("Found %d similar notes:\n\n", len(results)))
 		for i, r := range results {
-			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, r.Note.Title, r.Score, r.Note.Path, env.PublicURL()+r.Note.Path))
+			note := r.Note.NoteView
+			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, note.Title, r.Score, note.Path, env.PublicURL()+note.Permalink))
 		}
 	}
 
-	log.Debug("similar search completed", "path", args.Path, "results", len(results))
+	log.Debug("similar search completed", "path", input.Path, "results", len(results))
 
-	return successResponse(id, textToolResult(sb.String()))
+	return successResponse(id, structuredToolResult(sb.String(), buildSimilarPayload(sourceNote, results, env.PublicURL())))
+}
+
+func resolveSimilarReference(noteViews *model.NoteViews, args SimilarArguments) *model.NoteView {
+	id := args.PID
+	if id == 0 {
+		id = args.NoteID
+	}
+	if id != 0 {
+		return noteViews.GetByPathID(id)
+	}
+	if args.Path != "" {
+		if note := noteViews.PathMap[args.Path]; note != nil {
+			return note
+		}
+		return noteViews.GetByPath(args.Path)
+	}
+	if args.Href != "" {
+		return noteViews.GetByPath(args.Href)
+	}
+	return nil
+}
+
+func similarSourcePath(note *model.NoteView) string {
+	if note.Path != "" {
+		return note.Path
+	}
+	return note.Permalink
+}
+
+func buildSimilarPayload(sourceNote *model.NoteView, results []graphmodel.SimilarNote, publicURL string) SimilarResultPayload {
+	payload := SimilarResultPayload{
+		Source: searchResultItemFromNote(sourceNote, 1, publicURL),
+	}
+	for _, r := range results {
+		if r.Note == nil || r.Note.NoteView == nil {
+			continue
+		}
+		payload.Results = append(payload.Results, searchResultItemFromNote(r.Note.NoteView, r.Score, publicURL))
+	}
+	return payload
 }
 
 func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
@@ -298,20 +411,39 @@ func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
 		return *errResp
 	}
 
-	if args.Path == "" {
-		return errorResponse(id, ErrCodeInvalidParams, "path is required")
+	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
 	}
 
 	noteViews := env.LatestNoteViews()
-	note := noteViews.PathMap[args.Path]
+	note := resolveNoteReference(noteViews, *args)
 	if note == nil {
-		log.Warn("note not found", "path", args.Path)
-		return errorResponse(id, ErrCodeInvalidParams, "Note not found: "+args.Path)
+		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 
-	log.Debug("note html retrieved", "path", args.Path)
+	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
 	return successResponse(id, textToolResult(string(note.HTML)))
+}
+
+func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *model.NoteView {
+	id := args.PID
+	if id == 0 {
+		id = args.NoteID
+	}
+	if id != 0 {
+		return noteViews.GetByPathID(id)
+	}
+	if args.Path != "" {
+		if note := noteViews.PathMap[args.Path]; note != nil {
+			return note
+		}
+	}
+	if args.Href != "" {
+		return noteViews.GetByPath(args.Href)
+	}
+	return nil
 }
 
 func handleDynamicMethod(env Env, id any, methodName string) Response {
@@ -380,46 +512,88 @@ func stripFrontmatter(content string) string {
 }
 
 func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, error) {
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, query)
+	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
+	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create embedding: %w", err)
 	}
 
-	noteViews := env.LatestNoteViews()
+	return vectorResultsFromChunks(
+		embedding.Vector,
+		env.LatestNoteChunks(),
+		env.LatestNoteViews(),
+		limit,
+	), nil
+}
 
-	type scored struct {
-		note  *model.NoteView
-		score float64
-	}
+type scoredChunk struct {
+	chunk model.NoteChunk
+	score float64
+}
 
-	var scores []scored
-	for _, note := range noteViews.List {
-		if len(note.Embedding) == 0 {
+func vectorResultsFromChunks(
+	queryEmbedding []float32,
+	chunks []model.NoteChunk,
+	noteViews *model.NoteViews,
+	limit int,
+) []model.SearchResult {
+	var scores []scoredChunk
+	for _, chunk := range chunks {
+		if len(chunk.Embedding) == 0 {
 			continue
 		}
-
-		similarity := cosineSimilarity(embedding.Vector, note.Embedding)
-		scores = append(scores, scored{note: note, score: similarity})
+		scores = append(scores, scoredChunk{
+			chunk: chunk,
+			score: cosineSimilarity(queryEmbedding, chunk.Embedding),
+		})
 	}
 
 	sort.Slice(scores, func(i, j int) bool {
 		return scores[i].score > scores[j].score
 	})
 
-	if len(scores) > limit {
-		scores = scores[:limit]
-	}
-
 	results := make([]model.SearchResult, 0, len(scores))
+	seen := map[string]bool{}
 	for _, s := range scores {
+		if seen[s.chunk.NotePath] {
+			continue
+		}
+		seen[s.chunk.NotePath] = true
+
+		note := noteViews.PathMap[s.chunk.NotePath]
+		if note == nil || note.IsSystem() || note.ExcludeSearch {
+			continue
+		}
+		title := note.Title
 		results = append(results, model.SearchResult{
-			NoteView: s.note,
-			URL:      s.note.Permalink,
-			Score:    s.score,
+			NoteView:           note,
+			URL:                note.Permalink,
+			Score:              s.score,
+			HighlightedTitle:   &title,
+			HighlightedContent: []string{snippetFromChunk(s.chunk.Content, 200)},
 		})
+		if len(results) >= limit {
+			break
+		}
 	}
 
-	return results, nil
+	return results
+}
+
+func snippetFromChunk(content string, maxLen int) string {
+	if idx := strings.Index(content, "\n\n"); idx >= 0 {
+		content = content[idx+2:]
+	}
+	content = trimWhitespace(content)
+	runes := []rune(content)
+	if len(runes) > maxLen {
+		content = string(runes[:maxLen])
+		if lastSpace := lastIndexByte(content, ' '); lastSpace > maxLen/2 {
+			content = content[:lastSpace]
+		}
+		content += "..."
+	}
+	return content
 }
 
 func mergeResults(textResults, vectorResults []model.SearchResult) []model.SearchResult {
@@ -427,48 +601,34 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 		return textResults
 	}
 
-	maxTextScore := 0.0
-	for _, r := range textResults {
-		if r.Score > maxTextScore {
-			maxTextScore = r.Score
-		}
-	}
-
 	type merged struct {
-		result      model.SearchResult
-		textScore   float64
-		vectorScore float64
+		result   model.SearchResult
+		rrfScore float64
 	}
 
 	resultMap := make(map[string]*merged)
 
-	for _, r := range textResults {
-		normalizedScore := 0.0
-		if maxTextScore > 0 {
-			normalizedScore = r.Score / maxTextScore
-		}
-		resultMap[r.URL] = &merged{
-			result:    r,
-			textScore: normalizedScore,
+	for rank, r := range textResults {
+		score := 1.0 / float64(rrfK+rank+1)
+		if existing, ok := resultMap[r.URL]; ok {
+			existing.rrfScore += score
+		} else {
+			resultMap[r.URL] = &merged{result: r, rrfScore: score}
 		}
 	}
 
-	for _, r := range vectorResults {
+	for rank, r := range vectorResults {
+		score := 1.0 / float64(rrfK+rank+1)
 		if existing, ok := resultMap[r.URL]; ok {
-			existing.vectorScore = r.Score
+			existing.rrfScore += score
 		} else {
-			title := r.NoteView.Title
-			r.HighlightedTitle = &title
-			resultMap[r.URL] = &merged{
-				result:      r,
-				vectorScore: r.Score,
-			}
+			resultMap[r.URL] = &merged{result: r, rrfScore: score}
 		}
 	}
 
 	var finalResults []model.SearchResult
 	for _, m := range resultMap {
-		m.result.Score = m.textScore*TextSearchWeight + m.vectorScore*VectorSearchWeight
+		m.result.Score = m.rrfScore
 		finalResults = append(finalResults, m.result)
 	}
 
@@ -481,6 +641,36 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 	}
 
 	return finalResults
+}
+
+func trimWhitespace(s string) string {
+	result := make([]byte, 0, len(s))
+	inWhitespace := true
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			if !inWhitespace && len(result) > 0 {
+				result = append(result, ' ')
+				inWhitespace = true
+			}
+		} else {
+			result = append(result, c)
+			inWhitespace = false
+		}
+	}
+	if len(result) > 0 && result[len(result)-1] == ' ' {
+		result = result[:len(result)-1]
+	}
+	return string(result)
+}
+
+func lastIndexByte(s string, c byte) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == c {
+			return i
+		}
+	}
+	return -1
 }
 
 // cosineSimilarity calculates the cosine similarity between two vectors.

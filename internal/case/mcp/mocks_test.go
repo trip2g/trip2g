@@ -29,6 +29,9 @@ var _ mcp.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
+//			LatestNoteChunksFunc: func() []model.NoteChunk {
+//				panic("mock out the LatestNoteChunks method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -57,6 +60,9 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
+	LatestNoteChunksFunc func() []model.NoteChunk
+
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
 
@@ -84,6 +90,9 @@ type EnvMock struct {
 		// Features holds details about calls to the Features method.
 		Features []struct {
 		}
+		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
+		LatestNoteChunks []struct {
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -104,6 +113,7 @@ type EnvMock struct {
 	}
 	lockCanReadNote       sync.RWMutex
 	lockFeatures          sync.RWMutex
+	lockLatestNoteChunks  sync.RWMutex
 	lockLatestNoteViews   sync.RWMutex
 	lockLogger            sync.RWMutex
 	lockOpenAI            sync.RWMutex
@@ -171,6 +181,33 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// LatestNoteChunks calls LatestNoteChunksFunc.
+func (mock *EnvMock) LatestNoteChunks() []model.NoteChunk {
+	if mock.LatestNoteChunksFunc == nil {
+		panic("EnvMock.LatestNoteChunksFunc: method is nil but Env.LatestNoteChunks was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteChunks.Lock()
+	mock.calls.LatestNoteChunks = append(mock.calls.LatestNoteChunks, callInfo)
+	mock.lockLatestNoteChunks.Unlock()
+	return mock.LatestNoteChunksFunc()
+}
+
+// LatestNoteChunksCalls gets all the calls that were made to LatestNoteChunks.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteChunksCalls())
+func (mock *EnvMock) LatestNoteChunksCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteChunks.RLock()
+	calls = mock.calls.LatestNoteChunks
+	mock.lockLatestNoteChunks.RUnlock()
 	return calls
 }
 

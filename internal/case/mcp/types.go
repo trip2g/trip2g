@@ -53,8 +53,9 @@ type CallToolParams struct {
 }
 
 type CallToolResult struct {
-	Content []Content `json:"content"`
-	IsError bool      `json:"isError,omitempty"`
+	Content           []Content `json:"content"`
+	StructuredContent any       `json:"structuredContent,omitempty"`
+	IsError           bool      `json:"isError,omitempty"`
 }
 
 type Content struct {
@@ -68,13 +69,56 @@ type SearchArguments struct {
 	Query string `json:"query"`
 }
 
+type SearchResultPayload struct {
+	Query   string             `json:"query"`
+	Results []SearchResultItem `json:"results"`
+}
+
+type SearchResultItem struct {
+	Title    string        `json:"title"`
+	NoteID   int64         `json:"note_id"`
+	NotePath string        `json:"note_path"`
+	Href     string        `json:"href"`
+	URL      string        `json:"url"`
+	Kind     string        `json:"kind"`
+	Score    float64       `json:"score"`
+	Matches  []SearchMatch `json:"matches,omitempty"`
+}
+
+type SearchMatch struct {
+	MatchID      string       `json:"match_id"`
+	ChunkIndex   int          `json:"chunk_index,omitempty"`
+	Snippet      string       `json:"snippet"`
+	ContextWords int          `json:"context_words"`
+	Links        []SearchLink `json:"links,omitempty"`
+}
+
+type SearchLink struct {
+	Label  string `json:"label"`
+	NoteID int64  `json:"note_id"`
+	Href   string `json:"href"`
+}
+
 type SimilarArguments struct {
-	Path  string `json:"path"`
-	Limit int    `json:"limit,omitempty"`
+	Path   string `json:"path,omitempty"`
+	Href   string `json:"href,omitempty"`
+	PID    int64  `json:"pid,omitempty"`
+	NoteID int64  `json:"note_id,omitempty"`
+	Limit  int    `json:"limit,omitempty"`
+}
+
+type SimilarResultPayload struct {
+	Source  SearchResultItem   `json:"source"`
+	Results []SearchResultItem `json:"results"`
 }
 
 type NoteHTMLArguments struct {
-	Path string `json:"path"`
+	Path         string `json:"path,omitempty"`
+	Href         string `json:"href,omitempty"`
+	PID          int64  `json:"pid,omitempty"`
+	NoteID       int64  `json:"note_id,omitempty"`
+	MatchID      string `json:"match_id,omitempty"`
+	ContextWords int    `json:"context_words,omitempty"`
 }
 
 // JSON-RPC error codes.
