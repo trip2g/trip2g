@@ -834,6 +834,37 @@ update telegram_publish_account_instant_chats
  where account_id = ?
    and telegram_chat_id = ?;
 
+-- name: UpsertTelegramChatUsername :exec
+insert into telegram_chat_usernames (
+  telegram_chat_id,
+  username,
+  title,
+  refreshed_at,
+  refresh_requested_at,
+  last_error
+)
+values (?, ?, ?, ?, null, null)
+on conflict (telegram_chat_id) do update set
+    username = excluded.username,
+    title = excluded.title,
+    refreshed_at = excluded.refreshed_at,
+    refresh_requested_at = null,
+    last_error = null,
+    updated_at = current_timestamp;
+
+-- name: MarkTelegramChatUsernameRefreshRequested :exec
+update telegram_chat_usernames
+   set refresh_requested_at = ?,
+       updated_at = current_timestamp
+ where telegram_chat_id = ?;
+
+-- name: MarkTelegramChatUsernameRefreshError :exec
+update telegram_chat_usernames
+   set last_error = ?,
+       refresh_requested_at = null,
+       updated_at = current_timestamp
+ where telegram_chat_id = ?;
+
 -- name: UpsertNoteVersionEmbedding :exec
 insert into note_version_embeddings (version_id, embedding, model_id, content_hash, tokens)
 values (?, ?, ?, ?, ?)

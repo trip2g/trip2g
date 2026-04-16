@@ -45,6 +45,7 @@ type Env interface {
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error)
 	GetTelegramPostLinksByNoteVersionID(
 		ctx context.Context,
 		arg db.GetTelegramPostLinksByNoteVersionIDParams,
@@ -312,9 +313,16 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		if telegramErr == nil {
 			for _, row := range rows {
 				chatID := model.NormalizeTelegramChatID(row.TelegramChatID)
+				url := fmt.Sprintf("https://t.me/c/%d/%d", chatID, row.MessageID)
+
+				username, nameErr := env.GetTelegramChatName(ctx, row.TelegramChatID)
+				if nameErr == nil && username != "" {
+					url = fmt.Sprintf("https://t.me/%s/%d", username, row.MessageID)
+				}
+
 				response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
 					ChatTitle: row.ChatTitle,
-					URL:       fmt.Sprintf("https://t.me/c/%d/%d", chatID, row.MessageID),
+					URL:       url,
 				})
 			}
 		}

@@ -42,6 +42,16 @@ func (io *HandlerIO) Request(msg tgbotapi.Chattable) (*tgbotapi.APIResponse, err
 	return io.bot.Request(msg)
 }
 
+func (io *HandlerIO) GetChatInfo(ctx context.Context, chatID int64) (tgbotapi.Chat, error) {
+	_ = ctx
+
+	return io.bot.GetChat(tgbotapi.ChatInfoConfig{
+		ChatConfig: tgbotapi.ChatConfig{
+			ChatID: chatID,
+		},
+	})
+}
+
 func (io *HandlerIO) GetChatMemberStatus(ctx context.Context, chatID, userID int64) (string, error) {
 	getChatMemberConfig := tgbotapi.GetChatMemberConfig{
 		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{

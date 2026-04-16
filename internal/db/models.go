@@ -539,6 +539,17 @@ type TelegramAccount struct {
 	AppConfig   string    `json:"app_config"`
 }
 
+type TelegramChatUsername struct {
+	TelegramChatID     int64      `json:"telegram_chat_id"`
+	Username           string     `json:"username"`
+	Title              string     `json:"title"`
+	RefreshedAt        time.Time  `json:"refreshed_at"`
+	RefreshRequestedAt *time.Time `json:"refresh_requested_at"`
+	LastError          *string    `json:"last_error"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
 type TelegramPublishAccountChat struct {
 	AccountID      int64     `json:"account_id"`
 	TelegramChatID int64     `json:"telegram_chat_id"`

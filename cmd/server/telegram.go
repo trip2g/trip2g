@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"trip2g/internal/case/gettelegramchatname"
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/db"
 	appmodel "trip2g/internal/model"
@@ -438,6 +440,67 @@ func (a *app) TelegramClient() *tgtd.Client {
 // TelegramClientForAccount creates a tgtd.Client for a specific account.
 func (a *app) TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client {
 	return tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
+}
+
+func (a *app) ResolveTelegramChatUsernameViaBot(ctx context.Context, telegramChatID int64) (gettelegramchatname.LookupResult, bool, error) {
+	chat, err := a.TgBotChatByTelegramID(ctx, telegramChatID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return gettelegramchatname.LookupResult{}, false, nil
+		}
+		return gettelegramchatname.LookupResult{}, false, fmt.Errorf("failed to load bot chat by telegram id: %w", err)
+	}
+
+	if a.TgBots == nil {
+		return gettelegramchatname.LookupResult{}, false, errors.New("telegram bots are not initialized")
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+	if handlerIO == nil {
+		return gettelegramchatname.LookupResult{}, false, fmt.Errorf("telegram bot handler not found for bot %d", chat.BotID)
+	}
+
+	info, err := handlerIO.GetChatInfo(ctx, telegramChatID)
+	if err != nil {
+		return gettelegramchatname.LookupResult{}, false, fmt.Errorf("failed to get bot chat info: %w", err)
+	}
+
+	return gettelegramchatname.LookupResult{
+		Username: info.UserName,
+		Title:    info.Title,
+	}, info.UserName != "", nil
+}
+
+func (a *app) ResolveTelegramChatUsernameViaAccount(ctx context.Context, telegramChatID int64) (gettelegramchatname.LookupResult, bool, error) {
+	accounts, err := a.ListEnabledTelegramAccountsByChatID(ctx, telegramChatID)
+	if err != nil {
+		return gettelegramchatname.LookupResult{}, false, fmt.Errorf("failed to list candidate telegram accounts: %w", err)
+	}
+
+	var firstErr error
+
+	for _, account := range accounts {
+		dialogs, dialogsErr := a.ListTelegramAccountDialogs(ctx, account.ID, 0)
+		if dialogsErr != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("account %d dialogs: %w", account.ID, dialogsErr)
+			}
+			continue
+		}
+
+		for _, dialog := range dialogs {
+			if dialog.ID != telegramChatID {
+				continue
+			}
+
+			return gettelegramchatname.LookupResult{
+				Username: dialog.Username,
+				Title:    dialog.Title,
+			}, dialog.Username != "", nil
+		}
+	}
+
+	return gettelegramchatname.LookupResult{}, false, firstErr
 }
 
 // DecryptSessionData decrypts the encrypted session data from a telegram account.

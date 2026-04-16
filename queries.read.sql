@@ -986,6 +986,20 @@ select '' as chat_title
  where nv.id = ?
    and am.instant = 0;
 
+-- name: GetTelegramChatUsernameByChatID :one
+select *
+  from telegram_chat_usernames
+ where telegram_chat_id = ?;
+
+-- name: ListStaleTelegramChatUsernames :many
+select *
+  from telegram_chat_usernames
+ where refresh_requested_at is not null
+    or (username != '' and refreshed_at <= sqlc.arg(positive_stale_before))
+    or (username = '' and refreshed_at <= sqlc.arg(negative_stale_before))
+ order by coalesce(refresh_requested_at, refreshed_at) asc
+ limit sqlc.arg(limit);
+
 -- name: GetTelegramPublishNoteByNotePathID :one
 select *
   from telegram_publish_notes
@@ -1101,6 +1115,21 @@ select distinct ac.account_id, ac.telegram_chat_id, a.session_data
   join telegram_publish_note_tags nt on ac.tag_id = nt.tag_id
  where nt.note_path_id = ?
    and a.enabled = 1;
+
+-- name: ListEnabledTelegramAccountsByChatID :many
+select a.*
+  from telegram_accounts a
+  join (
+    select account_id
+      from telegram_publish_account_chats ac
+     where ac.telegram_chat_id = ?1
+    union
+    select account_id
+      from telegram_publish_account_instant_chats ac
+     where ac.telegram_chat_id = ?1
+  ) c on c.account_id = a.id
+ where a.enabled = 1
+ order by a.created_at desc;
 
 -- name: ListTelegramPublishSentAccountMessagesByNotePathID :many
 select account_id, telegram_chat_id, message_id, content_hash, content

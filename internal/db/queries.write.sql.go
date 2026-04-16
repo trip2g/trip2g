@@ -2288,6 +2288,41 @@ func (q *WriteQueries) MarkPatreonMembersAsMissed(ctx context.Context, campaignI
 	return err
 }
 
+const markTelegramChatUsernameRefreshError = `-- name: MarkTelegramChatUsernameRefreshError :exec
+update telegram_chat_usernames
+   set last_error = ?,
+       refresh_requested_at = null,
+       updated_at = current_timestamp
+ where telegram_chat_id = ?
+`
+
+type MarkTelegramChatUsernameRefreshErrorParams struct {
+	LastError      *string `json:"last_error"`
+	TelegramChatID int64   `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) MarkTelegramChatUsernameRefreshError(ctx context.Context, arg MarkTelegramChatUsernameRefreshErrorParams) error {
+	_, err := q.db.ExecContext(ctx, markTelegramChatUsernameRefreshError, arg.LastError, arg.TelegramChatID)
+	return err
+}
+
+const markTelegramChatUsernameRefreshRequested = `-- name: MarkTelegramChatUsernameRefreshRequested :exec
+update telegram_chat_usernames
+   set refresh_requested_at = ?,
+       updated_at = current_timestamp
+ where telegram_chat_id = ?
+`
+
+type MarkTelegramChatUsernameRefreshRequestedParams struct {
+	RefreshRequestedAt *time.Time `json:"refresh_requested_at"`
+	TelegramChatID     int64      `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) MarkTelegramChatUsernameRefreshRequested(ctx context.Context, arg MarkTelegramChatUsernameRefreshRequestedParams) error {
+	_, err := q.db.ExecContext(ctx, markTelegramChatUsernameRefreshRequested, arg.RefreshRequestedAt, arg.TelegramChatID)
+	return err
+}
+
 const markTgBotChatRemoved = `-- name: MarkTgBotChatRemoved :exec
 update tg_bot_chats
 set removed_at = current_timestamp
@@ -3933,6 +3968,42 @@ func (q *WriteQueries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonT
 		arg.Title,
 		arg.AmountCents,
 		arg.Attributes,
+	)
+	return err
+}
+
+const upsertTelegramChatUsername = `-- name: UpsertTelegramChatUsername :exec
+insert into telegram_chat_usernames (
+  telegram_chat_id,
+  username,
+  title,
+  refreshed_at,
+  refresh_requested_at,
+  last_error
+)
+values (?, ?, ?, ?, null, null)
+on conflict (telegram_chat_id) do update set
+    username = excluded.username,
+    title = excluded.title,
+    refreshed_at = excluded.refreshed_at,
+    refresh_requested_at = null,
+    last_error = null,
+    updated_at = current_timestamp
+`
+
+type UpsertTelegramChatUsernameParams struct {
+	TelegramChatID int64     `json:"telegram_chat_id"`
+	Username       string    `json:"username"`
+	Title          string    `json:"title"`
+	RefreshedAt    time.Time `json:"refreshed_at"`
+}
+
+func (q *WriteQueries) UpsertTelegramChatUsername(ctx context.Context, arg UpsertTelegramChatUsernameParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTelegramChatUsername,
+		arg.TelegramChatID,
+		arg.Username,
+		arg.Title,
+		arg.RefreshedAt,
 	)
 	return err
 }

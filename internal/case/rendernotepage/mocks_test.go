@@ -25,6 +25,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
+//			GetTelegramChatNameFunc: func(ctx context.Context, telegramChatID int64) (string, error) {
+//				panic("mock out the GetTelegramChatName method")
+//			},
 //			GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
 //				panic("mock out the GetTelegramPostLinksByNoteVersionID method")
 //			},
@@ -77,6 +80,9 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
+	// GetTelegramChatNameFunc mocks the GetTelegramChatName method.
+	GetTelegramChatNameFunc func(ctx context.Context, telegramChatID int64) (string, error)
+
 	// GetTelegramPostLinksByNoteVersionIDFunc mocks the GetTelegramPostLinksByNoteVersionID method.
 	GetTelegramPostLinksByNoteVersionIDFunc func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
 
@@ -127,6 +133,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Note is the note argument value.
 			Note *model.NoteView
+		}
+		// GetTelegramChatName holds details about calls to the GetTelegramChatName method.
+		GetTelegramChatName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// TelegramChatID is the telegramChatID argument value.
+			TelegramChatID int64
 		}
 		// GetTelegramPostLinksByNoteVersionID holds details about calls to the GetTelegramPostLinksByNoteVersionID method.
 		GetTelegramPostLinksByNoteVersionID []struct {
@@ -206,6 +219,7 @@ type EnvMock struct {
 		}
 	}
 	lockCanReadNote                         sync.RWMutex
+	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
 	lockIncreaseUserNoteViewCount           sync.RWMutex
 	lockInsertUserNoteView                  sync.RWMutex
@@ -255,6 +269,42 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
+	return calls
+}
+
+// GetTelegramChatName calls GetTelegramChatNameFunc.
+func (mock *EnvMock) GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error) {
+	if mock.GetTelegramChatNameFunc == nil {
+		panic("EnvMock.GetTelegramChatNameFunc: method is nil but Env.GetTelegramChatName was just called")
+	}
+	callInfo := struct {
+		Ctx            context.Context
+		TelegramChatID int64
+	}{
+		Ctx:            ctx,
+		TelegramChatID: telegramChatID,
+	}
+	mock.lockGetTelegramChatName.Lock()
+	mock.calls.GetTelegramChatName = append(mock.calls.GetTelegramChatName, callInfo)
+	mock.lockGetTelegramChatName.Unlock()
+	return mock.GetTelegramChatNameFunc(ctx, telegramChatID)
+}
+
+// GetTelegramChatNameCalls gets all the calls that were made to GetTelegramChatName.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramChatNameCalls())
+func (mock *EnvMock) GetTelegramChatNameCalls() []struct {
+	Ctx            context.Context
+	TelegramChatID int64
+} {
+	var calls []struct {
+		Ctx            context.Context
+		TelegramChatID int64
+	}
+	mock.lockGetTelegramChatName.RLock()
+	calls = mock.calls.GetTelegramChatName
+	mock.lockGetTelegramChatName.RUnlock()
 	return calls
 }
 

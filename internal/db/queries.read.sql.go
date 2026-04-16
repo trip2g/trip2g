@@ -2212,6 +2212,28 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 	return i, err
 }
 
+const getTelegramChatUsernameByChatID = `-- name: GetTelegramChatUsernameByChatID :one
+select telegram_chat_id, username, title, refreshed_at, refresh_requested_at, last_error, created_at, updated_at
+  from telegram_chat_usernames
+ where telegram_chat_id = ?
+`
+
+func (q *Queries) GetTelegramChatUsernameByChatID(ctx context.Context, telegramChatID int64) (TelegramChatUsername, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramChatUsernameByChatID, telegramChatID)
+	var i TelegramChatUsername
+	err := row.Scan(
+		&i.TelegramChatID,
+		&i.Username,
+		&i.Title,
+		&i.RefreshedAt,
+		&i.RefreshRequestedAt,
+		&i.LastError,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getTelegramPostLinksByNoteVersionID = `-- name: GetTelegramPostLinksByNoteVersionID :many
 select c.chat_title
      , c.telegram_id as telegram_chat_id
@@ -4169,6 +4191,57 @@ func (q *Queries) ListEnabledFrontmatterPatches(ctx context.Context) ([]NoteFron
 	return items, nil
 }
 
+const listEnabledTelegramAccountsByChatID = `-- name: ListEnabledTelegramAccountsByChatID :many
+select a.id, a.phone, a.session_data, a.display_name, a.is_premium, a.enabled, a.created_at, a.created_by, a.api_id, a.api_hash, a.app_config
+  from telegram_accounts a
+  join (
+    select account_id
+      from telegram_publish_account_chats ac
+     where ac.telegram_chat_id = ?1
+    union
+    select account_id
+      from telegram_publish_account_instant_chats ac
+     where ac.telegram_chat_id = ?1
+  ) c on c.account_id = a.id
+ where a.enabled = 1
+ order by a.created_at desc
+`
+
+func (q *Queries) ListEnabledTelegramAccountsByChatID(ctx context.Context, telegramChatID int64) ([]TelegramAccount, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledTelegramAccountsByChatID, telegramChatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramAccount
+	for rows.Next() {
+		var i TelegramAccount
+		if err := rows.Scan(
+			&i.ID,
+			&i.Phone,
+			&i.SessionData,
+			&i.DisplayName,
+			&i.IsPremium,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.ApiID,
+			&i.ApiHash,
+			&i.AppConfig,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
 select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
 `
@@ -4662,6 +4735,54 @@ func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int
 			return nil, err
 		}
 		items = append(items, note_path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaleTelegramChatUsernames = `-- name: ListStaleTelegramChatUsernames :many
+select telegram_chat_id, username, title, refreshed_at, refresh_requested_at, last_error, created_at, updated_at
+  from telegram_chat_usernames
+ where refresh_requested_at is not null
+    or (username != '' and refreshed_at <= ?1)
+    or (username = '' and refreshed_at <= ?2)
+ order by coalesce(refresh_requested_at, refreshed_at) asc
+ limit ?3
+`
+
+type ListStaleTelegramChatUsernamesParams struct {
+	PositiveStaleBefore time.Time `json:"positive_stale_before"`
+	NegativeStaleBefore time.Time `json:"negative_stale_before"`
+	Limit               int64     `json:"limit"`
+}
+
+func (q *Queries) ListStaleTelegramChatUsernames(ctx context.Context, arg ListStaleTelegramChatUsernamesParams) ([]TelegramChatUsername, error) {
+	rows, err := q.db.QueryContext(ctx, listStaleTelegramChatUsernames, arg.PositiveStaleBefore, arg.NegativeStaleBefore, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramChatUsername
+	for rows.Next() {
+		var i TelegramChatUsername
+		if err := rows.Scan(
+			&i.TelegramChatID,
+			&i.Username,
+			&i.Title,
+			&i.RefreshedAt,
+			&i.RefreshRequestedAt,
+			&i.LastError,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

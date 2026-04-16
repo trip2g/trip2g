@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/executecronwebhooks"
 	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
+	"trip2g/internal/case/cronjob/refreshtelegramchatusernames"
 	"trip2g/internal/case/cronjob/regeneratenoteembeddings"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/cronjob/sendscheduledtelegrampublishposts"
@@ -29,6 +30,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		_ sendscheduledtelegrampublishposts.Env = app
 		_ updatetelegrampublishposts.Env        = app
 		_ refreshtelegramaccounts.Env           = app
+		_ refreshtelegramchatusernames.Env      = app
 
 		_ regeneratenoteembeddings.Env = app
 
@@ -45,6 +47,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&sendscheduledtelegrampublishposts.Job{},
 		&updatetelegrampublishposts.Job{},
 		&refreshtelegramaccounts.Job{},
+		&refreshtelegramchatusernames.Job{},
 		&vacuumdatabase.Job{},
 		&regeneratenoteembeddings.Job{},
 		&executecronwebhooks.Job{},

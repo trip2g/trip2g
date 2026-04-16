@@ -30,6 +30,7 @@ type Env interface {
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error)
 }
 
 func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
@@ -2015,4 +2016,105 @@ func TestResolve_SigninWall(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResolve_UsesPublicTelegramUsernameWhenAvailable(t *testing.T) {
+	note := &model.NoteView{
+		Path:          "/telegram-note",
+		Title:         "Telegram Note",
+		PathID:        1,
+		VersionID:     11,
+		Content:       []byte("# Telegram Note"),
+		HTML:          "<h1>Telegram Note</h1>",
+		Permalink:     "/telegram-note",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
+	}
+
+	noteViews := &model.NoteViews{
+		Map:       map[string]*model.NoteView{"/telegram-note": note},
+		List:      []*model.NoteView{note},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "live",
+	}
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		SiteConfigFunc: func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
+		SiteTitleTemplateFunc: func() string { return "%s" },
+		LiveNoteViewsFunc: func() *model.NoteViews { return noteViews },
+		LatestNoteViewsFunc: func() *model.NoteViews { return noteViews },
+		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
+		GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+			return []db.GetTelegramPostLinksByNoteVersionIDRow{{
+				ChatTitle:      "Public Channel",
+				TelegramChatID: -1001234567890,
+				MessageID:      42,
+			}}, nil
+		},
+		GetTelegramChatNameFunc: func(ctx context.Context, telegramChatID int64) (string, error) {
+			require.Equal(t, int64(-1001234567890), telegramChatID)
+			return "publicchannel", nil
+		},
+	}
+
+	resp, err := rendernotepage.Resolve(context.Background(), env, rendernotepage.Request{Path: "/telegram-note"})
+	require.NoError(t, err)
+	require.Len(t, resp.TelegramLinks, 1)
+	require.Equal(t, "https://t.me/publicchannel/42", resp.TelegramLinks[0].URL)
+}
+
+func TestResolve_FallsBackToNumericTelegramLinkWhenUsernameUnavailable(t *testing.T) {
+	note := &model.NoteView{
+		Path:          "/telegram-note",
+		Title:         "Telegram Note",
+		PathID:        1,
+		VersionID:     11,
+		Content:       []byte("# Telegram Note"),
+		HTML:          "<h1>Telegram Note</h1>",
+		Permalink:     "/telegram-note",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
+	}
+
+	noteViews := &model.NoteViews{
+		Map:       map[string]*model.NoteView{"/telegram-note": note},
+		List:      []*model.NoteView{note},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "live",
+	}
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		SiteConfigFunc: func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
+		SiteTitleTemplateFunc: func() string { return "%s" },
+		LiveNoteViewsFunc: func() *model.NoteViews { return noteViews },
+		LatestNoteViewsFunc: func() *model.NoteViews { return noteViews },
+		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
+		GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
+			return []db.GetTelegramPostLinksByNoteVersionIDRow{{
+				ChatTitle:      "Private Channel",
+				TelegramChatID: -1001234567890,
+				MessageID:      42,
+			}}, nil
+		},
+		GetTelegramChatNameFunc: func(ctx context.Context, telegramChatID int64) (string, error) {
+			return "", nil
+		},
+	}
+
+	resp, err := rendernotepage.Resolve(context.Background(), env, rendernotepage.Request{Path: "/telegram-note"})
+	require.NoError(t, err)
+	require.Len(t, resp.TelegramLinks, 1)
+	require.Equal(t, "https://t.me/c/1234567890/42", resp.TelegramLinks[0].URL)
 }

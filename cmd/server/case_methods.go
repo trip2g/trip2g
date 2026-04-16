@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"trip2g/internal/case/convertnoteviewtotgpost"
+	"trip2g/internal/case/gettelegramchatname"
 	"trip2g/internal/case/sendtelegramaccountpublishpost"
 	"trip2g/internal/case/sendtelegrampublishpost"
 	"trip2g/internal/case/updatetelegramaccountpublishpost"
@@ -34,6 +35,14 @@ func (a *app) UpdateTelegramPublishPostWithTx(ctx context.Context, notePathID in
 
 func (a *app) ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	return convertnoteviewtotgpost.Resolve(ctx, a, source)
+}
+
+func (a *app) GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error) {
+	return gettelegramchatname.Resolve(ctx, a, telegramChatID)
+}
+
+func (a *app) RefreshStaleTelegramChatUsernames(ctx context.Context, limit int) (int, error) {
+	return gettelegramchatname.RefreshStale(ctx, a, limit)
 }
 
 // Account publishing methods.

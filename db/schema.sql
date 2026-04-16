@@ -537,19 +537,6 @@ CREATE TABLE note_version_embeddings (
     tokens integer not null,
     created_at datetime not null default (datetime('now'))
 );
-CREATE TABLE note_version_chunks (
-    id           integer primary key autoincrement,
-    version_id   integer not null references note_versions(id) on delete cascade,
-    chunk_index  integer not null,
-    content      text    not null,
-    embedding    blob,
-    model_id     integer,
-    content_hash blob,
-    tokens       integer,
-    created_at   datetime not null default (datetime('now')),
-    unique(version_id, chunk_index)
-);
-CREATE INDEX note_version_chunks_version_id ON note_version_chunks(version_id);
 CREATE TABLE google_oauth_credentials (
     id integer primary key,
     name text not null,
@@ -582,42 +569,6 @@ CREATE TABLE config_bool_values (
   change_id integer primary key references config_changes(id) on delete cascade,
   value boolean not null
 );
-CREATE TABLE config_int_values (
-  change_id integer primary key references config_changes(id) on delete cascade,
-  value integer not null
-);
-CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
-CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
-CREATE INDEX idx_releases_is_live on releases(is_live);
-CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
-CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
-CREATE INDEX idx_boosty_members_email on boosty_members(email);
-CREATE INDEX idx_patreon_members_email on patreon_members(email);
-CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
-CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
-CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
-CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
-CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
-CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
-CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
-on telegram_publish_sent_messages(chat_id, note_path_id)
-where instant = 0;
-CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
-CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
-CREATE UNIQUE INDEX idx_telegram_publish_sent_account_messages_unique
-  on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
-  where instant = 0;
-CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
-  on telegram_publish_sent_account_messages(account_id);
-CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
-  on telegram_publish_sent_account_messages(note_path_id);
-CREATE INDEX idx_note_paths_hidden_by on note_paths(hidden_by);
-CREATE INDEX idx_note_version_assets_version_id on note_version_assets(version_id);
-CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
-CREATE INDEX idx_config_changes_value_id on config_changes(value_id);
-CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
-  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
-end;
 CREATE TABLE change_webhooks (
   id integer primary key autoincrement,
   url text not null,
@@ -653,8 +604,6 @@ CREATE TABLE change_webhook_deliveries (
   created_at datetime not null default (datetime('now')),
   completed_at datetime
 );
-CREATE INDEX idx_change_webhook_deliveries_webhook_created
-  on change_webhook_deliveries(webhook_id, created_at);
 CREATE TABLE cron_webhooks (
   id integer primary key autoincrement,
   url text not null,
@@ -686,8 +635,6 @@ CREATE TABLE cron_webhook_deliveries (
   created_at datetime not null default (datetime('now')),
   completed_at datetime
 );
-CREATE INDEX idx_cron_webhook_deliveries_webhook_created
-  on cron_webhook_deliveries(cron_webhook_id, created_at);
 CREATE TABLE webhook_delivery_logs (
   id integer primary key autoincrement,
   delivery_id integer not null,
@@ -697,18 +644,6 @@ CREATE TABLE webhook_delivery_logs (
   error_message text,
   created_at datetime not null default (datetime('now'))
 );
-CREATE INDEX idx_wdl_delivery on webhook_delivery_logs(kind, delivery_id);
-CREATE INDEX idx_wdl_created on webhook_delivery_logs(created_at);
-CREATE TRIGGER trg_change_webhooks_updated_at
-after update on change_webhooks
-begin
-  update change_webhooks set updated_at = datetime('now') where id = new.id;
-end;
-CREATE TRIGGER trg_cron_webhooks_updated_at
-after update on cron_webhooks
-begin
-  update cron_webhooks set updated_at = datetime('now') where id = new.id;
-end;
 CREATE TABLE note_frontmatter_patches (
   id integer primary key autoincrement,
   include_patterns text not null,
@@ -721,6 +656,83 @@ CREATE TABLE note_frontmatter_patches (
   created_by integer not null references admins(user_id) on delete restrict,
   updated_at datetime not null default (datetime('now'))
 );
+CREATE TABLE note_version_chunks (
+    id           integer primary key autoincrement,
+    version_id   integer not null references note_versions(id) on delete cascade,
+    chunk_index  integer not null,
+    content      text    not null,
+    embedding    blob,
+    model_id     integer,
+    content_hash blob,
+    tokens       integer,
+    created_at   datetime not null default (datetime('now')),
+    unique(version_id, chunk_index)
+);
+CREATE TABLE config_int_values (
+  change_id integer primary key references config_changes(id) on delete cascade,
+  value integer not null
+);
+CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
+CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
+CREATE INDEX idx_releases_is_live on releases(is_live);
+CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
+CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
+CREATE INDEX idx_boosty_members_email on boosty_members(email);
+CREATE INDEX idx_patreon_members_email on patreon_members(email);
+CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
+CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
+CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
+CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
+CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
+CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
+on telegram_publish_sent_messages(chat_id, note_path_id)
+where instant = 0;
+CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
+CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_account_messages_unique
+  on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
+  where instant = 0;
+CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
+  on telegram_publish_sent_account_messages(account_id);
+CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
+  on telegram_publish_sent_account_messages(note_path_id);
+CREATE INDEX idx_note_paths_hidden_by on note_paths(hidden_by);
+CREATE INDEX idx_note_version_assets_version_id on note_version_assets(version_id);
+CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
+CREATE INDEX idx_config_changes_value_id on config_changes(value_id);
+CREATE INDEX idx_change_webhook_deliveries_webhook_created
+  on change_webhook_deliveries(webhook_id, created_at);
+CREATE INDEX idx_cron_webhook_deliveries_webhook_created
+  on cron_webhook_deliveries(cron_webhook_id, created_at);
+CREATE INDEX idx_wdl_delivery on webhook_delivery_logs(kind, delivery_id);
+CREATE INDEX idx_wdl_created on webhook_delivery_logs(created_at);
+CREATE INDEX note_version_chunks_version_id on note_version_chunks(version_id);
+CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
+  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
+end;
+CREATE TRIGGER trg_change_webhooks_updated_at
+after update on change_webhooks
+begin
+  update change_webhooks set updated_at = datetime('now') where id = new.id;
+end;
+CREATE TRIGGER trg_cron_webhooks_updated_at
+after update on cron_webhooks
+begin
+  update cron_webhooks set updated_at = datetime('now') where id = new.id;
+end;
+CREATE TABLE telegram_chat_usernames (
+  telegram_chat_id integer primary key,
+  username text not null default '',
+  title text not null default '',
+  refreshed_at datetime not null default current_timestamp,
+  refresh_requested_at datetime,
+  last_error text,
+  created_at datetime not null default current_timestamp,
+  updated_at datetime not null default current_timestamp
+);
+CREATE INDEX idx_telegram_chat_usernames_refresh
+  on telegram_chat_usernames(refresh_requested_at, refreshed_at);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -829,4 +841,8 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260128081252'),
   ('20260209100000'),
   ('20260211120000'),
-  ('20260213114107');
+  ('20260213114107'),
+  ('20260318100000'),
+  ('20260322100000'),
+  ('20260330100000'),
+  ('20260416132701');
