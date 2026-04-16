@@ -46,11 +46,37 @@ func TestVectorResultsFromChunksUsesBestMatchingChunk(t *testing.T) {
 	require.Equal(t, sourceNote.Path, results[0].NoteView.Path)
 	require.Equal(t, sourceNote.Permalink, results[0].URL)
 	require.Equal(t, float64(1), results[0].Score)
+	require.NotNil(t, results[0].ChunkIndex)
+	require.Equal(t, 2, *results[0].ChunkIndex)
 	require.NotNil(t, results[0].HighlightedTitle)
 	require.Equal(t, sourceNote.Title, *results[0].HighlightedTitle)
 	require.Len(t, results[0].HighlightedContent, 1)
 	require.Contains(t, results[0].HighlightedContent[0], "обидчику")
 	require.NotContains(t, results[0].HighlightedContent[0], "Книга 06\n\n")
+}
+
+func TestBuildSearchPayloadUsesChunkBasedMatchIDs(t *testing.T) {
+	chunkIndex := 4
+	note := &model.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+	}
+
+	payload := buildSearchPayload("обида", []model.SearchResult{{
+		NoteView:           note,
+		URL:                note.Permalink,
+		Score:              1,
+		MatchOrigin:        model.SearchMatchVector,
+		ChunkIndex:         &chunkIndex,
+		HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
+	}}, "https://markavrelii.2pub.me")
+
+	require.Len(t, payload.Results, 1)
+	require.Len(t, payload.Results[0].Matches, 1)
+	require.Equal(t, "p32:c4", payload.Results[0].Matches[0].MatchID)
+	require.Equal(t, 4, payload.Results[0].Matches[0].ChunkIndex)
 }
 
 func TestMergeResultsUsesRRF(t *testing.T) {

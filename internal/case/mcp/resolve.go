@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"trip2g/internal/case/similarnotes"
@@ -122,7 +123,7 @@ func handleToolsList(env Env, id any) Response {
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query (hybrid: text + semantic)",
+			Description: "Search notes by query and return note ids, snippets, and match ids. After search, open the best result with note_html(pid=..., match_id=...) when a match id is available.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -133,25 +134,31 @@ func handleToolsList(env Env, id any) Response {
 		},
 		{
 			Name:        "similar",
-			Description: "Find similar notes by path (vector similarity)",
+			Description: "Find related notes from a known note id, href, or path. Use this after opening a promising note when you need nearby context.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":  {Type: "string", Description: "Note path from search results"},
-					"limit": {Type: "number", Description: "Max number of results (default 10)"},
+					"path":    {Type: "string", Description: "Note path from search or note_html"},
+					"href":    {Type: "string", Description: "Note href from search results"},
+					"pid":     {Type: "number", Description: "Stable note id from search or HTML data-pid"},
+					"note_id": {Type: "number", Description: "Stable note id from search results"},
+					"limit":   {Type: "number", Description: "Max number of results (default 10)"},
 				},
-				Required: []string{"path"},
 			},
 		},
 		{
 			Name:        "note_html",
-			Description: "Get HTML content of a note by path",
+			Description: "Read a note by pid, note_id, href, or path. If search returned match_id, pass it here to fetch a focused chunk window and save tokens.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path": {Type: "string", Description: "Note path from search results"},
+					"path":          {Type: "string", Description: "Note path from search results"},
+					"href":          {Type: "string", Description: "Note href from search results"},
+					"pid":           {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
+					"note_id":       {Type: "number", Description: "Stable note id from search results"},
+					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
+					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
 				},
-				Required: []string{"path"},
 			},
 		},
 	}
@@ -273,8 +280,15 @@ func buildSearchPayload(query string, results []model.SearchResult, publicURL st
 
 		item := searchResultItemFromNote(r.NoteView, r.Score, publicURL)
 		for i, snippet := range r.HighlightedContent {
+			matchID := fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1)
+			chunkIndex := 0
+			if r.ChunkIndex != nil {
+				chunkIndex = *r.ChunkIndex
+				matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
+			}
 			item.Matches = append(item.Matches, SearchMatch{
-				MatchID:      fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1),
+				MatchID:      matchID,
+				ChunkIndex:   chunkIndex,
 				Snippet:      snippet,
 				ContextWords: 10,
 			})
@@ -424,7 +438,54 @@ func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
 
 	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
+	if args.MatchID != "" {
+		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
+			return successResponse(id, textToolResult(focused))
+		}
+	}
+
 	return successResponse(id, textToolResult(string(note.HTML)))
+}
+
+func focusedChunkWindow(note *model.NoteView, matchID string, chunks []model.NoteChunk) (string, bool) {
+	pathID, chunkIndex, ok := parseChunkMatchID(matchID)
+	if !ok || pathID != note.PathID {
+		return "", false
+	}
+
+	relevant := make([]string, 0, 3)
+	for _, chunk := range chunks {
+		if chunk.NotePath != note.Path {
+			continue
+		}
+		if chunk.ChunkIndex < chunkIndex-1 || chunk.ChunkIndex > chunkIndex+1 {
+			continue
+		}
+		relevant = append(relevant, snippetFromChunk(chunk.Content, 400))
+	}
+	if len(relevant) == 0 {
+		return "", false
+	}
+	return strings.Join(relevant, "\n\n"), true
+}
+
+func parseChunkMatchID(matchID string) (int64, int, bool) {
+	if !strings.HasPrefix(matchID, "p") {
+		return 0, 0, false
+	}
+	parts := strings.Split(matchID, ":c")
+	if len(parts) != 2 {
+		return 0, 0, false
+	}
+	pathID, err := strconv.ParseInt(strings.TrimPrefix(parts[0], "p"), 10, 64)
+	if err != nil {
+		return 0, 0, false
+	}
+	chunkIndex, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, false
+	}
+	return pathID, chunkIndex, true
 }
 
 func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *model.NoteView {
@@ -565,12 +626,14 @@ func vectorResultsFromChunks(
 			continue
 		}
 		title := note.Title
+		chunkIndex := s.chunk.ChunkIndex
 		results = append(results, model.SearchResult{
 			NoteView:           note,
 			URL:                note.Permalink,
 			Score:              s.score,
 			HighlightedTitle:   &title,
 			HighlightedContent: []string{snippetFromChunk(s.chunk.Content, 200)},
+			ChunkIndex:         &chunkIndex,
 		})
 		if len(results) >= limit {
 			break
@@ -621,6 +684,12 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 		score := 1.0 / float64(rrfK+rank+1)
 		if existing, ok := resultMap[r.URL]; ok {
 			existing.rrfScore += score
+			if existing.result.ChunkIndex == nil && r.ChunkIndex != nil {
+				existing.result.ChunkIndex = r.ChunkIndex
+			}
+			if len(existing.result.HighlightedContent) == 0 && len(r.HighlightedContent) > 0 {
+				existing.result.HighlightedContent = r.HighlightedContent
+			}
 		} else {
 			resultMap[r.URL] = &merged{result: r, rrfScore: score}
 		}

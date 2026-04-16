@@ -128,6 +128,7 @@ type SearchResult struct {
 	URL                string
 	Score              float64           // Combined score for ranking (higher is better)
 	MatchOrigin        SearchMatchOrigin // How this result was found
+	ChunkIndex         *int              // Optional chunk index for focused retrieval
 
 	NoteView *NoteView
 }

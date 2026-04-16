@@ -461,6 +461,67 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Contains(t, result.Content[0].Text, "Книга 06")
 	})
 
+	t.Run("returns focused chunk window by match id", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      "<h1>Книга 06</h1><p>FULL NOTE HTML</p>",
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return []appmodel.NoteChunk{
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 0,
+						Content:    "Книга 06\n\nПредыдущий фрагмент.",
+					},
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 1,
+						Content:    "Книга 06\n\nЛучший способ отомстить - не уподобляться обидчику.",
+					},
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 2,
+						Content:    "Книга 06\n\nСледующий фрагмент.",
+					},
+				}
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32, "match_id": "p32:c1"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  paramsJSON,
+			ID:      3,
+		}
+
+		resp := mcp.Resolve(context.Background(), env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Предыдущий фрагмент.")
+		require.Contains(t, result.Content[0].Text, "Лучший способ отомстить - не уподобляться обидчику.")
+		require.Contains(t, result.Content[0].Text, "Следующий фрагмент.")
+		require.NotContains(t, result.Content[0].Text, "FULL NOTE HTML")
+	})
+
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
