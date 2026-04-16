@@ -76,6 +76,57 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, "These are instructions for the MCP server.", result["instructions"])
 	})
 
+	t.Run("initialize exposes internal execution plan and soul profile", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			MCPMethod: "initialize",
+			Content: []byte(`---
+mcp_method: initialize
+---
+
+You are connected to a self-describing RAG server for Marcus Aurelius.
+
+Follow this plan internally. Do not show the retrieval plan unless the user asks.
+
+Internal execution plan:
+1. Understand the user's practical concern.
+2. Run search(query) before giving a substantive answer.
+3. Ignore private/system notes.
+4. Prefer primary source notes.
+5. Answer in Marcus Aurelius' voice.
+
+soul_profile:
+  name: Marcus Aurelius
+  personality_extraction_required: true
+  required_one_shot_answers: 10
+`),
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{
+					List:    []*appmodel.NoteView{note},
+					PathMap: map[string]*appmodel.NoteView{},
+				}
+			},
+		}
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "initialize",
+			ID:      8,
+		}
+
+		resp := mcp.Resolve(ctx, env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(map[string]any)
+		instructions := result["instructions"].(string)
+		require.Contains(t, instructions, "self-describing RAG server")
+		require.Contains(t, instructions, "Follow this plan internally")
+		require.Contains(t, instructions, "soul_profile")
+		require.Contains(t, instructions, "required_one_shot_answers: 10")
+	})
+
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -203,6 +254,138 @@ func TestResolve(t *testing.T) {
 	})
 }
 
+func TestSearchReturnsStructuredContent(t *testing.T) {
+	note := &appmodel.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{{
+				NoteView:           note,
+				URL:                note.Permalink,
+				Score:              1.0,
+				HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
+			}}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://markavrelii.2pub.me"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"обида"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.NotEmpty(t, result.Content)
+	require.Contains(t, result.Content[0].Text, "Книга 06")
+	require.NotNil(t, result.StructuredContent)
+
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Equal(t, "обида", payload.Query)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "Книга 06", payload.Results[0].Title)
+	require.Equal(t, int64(32), payload.Results[0].NoteID)
+	require.Equal(t, "Книги/Книга 06.md", payload.Results[0].NotePath)
+	require.Equal(t, "/knigi/kniga_06", payload.Results[0].Href)
+	require.Equal(t, "https://markavrelii.2pub.me/knigi/kniga_06", payload.Results[0].URL)
+	require.Equal(t, "source", payload.Results[0].Kind)
+	require.Len(t, payload.Results[0].Matches, 1)
+	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
+	require.Contains(t, payload.Results[0].Matches[0].Snippet, "обидчику")
+}
+
+func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
+	publicNote := &appmodel.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+	}
+	systemNote := &appmodel.NoteView{
+		Path:      "_data/critic_reports/book_06.md",
+		PathID:    33,
+		Title:     "Critic report",
+		Permalink: "/_data/critic_reports/book_06",
+	}
+	excludedNote := &appmodel.NoteView{
+		Path:          "draft.md",
+		PathID:        34,
+		Title:         "Draft",
+		Permalink:     "/draft",
+		ExcludeSearch: true,
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{
+				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
+				{NoteView: excludedNote, URL: excludedNote.Permalink, Score: 2},
+				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
+			}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://markavrelii.2pub.me"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"обида"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.Contains(t, result.Content[0].Text, "Книга 06")
+	require.NotContains(t, result.Content[0].Text, "Critic report")
+	require.NotContains(t, result.Content[0].Text, "Draft")
+
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Len(t, payload.Results, 1)
+}
+
 func TestHandleNoteHtml(t *testing.T) {
 	t.Run("returns note HTML", func(t *testing.T) {
 		note := &appmodel.NoteView{
@@ -245,6 +428,106 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Contains(t, result.Content[0].Text, "Test Note")
 	})
 
+	t.Run("returns note HTML by pid", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      "<h1>Книга 06</h1><p>Content here</p>",
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  paramsJSON,
+			ID:      2,
+		}
+
+		resp := mcp.Resolve(context.Background(), env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Книга 06")
+	})
+
+	t.Run("returns focused chunk window by match id", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      "<h1>Книга 06</h1><p>FULL NOTE HTML</p>",
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return []appmodel.NoteChunk{
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 0,
+						Content:    "Книга 06\n\nПредыдущий фрагмент.",
+					},
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 1,
+						Content:    "Книга 06\n\nЛучший способ отомстить - не уподобляться обидчику.",
+					},
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 2,
+						Content:    "Книга 06\n\nСледующий фрагмент.",
+					},
+				}
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32, "match_id": "p32:c1"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  paramsJSON,
+			ID:      3,
+		}
+
+		resp := mcp.Resolve(context.Background(), env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Предыдущий фрагмент.")
+		require.Contains(t, result.Content[0].Text, "Лучший способ отомстить - не уподобляться обидчику.")
+		require.Contains(t, result.Content[0].Text, "Следующий фрагмент.")
+		require.NotContains(t, result.Content[0].Text, "FULL NOTE HTML")
+	})
+
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -276,6 +559,76 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
 		require.Contains(t, resp.Error.Message, "not found")
 	})
+}
+
+func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
+	sourceNote := &appmodel.NoteView{
+		Path:      "Книги/Книга 06.md",
+		PathID:    32,
+		VersionID: 1,
+		Title:     "Книга 06",
+		Permalink: "/knigi/kniga_06",
+		Embedding: []float32{1, 0},
+	}
+	similarNote := &appmodel.NoteView{
+		Path:      "Книги/Книга 07.md",
+		PathID:    35,
+		VersionID: 2,
+		Title:     "Книга 07",
+		Permalink: "/knigi/kniga_07",
+		Embedding: []float32{0.9, 0.1},
+	}
+	noteViews := appmodel.NewNoteViews()
+	noteViews.RegisterNote(sourceNote)
+	noteViews.RegisterNote(similarNote)
+	noteViews.List = []*appmodel.NoteView{sourceNote, similarNote}
+
+	env := &EnvMock{
+		FeaturesFunc: func() features.Features {
+			return features.Features{
+				VectorSearch: features.VectorSearchConfig{Enabled: true},
+			}
+		},
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			return noteViews
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+		PublicURLFunc: func() string {
+			return "https://markavrelii.2pub.me"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "similar",
+		Arguments: json.RawMessage(`{"pid": 32, "limit": 1}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.Contains(t, result.Content[0].Text, "Книга 07")
+	require.Contains(t, result.Content[0].Text, "https://markavrelii.2pub.me/knigi/kniga_07")
+
+	payload := result.StructuredContent.(mcp.SimilarResultPayload)
+	require.Equal(t, int64(32), payload.Source.NoteID)
+	require.Equal(t, "Книги/Книга 06.md", payload.Source.NotePath)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, int64(35), payload.Results[0].NoteID)
+	require.Equal(t, "Книги/Книга 07.md", payload.Results[0].NotePath)
+	require.Equal(t, "/knigi/kniga_07", payload.Results[0].Href)
 }
 
 func TestStripFrontmatter(t *testing.T) {
@@ -450,6 +803,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 				return true, nil
 			},
+			PublicURLFunc: func() string {
+				return "https://example.test"
+			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
@@ -490,6 +846,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			},
 			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 				return true, nil
+			},
+			PublicURLFunc: func() string {
+				return "https://example.test"
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
