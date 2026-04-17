@@ -229,24 +229,23 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	}
 	results = filterSearchResults(results)
 
+	payload := buildSearchPayload(args.Query, results, env.PublicURL(), env.LatestNoteChunks())
+
 	// Format response
 	var sb strings.Builder
-	if len(results) == 0 {
+	if len(payload.Results) == 0 {
 		sb.WriteString("No results found for: " + args.Query)
 	} else {
-		sb.WriteString(fmt.Sprintf("Found %d notes:\n\n", len(results)))
-		for i, r := range results {
+		sb.WriteString(fmt.Sprintf("Found %d notes:\n\n", len(payload.Results)))
+		for i, r := range payload.Results {
 			if i >= DefaultDisplayLimit {
-				sb.WriteString(fmt.Sprintf("\n... and %d more", len(results)-DefaultDisplayLimit))
+				sb.WriteString(fmt.Sprintf("\n... and %d more", len(payload.Results)-DefaultDisplayLimit))
 				break
 			}
-			title := r.NoteView.Title
-			if r.HighlightedTitle != nil {
-				title = *r.HighlightedTitle
-			}
-			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, title, r.NoteView.Path, env.PublicURL()+r.NoteView.Permalink))
-			if len(r.HighlightedContent) > 0 {
-				sb.WriteString(fmt.Sprintf("   %s\n", r.HighlightedContent[0]))
+			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, r.Title, r.NotePath, r.URL))
+			if len(r.Matches) > 0 {
+				sb.WriteString(fmt.Sprintf("   %s\n", r.Matches[0].Snippet))
+				sb.WriteString(fmt.Sprintf("   match_id: %s\n", r.Matches[0].MatchID))
 			}
 			sb.WriteString("\n")
 		}
@@ -254,7 +253,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
-	return successResponse(id, structuredToolResult(sb.String(), buildSearchPayload(args.Query, results, env.PublicURL(), env.LatestNoteChunks())))
+	return successResponse(id, structuredToolResult(sb.String(), payload))
 }
 
 func filterSearchResults(results []model.SearchResult) []model.SearchResult {
