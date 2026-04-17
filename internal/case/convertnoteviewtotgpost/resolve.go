@@ -42,7 +42,7 @@ type Env interface {
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
 
-//nolint:gocognit,funlen // complex conversion logic
+//nolint:gocognit,funlen,gocyclo,cyclop // complex conversion logic
 func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 

@@ -301,6 +301,14 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return &response, &PaywallError{Message: "Need subscription"}
 	}
 
+	response.TelegramLinks = resolveTelegramLinks(ctx, env, note)
+
+	return &response, nil
+}
+
+func resolveTelegramLinks(ctx context.Context, env Env, note *model.NoteView) []model.TelegramPostLink {
+	var links []model.TelegramPostLink
+
 	// Fetch Telegram post links for this note (DB query, not cached).
 	if note.VersionID > 0 {
 		rows, telegramErr := env.GetTelegramPostLinksByNoteVersionID(
@@ -320,7 +328,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 					url = fmt.Sprintf("https://t.me/%s/%d", username, row.MessageID)
 				}
 
-				response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
+				links = append(links, model.TelegramPostLink{
 					ChatTitle: row.ChatTitle,
 					URL:       url,
 				})
@@ -329,16 +337,16 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	// Fallback: frontmatter telegram_publish_message_link (for imported notes).
-	if len(response.TelegramLinks) == 0 {
+	if len(links) == 0 {
 		if link, ok := note.ExtractTelegramPublishMessageLink(); ok {
-			response.TelegramLinks = append(response.TelegramLinks, model.TelegramPostLink{
+			links = append(links, model.TelegramPostLink{
 				ChatTitle: model.ExtractChannelFromTelegramLink(link),
 				URL:       link,
 			})
 		}
 	}
 
-	return &response, nil
+	return links
 }
 
 func checkLatestBanner(

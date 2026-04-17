@@ -2,7 +2,7 @@ package mdloader
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 
 	"github.com/yuin/goldmark/ast"
 )
@@ -69,7 +69,7 @@ func extractJsonnetBlocks(doc ast.Node, source []byte) ([]string, error) {
 			return ast.WalkContinue, nil
 		}
 
-		lang := string(info.Text(source))
+		lang := string(info.Segment.Value(source))
 		if lang != "jsonnet" {
 			return ast.WalkContinue, nil
 		}
@@ -91,7 +91,7 @@ func extractJsonnetBlocks(doc ast.Node, source []byte) ([]string, error) {
 	})
 
 	if len(blocks) == 0 {
-		return nil, fmt.Errorf("no jsonnet code blocks found")
+		return nil, errors.New("no jsonnet code blocks found")
 	}
 
 	return blocks, nil

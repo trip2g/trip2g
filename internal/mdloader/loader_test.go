@@ -1860,7 +1860,8 @@ func TestVaultPatchApplies(t *testing.T) {
 	sources := []mdloader.SourceFile{
 		{
 			Path: "_rules.md",
-			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\npriority: 10\n---\n\nMakes blog posts free.\n\n```jsonnet\n{ free: true }\n```"),
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\npriority: 10\n" +
+				"---\n\nMakes blog posts free.\n\n```jsonnet\n{ free: true }\n```"),
 		},
 		{
 			Path:    "blog/hello.md",
@@ -1886,7 +1887,7 @@ func TestVaultPatchDoesNotApplyToNonMatching(t *testing.T) {
 
 	sources := []mdloader.SourceFile{
 		{
-			Path: "_rules.md",
+			Path:    "_rules.md",
 			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\n```jsonnet\n{ free: true }\n```"),
 		},
 		{
@@ -1927,7 +1928,7 @@ func TestVaultPatchAppliesAfterDBPatch(t *testing.T) {
 
 	sources := []mdloader.SourceFile{
 		{
-			Path: "_rules.md",
+			Path:    "_rules.md",
 			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - notes/*\npriority: 100\n---\n\n```jsonnet\nmeta + { vault_applied: true }\n```"),
 		},
 		{
@@ -1956,7 +1957,7 @@ func TestVaultPatchFileIsInNoteViews(t *testing.T) {
 
 	sources := []mdloader.SourceFile{
 		{
-			Path: "_rules.md",
+			Path:    "_rules.md",
 			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\nMakes blog posts free.\n\n```jsonnet\n{ free: true }\n```"),
 		},
 		{
@@ -2058,7 +2059,8 @@ func TestVaultPatchMultipleBlocks(t *testing.T) {
 	sources := []mdloader.SourceFile{
 		{
 			Path: "_rules.md",
-			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - notes/*\n---\n\n```jsonnet\n{ free: true }\n```\n\nAnother rule.\n\n```jsonnet\nmeta + { tagged: true }\n```"),
+			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - notes/*\n---\n\n" +
+				"```jsonnet\n{ free: true }\n```\n\nAnother rule.\n\n```jsonnet\nmeta + { tagged: true }\n```"),
 		},
 		{
 			Path:    "notes/post.md",
@@ -2085,7 +2087,7 @@ func TestVaultPatchIsSystemWithUnderscore(t *testing.T) {
 
 	sources := []mdloader.SourceFile{
 		{
-			Path: "_rules.md",
+			Path:    "_rules.md",
 			Content: []byte("---\ntype: frontmatter-patch\ninclude:\n  - blog/*\n---\n\n```jsonnet\n{ free: true }\n```"),
 		},
 	}

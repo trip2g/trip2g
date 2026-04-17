@@ -1,6 +1,7 @@
 package frontmatterpatch
 
 import (
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 // IDs are deterministic negative integers derived from path + block index.
 func CompileVaultPatches(path string, includePatterns, excludePatterns []string, jsonnetBodies []string, priority int) ([]CompiledPatch, error) {
 	if len(includePatterns) == 0 {
-		return nil, fmt.Errorf("include patterns required")
+		return nil, errors.New("include patterns required")
 	}
 
 	if err := ValidatePatterns(includePatterns); err != nil {
@@ -23,7 +24,7 @@ func CompileVaultPatches(path string, includePatterns, excludePatterns []string,
 	}
 
 	if len(jsonnetBodies) == 0 {
-		return nil, fmt.Errorf("no jsonnet blocks found")
+		return nil, errors.New("no jsonnet blocks found")
 	}
 
 	patches := make([]CompiledPatch, 0, len(jsonnetBodies))
@@ -49,6 +50,6 @@ func CompileVaultPatches(path string, includePatterns, excludePatterns []string,
 // Always returns a value in [-2147483648, -1].
 func vaultPatchID(path string, blockIndex int) int {
 	h := fnv.New32a()
-	h.Write([]byte(path + "#" + strconv.Itoa(blockIndex)))
+	_, _ = h.Write([]byte(path + "#" + strconv.Itoa(blockIndex)))
 	return -(int(h.Sum32()&0x7FFFFFFF) + 1)
 }

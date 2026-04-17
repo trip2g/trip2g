@@ -26,19 +26,19 @@ func TestExtractJsonnetBlocks(t *testing.T) {
 			wantBlocks: []string{"{a: 1}", "{b: 2}"},
 		},
 		{
-			name:    "no code blocks at all",
+			name:     "no code blocks at all",
 			markdown: "Just plain text.\n",
-			wantErr: "no jsonnet code blocks found",
+			wantErr:  "no jsonnet code blocks found",
 		},
 		{
-			name:    "only non-jsonnet code blocks",
+			name:     "only non-jsonnet code blocks",
 			markdown: "```go\npackage main\n```\n\n```json\n{\"x\": 1}\n```\n",
-			wantErr: "no jsonnet code blocks found",
+			wantErr:  "no jsonnet code blocks found",
 		},
 		{
-			name:    "empty jsonnet block skipped, error if all empty",
+			name:     "empty jsonnet block skipped, error if all empty",
 			markdown: "```jsonnet\n   \n```\n",
-			wantErr: "no jsonnet code blocks found",
+			wantErr:  "no jsonnet code blocks found",
 		},
 		{
 			name:       "mixed content: text, other code blocks, jsonnet blocks",

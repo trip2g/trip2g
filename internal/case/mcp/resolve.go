@@ -321,7 +321,7 @@ func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []
 			continue
 		}
 
-		score := 0
+		var score int
 		if strings.Contains(normalizedChunk, normalizedSnippet) || strings.Contains(normalizedSnippet, normalizedChunk) {
 			score = 1000 + len(normalizedSnippet)
 		} else {
@@ -798,7 +798,7 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 func trimWhitespace(s string) string {
 	result := make([]byte, 0, len(s))
 	inWhitespace := true
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		c := s[i]
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
 			if !inWhitespace && len(result) > 0 {

@@ -4,16 +4,15 @@ import (
 	"trip2g/internal/model"
 )
 
-// Layout section types recognized in frontmatter.
-var layoutSectionTypes = []string{"header", "footer", "left_sidebar", "right_sidebar"}
-
 // parseLayoutSections extracts layout section entries from a note's rawMeta.
 // A note becomes a layout section when it has {section}_includes in its frontmatter.
 // Returns nil if no layout section fields are found.
 func parseLayoutSections(rawMeta map[string]interface{}, path string) []model.LayoutSectionEntry {
+	sectionTypes := []string{"header", "footer", "left_sidebar", "right_sidebar"}
+
 	var entries []model.LayoutSectionEntry
 
-	for _, section := range layoutSectionTypes {
+	for _, section := range sectionTypes {
 		includes := toStringSliceFlexible(rawMeta[section+"_includes"])
 		if len(includes) == 0 {
 			continue

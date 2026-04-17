@@ -45,7 +45,7 @@ func TestVectorResultsFromChunksUsesBestMatchingChunk(t *testing.T) {
 	require.Len(t, results, 2)
 	require.Equal(t, sourceNote.Path, results[0].NoteView.Path)
 	require.Equal(t, sourceNote.Permalink, results[0].URL)
-	require.Equal(t, float64(1), results[0].Score)
+	require.InEpsilon(t, float64(1), results[0].Score, 1e-9)
 	require.NotNil(t, results[0].ChunkIndex)
 	require.Equal(t, 2, *results[0].ChunkIndex)
 	require.NotNil(t, results[0].HighlightedTitle)

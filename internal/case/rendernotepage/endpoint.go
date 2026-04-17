@@ -486,8 +486,8 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			string(req.Req.Request.Header.Cookie(langCookieName)),
 			string(req.Req.Request.Header.Peek("Accept-Language")),
 		),
-		UserToken:      resp.UserToken,
-		TelegramLinks:  resp.TelegramLinks,
+		UserToken:     resp.UserToken,
+		TelegramLinks: resp.TelegramLinks,
 		LayoutSections: func() []model.LayoutSectionEntry {
 			if resp.Notes != nil {
 				return resp.Notes.LayoutSections

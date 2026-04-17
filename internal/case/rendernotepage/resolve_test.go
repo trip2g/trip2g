@@ -2044,12 +2044,12 @@ func TestResolve_UsesPublicTelegramUsernameWhenAvailable(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
-		SiteConfigFunc: func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
+		LoggerFunc:            func() logger.Logger { return &logger.DummyLogger{} },
+		SiteConfigFunc:        func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
 		SiteTitleTemplateFunc: func() string { return "%s" },
-		LiveNoteViewsFunc: func() *model.NoteViews { return noteViews },
-		LatestNoteViewsFunc: func() *model.NoteViews { return noteViews },
-		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
+		LiveNoteViewsFunc:     func() *model.NoteViews { return noteViews },
+		LatestNoteViewsFunc:   func() *model.NoteViews { return noteViews },
+		CanReadNoteFunc:       func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
 		GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
 			return []db.GetTelegramPostLinksByNoteVersionIDRow{{
 				ChatTitle:      "Public Channel",
@@ -2095,12 +2095,12 @@ func TestResolve_FallsBackToNumericTelegramLinkWhenUsernameUnavailable(t *testin
 	}
 
 	env := &EnvMock{
-		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
-		SiteConfigFunc: func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
+		LoggerFunc:            func() logger.Logger { return &logger.DummyLogger{} },
+		SiteConfigFunc:        func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
 		SiteTitleTemplateFunc: func() string { return "%s" },
-		LiveNoteViewsFunc: func() *model.NoteViews { return noteViews },
-		LatestNoteViewsFunc: func() *model.NoteViews { return noteViews },
-		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
+		LiveNoteViewsFunc:     func() *model.NoteViews { return noteViews },
+		LatestNoteViewsFunc:   func() *model.NoteViews { return noteViews },
+		CanReadNoteFunc:       func(ctx context.Context, note *model.NoteView) (bool, error) { return true, nil },
 		GetTelegramPostLinksByNoteVersionIDFunc: func(ctx context.Context, arg db.GetTelegramPostLinksByNoteVersionIDParams) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error) {
 			return []db.GetTelegramPostLinksByNoteVersionIDRow{{
 				ChatTitle:      "Private Channel",

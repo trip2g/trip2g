@@ -16,18 +16,18 @@ import (
 type testEnv struct {
 	now time.Time
 
-	cacheRow         db.TelegramChatUsername
-	cacheErr         error
-	upsertArgs       []db.UpsertTelegramChatUsernameParams
-	markRefreshArgs  []db.MarkTelegramChatUsernameRefreshRequestedParams
-	botResult        gettelegramchatname.LookupResult
-	botFound         bool
-	botErr           error
-	accountResult    gettelegramchatname.LookupResult
-	accountFound     bool
-	accountErr       error
-	botCalls         int
-	accountCalls     int
+	cacheRow        db.TelegramChatUsername
+	cacheErr        error
+	upsertArgs      []db.UpsertTelegramChatUsernameParams
+	markRefreshArgs []db.MarkTelegramChatUsernameRefreshRequestedParams
+	botResult       gettelegramchatname.LookupResult
+	botFound        bool
+	botErr          error
+	accountResult   gettelegramchatname.LookupResult
+	accountFound    bool
+	accountErr      error
+	botCalls        int
+	accountCalls    int
 }
 
 func (e *testEnv) Logger() logger.Logger { return &logger.DummyLogger{} }
@@ -131,8 +131,8 @@ func TestResolve_CacheMissResolvesViaBotFirst(t *testing.T) {
 func TestResolve_CacheMissFallsBackToAccount(t *testing.T) {
 	now := time.Date(2026, 4, 16, 12, 0, 0, 0, time.UTC)
 	env := &testEnv{
-		now:      now,
-		cacheErr: sql.ErrNoRows,
+		now:          now,
+		cacheErr:     sql.ErrNoRows,
 		accountFound: true,
 		accountResult: gettelegramchatname.LookupResult{
 			Username: "accountchannel",

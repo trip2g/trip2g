@@ -786,7 +786,7 @@ See [[nonexistent_target]] for details.`),
 	require.Contains(t, post.Content, `utm_source=telegram`)
 	require.NotContains(t, post.Content, "utm_content",
 		"unresolved-link homepage fallback must not emit utm_content")
-	require.Greater(t, post.UnresolvedLinkCount, int64(0))
+	require.Positive(t, post.UnresolvedLinkCount)
 }
 
 func TestCampaignFromTelegramChatIDWhenChatIDZero(t *testing.T) {

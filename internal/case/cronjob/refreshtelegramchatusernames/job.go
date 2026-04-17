@@ -23,5 +23,9 @@ type Env interface {
 }
 
 func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	return env.(Env).RefreshStaleTelegramChatUsernames(ctx, refreshBatchSize)
+	n, err := env.(Env).RefreshStaleTelegramChatUsernames(ctx, refreshBatchSize) //nolint:errcheck // err is checked below
+	if err != nil {
+		return nil, err
+	}
+	return n, nil
 }

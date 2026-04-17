@@ -93,8 +93,8 @@ func TestParseLayoutSections_PriorityParsed(t *testing.T) {
 
 func TestParseLayoutSections_IncludePropertyParsed(t *testing.T) {
 	meta := map[string]interface{}{
-		"header_includes":          []interface{}{"**/*.md"},
-		"header_include_property":  "published",
+		"header_includes":         []interface{}{"**/*.md"},
+		"header_include_property": "published",
 	}
 	entries := parseLayoutSections(meta, "layouts/header.md")
 	require.Len(t, entries, 1)
@@ -113,8 +113,8 @@ func TestParseLayoutSections_ExcludesParsed(t *testing.T) {
 
 func TestParseLayoutSections_ExcludePropertyParsed(t *testing.T) {
 	meta := map[string]interface{}{
-		"header_includes":          []interface{}{"**/*.md"},
-		"header_exclude_property":  "draft",
+		"header_includes":         []interface{}{"**/*.md"},
+		"header_exclude_property": "draft",
 	}
 	entries := parseLayoutSections(meta, "layouts/header.md")
 	require.Len(t, entries, 1)
