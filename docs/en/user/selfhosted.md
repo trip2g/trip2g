@@ -4,15 +4,15 @@ free: true
 lang_redirect: "[[ru/user/selfhosted]]"
 ---
 
-Minimal self-hosted setup for trip2g: `ghcr.io/trip2g/trip2g:0.2` + `MinIO` + `Caddy`.
+Minimal self-hosted setup for trip2g: `ghcr.io/trip2g/trip2g:latest` + `MinIO` + `Caddy`.
 
 This setup is for a single server, a single `docker-compose.yml`, and a straightforward `docker compose up -d`.
 
 ## What this setup runs
 
-- `trip2g` runs the site, admin UI, auth flow, and notes git repository.
-- `minio` stores uploaded assets and simple SQLite backups.
-- `caddy` accepts external `HTTP/HTTPS` traffic and proxies requests inside the compose network.
+- `trip2g` is a platform for publishing Obsidian notes as a website.
+- `minio` stores uploaded files and database backups.
+- `caddy` handles incoming HTTP/HTTPS traffic and proxies it into the compose network.
 - Vector search can stay disabled, or you can enable it later with OpenAI or another OpenAI-compatible embeddings API.
 
 ## Easy-to-miss requirements
@@ -32,6 +32,19 @@ You need:
 - DNS access
 
 Create a directory such as `/opt/trip2g` and put two files there: `docker-compose.yml` and `.env`.
+
+### Check your server before setup
+
+If the server is not fresh, verify the following before starting:
+
+- Ports `80` and `443` are free — compose hands them to Caddy:
+  ```bash
+  ss -tlnp | grep -E ':80 |:443 '
+  ```
+- No other Caddy, Nginx, or Traefik is already listening on those ports. If there is, stop it or move it to a different port.
+- No conflicting Docker networks from other projects (rare, but can happen with non-default bridge or overlay setups).
+
+If those ports are already claimed by an existing reverse proxy (Nginx, Caddy, Traefik), there is no need to remove it — just add trip2g as an upstream in your existing config, drop the `caddy` service from `docker-compose.yml`, and publish port `8081` directly. The same applies to MinIO: if you already have your own object storage, skip the `minio` service entirely and point `.env` at your existing bucket.
 
 ## `docker-compose.yml`
 
@@ -72,7 +85,7 @@ services:
       retries: 20
 
   trip2g:
-    image: ghcr.io/trip2g/trip2g:0.2
+    image: ghcr.io/trip2g/trip2g:latest
     restart: unless-stopped
     depends_on:
       minio:
@@ -162,7 +175,10 @@ FEATURES={}
 - `MAIL_FROM` is the sender address. It must belong to a domain verified in Resend.
 - `RESEND_API_KEY` is used to send email sign-in codes.
 - `JWT_SECRET` signs user session tokens. Rotating it invalidates existing sessions.
-- `DATA_ENCRYPTION_KEY` is a 32-byte key used to encrypt sensitive stored data.
+- `DATA_ENCRYPTION_KEY` is a 32-byte key used to encrypt sensitive stored data. To generate one:
+  ```bash
+  openssl rand -base64 32 | head -c 32
+  ```
 - `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` are the MinIO root credentials.
 - `MINIO_ENDPOINT` is the MinIO address as seen from the `trip2g` container.
 - `MINIO_PUBLIC_URL` is the public MinIO hostname used in presigned file URLs.
@@ -223,6 +239,46 @@ Why this matters:
 - trip2g stays on the main site hostname;
 - file URLs use a public MinIO hostname;
 - `caddy` reaches `trip2g` and `minio` by service name inside the docker network.
+
+## External object storage instead of MinIO
+
+By default MinIO runs on the same server as trip2g. That is convenient to start but offers no protection against server loss: if the disk dies, files and backups go with it.
+
+For production, we recommend moving storage to a separate S3-compatible service: Backblaze B2, Hetzner Object Storage, Timeweb S3, or similar.
+
+In that case you can remove the `minio` service from `docker-compose.yml` entirely and point `.env` at the external service:
+
+```dotenv
+MINIO_ENDPOINT=s3.us-east-005.backblazeb2.com
+MINIO_PUBLIC_URL=https://files.example.com
+MINIO_ACCESS_KEY_ID=your-key-id
+MINIO_SECRET_KEY=your-secret
+MINIO_BUCKET=trip2g
+MINIO_REGION=us-east-005
+MINIO_USE_SSL=true
+```
+
+With that in place, `SIMPLE_BACKUP=true` stores SQLite backups on the external service automatically — no extra work, and protected from server-level failure.
+
+## SQLite replication with Litestream
+
+`SIMPLE_BACKUP=true` takes periodic SQLite snapshots to MinIO. For continuous replication with a one-second interval, add [Litestream](https://litestream.io).
+
+Litestream runs on the host as a systemd service and streams the database file directly to any S3-compatible target. The `infra/` directory already has a ready-made setup:
+
+- `infra/generate-litestream-config.sh` — generates `/etc/litestream.yml` from environment variables
+- `infra/litestream.service` — the systemd unit
+
+The config reads the same variables as trip2g's `.env`: `MINIO_ACCESS_KEY_ID`, `MINIO_SECRET_KEY`, `MINIO_ENDPOINT`, `MINIO_BUCKET`, `DB_FILE`. After installing litestream:
+
+```bash
+sudo cp infra/generate-litestream-config.sh /usr/local/bin/generate-litestream-config.sh
+sudo chmod +x /usr/local/bin/generate-litestream-config.sh
+sudo cp infra/litestream.service /etc/systemd/system/litestream.service
+sudo systemctl enable --now litestream
+```
+
+Litestream and `SIMPLE_BACKUP` can run together — they do not conflict. The combination is especially useful with external object storage: both files and the database then live outside the server.
 
 ## Create a free Resend account
 

@@ -4,15 +4,15 @@ free: true
 lang_redirect: "[[en/user/selfhosted]]"
 ---
 
-Минимальный self-hosted вариант trip2g: `ghcr.io/trip2g/trip2g:0.2` + `MinIO` + `Caddy`.
+Минимальный self-hosted вариант trip2g: `ghcr.io/trip2g/trip2g:latest` + `MinIO` + `Caddy`.
 
 Этот вариант подходит, если вам нужен один сервер, один `docker-compose.yml` и запуск через `docker compose up -d`.
 
 ## Что поднимется
 
-- `trip2g` поднимает сайт, админку, авторизацию и git-репозиторий заметок.
-- `minio` хранит ассеты и простые резервные копии SQLite.
-- `caddy` принимает внешний `HTTP/HTTPS` и проксирует запросы внутрь compose-сети.
+- `trip2g` — платформа для публикации заметок из Obsidian в виде сайта.
+- `minio` хранит файлы и резервные копии базы данных.
+- `caddy` принимает входящий HTTP/HTTPS-трафик и проксирует его внутрь compose-сети.
 - Векторный поиск можно оставить выключенным или включить через OpenAI / OpenAI-compatible embeddings API.
 
 ## Что важно не забыть
@@ -32,6 +32,19 @@ lang_redirect: "[[en/user/selfhosted]]"
 - доступ к DNS
 
 Создайте директорию, например `/opt/trip2g`, и положите туда два файла: `docker-compose.yml` и `.env`.
+
+### Проверьте сервер перед установкой
+
+Если сервер не чистый, убедитесь до запуска:
+
+- Порты `80` и `443` свободны — compose отдаёт их Caddy:
+  ```bash
+  ss -tlnp | grep -E ':80 |:443 '
+  ```
+- Нет другого Caddy, Nginx или Traefik, уже слушающего эти порты. Если есть — его нужно остановить или перенести.
+- Нет конфликтующих Docker-сетей от других проектов (редко, но бывает при нестандартном overlay).
+
+Если порты заняты существующим reverse proxy (Nginx, Caddy, Traefik), убирать его не нужно — достаточно прописать trip2g как upstream в нём. Тогда сервис `caddy` из `docker-compose.yml` можно убрать, а порт `8081` опубликовать напрямую. То же самое касается MinIO: если у вас уже есть своё объектное хранилище — MinIO поднимать не нужно, достаточно указать его реквизиты в `.env`.
 
 ## `docker-compose.yml`
 
@@ -72,7 +85,7 @@ services:
       retries: 20
 
   trip2g:
-    image: ghcr.io/trip2g/trip2g:0.2
+    image: ghcr.io/trip2g/trip2g:latest
     restart: unless-stopped
     depends_on:
       minio:
@@ -162,7 +175,10 @@ FEATURES={}
 - `MAIL_FROM` — адрес отправителя. Он должен принадлежать домену, который вы подтвердили в Resend.
 - `RESEND_API_KEY` — API key для отправки кодов входа по email.
 - `JWT_SECRET` — секрет для пользовательских сессий. После смены старые сессии станут недействительными.
-- `DATA_ENCRYPTION_KEY` — 32-байтовый ключ для шифрования чувствительных данных.
+- `DATA_ENCRYPTION_KEY` — 32-байтовый ключ для шифрования чувствительных данных. Сгенерировать:
+  ```bash
+  openssl rand -base64 32 | head -c 32
+  ```
 - `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` — root-учетка самого MinIO.
 - `MINIO_ENDPOINT` — адрес MinIO из контейнера `trip2g`.
 - `MINIO_PUBLIC_URL` — публичный адрес MinIO, который попадет в presigned URL для файлов.
@@ -223,6 +239,46 @@ MINIO_PUBLIC_URL=https://files.example.com
 - trip2g работает на основном домене;
 - ссылки на файлы отдаются с публичного MinIO-домена;
 - `caddy` ходит к сервисам по именам `trip2g` и `minio` внутри docker-сети.
+
+## Внешнее объектное хранилище вместо MinIO
+
+По умолчанию MinIO работает на том же сервере, что и trip2g. Это удобно для старта, но не защищает от потери сервера: если диск умрёт, пропадут и файлы, и резервные копии.
+
+Для production рекомендуем вынести хранилище на отдельный S3-совместимый сервис: Backblaze B2, Hetzner Object Storage, Timeweb S3 и другие.
+
+В этом случае сервис `minio` из `docker-compose.yml` можно убрать полностью, а в `.env` указать реквизиты внешнего сервиса:
+
+```dotenv
+MINIO_ENDPOINT=s3.us-east-005.backblazeb2.com
+MINIO_PUBLIC_URL=https://files.example.com
+MINIO_ACCESS_KEY_ID=your-key-id
+MINIO_SECRET_KEY=your-secret
+MINIO_BUCKET=trip2g
+MINIO_REGION=us-east-005
+MINIO_USE_SSL=true
+```
+
+Тогда `SIMPLE_BACKUP=true` будет складывать резервные копии SQLite уже на внешний сервис — автоматически, без дополнительных усилий и с защитой от потери сервера.
+
+## Репликация SQLite через Litestream
+
+`SIMPLE_BACKUP=true` делает периодические snapshot'ы базы в MinIO. Если нужна непрерывная репликация SQLite с интервалом в 1 секунду, добавьте [Litestream](https://litestream.io).
+
+Litestream запускается на хосте как systemd-сервис и реплицирует файл базы напрямую в S3-совместимое хранилище. В `infra/` уже есть готовая конфигурация:
+
+- `infra/generate-litestream-config.sh` — генерирует `/etc/litestream.yml` из переменных окружения
+- `infra/litestream.service` — systemd unit
+
+Конфигурация читает те же переменные, что и `.env` trip2g: `MINIO_ACCESS_KEY_ID`, `MINIO_SECRET_KEY`, `MINIO_ENDPOINT`, `MINIO_BUCKET`, `DB_FILE`. После установки litestream:
+
+```bash
+sudo cp infra/generate-litestream-config.sh /usr/local/bin/generate-litestream-config.sh
+sudo chmod +x /usr/local/bin/generate-litestream-config.sh
+sudo cp infra/litestream.service /etc/systemd/system/litestream.service
+sudo systemctl enable --now litestream
+```
+
+Litestream и `SIMPLE_BACKUP` можно использовать одновременно — они не конфликтуют. Особенно полезна эта связка с внешним объектным хранилищем: тогда и файлы, и база данных хранятся вне сервера.
 
 ## Как создать бесплатный аккаунт Resend
 
