@@ -38,7 +38,7 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
-		override subgraph_ids( next?: number[] ): number[] {
+		override subgraph_ids( next?: readonly number[] ): readonly number[] {
 			if (next === undefined) {
 				return []
 			}
