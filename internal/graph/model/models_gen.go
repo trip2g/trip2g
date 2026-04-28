@@ -1122,6 +1122,7 @@ func (CreateHTMLInjectionPayload) IsCreateHTMLInjectionOrErrorPayload() {}
 type CreateInboundFederationSecretInput struct {
 	Kid         string  `json:"kid"`
 	Description *string `json:"description,omitempty"`
+	SecretHex   *string `json:"secretHex,omitempty"`
 }
 
 type CreateInboundFederationSecretPayload struct {

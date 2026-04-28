@@ -41,9 +41,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
 	}
 
-	secret := make([]byte, 32)
-	if _, err := rand.Read(secret); err != nil {
-		return nil, fmt.Errorf("failed to generate random secret: %w", err)
+	secret, err := resolveSecret(input.SecretHex)
+	if err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil
 	}
 
 	encrypted, err := env.EncryptData(secret)
@@ -74,4 +74,25 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &payload, nil
+}
+
+// resolveSecret returns the 32-byte secret to store: caller-supplied hex if
+// provided, otherwise crypto/rand. Hex must decode to exactly 32 bytes.
+func resolveSecret(provided *string) ([]byte, error) {
+	if provided == nil || *provided == "" {
+		secret := make([]byte, 32)
+		if _, err := rand.Read(secret); err != nil {
+			return nil, fmt.Errorf("failed to generate random secret: %w", err)
+		}
+		return secret, nil
+	}
+
+	decoded, err := hex.DecodeString(*provided)
+	if err != nil {
+		return nil, fmt.Errorf("secretHex is not valid hex: %w", err)
+	}
+	if len(decoded) != 32 {
+		return nil, fmt.Errorf("secretHex must decode to exactly 32 bytes, got %d", len(decoded))
+	}
+	return decoded, nil
 }

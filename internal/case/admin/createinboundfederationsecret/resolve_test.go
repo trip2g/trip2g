@@ -123,6 +123,60 @@ func TestResolve(t *testing.T) {
 			wantMsg:  "Federation secret with this kid already exists",
 		},
 		{
+			name: "success - caller-supplied secretHex used verbatim",
+			input: model.CreateInboundFederationSecretInput{
+				Kid:       "my-key-id",
+				SecretHex: strPtr("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"),
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.EncryptDataFunc = func(plaintext []byte) ([]byte, error) {
+					require.Len(t, plaintext, 32)
+					require.Equal(t, byte(0x00), plaintext[0])
+					require.Equal(t, byte(0xff), plaintext[31])
+					return []byte("encrypted"), nil
+				}
+				mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+					return db.FederationSecret{ID: 50, Kid: arg.Kid}, nil
+				}
+				return mock
+			},
+			wantType: "payload",
+		},
+		{
+			name: "validation error - secretHex wrong length",
+			input: model.CreateInboundFederationSecretInput{
+				Kid:       "my-key-id",
+				SecretHex: strPtr("deadbeef"),
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				return mock
+			},
+			wantType: "error",
+		},
+		{
+			name: "validation error - secretHex not hex",
+			input: model.CreateInboundFederationSecretInput{
+				Kid:       "my-key-id",
+				SecretHex: strPtr("zzzz"),
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				return mock
+			},
+			wantType: "error",
+		},
+		{
 			name:  "database error",
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {

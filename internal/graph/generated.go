@@ -36822,7 +36822,7 @@ func (ec *executionContext) unmarshalInputCreateInboundFederationSecretInput(ctx
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"kid", "description"}
+	fieldsInOrder := [...]string{"kid", "description", "secretHex"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36843,6 +36843,13 @@ func (ec *executionContext) unmarshalInputCreateInboundFederationSecretInput(ctx
 				return it, err
 			}
 			it.Description = data
+		case "secretHex":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secretHex"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SecretHex = data
 		}
 	}
 

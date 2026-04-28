@@ -3049,6 +3049,9 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
 input CreateInboundFederationSecretInput {
   kid: String!
   description: String
+  # Optional 64-char hex (32 bytes). If empty, server generates a random secret.
+  # Allows scripted bootstrap (e.g. e2e tests) to use a deterministic key.
+  secretHex: String
 }
 
 type CreateInboundFederationSecretPayload {
