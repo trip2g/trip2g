@@ -48,6 +48,23 @@ func mustExec(t *testing.T, db *sql.DB, query string, args ...interface{}) {
 	require.NoError(t, err, "Failed to execute query: %s", query)
 }
 
+// insertTestAdminUser creates a user and grants admin access for FK-backed admin fields.
+func insertTestAdminUser(t *testing.T, db *sql.DB) int64 {
+	t.Helper()
+
+	var userID int64
+	err := db.QueryRow(`
+		insert into users (email, created_via)
+		values ('admin@test.com', 'test')
+		returning id
+	`).Scan(&userID)
+	require.NoError(t, err, "Failed to insert test admin user")
+
+	mustExec(t, db, `insert into admins (user_id) values (?)`, userID)
+
+	return userID
+}
+
 // insertTestNotePath creates a test note path and returns the ID.
 func insertTestNotePath(t *testing.T, db *sql.DB, path string) int64 {
 	t.Helper()

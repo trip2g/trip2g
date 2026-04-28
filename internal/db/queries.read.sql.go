@@ -1283,6 +1283,55 @@ func (q *Queries) CronWebhookByID(ctx context.Context, id int64) (CronWebhook, e
 	return i, err
 }
 
+const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+ where kb_url = ?
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1
+`
+
+func (q *Queries) FederationSecretByKBURL(ctx context.Context, kbUrl *string) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, federationSecretByKBURL, kbUrl)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const federationSecretByKID = `-- name: FederationSecretByKID :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+ where kid = ?
+   and kb_url is null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1
+`
+
+func (q *Queries) FederationSecretByKID(ctx context.Context, kid string) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, federationSecretByKID, kid)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const filteredTgBotChats = `-- name: FilteredTgBotChats :many
 select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id
   from tg_bot_chats
@@ -4314,6 +4363,99 @@ func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, err
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFederationSecretSubgraphsByKID = `-- name: ListFederationSecretSubgraphsByKID :many
+select s.name
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ where fss.kid = ?
+ order by s.name
+`
+
+func (q *Queries) ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listFederationSecretSubgraphsByKID, kid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFederationSecrets = `-- name: ListFederationSecrets :many
+select
+  fs.id,
+  fs.kid,
+  fs.secret_crypt,
+  fs.kb_url,
+  fs.description,
+  fs.created_at,
+  fs.created_by,
+  fs.revoked_at,
+  count(fss.subgraph_id) as subgraph_count
+from federation_secrets fs
+left join federation_secret_subgraphs fss on fss.kid = fs.kid
+group by fs.id
+order by fs.created_at desc, fs.id desc
+`
+
+type ListFederationSecretsRow struct {
+	ID            int64      `json:"id"`
+	Kid           string     `json:"kid"`
+	SecretCrypt   []byte     `json:"secret_crypt"`
+	KbUrl         *string    `json:"kb_url"`
+	Description   *string    `json:"description"`
+	CreatedAt     time.Time  `json:"created_at"`
+	CreatedBy     int64      `json:"created_by"`
+	RevokedAt     *time.Time `json:"revoked_at"`
+	SubgraphCount int64      `json:"subgraph_count"`
+}
+
+func (q *Queries) ListFederationSecrets(ctx context.Context) ([]ListFederationSecretsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFederationSecrets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFederationSecretsRow
+	for rows.Next() {
+		var i ListFederationSecretsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kid,
+			&i.SecretCrypt,
+			&i.KbUrl,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.RevokedAt,
+			&i.SubgraphCount,
 		); err != nil {
 			return nil, err
 		}

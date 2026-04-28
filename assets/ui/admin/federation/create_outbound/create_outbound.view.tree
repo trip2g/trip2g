@@ -1,0 +1,31 @@
+$trip2g_admin_federation_create_outbound $mol_page
+	title @ \Add Outbound Secret
+	body /
+		<= Form $mol_form
+			body /
+				<= Kid_field $mol_form_field
+					name @ \Key ID (kid)
+					bid <= kid_bid \
+					Content <= kid_control $mol_string
+						value? <=> kid? \
+				<= SecretHex_field $mol_form_field
+					name @ \Secret Hex
+					bid <= secret_hex_bid \
+					Content <= secret_hex_control $mol_string
+						value? <=> secret_hex? \
+				<= KbUrl_field $mol_form_field
+					name @ \KB URL
+					bid <= kb_url_bid \
+					Content <= kb_url_control $mol_string
+						value? <=> kb_url? \
+				<= Description_field $mol_form_field
+					name @ \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description? \
+			buttons /
+				<= Submit $mol_button_major
+					title @ \Add Outbound
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

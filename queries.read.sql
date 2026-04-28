@@ -165,6 +165,44 @@ select * from subgraphs where name = ?;
 -- name: ListAllSubgraphs :many
 select * from subgraphs order by id;
 
+-- name: FederationSecretByKBURL :one
+select * from federation_secrets
+ where kb_url = ?
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1;
+
+-- name: FederationSecretByKID :one
+select * from federation_secrets
+ where kid = ?
+   and kb_url is null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1;
+
+-- name: ListFederationSecrets :many
+select
+  fs.id,
+  fs.kid,
+  fs.secret_crypt,
+  fs.kb_url,
+  fs.description,
+  fs.created_at,
+  fs.created_by,
+  fs.revoked_at,
+  count(fss.subgraph_id) as subgraph_count
+from federation_secrets fs
+left join federation_secret_subgraphs fss on fss.kid = fs.kid
+group by fs.id
+order by fs.created_at desc, fs.id desc;
+
+-- name: ListFederationSecretSubgraphsByKID :many
+select s.name
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ where fss.kid = ?
+ order by s.name;
+
 -- name: ListAllUserBans :many
 select * from user_bans;
 

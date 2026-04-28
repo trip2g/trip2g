@@ -55,6 +55,7 @@ import (
 	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbypurchasetoken"
@@ -68,6 +69,7 @@ import (
 	"trip2g/internal/defaulttemplate"
 	"trip2g/internal/fastgql"
 	"trip2g/internal/features"
+	"trip2g/internal/federation"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/githubauth"
@@ -118,6 +120,8 @@ type txEnvKeyType struct{}
 
 //nolint:gochecknoglobals // Context key for transactional env
 var txEnvKey = txEnvKeyType{}
+
+var _ mcp.Env = (*app)(nil)
 
 type graphTransactions struct {
 	sync.Mutex
@@ -1472,6 +1476,72 @@ func (a *app) GeneratePurchaseID() string {
 
 func (a *app) PublicURL() string {
 	return a.config.PublicURL
+}
+
+func (a *app) FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {
+	secret, err := a.Queries.FederationSecretByKBURL(ctx, &kbURL)
+	if errors.Is(err, sql.ErrNoRows) {
+		return db.FederationSecret{}, false, nil
+	}
+	if err != nil {
+		return db.FederationSecret{}, false, err
+	}
+	return secret, true, nil
+}
+
+func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error) {
+	secret, err := a.Queries.FederationSecretByKID(ctx, kid)
+	if errors.Is(err, sql.ErrNoRows) {
+		return db.FederationSecret{}, false, nil
+	}
+	if err != nil {
+		return db.FederationSecret{}, false, err
+	}
+	return secret, true, nil
+}
+
+func (a *app) FederationClient(kbID string) (model.Federation, error) {
+	nvs := a.LatestNoteViews()
+	if nvs == nil {
+		return nil, fmt.Errorf("federation kb %q not found", kbID)
+	}
+
+	for _, kb := range nvs.MCPFederationNotes {
+		if kb == nil || kb.ID != kbID {
+			continue
+		}
+
+		peer := model.FederationPeer{
+			KBID:   kb.ID,
+			KBURL:  kb.URL,
+			Issuer: a.PublicURL(),
+		}
+
+		ctx := a.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		secretRow, ok, err := a.FederationSecretByKBURL(ctx, kb.URL)
+		if err != nil {
+			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
+		}
+		if ok {
+			secret, err := a.DecryptData(secretRow.SecretCrypt)
+			if err != nil {
+				return nil, err
+			}
+			peer.KID = secretRow.Kid
+			peer.Secret = secret
+		}
+
+		return federation.NewClient(peer, a.webhookHTTPClient), nil
+	}
+
+	return nil, fmt.Errorf("federation kb %q not found", kbID)
+}
+
+func (a *app) FederationMaxDepth() int {
+	return a.config.MCPFederationMaxDepth
 }
 
 func (a *app) Insecure() bool {

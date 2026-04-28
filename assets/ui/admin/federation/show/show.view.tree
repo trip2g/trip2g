@@ -1,0 +1,26 @@
+$trip2g_admin_federation_show $mol_page
+	title \Federation Secret
+	secret_id 0
+	revoked false
+	kid \
+	kb_url \
+	body /
+		<= Info $mol_view
+			sub /
+				<= Kid_labeler $mol_labeler
+					title \Key ID
+					Content <= KidCell $trip2g_admin_cell
+						content <= kid
+				<= KbUrl_labeler $mol_labeler
+					title \KB URL
+					Content <= KbUrlCell $trip2g_admin_cell
+						content <= kb_url
+				<= SubgraphsSection $mol_view
+					sub /
+						<= SubgraphsTitle $mol_view
+							sub / \Subgraph Access
+						<= SubgraphList $trip2g_admin_subgraph_select_list
+							ids? <=> subgraph_ids? /number
+				<= RevokeButton $trip2g_admin_federation_button_revoke
+					id <= secret_id
+					visible <= can_revoke false

@@ -7,6 +7,7 @@ import (
 	"context"
 	"sync"
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -26,14 +27,32 @@ var _ mcp.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
+//			DecryptDataFunc: func(bytes []byte) ([]byte, error) {
+//				panic("mock out the DecryptData method")
+//			},
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
+//			},
+//			FederationClientFunc: func(kbID string) (model.Federation, error) {
+//				panic("mock out the FederationClient method")
+//			},
+//			FederationMaxDepthFunc: func() int {
+//				panic("mock out the FederationMaxDepth method")
+//			},
+//			FederationSecretByKBURLFunc: func(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {
+//				panic("mock out the FederationSecretByKBURL method")
+//			},
+//			FederationSecretByKIDFunc: func(ctx context.Context, kid string) (db.FederationSecret, bool, error) {
+//				panic("mock out the FederationSecretByKID method")
 //			},
 //			LatestNoteChunksFunc: func() []model.NoteChunk {
 //				panic("mock out the LatestNoteChunks method")
 //			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
+//			},
+//			ListFederationSecretSubgraphsByKIDFunc: func(ctx context.Context, kid string) ([]string, error) {
+//				panic("mock out the ListFederationSecretSubgraphsByKID method")
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
@@ -57,14 +76,32 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
+	// DecryptDataFunc mocks the DecryptData method.
+	DecryptDataFunc func(bytes []byte) ([]byte, error)
+
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
+
+	// FederationClientFunc mocks the FederationClient method.
+	FederationClientFunc func(kbID string) (model.Federation, error)
+
+	// FederationMaxDepthFunc mocks the FederationMaxDepth method.
+	FederationMaxDepthFunc func() int
+
+	// FederationSecretByKBURLFunc mocks the FederationSecretByKBURL method.
+	FederationSecretByKBURLFunc func(ctx context.Context, kbURL string) (db.FederationSecret, bool, error)
+
+	// FederationSecretByKIDFunc mocks the FederationSecretByKID method.
+	FederationSecretByKIDFunc func(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 
 	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
 	LatestNoteChunksFunc func() []model.NoteChunk
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
+
+	// ListFederationSecretSubgraphsByKIDFunc mocks the ListFederationSecretSubgraphsByKID method.
+	ListFederationSecretSubgraphsByKIDFunc func(ctx context.Context, kid string) ([]string, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -87,14 +124,48 @@ type EnvMock struct {
 			// Note is the note argument value.
 			Note *model.NoteView
 		}
+		// DecryptData holds details about calls to the DecryptData method.
+		DecryptData []struct {
+			// Bytes is the bytes argument value.
+			Bytes []byte
+		}
 		// Features holds details about calls to the Features method.
 		Features []struct {
+		}
+		// FederationClient holds details about calls to the FederationClient method.
+		FederationClient []struct {
+			// KbID is the kbID argument value.
+			KbID string
+		}
+		// FederationMaxDepth holds details about calls to the FederationMaxDepth method.
+		FederationMaxDepth []struct {
+		}
+		// FederationSecretByKBURL holds details about calls to the FederationSecretByKBURL method.
+		FederationSecretByKBURL []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// KbURL is the kbURL argument value.
+			KbURL string
+		}
+		// FederationSecretByKID holds details about calls to the FederationSecretByKID method.
+		FederationSecretByKID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Kid is the kid argument value.
+			Kid string
 		}
 		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
 		LatestNoteChunks []struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
+		}
+		// ListFederationSecretSubgraphsByKID holds details about calls to the ListFederationSecretSubgraphsByKID method.
+		ListFederationSecretSubgraphsByKID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Kid is the kid argument value.
+			Kid string
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -111,14 +182,20 @@ type EnvMock struct {
 			Query string
 		}
 	}
-	lockCanReadNote       sync.RWMutex
-	lockFeatures          sync.RWMutex
-	lockLatestNoteChunks  sync.RWMutex
-	lockLatestNoteViews   sync.RWMutex
-	lockLogger            sync.RWMutex
-	lockOpenAI            sync.RWMutex
-	lockPublicURL         sync.RWMutex
-	lockSearchLatestNotes sync.RWMutex
+	lockCanReadNote                        sync.RWMutex
+	lockDecryptData                        sync.RWMutex
+	lockFeatures                           sync.RWMutex
+	lockFederationClient                   sync.RWMutex
+	lockFederationMaxDepth                 sync.RWMutex
+	lockFederationSecretByKBURL            sync.RWMutex
+	lockFederationSecretByKID              sync.RWMutex
+	lockLatestNoteChunks                   sync.RWMutex
+	lockLatestNoteViews                    sync.RWMutex
+	lockListFederationSecretSubgraphsByKID sync.RWMutex
+	lockLogger                             sync.RWMutex
+	lockOpenAI                             sync.RWMutex
+	lockPublicURL                          sync.RWMutex
+	lockSearchLatestNotes                  sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -157,6 +234,38 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	return calls
 }
 
+// DecryptData calls DecryptDataFunc.
+func (mock *EnvMock) DecryptData(bytes []byte) ([]byte, error) {
+	if mock.DecryptDataFunc == nil {
+		panic("EnvMock.DecryptDataFunc: method is nil but Env.DecryptData was just called")
+	}
+	callInfo := struct {
+		Bytes []byte
+	}{
+		Bytes: bytes,
+	}
+	mock.lockDecryptData.Lock()
+	mock.calls.DecryptData = append(mock.calls.DecryptData, callInfo)
+	mock.lockDecryptData.Unlock()
+	return mock.DecryptDataFunc(bytes)
+}
+
+// DecryptDataCalls gets all the calls that were made to DecryptData.
+// Check the length with:
+//
+//	len(mockedEnv.DecryptDataCalls())
+func (mock *EnvMock) DecryptDataCalls() []struct {
+	Bytes []byte
+} {
+	var calls []struct {
+		Bytes []byte
+	}
+	mock.lockDecryptData.RLock()
+	calls = mock.calls.DecryptData
+	mock.lockDecryptData.RUnlock()
+	return calls
+}
+
 // Features calls FeaturesFunc.
 func (mock *EnvMock) Features() features.Features {
 	if mock.FeaturesFunc == nil {
@@ -181,6 +290,137 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// FederationClient calls FederationClientFunc.
+func (mock *EnvMock) FederationClient(kbID string) (model.Federation, error) {
+	if mock.FederationClientFunc == nil {
+		panic("EnvMock.FederationClientFunc: method is nil but Env.FederationClient was just called")
+	}
+	callInfo := struct {
+		KbID string
+	}{
+		KbID: kbID,
+	}
+	mock.lockFederationClient.Lock()
+	mock.calls.FederationClient = append(mock.calls.FederationClient, callInfo)
+	mock.lockFederationClient.Unlock()
+	return mock.FederationClientFunc(kbID)
+}
+
+// FederationClientCalls gets all the calls that were made to FederationClient.
+// Check the length with:
+//
+//	len(mockedEnv.FederationClientCalls())
+func (mock *EnvMock) FederationClientCalls() []struct {
+	KbID string
+} {
+	var calls []struct {
+		KbID string
+	}
+	mock.lockFederationClient.RLock()
+	calls = mock.calls.FederationClient
+	mock.lockFederationClient.RUnlock()
+	return calls
+}
+
+// FederationMaxDepth calls FederationMaxDepthFunc.
+func (mock *EnvMock) FederationMaxDepth() int {
+	if mock.FederationMaxDepthFunc == nil {
+		panic("EnvMock.FederationMaxDepthFunc: method is nil but Env.FederationMaxDepth was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederationMaxDepth.Lock()
+	mock.calls.FederationMaxDepth = append(mock.calls.FederationMaxDepth, callInfo)
+	mock.lockFederationMaxDepth.Unlock()
+	return mock.FederationMaxDepthFunc()
+}
+
+// FederationMaxDepthCalls gets all the calls that were made to FederationMaxDepth.
+// Check the length with:
+//
+//	len(mockedEnv.FederationMaxDepthCalls())
+func (mock *EnvMock) FederationMaxDepthCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederationMaxDepth.RLock()
+	calls = mock.calls.FederationMaxDepth
+	mock.lockFederationMaxDepth.RUnlock()
+	return calls
+}
+
+// FederationSecretByKBURL calls FederationSecretByKBURLFunc.
+func (mock *EnvMock) FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {
+	if mock.FederationSecretByKBURLFunc == nil {
+		panic("EnvMock.FederationSecretByKBURLFunc: method is nil but Env.FederationSecretByKBURL was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		KbURL string
+	}{
+		Ctx:   ctx,
+		KbURL: kbURL,
+	}
+	mock.lockFederationSecretByKBURL.Lock()
+	mock.calls.FederationSecretByKBURL = append(mock.calls.FederationSecretByKBURL, callInfo)
+	mock.lockFederationSecretByKBURL.Unlock()
+	return mock.FederationSecretByKBURLFunc(ctx, kbURL)
+}
+
+// FederationSecretByKBURLCalls gets all the calls that were made to FederationSecretByKBURL.
+// Check the length with:
+//
+//	len(mockedEnv.FederationSecretByKBURLCalls())
+func (mock *EnvMock) FederationSecretByKBURLCalls() []struct {
+	Ctx   context.Context
+	KbURL string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		KbURL string
+	}
+	mock.lockFederationSecretByKBURL.RLock()
+	calls = mock.calls.FederationSecretByKBURL
+	mock.lockFederationSecretByKBURL.RUnlock()
+	return calls
+}
+
+// FederationSecretByKID calls FederationSecretByKIDFunc.
+func (mock *EnvMock) FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error) {
+	if mock.FederationSecretByKIDFunc == nil {
+		panic("EnvMock.FederationSecretByKIDFunc: method is nil but Env.FederationSecretByKID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Kid string
+	}{
+		Ctx: ctx,
+		Kid: kid,
+	}
+	mock.lockFederationSecretByKID.Lock()
+	mock.calls.FederationSecretByKID = append(mock.calls.FederationSecretByKID, callInfo)
+	mock.lockFederationSecretByKID.Unlock()
+	return mock.FederationSecretByKIDFunc(ctx, kid)
+}
+
+// FederationSecretByKIDCalls gets all the calls that were made to FederationSecretByKID.
+// Check the length with:
+//
+//	len(mockedEnv.FederationSecretByKIDCalls())
+func (mock *EnvMock) FederationSecretByKIDCalls() []struct {
+	Ctx context.Context
+	Kid string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Kid string
+	}
+	mock.lockFederationSecretByKID.RLock()
+	calls = mock.calls.FederationSecretByKID
+	mock.lockFederationSecretByKID.RUnlock()
 	return calls
 }
 
@@ -235,6 +475,42 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// ListFederationSecretSubgraphsByKID calls ListFederationSecretSubgraphsByKIDFunc.
+func (mock *EnvMock) ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error) {
+	if mock.ListFederationSecretSubgraphsByKIDFunc == nil {
+		panic("EnvMock.ListFederationSecretSubgraphsByKIDFunc: method is nil but Env.ListFederationSecretSubgraphsByKID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Kid string
+	}{
+		Ctx: ctx,
+		Kid: kid,
+	}
+	mock.lockListFederationSecretSubgraphsByKID.Lock()
+	mock.calls.ListFederationSecretSubgraphsByKID = append(mock.calls.ListFederationSecretSubgraphsByKID, callInfo)
+	mock.lockListFederationSecretSubgraphsByKID.Unlock()
+	return mock.ListFederationSecretSubgraphsByKIDFunc(ctx, kid)
+}
+
+// ListFederationSecretSubgraphsByKIDCalls gets all the calls that were made to ListFederationSecretSubgraphsByKID.
+// Check the length with:
+//
+//	len(mockedEnv.ListFederationSecretSubgraphsByKIDCalls())
+func (mock *EnvMock) ListFederationSecretSubgraphsByKIDCalls() []struct {
+	Ctx context.Context
+	Kid string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Kid string
+	}
+	mock.lockListFederationSecretSubgraphsByKID.RLock()
+	calls = mock.calls.ListFederationSecretSubgraphsByKID
+	mock.lockListFederationSecretSubgraphsByKID.RUnlock()
 	return calls
 }
 

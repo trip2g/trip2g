@@ -422,6 +422,11 @@ type AdminMutationResolver interface {
 	CreateFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.CreateFrontmatterPatchInput) (model.CreateFrontmatterPatchOrErrorPayload, error)
 	UpdateFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.UpdateFrontmatterPatchInput) (model.UpdateFrontmatterPatchOrErrorPayload, error)
 	DeleteFrontmatterPatch(ctx context.Context, obj *model1.AdminMutation, input model.DeleteFrontmatterPatchInput) (model.DeleteFrontmatterPatchOrErrorPayload, error)
+	CreateInboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateInboundFederationSecretInput) (model.CreateInboundFederationSecretOrErrorPayload, error)
+	CreateOutboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateOutboundFederationSecretInput) (model.CreateOutboundFederationSecretOrErrorPayload, error)
+	RevokeFederationSecret(ctx context.Context, obj *model1.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error)
+	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
+	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -509,6 +514,7 @@ type AdminQueryResolver interface {
 	GoogleOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GoogleOauthCredential, error)
 	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
+	FederationSecrets(ctx context.Context, obj *model1.AdminQuery) ([]db.ListFederationSecretsRow, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
 	ConfigValues(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminConfigValue, error)
@@ -813,6 +819,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAddFederationSecretSubgraphInput,
 		ec.unmarshalInputAdminAuditLogsDateFilter,
 		ec.unmarshalInputAdminAuditLogsFilterInput,
 		ec.unmarshalInputAdminBoostyCredentialsFilterInput,
@@ -849,8 +856,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateGitTokenInput,
 		ec.unmarshalInputCreateGoogleOAuthCredentialsInput,
 		ec.unmarshalInputCreateHtmlInjectionInput,
+		ec.unmarshalInputCreateInboundFederationSecretInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
+		ec.unmarshalInputCreateOutboundFederationSecretInput,
 		ec.unmarshalInputCreatePatreonCredentialsInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateRedirectInput,
@@ -883,6 +892,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRefreshPatreonDataInput,
 		ec.unmarshalInputRegenerateCronWebhookSecretInput,
 		ec.unmarshalInputRemoveExpiredTgChatMembersInput,
+		ec.unmarshalInputRemoveFederationSecretSubgraphInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputResetTelegramPublishNoteInput,
@@ -1058,6 +1068,17 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_AdminMutation_addFederationSecretSubgraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddFederationSecretSubgraphInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_AdminMutation_banUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1246,6 +1267,17 @@ func (ec *executionContext) field_AdminMutation_createHtmlInjection_args(ctx con
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createInboundFederationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateInboundFederationSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateInboundFederationSecretInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1261,6 +1293,17 @@ func (ec *executionContext) field_AdminMutation_createOffer_args(ctx context.Con
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_createOutboundFederationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateOutboundFederationSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOutboundFederationSecretInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1532,6 +1575,17 @@ func (ec *executionContext) field_AdminMutation_removeExpiredTgChatMembers_args(
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_removeFederationSecretSubgraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRemoveFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveFederationSecretSubgraphInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_resetNotFoundPath_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1573,6 +1627,17 @@ func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_args(c
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_revokeFederationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2672,6 +2737,35 @@ func (ec *executionContext) fieldContext_ActiveOffers_nodes(_ context.Context, f
 				return ec.fieldContext_Offer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AddFederationSecretSubgraphPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.AddFederationSecretSubgraphPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AddFederationSecretSubgraphPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AddFederationSecretSubgraphPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AddFederationSecretSubgraphPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8093,6 +8187,238 @@ func (ec *executionContext) fieldContext_AdminCronWebhooksConnection_nodes(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminFederationSecret_id(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_kid(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_kid,
+		func(ctx context.Context) (any, error) {
+			return obj.Kid, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_kid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_kbUrl(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_kbUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.KbUrl, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_kbUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_description(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_createdBy,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedBy, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_revokedAt(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_revokedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_revokedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_subgraphCount(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_subgraphCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SubgraphCount, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_subgraphCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminFrontmatterPatch_id(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13088,6 +13414,211 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteFrontmatterPatch(ct
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_createInboundFederationSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createInboundFederationSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateInboundFederationSecret(ctx, obj, fc.Args["input"].(model.CreateInboundFederationSecretInput))
+		},
+		nil,
+		ec.marshalNCreateInboundFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateInboundFederationSecretOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createInboundFederationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateInboundFederationSecretOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createInboundFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createOutboundFederationSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createOutboundFederationSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateOutboundFederationSecret(ctx, obj, fc.Args["input"].(model.CreateOutboundFederationSecretInput))
+		},
+		nil,
+		ec.marshalNCreateOutboundFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOutboundFederationSecretOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createOutboundFederationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateOutboundFederationSecretOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createOutboundFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_revokeFederationSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_revokeFederationSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().RevokeFederationSecret(ctx, obj, fc.Args["id"].(int64))
+		},
+		nil,
+		ec.marshalNRevokeFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeFederationSecretOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_revokeFederationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RevokeFederationSecretOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_revokeFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_addFederationSecretSubgraph(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_addFederationSecretSubgraph,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().AddFederationSecretSubgraph(ctx, obj, fc.Args["input"].(model.AddFederationSecretSubgraphInput))
+		},
+		nil,
+		ec.marshalNAddFederationSecretSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddFederationSecretSubgraphOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_addFederationSecretSubgraph(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AddFederationSecretSubgraphOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_addFederationSecretSubgraph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_removeFederationSecretSubgraph(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_removeFederationSecretSubgraph,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().RemoveFederationSecretSubgraph(ctx, obj, fc.Args["input"].(model.RemoveFederationSecretSubgraphInput))
+		},
+		nil,
+		ec.marshalNRemoveFederationSecretSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveFederationSecretSubgraphOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_removeFederationSecretSubgraph(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RemoveFederationSecretSubgraphOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_removeFederationSecretSubgraph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -16856,6 +17387,53 @@ func (ec *executionContext) fieldContext_AdminQuery_gitHubOAuthCredentials(ctx c
 	if fc.Args, err = ec.field_AdminQuery_gitHubOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_federationSecrets(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_federationSecrets,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().FederationSecrets(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminFederationSecret2ᚕtrip2gᚋinternalᚋdbᚐListFederationSecretsRowᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFederationSecret_id(ctx, field)
+			case "kid":
+				return ec.fieldContext_AdminFederationSecret_kid(ctx, field)
+			case "kbUrl":
+				return ec.fieldContext_AdminFederationSecret_kbUrl(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminFederationSecret_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminFederationSecret_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminFederationSecret_createdBy(ctx, field)
+			case "revokedAt":
+				return ec.fieldContext_AdminFederationSecret_revokedAt(ctx, field)
+			case "subgraphCount":
+				return ec.fieldContext_AdminFederationSecret_subgraphCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFederationSecret", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -24247,6 +24825,93 @@ func (ec *executionContext) fieldContext_CreateHtmlInjectionPayload_htmlInjectio
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateInboundFederationSecretPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.CreateInboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateInboundFederationSecretPayload_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateInboundFederationSecretPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateInboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateInboundFederationSecretPayload_kid(ctx context.Context, field graphql.CollectedField, obj *model.CreateInboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateInboundFederationSecretPayload_kid,
+		func(ctx context.Context) (any, error) {
+			return obj.Kid, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateInboundFederationSecretPayload_kid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateInboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateInboundFederationSecretPayload_secretHex(ctx context.Context, field graphql.CollectedField, obj *model.CreateInboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateInboundFederationSecretPayload_secretHex,
+		func(ctx context.Context) (any, error) {
+			return obj.SecretHex, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateInboundFederationSecretPayload_secretHex(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateInboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model.CreateNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24330,6 +24995,64 @@ func (ec *executionContext) fieldContext_CreateOfferPayload_offer(_ context.Cont
 				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateOutboundFederationSecretPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.CreateOutboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateOutboundFederationSecretPayload_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateOutboundFederationSecretPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateOutboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateOutboundFederationSecretPayload_kid(ctx context.Context, field graphql.CollectedField, obj *model.CreateOutboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateOutboundFederationSecretPayload_kid,
+		func(ctx context.Context) (any, error) {
+			return obj.Kid, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateOutboundFederationSecretPayload_kid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateOutboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26476,6 +27199,16 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_updateFrontmatterPatch(ctx, field)
 			case "deleteFrontmatterPatch":
 				return ec.fieldContext_AdminMutation_deleteFrontmatterPatch(ctx, field)
+			case "createInboundFederationSecret":
+				return ec.fieldContext_AdminMutation_createInboundFederationSecret(ctx, field)
+			case "createOutboundFederationSecret":
+				return ec.fieldContext_AdminMutation_createOutboundFederationSecret(ctx, field)
+			case "revokeFederationSecret":
+				return ec.fieldContext_AdminMutation_revokeFederationSecret(ctx, field)
+			case "addFederationSecretSubgraph":
+				return ec.fieldContext_AdminMutation_addFederationSecretSubgraph(ctx, field)
+			case "removeFederationSecretSubgraph":
+				return ec.fieldContext_AdminMutation_removeFederationSecretSubgraph(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -28657,6 +29390,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allGitHubOAuthCredentials(ctx, field)
 			case "gitHubOAuthCredentials":
 				return ec.fieldContext_AdminQuery_gitHubOAuthCredentials(ctx, field)
+			case "federationSecrets":
+				return ec.fieldContext_AdminQuery_federationSecrets(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "auditLogs":
@@ -29410,6 +30145,35 @@ func (ec *executionContext) fieldContext_RemoveExpiredTgChatMembersPayload_error
 	return fc, nil
 }
 
+func (ec *executionContext) _RemoveFederationSecretSubgraphPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RemoveFederationSecretSubgraphPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RemoveFederationSecretSubgraphPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RemoveFederationSecretSubgraphPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RemoveFederationSecretSubgraphPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RequestCaptchaPayload_siteKey(ctx context.Context, field graphql.CollectedField, obj *model.RequestCaptchaPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29661,6 +30425,35 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RevokeFederationSecretPayload_revokedId(ctx context.Context, field graphql.CollectedField, obj *model.RevokeFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RevokeFederationSecretPayload_revokedId,
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RevokeFederationSecretPayload_revokedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RevokeFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -34421,6 +35214,40 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddFederationSecretSubgraphInput(ctx context.Context, obj any) (model.AddFederationSecretSubgraphInput, error) {
+	var it model.AddFederationSecretSubgraphInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"kid", "subgraphID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "kid":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kid"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kid = data
+		case "subgraphID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphID"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminAuditLogsDateFilter(ctx context.Context, obj any) (model.AdminAuditLogsDateFilter, error) {
 	var it model.AdminAuditLogsDateFilter
 	asMap := map[string]any{}
@@ -35988,6 +36815,40 @@ func (ec *executionContext) unmarshalInputCreateHtmlInjectionInput(ctx context.C
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateInboundFederationSecretInput(ctx context.Context, obj any) (model.CreateInboundFederationSecretInput, error) {
+	var it model.CreateInboundFederationSecretInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"kid", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "kid":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kid"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kid = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.CreateNotFoundIgnoredPatternInput, error) {
 	var it model.CreateNotFoundIgnoredPatternInput
 	asMap := map[string]any{}
@@ -36064,6 +36925,54 @@ func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, 
 				return it, err
 			}
 			it.SubgraphIds = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateOutboundFederationSecretInput(ctx context.Context, obj any) (model.CreateOutboundFederationSecretInput, error) {
+	var it model.CreateOutboundFederationSecretInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"kid", "secretHex", "kbURL", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "kid":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kid"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kid = data
+		case "secretHex":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secretHex"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SecretHex = data
+		case "kbURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kbURL"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KbURL = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
 		}
 	}
 
@@ -37054,6 +37963,40 @@ func (ec *executionContext) unmarshalInputRemoveExpiredTgChatMembersInput(ctx co
 				return it, err
 			}
 			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRemoveFederationSecretSubgraphInput(ctx context.Context, obj any) (model.RemoveFederationSecretSubgraphInput, error) {
+	var it model.RemoveFederationSecretSubgraphInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"kid", "subgraphID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "kid":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kid"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kid = data
+		case "subgraphID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphID"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphID = data
 		}
 	}
 
@@ -38694,6 +39637,29 @@ func (ec *executionContext) unmarshalInputViewerOffersFilter(ctx context.Context
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _AddFederationSecretSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AddFederationSecretSubgraphOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.AddFederationSecretSubgraphPayload:
+		return ec._AddFederationSecretSubgraphPayload(ctx, sel, &obj)
+	case *model.AddFederationSecretSubgraphPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AddFederationSecretSubgraphPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _AdminCancelTelegramAccountAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AdminCancelTelegramAccountAuthOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -39299,6 +40265,29 @@ func (ec *executionContext) _CreateHtmlInjectionOrErrorPayload(ctx context.Conte
 	}
 }
 
+func (ec *executionContext) _CreateInboundFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateInboundFederationSecretOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateInboundFederationSecretPayload:
+		return ec._CreateInboundFederationSecretPayload(ctx, sel, &obj)
+	case *model.CreateInboundFederationSecretPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateInboundFederationSecretPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -39340,6 +40329,29 @@ func (ec *executionContext) _CreateOfferOrErrorPayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._CreateOfferPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreateOutboundFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateOutboundFederationSecretOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateOutboundFederationSecretPayload:
+		return ec._CreateOutboundFederationSecretPayload(ctx, sel, &obj)
+	case *model.CreateOutboundFederationSecretPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateOutboundFederationSecretPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -40049,6 +41061,29 @@ func (ec *executionContext) _RemoveExpiredTgChatMembersOrErrorPayload(ctx contex
 	}
 }
 
+func (ec *executionContext) _RemoveFederationSecretSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RemoveFederationSecretSubgraphOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RemoveFederationSecretSubgraphPayload:
+		return ec._RemoveFederationSecretSubgraphPayload(ctx, sel, &obj)
+	case *model.RemoveFederationSecretSubgraphPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RemoveFederationSecretSubgraphPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -40159,6 +41194,29 @@ func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context
 			return graphql.Null
 		}
 		return ec._RestorePatreonCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RevokeFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RevokeFederationSecretOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RevokeFederationSecretPayload:
+		return ec._RevokeFederationSecretPayload(ctx, sel, &obj)
+	case *model.RevokeFederationSecretPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RevokeFederationSecretPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -41032,6 +42090,45 @@ func (ec *executionContext) _ActiveOffers(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("ActiveOffers")
 		case "nodes":
 			out.Values[i] = ec._ActiveOffers_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var addFederationSecretSubgraphPayloadImplementors = []string{"AddFederationSecretSubgraphPayload", "AddFederationSecretSubgraphOrErrorPayload"}
+
+func (ec *executionContext) _AddFederationSecretSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AddFederationSecretSubgraphPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, addFederationSecretSubgraphPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AddFederationSecretSubgraphPayload")
+		case "success":
+			out.Values[i] = ec._AddFederationSecretSubgraphPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -44739,6 +45836,71 @@ func (ec *executionContext) _AdminCronWebhooksConnection(ctx context.Context, se
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFederationSecretImplementors = []string{"AdminFederationSecret"}
+
+func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.SelectionSet, obj *db.ListFederationSecretsRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFederationSecretImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFederationSecret")
+		case "id":
+			out.Values[i] = ec._AdminFederationSecret_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kid":
+			out.Values[i] = ec._AdminFederationSecret_kid(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kbUrl":
+			out.Values[i] = ec._AdminFederationSecret_kbUrl(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._AdminFederationSecret_description(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._AdminFederationSecret_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdBy":
+			out.Values[i] = ec._AdminFederationSecret_createdBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokedAt":
+			out.Values[i] = ec._AdminFederationSecret_revokedAt(ctx, field, obj)
+		case "subgraphCount":
+			out.Values[i] = ec._AdminFederationSecret_subgraphCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -48989,6 +50151,186 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createInboundFederationSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createInboundFederationSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createOutboundFederationSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createOutboundFederationSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "revokeFederationSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_revokeFederationSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "addFederationSecretSubgraph":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_addFederationSecretSubgraph(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "removeFederationSecretSubgraph":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_removeFederationSecretSubgraph(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -51800,6 +53142,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_gitHubOAuthCredentials(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "federationSecrets":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_federationSecrets(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -57333,6 +58711,55 @@ func (ec *executionContext) _CreateHtmlInjectionPayload(ctx context.Context, sel
 	return out
 }
 
+var createInboundFederationSecretPayloadImplementors = []string{"CreateInboundFederationSecretPayload", "CreateInboundFederationSecretOrErrorPayload"}
+
+func (ec *executionContext) _CreateInboundFederationSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateInboundFederationSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createInboundFederationSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateInboundFederationSecretPayload")
+		case "id":
+			out.Values[i] = ec._CreateInboundFederationSecretPayload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kid":
+			out.Values[i] = ec._CreateInboundFederationSecretPayload_kid(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "secretHex":
+			out.Values[i] = ec._CreateInboundFederationSecretPayload_secretHex(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createNotFoundIgnoredPatternPayloadImplementors = []string{"CreateNotFoundIgnoredPatternPayload", "CreateNotFoundIgnoredPatternOrErrorPayload"}
 
 func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNotFoundIgnoredPatternPayload) graphql.Marshaler {
@@ -57385,6 +58812,50 @@ func (ec *executionContext) _CreateOfferPayload(ctx context.Context, sel ast.Sel
 			out.Values[i] = graphql.MarshalString("CreateOfferPayload")
 		case "offer":
 			out.Values[i] = ec._CreateOfferPayload_offer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var createOutboundFederationSecretPayloadImplementors = []string{"CreateOutboundFederationSecretPayload", "CreateOutboundFederationSecretOrErrorPayload"}
+
+func (ec *executionContext) _CreateOutboundFederationSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateOutboundFederationSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createOutboundFederationSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateOutboundFederationSecretPayload")
+		case "id":
+			out.Values[i] = ec._CreateOutboundFederationSecretPayload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kid":
+			out.Values[i] = ec._CreateOutboundFederationSecretPayload_kid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -58304,7 +59775,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -60672,6 +62143,45 @@ func (ec *executionContext) _RemoveExpiredTgChatMembersPayload(ctx context.Conte
 	return out
 }
 
+var removeFederationSecretSubgraphPayloadImplementors = []string{"RemoveFederationSecretSubgraphPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
+
+func (ec *executionContext) _RemoveFederationSecretSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveFederationSecretSubgraphPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, removeFederationSecretSubgraphPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RemoveFederationSecretSubgraphPayload")
+		case "success":
+			out.Values[i] = ec._RemoveFederationSecretSubgraphPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var requestCaptchaPayloadImplementors = []string{"RequestCaptchaPayload", "RequestEmailSignInCodeOrErrorPayload"}
 
 func (ec *executionContext) _RequestCaptchaPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestCaptchaPayload) graphql.Marshaler {
@@ -60880,6 +62390,45 @@ func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Contex
 			out.Values[i] = graphql.MarshalString("RestorePatreonCredentialsPayload")
 		case "patreonCredentials":
 			out.Values[i] = ec._RestorePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var revokeFederationSecretPayloadImplementors = []string{"RevokeFederationSecretPayload", "RevokeFederationSecretOrErrorPayload"}
+
+func (ec *executionContext) _RevokeFederationSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RevokeFederationSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, revokeFederationSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RevokeFederationSecretPayload")
+		case "revokedId":
+			out.Values[i] = ec._RevokeFederationSecretPayload_revokedId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -63982,6 +65531,21 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddFederationSecretSubgraphInput(ctx context.Context, v any) (model.AddFederationSecretSubgraphInput, error) {
+	res, err := ec.unmarshalInputAddFederationSecretSubgraphInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAddFederationSecretSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddFederationSecretSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AddFederationSecretSubgraphOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AddFederationSecretSubgraphOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdmin2trip2gᚋinternalᚋdbᚐAdmin(ctx context.Context, sel ast.SelectionSet, v db.Admin) graphql.Marshaler {
 	return ec._Admin(ctx, sel, &v)
 }
@@ -65245,6 +66809,54 @@ func (ec *executionContext) marshalNAdminCronWebhooksConnection2ᚖtrip2gᚋinte
 		return graphql.Null
 	}
 	return ec._AdminCronWebhooksConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminFederationSecret2trip2gᚋinternalᚋdbᚐListFederationSecretsRow(ctx context.Context, sel ast.SelectionSet, v db.ListFederationSecretsRow) graphql.Marshaler {
+	return ec._AdminFederationSecret(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminFederationSecret2ᚕtrip2gᚋinternalᚋdbᚐListFederationSecretsRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.ListFederationSecretsRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminFederationSecret2trip2gᚋinternalᚋdbᚐListFederationSecretsRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNAdminFrontmatterPatch2trip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v db.NoteFrontmatterPatch) graphql.Marshaler {
@@ -67773,6 +69385,21 @@ func (ec *executionContext) marshalNCreateHtmlInjectionOrErrorPayload2trip2gᚋi
 	return ec._CreateHtmlInjectionOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateInboundFederationSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateInboundFederationSecretInput(ctx context.Context, v any) (model.CreateInboundFederationSecretInput, error) {
+	res, err := ec.unmarshalInputCreateInboundFederationSecretInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateInboundFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateInboundFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateInboundFederationSecretOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateInboundFederationSecretOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.CreateNotFoundIgnoredPatternInput, error) {
 	res, err := ec.unmarshalInputCreateNotFoundIgnoredPatternInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -67801,6 +69428,21 @@ func (ec *executionContext) marshalNCreateOfferOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._CreateOfferOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateOutboundFederationSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOutboundFederationSecretInput(ctx context.Context, v any) (model.CreateOutboundFederationSecretInput, error) {
+	res, err := ec.unmarshalInputCreateOutboundFederationSecretInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateOutboundFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOutboundFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateOutboundFederationSecretOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateOutboundFederationSecretOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreatePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePatreonCredentialsInput(ctx context.Context, v any) (model.CreatePatreonCredentialsInput, error) {
@@ -69183,6 +70825,21 @@ func (ec *executionContext) marshalNRemoveExpiredTgChatMembersOrErrorPayload2tri
 	return ec._RemoveExpiredTgChatMembersOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNRemoveFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveFederationSecretSubgraphInput(ctx context.Context, v any) (model.RemoveFederationSecretSubgraphInput, error) {
+	res, err := ec.unmarshalInputRemoveFederationSecretSubgraphInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRemoveFederationSecretSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveFederationSecretSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RemoveFederationSecretSubgraphOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RemoveFederationSecretSubgraphOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -69256,6 +70913,16 @@ func (ec *executionContext) marshalNRestorePatreonCredentialsOrErrorPayload2trip
 		return graphql.Null
 	}
 	return ec._RestorePatreonCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRevokeFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RevokeFederationSecretOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RevokeFederationSecretOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, v any) (model.Role, error) {

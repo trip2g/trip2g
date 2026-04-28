@@ -10,3 +10,5 @@ $trip2g_admin_menu_integrations $trip2g_admin_catalog
 			close_icon <= Spread_close
 		githuboauth <= GitHubOAuth $trip2g_admin_oauth_github_catalog
 			close_icon <= Spread_close
+		federation <= Federation $trip2g_admin_federation_catalog
+			close_icon <= Spread_close

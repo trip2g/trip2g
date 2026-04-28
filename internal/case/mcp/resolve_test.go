@@ -148,18 +148,23 @@ soul_profile:
 		require.Nil(t, resp.Error)
 
 		result := resp.Result.(mcp.ListToolsResult)
-		require.GreaterOrEqual(t, len(result.Tools), 3) // search, similar, note_html
+		require.Len(t, result.Tools, 6)
 
 		var toolNames []string
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Contains(t, toolNames, "search")
-		require.Contains(t, toolNames, "similar")
-		require.Contains(t, toolNames, "note_html")
+		require.Equal(t, []string{
+			"search",
+			"similar",
+			"note_html",
+			"federated_search",
+			"federated_similar",
+			"federated_note_html",
+		}, toolNames)
 	})
 
-	t.Run("tools/list includes dynamic methods", func(t *testing.T) {
+	t.Run("tools/list ignores dynamic methods", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			MCPMethod:      "code-review",
 			MCPDescription: "Detailed code review",
@@ -185,15 +190,12 @@ soul_profile:
 
 		result := resp.Result.(mcp.ListToolsResult)
 
-		var found bool
+		var toolNames []string
 		for _, tool := range result.Tools {
-			if tool.Name == "code-review" {
-				found = true
-				require.Equal(t, "Detailed code review", tool.Description)
-				break
-			}
+			toolNames = append(toolNames, tool.Name)
 		}
-		require.True(t, found, "dynamic method not found in tools list")
+		require.Len(t, toolNames, 6)
+		require.NotContains(t, toolNames, "code-review")
 	})
 
 	t.Run("method not found returns error", func(t *testing.T) {
@@ -283,6 +285,9 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
 	}
 
 	params := mcp.CallToolParams{
@@ -317,6 +322,161 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	require.Len(t, payload.Results[0].Matches, 1)
 	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
 	require.Contains(t, payload.Results[0].Matches[0].Snippet, "обидчику")
+}
+
+func TestSearchMarksFederationKBNotes(t *testing.T) {
+	note := &appmodel.NoteView{
+		Path:                    "team/bob.md",
+		PathID:                  17,
+		Title:                   "Bob's KB",
+		Permalink:               "/team/bob",
+		MCPFederationKBURL:      "https://bob.team.io/_system/mcp",
+		MCPFederationKBID:       "bob",
+		MCPFederationKBMaxDepth: 1,
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{{
+				NoteView:           note,
+				URL:                note.Permalink,
+				Score:              0.71,
+				HighlightedContent: []string{"Use when: Bob's work-status updates."},
+			}}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://hub.local"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"bob"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "federation_kb", payload.Results[0].Kind)
+	require.NotNil(t, payload.Results[0].Federation)
+	require.Equal(t, "bob", payload.Results[0].Federation.KBID)
+	require.Equal(t, "https://bob.team.io/_system/mcp", payload.Results[0].Federation.KBURL)
+	require.Contains(t, payload.Results[0].Federation.AgentInstruction, `federated_search with kb_id="bob"`)
+}
+
+func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
+	federationNote := &appmodel.NoteView{
+		Path:               "team/bob.md",
+		PathID:             17,
+		Title:              "Bob's KB",
+		Permalink:          "/team/bob",
+		MCPFederationKBURL: "https://bob.team.io/_system/mcp",
+		MCPFederationKBID:  "bob",
+	}
+	localNote := &appmodel.NoteView{
+		Path:      "local.md",
+		PathID:    18,
+		Title:     "Local",
+		Permalink: "/local",
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{
+				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
+				{NoteView: localNote, URL: localNote.Permalink, Score: 1},
+			}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://hub.local"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return note.PathID != federationNote.PathID, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"bob"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "Local", payload.Results[0].Title)
+}
+
+func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			return appmodel.NewNoteViews()
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "federated_search",
+		Arguments: json.RawMessage(`{"query":"anything"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.False(t, result.IsError)
+	payload := result.StructuredContent.(mcp.FederationStatusPayload)
+	require.Equal(t, "federation_not_configured", payload.Status)
+	require.Contains(t, result.Content[0].Text, "Federation is not configured")
 }
 
 func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {

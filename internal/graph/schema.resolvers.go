@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/addfederationsecretsubgraph"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
 	"trip2g/internal/case/admin/checkhealth"
@@ -32,8 +33,10 @@ import (
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
+	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
@@ -57,13 +60,16 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
+	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
+	"trip2g/internal/case/admin/removefederationsecretsubgraph"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/revokefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -1203,6 +1209,31 @@ func (r *adminMutationResolver) DeleteFrontmatterPatch(ctx context.Context, obj 
 	return deletefrontmatterpatch.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateInboundFederationSecret is the resolver for the createInboundFederationSecret field.
+func (r *adminMutationResolver) CreateInboundFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateInboundFederationSecretInput) (model.CreateInboundFederationSecretOrErrorPayload, error) {
+	return createinboundfederationsecret.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateOutboundFederationSecret is the resolver for the createOutboundFederationSecret field.
+func (r *adminMutationResolver) CreateOutboundFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateOutboundFederationSecretInput) (model.CreateOutboundFederationSecretOrErrorPayload, error) {
+	return createoutboundfederationsecret.Resolve(ctx, r.env(ctx), input)
+}
+
+// RevokeFederationSecret is the resolver for the revokeFederationSecret field.
+func (r *adminMutationResolver) RevokeFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error) {
+	return revokefederationsecret.Resolve(ctx, r.env(ctx), id)
+}
+
+// AddFederationSecretSubgraph is the resolver for the addFederationSecretSubgraph field.
+func (r *adminMutationResolver) AddFederationSecretSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error) {
+	return addfederationsecretsubgraph.Resolve(ctx, r.env(ctx), input)
+}
+
+// RemoveFederationSecretSubgraph is the resolver for the removeFederationSecretSubgraph field.
+func (r *adminMutationResolver) RemoveFederationSecretSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error) {
+	return removefederationsecretsubgraph.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1585,6 +1616,11 @@ func (r *adminQueryResolver) GitHubOAuthCredentials(ctx context.Context, obj *ap
 		return nil, err
 	}
 	return &creds, nil
+}
+
+// FederationSecrets is the resolver for the federationSecrets field.
+func (r *adminQueryResolver) FederationSecrets(ctx context.Context, obj *appmodel.AdminQuery) ([]db.ListFederationSecretsRow, error) {
+	return listfederationsecrets.Resolve(ctx, r.env(ctx))
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.

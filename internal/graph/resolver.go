@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/addfederationsecretsubgraph"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
 	"trip2g/internal/case/admin/checkhealth"
@@ -18,8 +19,10 @@ import (
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
+	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
@@ -43,13 +46,16 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
+	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
+	"trip2g/internal/case/admin/removefederationsecretsubgraph"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/revokefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -327,6 +333,14 @@ type Env interface {
 	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
 	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+
+	// Federation secrets
+	createinboundfederationsecret.Env
+	createoutboundfederationsecret.Env
+	revokefederationsecret.Env
+	addfederationsecretsubgraph.Env
+	removefederationsecretsubgraph.Env
+	listfederationsecrets.Env
 
 	// Frontmatter patches
 	createfrontmatterpatch.Env

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"trip2g/internal/case/similarnotes"
+	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -36,11 +37,17 @@ const (
 
 type Env interface {
 	similarnotes.Env
+	model.FederationClientFactory
 	SearchLatestNotes(query string) ([]model.SearchResult, error)
 	LatestNoteChunks() []model.NoteChunk
 	OpenAI() *openai.Client
 	PublicURL() string
 	Logger() logger.Logger
+	FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error)
+	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
+	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
+	DecryptData([]byte) ([]byte, error)
+	FederationMaxDepth() int
 }
 
 // unmarshalArgs unmarshals JSON arguments into the target type.
@@ -161,20 +168,51 @@ func handleToolsList(env Env, id any) Response {
 				},
 			},
 		},
-	}
-
-	// Add dynamic methods from notes with mcp_method
-	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod != "" && note.MCPMethod != MCPMethodInitialize {
-			tools = append(tools, Tool{
-				Name:        note.MCPMethod,
-				Description: note.MCPDescription,
-				InputSchema: &InputSchema{
-					Type:       "object",
-					Properties: map[string]Property{},
+		{
+			Name:        "federated_search",
+			Description: "Search connected knowledge bases. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"query":  {Type: "string", Description: "Search query"},
+					"kb_id":  {Type: "string", Description: "Target knowledge base id"},
+					"kb_ids": {Type: "array", Description: "Target knowledge base ids"},
 				},
-			})
-		}
+				Required: []string{"query"},
+			},
+		},
+		{
+			Name:        "federated_similar",
+			Description: "Find remote notes similar to a known note reference inside a connected knowledge base.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":   {Type: "string", Description: "Target knowledge base id"},
+					"path":    {Type: "string", Description: "Remote note path"},
+					"href":    {Type: "string", Description: "Remote note href"},
+					"pid":     {Type: "number", Description: "Remote stable note id"},
+					"note_id": {Type: "number", Description: "Remote stable note id"},
+					"limit":   {Type: "number", Description: "Max number of results"},
+				},
+				Required: []string{"kb_id"},
+			},
+		},
+		{
+			Name:        "federated_note_html",
+			Description: "Read a remote note by pid, note_id, href, path, or match_id inside a connected knowledge base.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":    {Type: "string", Description: "Target knowledge base id"},
+					"path":     {Type: "string", Description: "Remote note path"},
+					"href":     {Type: "string", Description: "Remote note href"},
+					"pid":      {Type: "number", Description: "Remote stable note id"},
+					"note_id":  {Type: "number", Description: "Remote stable note id"},
+					"match_id": {Type: "string", Description: "Focused match id from remote search results"},
+				},
+				Required: []string{"kb_id"},
+			},
+		},
 	}
 
 	return successResponse(id, ListToolsResult{Tools: tools})
@@ -194,6 +232,12 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
 	case "note_html":
 		return handleNoteHTML(env, req.ID, params.Arguments)
+	case "federated_search":
+		return handleFederatedSearch(ctx, env, req.ID, params.Arguments)
+	case "federated_similar":
+		return handleFederatedSimilar(ctx, env, req.ID, params.Arguments)
+	case "federated_note_html":
+		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
 	default:
 		return handleDynamicMethod(env, req.ID, params.Name)
 	}
@@ -228,6 +272,11 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		}
 	}
 	results = filterSearchResults(results)
+	results, err = filterFederationKBSearchResults(ctx, env, results)
+	if err != nil {
+		log.Error("federation kb access check failed", "error", err, "query", args.Query)
+		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
+	}
 
 	payload := buildSearchPayload(args.Query, results, env.PublicURL(), env.LatestNoteChunks())
 
@@ -268,6 +317,25 @@ func filterSearchResults(results []model.SearchResult) []model.SearchResult {
 		filtered = append(filtered, r)
 	}
 	return filtered
+}
+
+func filterFederationKBSearchResults(ctx context.Context, env Env, results []model.SearchResult) ([]model.SearchResult, error) {
+	filtered := make([]model.SearchResult, 0, len(results))
+	for _, r := range results {
+		if r.NoteView == nil || r.NoteView.MCPFederationKBURL == "" {
+			filtered = append(filtered, r)
+			continue
+		}
+
+		ok, err := env.CanReadNote(ctx, r.NoteView)
+		if err != nil {
+			return nil, fmt.Errorf("check federation kb-note access: %w", err)
+		}
+		if ok {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered, nil
 }
 
 func buildSearchPayload(query string, results []model.SearchResult, publicURL string, chunks []model.NoteChunk) SearchResultPayload {
@@ -381,7 +449,7 @@ func overlapTokenScore(a string, b string) int {
 }
 
 func searchResultItemFromNote(note *model.NoteView, score float64, publicURL string) SearchResultItem {
-	return SearchResultItem{
+	item := SearchResultItem{
 		Title:    note.Title,
 		NoteID:   note.PathID,
 		NotePath: note.Path,
@@ -390,6 +458,23 @@ func searchResultItemFromNote(note *model.NoteView, score float64, publicURL str
 		Kind:     noteKind(note),
 		Score:    score,
 	}
+	if kb := model.NewMCPFederationNote(note); kb != nil {
+		item.Kind = "federation_kb"
+		item.Federation = &FederationRef{
+			KBID:             kb.ID,
+			KBURL:            kb.URL,
+			AgentInstruction: federationAgentInstruction(kb.ID),
+		}
+	}
+	return item
+}
+
+func federationAgentInstruction(kbID string) string {
+	return fmt.Sprintf(
+		`This is a knowledge base pointer. To search inside it, call federated_search with kb_id="%s". To open notes from it, call federated_note_html(note_id=..., kb_id="%s").`,
+		kbID,
+		kbID,
+	)
 }
 
 func noteKind(note *model.NoteView) string {

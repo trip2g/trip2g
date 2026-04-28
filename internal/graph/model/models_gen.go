@@ -14,6 +14,10 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type AddFederationSecretSubgraphOrErrorPayload interface {
+	IsAddFederationSecretSubgraphOrErrorPayload()
+}
+
 type AdminCancelTelegramAccountAuthOrErrorPayload interface {
 	IsAdminCancelTelegramAccountAuthOrErrorPayload()
 }
@@ -122,12 +126,20 @@ type CreateHTMLInjectionOrErrorPayload interface {
 	IsCreateHTMLInjectionOrErrorPayload()
 }
 
+type CreateInboundFederationSecretOrErrorPayload interface {
+	IsCreateInboundFederationSecretOrErrorPayload()
+}
+
 type CreateNotFoundIgnoredPatternOrErrorPayload interface {
 	IsCreateNotFoundIgnoredPatternOrErrorPayload()
 }
 
 type CreateOfferOrErrorPayload interface {
 	IsCreateOfferOrErrorPayload()
+}
+
+type CreateOutboundFederationSecretOrErrorPayload interface {
+	IsCreateOutboundFederationSecretOrErrorPayload()
 }
 
 type CreatePatreonCredentialsOrErrorPayload interface {
@@ -250,6 +262,10 @@ type RemoveExpiredTgChatMembersOrErrorPayload interface {
 	IsRemoveExpiredTgChatMembersOrErrorPayload()
 }
 
+type RemoveFederationSecretSubgraphOrErrorPayload interface {
+	IsRemoveFederationSecretSubgraphOrErrorPayload()
+}
+
 type RequestEmailSignInCodeOrErrorPayload interface {
 	IsRequestEmailSignInCodeOrErrorPayload()
 }
@@ -268,6 +284,10 @@ type RestoreBoostyCredentialsOrErrorPayload interface {
 
 type RestorePatreonCredentialsOrErrorPayload interface {
 	IsRestorePatreonCredentialsOrErrorPayload()
+}
+
+type RevokeFederationSecretOrErrorPayload interface {
+	IsRevokeFederationSecretOrErrorPayload()
 }
 
 type RunCronJobOrErrorPayload interface {
@@ -423,6 +443,17 @@ type ActiveOffers struct {
 }
 
 func (ActiveOffers) IsViewerOffers() {}
+
+type AddFederationSecretSubgraphInput struct {
+	Kid        string `json:"kid"`
+	SubgraphID int64  `json:"subgraphID"`
+}
+
+type AddFederationSecretSubgraphPayload struct {
+	Success bool `json:"success"`
+}
+
+func (AddFederationSecretSubgraphPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
 
 type AdminAdminsConnection struct {
 	Nodes []db.Admin `json:"nodes"`
@@ -1088,6 +1119,19 @@ type CreateHTMLInjectionPayload struct {
 
 func (CreateHTMLInjectionPayload) IsCreateHTMLInjectionOrErrorPayload() {}
 
+type CreateInboundFederationSecretInput struct {
+	Kid         string  `json:"kid"`
+	Description *string `json:"description,omitempty"`
+}
+
+type CreateInboundFederationSecretPayload struct {
+	ID        int64  `json:"id"`
+	Kid       string `json:"kid"`
+	SecretHex string `json:"secretHex"`
+}
+
+func (CreateInboundFederationSecretPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
+
 type CreateNotFoundIgnoredPatternInput struct {
 	Pattern string `json:"pattern"`
 }
@@ -1111,6 +1155,20 @@ type CreateOfferPayload struct {
 }
 
 func (CreateOfferPayload) IsCreateOfferOrErrorPayload() {}
+
+type CreateOutboundFederationSecretInput struct {
+	Kid         string  `json:"kid"`
+	SecretHex   string  `json:"secretHex"`
+	KbURL       string  `json:"kbURL"`
+	Description *string `json:"description,omitempty"`
+}
+
+type CreateOutboundFederationSecretPayload struct {
+	ID  int64  `json:"id"`
+	Kid string `json:"kid"`
+}
+
+func (CreateOutboundFederationSecretPayload) IsCreateOutboundFederationSecretOrErrorPayload() {}
 
 type CreatePatreonCredentialsInput struct {
 	CreatorAccessToken string `json:"creatorAccessToken"`
@@ -1524,6 +1582,16 @@ func (ErrorPayload) IsUpdateFrontmatterPatchOrErrorPayload() {}
 
 func (ErrorPayload) IsDeleteFrontmatterPatchOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateOutboundFederationSecretOrErrorPayload() {}
+
+func (ErrorPayload) IsRevokeFederationSecretOrErrorPayload() {}
+
+func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
+
+func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -1730,6 +1798,17 @@ type RemoveExpiredTgChatMembersPayload struct {
 
 func (RemoveExpiredTgChatMembersPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
 
+type RemoveFederationSecretSubgraphInput struct {
+	Kid        string `json:"kid"`
+	SubgraphID int64  `json:"subgraphID"`
+}
+
+type RemoveFederationSecretSubgraphPayload struct {
+	Success bool `json:"success"`
+}
+
+func (RemoveFederationSecretSubgraphPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
+
 type RequestCaptchaPayload struct {
 	SiteKey string `json:"siteKey"`
 }
@@ -1786,6 +1865,12 @@ type RestorePatreonCredentialsPayload struct {
 }
 
 func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
+
+type RevokeFederationSecretPayload struct {
+	RevokedID int64 `json:"revokedId"`
+}
+
+func (RevokeFederationSecretPayload) IsRevokeFederationSecretOrErrorPayload() {}
 
 type RunCronJobInput struct {
 	ID int64 `json:"id"`

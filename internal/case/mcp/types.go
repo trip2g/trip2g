@@ -1,6 +1,10 @@
 package mcp
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"trip2g/internal/model"
+)
 
 // JSON-RPC 2.0 types
 
@@ -69,20 +73,77 @@ type SearchArguments struct {
 	Query string `json:"query"`
 }
 
+type FederatedSearchArguments struct {
+	Query string   `json:"query"`
+	KBID  string   `json:"kb_id,omitempty"`
+	KBIDs []string `json:"kb_ids,omitempty"`
+}
+
+type FederatedSimilarArguments struct {
+	KBID   string `json:"kb_id"`
+	PID    int64  `json:"pid,omitempty"`
+	NoteID int64  `json:"note_id,omitempty"`
+	Path   string `json:"path,omitempty"`
+	Href   string `json:"href,omitempty"`
+	Limit  int    `json:"limit,omitempty"`
+}
+
+type FederatedNoteHTMLArguments struct {
+	KBID    string `json:"kb_id"`
+	PID     int64  `json:"pid,omitempty"`
+	NoteID  int64  `json:"note_id,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Href    string `json:"href,omitempty"`
+	MatchID string `json:"match_id,omitempty"`
+}
+
+type FederationRef struct {
+	KBID             string `json:"kb_id"`
+	KBURL            string `json:"kb_url"`
+	AgentInstruction string `json:"agent_instruction"`
+}
+
+type PayloadContext struct {
+	KBInstructions map[string]string `json:"kb_instructions,omitempty"`
+}
+
+type FederationStatusPayload struct {
+	Status  string `json:"status"`
+	KBID    string `json:"kb_id,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+type FederatedCallPayload struct {
+	Results []FederatedCallResult `json:"results,omitempty"`
+	Errors  []FederatedCallError  `json:"errors,omitempty"`
+}
+
+type FederatedCallResult struct {
+	KBID    string                 `json:"kb_id"`
+	Result  model.FederationResult `json:"result"`
+	Latency string                 `json:"latency"`
+}
+
+type FederatedCallError struct {
+	KBID  string `json:"kb_id"`
+	Error string `json:"error"`
+}
+
 type SearchResultPayload struct {
 	Query   string             `json:"query"`
 	Results []SearchResultItem `json:"results"`
 }
 
 type SearchResultItem struct {
-	Title    string        `json:"title"`
-	NoteID   int64         `json:"note_id"`
-	NotePath string        `json:"note_path"`
-	Href     string        `json:"href"`
-	URL      string        `json:"url"`
-	Kind     string        `json:"kind"`
-	Score    float64       `json:"score"`
-	Matches  []SearchMatch `json:"matches,omitempty"`
+	Title      string         `json:"title"`
+	NoteID     int64          `json:"note_id"`
+	NotePath   string         `json:"note_path"`
+	Href       string         `json:"href"`
+	URL        string         `json:"url"`
+	Kind       string         `json:"kind"`
+	Score      float64        `json:"score"`
+	Matches    []SearchMatch  `json:"matches,omitempty"`
+	Federation *FederationRef `json:"federation,omitempty"`
 }
 
 type SearchMatch struct {

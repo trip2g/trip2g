@@ -1,0 +1,27 @@
+$trip2g_admin_federation_create_inbound $mol_page
+	title @ \Add Inbound Secret
+	SecretHexView $mol_view
+		sub /
+			<= SecretHex_labeler $mol_labeler
+				title @ \Secret (copy now — shown once)
+				Content <= SecretHexCell $trip2g_admin_cell
+					content <= secret_hex? \
+	body /
+		<= Form $mol_form
+			body /
+				<= Kid_field $mol_form_field
+					name @ \Key ID (kid)
+					bid <= kid_bid \
+					Content <= kid_control $mol_string
+						value? <=> kid? \
+				<= Description_field $mol_form_field
+					name @ \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description? \
+			buttons /
+				<= Submit $mol_button_major
+					title @ \Generate Secret
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

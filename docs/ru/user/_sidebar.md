@@ -34,6 +34,7 @@ title: "Навигация"
 ### Автоматизация
 
 - [[ru/user/mcp|MCP-сервер]]
+- [[ru/user/federation|MCP Federation]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
 - [[ru/user/cron_webhooks|Вебхуки по расписанию]]
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]

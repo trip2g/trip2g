@@ -229,6 +229,10 @@ type NoteView struct {
 	MCPMethod      string // method name for MCP tools/list
 	MCPDescription string // description for MCP tools/list
 
+	MCPFederationKBURL      string
+	MCPFederationKBID       string
+	MCPFederationKBMaxDepth int
+
 	// RSS feed fields from frontmatter.
 	RSSTitle       string
 	RSSDescription string
@@ -293,6 +297,8 @@ type NoteViews struct {
 	Sitemap []byte `json:"-"`
 
 	Subgraphs map[string]*NoteSubgraph `json:"-"`
+
+	MCPFederationNotes []*MCPFederationNote `json:"-"`
 
 	// RouteMap indexes notes by host -> path -> *NoteView.
 	// host="" for main domain alias routes.
@@ -552,6 +558,7 @@ func (n *NoteView) ExtractMetaData() error {
 	n.extractLayout()
 
 	n.extractMCPFields()
+	n.extractMCPFederationFields()
 
 	n.extractRSSFields()
 

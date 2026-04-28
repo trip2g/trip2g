@@ -16,6 +16,7 @@ title: "Navigation"
 - [[en/user/telegram|Telegram publishing]]
 - [[en/user/monetization|Monetization]]
 - [[en/user/mcp|AI assistant (MCP)]]
+- [[en/user/federation|MCP Federation]]
 
 ### Customization
 

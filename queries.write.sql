@@ -1050,3 +1050,22 @@ returning *;
 
 -- name: DeleteFrontmatterPatch :exec
 delete from note_frontmatter_patches where id = ?;
+
+-- name: InsertFederationSecret :one
+insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
+values (?, ?, ?, ?, ?)
+returning *;
+
+-- name: RevokeFederationSecret :exec
+update federation_secrets
+   set revoked_at = current_timestamp
+ where id = ?;
+
+-- name: InsertFederationSecretSubgraph :exec
+insert into federation_secret_subgraphs (kid, subgraph_id, created_by)
+values (?, ?, ?);
+
+-- name: DeleteFederationSecretSubgraph :exec
+delete from federation_secret_subgraphs
+ where kid = ?
+   and subgraph_id = ?;

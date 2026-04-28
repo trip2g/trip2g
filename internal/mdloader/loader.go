@@ -228,6 +228,7 @@ func Load(options Options) (*model.NoteViews, error) {
 
 	ldr.nvs.ExtractNoteList()
 	ldr.nvs.ExtractSubgraphs()
+	ldr.nvs.ExtractMCPFederationNotes()
 
 	err = ldr.findAssets()
 	if err != nil {

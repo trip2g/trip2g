@@ -1140,6 +1140,8 @@ type AdminQuery {
   allGitHubOAuthCredentials: AdminGitHubOAuthCredentialsConnection!
   gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
 
+  federationSecrets: [AdminFederationSecret!]!
+
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
 
@@ -2763,6 +2765,13 @@ type AdminMutation {
   createFrontmatterPatch(input: CreateFrontmatterPatchInput!): CreateFrontmatterPatchOrErrorPayload!
   updateFrontmatterPatch(input: UpdateFrontmatterPatchInput!): UpdateFrontmatterPatchOrErrorPayload!
   deleteFrontmatterPatch(input: DeleteFrontmatterPatchInput!): DeleteFrontmatterPatchOrErrorPayload!
+
+  # Federation secret mutations
+  createInboundFederationSecret(input: CreateInboundFederationSecretInput!): CreateInboundFederationSecretOrErrorPayload!
+  createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload!
+  revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
+  removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 }
 
 #
@@ -3017,3 +3026,93 @@ type DeleteFrontmatterPatchPayload {
 }
 
 union DeleteFrontmatterPatchOrErrorPayload = DeleteFrontmatterPatchPayload | ErrorPayload
+
+#
+# AdminFederationSecret
+#
+
+type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSecretsRow") {
+  id: Int64!
+  kid: String!
+  kbUrl: String
+  description: String
+  createdAt: Time!
+  createdBy: Int64!
+  revokedAt: Time
+  subgraphCount: Int64!
+}
+
+#
+# createInboundFederationSecret
+#
+
+input CreateInboundFederationSecretInput {
+  kid: String!
+  description: String
+}
+
+type CreateInboundFederationSecretPayload {
+  id: Int64!
+  kid: String!
+  secretHex: String!
+}
+
+union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecretPayload | ErrorPayload
+
+#
+# createOutboundFederationSecret
+#
+
+input CreateOutboundFederationSecretInput {
+  kid: String!
+  secretHex: String!
+  kbURL: String!
+  description: String
+}
+
+type CreateOutboundFederationSecretPayload {
+  id: Int64!
+  kid: String!
+}
+
+union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
+
+#
+# revokeFederationSecret
+#
+
+type RevokeFederationSecretPayload {
+  revokedId: Int64!
+}
+
+union RevokeFederationSecretOrErrorPayload = RevokeFederationSecretPayload | ErrorPayload
+
+#
+# addFederationSecretSubgraph
+#
+
+input AddFederationSecretSubgraphInput {
+  kid: String!
+  subgraphID: Int64!
+}
+
+type AddFederationSecretSubgraphPayload {
+  success: Boolean!
+}
+
+union AddFederationSecretSubgraphOrErrorPayload = AddFederationSecretSubgraphPayload | ErrorPayload
+
+#
+# removeFederationSecretSubgraph
+#
+
+input RemoveFederationSecretSubgraphInput {
+  kid: String!
+  subgraphID: Int64!
+}
+
+type RemoveFederationSecretSubgraphPayload {
+  success: Boolean!
+}
+
+union RemoveFederationSecretSubgraphOrErrorPayload = RemoveFederationSecretSubgraphPayload | ErrorPayload

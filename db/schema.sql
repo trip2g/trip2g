@@ -672,6 +672,16 @@ CREATE TABLE config_int_values (
   change_id integer primary key references config_changes(id) on delete cascade,
   value integer not null
 );
+CREATE TABLE telegram_chat_usernames (
+  telegram_chat_id integer primary key,
+  username text not null default '',
+  title text not null default '',
+  refreshed_at datetime not null default current_timestamp,
+  refresh_requested_at datetime,
+  last_error text,
+  created_at datetime not null default current_timestamp,
+  updated_at datetime not null default current_timestamp
+);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);
@@ -708,6 +718,8 @@ CREATE INDEX idx_cron_webhook_deliveries_webhook_created
 CREATE INDEX idx_wdl_delivery on webhook_delivery_logs(kind, delivery_id);
 CREATE INDEX idx_wdl_created on webhook_delivery_logs(created_at);
 CREATE INDEX note_version_chunks_version_id on note_version_chunks(version_id);
+CREATE INDEX idx_telegram_chat_usernames_refresh
+  on telegram_chat_usernames(refresh_requested_at, refreshed_at);
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
@@ -721,18 +733,27 @@ after update on cron_webhooks
 begin
   update cron_webhooks set updated_at = datetime('now') where id = new.id;
 end;
-CREATE TABLE telegram_chat_usernames (
-  telegram_chat_id integer primary key,
-  username text not null default '',
-  title text not null default '',
-  refreshed_at datetime not null default current_timestamp,
-  refresh_requested_at datetime,
-  last_error text,
+CREATE TABLE federation_secrets (
+  id integer primary key autoincrement,
+  kid text not null,
+  secret_crypt blob not null,
+  kb_url text,
+  description text,
   created_at datetime not null default current_timestamp,
-  updated_at datetime not null default current_timestamp
+  created_by integer not null references admins(user_id) on delete restrict,
+  revoked_at datetime
 );
-CREATE INDEX idx_telegram_chat_usernames_refresh
-  on telegram_chat_usernames(refresh_requested_at, refreshed_at);
+CREATE INDEX idx_federation_secrets_kid
+  on federation_secrets(kid);
+CREATE INDEX idx_federation_secrets_kb_url
+  on federation_secrets(kb_url) where kb_url is not null;
+CREATE TABLE federation_secret_subgraphs (
+  kid text not null,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  primary key (kid, subgraph_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -845,4 +866,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260318100000'),
   ('20260322100000'),
   ('20260330100000'),
-  ('20260416132701');
+  ('20260416132701'),
+  ('20260427100000');

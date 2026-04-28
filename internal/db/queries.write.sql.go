@@ -256,6 +256,22 @@ func (q *WriteQueries) DeleteCronJobByName(ctx context.Context, name string) err
 	return err
 }
 
+const deleteFederationSecretSubgraph = `-- name: DeleteFederationSecretSubgraph :exec
+delete from federation_secret_subgraphs
+ where kid = ?
+   and subgraph_id = ?
+`
+
+type DeleteFederationSecretSubgraphParams struct {
+	Kid        string `json:"kid"`
+	SubgraphID int64  `json:"subgraph_id"`
+}
+
+func (q *WriteQueries) DeleteFederationSecretSubgraph(ctx context.Context, arg DeleteFederationSecretSubgraphParams) error {
+	_, err := q.db.ExecContext(ctx, deleteFederationSecretSubgraph, arg.Kid, arg.SubgraphID)
+	return err
+}
+
 const deleteFrontmatterPatch = `-- name: DeleteFrontmatterPatch :exec
 delete from note_frontmatter_patches where id = ?
 `
@@ -1078,6 +1094,58 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 		&i.CompletedAt,
 	)
 	return i, err
+}
+
+const insertFederationSecret = `-- name: InsertFederationSecret :one
+insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
+values (?, ?, ?, ?, ?)
+returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at
+`
+
+type InsertFederationSecretParams struct {
+	Kid         string  `json:"kid"`
+	SecretCrypt []byte  `json:"secret_crypt"`
+	KbUrl       *string `json:"kb_url"`
+	Description *string `json:"description"`
+	CreatedBy   int64   `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertFederationSecret(ctx context.Context, arg InsertFederationSecretParams) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, insertFederationSecret,
+		arg.Kid,
+		arg.SecretCrypt,
+		arg.KbUrl,
+		arg.Description,
+		arg.CreatedBy,
+	)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const insertFederationSecretSubgraph = `-- name: InsertFederationSecretSubgraph :exec
+insert into federation_secret_subgraphs (kid, subgraph_id, created_by)
+values (?, ?, ?)
+`
+
+type InsertFederationSecretSubgraphParams struct {
+	Kid        string `json:"kid"`
+	SubgraphID int64  `json:"subgraph_id"`
+	CreatedBy  int64  `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertFederationSecretSubgraph(ctx context.Context, arg InsertFederationSecretSubgraphParams) error {
+	_, err := q.db.ExecContext(ctx, insertFederationSecretSubgraph, arg.Kid, arg.SubgraphID, arg.CreatedBy)
+	return err
 }
 
 const insertFrontmatterPatch = `-- name: InsertFrontmatterPatch :one
@@ -2508,6 +2576,17 @@ func (q *WriteQueries) RestorePatreonCredentials(ctx context.Context, id int64) 
 		&i.WebhookSecret,
 	)
 	return i, err
+}
+
+const revokeFederationSecret = `-- name: RevokeFederationSecret :exec
+update federation_secrets
+   set revoked_at = current_timestamp
+ where id = ?
+`
+
+func (q *WriteQueries) RevokeFederationSecret(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, revokeFederationSecret, id)
+	return err
 }
 
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
