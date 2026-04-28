@@ -16,7 +16,7 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_federation_create_outbound extends $.$trip2g_admin_federation_create_outbound {
+	export class $trip2g_admin_federation_outbound extends $.$trip2g_admin_federation_outbound {
 		override submit() {
 			const res = mutate({
 				input: {

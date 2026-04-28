@@ -1,4 +1,4 @@
-$trip2g_admin_federation_create_outbound $mol_page
+$trip2g_admin_federation_outbound $mol_page
 	title @ \Add Outbound Secret
 	body /
 		<= Form $mol_form

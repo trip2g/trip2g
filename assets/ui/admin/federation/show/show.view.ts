@@ -40,7 +40,7 @@ namespace $.$$ {
 		@$mol_mem
 		override subgraph_ids( next?: number[] ): number[] {
 			if (next === undefined) {
-				return this.$.$mol_mem_cached( () => [] as number[] )
+				return []
 			}
 
 			const prev = this.subgraph_ids()

@@ -1,4 +1,4 @@
-$trip2g_admin_federation_create_inbound $mol_page
+$trip2g_admin_federation_inbound $mol_page
 	title @ \Add Inbound Secret
 	SecretHexView $mol_view
 		sub /

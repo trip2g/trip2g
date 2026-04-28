@@ -17,7 +17,7 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_federation_create_inbound extends $.$trip2g_admin_federation_create_inbound {
+	export class $trip2g_admin_federation_inbound extends $.$trip2g_admin_federation_inbound {
 		override body() {
 			if (this.secret_hex() !== '') {
 				return [this.SecretHexView()]
