@@ -58,11 +58,22 @@ note_html(pid=42, toc_path=["Chapter 1", "Introduction"])
 
 This is useful when a note is long: load the TOC via `search`, pick the relevant section by its `path`, then fetch just that section with `note_html`.
 
-Typical agent workflow:
+#### Saving tokens with TOC navigation
 
-1. `search(query)` — get results with `toc` and per-match `toc_path`
-2. Identify the relevant section from `toc_path` on the closest match
-3. `note_html(pid=N, toc_path=[...])` — load only that section
+Long notes can cost many tokens if loaded in full. The `toc` and `toc_path` fields let an agent fetch only the section it actually needs.
+
+**How the fields work:**
+
+- `search` results include `toc` — the full table of contents for each returned document. Each TOC item has `title`, `level`, and `path` (a breadcrumb array identifying that section).
+- Each item in `matches[]` includes `toc_path` — the breadcrumb path of the innermost section containing that match. This tells you exactly where in the document the relevant snippet lives.
+- `note_html` accepts `toc_path` — pass any `path` value from the TOC to receive only that section's HTML, not the entire note.
+
+**Recommended workflow:**
+
+1. `search(query)` — get results with `toc` (document structure) and `matches[].toc_path` (match location)
+2. Read `toc_path` on the best match to identify the relevant section
+3. `note_html(pid=N, toc_path=match.toc_path)` — load only that section
+4. If you need a different section, use `toc` items from the same search result to navigate without another search call
 
 For searching and retrieving notes across federated peer bases, see [[en/user/federation]].
 
