@@ -83,6 +83,51 @@ sync_vault() {
   npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
 }
 
+# Helper: sign in to peer and push seedvault content
+sync_seedvault_to_peer() {
+  local PEER_URL="http://localhost:20091"
+  local PEER_GRAPHQL="$PEER_URL/graphql"
+
+  echo "🔄 Setting up peer instance (seedvault push)..."
+
+  # 1. Request sign-in code on peer
+  curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { requestEmailSignInCode(input: { email: \"hello@example.com\" }) { ... on RequestEmailSignInCodePayload { success } } }"}' > /dev/null
+
+  # 2. Sign in to peer (dev code 111111)
+  local PEER_TOKEN
+  PEER_TOKEN=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { signInByEmail(input: { email: \"hello@example.com\", code: \"111111\" }) { ... on SignInPayload { token } } }"}' \
+    | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_TOKEN" ]; then
+    echo -e "${RED}✗ Failed to sign in to peer${NC}"
+    return 1
+  fi
+
+  # 3. Create API key on peer
+  local PEER_API_KEY
+  PEER_API_KEY=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -H "Cookie: trip2g_e2e_peer=$PEER_TOKEN" \
+    -d '{"query":"mutation { createApiKey(input: { description: \"e2e\" }) { ... on CreateApiKeyPayload { value } } }"}' \
+    | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_API_KEY" ]; then
+    echo -e "${RED}✗ Failed to create peer API key${NC}"
+    return 1
+  fi
+
+  echo -e "${GREEN}✓ Peer API key created: ${PEER_API_KEY:0:20}...${NC}"
+
+  # 4. Push seedvault to peer via obsidian-sync CLI
+  npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/seedvault --api-key "$PEER_API_KEY" --api-url "$PEER_GRAPHQL"
+
+  echo -e "${GREEN}✓ Seedvault pushed to peer${NC}"
+}
+
 # NOTE: presigned MinIO URLs contain "minio:29000" hostname.
 # Add "127.0.0.1 minio" to /etc/hosts for local testing.
 # In CI this is done in the workflow file.
@@ -169,6 +214,12 @@ docker compose -f docker-compose.test.yml up -d --build
   exit 1
 }
 
+# Wait for peer instance (federation e2e)
+./scripts/waitfor localhost:20091 || {
+  echo -e "${RED}✗ Peer service failed to start${NC}"
+  exit 1
+}
+
 # Run setup test to create API key
 echo "🔑 Running setup test (create API key)..."
 echo ""
@@ -199,6 +250,13 @@ echo ""
 
 echo ""
 echo -e "${GREEN}✓ CLI sync tests passed${NC}"
+echo ""
+
+# Push seedvault to peer instance for federation tests
+sync_seedvault_to_peer || {
+  echo -e "${RED}✗ Peer seedvault sync failed${NC}"
+  exit 1
+}
 echo ""
 
 # Schedule send_scheduled_telegram_publishposts job (only if ENABLE_TG=1)

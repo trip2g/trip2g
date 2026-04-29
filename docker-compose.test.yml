@@ -96,6 +96,68 @@ services:
       retries: 10
       start_period: 10s
 
+  # Peer instance for MCP federation e2e tests.
+  # Separate DB, cookie name, and minio prefix to keep sessions isolated.
+  app-peer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-test-app-peer
+    depends_on:
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+    ports:
+      - "20091:20091"
+      - "20092:20092"
+    environment:
+      # Server
+      - LISTEN_ADDR=0.0.0.0:20091
+      - INTERNAL_LISTEN_ADDR=:20092
+      - DB_FILE=/data/peer.sqlite3
+      - DEV=true
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
+
+      # MinIO (shared instance, separate prefix)
+      - MINIO_ENDPOINT=minio:29000
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_PREFIX=peer/
+      - MINIO_USE_SSL=false
+
+      # Public URL (docker-internal so hub can reach peer)
+      - PUBLIC_URL=http://app-peer:20091
+
+      # JWT
+      - JWT_SECRET=test-peer-secret-key-do-not-use
+      - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer
+
+      # Git API (seedvault)
+      - GIT_API_REPO_PATH=/app/testdata/seedvault
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock)
+      - RESEND_API_KEY=test-key
+      - MAIL_FROM=test@example.com
+
+      # MCP federation
+      - MCP_FEDERATION_MAX_DEPTH=3
+    volumes:
+      - ./tmp/data:/data
+      - ./testdata/seedvault:/app/testdata/seedvault:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20092/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
 volumes:
   test-data:
   embedding-models:
