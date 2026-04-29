@@ -156,7 +156,7 @@ func handleToolsList(env Env, id any) Response {
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, or path. If search returned match_id, pass it here to fetch a focused chunk window and save tokens.",
+			Description: "Read a note by pid, note_id, href, or path. Pass match_id for a focused chunk window. Pass toc_path to read a specific section (use the path array from search result TOC).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -166,6 +166,7 @@ func handleToolsList(env Env, id any) Response {
 					"note_id":       {Type: "number", Description: "Stable note id from search results"},
 					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
+					"toc_path":      {Type: "array", Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items."},
 				},
 			},
 		},
@@ -376,6 +377,7 @@ func buildSearchPayload(query string, results []model.SearchResult, publicURL st
 				ChunkIndex:   chunkIndex,
 				Snippet:      snippet,
 				ContextWords: 10,
+				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet),
 			})
 		}
 		payload.Results = append(payload.Results, item)
@@ -471,9 +473,11 @@ func searchResultItemFromNote(note *model.NoteView, score float64, publicURL str
 		URL:      publicURL + note.Permalink,
 		Kind:     noteKind(note),
 		Score:    score,
+		TOC:      buildNoteTOC(note.Headings),
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
 		item.Kind = "federation_kb"
+		item.TOC = nil // federation pointers have no local TOC
 		item.Federation = &FederationRef{
 			KBID:             kb.ID,
 			KBURL:            kb.URL,
@@ -640,6 +644,13 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 	if args.MatchID != "" {
 		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
 			return successResponse(id, textToolResult(focused))
+		}
+	}
+
+	if len(args.TocPath) > 0 {
+		sectionHTML := sectionHTMLByTocPath(string(note.HTML), args.TocPath)
+		if sectionHTML != "" {
+			return successResponse(id, textToolResult(sectionHTML))
 		}
 	}
 

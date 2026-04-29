@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/db"
+	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
@@ -80,6 +81,12 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
+	// FeaturesFunc mocks the Features method.
+	FeaturesFunc func() features.Features
+
+	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
+	LatestNoteChunksFunc func() []model.NoteChunk
+
 	// GetTelegramChatNameFunc mocks the GetTelegramChatName method.
 	GetTelegramChatNameFunc func(ctx context.Context, telegramChatID int64) (string, error)
 
@@ -134,6 +141,10 @@ type EnvMock struct {
 			// Note is the note argument value.
 			Note *model.NoteView
 		}
+		// Features holds details about calls to the Features method.
+		Features []struct{}
+		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
+		LatestNoteChunks []struct{}
 		// GetTelegramChatName holds details about calls to the GetTelegramChatName method.
 		GetTelegramChatName []struct {
 			// Ctx is the ctx argument value.
@@ -219,6 +230,8 @@ type EnvMock struct {
 		}
 	}
 	lockCanReadNote                         sync.RWMutex
+	lockFeatures                            sync.RWMutex
+	lockLatestNoteChunks                    sync.RWMutex
 	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
 	lockIncreaseUserNoteViewCount           sync.RWMutex
@@ -234,6 +247,48 @@ type EnvMock struct {
 	lockSiteConfig                          sync.RWMutex
 	lockSiteTitleTemplate                   sync.RWMutex
 	lockUpsertUserNoteDailyView             sync.RWMutex
+}
+
+// Features calls FeaturesFunc.
+func (mock *EnvMock) Features() features.Features {
+	if mock.FeaturesFunc == nil {
+		panic("EnvMock.FeaturesFunc: method is nil but Env.Features was just called")
+	}
+	callInfo := struct{}{}
+	mock.lockFeatures.Lock()
+	mock.calls.Features = append(mock.calls.Features, callInfo)
+	mock.lockFeatures.Unlock()
+	return mock.FeaturesFunc()
+}
+
+// FeaturesCalls gets all the calls that were made to Features.
+func (mock *EnvMock) FeaturesCalls() []struct{} {
+	var calls []struct{}
+	mock.lockFeatures.RLock()
+	calls = mock.calls.Features
+	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// LatestNoteChunks calls LatestNoteChunksFunc.
+func (mock *EnvMock) LatestNoteChunks() []model.NoteChunk {
+	if mock.LatestNoteChunksFunc == nil {
+		panic("EnvMock.LatestNoteChunksFunc: method is nil but Env.LatestNoteChunks was just called")
+	}
+	callInfo := struct{}{}
+	mock.lockLatestNoteChunks.Lock()
+	mock.calls.LatestNoteChunks = append(mock.calls.LatestNoteChunks, callInfo)
+	mock.lockLatestNoteChunks.Unlock()
+	return mock.LatestNoteChunksFunc()
+}
+
+// LatestNoteChunksCalls gets all the calls that were made to LatestNoteChunks.
+func (mock *EnvMock) LatestNoteChunksCalls() []struct{} {
+	var calls []struct{}
+	mock.lockLatestNoteChunks.RLock()
+	calls = mock.calls.LatestNoteChunks
+	mock.lockLatestNoteChunks.RUnlock()
+	return calls
 }
 
 // CanReadNote calls CanReadNoteFunc.

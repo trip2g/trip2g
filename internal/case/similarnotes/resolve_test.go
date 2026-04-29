@@ -68,6 +68,7 @@ func TestResolve(t *testing.T) {
 					List: []*appmodel.NoteView{noteView},
 				}
 			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 		}
 
 		result, err := similarnotes.Resolve(ctx, env, model.SimilarNotesInput{Path: "/test"})
@@ -108,6 +109,7 @@ func TestResolve(t *testing.T) {
 					List: []*appmodel.NoteView{sourceNote, similarNote, lessSimilarNote},
 				}
 			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 				return true, nil
 			},
@@ -153,6 +155,7 @@ func TestResolve(t *testing.T) {
 					List: notes,
 				}
 			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 				return true, nil
 			},
@@ -165,6 +168,41 @@ func TestResolve(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, result, 3)
+	})
+
+	t.Run("uses chunk embeddings when available", func(t *testing.T) {
+		sourceNote := &appmodel.NoteView{VersionID: 1, Path: "/source", Permalink: "/source"}
+		closeNote := &appmodel.NoteView{VersionID: 2, Path: "/close", Permalink: "/close"}
+		farNote := &appmodel.NoteView{VersionID: 3, Path: "/far", Permalink: "/far"}
+
+		env := &EnvMock{
+			FeaturesFunc: func() features.Features {
+				return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
+			},
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{
+					Map:  map[string]*appmodel.NoteView{"/source": sourceNote, "/close": closeNote, "/far": farNote},
+					List: []*appmodel.NoteView{sourceNote, closeNote, farNote},
+				}
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return []appmodel.NoteChunk{
+					{NotePath: "/source", ChunkIndex: 0, Embedding: []float32{1.0, 0.0, 0.0}},
+					{NotePath: "/close", ChunkIndex: 0, Embedding: []float32{0.95, 0.05, 0.0}},
+					{NotePath: "/far", ChunkIndex: 0, Embedding: []float32{0.1, 0.1, 0.99}},
+				}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		result, err := similarnotes.Resolve(ctx, env, model.SimilarNotesInput{Path: "/source"})
+		require.NoError(t, err)
+		require.Len(t, result, 2)
+		require.Equal(t, "/close", result[0].Note.NoteView.Permalink)
+		require.Equal(t, "/far", result[1].Note.NoteView.Permalink)
+		require.Greater(t, result[0].Score, result[1].Score)
 	})
 
 	t.Run("filters notes user cannot read", func(t *testing.T) {
@@ -200,6 +238,7 @@ func TestResolve(t *testing.T) {
 					List: []*appmodel.NoteView{sourceNote, readableNote, restrictedNote},
 				}
 			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 				// Only readable note is allowed
 				return note.Permalink == "/readable", nil

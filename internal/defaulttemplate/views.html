@@ -177,6 +177,8 @@ window.__trip2g_settings = {
       {%= InLinksWidget(ctx) %}
     {% case WidgetOutLinks %}
       {%= OutLinksWidget(ctx) %}
+    {% case WidgetSimilar %}
+      {%= SimilarWidget(ctx) %}
     {% case WidgetContent %}
       {% code
         ref := ContentRef{Kind: ContentRefWikiLink, Value: w.Value}
@@ -234,6 +236,19 @@ window.__trip2g_settings = {
 
 {% func OutLinksWidget(ctx *Ctx) %}
 {%comment%}TODO: outlinks - needs access to note.nv.ResolvedLinks{%endcomment%}
+{% endfunc %}
+
+{% func SimilarWidget(ctx *Ctx) %}
+{% if len(ctx.SimilarNotes) > 0 %}
+<div class="widget widget--similar">
+  <h3 class="widget__title">{%s ctx.T("similar_title") %}</h3>
+  <ul class="widget__list">
+    {% for _, note := range ctx.SimilarNotes %}
+    <li class="widget__item"><a class="widget__link" href="{%s= note.PermalinkEncoded() %}">{%s note.Title %}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endfunc %}
 
 {% func NoteContent(ctx *Ctx) %}

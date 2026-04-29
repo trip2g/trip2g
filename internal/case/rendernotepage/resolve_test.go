@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/db"
+	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
@@ -18,8 +19,10 @@ import (
 
 type Env interface {
 	Layouts() *model.Layouts
+	Features() features.Features
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
+	LatestNoteChunks() []model.NoteChunk
 	LiveNoteViews() *model.NoteViews
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)

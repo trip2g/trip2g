@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"trip2g/internal/db"
+	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
@@ -21,9 +22,11 @@ import (
 type Env interface {
 	Layouts() *model.Layouts
 
+	Features() features.Features
 	Logger() logger.Logger
 	PublicURL() string
 	LatestNoteViews() *model.NoteViews
+	LatestNoteChunks() []model.NoteChunk
 	LiveNoteViews() *model.NoteViews
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(

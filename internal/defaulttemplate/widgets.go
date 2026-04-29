@@ -27,6 +27,7 @@ const (
 	WidgetInLinks
 	WidgetOutLinks
 	WidgetContent // wikilink or file path
+	WidgetSimilar
 )
 
 // WidgetRef represents a sidebar widget reference.
@@ -90,6 +91,8 @@ func parseWidgetRef(raw interface{}) (WidgetRef, bool) {
 		return WidgetRef{Kind: WidgetInLinks}, true
 	case "outlinks":
 		return WidgetRef{Kind: WidgetOutLinks}, true
+	case "similar":
+		return WidgetRef{Kind: WidgetSimilar}, true
 	}
 
 	// Check for wikilink [[Title]]

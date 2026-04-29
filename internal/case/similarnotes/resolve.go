@@ -18,6 +18,7 @@ const (
 type Env interface {
 	Features() features.Features
 	LatestNoteViews() *appmodel.NoteViews
+	LatestNoteChunks() []appmodel.NoteChunk
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
 }
 
@@ -43,11 +44,6 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 		return []model.SimilarNote{}, nil
 	}
 
-	// Check if source note has embedding
-	if len(sourceNote.Embedding) == 0 {
-		return []model.SimilarNote{}, nil
-	}
-
 	// Calculate limit
 	limit := defaultLimit
 	if input.Limit != nil {
@@ -60,22 +56,47 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 		}
 	}
 
-	// Calculate similarity scores using cached embeddings
+	// Build chunk map indexed by note path (only chunks with embeddings).
+	allChunks := env.LatestNoteChunks()
+	chunkMap := make(map[string][]appmodel.NoteChunk, len(allChunks)/4+1)
+	for _, c := range allChunks {
+		if len(c.Embedding) > 0 {
+			chunkMap[c.NotePath] = append(chunkMap[c.NotePath], c)
+		}
+	}
+
+	srcChunks := chunkMap[sourceNote.Path]
+	useChunks := len(srcChunks) > 0
+
+	if !useChunks && len(sourceNote.Embedding) == 0 {
+		return []model.SimilarNote{}, nil
+	}
+
+	// Calculate similarity scores. Prefer chunk-level matching when available.
 	scores := make([]similarNoteScore, 0, len(noteViews.List))
 	for _, note := range noteViews.List {
 		if note.VersionID == sourceNote.VersionID {
 			continue
 		}
 
-		if len(note.Embedding) == 0 {
+		tgtChunks := chunkMap[note.Path]
+		var score float64
+		switch {
+		case useChunks && len(tgtChunks) > 0:
+			score = maxChunkSimilarity(srcChunks, tgtChunks)
+		case useChunks && len(note.Embedding) > 0:
+			for _, sc := range srcChunks {
+				if s := cosineSimilarity(sc.Embedding, note.Embedding); s > score {
+					score = s
+				}
+			}
+		case !useChunks && len(note.Embedding) > 0:
+			score = cosineSimilarity(sourceNote.Embedding, note.Embedding)
+		default:
 			continue
 		}
 
-		score := cosineSimilarity(sourceNote.Embedding, note.Embedding)
-		scores = append(scores, similarNoteScore{
-			noteView: note,
-			score:    score,
-		})
+		scores = append(scores, similarNoteScore{noteView: note, score: score})
 	}
 
 	// Sort by similarity score (descending)
@@ -105,6 +126,19 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 	}
 
 	return result, nil
+}
+
+// maxChunkSimilarity returns the maximum cosine similarity across all src×tgt chunk pairs.
+func maxChunkSimilarity(src, tgt []appmodel.NoteChunk) float64 {
+	var best float64
+	for _, s := range src {
+		for _, t := range tgt {
+			if sc := cosineSimilarity(s.Embedding, t.Embedding); sc > best {
+				best = sc
+			}
+		}
+	}
+	return best
 }
 
 // cosineSimilarity calculates the cosine similarity between two vectors.

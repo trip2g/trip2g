@@ -10,10 +10,13 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
+	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/langdetect"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/templateviews"
 
 	"github.com/CloudyKit/jet/v6"
@@ -494,6 +497,22 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			}
 			return nil
 		}(),
+	}
+
+	if resp.Note != nil && env.Features().VectorSearch.Enabled {
+		simResults, err := similarnotes.Resolve(req.Req, env, graphmodel.SimilarNotesInput{
+			Path:  resp.Note.Path,
+			Limit: ptr.To(int32(10)),
+		})
+		if err != nil {
+			env.Logger().Error("similar notes failed", "error", err)
+		} else {
+			for _, sn := range simResults {
+				if sn.Note != nil && sn.Note.NoteView != nil {
+					dtCtx.SimilarNotes = append(dtCtx.SimilarNotes, sn.Note.NoteView)
+				}
+			}
+		}
 	}
 
 	return dtCtx

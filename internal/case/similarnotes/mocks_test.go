@@ -56,6 +56,9 @@ type EnvMock struct {
 	// GetNoteVersionEmbeddingsByVersionIDsFunc mocks the GetNoteVersionEmbeddingsByVersionIDs method.
 	GetNoteVersionEmbeddingsByVersionIDsFunc func(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error)
 
+	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
+	LatestNoteChunksFunc func() []appmodel.NoteChunk
+
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
 
@@ -85,6 +88,9 @@ type EnvMock struct {
 			// VersionIDs is the versionIDs argument value.
 			VersionIDs []int64
 		}
+		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
+		LatestNoteChunks []struct {
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -93,6 +99,7 @@ type EnvMock struct {
 	lockFeatures                             sync.RWMutex
 	lockGetNoteVersionEmbedding              sync.RWMutex
 	lockGetNoteVersionEmbeddingsByVersionIDs sync.RWMutex
+	lockLatestNoteChunks                     sync.RWMutex
 	lockLatestNoteViews                      sync.RWMutex
 }
 
@@ -228,6 +235,27 @@ func (mock *EnvMock) GetNoteVersionEmbeddingsByVersionIDsCalls() []struct {
 	mock.lockGetNoteVersionEmbeddingsByVersionIDs.RLock()
 	calls = mock.calls.GetNoteVersionEmbeddingsByVersionIDs
 	mock.lockGetNoteVersionEmbeddingsByVersionIDs.RUnlock()
+	return calls
+}
+
+// LatestNoteChunks calls LatestNoteChunksFunc.
+func (mock *EnvMock) LatestNoteChunks() []appmodel.NoteChunk {
+	if mock.LatestNoteChunksFunc == nil {
+		panic("EnvMock.LatestNoteChunksFunc: method is nil but Env.LatestNoteChunks was just called")
+	}
+	callInfo := struct{}{}
+	mock.lockLatestNoteChunks.Lock()
+	mock.calls.LatestNoteChunks = append(mock.calls.LatestNoteChunks, callInfo)
+	mock.lockLatestNoteChunks.Unlock()
+	return mock.LatestNoteChunksFunc()
+}
+
+// LatestNoteChunksCalls gets all the calls that were made to LatestNoteChunks.
+func (mock *EnvMock) LatestNoteChunksCalls() []struct{} {
+	var calls []struct{}
+	mock.lockLatestNoteChunks.RLock()
+	calls = mock.calls.LatestNoteChunks
+	mock.lockLatestNoteChunks.RUnlock()
 	return calls
 }
 

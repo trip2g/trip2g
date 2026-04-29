@@ -4,6 +4,9 @@ other = "Содержание"
 [backlinks_title]
 other = "Ссылки сюда"
 
+[similar_title]
+other = "Похожие заметки"
+
 [readmore]
 other = "Читать далее →"
 

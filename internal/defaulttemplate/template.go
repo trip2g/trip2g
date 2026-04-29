@@ -67,6 +67,7 @@ type Ctx struct {
 	Lang            string
 
 	TelegramLinks []model.TelegramPostLink
+	SimilarNotes  []*model.NoteView
 
 	// LayoutSections holds vault-based layout section files for glob-based
 	// header/footer/sidebar resolution. Populated from NoteViews.LayoutSections.
