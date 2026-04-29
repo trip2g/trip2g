@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
@@ -231,7 +232,7 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 	case "similar":
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
 	case "note_html":
-		return handleNoteHTML(env, req.ID, params.Arguments)
+		return handleNoteHTML(ctx, env, req.ID, params.Arguments)
 	case "federated_search":
 		return handleFederatedSearch(ctx, env, req.ID, params.Arguments)
 	case "federated_similar":
@@ -271,10 +272,9 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 			log.Warn("vector search failed", "error", vecErr, "query", args.Query)
 		}
 	}
-	results = filterSearchResults(results)
-	results, err = filterFederationKBSearchResults(ctx, env, results)
+	results, err = filterSearchResults(ctx, env, results)
 	if err != nil {
-		log.Error("federation kb access check failed", "error", err, "query", args.Query)
+		log.Error("search access check failed", "error", err, "query", args.Query)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
 
@@ -305,7 +305,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	return successResponse(id, structuredToolResult(sb.String(), payload))
 }
 
-func filterSearchResults(results []model.SearchResult) []model.SearchResult {
+func filterSearchResults(ctx context.Context, env Env, results []model.SearchResult) ([]model.SearchResult, error) {
 	filtered := make([]model.SearchResult, 0, len(results))
 	for _, r := range results {
 		if r.NoteView == nil {
@@ -314,28 +314,42 @@ func filterSearchResults(results []model.SearchResult) []model.SearchResult {
 		if r.NoteView.IsSystem() || r.NoteView.ExcludeSearch {
 			continue
 		}
-		filtered = append(filtered, r)
-	}
-	return filtered
-}
 
-func filterFederationKBSearchResults(ctx context.Context, env Env, results []model.SearchResult) ([]model.SearchResult, error) {
-	filtered := make([]model.SearchResult, 0, len(results))
-	for _, r := range results {
-		if r.NoteView == nil || r.NoteView.MCPFederationKBURL == "" {
-			filtered = append(filtered, r)
-			continue
-		}
-
-		ok, err := env.CanReadNote(ctx, r.NoteView)
+		ok, err := canReadMCPNote(ctx, env, r.NoteView)
 		if err != nil {
-			return nil, fmt.Errorf("check federation kb-note access: %w", err)
+			return nil, fmt.Errorf("check note access: %w", err)
 		}
 		if ok {
 			filtered = append(filtered, r)
 		}
 	}
 	return filtered, nil
+}
+
+type federationAuthContextKey struct{}
+
+type federationAuthContext struct {
+	KID              string
+	AllowedSubgraphs []string
+}
+
+func contextWithFederationAuth(ctx context.Context, kid string, allowedSubgraphs []string) context.Context {
+	return context.WithValue(ctx, federationAuthContextKey{}, federationAuthContext{
+		KID:              kid,
+		AllowedSubgraphs: append([]string(nil), allowedSubgraphs...),
+	})
+}
+
+func federationAuthFromContext(ctx context.Context) (federationAuthContext, bool) {
+	auth, ok := ctx.Value(federationAuthContextKey{}).(federationAuthContext)
+	return auth, ok
+}
+
+func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
+	if auth, ok := federationAuthFromContext(ctx); ok {
+		return canreadnote.ResolveWithSubgraphs(ctx, env, note, auth.AllowedSubgraphs)
+	}
+	return env.CanReadNote(ctx, note)
 }
 
 func buildSearchPayload(query string, results []model.SearchResult, publicURL string, chunks []model.NoteChunk) SearchResultPayload {
@@ -506,6 +520,15 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		log.Warn("source note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
 		return errorResponse(id, ErrCodeInvalidParams, "Source note not found")
 	}
+	canReadSource, err := canReadMCPNote(ctx, env, sourceNote)
+	if err != nil {
+		log.Error("source note access check failed", "error", err, "path", sourceNote.Path)
+		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
+	}
+	if !canReadSource {
+		log.Warn("source note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Source note not found")
+	}
 
 	// Validate and normalize limit
 	limit := args.Limit
@@ -584,7 +607,7 @@ func buildSimilarPayload(sourceNote *model.NoteView, results []graphmodel.Simila
 	return payload
 }
 
-func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
+func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleNoteHTML")
 
 	args, errResp := unmarshalArgs[NoteHTMLArguments](argsRaw, id, "note_html")
@@ -600,6 +623,15 @@ func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
 	note := resolveNoteReference(noteViews, *args)
 	if note == nil {
 		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
+	}
+	canRead, err := canReadMCPNote(ctx, env, note)
+	if err != nil {
+		log.Error("note access check failed", "error", err, "path", note.Path)
+		return errorResponse(id, ErrCodeInternal, "Note HTML failed: "+err.Error())
+	}
+	if !canRead {
+		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 

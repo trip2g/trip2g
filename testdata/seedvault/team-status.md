@@ -1,6 +1,7 @@
 ---
 title: Team Status
 publish: true
+free: true
 ---
 
 # Team Status

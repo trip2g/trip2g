@@ -171,6 +171,9 @@ echo "🗄️  Preparing test database $DB_PATH"
 
 mkdir -p tmp/data
 rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
+# Reproducibility note: the federation e2e spec assumes a clean DB. Without this
+# reset, multiple active outbound rows for the same kbURL accumulate across runs
+# and make revoke ineffective (FederationSecretByKBURL still finds an active row).
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
 
 # Cleanup telegram channels (only if ENABLE_TG=1)

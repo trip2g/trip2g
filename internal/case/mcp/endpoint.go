@@ -1,8 +1,10 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"trip2g/internal/appreq"
 )
@@ -26,8 +28,24 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeJSONResponse(req, resp)
 	}
 
+	resolveCtx := context.Context(req.Req)
+	if authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization"))); authHeader != "" {
+		token, ok := strings.CutPrefix(authHeader, "Bearer ")
+		if !ok || strings.TrimSpace(token) == "" {
+			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token")
+			return writeJSONResponse(req, resp)
+		}
+
+		kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
+		if verifyErr != nil {
+			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
+			return writeJSONResponse(req, resp)
+		}
+		resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
+	}
+
 	// Handle request
-	resp := Resolve(req.Req, env, rpcReq)
+	resp := Resolve(resolveCtx, env, rpcReq)
 	return writeJSONResponse(req, resp)
 }
 

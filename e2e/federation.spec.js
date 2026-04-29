@@ -191,9 +191,10 @@ test.describe.serial('Federation', () => {
       arguments: { kb_id: 'peer', query: 'team status' },
     });
 
-    expect(result.result).toBeDefined();
-    const text = result.result.content[0].text;
-    // After revocation, expect either auth failure or "not configured"
+    const text = result.result?.content?.[0]?.text ?? result.error?.message ?? '';
+    // After revocation, the hub must not silently downgrade this configured private peer to anonymous access.
     expect(text.toLowerCase()).toMatch(/not.*(found|configured)|auth|revoke|no.*secret/);
+    expect(text.toLowerCase()).not.toContain('team status');
+    expect(text.toLowerCase()).not.toContain('internal notes');
   });
 });

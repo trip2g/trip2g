@@ -1500,6 +1500,19 @@ func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.Federat
 	return secret, true, nil
 }
 
+func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bool, error) {
+	rows, err := a.Queries.ListFederationSecrets(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, row := range rows {
+		if row.KbUrl != nil && *row.KbUrl == kbURL {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (a *app) FederationClient(kbID string) (model.Federation, error) {
 	nvs := a.LatestNoteViews()
 	if nvs == nil {
@@ -1532,6 +1545,14 @@ func (a *app) FederationClient(kbID string) (model.Federation, error) {
 			}
 			peer.KID = secretRow.Kid
 			peer.Secret = secret
+		} else {
+			configured, err := a.HasFederationSecretForKBURL(ctx, kb.URL)
+			if err != nil {
+				return nil, fmt.Errorf("check federation secret history by kb url: %w", err)
+			}
+			if configured {
+				return nil, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
+			}
 		}
 
 		return federation.NewClient(peer, a.webhookHTTPClient), nil

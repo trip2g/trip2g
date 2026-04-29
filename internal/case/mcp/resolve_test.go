@@ -447,6 +447,67 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 	require.Equal(t, "Local", payload.Results[0].Title)
 }
 
+func TestSearchHidesInaccessibleNotes(t *testing.T) {
+	privateNote := &appmodel.NoteView{
+		Path:          "internal-notes.md",
+		PathID:        19,
+		Title:         "Internal Notes",
+		Permalink:     "/internal_notes",
+		SubgraphNames: []string{"premium"},
+	}
+	publicNote := &appmodel.NoteView{
+		Path:      "team-status.md",
+		PathID:    20,
+		Title:     "Team Status",
+		Permalink: "/team_status",
+		Free:      true,
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{
+				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
+				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
+			}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://peer.local"
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return note.PathID != privateNote.PathID, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"team status"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	})
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.NotContains(t, result.Content[0].Text, "Internal Notes")
+	require.Contains(t, result.Content[0].Text, "Team Status")
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "Team Status", payload.Results[0].Title)
+}
+
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -454,6 +515,9 @@ func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
 		},
 	}
 
@@ -520,6 +584,9 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
 	}
 
 	params := mcp.CallToolParams{
@@ -564,6 +631,9 @@ func TestHandleNoteHtml(t *testing.T) {
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
 		}
 
 		params := mcp.CallToolParams{
@@ -604,6 +674,9 @@ func TestHandleNoteHtml(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
@@ -663,6 +736,9 @@ func TestHandleNoteHtml(t *testing.T) {
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
 		}
 
 		params := mcp.CallToolParams{
@@ -697,6 +773,9 @@ func TestHandleNoteHtml(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
@@ -808,6 +887,9 @@ func TestStripFrontmatter(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
