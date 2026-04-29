@@ -110,3 +110,9 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 ## Conclusion
 
 Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.
+
+## See also
+
+- [[article-with-toc]] — TOC widget demo
+- [[article-with-outlinks]] — outlinks demo
+- [[full-layout]] — full layout demo
