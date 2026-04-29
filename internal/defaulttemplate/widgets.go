@@ -110,3 +110,24 @@ func parseWidgetRef(raw interface{}) (WidgetRef, bool) {
 
 	return WidgetRef{}, false
 }
+
+// parseWidgetList parses a raw frontmatter value (string or []interface{}) into a widget list.
+// Returns nil if the value doesn't contain any recognized widgets.
+func parseWidgetList(raw interface{}) []WidgetRef {
+	var items []interface{}
+	switch v := raw.(type) {
+	case []interface{}:
+		items = v
+	case string:
+		items = []interface{}{v}
+	default:
+		return nil
+	}
+	var widgets []WidgetRef
+	for _, item := range items {
+		if w, ok := parseWidgetRef(item); ok {
+			widgets = append(widgets, w)
+		}
+	}
+	return widgets
+}
