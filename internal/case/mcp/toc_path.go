@@ -50,15 +50,19 @@ func buildNoteTOC(headings model.NoteViewHeadings) []TOCItem {
 // tocPathForSnippet returns the heading breadcrumb (outermost → innermost) of the
 // data-header section that contains the given snippet. Snippet may contain <mark>
 // tags; they are stripped before matching. Returns nil if not found.
+//
+// To avoid false negatives when the snippet spans multiple sections, only the
+// context immediately around the first <mark> block is used as the search target.
 func tocPathForSnippet(noteHTML, snippet string) []string {
 	if noteHTML == "" || snippet == "" {
 		return nil
 	}
 
-	target := strings.TrimSpace(strings.ToLower(htmlPlainText(snippet)))
-	if len([]rune(target)) < 4 {
+	raw := strings.Join(strings.Fields(strings.ToLower(htmlPlainText(markedContext(snippet)))), " ")
+	if len([]rune(raw)) < 4 {
 		return nil
 	}
+	target := raw
 
 	doc, err := html.Parse(strings.NewReader(noteHTML))
 	if err != nil {
@@ -74,7 +78,8 @@ func tocPathForSnippet(noteHTML, snippet string) []string {
 func findDeepestSection(n *html.Node, target string, currentPath []string) ([]string, bool) {
 	if n.Type == html.ElementNode && n.Data == "div" {
 		if header := htmlNodeAttr(n, "data-header"); header != "" {
-			if !strings.Contains(strings.ToLower(htmlNodeText(n)), target) {
+			sectionText := strings.Join(strings.Fields(strings.ToLower(htmlNodeText(n))), " ")
+			if !strings.Contains(sectionText, target) {
 				return nil, false
 			}
 			newPath := append(append([]string(nil), currentPath...), header)
@@ -180,6 +185,30 @@ func htmlNodeAttr(n *html.Node, name string) string {
 		}
 	}
 	return ""
+}
+
+// markedContext returns the text immediately surrounding the first <mark> block
+// in the snippet (up to 120 chars before and 120 chars after the marked region).
+// This avoids false negatives when a snippet spans multiple sections.
+// Returns the original snippet when no <mark> tags are found.
+func markedContext(snippet string) string {
+	start := strings.Index(snippet, "<mark>")
+	end := strings.LastIndex(snippet, "</mark>")
+	if start == -1 || end == -1 {
+		return snippet
+	}
+	end += len("</mark>")
+
+	const window = 120
+	lo := start - window
+	if lo < 0 {
+		lo = 0
+	}
+	hi := end + window
+	if hi > len(snippet) {
+		hi = len(snippet)
+	}
+	return snippet[lo:hi]
 }
 
 // htmlPlainText strips all HTML tags from s and returns plain text.
