@@ -1166,11 +1166,19 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 		}
 //line views.html:283
 		qw422016.N().S(`
-  <h1 class="content__title">`)
+  `)
 //line views.html:284
-		qw422016.E().S(ctx.Note.Title())
+		if !ctx.Note.HasH1() {
 //line views.html:284
-		qw422016.N().S(`</h1>
+			qw422016.N().S(`<h1 class="content__title">`)
+//line views.html:284
+			qw422016.E().S(ctx.Note.Title())
+//line views.html:284
+			qw422016.N().S(`</h1>`)
+//line views.html:284
+		}
+//line views.html:284
+		qw422016.N().S(`
   <div class="content__body">`)
 //line views.html:285
 		qw422016.N().S(ctx.Note.HTMLString())

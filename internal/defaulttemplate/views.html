@@ -281,7 +281,7 @@ window.__trip2g_settings = {
     {% endfor %}
   </div>
   {% endif %}
-  <h1 class="content__title">{%s ctx.Note.Title() %}</h1>
+  {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
 </article>
 {% endif %}

@@ -155,6 +155,7 @@ type LangGroup struct {
 type NoteView struct {
 	Path  string
 	Title string
+	HasH1 bool // true if note content starts with an H1 heading (used as title)
 
 	PathID    int64
 	VersionID int64
@@ -926,35 +927,35 @@ func (n *NoteView) ExtractTitle() string {
 		}
 	}
 
-	// nodeCount := 0
-	// docTitle := ""
-	//
-	// find the first heading in .Ast
-	// Need to remove the heading node before rendering
-	// ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-	// 	nodeCount++
-	//
-	// 	if nodeCount > 5 {
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	if n.Kind() == ast.KindHeading {
-	// 		heading := n.(*ast.Heading)
-	//
-	// 		if heading.Level != 1 {
-	// 			return ast.WalkContinue, nil
-	// 		}
-	//
-	// 		docTitle = string(heading.Text(p.Content))
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	return ast.WalkContinue, nil
-	// })
-	//
-	// if docTitle != "" {
-	// 	return docTitle
-	// }
+	nodeCount := 0
+	docTitle := ""
+
+	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		nodeCount++
+		if nodeCount > 5 {
+			return ast.WalkStop, nil
+		}
+
+		if node.Kind() == ast.KindHeading {
+			heading := node.(*ast.Heading)
+			if heading.Level != 1 {
+				return ast.WalkContinue, nil
+			}
+			docTitle = extractHeadingText(n.Content, heading)
+			return ast.WalkStop, nil
+		}
+
+		return ast.WalkContinue, nil
+	})
+
+	if docTitle != "" {
+		n.HasH1 = true
+		return docTitle
+	}
 
 	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
 }

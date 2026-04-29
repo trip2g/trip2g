@@ -40,6 +40,13 @@ func (n *Note) Title() string {
 	return n.nv.Title
 }
 
+// HasH1 returns true if the note content starts with an H1 heading,
+// which is used as the title. When true, the template should skip
+// rendering a separate <h1> title element.
+func (n *Note) HasH1() bool {
+	return n.nv.HasH1
+}
+
 // HTMLString returns the rendered HTML content.
 // When domain context is set, returns domain-specific HTML if available.
 // domainHost is "" for main domain — DomainHTML[""] holds main-domain re-rendered

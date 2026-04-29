@@ -245,6 +245,24 @@ content:
 - If you don't set `content`, only the note itself is shown (`self`)
 - If the note is the site root with no index page, `magazine` is shown
 
+### Title display
+
+Trip2g determines what to show as the page title using this priority:
+
+1. **`title` frontmatter field** — always wins if set
+2. **First H1 heading in the content** — if the note starts with `# Heading`, that text becomes the title and no separate title element is rendered above the content (the heading stays in place inside the body)
+3. **Filename** — used as a fallback when neither of the above is set
+
+The H1 detection means you can write natural markdown without frontmatter and the heading does double duty — it's both the visual H1 and the page title used in `<title>`, OpenGraph tags, and listings.
+
+```markdown
+# My Article Title
+
+Body text starts here...
+```
+
+This note gets the title "My Article Title" without any frontmatter. The `<h1>` is rendered inside the article body — no duplicate title element is added above it.
+
 ### Magazine layout
 
 The magazine displays related notes as cards in a three-tier visual hierarchy:
