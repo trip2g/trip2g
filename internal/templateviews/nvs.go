@@ -145,6 +145,26 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 	return result
 }
 
+// OutLinks returns notes that this note links to (resolved wikilinks/paths).
+func (n *NVS) OutLinks(note *Note) []*Note {
+	if n.nvs == nil || note == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(note.nv.ResolvedLinks))
+	result := make([]*Note, 0, len(note.nv.ResolvedLinks))
+	for _, permalink := range note.nv.ResolvedLinks {
+		if _, ok := seen[permalink]; ok {
+			continue
+		}
+		seen[permalink] = struct{}{}
+		if linked := n.nvs.GetByPath(permalink); linked != nil {
+			result = append(result, NewNote(linked))
+		}
+	}
+	return result
+}
+
 // ResolveURL returns the full URL for a note, including version if needed.
 func (n *NVS) ResolveURL(note *Note) string {
 	if n.nvs == nil || note == nil {

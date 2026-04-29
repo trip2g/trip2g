@@ -4,6 +4,9 @@ other = "Содержание"
 [backlinks_title]
 other = "Ссылки сюда"
 
+[outlinks_title]
+other = "Ссылки"
+
 [similar_title]
 other = "Похожие заметки"
 

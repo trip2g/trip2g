@@ -120,4 +120,6 @@ From [[embedding]]:
 | `embed_class` | `alert` | CSS class for embeds |
 | `slug` | `custom-url` or `/full/path` | Custom URL (relative or absolute) |
 
+See also: [[with_right_sidebar]] — sidebar widgets demo (TOC, backlinks, similar, outlinks)
+
 ![[_banner]]

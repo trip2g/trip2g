@@ -164,7 +164,7 @@ right_sidebar: false
 
 - `TOC` — interactive table of contents (headings from the current note)
 - `Backlinks` or `inlinks` — notes that link to this note
-- `outlinks` — links from this note to other notes
+- `outlinks` — notes that this note links to
 - `similar` — semantically similar notes (requires vector search to be enabled)
 - `[[PageName]]` — embed another note by title
 - `path/to/file.md` — embed a note by file path

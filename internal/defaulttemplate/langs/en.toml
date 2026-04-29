@@ -4,6 +4,9 @@ other = "Table of Contents"
 [backlinks_title]
 other = "Backlinks"
 
+[outlinks_title]
+other = "Links"
+
 [similar_title]
 other = "Similar notes"
 

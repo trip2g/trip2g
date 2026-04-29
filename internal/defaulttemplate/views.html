@@ -235,7 +235,19 @@ window.__trip2g_settings = {
 {% endfunc %}
 
 {% func OutLinksWidget(ctx *Ctx) %}
-{%comment%}TODO: outlinks - needs access to note.nv.ResolvedLinks{%endcomment%}
+{% if ctx.Note != nil && ctx.Notes != nil %}
+{% code outlinks := ctx.Notes.OutLinks(ctx.Note) %}
+{% if len(outlinks) > 0 %}
+<div class="widget widget--outlinks">
+  <h3 class="widget__title">{%s ctx.T("outlinks_title") %}</h3>
+  <ul class="widget__list">
+    {% for _, ol := range outlinks %}
+    <li class="widget__item"><a class="widget__link" href="{%s= ol.PermalinkEncoded() %}">{%s ol.Title() %}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endif %}
 {% endfunc %}
 
 {% func SimilarWidget(ctx *Ctx) %}
