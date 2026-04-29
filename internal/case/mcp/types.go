@@ -142,6 +142,7 @@ type SearchResultItem struct {
 	URL        string         `json:"url"`
 	Kind       string         `json:"kind"`
 	Score      float64        `json:"score"`
+	TOC        []TOCItem      `json:"toc,omitempty"`
 	Matches    []SearchMatch  `json:"matches,omitempty"`
 	Federation *FederationRef `json:"federation,omitempty"`
 }
@@ -151,6 +152,7 @@ type SearchMatch struct {
 	ChunkIndex   int          `json:"chunk_index,omitempty"`
 	Snippet      string       `json:"snippet"`
 	ContextWords int          `json:"context_words"`
+	TOCPath      []string     `json:"toc_path,omitempty"`
 	Links        []SearchLink `json:"links,omitempty"`
 }
 
@@ -174,12 +176,13 @@ type SimilarResultPayload struct {
 }
 
 type NoteHTMLArguments struct {
-	Path         string `json:"path,omitempty"`
-	Href         string `json:"href,omitempty"`
-	PID          int64  `json:"pid,omitempty"`
-	NoteID       int64  `json:"note_id,omitempty"`
-	MatchID      string `json:"match_id,omitempty"`
-	ContextWords int    `json:"context_words,omitempty"`
+	Path         string   `json:"path,omitempty"`
+	Href         string   `json:"href,omitempty"`
+	PID          int64    `json:"pid,omitempty"`
+	NoteID       int64    `json:"note_id,omitempty"`
+	MatchID      string   `json:"match_id,omitempty"`
+	ContextWords int      `json:"context_words,omitempty"`
+	TocPath      []string `json:"toc_path,omitempty"`
 }
 
 // JSON-RPC error codes.

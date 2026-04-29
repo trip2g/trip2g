@@ -32,6 +32,40 @@ The MCP server turns your knowledge base into an AI consultant. Connect it to an
 | `instructions()` | Author-defined AI instructions |
 | `editor_role()` | Answer style instructions |
 
+#### `search` — TOC and match location
+
+Each result item returned by `search` includes a `toc` field: an array of objects describing the document's table of contents.
+
+```json
+{
+  "title": "Introduction",
+  "level": 2,
+  "path": ["Chapter 1", "Introduction"]
+}
+```
+
+`path` is a breadcrumb array that uniquely identifies a section. Heading titles can repeat under different parents; `path` disambiguates them. For example, two sections both titled "Introduction" under "Chapter 1" and "Chapter 2" produce distinct paths: `["Chapter 1", "Introduction"]` and `["Chapter 2", "Introduction"]`.
+
+Each match inside `matches[]` also carries a `toc_path` field (string array) pointing to the innermost section that contains that snippet. Use it to know where in the document a match lives without loading the full note.
+
+#### `note_html` — retrieve a single section
+
+`note_html` accepts an optional `toc_path` parameter. Pass a `path` value from a TOC item to retrieve only that section's HTML instead of the full note.
+
+```
+note_html(pid=42, toc_path=["Chapter 1", "Introduction"])
+```
+
+This is useful when a note is long: load the TOC via `search`, pick the relevant section by its `path`, then fetch just that section with `note_html`.
+
+Typical agent workflow:
+
+1. `search(query)` — get results with `toc` and per-match `toc_path`
+2. Identify the relevant section from `toc_path` on the closest match
+3. `note_html(pid=N, toc_path=[...])` — load only that section
+
+For searching and retrieving notes across federated peer bases, see [[en/user/federation]].
+
 ### Setting up your own MCP knowledge base
 
 #### Step 1. Publish your notes
