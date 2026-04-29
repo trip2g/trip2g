@@ -112,7 +112,7 @@ sync_seedvault_to_peer() {
   PEER_API_KEY=$(curl -sf -X POST "$PEER_GRAPHQL" \
     -H 'Content-Type: application/json' \
     -H "Cookie: trip2g_e2e_peer=$PEER_TOKEN" \
-    -d '{"query":"mutation { createApiKey(input: { description: \"e2e\" }) { ... on CreateApiKeyPayload { value } } }"}' \
+    -d '{"query":"mutation AdminCreateApiKey($input: CreateApiKeyInput!) { admin { createApiKey(input: $input) { ... on ErrorPayload { message } ... on CreateApiKeyPayload { value } } } }","variables":{"input":{"description":"demo"}}}' \
     | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
 
   if [ -z "$PEER_API_KEY" ]; then
@@ -140,13 +140,13 @@ cleanup() {
   echo ""
 
   # Show logs if tests didn't complete successfully
-  if [ $SUCCESS -eq 0 ]; then
-    echo "📋 Container logs (due to error):"
-    echo "================================="
-    docker compose -f docker-compose.test.yml logs
-    echo "================================="
-    echo ""
-  fi
+  # if [ $SUCCESS -eq 0 ]; then
+  #   echo "📋 Container logs (due to error):"
+  #   echo "================================="
+  #   docker compose -f docker-compose.test.yml logs
+  #   echo "================================="
+  #   echo ""
+  # fi
 
   echo "🧹 Cleaning up..."
   #docker compose -f docker-compose.test.yml down -v

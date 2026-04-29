@@ -31,11 +31,17 @@ async function gql(request, baseURL, cookie, query, variables = {}) {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });
-  expect(response.ok(), `GraphQL request to ${baseURL} failed: ${response.status()}`).toBeTruthy();
+
+  if (!response.ok()) {
+    const failedBody = await response.text()
+    throw new Error(`GraphQL request to ${baseURL} failed: ${failedBody}, variables: ${JSON.stringify(variables)}`);
+  }
+
   const body = await response.json();
   if (body.errors) {
     throw new Error(`GraphQL errors (${baseURL}): ${JSON.stringify(body.errors)}`);
   }
+
   return body.data;
 }
 
@@ -73,27 +79,33 @@ test.describe.serial('Federation', () => {
     await peerRequest?.dispose();
   });
 
-  test('bootstrap federation secrets', async () => {
+  test.beforeAll(async ({ playwright }) => {
     // 1. Create inbound secret on peer
     const inboundData = await gql(peerRequest, PEER_URL, peerCookie, `
       mutation($input: CreateInboundFederationSecretInput!) {
-        createInboundFederationSecret(input: $input) {
-          ... on CreateInboundFederationSecretPayload { id kid secretHex }
-          ... on ErrorPayload { message }
+        admin {
+          createInboundFederationSecret(input: $input) {
+            ... on CreateInboundFederationSecretPayload { id kid secretHex }
+            ... on ErrorPayload { message }
+          }
         }
       }
     `, { input: { kid: KID, secretHex: SECRET_HEX } });
 
-    const inbound = inboundData.createInboundFederationSecret;
+    console.log(inboundData);
+
+    const inbound = inboundData.admin.createInboundFederationSecret;
     expect(inbound.kid).toBe(KID);
     expect(inbound.secretHex).toBe(SECRET_HEX);
 
     // 2. Create outbound secret on hub pointing to peer's MCP endpoint
     const outboundData = await gql(hubRequest, HUB_URL, hubCookie, `
       mutation($input: CreateOutboundFederationSecretInput!) {
-        createOutboundFederationSecret(input: $input) {
-          ... on CreateOutboundFederationSecretPayload { id kid }
-          ... on ErrorPayload { message }
+        admin {
+          createOutboundFederationSecret(input: $input) {
+            ... on CreateOutboundFederationSecretPayload { id kid }
+            ... on ErrorPayload { message }
+          }
         }
       }
     `, {
@@ -104,7 +116,7 @@ test.describe.serial('Federation', () => {
       },
     });
 
-    const outbound = outboundData.createOutboundFederationSecret;
+    const outbound = outboundData.admin.createOutboundFederationSecret;
     expect(outbound.kid).toBe(KID);
     outboundSecretId = outbound.id;
   });
@@ -158,17 +170,20 @@ test.describe.serial('Federation', () => {
   });
 
   test('revoke outbound secret blocks federation', async () => {
+    console.log({ id: outboundSecretId })
     // Revoke the outbound secret on the hub
     const revokeData = await gql(hubRequest, HUB_URL, hubCookie, `
       mutation($id: Int64!) {
-        revokeFederationSecret(id: $id) {
-          ... on RevokeFederationSecretPayload { revokedId }
-          ... on ErrorPayload { message }
+        admin {
+          revokeFederationSecret(id: $id) {
+            ... on RevokeFederationSecretPayload { revokedId }
+            ... on ErrorPayload { message }
+          }
         }
       }
     `, { id: outboundSecretId });
 
-    expect(revokeData.revokeFederationSecret.revokedId).toBe(outboundSecretId);
+    expect(revokeData.admin.revokeFederationSecret.revokedId).toBe(outboundSecretId);
 
     // Federated search should now fail or return no results
     const result = await mcpCall(hubRequest, HUB_MCP, 'tools/call', {

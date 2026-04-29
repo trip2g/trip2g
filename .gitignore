@@ -56,3 +56,4 @@ db.sqlite
 docs/.obsidian
 docs/.sync-state.json
 .omx/
+/testdata/seedvault/.sync-state.json
