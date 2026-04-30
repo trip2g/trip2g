@@ -30,6 +30,7 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/auditlogger"
+	"trip2g/internal/personaltoken"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
@@ -187,7 +188,8 @@ type app struct {
 
 	// mail *mailyak.MailYak
 
-	tokenManager *usertoken.Manager
+	tokenManager          *usertoken.Manager
+	personalTokenResolver *personaltoken.Resolver
 
 	notFoundTracker *notfoundtracker.Tracker
 
@@ -425,6 +427,7 @@ func main() {
 
 	a.setupAssets()
 	a.setTokenValidator()
+	a.personalTokenResolver = personaltoken.NewResolver(a)
 	a.setFileStorageExpiringCallback()
 
 	a.globalQueue.start()
@@ -2095,6 +2098,7 @@ func (a *app) startServer() {
 		req.Req = ctx
 		req.Path = path
 		req.TokenManager = a.tokenManager
+		req.PersonalTokenResolver = a.personalTokenResolver
 		req.StoreInContext() // appreq.FromCtx(ctx)
 		defer appreq.Release(req)
 

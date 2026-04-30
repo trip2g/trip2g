@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
+	"trip2g/internal/personaltoken"
 	"trip2g/internal/usertoken"
 
 	"github.com/valyala/fasthttp"
@@ -13,6 +15,11 @@ import (
 var ErrNotFound = errors.New("appreq: not found in context")
 var ErrInvalidType = errors.New("appreq: invalid type")
 var ErrInvalidEnv = errors.New("appreq: invalid env")
+
+// PersonalTokenResolver resolves a plaintext personal token (t2g_*) to user data.
+type PersonalTokenResolver interface {
+	Resolve(ctx context.Context, plaintext string) (*usertoken.Data, error)
+}
 
 type ctxKeyW struct{}
 
@@ -26,7 +33,8 @@ type Request struct {
 
 	Path string
 
-	TokenManager *usertoken.Manager
+	TokenManager          *usertoken.Manager
+	PersonalTokenResolver PersonalTokenResolver
 
 	token *usertoken.Data
 
@@ -45,6 +53,7 @@ func (c *Request) Reset() {
 	c.Env = nil
 	c.Req = nil
 	c.TokenManager = nil
+	c.PersonalTokenResolver = nil
 	c.token = nil
 	c.Path = ""
 	c.tokenExtracted = false
@@ -106,15 +115,55 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 		panic("appreq: request is nil")
 	}
 
+	// 1. Try cookie first.
 	token, err := c.TokenManager.Extract(c.Req)
 	if err != nil && !errors.Is(err, usertoken.ErrTokenMissing) {
 		return nil, err
 	}
+	if token != nil {
+		c.token = token
+		c.tokenExtracted = true
+		return token, nil
+	}
 
-	c.token = token
+	// 2. Try Authorization: Bearer <value> where value starts with t2g_.
+	if bearer := string(c.Req.Request.Header.Peek("Authorization")); bearer != "" {
+		if value, ok := strings.CutPrefix(bearer, "Bearer "); ok {
+			if personaltoken.IsPersonal(value) {
+				data, resolveErr := c.resolvePersonalToken(value)
+				if resolveErr != nil {
+					return nil, resolveErr
+				}
+				c.token = data
+				c.tokenExtracted = true
+				return data, nil
+			}
+			// Non-t2g_ Bearer (e.g. federation JWT) — fall through to anonymous.
+		}
+	}
+
+	// 3. Try ?token=<value> where value starts with t2g_.
+	if qtoken := string(c.Req.QueryArgs().Peek("token")); personaltoken.IsPersonal(qtoken) {
+		data, resolveErr := c.resolvePersonalToken(qtoken)
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		c.token = data
+		c.tokenExtracted = true
+		return data, nil
+	}
+
+	// 4. Anonymous.
+	c.token = nil
 	c.tokenExtracted = true
+	return nil, nil
+}
 
-	return token, nil
+func (c *Request) resolvePersonalToken(plaintext string) (*usertoken.Data, error) {
+	if c.PersonalTokenResolver == nil {
+		return nil, fmt.Errorf("personal token resolver not configured")
+	}
+	return c.PersonalTokenResolver.Resolve(c.Req, plaintext)
 }
 
 //nolint:gochecknoglobals // it's a common pattern.
