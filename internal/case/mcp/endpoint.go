@@ -29,19 +29,33 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	resolveCtx := context.Context(req.Req)
-	if authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization"))); authHeader != "" {
-		token, ok := strings.CutPrefix(authHeader, "Bearer ")
-		if !ok || strings.TrimSpace(token) == "" {
-			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token")
-			return writeJSONResponse(req, resp)
-		}
 
-		kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
-		if verifyErr != nil {
-			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
-			return writeJSONResponse(req, resp)
+	// Resolve personal token first (t2g_* Bearer or ?token= — handled by appreq.UserToken).
+	// If a user is present in ctx, the personal token authenticated successfully; skip federation verifyInbound.
+	// If UserToken returns an error (invalid/revoked/expired personal token), surface it immediately.
+	// Only attempt verifyInbound when no personal token user was found AND a Bearer is present.
+	userToken, utErr := req.UserToken()
+	if utErr != nil {
+		resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Auth failed: "+utErr.Error())
+		return writeJSONResponse(req, resp)
+	}
+
+	if userToken == nil {
+		// No personal token authenticated — check for federation JWT Bearer.
+		if authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization"))); authHeader != "" {
+			token, ok := strings.CutPrefix(authHeader, "Bearer ")
+			if !ok || strings.TrimSpace(token) == "" {
+				resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token")
+				return writeJSONResponse(req, resp)
+			}
+
+			kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
+			if verifyErr != nil {
+				resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
+				return writeJSONResponse(req, resp)
+			}
+			resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
 		}
-		resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
 	}
 
 	// Handle request
