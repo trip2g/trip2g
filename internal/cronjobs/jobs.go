@@ -190,9 +190,9 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 
 	cj.runningMU.Lock()
 	exec, exists := cj.runningJobs[jobID]
+	cj.runningMU.Unlock()
 
 	if exists {
-		cj.runningMU.Unlock()
 		return &exec, nil
 	}
 
@@ -202,6 +202,8 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 		cj.runningMU.Unlock()
 	}()
 
+	// DB calls are outside the mutex to avoid blocking other jobs while waiting
+	// for a SQLite write lock (e.g. when another cron job holds a write transaction).
 	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
 		JobID:        jobID,
 		Status:       JobStatusRunning,
@@ -222,6 +224,7 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 		return nil, fmt.Errorf("failed to insert cron job execution for %d: %w", jobID, err)
 	}
 
+	cj.runningMU.Lock()
 	cj.runningJobs[jobID] = exec
 	cj.runningMU.Unlock()
 
