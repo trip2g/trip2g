@@ -54,6 +54,7 @@ $trip2g_user_space $mol_view
 		spreads *
 			home <= Home $trip2g_user_space_home
 			subscriptions <= Subscriptions $trip2g_user_space_subscriptions
+			tokens <= Tokens $trip2g_user_space_tokens
 
 $trip2g_user_space_home $mol_view
 	sub /
