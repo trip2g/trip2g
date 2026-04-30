@@ -129,6 +129,25 @@ free: true
 Default header and footer for all pages.
 ```
 
+**Sidebar widgets via glob sections**
+
+A glob sidebar section can specify widgets for matched pages using the `content:` key. Use `self` to also render the section note's own body (navigation, links, etc.):
+
+```yaml
+---
+right_sidebar_includes: "docs/**/*.md"
+content:
+  - self       # render this note's body in the sidebar
+  - TOC
+  - inlinks
+  - similar
+---
+
+Navigation links or any other content here.
+```
+
+When a matched page is rendered, the right sidebar will show: this note's body, then TOC, then backlinks, then similar notes.
+
 **Hiding glob sections from listings**
 
 Prefix the filename with `_` to hide it from the site's magazine and note listings:

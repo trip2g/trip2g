@@ -111,6 +111,36 @@ func parseWidgetRef(raw interface{}) (WidgetRef, bool) {
 	return WidgetRef{}, false
 }
 
+// parseGlobSectionWidgets parses content: from a glob section note into widget refs.
+// "self"/"selfcontent" becomes WidgetContent pointing to the section note itself.
+func parseGlobSectionWidgets(raw interface{}, notePath string) []WidgetRef {
+	var items []interface{}
+	switch v := raw.(type) {
+	case []interface{}:
+		items = v
+	case string:
+		items = []interface{}{v}
+	default:
+		return nil
+	}
+	var widgets []WidgetRef
+	for _, item := range items {
+		s, ok := item.(string)
+		if !ok {
+			continue
+		}
+		lower := strings.ToLower(strings.TrimSpace(s))
+		if lower == "self" || lower == "selfcontent" || lower == "self_content" {
+			widgets = append(widgets, WidgetRef{Kind: WidgetContent, Value: notePath})
+			continue
+		}
+		if w, ok := parseWidgetRef(item); ok {
+			widgets = append(widgets, w)
+		}
+	}
+	return widgets
+}
+
 // parseWidgetList parses a raw frontmatter value (string or []interface{}) into a widget list.
 // Returns nil if the value doesn't contain any recognized widgets.
 func parseWidgetList(raw interface{}) []WidgetRef {
