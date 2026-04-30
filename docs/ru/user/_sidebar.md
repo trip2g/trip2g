@@ -37,6 +37,7 @@ title: "Навигация"
 - [[ru/user/federation|MCP Federation]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
 - [[ru/user/cron_webhooks|Вебхуки по расписанию]]
+- [[ru/user/Knowlume Adapter|Knowlume Adapter]]
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]
 - [[ru/user/rss-feeds|RSS-ленты]]
 - [[ru/user/oauth|OAuth]]

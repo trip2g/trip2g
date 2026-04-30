@@ -26,6 +26,7 @@ title: "Navigation"
 ### Automation
 
 - [[en/user/webhooks|Webhooks & automation]]
+- [[en/user/knowlume-adapter|Knowlume Adapter]]
 - [[en/user/rss|RSS feeds]]
 
 ### Advanced
