@@ -1152,6 +1152,20 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	return count, err
 }
 
+const countActiveUserTokensByUserID = `-- name: CountActiveUserTokensByUserID :one
+select count(*) from user_tokens
+where user_id = ?
+  and revoked_at is null
+  and (expires_at is null or expires_at > datetime('now'))
+`
+
+func (q *Queries) CountActiveUserTokensByUserID(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countActiveUserTokensByUserID, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countAllNotePaths = `-- name: CountAllNotePaths :one
 select count(*) from note_paths
 `
@@ -5822,6 +5836,46 @@ func (q *Queries) ListUserFavoriteNotes(ctx context.Context, userID int64) ([]Li
 	return items, nil
 }
 
+const listUserTokensByUserID = `-- name: ListUserTokensByUserID :many
+select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
+where user_id = ?
+order by created_at desc
+`
+
+func (q *Queries) ListUserTokensByUserID(ctx context.Context, userID int64) ([]UserToken, error) {
+	rows, err := q.db.QueryContext(ctx, listUserTokensByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserToken
+	for rows.Next() {
+		var i UserToken
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.TokenHash,
+			&i.TokenPrefix,
+			&i.Scope,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.LastUsedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
 select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at from change_webhook_deliveries
 where webhook_id = ?
@@ -7083,6 +7137,35 @@ func (q *Queries) UserSubgraphAccessByID(ctx context.Context, id int64) (UserSub
 		&i.RevokeID,
 		&i.PurchaseID,
 		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const userTokenByHash = `-- name: UserTokenByHash :one
+
+select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
+where token_hash = ?
+  and revoked_at is null
+  and (expires_at is null or expires_at > datetime('now'))
+`
+
+// ============================================
+// User Tokens
+// ============================================
+func (q *Queries) UserTokenByHash(ctx context.Context, tokenHash string) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, userTokenByHash, tokenHash)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
 	)
 	return i, err
 }

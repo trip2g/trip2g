@@ -1071,3 +1071,23 @@ values (?, ?, ?);
 delete from federation_secret_subgraphs
  where kid = ?
    and subgraph_id = ?;
+
+-- ============================================
+-- User Tokens
+-- ============================================
+
+-- name: InsertUserToken :one
+insert into user_tokens (id, user_id, name, token_hash, token_prefix, scope, expires_at)
+values (?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: RevokeUserToken :one
+update user_tokens
+set revoked_at = current_timestamp
+where id = ? and user_id = ? and revoked_at is null
+returning *;
+
+-- name: UpdateUserTokenLastUsedAt :exec
+update user_tokens
+set last_used_at = current_timestamp
+where id = ?;

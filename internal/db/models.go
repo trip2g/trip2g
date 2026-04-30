@@ -770,6 +770,19 @@ type UserSubgraphAccess struct {
 	CreatedBy  *int64     `json:"created_by"`
 }
 
+type UserToken struct {
+	ID          string     `json:"id"`
+	UserID      int64      `json:"user_id"`
+	Name        string     `json:"name"`
+	TokenHash   string     `json:"token_hash"`
+	TokenPrefix string     `json:"token_prefix"`
+	Scope       string     `json:"scope"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	LastUsedAt  *time.Time `json:"last_used_at"`
+	RevokedAt   *time.Time `json:"revoked_at"`
+}
+
 type WaitListEmailRequest struct {
 	Email      string    `json:"email"`
 	CreatedAt  time.Time `json:"created_at"`

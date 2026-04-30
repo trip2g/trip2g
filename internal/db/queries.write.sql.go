@@ -2080,6 +2080,52 @@ func (q *WriteQueries) InsertUserNoteView(ctx context.Context, arg InsertUserNot
 	return err
 }
 
+const insertUserToken = `-- name: InsertUserToken :one
+
+insert into user_tokens (id, user_id, name, token_hash, token_prefix, scope, expires_at)
+values (?, ?, ?, ?, ?, ?, ?)
+returning id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at
+`
+
+type InsertUserTokenParams struct {
+	ID          string     `json:"id"`
+	UserID      int64      `json:"user_id"`
+	Name        string     `json:"name"`
+	TokenHash   string     `json:"token_hash"`
+	TokenPrefix string     `json:"token_prefix"`
+	Scope       string     `json:"scope"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+}
+
+// ============================================
+// User Tokens
+// ============================================
+func (q *WriteQueries) InsertUserToken(ctx context.Context, arg InsertUserTokenParams) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, insertUserToken,
+		arg.ID,
+		arg.UserID,
+		arg.Name,
+		arg.TokenHash,
+		arg.TokenPrefix,
+		arg.Scope,
+		arg.ExpiresAt,
+	)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const insertUserWithEmail = `-- name: InsertUserWithEmail :one
 insert into users (email, created_via) values (lower(?1), ?2)
 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
@@ -2605,6 +2651,36 @@ type RevokeUserSubgraphAccessParams struct {
 func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
 	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
 	return err
+}
+
+const revokeUserToken = `-- name: RevokeUserToken :one
+update user_tokens
+set revoked_at = current_timestamp
+where id = ? and user_id = ? and revoked_at is null
+returning id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at
+`
+
+type RevokeUserTokenParams struct {
+	ID     string `json:"id"`
+	UserID int64  `json:"user_id"`
+}
+
+func (q *WriteQueries) RevokeUserToken(ctx context.Context, arg RevokeUserTokenParams) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, revokeUserToken, arg.ID, arg.UserID)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
+	)
+	return i, err
 }
 
 const setActiveGitHubOAuthCredentials = `-- name: SetActiveGitHubOAuthCredentials :exec
@@ -3656,6 +3732,17 @@ type UpdateUserTgIDParams struct {
 
 func (q *WriteQueries) UpdateUserTgID(ctx context.Context, arg UpdateUserTgIDParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserTgID, arg.TgUserID, arg.ID)
+	return err
+}
+
+const updateUserTokenLastUsedAt = `-- name: UpdateUserTokenLastUsedAt :exec
+update user_tokens
+set last_used_at = current_timestamp
+where id = ?
+`
+
+func (q *WriteQueries) UpdateUserTokenLastUsedAt(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, updateUserTokenLastUsedAt, id)
 	return err
 }
 

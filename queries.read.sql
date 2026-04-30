@@ -1364,3 +1364,24 @@ select cast(coalesce(sum(size), 0) as integer) from note_assets;
 
 -- name: CountNoteAssets :one
 select count(*) from note_assets;
+
+-- ============================================
+-- User Tokens
+-- ============================================
+
+-- name: UserTokenByHash :one
+select * from user_tokens
+where token_hash = ?
+  and revoked_at is null
+  and (expires_at is null or expires_at > datetime('now'));
+
+-- name: ListUserTokensByUserID :many
+select * from user_tokens
+where user_id = ?
+order by created_at desc;
+
+-- name: CountActiveUserTokensByUserID :one
+select count(*) from user_tokens
+where user_id = ?
+  and revoked_at is null
+  and (expires_at is null or expires_at > datetime('now'));
