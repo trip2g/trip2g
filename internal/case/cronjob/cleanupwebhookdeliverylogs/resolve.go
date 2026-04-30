@@ -16,7 +16,7 @@ type Result struct {
 	Cleaned bool
 }
 
-// Resolve deletes webhook delivery logs older than 7 days.
+// Resolve deletes webhook delivery logs older than 1 day.
 func Resolve(ctx context.Context, env Env) (*Result, error) {
 	err := env.CleanupOldDeliveryLogs(ctx)
 	if err != nil {

@@ -1016,8 +1016,10 @@ insert into webhook_delivery_logs (delivery_id, kind, request_body, response_bod
 values (?, ?, ?, ?, ?);
 
 -- name: CleanupOldDeliveryLogs :exec
+-- Cron webhook response bodies can be hundreds of KB (full note content from agents),
+-- so logs accumulate fast. Keep only the last day.
 delete from webhook_delivery_logs
-where created_at < datetime('now', '-7 days');
+where created_at < datetime('now', '-1 days');
 
 -- name: CleanupOldChangeWebhookDeliveries :exec
 delete from change_webhook_deliveries
