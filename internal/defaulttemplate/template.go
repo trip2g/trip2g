@@ -154,7 +154,7 @@ func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 		if match := ctx.resolveLayoutSection(key); match != nil {
 			// If the layout section note declares content: [widget, ...], use those as widgets.
 			if sectionNote := ctx.Notes.ByPath(match.NotePath); sectionNote != nil {
-				if widgets := parseWidgetList(sectionNote.M().Get(key)); len(widgets) > 0 {
+				if widgets := parseWidgetList(sectionNote.M().Get("content")); len(widgets) > 0 {
 					return widgets
 				}
 			}
