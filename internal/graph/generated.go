@@ -12604,7 +12604,20 @@ func (ec *executionContext) _AdminMutation_runCronJob(ctx context.Context, field
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().RunCronJob(ctx, obj, fc.Args["input"].(model.RunCronJobInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.RunCronJobOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNRunCronJobOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobOrErrorPayload,
 		true,
 		true,

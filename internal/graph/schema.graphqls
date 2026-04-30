@@ -2735,7 +2735,9 @@ type AdminMutation {
 
   # Cron Job mutations
   updateCronJob(input: UpdateCronJobInput!): UpdateCronJobOrErrorPayload!
-  runCronJob(input: RunCronJobInput!): RunCronJobOrErrorPayload!
+  # @skipTx: executeJob uses cj.env (root app, not tx env) so it would deadlock
+  # waiting for the write connection that the GraphQL tx middleware already holds.
+  runCronJob(input: RunCronJobInput!): RunCronJobOrErrorPayload! @skipTx
 
   # Atomic config mutations
   setConfigStringValue(input: SetConfigStringValueInput!): SetConfigStringValuePayload!

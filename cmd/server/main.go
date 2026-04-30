@@ -290,7 +290,10 @@ func main() {
 	// tokenManager.SetInsecure(config.DevMode) // for k6
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
-	writeQueries := db.NewWriteQueries(db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")))
+	writeQueries := db.NewWriteQueries(
+		db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")).
+			WithPoolStats(writeConn.Stats),
+	)
 
 	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey, log)
 	if err != nil {
