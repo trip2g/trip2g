@@ -112,6 +112,8 @@ import (
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/createusertoken"
+	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
@@ -2421,6 +2423,46 @@ func (r *mutationResolver) GenerateTgAttachCode(ctx context.Context, input model
 	return generatetgattachcode.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateUserToken is the resolver for the createUserToken field.
+func (r *mutationResolver) CreateUserToken(ctx context.Context, input model.CreateUserTokenInput) (model.CreateUserTokenOrErrorPayload, error) {
+	ucInput := createusertoken.Input{Name: input.Name}
+	if input.ExpiresInDays != nil {
+		d := time.Duration(*input.ExpiresInDays) * 24 * time.Hour
+		ucInput.ExpiresIn = &d
+	}
+	result, err := createusertoken.Resolve(ctx, r.env(ctx), ucInput)
+	if err != nil {
+		return nil, err
+	}
+	switch p := result.(type) {
+	case *createusertoken.SuccessPayload:
+		return &model.CreateUserTokenPayload{
+			PlaintextToken: p.PlaintextToken,
+			Token:          &p.Token,
+		}, nil
+	case *createusertoken.ErrorPayload:
+		return &model.ErrorPayload{Message: p.Message}, nil
+	default:
+		return nil, fmt.Errorf("unexpected payload type: %T", result)
+	}
+}
+
+// RevokeUserToken is the resolver for the revokeUserToken field.
+func (r *mutationResolver) RevokeUserToken(ctx context.Context, input model.RevokeUserTokenInput) (model.RevokeUserTokenOrErrorPayload, error) {
+	result, err := revokeusertoken.Resolve(ctx, r.env(ctx), revokeusertoken.Input{ID: input.ID})
+	if err != nil {
+		return nil, err
+	}
+	switch p := result.(type) {
+	case *revokeusertoken.SuccessPayload:
+		return &model.RevokeUserTokenPayload{Token: &p.Token}, nil
+	case *revokeusertoken.ErrorPayload:
+		return &model.ErrorPayload{Message: p.Message}, nil
+	default:
+		return nil, fmt.Errorf("unexpected payload type: %T", result)
+	}
+}
+
 // Admin is the resolver for the admin field.
 func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, error) {
 	err := checkAdmin(ctx)
@@ -2920,6 +2962,11 @@ func (r *userResolver) FavoriteNotes(ctx context.Context, obj *db.User) ([]model
 	}
 
 	return favoriteNotes, nil
+}
+
+// Tokens is the resolver for the tokens field.
+func (r *userResolver) Tokens(ctx context.Context, obj *db.User) ([]db.UserToken, error) {
+	return r.env(ctx).ListUserTokensByUserID(ctx, obj.ID)
 }
 
 // User is the resolver for the user field.

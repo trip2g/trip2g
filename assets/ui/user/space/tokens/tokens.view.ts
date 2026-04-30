@@ -20,15 +20,20 @@ namespace $.$$ {
 	const createMutation = $trip2g_graphql_request(/* GraphQL */ `
 		mutation CreateUserToken($input: CreateUserTokenInput!) {
 			createUserToken(input: $input) {
-				plaintextToken
-				token {
-					id
-					name
-					tokenPrefix
-					scope
-					createdAt
-					lastUsedAt
-					expiresAt
+				... on CreateUserTokenPayload {
+					plaintextToken
+					token {
+						id
+						name
+						tokenPrefix
+						scope
+						createdAt
+						lastUsedAt
+						expiresAt
+					}
+				}
+				... on ErrorPayload {
+					message
 				}
 			}
 		}
@@ -37,8 +42,13 @@ namespace $.$$ {
 	const revokeMutation = $trip2g_graphql_request(/* GraphQL */ `
 		mutation RevokeUserToken($input: RevokeUserTokenInput!) {
 			revokeUserToken(input: $input) {
-				token {
-					id
+				... on RevokeUserTokenPayload {
+					token {
+						id
+					}
+				}
+				... on ErrorPayload {
+					message
 				}
 			}
 		}
@@ -146,7 +156,12 @@ namespace $.$$ {
 				},
 			})
 
-			const plaintext = res.createUserToken.plaintextToken
+			const payload = res.createUserToken
+			if (payload.__typename === 'ErrorPayload') {
+				this.generate_result(payload.message)
+				return
+			}
+			const plaintext = payload.plaintextToken
 			this.plaintext_token(plaintext)
 			this.plaintext_modal_open('open')
 			this.new_name('')

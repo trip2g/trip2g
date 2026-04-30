@@ -97,6 +97,8 @@ import (
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/createusertoken"
+	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
@@ -227,6 +229,8 @@ type Env interface {
 	signout.Env
 	createpaymentlink.Env
 	createemailwaitlistrequest.Env
+	createusertoken.Env
+	revokeusertoken.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env
 	commitnotes.Env
@@ -359,6 +363,7 @@ type Env interface {
 	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
+	ListUserTokensByUserID(ctx context.Context, userID int64) ([]db.UserToken, error)
 
 	AllLatestNoteAssets(ctx context.Context) ([]db.AllLatestNoteAssetsRow, error)
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)

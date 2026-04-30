@@ -170,6 +170,10 @@ type CreateUserSubgraphAccessOrErrorPayload interface {
 	IsCreateUserSubgraphAccessOrErrorPayload()
 }
 
+type CreateUserTokenOrErrorPayload interface {
+	IsCreateUserTokenOrErrorPayload()
+}
+
 type DeactivateGitHubOAuthOrErrorPayload interface {
 	IsDeactivateGitHubOAuthOrErrorPayload()
 }
@@ -288,6 +292,10 @@ type RestorePatreonCredentialsOrErrorPayload interface {
 
 type RevokeFederationSecretOrErrorPayload interface {
 	IsRevokeFederationSecretOrErrorPayload()
+}
+
+type RevokeUserTokenOrErrorPayload interface {
+	IsRevokeUserTokenOrErrorPayload()
 }
 
 type RunCronJobOrErrorPayload interface {
@@ -1252,6 +1260,18 @@ type CreateUserSubgraphAccessPayload struct {
 
 func (CreateUserSubgraphAccessPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 
+type CreateUserTokenInput struct {
+	Name          string `json:"name"`
+	ExpiresInDays *int32 `json:"expiresInDays,omitempty"`
+}
+
+type CreateUserTokenPayload struct {
+	PlaintextToken string        `json:"plaintextToken"`
+	Token          *db.UserToken `json:"token"`
+}
+
+func (CreateUserTokenPayload) IsCreateUserTokenOrErrorPayload() {}
+
 type DeactivateGitHubOAuthPayload struct {
 	Success bool `json:"success"`
 }
@@ -1390,6 +1410,10 @@ type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
 }
+
+func (ErrorPayload) IsCreateUserTokenOrErrorPayload() {}
+
+func (ErrorPayload) IsRevokeUserTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsSetConfigStringValuePayload() {}
 
@@ -1872,6 +1896,16 @@ type RevokeFederationSecretPayload struct {
 }
 
 func (RevokeFederationSecretPayload) IsRevokeFederationSecretOrErrorPayload() {}
+
+type RevokeUserTokenInput struct {
+	ID string `json:"id"`
+}
+
+type RevokeUserTokenPayload struct {
+	Token *db.UserToken `json:"token"`
+}
+
+func (RevokeUserTokenPayload) IsRevokeUserTokenOrErrorPayload() {}
 
 type RunCronJobInput struct {
 	ID int64 `json:"id"`

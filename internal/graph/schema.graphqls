@@ -48,6 +48,40 @@ type User {
   email: String
   subgraphAccesses: [UserSubgraphAccess!]!
   favoriteNotes: [PublicNote!]!
+  tokens: [UserToken!]! @goField(forceResolver: true)
+}
+
+type UserToken @goModel(model: "trip2g/internal/db.UserToken") {
+  id: ID!
+  name: String!
+  tokenPrefix: String!
+  scope: String!
+  createdAt: Time!
+  expiresAt: Time
+  lastUsedAt: Time
+  revokedAt: Time
+}
+
+type CreateUserTokenPayload {
+  plaintextToken: String!
+  token: UserToken!
+}
+
+type RevokeUserTokenPayload {
+  token: UserToken!
+}
+
+union CreateUserTokenOrErrorPayload = CreateUserTokenPayload | ErrorPayload
+
+union RevokeUserTokenOrErrorPayload = RevokeUserTokenPayload | ErrorPayload
+
+input CreateUserTokenInput {
+  name: String!
+  expiresInDays: Int
+}
+
+input RevokeUserTokenInput {
+  id: ID!
 }
 
 type Admin {
@@ -1688,6 +1722,9 @@ type Mutation {
   commitNotes: CommitNotesOrErrorPayload!
 
   generateTgAttachCode(input: GenerateTgAttachCodeInput!): GenerateTgAttachCodeOrErrorPayload!
+
+  createUserToken(input: CreateUserTokenInput!): CreateUserTokenOrErrorPayload!
+  revokeUserToken(input: RevokeUserTokenInput!): RevokeUserTokenOrErrorPayload!
 
   admin: AdminMutation!
 }
