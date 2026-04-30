@@ -1,5 +1,3 @@
-//go:build personal_tokens
-
 package mcp_test
 
 import (
@@ -72,12 +70,20 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 	return env
 }
 
+// noopTokenManager is a minimal usertoken.Manager with a distinct cookie name that
+// will never match any test request, so Extract always returns ErrTokenMissing.
+var noopTokenManager = usertoken.NewManager(usertoken.Config{
+	CookieName: "__noop_test_cookie__",
+	Secret:     "test-secret-32-bytes-long-filler!",
+})
+
 // wiredRequest creates an appreq.Request backed by the given fasthttp context,
 // with the env and optional PersonalTokenResolver set.
 func wiredRequest(fasthttpCtx *fasthttp.RequestCtx, env interface{}, resolver appreq.PersonalTokenResolver) *appreq.Request {
 	req := appreq.Acquire()
 	req.Env = env
 	req.Req = fasthttpCtx
+	req.TokenManager = noopTokenManager
 	req.PersonalTokenResolver = resolver
 	req.StoreInContext()
 	return req
