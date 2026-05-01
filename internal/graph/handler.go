@@ -13,6 +13,8 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+// buildSkipTxMap collects all field names (at any nesting level under Mutation)
+// that carry the @skipTx directive, so shouldSkipTx can match them recursively.
 func buildSkipTxMap(schema graphql.ExecutableSchema) map[string]struct{} {
 	skipTxMutations := make(map[string]struct{})
 
@@ -20,11 +22,26 @@ func buildSkipTxMap(schema graphql.ExecutableSchema) map[string]struct{} {
 		return skipTxMutations
 	}
 
-	for _, field := range schema.Schema().Mutation.Fields {
-		if field.Directives.ForName("skipTx") != nil {
-			skipTxMutations[field.Name] = struct{}{}
+	visited := make(map[string]bool)
+	var scan func(typeName string)
+	scan = func(typeName string) {
+		if visited[typeName] {
+			return
+		}
+		visited[typeName] = true
+
+		typeDef := schema.Schema().Types[typeName]
+		if typeDef == nil {
+			return
+		}
+		for _, field := range typeDef.Fields {
+			if field.Directives.ForName("skipTx") != nil {
+				skipTxMutations[field.Name] = struct{}{}
+			}
+			scan(field.Type.Name())
 		}
 	}
+	scan(schema.Schema().Mutation.Name)
 
 	return skipTxMutations
 }
@@ -157,14 +174,24 @@ func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct
 	if op.Operation != ast.Mutation {
 		return true
 	}
+	return selectionHasSkipTx(op.SelectionSet, skipTxMutations)
+}
 
-	for _, selection := range op.SelectionSet {
-		if field, ok := selection.(*ast.Field); ok {
-			if _, shouldSkip := skipTxMutations[field.Name]; shouldSkip {
-				return true
-			}
+// selectionHasSkipTx walks the selection set recursively. A single @skipTx
+// field anywhere in the tree is enough to skip the transaction for the whole
+// operation — nested mutations like AdminMutation.runCronJob are covered.
+func selectionHasSkipTx(sel ast.SelectionSet, skipTx map[string]struct{}) bool {
+	for _, s := range sel {
+		field, ok := s.(*ast.Field)
+		if !ok {
+			continue
+		}
+		if _, skip := skipTx[field.Name]; skip {
+			return true
+		}
+		if selectionHasSkipTx(field.SelectionSet, skipTx) {
+			return true
 		}
 	}
-
 	return false
 }
