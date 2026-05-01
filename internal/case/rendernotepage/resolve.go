@@ -256,11 +256,18 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Time = int(time.Now().Unix())
 	response.NoteView = templateviews.NewNoteWithDomain(note, response.domainHost)
 
-	// not sure if this is the right place to do this
-	for key := range note.InLinks {
-		if len(key) > 1 && key[1] == '_' {
-			delete(note.InLinks, key)
+	// Filter out internal inlinks (keys starting with _) without mutating the
+	// shared cached note — concurrent requests share the same note object.
+	if note.InLinks != nil {
+		filtered := make(map[string]struct{}, len(note.InLinks))
+		for key := range note.InLinks {
+			if !(len(key) > 1 && key[1] == '_') {
+				filtered[key] = struct{}{}
+			}
 		}
+		noteCopy := *note
+		noteCopy.InLinks = filtered
+		note = &noteCopy
 	}
 
 	// Check sign-in wall before paywall.
