@@ -42,7 +42,7 @@ type QueueOpts struct {
 
 func (a *app) createQueue(ctx context.Context, name string, opts QueueOpts) *appQueue {
 	queueOpts := goqite.NewOpts{
-		DB:   a.writeConn,
+		DB:   a.queueConn,
 		Name: name,
 	}
 	if opts.MaxReceive > 0 {
@@ -239,7 +239,7 @@ func (a *app) ClearBackgroundQueue(ctx context.Context, name string) (int64, err
 	}
 
 	// Delete all jobs from this queue
-	result, err := a.writeConn.ExecContext(ctx, "DELETE FROM goqite WHERE queue = ?", name)
+	result, err := a.queueConn.ExecContext(ctx, "DELETE FROM goqite WHERE queue = ?", name)
 	if err != nil {
 		// Try to restart queue if it was running
 		if wasRunning {

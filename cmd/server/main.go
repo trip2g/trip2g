@@ -173,6 +173,7 @@ type app struct {
 	queries   *db.Queries
 	conn      *sql.DB
 	writeConn *sql.DB
+	queueConn *sql.DB // separate connection for goqite so queue polling never blocks app writes
 
 	currentTx *sql.Tx
 
@@ -233,7 +234,7 @@ type app struct {
 	signinCounter *requestemailsignin.SignInCounter
 }
 
-func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
+func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB, *sql.DB) {
 	dbConfig := db.SetupConfig{
 		DatabaseFile: config.DatabaseFile,
 		Logger:       log,
@@ -256,7 +257,16 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
 		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
 
-	return conn, writeConn
+	// Separate connection for goqite queue so polling goroutines never compete
+	// with application writes for the single writeConn connection slot.
+	dbConfig.CheckStatus = false
+	dbConfig.SkipDump = true
+	queueConn, err := db.Setup(dbConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to setup queue database: %w", err))
+	}
+
+	return conn, writeConn, queueConn
 }
 
 func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager {
@@ -285,7 +295,7 @@ func main() {
 		restoreBackup(log, config)
 	}
 
-	conn, writeConn := initDBs(config, log)
+	conn, writeConn, queueConn := initDBs(config, log)
 
 	tokenManager := usertoken.NewManager(config.UserToken)
 	// use USER_TOKEN_INSECURE instead
@@ -346,6 +356,7 @@ func main() {
 		// mail:    mailyak.New(mailAddr, mailAuth),
 
 		writeConn: writeConn,
+		queueConn: queueConn,
 
 		UserBans: userbans.New(queries),
 
