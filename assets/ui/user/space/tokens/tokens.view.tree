@@ -58,7 +58,7 @@ $trip2g_user_space_tokens $mol_view
 							message <= generate_result? \
 				<= PlaintextModal $mol_view
 					dom_name \dialog
-					attr * open <= plaintext_modal_open null|string
+					attr * open <= plaintext_modal_open null null|string
 					sub /
 						<= ModalTitle $mol_view
 							sub / @ \New Token Created
@@ -68,14 +68,14 @@ $trip2g_user_space_tokens $mol_view
 							sub / <= plaintext_token \
 						<= CopyTokenButton $mol_button_copy
 							title @ \Copy Token
-							value <= plaintext_token \
+							text <= plaintext_token \
 						<= McpUrlLabel $mol_view
 							sub / @ \MCP URL
 						<= McpUrlValue $mol_view
 							sub / <= mcp_url \
 						<= CopyMcpButton $mol_button_copy
 							title @ \Copy MCP URL
-							value <= mcp_url \
+							text <= mcp_url \
 						<= CurlExample $mol_view
 							sub / <= curl_example \
 						<= CloseModalButton $mol_button_major

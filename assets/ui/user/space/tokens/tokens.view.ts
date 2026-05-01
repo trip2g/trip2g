@@ -157,8 +157,8 @@ namespace $.$$ {
 			})
 
 			const payload = res.createUserToken
-			if (payload.__typename === 'ErrorPayload') {
-				this.generate_result(payload.message)
+			if (!('plaintextToken' in payload)) {
+				this.generate_result((payload as any).message ?? 'Unknown error')
 				return
 			}
 			const plaintext = payload.plaintextToken
