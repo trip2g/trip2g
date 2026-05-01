@@ -115,6 +115,48 @@ Enable the MCP server in site settings. Access can be:
 - **Open** — for everyone
 - **Subscription-only** — for paying subscribers only
 
+### Personal access tokens
+
+Personal access tokens let you authenticate to the MCP server without a browser session. Use them to integrate with CLI tools, scripts, or external applications.
+
+#### Create a token
+
+1. Go to **User → Tokens** in your account settings
+2. Click **Generate token**
+3. Enter a name (e.g., "Claude Desktop", "API script")
+4. Choose expiration: **30 days**, **90 days** (default), **1 year**, or **Never**
+5. Click **Generate**
+6. Copy the token — it shows only once. Store it securely
+
+#### Use the token
+
+Two formats work:
+
+**HTTP Bearer header:**
+```bash
+curl https://yoursite.com/_system/mcp/tools/call \
+  -H "Authorization: Bearer t2g_…" \
+  -d '{"method":"search","params":{"query":"design"}}'
+```
+
+**Query parameter:**
+```bash
+curl 'https://yoursite.com/_system/mcp/tools/call?token=t2g_…' \
+  -d '{"method":"search","params":{"query":"design"}}'
+```
+
+#### Access control
+
+- **Admin**: sees all notes and subgraphs
+- **Regular user**: sees only notes in subgraphs you're subscribed to
+- Tokens inherit your access — no additional privileges
+
+#### Revoke a token
+
+1. Go to **User → Tokens**
+2. Find the token and click **Revoke**
+3. The token stops working immediately (within ~30 seconds if cached)
+
 ### Use cases
 
 **Expert knowledge consultant** — an expert built a knowledge base on a topic. You connect their MCP and get a consultant that answers in the expert's style, citing their materials.
