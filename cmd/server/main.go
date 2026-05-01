@@ -160,6 +160,9 @@ type app struct {
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex
 
+	debugJobLog []debugJobRecord
+	debugJobMu  sync.Mutex
+
 	openaiClient *openai.Client
 
 	sigChan     chan os.Signal
@@ -504,6 +507,8 @@ func (a *app) initJobs(ctx context.Context) {
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
+
+	a.initDebugJobs()
 }
 
 func (a *app) initPatreon(ctx context.Context) {

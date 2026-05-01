@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +18,44 @@ type webhookTestCall struct {
 	Timestamp int64             `json:"timestamp"`
 	Headers   map[string]string `json:"headers"`
 	Body      json.RawMessage   `json:"body"`
+}
+
+// debugJobRecord is written by the debug_sleep_job when it completes.
+type debugJobRecord struct {
+	Tag         string    `json:"tag"`
+	DurationMs  int       `json:"durationMs"`
+	CompletedAt time.Time `json:"completedAt"`
+}
+
+type debugSleepJobParams struct {
+	Tag        string `json:"tag"`
+	DurationMs int    `json:"durationMs"`
+}
+
+const debugSleepJobID = "debug_sleep_job"
+
+// initDebugJobs registers the debug_sleep_job handler. Only active in devMode.
+func (a *app) initDebugJobs() {
+	if !a.config.DevMode {
+		return
+	}
+	a.RegisterJob(model.BackgroundDefaultQueue, debugSleepJobID, func(_ context.Context, m []byte) error {
+		var params debugSleepJobParams
+		if err := json.Unmarshal(m, &params); err != nil {
+			return fmt.Errorf("unmarshal debug sleep params: %w", err)
+		}
+		if params.DurationMs > 0 {
+			time.Sleep(time.Duration(params.DurationMs) * time.Millisecond)
+		}
+		a.debugJobMu.Lock()
+		a.debugJobLog = append(a.debugJobLog, debugJobRecord{
+			Tag:         params.Tag,
+			DurationMs:  params.DurationMs,
+			CompletedAt: time.Now().UTC(),
+		})
+		a.debugJobMu.Unlock()
+		return nil
+	})
 }
 
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
@@ -43,6 +83,15 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 
 	case strings.HasPrefix(path, "/debug/wait_all_jobs"):
 		return a.handleDebugWaitAllJobs(ctx)
+
+	case ctx.IsPost() && strings.HasPrefix(path, "/debug/spawn_jobs"):
+		return a.handleDebugSpawnJobs(ctx)
+
+	case ctx.IsGet() && strings.HasPrefix(path, "/debug/completed_jobs"):
+		return a.handleDebugCompletedJobs(ctx)
+
+	case ctx.IsDelete() && strings.HasPrefix(path, "/debug/completed_jobs"):
+		return a.handleDebugCompletedJobsClear(ctx)
 
 	case strings.HasPrefix(path, "/debug/run_cron_job"):
 		return a.handleDebugRunCronJob(ctx)
@@ -83,10 +132,11 @@ func (a *app) handleDebugNvsLatest(ctx *fasthttp.RequestCtx) bool {
 }
 
 func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
-	const (
-		pollInterval = 10 * time.Second
-		maxTimeout   = 5 * time.Minute
-	)
+	const maxTimeout = 5 * time.Minute
+	pollInterval := 10 * time.Second
+	if ms, err := strconv.Atoi(string(ctx.QueryArgs().Peek("interval"))); err == nil && ms > 0 {
+		pollInterval = time.Duration(ms) * time.Millisecond
+	}
 
 	// Extend write deadline to allow long polling
 	err := ctx.Conn().SetWriteDeadline(time.Now().Add(maxTimeout + time.Minute))
@@ -245,6 +295,62 @@ func (a *app) handleDebugTelegramImport(ctx *fasthttp.RequestCtx) bool {
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.SetBodyString("ok: telegram channel imported")
+	return true
+}
+
+func (a *app) handleDebugSpawnJobs(ctx *fasthttp.RequestCtx) bool {
+	count, _ := strconv.Atoi(string(ctx.QueryArgs().Peek("count")))
+	if count <= 0 {
+		count = 1
+	}
+	durationMs, _ := strconv.Atoi(string(ctx.QueryArgs().Peek("durationMs")))
+	tag := string(ctx.QueryArgs().Peek("tag"))
+
+	for i := range count {
+		data, _ := json.Marshal(debugSleepJobParams{Tag: tag, DurationMs: durationMs})
+		err := a.EnqueueJob(a.ctx, model.BackgroundTask{
+			ID:    debugSleepJobID,
+			Queue: model.BackgroundDefaultQueue,
+			Data:  json.RawMessage(data),
+		})
+		if err != nil {
+			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+			ctx.SetBodyString(fmt.Sprintf("failed to enqueue job %d: %v", i, err))
+			return true
+		}
+	}
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBodyString(fmt.Sprintf("ok: enqueued %d jobs", count))
+	return true
+}
+
+func (a *app) handleDebugCompletedJobs(ctx *fasthttp.RequestCtx) bool {
+	a.debugJobMu.Lock()
+	log := make([]debugJobRecord, len(a.debugJobLog))
+	copy(log, a.debugJobLog)
+	a.debugJobMu.Unlock()
+
+	data, err := json.Marshal(log)
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString("failed to marshal log: " + err.Error())
+		return true
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBody(data)
+	return true
+}
+
+func (a *app) handleDebugCompletedJobsClear(ctx *fasthttp.RequestCtx) bool {
+	a.debugJobMu.Lock()
+	a.debugJobLog = nil
+	a.debugJobMu.Unlock()
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBodyString("ok: completed jobs log cleared")
 	return true
 }
 

@@ -3,12 +3,75 @@
 export const USER_TOKEN_COOKIE_NAME = process.env.USER_TOKEN_COOKIE_NAME || 'trip2g_token';
 
 /**
+ * Create a personal token via GraphQL mutation.
+ * @param {import('@playwright/test').APIRequestContext} request
+ * @param {string} baseURL
+ * @param {string} cookie - full cookie header value, e.g. "trip2g_e2e=<token>"
+ * @param {{ name: string, expiresInDays?: number | null }} opts
+ * @returns {Promise<{ plaintextToken: string, id: string }>}
+ */
+export async function createPersonalToken(request, baseURL, cookie, { name, expiresInDays = 90 }) {
+  const res = await request.post(`${baseURL}/graphql`, {
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    data: {
+      query: `
+        mutation CreateUserToken($input: CreateUserTokenInput!) {
+          createUserToken(input: $input) {
+            ... on CreateUserTokenPayload {
+              plaintextToken
+              token { id }
+            }
+            ... on ErrorPayload { message }
+          }
+        }
+      `,
+      variables: { input: { name, expiresInDays: expiresInDays ?? null } },
+    },
+  });
+  if (!res.ok()) throw new Error(`createPersonalToken HTTP ${res.status()}`);
+  const body = await res.json();
+  const payload = body.data?.createUserToken;
+  if (!payload) throw new Error(`createPersonalToken: no data: ${JSON.stringify(body)}`);
+  if (payload.message) throw new Error(`createPersonalToken error: ${payload.message}`);
+  return { plaintextToken: payload.plaintextToken, id: payload.token.id };
+}
+
+/**
+ * Revoke a personal token via GraphQL mutation.
+ * @param {import('@playwright/test').APIRequestContext} request
+ * @param {string} baseURL
+ * @param {string} cookie
+ * @param {string} id - token ID (UUID)
+ * @returns {Promise<void>}
+ */
+export async function revokePersonalToken(request, baseURL, cookie, id) {
+  const res = await request.post(`${baseURL}/graphql`, {
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    data: {
+      query: `
+        mutation RevokeUserToken($input: RevokeUserTokenInput!) {
+          revokeUserToken(input: $input) {
+            ... on RevokeUserTokenPayload { token { id } }
+            ... on ErrorPayload { message }
+          }
+        }
+      `,
+      variables: { input: { id } },
+    },
+  });
+  if (!res.ok()) throw new Error(`revokePersonalToken HTTP ${res.status()}`);
+  const body = await res.json();
+  const payload = body.data?.revokeUserToken;
+  if (payload?.message) throw new Error(`revokePersonalToken error: ${payload.message}`);
+}
+
+/**
  * Sign in as admin user (hello@example.com) using dev code 111111
  * @param {import('@playwright/test').Page} page
  * @returns {Promise<string>} Session cookie value in format "trip2g_e2e=<value>"
  */
 export async function signInAsAdmin(page) {
-  await page.goto('/');
+  await page.goto(process.env.START_PATH || '/');
 
   // 1. Click sign in button
   await page.locator('mol_button_minor[trip2g_user_space_signinbutton]').click();
