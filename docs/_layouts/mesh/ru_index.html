@@ -1,0 +1,753 @@
+{{ import "_blocks" }}
+
+{{ yield index_layout() content }}
+    <!-- TOP BAR -->
+    <header class="bar">
+      <div class="prompt">$ <b>trip2g</b></div>
+      <div class="pill"><span class="dot"></span>демо-сеть · 10 баз онлайн</div>
+      <a class="pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
+      <div class="bar-spacer"></div>
+      <nav class="nav">
+        <a href="#" class="k" onclick="document.getElementById('mcp-hint').style.display='flex'; return false;">⌘K</a>
+        <a href="/ru/user">Документация</a>
+        <a href="/ru/user/use_cases">Сценарии</a>
+        <a href="/ru/thoughts">Философия</a>
+        <a href="/">EN</a>
+        <a href="/ru" class="k">RU</a>
+        <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">★ star us</a>
+        <a href="/ru/simple">начать →</a>
+      </nav>
+    </header>
+    <div id="mcp-hint" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(14,14,12,0.88); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:var(--bg); border:1px solid var(--fg); max-width:560px; width:90%; padding:40px 48px; font-family:var(--mono); position:relative;">
+        <div style="font-size:10px; letter-spacing:0.16em; color:var(--accent); margin-bottom:20px;">// ВАШ АГЕНТ ЖДЁТ</div>
+        <div style="font-family:var(--sans); font-size:22px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px;">Добавь это своему агенту.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:28px;">Затем спроси что угодно — быстрее чем читать эту страницу.</div>
+        <div style="border:1px solid var(--rule); margin-bottom:24px;">
+          <div style="padding:10px 16px; border-bottom:1px dashed var(--rule); font-size:10px; letter-spacing:0.12em; color:var(--muted); display:flex; justify-content:space-between; align-items:center;">
+            <span>// команда для агента</span>
+            <button onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='скопировано ✓'; setTimeout(()=>this.textContent='скопировать',1800)" style="background:var(--accent); color:var(--bg); border:0; padding:4px 12px; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; cursor:pointer;">скопировать</button>
+          </div>
+          <div style="padding:16px 18px; font-size:14px; color:var(--fg);">mcp:add https://trip2g.com/_system/mcp</div>
+        </div>
+        <a href="/ru/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">начать →</a>
+        <div onclick="document.getElementById('mcp-hint').style.display='none'" style="position:absolute; top:16px; right:20px; cursor:pointer; color:var(--muted); font-size:12px; letter-spacing:0.1em;">[ esc ]</div>
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">Второй мозг всегда должен был быть общим.</div>
+        <h1 class="h1">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
+        <p class="blurb">
+          У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
+        </p>
+        <div class="cta-row" style="margin-top:28px;">
+          <a class="cta cta--primary" href="/ru/simple">начать →</a>
+          <a class="cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+          <a class="cta" href="/ru/user">документация</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="frame graph-frame mg">
+          <div class="frame-head">
+            <span>fig.01 · mesh.trace · query.route</span>
+            <span class="live">LIVE</span>
+          </div>
+          <div id="mesh-svg-mount"></div>
+        </div>
+        <div class="frame trace-frame">
+          <div class="frame-head">
+            <span>stdout · /var/log/mesh.trace</span>
+            <span style="color: var(--muted)">tail -f</span>
+          </div>
+          <div class="trace-stream" id="trace-stream"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    {{ yield section_header(lhs="как это работает", rhs="3 шага · за минуту") }}
+    <div class="how">
+      {{ yield how_step(num="01 / install", title="Запустите хаб") content }}
+        <div class="step-diag" aria-hidden="true">
+          <svg viewBox="0 0 200 100">
+            <rect x="20" y="30" width="60" height="40" fill="none" stroke="#5a5a55" stroke-dasharray="3 3" />
+            <text x="50" y="55" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#8c8c84" letter-spacing="0.1em">SERVER</text>
+            <line x1="80" y1="50" x2="120" y2="50" stroke="#a3e635" stroke-width="1.4" />
+            <polygon points="120,46 128,50 120,54" fill="#a3e635" />
+            <rect x="130" y="30" width="50" height="40" fill="oklch(0.78 0.18 145)" />
+            <text x="155" y="56" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="11" fill="#0e0e0c">trip2g</text>
+          </svg>
+        </div>
+        <p class="step-p">Свой сервер через <code>docker compose up</code> или бесплатный sandbox — без терминала. MIT лицензия.</p>
+      {{ end }}
+      {{ yield how_step(num="02 / connect", title="Подключите базы знаний") content }}
+        <div class="step-diag" aria-hidden="true">
+          <svg viewBox="0 0 200 100">
+            <circle cx="100" cy="50" r="14" fill="oklch(0.78 0.18 145)" />
+            <text x="100" y="53" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#0e0e0c">hub</text>
+            <g stroke="#5a5a55" stroke-width="1" stroke-dasharray="3 4">
+              <line x1="100" y1="50" x2="40" y2="20" />
+              <line x1="100" y1="50" x2="40" y2="50" />
+              <line x1="100" y1="50" x2="40" y2="80" />
+              <line x1="100" y1="50" x2="160" y2="20" />
+              <line x1="100" y1="50" x2="160" y2="50" />
+              <line x1="100" y1="50" x2="160" y2="80" />
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="8" fill="#f5f5f2" text-anchor="end">
+              <text x="38" y="22">obsidian</text>
+              <text x="38" y="52">drive</text>
+              <text x="38" y="82">tg</text>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="8" fill="#f5f5f2" text-anchor="start">
+              <text x="162" y="22">notion</text>
+              <text x="162" y="52">books</text>
+              <text x="162" y="82">courses</text>
+            </g>
+          </svg>
+        </div>
+        <p class="step-p">Каждая база — vault, источник документов или другой хаб. Obsidian, Telegram, Drive, Notion — отключить можно в любой момент.</p>
+      {{ end }}
+      {{ yield how_step(num="03 / federate", title="Поделитесь с сообществом") content }}
+        <div class="step-diag" aria-hidden="true">
+          <svg viewBox="0 0 200 100">
+            <g stroke="oklch(0.78 0.18 145)" stroke-width="1.4">
+              <line x1="50" y1="50" x2="100" y2="20" />
+              <line x1="50" y1="50" x2="100" y2="80" />
+              <line x1="100" y1="20" x2="150" y2="50" />
+              <line x1="100" y1="80" x2="150" y2="50" />
+              <line x1="50" y1="50" x2="150" y2="50" />
+            </g>
+            <circle cx="50"  cy="50" r="12" fill="oklch(0.78 0.18 145)" />
+            <circle cx="150" cy="50" r="12" fill="oklch(0.78 0.18 145)" />
+            <circle cx="100" cy="20" r="8"  fill="#f5f5f2" />
+            <circle cx="100" cy="80" r="8"  fill="#f5f5f2" />
+            <circle cx="100" cy="50" r="3"  fill="oklch(0.78 0.18 145)">
+              <animateMotion path="M -50,0 L 0,0 L 50,0 L 0,0 L -50,0" dur="3s" repeatCount="indefinite" />
+            </circle>
+          </svg>
+        </div>
+        <p class="step-p">Агент видит всё — ваши базы и те, которыми поделились доверенные люди. Один вопрос — много источников.</p>
+      {{ end }}
+    </div>
+
+    <!-- USE CASES -->
+    {{ yield section_header(lhs="для кого это", rhs="4 паттерна · один протокол") }}
+    <div class="cases">
+
+      <article class="case">
+        <div class="case-topo">
+          <div class="case-topo-label">topology · solo</div>
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <g stroke="#5a5a55" stroke-width="1" stroke-dasharray="3 4">
+              <line x1="100" y1="65" x2="40"  y2="25" />
+              <line x1="100" y1="65" x2="40"  y2="65" />
+              <line x1="100" y1="65" x2="40"  y2="105" />
+              <line x1="100" y1="65" x2="160" y2="25" />
+              <line x1="100" y1="65" x2="160" y2="65" />
+              <line x1="100" y1="65" x2="160" y2="105" />
+            </g>
+            <g fill="#0e0e0c" stroke="#f5f5f2" stroke-width="1">
+              <circle cx="40"  cy="25"  r="6" />
+              <circle cx="40"  cy="65"  r="6" />
+              <circle cx="40"  cy="105" r="6" />
+              <circle cx="160" cy="25"  r="6" />
+              <circle cx="160" cy="65"  r="6" />
+              <circle cx="160" cy="105" r="6" />
+            </g>
+            <circle cx="100" cy="65" r="14" fill="oklch(0.78 0.18 145)" />
+            <text x="100" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#0e0e0c">you</text>
+          </svg>
+        </div>
+        <div class="case-body">
+          <div class="case-tag">[01] solo</div>
+          <h3 class="case-h">Один человек, много баз</h3>
+          <dl class="case-rows">
+            <dt>Роль</dt><dd>Исследователь или учащийся — знания разбросаны по Obsidian, книгам, курсам, сохранённым статьям.</dd>
+            <dt>Настройка</dt><dd>Один хаб. Каждая книга, курс, проект — отдельная база. Добавь когда начинаешь, поставь на паузу когда заканчиваешь.</dd>
+            <dt>Результат</dt><dd>Один вопрос агенту — ответы из всего что вы когда-либо читали, с источниками.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="case">
+        <div class="case-topo">
+          <div class="case-topo-label">topology · friends</div>
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <g stroke="oklch(0.78 0.18 145)" stroke-width="1" stroke-dasharray="3 4">
+              <line x1="100" y1="30"  x2="40"  y2="100" />
+              <line x1="100" y1="30"  x2="160" y2="100" />
+              <line x1="40"  y1="100" x2="160" y2="100" />
+              <line x1="100" y1="30"  x2="100" y2="100" />
+              <line x1="40"  y1="100" x2="100" y2="100" />
+              <line x1="100" y1="100" x2="160" y2="100" />
+            </g>
+            <g fill="oklch(0.78 0.18 145)">
+              <circle cx="100" cy="30"  r="10" />
+              <circle cx="40"  cy="100" r="10" />
+              <circle cx="100" cy="100" r="10" />
+              <circle cx="160" cy="100" r="10" />
+            </g>
+          </svg>
+        </div>
+        <div class="case-body">
+          <div class="case-tag">[02] friends</div>
+          <h3 class="case-h">Приватная сеть, 3–5 участников</h3>
+          <dl class="case-rows">
+            <dt>Роль</dt><dd>Небольшой доверенный круг — совместные читатели, напарники по учёбе, командная работа.</dd>
+            <dt>Настройка</dt><dd>Каждый запускает свой хаб. Все хабы связаны друг с другом. Доступ настраивается на уровне базы.</dd>
+            <dt>Результат</dt><dd>Один вопрос агенту — ответ из объединённых знаний всей группы, без SaaS посередине.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="case">
+        <div class="case-topo">
+          <div class="case-topo-label">topology · company</div>
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <g stroke="#5a5a55" stroke-width="1" stroke-dasharray="3 4">
+              <line x1="100" y1="65" x2="40"  y2="25" />
+              <line x1="100" y1="65" x2="40"  y2="65" />
+              <line x1="100" y1="65" x2="40"  y2="105" />
+              <line x1="100" y1="65" x2="160" y2="25" />
+              <line x1="100" y1="65" x2="160" y2="65" />
+              <line x1="100" y1="65" x2="160" y2="105" />
+              <line x1="100" y1="65" x2="100" y2="20" />
+              <line x1="100" y1="65" x2="100" y2="110" />
+            </g>
+            <g fill="#0e0e0c" stroke="#f5f5f2" stroke-width="1">
+              <circle cx="40"  cy="25"  r="6" />
+              <circle cx="40"  cy="65"  r="6" />
+              <circle cx="40"  cy="105" r="6" />
+              <circle cx="160" cy="25"  r="6" />
+              <circle cx="160" cy="65"  r="6" />
+              <circle cx="160" cy="105" r="6" />
+              <circle cx="100" cy="20"  r="6" />
+              <circle cx="100" cy="110" r="6" />
+            </g>
+            <rect x="86" y="51" width="28" height="28" fill="oklch(0.78 0.18 145)" />
+            <text x="100" y="69" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#0e0e0c">corp</text>
+          </svg>
+        </div>
+        <div class="case-body">
+          <div class="case-tag">[03] company internal</div>
+          <h3 class="case-h">Звезда: компания + сотрудники</h3>
+          <dl class="case-rows">
+            <dt>Роль</dt><dd>Организация с общими документами и личными рабочими заметками сотрудников. Роли, области доступа, хранение.</dd>
+            <dt>Настройка</dt><dd>Один центральный hub хранит канонические данные. Каждый сотрудник запускает (или арендует) личный hub, связанный с центром.</dd>
+            <dt>Результат</dt><dd>Онбординг, история проектов, неформальные знания — всё доступно для запросов, но доступ к каждому vault остаётся гранулярным.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="case">
+        <div class="case-topo">
+          <div class="case-topo-label">topology · b2b</div>
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <g stroke="#5a5a55" stroke-width="1" stroke-dasharray="3 4">
+              <line x1="50"  y1="50" x2="20"  y2="20" />
+              <line x1="50"  y1="50" x2="20"  y2="80" />
+              <line x1="50"  y1="50" x2="50"  y2="100" />
+              <line x1="150" y1="50" x2="180" y2="20" />
+              <line x1="150" y1="50" x2="180" y2="80" />
+              <line x1="150" y1="50" x2="150" y2="100" />
+            </g>
+            <line x1="50" y1="50" x2="150" y2="50" stroke="oklch(0.78 0.18 145)" stroke-width="2" />
+            <g fill="#0e0e0c" stroke="#f5f5f2" stroke-width="1">
+              <circle cx="20"  cy="20"  r="5" />
+              <circle cx="20"  cy="80"  r="5" />
+              <circle cx="50"  cy="100" r="5" />
+              <circle cx="180" cy="20"  r="5" />
+              <circle cx="180" cy="80"  r="5" />
+              <circle cx="150" cy="100" r="5" />
+            </g>
+            <rect x="38"  y="38" width="24" height="24" fill="oklch(0.78 0.18 145)" />
+            <rect x="138" y="38" width="24" height="24" fill="oklch(0.78 0.18 145)" />
+            <text x="50"  y="55" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="#0e0e0c">A</text>
+            <text x="150" y="55" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="#0e0e0c">B</text>
+          </svg>
+        </div>
+        <div class="case-body">
+          <div class="case-tag">[04] b2b mesh</div>
+          <h3 class="case-h">Две компании, один мост</h3>
+          <dl class="case-rows">
+            <dt>Роль</dt><dd>Партнёрские организации, которым нужно обменяться частью данных — исследования, цепочки поставок, совместные проекты.</dd>
+            <dt>Настройка</dt><dd>Каждая компания сохраняет свою звезду. Два центральных hub'а связаны через ограниченный, аудируемый доступ.</dd>
+            <dt>Результат</dt><dd>Общие знания без слияния систем, экспорта данных и входа в сторонний сервис.</dd>
+          </dl>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- COMPATIBILITY -->
+    {{ yield section_header(lhs="работает с тем что у вас есть", rhs="markdown-first · MCP под капотом") }}
+    <div class="compat">
+      {{ yield compat_item(title="Obsidian", desc="Двусторонняя синхронизация через плагин. Vault остаётся локально, доступен глобально.", state="● ready") content }}
+        <svg class="compat-icon" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M 7,0 L 14,5.6 L 9.8,14 L 4.2,14 L 0,5.6 Z" fill="#7c3aed" stroke="#f5f5f2" stroke-width="0.6" />
+          <path d="M 7,0 L 4.2,6.3 L 0,5.6" fill="none" stroke="#a78bfa" stroke-width="0.5" />
+          <path d="M 7,0 L 9.8,6.3 L 14,5.6"  fill="none" stroke="#5b21b6" stroke-width="0.5" />
+        </svg>
+      {{ end }}
+      {{ yield compat_item(title="Notion", desc="Адаптер читает workspace / базы данных как bases. Сначала только чтение.", state="● ready") content }}
+        <svg class="compat-icon" viewBox="0 0 14 14" aria-hidden="true">
+          <circle cx="7" cy="7" r="6" fill="none" stroke="#f5f5f2" stroke-width="1" />
+          <path d="M 4,3 L 4,11 M 4,3 L 10,11 M 10,3 L 10,11" stroke="#f5f5f2" stroke-width="1.4" fill="none" />
+        </svg>
+      {{ end }}
+      {{ yield compat_item(title="Drive", desc="Папки → векторный индекс. Docs, Sheets, PDF.", state="● ready") content }}
+        <svg class="compat-icon" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M 1,4 L 7,1 L 13,4 L 13,11 L 7,8 L 1,11 Z" fill="none" stroke="#f5f5f2" stroke-width="1" />
+        </svg>
+      {{ end }}
+      {{ yield compat_item(title="Telegram", desc="Публикация в канал + зеркало истории. Двусторонняя связь.", state="● ready") content }}
+        <svg class="compat-icon" viewBox="0 0 14 14" aria-hidden="true">
+          <circle cx="7" cy="7" r="6" fill="oklch(0.78 0.18 145)" />
+          <path d="M 3,7 L 11,3 L 9,11 L 7,8 Z" fill="#0e0e0c" />
+        </svg>
+      {{ end }}
+      {{ yield compat_item(title="Ещё", desc="Linear, архив Slack, RSS, обычные MCP-серверы.", state="○ on the way", state_class="soon") content }}
+        <svg class="compat-icon" viewBox="0 0 14 14" aria-hidden="true">
+          <rect x="1" y="2" width="12" height="10" fill="none" stroke="#5a5a55" stroke-dasharray="2 2" />
+          <text x="7" y="9" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="6" fill="#8c8c84">+</text>
+        </svg>
+      {{ end }}
+    </div>
+
+    <!-- PRIVACY -->
+    {{ yield section_header(lhs="ваши данные остаются вашими", rhs="ваш hub · ваши данные · ваш выбор") }}
+    <section class="privacy">
+      <div class="privacy-text">
+        <h2 class="privacy-h">Данные хранятся там,<br>где вы решите.</h2>
+        <p class="privacy-p">
+          trip2g — это протокол, а не вендор. Нет центрального сервера, от которого вы зависите,
+          нет пикселя аналитики, нет теневой копии ваших заметок на чужом сервере.
+        </p>
+        <p class="privacy-p">
+          Каждый хаб владеет своими данными и сам решает — по каждому подключению и каждой базе — что доступно для запросов, а что нет.
+        </p>
+        <ul class="privacy-list">
+          <li><span class="key">хранение</span><span>ваш диск · ваш S3 · или наш sandbox 100MB</span></li>
+          <li><span class="key">доступ</span><span>переключатель на уровне базы · пауза в любой момент</span></li>
+          <li><span class="key">peer'ы</span><span>только по согласию · доверие отзывается</span></li>
+          <li><span class="key">сеть</span><span>прямое hub ⇄ hub · без relay</span></li>
+          <li><span class="key">код</span><span>MIT · аудит, форк, запуск</span></li>
+        </ul>
+      </div>
+      <div class="privacy-diag" aria-hidden="true">
+        <svg viewBox="0 0 360 280">
+          <!-- your perimeter -->
+          <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+          <text x="20" y="28" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.16em" fill="#8c8c84">YOUR BOX</text>
+
+          <rect x="50" y="80"  width="90" height="34" fill="oklch(0.78 0.18 145)" />
+          <text x="95" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#0e0e0c">your hub</text>
+
+          <rect x="50" y="130" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">notes/</text>
+          <rect x="50" y="158" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="174" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">books/</text>
+          <rect x="50" y="186" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="202" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">tg/</text>
+
+          <!-- the wire -->
+          <line x1="180" y1="97" x2="280" y2="97" stroke="oklch(0.78 0.18 145)" stroke-width="1.5" stroke-dasharray="6 6">
+            <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="1.6s" repeatCount="indefinite" />
+          </line>
+          <text x="230" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#a3e635" letter-spacing="0.12em">SCOPED QUERY</text>
+
+          <!-- friend perimeter -->
+          <rect x="280" y="60" width="70" height="170" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+          <text x="290" y="78" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.12em" fill="#8c8c84">PEER</text>
+          <rect x="295" y="90" width="40" height="20" fill="oklch(0.78 0.18 145)" />
+          <text x="315" y="103" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#0e0e0c">hub</text>
+          <rect x="295" y="118" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+          <rect x="295" y="136" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+          <rect x="295" y="154" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" stroke-dasharray="2 2" />
+          <text x="315" y="178" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8c8c84">2/3 shared</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    {{ yield section_header(lhs="роадмап", rhs="v0.3 · обратная связь · публично") }}
+    <div class="roadmap">
+      {{ yield roadmap_col(cls="shipped", label="готово") content }}
+        <ul>
+          <li>Свой hub <small>docker · MIT</small></li>
+          <li>Двусторонняя синхронизация Obsidian <small>vault ⇄ hub</small></li>
+          <li>MCP federation <small>hub ⇄ hub</small></li>
+          <li>Подключение / пауза на уровне базы <small>гранулярное доверие</small></li>
+          <li>Адаптеры Telegram &amp; Drive <small>чтение + публикация</small></li>
+        </ul>
+      {{ end }}
+      {{ yield roadmap_col(cls="progress", label="в разработке") content }}
+        <ul>
+          <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
+          <li>Адаптер Notion <small>workspace → базы</small></li>
+          <li>Области доверия &amp; журнал аудита <small>права на уровне peer'а</small></li>
+          <li>Webhooks · cron <small>события наружу</small></li>
+        </ul>
+      {{ end }}
+      {{ yield roadmap_col(cls="planned", label="запланировано") content }}
+        <ul>
+          <li>Адаптеры Linear / Slack archive</li>
+          <li>SSO &amp; SCIM для организаций <small>внутри компании</small></li>
+          <li>Зашифрованные vault'ы <small>e2e для чувствительных баз</small></li>
+          <li>Реестр mesh <small>поиск публичных peer'ов</small></li>
+        </ul>
+      {{ end }}
+    </div>
+
+    <!-- PHILOSOPHY (small) -->
+    <section class="philo">
+      <div class="philo-eyebrow">философия</div>
+      <p class="philo-text">
+        Второй мозг — это не личный vault. Это общие знания людей которые думают об одном. trip2g не владеет этими знаниями — он даёт каждому человеку и каждому сообществу способ объединить свои базы и оставаться под контролем.
+        <a href="#">читать полностью →</a>
+      </p>
+    </section>
+
+    <!-- MATRIX -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--rule);">
+      <div style="padding:40px 48px; border-right:1px solid var(--rule);">
+        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--accent); margin:0 0 24px;">
+  ██████╗ ███████╗██████╗
+  ██╔══██╗██╔════╝██╔══██╗
+  ██████╔╝█████╗  ██║  ██║
+  ██╔══██╗██╔══╝  ██║  ██║</pre>
+        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Возьми красную таблетку.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
+        <a href="/ru/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">mcp:add →</a>
+      </div>
+      <div style="padding:40px 48px; opacity:0.45;">
+        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--muted); margin:0 0 24px;">
+  ██████╗ ██╗     ██╗   ██╗███████╗
+  ██╔══██╗██║     ██║   ██║██╔════╝
+  ██████╔╝██║     ██║   ██║█████╗
+  ██╔══██╗██║     ██║   ██║██╔══╝</pre>
+        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Возьми синюю таблетку.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Закрой вкладку. Вернись читать лендинги. История заканчивается. Ты просыпаешься и веришь во что хочешь.</div>
+        <span style="display:inline-block; border:1px solid var(--rule); color:var(--muted); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:default;">закрыть вкладку</span>
+      </div>
+    </div>
+
+    <!-- TRY NOW -->
+    <header class="section" id="try">
+      <span class="lhs">попробовать · 5 минут · без установки</span>
+      <span class="rhs">подключить mcp → спросить агента → пропустить лендинг</span>
+    </header>
+    <section class="try">
+      <div class="try-left">
+        <h2 class="try-h">Пропусти лендинг.<br>Спроси <em>агента</em>.</h2>
+        <p class="try-sub">
+          Не читай эту страницу. Вставь адрес MCP в Claude Code, Codex, Cursor или любой MCP-клиент — он подключится к живой демо-сети знаний и ответит на любой вопрос о trip2g. Быстрее чем читать.
+        </p>
+        <div class="try-prompt">
+          <div class="try-prompt-head">
+            <span><b>// agent prompt</b> · paste as-is</span>
+            <button type="button" class="try-copy-btn" id="try-copy">copy</button>
+          </div>
+<pre id="try-prompt-text"><span class="c"># Подключи эту сеть знаний:</span>
+mcp:add <span class="a">https://trip2g.com/_system/mcp</span>
+
+<span class="c"># Теперь спроси что угодно, например:</span>
+- что такое trip2g и как работает сеть знаний?
+- как подключить свой Obsidian vault?
+- какая модель приватности? где хранятся данные?
+- покажи минимальный конфиг чтобы поделиться базами с другом
+- сравни trip2g с централизованным RAG сервисом
+
+<span class="c"># Когда будешь готов:</span>
+mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># свой хаб, 100MB бесплатно</span></pre>
+        </div>
+      </div>
+
+      <div class="try-right">
+        <ol class="try-steps">
+          <li class="try-step">
+            <div class="try-step-num">step 01</div>
+            <div>
+              <h4 class="try-step-h">Возьмите MCP-агента</h4>
+              <p class="try-step-p">
+                Если ещё нет — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
+                <kbd>Cursor</kbd> или любой MCP-клиент. Пять минут на установку.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
+                <a class="try-chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
+                <a class="try-chip" href="/ru/user/mcp">другие клиенты</a>
+              </div>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 02</div>
+            <div>
+              <h4 class="try-step-h">Вставьте адрес → спросите что угодно</h4>
+              <p class="try-step-p">
+                Агент подключается к нашей публичной демо-сети по MCP и отвечает из реальных баз знаний. Без регистрации, без API-ключа.
+              </p>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 03</div>
+            <div>
+              <h4 class="try-step-h">Запустите свой хаб</h4>
+              <p class="try-step-p">
+                Убедились? Получите бесплатный sandbox на 100MB в нашем облаке — без docker, без
+                терминала — и начните добавлять базы (Obsidian, Drive, TG). Перейдите на self-host, когда вырастете.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip is-accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
+                <a class="try-chip" href="/ru/user/selfhosted">руководство по self-host</a>
+              </div>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 04</div>
+            <div>
+              <h4 class="try-step-h">Нужно больше? Напишите нам</h4>
+              <p class="try-step-p">
+                Федерация команды или двух компаний, кастомные адаптеры, on-prem? Вступайте в сообщество
+                или запишитесь на 30-минутную консультацию — разберём вашу топологию.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip" href="#" target="_blank" rel="noopener">сообщество ↗</a>
+                <a class="try-chip" href="#" target="_blank" rel="noopener">записаться ↗</a>
+                <a class="try-chip" href="#" target="_blank" rel="noopener">github ↗</a>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--rule);">
+          <a class="cta cta--primary" href="/ru/simple" style="display:inline-block;">начать →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="news" id="newsletter">
+      <div>
+        <h2 class="news-h">Changelog и <em>заметки</em></h2>
+        <p class="news-p">
+          Одно письмо когда выходит релиз. Заметки о том как работают сети общих знаний на практике — что мы узнали строя это. Без маркетинга.
+        </p>
+      </div>
+      <form class="news-form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.news-joke').style.display='block'; this.style.display='none';">
+        <input type="email" placeholder="you@somewhere" aria-label="email" required>
+        <button type="submit">подписаться →</button>
+      </form>
+      <div class="news-meta">
+        <span><b>~1×/месяц</b></span>
+        <span>отписка в один клик</span>
+        <span>архив на <b>trip2g.com/notes</b></span>
+      </div>
+      <div class="news-joke" style="display:none; grid-column:1/-1; padding:18px; border:1px solid var(--accent); font-family:var(--mono); font-size:13px; color:var(--fg);">
+  Нам не нужен твой email.<br>
+  <span style="color:var(--muted);">Вот всё что тебе нужно на самом деле:</span><br><br>
+  <code style="color:var(--accent);">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+  <a href="/ru/simple" style="color:var(--accent); text-decoration:none; letter-spacing:0.06em; text-transform:uppercase; font-size:11px;">→ /simple</a>
+</div>
+    </section>
+
+    <!-- DOCS -->
+    {{ yield section_header(lhs="tree docs/", rhs="начни здесь · обновлено 2026-04-30") }}
+    <div class="files" id="docs-list"></div>
+
+    <!-- TRUSTED BY -->
+    {{ yield section_header(lhs="уже в сети", rhs="их знания отвечают на ваши вопросы каждый день") }}
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_01</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI · продуктивность</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_02</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">строю публично</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_03</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">вайб-кодинг</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_04</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">продукт · стартап</div>
+      </div>
+      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_05</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">знания · PKM</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_06</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI инструменты</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_07</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">сообщество · системы</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_08</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">инди хакер</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_09</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">исследования · deep work</div>
+      </div>
+      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_10</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">будущее · инструменты</div>
+      </div>
+    </div>
+
+    <!-- TESTIMONIALS -->
+    {{ yield section_header(lhs="из сети", rhs="что люди говорили после одной команды") }}
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Я просто добавил одну команду. Теперь мы с новым другом строим бизнес о котором наши агенты уже договорились."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_01 · вайб-кодер</div>
+      </div>
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Я задал вопрос который думал неделями. Агент ответил из знаний трёх людей которых я никогда не встречал. Вот что такое сеть."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_02 · строитель</div>
+      </div>
+      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Все говорили мне построить второй мозг. Оказалось он был неполным без людей вокруг меня."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_03 · PKM-задрот</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Мои знания были разбросаны по 12 инструментам. После одной команды агент знает где всё. И агенты моих друзей тоже."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_04 · инди хакер</div>
+      </div>
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Добавил MCP. Спросил. Перешёл на /simple и прочитал цитату Фроста. Всё понял."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_05 · наблюдатель → строитель</div>
+      </div>
+      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Не читай лендинг. Просто добавь команду. Доверься процессу."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_06 · ранний последователь</div>
+      </div>
+    </div>
+
+    <!-- COMMUNITY -->
+    <div style="display:grid; grid-template-columns:1.2fr 1fr; border-bottom:1px solid var(--rule);">
+      <div style="padding:40px 48px; border-right:1px solid var(--rule);">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.16em; color:var(--accent); margin-bottom:16px;">// ЗАКРЫТОЕ СООБЩЕСТВО</div>
+        <div style="font-family:var(--sans); font-size:32px; font-weight:800; letter-spacing:-0.02em; line-height:1.1; margin-bottom:16px;">Вступи пока<br>это бесплатно.</div>
+        <div style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--muted); margin-bottom:28px; max-width:48ch;">Закрытая группа для тех кто строит сети знаний. Лидеры мнений, первые участники, прямой доступ к команде. После запуска — $100/месяц. Сейчас — бесплатно для первых.</div>
+        <a href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener" style="display:inline-block; background:var(--accent); color:var(--bg); padding:14px 28px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">вступай — или завтра будет платно →</a>
+      </div>
+      <div style="padding:40px 48px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px;">
+        <div style="font-family:var(--mono); font-size:11px; letter-spacing:0.14em; color:var(--muted); margin-bottom:8px;">ПРЕДЛОЖЕНИЕ ИСТЕКАЕТ ЧЕРЕЗ</div>
+        <div id="community-timer" style="font-family:var(--sans); font-size:72px; font-weight:800; letter-spacing:-0.04em; line-height:1; color:var(--accent);">00:00:00</div>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); display:flex; gap:32px; margin-top:8px;">
+          <span>ЧЧ</span><span>ММ</span><span>СС</span>
+        </div>
+        <div style="margin-top:24px; font-family:var(--sans); font-size:13px; color:var(--muted); text-align:center; line-height:1.5;">После полуночи<br>цена $100/мес</div>
+      </div>
+    </div>
+    <script>
+    (function() {
+      function updateTimer() {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0);
+        const diff = midnight - now;
+        const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        const el = document.getElementById('community-timer');
+        if (el) el.textContent = h + ':' + m + ':' + s;
+      }
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    })();
+    </script>
+
+    <!-- PRICING -->
+    {{ yield section_header(lhs="цены — их почти нет", rhs="open source · свой сервер или sandbox") }}
+    <div class="pricing">
+      {{ yield pricing_card(tag="FREE · OSS", title="Свой сервер", price="$ 0", period="/навсегда", cta_href="/ru/user/selfhosted", cta_text="установить →") content }}
+        <ul class="price-list">
+          <li>Open source — MIT</li>
+          <li>Установка одной командой на своём сервере</li>
+          <li>Неограниченные vault'ы, peer'ы, хранилище</li>
+          <li>Полная federation, MCP, webhooks</li>
+        </ul>
+      {{ end }}
+      {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox", price="$ 0", period="· 100 MB", cta_href="#try", cta_class="cta--primary", cta_text="попробовать →") content }}
+        <ul class="price-list">
+          <li>Один инстанс на аккаунт</li>
+          <li>Попробуйте federation без настройки</li>
+          <li>Все возможности, лимит 100&nbsp;MB</li>
+          <li>Поддомен на simplecloud.2pub.me</li>
+        </ul>
+      {{ end }}
+      {{ yield pricing_card(tag="CUSTOM", title="Нужно больше?", price="поговорим", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="написать →") content }}
+        <ul class="price-list">
+          <li>Больше хранилища, выделенный хост</li>
+          <li>Настройка team mesh &amp; миграция</li>
+          <li>Кастомные адаптеры (Notion, Drive…)</li>
+          <li>SLA — только если действительно нужен</li>
+        </ul>
+      {{ end }}
+    </div>
+
+    <!-- FOOT -->
+    <footer class="foot">
+      <div>
+        <h4>// trip2g</h4>
+        <p>Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
+        <a class="cta cta--primary" href="/ru/simple" style="margin-top:16px; display:inline-block;">начать →</a>
+      </div>
+      <div>
+        <h4>Философия</h4>
+        <ul>
+          <li><a href="/ru/thoughts/knowledge_graph">/knowledge_graph</a></li>
+          <li><a href="/ru/thoughts/three_zones">/three_zones</a></li>
+          <li><a href="/ru/thoughts/why_not_book">/why_not_book</a></li>
+          <li><a href="/ru/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Документация</h4>
+        <ul>
+          <li><a href="/ru/user/nachalo_rabotyi">/getting-started</a></li>
+          <li><a href="/ru/user/federation">/federation</a></li>
+          <li><a href="/ru/user/telegram">/telegram</a></li>
+          <li><a href="/ru/user/webhooks">/webhooks</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Контакты</h4>
+        <ul>
+          <li><a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+          <li><a href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+          <li><a href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+        </ul>
+      </div>
+    </footer>
+    <div class="coda">
+      <span>© trip2g.com · 2026 · MIT</span>
+      <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
+    </div>
+{{ end }}

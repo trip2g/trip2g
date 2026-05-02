@@ -22,6 +22,7 @@ title: "Navigation"
 
 - [[en/user/default-template|Default template]]
 - [[en/user/templates|Custom templates]]
+- [[en/user/One HTML Page|One HTML page]]
 
 ### Automation
 

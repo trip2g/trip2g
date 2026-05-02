@@ -30,6 +30,7 @@ title: "Навигация"
 - [[ru/user/templates|Основы]]
 - [[ru/user/templates-advanced|API и запросы]]
 - [[ru/user/templates-best-practices|Лучшие практики]]
+- [[ru/user/One HTML Page|Страница на чистом HTML]]
 
 ### Автоматизация
 
