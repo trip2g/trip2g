@@ -1,0 +1,7 @@
+{{ import "/comp_nav.html" }}
+{{ import "/comp_hero.html" }}
+<html><body>
+{{yield nav()}}
+{{yield hero(title="Welcome")}}
+<style>{{yield_blocks("_style_")}}</style>
+</body></html>

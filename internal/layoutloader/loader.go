@@ -26,9 +26,19 @@ type Env interface {
 
 type jetLoader struct {
 	templates map[string]string
+	sourceIDs []string
 	log       logger.Logger
 
 	layouts model.Layouts
+
+	pendingWarnings map[string][]model.NoteWarning
+
+	// sets stores the jet.Set per sourceID for the second-pass yield_blocks wiring.
+	sets map[string]*jet.Set
+	// yieldBlocksSlices stores the mutable block-name slice pointer per sourceID.
+	yieldBlocksSlices map[string]*[]string
+	// yieldBlocksWarnSinks stores the mutable warn-sink pointer per sourceID.
+	yieldBlocksWarnSinks map[string]*[]model.NoteWarning
 
 	mu sync.Mutex
 }
@@ -52,8 +62,12 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 	log := logger.WithPrefix(env.Logger(), "layoutloader:")
 
 	jl := &jetLoader{
-		templates: make(map[string]string),
-		log:       log,
+		templates:            make(map[string]string),
+		log:                  log,
+		pendingWarnings:      make(map[string][]model.NoteWarning),
+		sets:                 make(map[string]*jet.Set),
+		yieldBlocksSlices:    make(map[string]*[]string),
+		yieldBlocksWarnSinks: make(map[string]*[]model.NoteWarning),
 	}
 
 	// First pass: add all templates to map (for cross-imports)
@@ -68,6 +82,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			content = jetContent
 		}
 		jl.templates[source.ID] = content
+		jl.sourceIDs = append(jl.sourceIDs, source.ID)
 	}
 
 	jl.layouts = model.Layouts{
@@ -137,6 +152,11 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			})
 		}
 
+		var warnings []model.NoteWarning
+		if pending, ok := jl.pendingWarnings[source.ID]; ok {
+			warnings = append(warnings, pending...)
+		}
+
 		jl.layouts.Map[source.ID] = model.Layout{
 			VersionID:       source.VersionID,
 			Path:            source.Path,
@@ -146,10 +166,71 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			OriginalContent: source.OriginalContent,
 
 			AssetReplaces: source.Assets,
+
+			Warnings: warnings,
+		}
+	}
+
+	// Second pass: wire yield_blocks for each successfully parsed layout.
+	for _, source := range sourceFiles {
+		layout, ok := jl.layouts.Map[source.ID]
+		if !ok || layout.View == nil {
+			continue
+		}
+		views, hasSet := jl.sets[source.ID]
+		blockNamesPtr, hasSlice := jl.yieldBlocksSlices[source.ID]
+		if !hasSet || !hasSlice {
+			continue
+		}
+
+		// Check if this template uses yield_blocks at all; skip if not.
+		ybv := &yieldBlocksUsageFinder{}
+		utils.Walk(layout.View, ybv)
+		if !ybv.found {
+			continue
+		}
+
+		// Build registry of blocks from all component files (excluding this page).
+		registry, regWarnings := buildBlockRegistry(views, jl.sourceIDs, source.ID)
+
+		// Resolve which block names are reachable from this page via yield deps.
+		_, inlinedBlockNames, resolveWarnings := resolveNeededFiles(views, layout.View, registry)
+
+		// Populate the slice pointer so the already-registered yield_blocks func sees them.
+		*blockNamesPtr = inlinedBlockNames
+
+		// Run validator for static pattern warnings (e.g. invalid regexp).
+		validator := &yieldBlocksValidator{}
+		utils.Walk(layout.View, validator)
+
+		// Merge all warnings into pendingWarnings so they end up on the layout.
+		allWarnings := append(regWarnings, resolveWarnings...)
+		allWarnings = append(allWarnings, validator.warnings...)
+		if len(allWarnings) > 0 {
+			layout.Warnings = append(layout.Warnings, allWarnings...)
+			jl.layouts.Map[source.ID] = layout
 		}
 	}
 
 	return &jl.layouts, nil
+}
+
+// yieldBlocksUsageFinder checks whether a template contains a yield_blocks call.
+type yieldBlocksUsageFinder struct{ found bool }
+
+func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
+	if node == nil {
+		return
+	}
+	if action, ok := node.(*jet.ActionNode); ok && !w.found {
+		if action.Pipe != nil && len(action.Pipe.Cmds) > 0 {
+			if ident, ok := action.Pipe.Cmds[0].BaseExpr.(*jet.IdentifierNode); ok && ident.Ident == "yield_blocks" {
+				w.found = true
+				return
+			}
+		}
+	}
+	vc.Visit(node)
 }
 
 // load parses a template and returns (template, parseError).
@@ -201,6 +282,15 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string)
 	views.AddGlobalFunc("arg_type", func(a jet.Arguments) reflect.Value {
 		return reflect.ValueOf("")
 	})
+
+	// yield_blocks is registered with a mutable slice pointer so the second pass
+	// can populate block names after all templates are parsed.
+	blockNames := make([]string, 0)
+	var warnSink []model.NoteWarning
+	views.AddGlobalFunc("yield_blocks", makeYieldBlocksFunc(&blockNames, &warnSink))
+	jl.sets[source.ID] = views
+	jl.yieldBlocksSlices[source.ID] = &blockNames
+	jl.yieldBlocksWarnSinks[source.ID] = &warnSink
 
 	view, err := views.GetTemplate(source.ID)
 	if err != nil || view == nil {

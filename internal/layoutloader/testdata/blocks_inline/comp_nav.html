@@ -1,0 +1,8 @@
+{{ import "/comp_navinner.html" }}
+{{block _style_nav()}}
+.nav { display: flex; gap: 16px; }
+{{end}}
+
+{{block nav(active="")}}
+<nav class="nav">Home {{yield nav_inner()}}</nav>
+{{end}}
