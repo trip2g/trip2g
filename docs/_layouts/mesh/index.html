@@ -1,19 +1,71 @@
 {{ import "_blocks" }}
-{{ import "bar" }}
-{{ import "hero" }}
-{{ import "privacy" }}
-{{ import "philo" }}
-{{ import "matrix" }}
-{{ import "try_now" }}
-{{ import "newsletter" }}
-{{ import "trusted_by" }}
-{{ import "testimonials" }}
-{{ import "foot" }}
 
 {{ yield index_layout() content }}
-    {{ yield mesh_bar() }}
+    <!-- TOP BAR -->
+    <header class="bar">
+      <div class="prompt">$ <b>trip2g</b></div>
+      <div class="pill"><span class="dot"></span>demo network · 10 bases online</div>
+      <a class="pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
+      <div class="bar-spacer"></div>
+      <nav class="nav">
+        <a href="#" class="k" onclick="document.getElementById('mcp-hint').style.display='flex'; return false;">⌘K</a>
+        <a href="/en/user">Docs</a>
+        <a href="/en/user/use_cases">Use cases</a>
+        <a href="/en/thoughts">Philosophy</a>
+        <a href="/" class="k">EN</a>
+        <a href="/ru">RU</a>
+        <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">★ star us</a>
+        <a href="/simple">start →</a>
+      </nav>
+    </header>
+    <div id="mcp-hint" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(14,14,12,0.88); z-index:1000; display:none; align-items:center; justify-content:center;">
+      <div style="background:var(--bg); border:1px solid var(--fg); max-width:560px; width:90%; padding:40px 48px; font-family:var(--mono); position:relative;">
+        <div style="font-size:10px; letter-spacing:0.16em; color:var(--accent); margin-bottom:20px;">// YOUR AGENT IS WAITING</div>
+        <div style="font-family:var(--sans); font-size:22px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px;">Add this to your agent.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:28px;">Then ask it anything about trip2g — faster than reading this page.</div>
+        <div style="border:1px solid var(--rule); margin-bottom:24px;">
+          <div style="padding:10px 16px; border-bottom:1px dashed var(--rule); font-size:10px; letter-spacing:0.12em; color:var(--muted); display:flex; justify-content:space-between; align-items:center;">
+            <span>// agent prompt</span>
+            <button onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='copied ✓'; setTimeout(()=>this.textContent='copy',1800)" style="background:var(--accent); color:var(--bg); border:0; padding:4px 12px; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; cursor:pointer;">copy</button>
+          </div>
+          <div style="padding:16px 18px; font-size:14px; color:var(--fg);">mcp:add https://trip2g.com/_system/mcp</div>
+        </div>
+        <a href="/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">start →</a>
+        <div onclick="document.getElementById('mcp-hint').style.display='none'" style="position:absolute; top:16px; right:20px; cursor:pointer; color:var(--muted); font-size:12px; letter-spacing:0.1em;">[ esc ]</div>
+      </div>
+    </div>
 
-    {{ yield mesh_hero() }}
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">Your second brain was always meant to be shared.</div>
+        <h1 class="h1">Join the network.<br>Your agents will<br>find the rest.</h1>
+        <p class="blurb">
+          You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent — let's add it to the network. Your piece is the last missing part of the puzzle.
+        </p>
+        <div class="cta-row" style="margin-top:28px;">
+          <a class="cta cta--primary" href="/simple">start →</a>
+          <a class="cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+          <a class="cta" href="/en/user">docs</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="frame graph-frame mg">
+          <div class="frame-head">
+            <span>fig.01 · mesh.trace · query.route</span>
+            <span class="live">LIVE</span>
+          </div>
+          <div id="mesh-svg-mount"></div>
+        </div>
+        <div class="frame trace-frame">
+          <div class="frame-head">
+            <span>stdout · /var/log/mesh.trace</span>
+            <span style="color: var(--muted)">tail -f</span>
+          </div>
+          <div class="trace-stream" id="trace-stream"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- HOW IT WORKS -->
     {{ yield section_header(lhs="how it works", rhs="3 steps · under a minute") }}
@@ -267,7 +319,58 @@
 
     <!-- PRIVACY -->
     {{ yield section_header(lhs="your data stays yours", rhs="your hub · your data · your call") }}
-    {{ yield mesh_privacy() }}
+    <section class="privacy">
+      <div class="privacy-text">
+        <h2 class="privacy-h">Data lives where<br>you put it.</h2>
+        <p class="privacy-p">
+          trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
+          pixel, no shadow copy of your notes on someone else's box.
+        </p>
+        <p class="privacy-p">
+          Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
+        </p>
+        <ul class="privacy-list">
+          <li><span class="key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
+          <li><span class="key">access</span><span>per-base toggle · pause anytime</span></li>
+          <li><span class="key">peers</span><span>opt-in only · revocable trust</span></li>
+          <li><span class="key">network</span><span>direct hub ⇄ hub · no relay</span></li>
+          <li><span class="key">code</span><span>MIT · audit, fork, run</span></li>
+        </ul>
+      </div>
+      <div class="privacy-diag" aria-hidden="true">
+        <svg viewBox="0 0 360 280">
+          <!-- your perimeter -->
+          <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+          <text x="20" y="28" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.16em" fill="#8c8c84">YOUR BOX</text>
+
+          <rect x="50" y="80"  width="90" height="34" fill="oklch(0.78 0.18 145)" />
+          <text x="95" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#0e0e0c">your hub</text>
+
+          <rect x="50" y="130" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">notes/</text>
+          <rect x="50" y="158" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="174" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">books/</text>
+          <rect x="50" y="186" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+          <text x="95" y="202" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">tg/</text>
+
+          <!-- the wire -->
+          <line x1="180" y1="97" x2="280" y2="97" stroke="oklch(0.78 0.18 145)" stroke-width="1.5" stroke-dasharray="6 6">
+            <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="1.6s" repeatCount="indefinite" />
+          </line>
+          <text x="230" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#a3e635" letter-spacing="0.12em">SCOPED QUERY</text>
+
+          <!-- friend perimeter -->
+          <rect x="280" y="60" width="70" height="170" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+          <text x="290" y="78" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.12em" fill="#8c8c84">PEER</text>
+          <rect x="295" y="90" width="40" height="20" fill="oklch(0.78 0.18 145)" />
+          <text x="315" y="103" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#0e0e0c">hub</text>
+          <rect x="295" y="118" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+          <rect x="295" y="136" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+          <rect x="295" y="154" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" stroke-dasharray="2 2" />
+          <text x="315" y="178" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8c8c84">2/3 shared</text>
+        </svg>
+      </div>
+    </section>
 
     <!-- ROADMAP -->
     {{ yield section_header(lhs="roadmap", rhs="v0.3 · feedback driven · public") }}
@@ -299,17 +402,164 @@
       {{ end }}
     </div>
 
-    <!-- PHILOSOPHY -->
-    {{ yield mesh_philo() }}
+    <!-- PHILOSOPHY (small) -->
+    <section class="philo">
+      <div class="philo-eyebrow">philosophy</div>
+      <p class="philo-text">
+        A second brain isn't one person's vault — it's the shared knowledge of people who think about
+        the same things. trip2g doesn't own that knowledge; it gives every person and every community
+        a way to connect their bases and stay in control.
+        <a href="#">read full →</a>
+      </p>
+    </section>
 
     <!-- MATRIX -->
-    {{ yield mesh_matrix() }}
+    <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--rule);">
+      <div style="padding:40px 48px; border-right:1px solid var(--rule);">
+        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--accent); margin:0 0 24px;">
+  ██████╗ ███████╗██████╗
+  ██╔══██╗██╔════╝██╔══██╗
+  ██████╔╝█████╗  ██║  ██║
+  ██╔══██╗██╔══╝  ██║  ██║</pre>
+        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Take the red pill.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
+        <a href="/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">mcp:add →</a>
+      </div>
+      <div style="padding:40px 48px; opacity:0.45;">
+        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--muted); margin:0 0 24px;">
+  ██████╗ ██╗     ██╗   ██╗███████╗
+  ██╔══██╗██║     ██║   ██║██╔════╝
+  ██████╔╝██║     ██║   ██║█████╗
+  ██╔══██╗██║     ██║   ██║██╔══╝</pre>
+        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Take the blue pill.</div>
+        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
+        <span style="display:inline-block; border:1px solid var(--rule); color:var(--muted); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:default;">close tab</span>
+      </div>
+    </div>
 
     <!-- TRY NOW -->
-    {{ yield mesh_try_now() }}
+    <header class="section" id="try">
+      <span class="lhs">try now · 5 minutes · no install</span>
+      <span class="rhs">connect mcp → ask your agent → skip the landing</span>
+    </header>
+    <section class="try">
+      <div class="try-left">
+        <h2 class="try-h">Skip the landing.<br>Ask your <em>agent</em>.</h2>
+        <p class="try-sub">
+          Don't read this page. Paste the MCP address into Claude Code, Codex, Cursor, or any
+          MCP-aware agent — it'll connect to a live demo knowledge network and answer anything
+          about trip2g. Faster than reading.
+        </p>
+        <div class="try-prompt">
+          <div class="try-prompt-head">
+            <span><b>// agent prompt</b> · paste as-is</span>
+            <button type="button" class="try-copy-btn" id="try-copy">copy</button>
+          </div>
+<pre id="try-prompt-text"><span class="c"># Connect this knowledge network:</span>
+mcp:add <span class="a">https://trip2g.com/_system/mcp</span>
+
+<span class="c"># Now ask anything, e.g.:</span>
+- what is trip2g and how does the knowledge network work?
+- how do I connect my Obsidian vault?
+- what's the privacy model? where does data live?
+- show me a minimal config to share bases with a friend
+- compare trip2g to a centralized RAG service
+
+<span class="c"># When you're ready:</span>
+mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># your own hub, 100MB free</span></pre>
+        </div>
+      </div>
+
+      <div class="try-right">
+        <ol class="try-steps">
+          <li class="try-step">
+            <div class="try-step-num">step 01</div>
+            <div>
+              <h4 class="try-step-h">Get an MCP-aware agent</h4>
+              <p class="try-step-p">
+                If you don't have one yet — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
+                <kbd>Cursor</kbd>, or any MCP client works. Five minutes to install.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
+                <a class="try-chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
+                <a class="try-chip" href="/en/user/mcp">other clients</a>
+              </div>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 02</div>
+            <div>
+              <h4 class="try-step-h">Paste the address → ask anything</h4>
+              <p class="try-step-p">
+                Your agent connects to our public demo network over MCP and answers from real
+                knowledge bases. No signup, no API key.
+              </p>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 03</div>
+            <div>
+              <h4 class="try-step-h">Spin up your own hub</h4>
+              <p class="try-step-p">
+                Convinced? Get a free 100MB sandbox on our cloud — no docker, no terminal —
+                and start adding bases (Obsidian, Drive, TG). Self-host later when you outgrow it.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip is-accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
+                <a class="try-chip" href="/en/user/selfhosted">self-host guide</a>
+              </div>
+            </div>
+          </li>
+
+          <li class="try-step">
+            <div class="try-step-num">step 04</div>
+            <div>
+              <h4 class="try-step-h">Need more? Talk to us</h4>
+              <p class="try-step-p">
+                Federating a team or two companies, custom adapters, on-prem? Join the community
+                or book a 30-min consultation — we'll walk through your topology.
+              </p>
+              <div class="try-step-links">
+                <a class="try-chip" href="#" target="_blank" rel="noopener">community ↗</a>
+                <a class="try-chip" href="#" target="_blank" rel="noopener">book consult ↗</a>
+                <a class="try-chip" href="#" target="_blank" rel="noopener">github ↗</a>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--rule);">
+          <a class="cta cta--primary" href="/simple" style="display:inline-block;">start now →</a>
+        </div>
+      </div>
+    </section>
 
     <!-- NEWSLETTER -->
-    {{ yield mesh_newsletter() }}
+    <section class="news" id="newsletter">
+      <div>
+        <h2 class="news-h">Changelog &amp; <em>field notes</em></h2>
+        <p class="news-p">
+          One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.
+        </p>
+      </div>
+      <form class="news-form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.news-joke').style.display='block'; this.style.display='none';">
+        <input type="email" placeholder="you@somewhere" aria-label="email" required>
+        <button type="submit">subscribe →</button>
+      </form>
+      <div class="news-meta">
+        <span><b>~1×/month</b></span>
+        <span>unsubscribe in one click</span>
+        <span>archive at <b>trip2g.com/notes</b></span>
+      </div>
+      <div class="news-joke" style="display:none; grid-column:1/-1; padding:18px; border:1px solid var(--accent); font-family:var(--mono); font-size:13px; color:var(--fg);">
+  We don't need your email.<br>
+  <span style="color:var(--muted);">Here's everything you actually need:</span><br><br>
+  <code style="color:var(--accent);">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+  <a href="/simple" style="color:var(--accent); text-decoration:none; letter-spacing:0.06em; text-transform:uppercase; font-size:11px;">→ /simple</a>
+</div>
+    </section>
 
     <!-- DOCS -->
     {{ yield section_header(lhs="tree docs/", rhs="start here · updated 2026-04-30") }}
@@ -317,11 +567,91 @@
 
     <!-- TRUSTED BY -->
     {{ yield section_header(lhs="already in the network", rhs="their knowledge answers your questions every day") }}
-    {{ yield mesh_trusted_by() }}
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_01</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI · productivity</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_02</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">building in public</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_03</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">vibe coding</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_04</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">product · startup</div>
+      </div>
+      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_05</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">knowledge · PKM</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_06</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI tools</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_07</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">community · systems</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_08</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">indie hacker</div>
+      </div>
+      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_09</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">research · deep work</div>
+      </div>
+      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">CHANNEL_10</div>
+        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder Name</div>
+        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">future · tools</div>
+      </div>
+    </div>
 
     <!-- TESTIMONIALS -->
     {{ yield section_header(lhs="from the network", rhs="things people said after adding one command") }}
-    {{ yield mesh_testimonials() }}
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"I just added one command. Now me and a new friend are building a business our agents negotiated."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_01 · vibe coder</div>
+      </div>
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"I asked my agent a question I'd been thinking about for weeks. It answered from three people I'd never met. That's the network."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_02 · builder</div>
+      </div>
+      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Everyone told me to build a second brain. Turns out mine was incomplete without the people around me."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_03 · PKM nerd</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"My knowledge was scattered across 12 tools. One command later, my agent knows where everything is. So do my friends' agents."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_04 · indie hacker</div>
+      </div>
+      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"I added the MCP. Then I asked it something. Then I went to /simple and read the Frost quote. I got it."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_05 · lurker → builder</div>
+      </div>
+      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
+        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Don't read the landing. Just add the command. Trust the process."</p>
+        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_06 · early adopter</div>
+      </div>
+    </div>
 
     <!-- PRICING -->
     {{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
@@ -353,5 +683,41 @@
     </div>
 
     <!-- FOOT -->
-    {{ yield mesh_foot() }}
+    <footer class="foot">
+      <div>
+        <h4>// trip2g</h4>
+        <p>Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
+        <a class="cta cta--primary" href="/simple" style="margin-top:16px; display:inline-block;">start →</a>
+      </div>
+      <div>
+        <h4>Philosophy</h4>
+        <ul>
+          <li><a href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
+          <li><a href="/en/thoughts/three_zones">/three_zones</a></li>
+          <li><a href="/en/thoughts/why_not_book">/why_not_book</a></li>
+          <li><a href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Docs</h4>
+        <ul>
+          <li><a href="/en/user/getting_started">/getting-started</a></li>
+          <li><a href="/en/user/federation">/federation</a></li>
+          <li><a href="/en/user/telegram">/telegram</a></li>
+          <li><a href="/en/user/webhooks">/webhooks</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+          <li><a href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+          <li><a href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+        </ul>
+      </div>
+    </footer>
+    <div class="coda">
+      <span>© trip2g.com · 2026 · MIT</span>
+      <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
+    </div>
 {{ end }}
