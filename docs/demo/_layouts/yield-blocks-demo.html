@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }} — yield_blocks demo</title>
+</head>
+<body>
+
+  {{yield yb_hero(title=note.Title(), subtitle="yield_blocks demo page")}}
+
+  <main style="max-width:800px;margin:40px auto;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    {{yield yb_card(title="Auto-wired CSS", body="No imports needed. The loader finds component files automatically.")}}
+    {{yield yb_card(title="Only what you use", body="CSS for unused components is never included on the page.")}}
+    {{yield yb_card(title="Transitive deps", body="If a component uses another, it is pulled in automatically.")}}
+    {{yield yb_button(label="Primary action", variant="primary")}}
+    {{yield yb_button(label="Secondary", variant="ghost")}}
+  </main>
+
+  <style id="yield-blocks-styles">{{yield_blocks("_style_yb_")}}</style>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{{block _style_yb_button()}}
+.yb-button { display: inline-flex; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+.yb-button--primary { background: #0070f3; color: #fff; }
+.yb-button--ghost { background: transparent; border: 1px solid #0070f3; color: #0070f3; }
+{{end}}
+
+{{block yb_button(label="Click", variant="")}}
+<button class="yb-button{{if variant}} yb-button--{{variant}}{{end}}">{{label}}</button>
+{{end}}

@@ -1,0 +1,12 @@
+{{block _style_yb_card()}}
+.yb-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; }
+.yb-card__title { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.yb-card__body { color: #6b7280; margin: 0; }
+{{end}}
+
+{{block yb_card(title="", body="")}}
+<div class="yb-card">
+  <h3 class="yb-card__title">{{title}}</h3>
+  <p class="yb-card__body">{{body}}</p>
+</div>
+{{end}}

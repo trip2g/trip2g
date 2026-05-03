@@ -1,0 +1,12 @@
+{{block _style_yb_hero()}}
+.yb-hero { padding: 64px 32px; text-align: center; background: #f9fafb; }
+.yb-hero__title { font-size: 2.5rem; font-weight: 700; margin: 0 0 16px; }
+.yb-hero__subtitle { font-size: 1.2rem; color: #6b7280; margin: 0 0 32px; }
+{{end}}
+
+{{block yb_hero(title="", subtitle="")}}
+<section class="yb-hero">
+  <h1 class="yb-hero__title">{{title}}</h1>
+  <p class="yb-hero__subtitle">{{subtitle}}</p>
+</section>
+{{end}}
