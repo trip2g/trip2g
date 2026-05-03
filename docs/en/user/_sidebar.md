@@ -17,6 +17,7 @@ title: "Navigation"
 - [[en/user/monetization|Monetization]]
 - [[en/user/mcp|AI assistant (MCP)]]
 - [[en/user/federation|MCP Federation]]
+- [[en/user/llm-wiki|LLM Wiki for agents]]
 
 ### Customization
 

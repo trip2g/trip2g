@@ -1,4 +1,4 @@
-{{ block _style_$name() }}
+{{ block _style_$fileID() }}
 .privacy {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -44,7 +44,7 @@
 }
 {{ end }}
 
-{{ block $name() }}
+{{ block $fileID() }}
 <section class="privacy">
   <div class="privacy-text">
     <h2 class="privacy-h">Data lives where<br>you put it.</h2>

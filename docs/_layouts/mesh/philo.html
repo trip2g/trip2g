@@ -1,4 +1,4 @@
-{{ block _style_$name() }}
+{{ block _style_$fileID() }}
 .philo {
   padding: 32px 40px;
   border-bottom: 1px solid var(--rule);
@@ -41,7 +41,7 @@
 }
 {{ end }}
 
-{{ block $name() }}
+{{ block $fileID() }}
 <section class="philo">
   <div class="philo-eyebrow">philosophy</div>
   <p class="philo-text">

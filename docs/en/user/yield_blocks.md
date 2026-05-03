@@ -88,13 +88,13 @@ For JS, place a `<script>` tag the same way:
 
 If `card.html` internally yields `button`, the loader includes `button.html` automatically. You do not need to list dependencies manually — the loader walks the full component graph.
 
-### Block name uniqueness and `$name`
+### Block name uniqueness and `$fileID`
 
 Block names in Jet are **global** across all included files. If `hero.html` and `card.html` both define `{{block hero()}}`, the second definition silently overwrites the first. This is a real risk in multi-component projects where different developers add files independently.
 
-`$name` solves this by substituting the file path into block names before parsing. The substitution happens automatically — no configuration needed.
+`$fileID` solves this by substituting the file path into block names before parsing. The substitution happens automatically — no configuration needed.
 
-| File path | `$name` value |
+| File path | `$fileID` value |
 |-----------|---------------|
 | `button.html` | `button` |
 | `components/button.html` | `components_button` |
@@ -102,26 +102,26 @@ Block names in Jet are **global** across all included files. If `hero.html` and 
 
 Path separators become underscores. The value is derived from the file ID, not the block name.
 
-Use `$name` as a suffix in all block names inside a component file:
+Use `$fileID` as a suffix in all block names inside a component file:
 
 ```html
-{{block _style_$name()}}
+{{block _style_$fileID()}}
 .button { display: inline-flex; padding: 8px 20px; }
 {{end}}
 
-{{block $name(label="Click", variant="")}}
+{{block $fileID(label="Click", variant="")}}
 <button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
 For `button.html`, this expands to `_style_button` and `button`. For `components/button.html`, it expands to `_style_components_button` and `components_button`. The `yield_blocks("_style_")` prefix pattern still matches both, because the prefix is checked against the expanded name.
 
-**Escaping.** If you need the literal string `$name` in output — for example, as a JavaScript variable — write `$$name`:
+**Escaping.** If you need the literal string `$fileID` in output — for example, as a JavaScript variable — write `$$fileID`:
 
 ```html
-{{block _js_$name()}}
-var $$name = document.querySelector('.$name-root');
-$$name.addEventListener('click', () => { ... });
+{{block _js_$fileID()}}
+var $$fileID = document.querySelector('.$fileID-root');
+$$fileID.addEventListener('click', () => { ... });
 {{end}}
 ```
 
@@ -129,12 +129,12 @@ After substitution (for `button.html`):
 
 ```html
 {{block _js_button()}}
-var $name = document.querySelector('.button-root');
-$name.addEventListener('click', () => { ... });
+var $fileID = document.querySelector('.button-root');
+$fileID.addEventListener('click', () => { ... });
 {{end}}
 ```
 
-`$$name` becomes `$name` in the output; `$name` (single `$`) becomes the file-derived value.
+`$$fileID` becomes `$fileID` in the output; `$fileID` (single `$`) becomes the file-derived value.
 
 ### Warnings
 

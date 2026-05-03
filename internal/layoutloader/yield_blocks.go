@@ -38,24 +38,24 @@ func makeYieldBlocksFunc(blockNames *[]string, warnSink *[]model.NoteWarning) fu
 	}
 }
 
-// expandBlockName replaces $name with the sanitized block name derived from sourceID,
-// and $$name with a literal $name (escape sequence).
-// sourceID examples: "/components/button.html" → "button", "card.html" → "card"
+// expandBlockName replaces $fileID with the sanitized file identifier derived from sourceID,
+// and $$fileID with a literal $fileID (escape sequence).
+// sourceID examples: "/mesh/button.html" → "mesh_button", "card.html" → "card"
 func expandBlockName(content, sourceID string) string {
-	if !strings.Contains(content, "$name") {
+	if !strings.Contains(content, "$fileID") {
 		return content
 	}
-	// derive block name: strip leading slash, strip extension, replace / with _
-	name := strings.TrimPrefix(sourceID, "/")
-	if idx := strings.LastIndex(name, "."); idx != -1 {
-		name = name[:idx]
+	// derive file id: strip leading slash, strip extension, replace / with _
+	fileID := strings.TrimPrefix(sourceID, "/")
+	if idx := strings.LastIndex(fileID, "."); idx != -1 {
+		fileID = fileID[:idx]
 	}
-	name = strings.ReplaceAll(name, "/", "_")
+	fileID = strings.ReplaceAll(fileID, "/", "_")
 
-	const sentinel = "\x00dollar_name\x00"
-	content = strings.ReplaceAll(content, "$$name", sentinel)
-	content = strings.ReplaceAll(content, "$name", name)
-	content = strings.ReplaceAll(content, sentinel, "$name")
+	const sentinel = "\x00dollar_fileid\x00"
+	content = strings.ReplaceAll(content, "$$fileID", sentinel)
+	content = strings.ReplaceAll(content, "$fileID", fileID)
+	content = strings.ReplaceAll(content, sentinel, "$fileID")
 	return content
 }
 

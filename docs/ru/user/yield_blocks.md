@@ -88,13 +88,13 @@ _layouts/
 
 Если `card.html` внутри себя вызывает `button`, загрузчик автоматически включает `button.html`. Перечислять зависимости вручную не нужно — загрузчик обходит полный граф компонентов.
 
-### Уникальность имён блоков и `$name`
+### Уникальность имён блоков и `$fileID`
 
 Имена блоков в Jet **глобальны** для всех включённых файлов. Если `hero.html` и `card.html` оба определяют `{{block hero()}}`, второе определение молча перезапишет первое. В проектах с несколькими компонентами, которые разрабатываются независимо, это реальная проблема.
 
-`$name` решает её: перед разбором шаблона плейсхолдер автоматически заменяется значением, производным от пути к файлу. Никакой настройки не требуется.
+`$fileID` решает её: перед разбором шаблона плейсхолдер автоматически заменяется значением, производным от пути к файлу. Никакой настройки не требуется.
 
-| Путь к файлу | Значение `$name` |
+| Путь к файлу | Значение `$fileID` |
 |--------------|-----------------|
 | `button.html` | `button` |
 | `components/button.html` | `components_button` |
@@ -102,26 +102,26 @@ _layouts/
 
 Разделители пути заменяются на `_`. Значение берётся из ID файла, а не из имени блока.
 
-Используйте `$name` как суффикс во всех именах блоков файла компонента:
+Используйте `$fileID` как суффикс во всех именах блоков файла компонента:
 
 ```html
-{{block _style_$name()}}
+{{block _style_$fileID()}}
 .button { display: inline-flex; padding: 8px 20px; }
 {{end}}
 
-{{block $name(label="Нажмите", variant="")}}
+{{block $fileID(label="Нажмите", variant="")}}
 <button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
 Для `button.html` это раскрывается в `_style_button` и `button`. Для `components/button.html` — в `_style_components_button` и `components_button`. Паттерн `yield_blocks("_style_")` по-прежнему найдёт оба варианта, потому что префикс проверяется по уже раскрытому имени.
 
-**Экранирование.** Если в выводе нужна буквальная строка `$name` — например, как переменная JavaScript — напишите `$$name`:
+**Экранирование.** Если в выводе нужна буквальная строка `$fileID` — например, как переменная JavaScript — напишите `$$fileID`:
 
 ```html
-{{block _js_$name()}}
-var $$name = document.querySelector('.$name-root');
-$$name.addEventListener('click', () => { ... });
+{{block _js_$fileID()}}
+var $$fileID = document.querySelector('.$fileID-root');
+$$fileID.addEventListener('click', () => { ... });
 {{end}}
 ```
 
@@ -129,12 +129,12 @@ $$name.addEventListener('click', () => { ... });
 
 ```html
 {{block _js_button()}}
-var $name = document.querySelector('.button-root');
-$name.addEventListener('click', () => { ... });
+var $fileID = document.querySelector('.button-root');
+$fileID.addEventListener('click', () => { ... });
 {{end}}
 ```
 
-`$$name` превращается в `$name` в выводе; `$name` (одиночный `$`) — в значение, производное от пути файла.
+`$$fileID` превращается в `$fileID` в выводе; `$fileID` (одиночный `$`) — в значение, производное от пути файла.
 
 ### Предупреждения
 

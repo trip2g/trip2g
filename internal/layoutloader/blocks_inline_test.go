@@ -151,15 +151,15 @@ func TestExpandBlockName(t *testing.T) {
 		content  string
 		want     string
 	}{
-		{"/components/button.html", "{{block $name()}}", "{{block components_button()}}"},
-		{"card.html", "_style_$name", "_style_card"},
-		{"/a/b/c.html", "$name", "a_b_c"},
-		// escape: $$name → literal $name
-		{"button.html", "var $$name = 1;", "var $name = 1;"},
-		// no $name → unchanged
+		{"/components/button.html", "{{block $fileID()}}", "{{block components_button()}}"},
+		{"card.html", "_style_$fileID", "_style_card"},
+		{"/a/b/c.html", "$fileID", "a_b_c"},
+		// escape: $$fileID → literal $fileID
+		{"button.html", "var $$fileID = 1;", "var $fileID = 1;"},
+		// no $fileID → unchanged
 		{"button.html", "no placeholder", "no placeholder"},
 		// both in same string
-		{"button.html", "$name and $$name", "button and $name"},
+		{"button.html", "$fileID and $$fileID", "button and $fileID"},
 	}
 	for _, tt := range tests {
 		got := expandBlockName(tt.content, tt.sourceID)

@@ -38,6 +38,7 @@ title: "Навигация"
 
 - [[ru/user/mcp|MCP-сервер]]
 - [[ru/user/federation|MCP Federation]]
+- [[ru/user/llm-wiki|LLM Wiki для агентов]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
 - [[ru/user/cron_webhooks|Вебхуки по расписанию]]
 - [[ru/user/Knowlume Adapter|Knowlume Adapter]]

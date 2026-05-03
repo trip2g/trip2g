@@ -99,31 +99,31 @@ Avoid generic class names inside component CSS blocks — they will conflict the
 {{end}}
 ```
 
-### Using `$name` to guarantee unique block names
+### Using `$fileID` to guarantee unique block names
 
 Block names in Jet are global. If two component files both define a block called `hero`, one silently overwrites the other. This can happen in any multi-component project — BEM scopes CSS class names, but it does not scope Jet block names.
 
-`$name` solves this at the block-name level. Before parsing, the engine replaces `$name` in block names with a sanitized version of the file path:
+`$fileID` solves this at the block-name level. Before parsing, the engine replaces `$fileID` in block names with a sanitized version of the file path:
 
-- `components/button.html` → `$name` = `components_button`
-- `ui/nav/header.html` → `$name` = `ui_nav_header`
+- `components/button.html` → `$fileID` = `components_button`
+- `ui/nav/header.html` → `$fileID` = `ui_nav_header`
 
-The recommended pattern combines BEM class names with `$name` block names:
+The recommended pattern combines BEM class names with `$fileID` block names:
 
 ```html
-{{block _style_$name()}}
+{{block _style_$fileID()}}
 .button { display: inline-flex; padding: 8px 20px; }
 .button--primary { background: #0070f3; color: #fff; }
 {{end}}
 
-{{block $name(label="Click", variant="")}}
+{{block $fileID(label="Click", variant="")}}
 <button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
-BEM keeps CSS classes unique across the page. `$name` keeps Jet block names unique across all component files. Use both together in every component file.
+BEM keeps CSS classes unique across the page. `$fileID` keeps Jet block names unique across all component files. Use both together in every component file.
 
 ### Related
 
-- [[en/user/yield_blocks|yield_blocks: per-page CSS and JS]] — how style blocks are collected and emitted, and the full `$name` reference
+- [[en/user/yield_blocks|yield_blocks: per-page CSS and JS]] — how style blocks are collected and emitted, and the full `$fileID` reference
 - [[en/user/templates|Custom templates]] — template basics and Jet syntax

@@ -1,4 +1,4 @@
-{{ block _style_$name() }}
+{{ block _style_$fileID() }}
 .testi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -14,7 +14,7 @@
 .testi-handle { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-top: auto; }
 {{ end }}
 
-{{ block $name() }}
+{{ block $fileID() }}
 <div class="testi-grid">
   <div class="testi-cell">
     <p class="testi-quote">"I just added one command. Now me and a new friend are building a business our agents negotiated."</p>

@@ -1,4 +1,4 @@
-{{ block _style_$name() }}
+{{ block _style_$fileID() }}
 .hero {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -112,7 +112,7 @@
 }
 {{ end }}
 
-{{ block $name() }}
+{{ block $fileID() }}
 <section class="hero">
   <div class="hero-left">
     <div class="eyebrow">Your second brain was always meant to be shared.</div>
