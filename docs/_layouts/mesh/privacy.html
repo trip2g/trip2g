@@ -1,28 +1,28 @@
 {{ block _style_$fileID() }}
-.privacy {
+.mesh-privacy {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   border-bottom: 1px solid var(--rule);
 }
-.privacy-text {
+.mesh-privacy__text {
   padding: 36px 40px;
   border-right: 1px solid var(--rule);
 }
-.privacy-h {
+.mesh-privacy__title {
   font-family: var(--sans);
   font-weight: 800; font-size: 32px; letter-spacing: -0.02em;
   margin: 0 0 16px; line-height: 1.05;
 }
-.privacy-p {
+.mesh-privacy__p {
   font-family: var(--sans); font-size: 15px; line-height: 1.55;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
   margin: 0 0 12px;
 }
-.privacy-list {
+.mesh-privacy__list {
   list-style: none; padding: 0; margin: 18px 0 0;
   font-family: var(--mono); font-size: 13px;
 }
-.privacy-list li {
+.mesh-privacy__item {
   padding: 8px 0;
   border-bottom: 1px dashed var(--rule);
   display: grid;
@@ -30,40 +30,40 @@
   gap: 12px;
   align-items: baseline;
 }
-.privacy-list li::before { content: "✓"; color: var(--accent); }
-.privacy-list .key { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
-.privacy-diag {
+.mesh-privacy__item::before { content: "✓"; color: var(--accent); }
+.mesh-privacy__item-key { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
+.mesh-privacy__diag {
   padding: 36px 40px;
   display: grid; place-items: center;
 }
-.privacy-diag svg { width: 100%; max-width: 360px; height: auto; }
+.mesh-privacy__diag svg { width: 100%; max-width: 360px; height: auto; }
 @media (max-width: 900px) {
-  .privacy { grid-template-columns: 1fr; }
-  .privacy-diag { display: none; }
-  .privacy-text { padding: 24px 20px; border-right: 0; }
+  .mesh-privacy { grid-template-columns: 1fr; }
+  .mesh-privacy__diag { display: none; }
+  .mesh-privacy__text { padding: 24px 20px; border-right: 0; }
 }
 {{ end }}
 
 {{ block $fileID() }}
-<section class="privacy">
-  <div class="privacy-text">
-    <h2 class="privacy-h">Data lives where<br>you put it.</h2>
-    <p class="privacy-p">
+<section class="mesh-privacy">
+  <div class="mesh-privacy__text">
+    <h2 class="mesh-privacy__title">Data lives where<br>you put it.</h2>
+    <p class="mesh-privacy__p">
       trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
       pixel, no shadow copy of your notes on someone else's box.
     </p>
-    <p class="privacy-p">
+    <p class="mesh-privacy__p">
       Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
     </p>
-    <ul class="privacy-list">
-      <li><span class="key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
-      <li><span class="key">access</span><span>per-base toggle · pause anytime</span></li>
-      <li><span class="key">peers</span><span>opt-in only · revocable trust</span></li>
-      <li><span class="key">network</span><span>direct hub ⇄ hub · no relay</span></li>
-      <li><span class="key">code</span><span>MIT · audit, fork, run</span></li>
+    <ul class="mesh-privacy__list">
+      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
+      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">access</span><span>per-base toggle · pause anytime</span></li>
+      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">peers</span><span>opt-in only · revocable trust</span></li>
+      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
+      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">code</span><span>MIT · audit, fork, run</span></li>
     </ul>
   </div>
-  <div class="privacy-diag" aria-hidden="true">
+  <div class="mesh-privacy__diag" aria-hidden="true">
     <svg viewBox="0 0 360 280">
       <!-- your perimeter -->
       <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />

@@ -1,46 +1,46 @@
 {{ block _style_$fileID() }}
-.testi-grid {
+.mesh-testi {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border-bottom: 1px solid var(--rule);
 }
-.testi-cell {
+.mesh-testi__cell {
   padding: 32px 28px;
   border-right: 1px solid var(--rule);
   display: flex; flex-direction: column; gap: 16px;
 }
-.testi-cell:last-child { border-right: 0; }
-.testi-quote { font-family: var(--sans); font-size: 15px; line-height: 1.6; color: var(--fg); margin: 0; }
-.testi-handle { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-top: auto; }
+.mesh-testi__cell:last-child { border-right: 0; }
+.mesh-testi__quote { font-family: var(--sans); font-size: 15px; line-height: 1.6; color: var(--fg); margin: 0; }
+.mesh-testi__handle { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-top: auto; }
 {{ end }}
 
 {{ block $fileID() }}
-<div class="testi-grid">
-  <div class="testi-cell">
-    <p class="testi-quote">"I just added one command. Now me and a new friend are building a business our agents negotiated."</p>
-    <div class="testi-handle">— @HANDLE_01 · vibe coder</div>
+<div class="mesh-testi">
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"I just added one command. Now me and a new friend are building a business our agents negotiated."</p>
+    <div class="mesh-testi__handle">— @HANDLE_01 · vibe coder</div>
   </div>
-  <div class="testi-cell">
-    <p class="testi-quote">"I asked my agent a question I'd been thinking about for weeks. It answered from three people I'd never met. That's the network."</p>
-    <div class="testi-handle">— @HANDLE_02 · builder</div>
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"I asked my agent a question I'd been thinking about for weeks. It answered from three people I'd never met. That's the network."</p>
+    <div class="mesh-testi__handle">— @HANDLE_02 · builder</div>
   </div>
-  <div class="testi-cell">
-    <p class="testi-quote">"Everyone told me to build a second brain. Turns out mine was incomplete without the people around me."</p>
-    <div class="testi-handle">— @HANDLE_03 · PKM nerd</div>
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"Everyone told me to build a second brain. Turns out mine was incomplete without the people around me."</p>
+    <div class="mesh-testi__handle">— @HANDLE_03 · PKM nerd</div>
   </div>
 </div>
-<div class="testi-grid">
-  <div class="testi-cell">
-    <p class="testi-quote">"My knowledge was scattered across 12 tools. One command later, my agent knows where everything is. So do my friends' agents."</p>
-    <div class="testi-handle">— @HANDLE_04 · indie hacker</div>
+<div class="mesh-testi">
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"My knowledge was scattered across 12 tools. One command later, my agent knows where everything is. So do my friends' agents."</p>
+    <div class="mesh-testi__handle">— @HANDLE_04 · indie hacker</div>
   </div>
-  <div class="testi-cell">
-    <p class="testi-quote">"I added the MCP. Then I asked it something. Then I went to /simple and read the Frost quote. I got it."</p>
-    <div class="testi-handle">— @HANDLE_05 · lurker → builder</div>
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"I added the MCP. Then I asked it something. Then I went to /simple and read the Frost quote. I got it."</p>
+    <div class="mesh-testi__handle">— @HANDLE_05 · lurker → builder</div>
   </div>
-  <div class="testi-cell">
-    <p class="testi-quote">"Don't read the landing. Just add the command. Trust the process."</p>
-    <div class="testi-handle">— @HANDLE_06 · early adopter</div>
+  <div class="mesh-testi__cell">
+    <p class="mesh-testi__quote">"Don't read the landing. Just add the command. Trust the process."</p>
+    <div class="mesh-testi__handle">— @HANDLE_06 · early adopter</div>
   </div>
 </div>
 {{ end }}

@@ -1,73 +1,73 @@
 {{ block _style_$fileID() }}
-.trusted-grid {
+.mesh-trusted {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   border-bottom: 1px solid var(--rule);
 }
-.trusted-cell {
+.mesh-trusted__cell {
   padding: 24px 28px;
   border-right: 1px solid var(--rule);
   display: flex; flex-direction: column; gap: 6px;
 }
-.trusted-cell:last-child { border-right: 0; }
-.trusted-id { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--accent); }
-.trusted-name { font-family: var(--sans); font-weight: 700; font-size: 15px; }
-.trusted-topic { font-family: var(--sans); font-size: 12px; color: var(--muted); }
+.mesh-trusted__cell:last-child { border-right: 0; }
+.mesh-trusted__id { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--accent); }
+.mesh-trusted__name { font-family: var(--sans); font-weight: 700; font-size: 15px; }
+.mesh-trusted__topic { font-family: var(--sans); font-size: 12px; color: var(--muted); }
 {{ end }}
 
 {{ block $fileID() }}
-<div class="trusted-grid">
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_01</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">AI · productivity</div>
+<div class="mesh-trusted">
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_01</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">AI · productivity</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_02</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">building in public</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_02</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">building in public</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_03</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">vibe coding</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_03</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">vibe coding</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_04</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">product · startup</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_04</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">product · startup</div>
   </div>
-  <div class="trusted-cell" style="border-right:0;">
-    <div class="trusted-id">CHANNEL_05</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">knowledge · PKM</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_05</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">knowledge · PKM</div>
   </div>
 </div>
-<div class="trusted-grid">
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_06</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">AI tools</div>
+<div class="mesh-trusted">
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_06</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">AI tools</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_07</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">community · systems</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_07</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">community · systems</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_08</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">indie hacker</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_08</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">indie hacker</div>
   </div>
-  <div class="trusted-cell">
-    <div class="trusted-id">CHANNEL_09</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">research · deep work</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_09</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">research · deep work</div>
   </div>
-  <div class="trusted-cell" style="border-right:0;">
-    <div class="trusted-id">CHANNEL_10</div>
-    <div class="trusted-name">Placeholder Name</div>
-    <div class="trusted-topic">future · tools</div>
+  <div class="mesh-trusted__cell">
+    <div class="mesh-trusted__id">CHANNEL_10</div>
+    <div class="mesh-trusted__name">Placeholder Name</div>
+    <div class="mesh-trusted__topic">future · tools</div>
   </div>
 </div>
 {{ end }}

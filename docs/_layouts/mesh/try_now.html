@@ -1,187 +1,213 @@
 {{ block _style_$fileID() }}
-.try {
+.mesh-try {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   border-bottom: 1px solid var(--rule);
 }
-.try-left { padding: 40px; border-right: 1px solid var(--rule); }
-.try-right { padding: 40px; display: flex; flex-direction: column; gap: 22px; }
-.try-h {
+.mesh-try__header {
+  padding: 14px 40px;
+  border-bottom: 1px solid var(--rule);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mesh-try__header-lhs::before { content: "» "; color: var(--accent); }
+.mesh-try__header-rhs { color: var(--muted); }
+.mesh-try__left { padding: 40px; border-right: 1px solid var(--rule); }
+.mesh-try__right { padding: 40px; display: flex; flex-direction: column; gap: 22px; }
+.mesh-try__title {
   font-family: var(--sans);
   font-weight: 800; font-size: 38px; letter-spacing: -0.022em;
   line-height: 1.05; margin: 0 0 14px;
 }
-.try-h em {
+.mesh-try__title em {
   font-style: normal;
   background: var(--accent); color: var(--bg);
   font-family: var(--mono); font-weight: 600;
   font-size: 0.62em; padding: 0 0.18em; vertical-align: 0.22em;
 }
-.try-sub {
+.mesh-try__sub {
   font-family: var(--sans); font-size: 15px; line-height: 1.55;
   color: color-mix(in oklab, var(--fg) 80%, transparent);
   margin: 0 0 22px; max-width: 56ch;
 }
-.try-prompt {
+.mesh-try__prompt {
   border: 1px solid var(--fg);
   background: rgba(245,245,242,0.03);
 }
-.try-prompt-head {
+.mesh-try__prompt-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 14px;
   border-bottom: 1px dashed var(--rule);
   font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--muted);
 }
-.try-prompt-head b { color: var(--accent); font-weight: 600; }
-.try-copy-btn {
+.mesh-try__prompt-head b { color: var(--accent); font-weight: 600; }
+.mesh-try__copy-btn {
   background: var(--accent); color: var(--bg);
   border: 0; padding: 4px 10px;
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
   text-transform: uppercase; cursor: pointer;
 }
-.try-copy-btn:hover { background: var(--fg); }
-.try-prompt pre {
+.mesh-try__copy-btn:hover { background: var(--fg); }
+.mesh-try__prompt-pre {
   margin: 0; padding: 16px 18px;
   font-family: var(--mono); font-size: 13px; line-height: 1.65;
   color: var(--fg); white-space: pre-wrap;
   max-height: 320px; overflow: auto;
 }
-.try-prompt pre .c { color: var(--muted); }
-.try-prompt pre .a { color: var(--accent); }
-.try-steps { list-style: none; padding: 0; margin: 0; }
-.try-step {
+.mesh-try__prompt-pre .mesh-try__token--comment { color: var(--muted); }
+.mesh-try__prompt-pre .mesh-try__token--accent { color: var(--accent); }
+.mesh-try__steps { list-style: none; padding: 0; margin: 0; }
+.mesh-try__step {
   display: grid; grid-template-columns: 44px 1fr;
   gap: 18px; padding: 18px 0;
   border-bottom: 1px dashed var(--rule);
 }
-.try-step:last-child { border-bottom: 0; }
-.try-step-num {
+.mesh-try__step:last-child { border-bottom: 0; }
+.mesh-try__step-num {
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
   color: var(--accent); padding-top: 4px;
 }
-.try-step-h {
+.mesh-try__step-title {
   font-family: var(--sans); font-weight: 700; font-size: 17px;
   letter-spacing: -0.01em; margin: 0 0 6px;
 }
-.try-step-p {
+.mesh-try__step-p {
   font-family: var(--sans); font-size: 14px; line-height: 1.5;
   color: color-mix(in oklab, var(--fg) 82%, transparent);
   margin: 0 0 10px;
 }
-.try-step-p code, .try-step-p kbd {
+.mesh-try__step-p code, .mesh-try__step-p kbd {
   font-family: var(--mono); font-size: 12px;
   background: rgba(245,245,242,0.06); padding: 1px 6px; color: var(--fg);
 }
-.try-step-links { display: flex; flex-wrap: wrap; gap: 8px; }
-.try-chip {
+.mesh-try__step-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.mesh-try__chip {
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
   padding: 4px 10px; border: 1px solid var(--rule);
   color: var(--muted); text-decoration: none;
 }
-.try-chip:hover { color: var(--fg); border-color: var(--fg); }
-.try-chip.is-accent { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 50%, var(--rule)); }
+.mesh-try__chip:hover { color: var(--fg); border-color: var(--fg); }
+.mesh-try__chip--accent { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 50%, var(--rule)); }
+.mesh-try__footer {
+  margin-top: 24px; padding-top: 18px;
+  border-top: 1px dashed var(--rule);
+}
+.mesh-try__cta {
+  display: inline-block;
+  padding: 14px 22px;
+  border: 1px solid var(--accent);
+  background: var(--accent); color: var(--bg);
+  text-decoration: none;
+  font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+}
+.mesh-try__cta:hover { background: var(--fg); border-color: var(--fg); }
 @media (max-width: 900px) {
-  .try { grid-template-columns: 1fr; }
-  .try-left, .try-right { padding: 24px 20px; border-right: 0; }
+  .mesh-try { grid-template-columns: 1fr; }
+  .mesh-try__left, .mesh-try__right { padding: 24px 20px; border-right: 0; }
+  .mesh-try__header { padding: 12px 20px; }
 }
 {{ end }}
 
 {{ block $fileID() }}
-<header class="section" id="try">
-  <span class="lhs">try now · 5 minutes · no install</span>
-  <span class="rhs">connect mcp → ask your agent → skip the landing</span>
+<header class="mesh-try__header" id="try">
+  <span class="mesh-try__header-lhs">try now · 5 minutes · no install</span>
+  <span class="mesh-try__header-rhs">connect mcp → ask your agent → skip the landing</span>
 </header>
-<section class="try">
-  <div class="try-left">
-    <h2 class="try-h">Skip the landing.<br>Ask your <em>agent</em>.</h2>
-    <p class="try-sub">
+<section class="mesh-try">
+  <div class="mesh-try__left">
+    <h2 class="mesh-try__title">Skip the landing.<br>Ask your <em>agent</em>.</h2>
+    <p class="mesh-try__sub">
       Don't read this page. Paste the MCP address into Claude Code, Codex, Cursor, or any
       MCP-aware agent — it'll connect to a live demo knowledge network and answer anything
       about trip2g. Faster than reading.
     </p>
-    <div class="try-prompt">
-      <div class="try-prompt-head">
+    <div class="mesh-try__prompt">
+      <div class="mesh-try__prompt-head">
         <span><b>// agent prompt</b> · paste as-is</span>
-        <button type="button" class="try-copy-btn" id="try-copy">copy</button>
+        <button type="button" class="mesh-try__copy-btn" id="try-copy">copy</button>
       </div>
-<pre id="try-prompt-text"><span class="c"># Connect this knowledge network:</span>
-mcp:add <span class="a">https://trip2g.com/_system/mcp</span>
+<pre class="mesh-try__prompt-pre" id="try-prompt-text"><span class="mesh-try__token--comment"># Connect this knowledge network:</span>
+mcp:add <span class="mesh-try__token--accent">https://trip2g.com/_system/mcp</span>
 
-<span class="c"># Now ask anything, e.g.:</span>
+<span class="mesh-try__token--comment"># Now ask anything, e.g.:</span>
 - what is trip2g and how does the knowledge network work?
 - how do I connect my Obsidian vault?
 - what's the privacy model? where does data live?
 - show me a minimal config to share bases with a friend
 - compare trip2g to a centralized RAG service
 
-<span class="c"># When you're ready:</span>
-mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># your own hub, 100MB free</span></pre>
+<span class="mesh-try__token--comment"># When you're ready:</span>
+mcp:add <span class="mesh-try__token--accent">https://mcp.trip2g.com/me</span>  <span class="mesh-try__token--comment"># your own hub, 100MB free</span></pre>
     </div>
   </div>
 
-  <div class="try-right">
-    <ol class="try-steps">
-      <li class="try-step">
-        <div class="try-step-num">step 01</div>
+  <div class="mesh-try__right">
+    <ol class="mesh-try__steps">
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 01</div>
         <div>
-          <h4 class="try-step-h">Get an MCP-aware agent</h4>
-          <p class="try-step-p">
+          <h4 class="mesh-try__step-title">Get an MCP-aware agent</h4>
+          <p class="mesh-try__step-p">
             If you don't have one yet — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
             <kbd>Cursor</kbd>, or any MCP client works. Five minutes to install.
           </p>
-          <div class="try-step-links">
-            <a class="try-chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
-            <a class="try-chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
-            <a class="try-chip" href="/en/user/mcp">other clients</a>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
+            <a class="mesh-try__chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
+            <a class="mesh-try__chip" href="/en/user/mcp">other clients</a>
           </div>
         </div>
       </li>
 
-      <li class="try-step">
-        <div class="try-step-num">step 02</div>
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 02</div>
         <div>
-          <h4 class="try-step-h">Paste the address → ask anything</h4>
-          <p class="try-step-p">
+          <h4 class="mesh-try__step-title">Paste the address → ask anything</h4>
+          <p class="mesh-try__step-p">
             Your agent connects to our public demo network over MCP and answers from real
             knowledge bases. No signup, no API key.
           </p>
         </div>
       </li>
 
-      <li class="try-step">
-        <div class="try-step-num">step 03</div>
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 03</div>
         <div>
-          <h4 class="try-step-h">Spin up your own hub</h4>
-          <p class="try-step-p">
+          <h4 class="mesh-try__step-title">Spin up your own hub</h4>
+          <p class="mesh-try__step-p">
             Convinced? Get a free 100MB sandbox on our cloud — no docker, no terminal —
             and start adding bases (Obsidian, Drive, TG). Self-host later when you outgrow it.
           </p>
-          <div class="try-step-links">
-            <a class="try-chip is-accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
-            <a class="try-chip" href="/en/user/selfhosted">self-host guide</a>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
+            <a class="mesh-try__chip" href="/en/user/selfhosted">self-host guide</a>
           </div>
         </div>
       </li>
 
-      <li class="try-step">
-        <div class="try-step-num">step 04</div>
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 04</div>
         <div>
-          <h4 class="try-step-h">Need more? Talk to us</h4>
-          <p class="try-step-p">
+          <h4 class="mesh-try__step-title">Need more? Talk to us</h4>
+          <p class="mesh-try__step-p">
             Federating a team or two companies, custom adapters, on-prem? Join the community
             or book a 30-min consultation — we'll walk through your topology.
           </p>
-          <div class="try-step-links">
-            <a class="try-chip" href="#" target="_blank" rel="noopener">community ↗</a>
-            <a class="try-chip" href="#" target="_blank" rel="noopener">book consult ↗</a>
-            <a class="try-chip" href="#" target="_blank" rel="noopener">github ↗</a>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">community ↗</a>
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">book consult ↗</a>
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">github ↗</a>
           </div>
         </div>
       </li>
     </ol>
-    <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--rule);">
-      <a class="cta cta--primary" href="/simple" style="display:inline-block;">start now →</a>
+    <div class="mesh-try__footer">
+      <a class="mesh-try__cta" href="/simple">start now →</a>
     </div>
   </div>
 </section>

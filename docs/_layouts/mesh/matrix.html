@@ -1,27 +1,27 @@
 {{ block _style_$fileID() }}
-.matrix {
+.mesh-matrix {
   display: grid;
   grid-template-columns: 1fr 1fr;
   border-bottom: 1px solid var(--rule);
 }
-.matrix-cell { padding: 40px 48px; }
-.matrix-cell--red { border-right: 1px solid var(--rule); }
-.matrix-cell--blue { opacity: 0.45; }
-.matrix-ascii {
+.mesh-matrix__cell { padding: 40px 48px; }
+.mesh-matrix__cell--red { border-right: 1px solid var(--rule); }
+.mesh-matrix__cell--blue { opacity: 0.45; }
+.mesh-matrix__ascii {
   font-family: var(--mono); font-size: 11px;
   line-height: 1.6; margin: 0 0 24px;
 }
-.matrix-ascii--red { color: var(--accent); }
-.matrix-ascii--blue { color: var(--muted); }
-.matrix-title {
+.mesh-matrix__ascii--red { color: var(--accent); }
+.mesh-matrix__ascii--blue { color: var(--muted); }
+.mesh-matrix__title {
   font-family: var(--sans); font-size: 18px;
   font-weight: 700; margin-bottom: 8px;
 }
-.matrix-desc {
+.mesh-matrix__desc {
   font-family: var(--sans); font-size: 14px;
   color: var(--muted); margin-bottom: 24px; line-height: 1.5;
 }
-.matrix-cta {
+.mesh-matrix__cta {
   display: inline-block;
   background: var(--accent); color: var(--bg);
   padding: 12px 24px;
@@ -29,7 +29,7 @@
   letter-spacing: 0.1em; text-transform: uppercase;
   text-decoration: none;
 }
-.matrix-nocta {
+.mesh-matrix__nocta {
   display: inline-block;
   border: 1px solid var(--rule); color: var(--muted);
   padding: 12px 24px;
@@ -40,26 +40,26 @@
 {{ end }}
 
 {{ block $fileID() }}
-<div class="matrix">
-  <div class="matrix-cell matrix-cell--red">
-    <pre class="matrix-ascii matrix-ascii--red">
+<div class="mesh-matrix">
+  <div class="mesh-matrix__cell mesh-matrix__cell--red">
+    <pre class="mesh-matrix__ascii mesh-matrix__ascii--red">
   ██████╗ ███████╗██████╗
   ██╔══██╗██╔════╝██╔══██╗
   ██████╔╝█████╗  ██║  ██║
   ██╔══██╗██╔══╝  ██║  ██║</pre>
-    <div class="matrix-title">Take the red pill.</div>
-    <div class="matrix-desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
-    <a href="/simple" class="matrix-cta">mcp:add →</a>
+    <div class="mesh-matrix__title">Take the red pill.</div>
+    <div class="mesh-matrix__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
+    <a href="/simple" class="mesh-matrix__cta">mcp:add →</a>
   </div>
-  <div class="matrix-cell matrix-cell--blue">
-    <pre class="matrix-ascii matrix-ascii--blue">
+  <div class="mesh-matrix__cell mesh-matrix__cell--blue">
+    <pre class="mesh-matrix__ascii mesh-matrix__ascii--blue">
   ██████╗ ██╗     ██╗   ██╗███████╗
   ██╔══██╗██║     ██║   ██║██╔════╝
   ██████╔╝██║     ██║   ██║█████╗
   ██╔══██╗██║     ██║   ██║██╔══╝</pre>
-    <div class="matrix-title">Take the blue pill.</div>
-    <div class="matrix-desc">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
-    <span class="matrix-nocta">close tab</span>
+    <div class="mesh-matrix__title">Take the blue pill.</div>
+    <div class="mesh-matrix__desc">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
+    <span class="mesh-matrix__nocta">close tab</span>
   </div>
 </div>
 {{ end }}

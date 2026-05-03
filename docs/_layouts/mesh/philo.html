@@ -1,5 +1,5 @@
 {{ block _style_$fileID() }}
-.philo {
+.mesh-philo {
   padding: 32px 40px;
   border-bottom: 1px solid var(--rule);
   display: grid;
@@ -7,20 +7,20 @@
   gap: 32px;
   align-items: baseline;
 }
-.philo-eyebrow {
+.mesh-philo__eyebrow {
   font-family: var(--mono); font-size: 10px;
   letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--muted);
 }
-.philo-eyebrow::before { content: "// "; color: var(--accent); }
-.philo-text {
+.mesh-philo__eyebrow::before { content: "// "; color: var(--accent); }
+.mesh-philo__text {
   font-family: var(--sans); font-size: 17px; line-height: 1.5;
   letter-spacing: -0.005em;
   color: color-mix(in oklab, var(--fg) 92%, transparent);
   margin: 0;
   max-width: 64ch;
 }
-.philo-text em {
+.mesh-philo__text em {
   font-style: normal;
   background: var(--accent);
   color: var(--bg);
@@ -29,26 +29,26 @@
   font-size: 0.78em;
   padding: 0 0.18em;
 }
-.philo-text a {
+.mesh-philo__link {
   color: var(--accent); text-decoration: none;
   font-family: var(--mono); font-size: 12px;
   letter-spacing: 0.06em; text-transform: uppercase;
   margin-left: 6px;
 }
-.philo-text a:hover { color: var(--fg); }
+.mesh-philo__link:hover { color: var(--fg); }
 @media (max-width: 900px) {
-  .philo { grid-template-columns: 1fr; padding: 24px 20px; }
+  .mesh-philo { grid-template-columns: 1fr; padding: 24px 20px; }
 }
 {{ end }}
 
 {{ block $fileID() }}
-<section class="philo">
-  <div class="philo-eyebrow">philosophy</div>
-  <p class="philo-text">
+<section class="mesh-philo">
+  <div class="mesh-philo__eyebrow">philosophy</div>
+  <p class="mesh-philo__text">
     A second brain isn't one person's vault — it's the shared knowledge of people who think about
     the same things. trip2g doesn't own that knowledge; it gives every person and every community
     a way to connect their bases and stay in control.
-    <a href="#">read full →</a>
+    <a href="#" class="mesh-philo__link">read full →</a>
   </p>
 </section>
 {{ end }}
