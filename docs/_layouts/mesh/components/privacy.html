@@ -1,0 +1,100 @@
+{{ block _style_privacy() }}
+.privacy {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+.privacy-text {
+  padding: 36px 40px;
+  border-right: 1px solid var(--rule);
+}
+.privacy-h {
+  font-family: var(--sans);
+  font-weight: 800; font-size: 32px; letter-spacing: -0.02em;
+  margin: 0 0 16px; line-height: 1.05;
+}
+.privacy-p {
+  font-family: var(--sans); font-size: 15px; line-height: 1.55;
+  color: color-mix(in oklab, var(--fg) 85%, transparent);
+  margin: 0 0 12px;
+}
+.privacy-list {
+  list-style: none; padding: 0; margin: 18px 0 0;
+  font-family: var(--mono); font-size: 13px;
+}
+.privacy-list li {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--rule);
+  display: grid;
+  grid-template-columns: 18px 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.privacy-list li::before { content: "✓"; color: var(--accent); }
+.privacy-list .key { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
+.privacy-diag {
+  padding: 36px 40px;
+  display: grid; place-items: center;
+}
+.privacy-diag svg { width: 100%; max-width: 360px; height: auto; }
+@media (max-width: 900px) {
+  .privacy { grid-template-columns: 1fr; }
+  .privacy-diag { display: none; }
+  .privacy-text { padding: 24px 20px; border-right: 0; }
+}
+{{ end }}
+
+{{ block privacy() }}
+<section class="privacy">
+  <div class="privacy-text">
+    <h2 class="privacy-h">Data lives where<br>you put it.</h2>
+    <p class="privacy-p">
+      trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
+      pixel, no shadow copy of your notes on someone else's box.
+    </p>
+    <p class="privacy-p">
+      Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
+    </p>
+    <ul class="privacy-list">
+      <li><span class="key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
+      <li><span class="key">access</span><span>per-base toggle · pause anytime</span></li>
+      <li><span class="key">peers</span><span>opt-in only · revocable trust</span></li>
+      <li><span class="key">network</span><span>direct hub ⇄ hub · no relay</span></li>
+      <li><span class="key">code</span><span>MIT · audit, fork, run</span></li>
+    </ul>
+  </div>
+  <div class="privacy-diag" aria-hidden="true">
+    <svg viewBox="0 0 360 280">
+      <!-- your perimeter -->
+      <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+      <text x="20" y="28" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.16em" fill="#8c8c84">YOUR BOX</text>
+
+      <rect x="50" y="80"  width="90" height="34" fill="oklch(0.78 0.18 145)" />
+      <text x="95" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#0e0e0c">your hub</text>
+
+      <rect x="50" y="130" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+      <text x="95" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">notes/</text>
+      <rect x="50" y="158" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+      <text x="95" y="174" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">books/</text>
+      <rect x="50" y="186" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
+      <text x="95" y="202" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">tg/</text>
+
+      <!-- the wire -->
+      <line x1="180" y1="97" x2="280" y2="97" stroke="oklch(0.78 0.18 145)" stroke-width="1.5" stroke-dasharray="6 6">
+        <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="1.6s" repeatCount="indefinite" />
+      </line>
+      <text x="230" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#a3e635" letter-spacing="0.12em">SCOPED QUERY</text>
+
+      <!-- friend perimeter -->
+      <rect x="280" y="60" width="70" height="170" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
+      <text x="290" y="78" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.12em" fill="#8c8c84">PEER</text>
+      <rect x="295" y="90" width="40" height="20" fill="oklch(0.78 0.18 145)" />
+      <text x="315" y="103" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#0e0e0c">hub</text>
+      <rect x="295" y="118" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+      <rect x="295" y="136" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
+      <rect x="295" y="154" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" stroke-dasharray="2 2" />
+      <text x="315" y="178" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8c8c84">2/3 shared</text>
+    </svg>
+  </div>
+</section>
+{{ end }}

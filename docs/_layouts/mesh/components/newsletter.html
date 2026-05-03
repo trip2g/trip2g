@@ -1,0 +1,83 @@
+{{ block _style_newsletter() }}
+.news {
+  padding: 48px 40px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+.news-h {
+  font-family: var(--sans);
+  font-weight: 800; font-size: 36px; letter-spacing: -0.02em;
+  margin: 0 0 14px; line-height: 1.05;
+}
+.news-h em {
+  font-style: normal;
+  background: var(--accent); color: var(--bg);
+  font-family: var(--mono); font-weight: 600;
+  font-size: 0.65em; padding: 0 0.18em; vertical-align: 0.18em;
+}
+.news-p {
+  font-family: var(--sans); font-size: 14px; line-height: 1.55;
+  color: var(--muted); margin: 0; max-width: 50ch;
+}
+.news-form {
+  display: flex; align-items: stretch;
+  border: 1px solid var(--fg);
+  background: rgba(245,245,242,0.02);
+}
+.news-form input {
+  flex: 1; background: transparent; border: 0; outline: 0;
+  color: var(--fg); font-family: var(--mono); font-size: 14px;
+  padding: 14px 16px;
+}
+.news-form input::placeholder { color: var(--muted-2); }
+.news-form button {
+  background: var(--accent); color: var(--bg);
+  border: 0; border-left: 1px solid var(--fg);
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0 22px; cursor: pointer;
+}
+.news-form button:hover { background: var(--fg); }
+.news-meta {
+  grid-column: 1 / -1;
+  display: flex; gap: 24px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  color: var(--muted);
+  padding-top: 14px;
+  border-top: 1px dashed var(--rule);
+  margin-top: 4px;
+}
+.news-meta b { color: var(--fg); font-weight: 600; }
+@media (max-width: 900px) {
+  .news { grid-template-columns: 1fr; padding: 32px 20px; gap: 24px; }
+}
+{{ end }}
+
+{{ block newsletter() }}
+<section class="news" id="newsletter">
+  <div>
+    <h2 class="news-h">Changelog &amp; <em>field notes</em></h2>
+    <p class="news-p">
+      One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.
+    </p>
+  </div>
+  <form class="news-form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.news-joke').style.display='block'; this.style.display='none';">
+    <input type="email" placeholder="you@somewhere" aria-label="email" required>
+    <button type="submit">subscribe →</button>
+  </form>
+  <div class="news-meta">
+    <span><b>~1×/month</b></span>
+    <span>unsubscribe in one click</span>
+    <span>archive at <b>trip2g.com/notes</b></span>
+  </div>
+  <div class="news-joke" style="display:none; grid-column:1/-1; padding:18px; border:1px solid var(--accent); font-family:var(--mono); font-size:13px; color:var(--fg);">
+We don't need your email.<br>
+<span style="color:var(--muted);">Here's everything you actually need:</span><br><br>
+<code style="color:var(--accent);">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+<a href="/simple" style="color:var(--accent); text-decoration:none; letter-spacing:0.06em; text-transform:uppercase; font-size:11px;">→ /simple</a>
+</div>
+</section>
+{{ end }}

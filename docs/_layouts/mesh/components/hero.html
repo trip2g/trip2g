@@ -1,0 +1,146 @@
+{{ block _style_hero() }}
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-left {
+  padding: 56px 40px 40px;
+  border-right: 1px solid var(--rule);
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.eyebrow::before { content: "// "; color: var(--accent); }
+.h1 {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 60px;
+  line-height: 0.96;
+  letter-spacing: -0.025em;
+  margin: 18px 0 0;
+}
+.h1 .hl {
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.78em;
+  padding: 0 0.18em;
+}
+.blurb {
+  margin: 28px 0 0;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+  color: color-mix(in oklab, var(--fg) 85%, transparent);
+}
+.cta-row { margin-top: 28px; display: flex; }
+.cta {
+  padding: 14px 22px;
+  border: 1px solid var(--fg);
+  color: var(--fg); text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+}
+.cta + .cta { border-left: 0; }
+.cta--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.cta:hover:not(.cta--primary) { background: var(--fg); color: var(--bg); }
+.hero-right {
+  padding: 18px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 14px;
+  min-height: 540px;
+}
+.frame {
+  border: 1px solid var(--rule);
+  background: rgba(245,245,242,0.02);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.frame-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--rule);
+  margin-bottom: 10px;
+}
+.frame-head .live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.frame-head .live::before {
+  content: ""; width: 6px; height: 6px; background: var(--accent);
+  animation: blink 1.4s steps(2) infinite;
+}
+@keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.2; } }
+.graph-frame svg { width: 100%; height: auto; min-height: 320px; display: block; }
+.trace-frame { min-height: 200px; }
+.trace-stream {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-height: 160px;
+  overflow: hidden;
+}
+.log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
+.log-line.is-on { opacity: 1; color: var(--fg); }
+.log-num { color: var(--accent); font-weight: 700; }
+.mg svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
+.mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
+.mg-pipe-flow {
+  stroke: var(--muted-2); stroke-width: 1;
+  stroke-dasharray: 5 7;
+  opacity: 0.5;
+  animation: dashflow 1.6s linear infinite;
+}
+.mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.9; }
+@keyframes dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .hero-left { padding: 32px 20px 28px; border-right: 0; }
+  .h1 { font-size: 38px; }
+}
+{{ end }}
+
+{{ block hero() }}
+<section class="hero">
+  <div class="hero-left">
+    <div class="eyebrow">Your second brain was always meant to be shared.</div>
+    <h1 class="h1">Join the network.<br>Your agents will<br>find the rest.</h1>
+    <p class="blurb">
+      You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent — let's add it to the network. Your piece is the last missing part of the puzzle.
+    </p>
+    <div class="cta-row" style="margin-top:28px;">
+      <a class="cta cta--primary" href="/simple">start →</a>
+      <a class="cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+      <a class="cta" href="/en/user">docs</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="frame graph-frame mg">
+      <div class="frame-head">
+        <span>fig.01 · mesh.trace · query.route</span>
+        <span class="live">LIVE</span>
+      </div>
+      <div id="mesh-svg-mount"></div>
+    </div>
+    <div class="frame trace-frame">
+      <div class="frame-head">
+        <span>stdout · /var/log/mesh.trace</span>
+        <span style="color: var(--muted)">tail -f</span>
+      </div>
+      <div class="trace-stream" id="trace-stream"></div>
+    </div>
+  </div>
+</section>
+{{ end }}

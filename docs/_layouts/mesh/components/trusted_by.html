@@ -1,0 +1,73 @@
+{{ block _style_trusted_by() }}
+.trusted-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+.trusted-cell {
+  padding: 24px 28px;
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.trusted-cell:last-child { border-right: 0; }
+.trusted-id { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--accent); }
+.trusted-name { font-family: var(--sans); font-weight: 700; font-size: 15px; }
+.trusted-topic { font-family: var(--sans); font-size: 12px; color: var(--muted); }
+{{ end }}
+
+{{ block trusted_by() }}
+<div class="trusted-grid">
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_01</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">AI · productivity</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_02</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">building in public</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_03</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">vibe coding</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_04</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">product · startup</div>
+  </div>
+  <div class="trusted-cell" style="border-right:0;">
+    <div class="trusted-id">CHANNEL_05</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">knowledge · PKM</div>
+  </div>
+</div>
+<div class="trusted-grid">
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_06</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">AI tools</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_07</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">community · systems</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_08</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">indie hacker</div>
+  </div>
+  <div class="trusted-cell">
+    <div class="trusted-id">CHANNEL_09</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">research · deep work</div>
+  </div>
+  <div class="trusted-cell" style="border-right:0;">
+    <div class="trusted-id">CHANNEL_10</div>
+    <div class="trusted-name">Placeholder Name</div>
+    <div class="trusted-topic">future · tools</div>
+  </div>
+</div>
+{{ end }}

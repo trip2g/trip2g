@@ -1,0 +1,54 @@
+{{ block _style_philo() }}
+.philo {
+  padding: 32px 40px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: baseline;
+}
+.philo-eyebrow {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted);
+}
+.philo-eyebrow::before { content: "// "; color: var(--accent); }
+.philo-text {
+  font-family: var(--sans); font-size: 17px; line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: color-mix(in oklab, var(--fg) 92%, transparent);
+  margin: 0;
+  max-width: 64ch;
+}
+.philo-text em {
+  font-style: normal;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.78em;
+  padding: 0 0.18em;
+}
+.philo-text a {
+  color: var(--accent); text-decoration: none;
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-left: 6px;
+}
+.philo-text a:hover { color: var(--fg); }
+@media (max-width: 900px) {
+  .philo { grid-template-columns: 1fr; padding: 24px 20px; }
+}
+{{ end }}
+
+{{ block philo() }}
+<section class="philo">
+  <div class="philo-eyebrow">philosophy</div>
+  <p class="philo-text">
+    A second brain isn't one person's vault — it's the shared knowledge of people who think about
+    the same things. trip2g doesn't own that knowledge; it gives every person and every community
+    a way to connect their bases and stay in control.
+    <a href="#">read full →</a>
+  </p>
+</section>
+{{ end }}

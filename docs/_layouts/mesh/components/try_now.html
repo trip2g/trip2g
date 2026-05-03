@@ -1,0 +1,188 @@
+{{ block _style_try_now() }}
+.try {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+.try-left { padding: 40px; border-right: 1px solid var(--rule); }
+.try-right { padding: 40px; display: flex; flex-direction: column; gap: 22px; }
+.try-h {
+  font-family: var(--sans);
+  font-weight: 800; font-size: 38px; letter-spacing: -0.022em;
+  line-height: 1.05; margin: 0 0 14px;
+}
+.try-h em {
+  font-style: normal;
+  background: var(--accent); color: var(--bg);
+  font-family: var(--mono); font-weight: 600;
+  font-size: 0.62em; padding: 0 0.18em; vertical-align: 0.22em;
+}
+.try-sub {
+  font-family: var(--sans); font-size: 15px; line-height: 1.55;
+  color: color-mix(in oklab, var(--fg) 80%, transparent);
+  margin: 0 0 22px; max-width: 56ch;
+}
+.try-prompt {
+  border: 1px solid var(--fg);
+  background: rgba(245,245,242,0.03);
+}
+.try-prompt-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px dashed var(--rule);
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+}
+.try-prompt-head b { color: var(--accent); font-weight: 600; }
+.try-copy-btn {
+  background: var(--accent); color: var(--bg);
+  border: 0; padding: 4px 10px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; cursor: pointer;
+}
+.try-copy-btn:hover { background: var(--fg); }
+.try-prompt pre {
+  margin: 0; padding: 16px 18px;
+  font-family: var(--mono); font-size: 13px; line-height: 1.65;
+  color: var(--fg); white-space: pre-wrap;
+  max-height: 320px; overflow: auto;
+}
+.try-prompt pre .c { color: var(--muted); }
+.try-prompt pre .a { color: var(--accent); }
+.try-steps { list-style: none; padding: 0; margin: 0; }
+.try-step {
+  display: grid; grid-template-columns: 44px 1fr;
+  gap: 18px; padding: 18px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.try-step:last-child { border-bottom: 0; }
+.try-step-num {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
+  color: var(--accent); padding-top: 4px;
+}
+.try-step-h {
+  font-family: var(--sans); font-weight: 700; font-size: 17px;
+  letter-spacing: -0.01em; margin: 0 0 6px;
+}
+.try-step-p {
+  font-family: var(--sans); font-size: 14px; line-height: 1.5;
+  color: color-mix(in oklab, var(--fg) 82%, transparent);
+  margin: 0 0 10px;
+}
+.try-step-p code, .try-step-p kbd {
+  font-family: var(--mono); font-size: 12px;
+  background: rgba(245,245,242,0.06); padding: 1px 6px; color: var(--fg);
+}
+.try-step-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.try-chip {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  padding: 4px 10px; border: 1px solid var(--rule);
+  color: var(--muted); text-decoration: none;
+}
+.try-chip:hover { color: var(--fg); border-color: var(--fg); }
+.try-chip.is-accent { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 50%, var(--rule)); }
+@media (max-width: 900px) {
+  .try { grid-template-columns: 1fr; }
+  .try-left, .try-right { padding: 24px 20px; border-right: 0; }
+}
+{{ end }}
+
+{{ block try_now() }}
+<header class="section" id="try">
+  <span class="lhs">try now · 5 minutes · no install</span>
+  <span class="rhs">connect mcp → ask your agent → skip the landing</span>
+</header>
+<section class="try">
+  <div class="try-left">
+    <h2 class="try-h">Skip the landing.<br>Ask your <em>agent</em>.</h2>
+    <p class="try-sub">
+      Don't read this page. Paste the MCP address into Claude Code, Codex, Cursor, or any
+      MCP-aware agent — it'll connect to a live demo knowledge network and answer anything
+      about trip2g. Faster than reading.
+    </p>
+    <div class="try-prompt">
+      <div class="try-prompt-head">
+        <span><b>// agent prompt</b> · paste as-is</span>
+        <button type="button" class="try-copy-btn" id="try-copy">copy</button>
+      </div>
+<pre id="try-prompt-text"><span class="c"># Connect this knowledge network:</span>
+mcp:add <span class="a">https://trip2g.com/_system/mcp</span>
+
+<span class="c"># Now ask anything, e.g.:</span>
+- what is trip2g and how does the knowledge network work?
+- how do I connect my Obsidian vault?
+- what's the privacy model? where does data live?
+- show me a minimal config to share bases with a friend
+- compare trip2g to a centralized RAG service
+
+<span class="c"># When you're ready:</span>
+mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># your own hub, 100MB free</span></pre>
+    </div>
+  </div>
+
+  <div class="try-right">
+    <ol class="try-steps">
+      <li class="try-step">
+        <div class="try-step-num">step 01</div>
+        <div>
+          <h4 class="try-step-h">Get an MCP-aware agent</h4>
+          <p class="try-step-p">
+            If you don't have one yet — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
+            <kbd>Cursor</kbd>, or any MCP client works. Five minutes to install.
+          </p>
+          <div class="try-step-links">
+            <a class="try-chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
+            <a class="try-chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
+            <a class="try-chip" href="/en/user/mcp">other clients</a>
+          </div>
+        </div>
+      </li>
+
+      <li class="try-step">
+        <div class="try-step-num">step 02</div>
+        <div>
+          <h4 class="try-step-h">Paste the address → ask anything</h4>
+          <p class="try-step-p">
+            Your agent connects to our public demo network over MCP and answers from real
+            knowledge bases. No signup, no API key.
+          </p>
+        </div>
+      </li>
+
+      <li class="try-step">
+        <div class="try-step-num">step 03</div>
+        <div>
+          <h4 class="try-step-h">Spin up your own hub</h4>
+          <p class="try-step-p">
+            Convinced? Get a free 100MB sandbox on our cloud — no docker, no terminal —
+            and start adding bases (Obsidian, Drive, TG). Self-host later when you outgrow it.
+          </p>
+          <div class="try-step-links">
+            <a class="try-chip is-accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
+            <a class="try-chip" href="/en/user/selfhosted">self-host guide</a>
+          </div>
+        </div>
+      </li>
+
+      <li class="try-step">
+        <div class="try-step-num">step 04</div>
+        <div>
+          <h4 class="try-step-h">Need more? Talk to us</h4>
+          <p class="try-step-p">
+            Federating a team or two companies, custom adapters, on-prem? Join the community
+            or book a 30-min consultation — we'll walk through your topology.
+          </p>
+          <div class="try-step-links">
+            <a class="try-chip" href="#" target="_blank" rel="noopener">community ↗</a>
+            <a class="try-chip" href="#" target="_blank" rel="noopener">book consult ↗</a>
+            <a class="try-chip" href="#" target="_blank" rel="noopener">github ↗</a>
+          </div>
+        </div>
+      </li>
+    </ol>
+    <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--rule);">
+      <a class="cta cta--primary" href="/simple" style="display:inline-block;">start now →</a>
+    </div>
+  </div>
+</section>
+{{ end }}

@@ -1,0 +1,64 @@
+{{ block _style_foot() }}
+.foot {
+  padding: 32px 40px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 32px;
+  border-bottom: 1px solid var(--rule);
+}
+.foot h4 { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 500; }
+.foot ul { list-style: none; padding: 0; margin: 0; }
+.foot li { margin: 0 0 8px; }
+.foot a { color: var(--fg); text-decoration: none; font-size: 13px; font-family: var(--mono); }
+.foot a:hover { color: var(--accent); }
+.foot p { font-family: var(--sans); font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0; }
+.coda {
+  padding: 14px 40px;
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted);
+  display: flex; justify-content: space-between;
+}
+@media (max-width: 900px) {
+  .foot { grid-template-columns: 1fr 1fr; padding: 24px 20px; }
+}
+{{ end }}
+
+{{ block foot() }}
+<footer class="foot">
+  <div>
+    <h4>// trip2g</h4>
+    <p>Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
+    <a class="cta cta--primary" href="/simple" style="margin-top:16px; display:inline-block;">start →</a>
+  </div>
+  <div>
+    <h4>Philosophy</h4>
+    <ul>
+      <li><a href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
+      <li><a href="/en/thoughts/three_zones">/three_zones</a></li>
+      <li><a href="/en/thoughts/why_not_book">/why_not_book</a></li>
+      <li><a href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4>Docs</h4>
+    <ul>
+      <li><a href="/en/user/getting_started">/getting-started</a></li>
+      <li><a href="/en/user/federation">/federation</a></li>
+      <li><a href="/en/user/telegram">/telegram</a></li>
+      <li><a href="/en/user/webhooks">/webhooks</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4>Contact</h4>
+    <ul>
+      <li><a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+      <li><a href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+      <li><a href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+    </ul>
+  </div>
+</footer>
+<div class="coda">
+  <span>© trip2g.com · 2026 · MIT</span>
+  <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
+</div>
+{{ end }}
