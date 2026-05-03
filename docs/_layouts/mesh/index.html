@@ -11,8 +11,6 @@
 {{ import "foot" }}
 
 {{ yield index_layout() content }}
-    <style>{{ yield_blocks("_style_mesh_") }}</style>
-
     {{ yield mesh_bar() }}
 
     {{ yield mesh_hero() }}
@@ -351,4 +349,5 @@
     </div>
 
     {{ yield mesh_foot() }}
+    <style>{{ yield_blocks("_style_mesh_") }}</style>
 {{ end }}
