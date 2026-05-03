@@ -138,7 +138,24 @@ _layouts/theme/
 
 The rendered page gets a `<style>` tag with CSS from `_style_hero` and `_style_card` only — `_style_button` is absent because no `{{yield button(...)}}` appears on this page.
 
+### BEM naming for style blocks
+
+The `_style_blockname` convention pairs naturally with BEM class naming. BEM scopes every class to its block name, so when `yield_blocks` assembles CSS from multiple components onto one page, nothing collides.
+
+A `card` component with BEM classes:
+
+```html
+{{block _style_card()}}
+.card { border: 1px solid #eee; border-radius: 6px; padding: 16px; }
+.card__title { font-weight: bold; }
+.card--featured { border-color: #0070f3; }
+{{end}}
+```
+
+`.card__title` can never conflict with `.hero__title` — the block name is part of every class. See [[en/user/bem|BEM naming in templates]] for the full convention.
+
 ### Related
 
 - [[templates|Custom templates]] — template basics, Jet syntax, `note` and `nvs` variables
 - [[templates-best-practices|Template best practices]] — organizing multi-template projects
+- [[en/user/bem|BEM naming in templates]] — naming convention for component CSS classes

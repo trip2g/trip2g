@@ -23,6 +23,7 @@ title: "Navigation"
 - [[en/user/default-template|Default template]]
 - [[en/user/templates|Custom templates]]
 - [[en/user/yield_blocks|yield_blocks: per-page CSS/JS]]
+- [[en/user/bem|BEM naming in templates]]
 - [[en/user/One HTML Page|One HTML page]]
 
 ### Automation
