@@ -1,4 +1,4 @@
-{{ block _style_newsletter() }}
+{{ block _style_$name() }}
 .news {
   padding: 48px 40px;
   border-bottom: 1px solid var(--rule);
@@ -56,7 +56,7 @@
 }
 {{ end }}
 
-{{ block newsletter() }}
+{{ block $name() }}
 <section class="news" id="newsletter">
   <div>
     <h2 class="news-h">Changelog &amp; <em>field notes</em></h2>

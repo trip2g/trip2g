@@ -1,4 +1,4 @@
-{{ block _style_bar() }}
+{{ block _style_$name() }}
 .bar {
   display: flex; align-items: center;
   border-bottom: 1px solid var(--rule);
@@ -35,7 +35,7 @@
 }
 {{ end }}
 
-{{ block bar() }}
+{{ block $name() }}
 <header class="bar">
   <div class="prompt">$ <b>trip2g</b></div>
   <div class="pill"><span class="dot"></span>demo network · 10 bases online</div>

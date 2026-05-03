@@ -1,4 +1,4 @@
-{{ block _style_matrix() }}
+{{ block _style_$name() }}
 .matrix {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -39,7 +39,7 @@
 }
 {{ end }}
 
-{{ block matrix() }}
+{{ block $name() }}
 <div class="matrix">
   <div class="matrix-cell matrix-cell--red">
     <pre class="matrix-ascii matrix-ascii--red">

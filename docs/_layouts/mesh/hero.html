@@ -1,4 +1,4 @@
-{{ block _style_hero() }}
+{{ block _style_$name() }}
 .hero {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -112,7 +112,7 @@
 }
 {{ end }}
 
-{{ block hero() }}
+{{ block $name() }}
 <section class="hero">
   <div class="hero-left">
     <div class="eyebrow">Your second brain was always meant to be shared.</div>

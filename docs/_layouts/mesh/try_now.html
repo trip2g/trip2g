@@ -1,4 +1,4 @@
-{{ block _style_try_now() }}
+{{ block _style_$name() }}
 .try {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
@@ -87,7 +87,7 @@
 }
 {{ end }}
 
-{{ block try_now() }}
+{{ block $name() }}
 <header class="section" id="try">
   <span class="lhs">try now · 5 minutes · no install</span>
   <span class="rhs">connect mcp → ask your agent → skip the landing</span>

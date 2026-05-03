@@ -1,19 +1,19 @@
 {{ import "_blocks" }}
-{{ import "components/bar" }}
-{{ import "components/hero" }}
-{{ import "components/privacy" }}
-{{ import "components/philo" }}
-{{ import "components/matrix" }}
-{{ import "components/try_now" }}
-{{ import "components/newsletter" }}
-{{ import "components/trusted_by" }}
-{{ import "components/testimonials" }}
-{{ import "components/foot" }}
+{{ import "bar" }}
+{{ import "hero" }}
+{{ import "privacy" }}
+{{ import "philo" }}
+{{ import "matrix" }}
+{{ import "try_now" }}
+{{ import "newsletter" }}
+{{ import "trusted_by" }}
+{{ import "testimonials" }}
+{{ import "foot" }}
 
 {{ yield index_layout() content }}
-    {{ yield bar() }}
+    {{ yield mesh_bar() }}
 
-    {{ yield hero() }}
+    {{ yield mesh_hero() }}
 
     <!-- HOW IT WORKS -->
     {{ yield section_header(lhs="how it works", rhs="3 steps · under a minute") }}
@@ -267,7 +267,7 @@
 
     <!-- PRIVACY -->
     {{ yield section_header(lhs="your data stays yours", rhs="your hub · your data · your call") }}
-    {{ yield privacy() }}
+    {{ yield mesh_privacy() }}
 
     <!-- ROADMAP -->
     {{ yield section_header(lhs="roadmap", rhs="v0.3 · feedback driven · public") }}
@@ -300,16 +300,16 @@
     </div>
 
     <!-- PHILOSOPHY -->
-    {{ yield philo() }}
+    {{ yield mesh_philo() }}
 
     <!-- MATRIX -->
-    {{ yield matrix() }}
+    {{ yield mesh_matrix() }}
 
     <!-- TRY NOW -->
-    {{ yield try_now() }}
+    {{ yield mesh_try_now() }}
 
     <!-- NEWSLETTER -->
-    {{ yield newsletter() }}
+    {{ yield mesh_newsletter() }}
 
     <!-- DOCS -->
     {{ yield section_header(lhs="tree docs/", rhs="start here · updated 2026-04-30") }}
@@ -317,11 +317,11 @@
 
     <!-- TRUSTED BY -->
     {{ yield section_header(lhs="already in the network", rhs="their knowledge answers your questions every day") }}
-    {{ yield trusted_by() }}
+    {{ yield mesh_trusted_by() }}
 
     <!-- TESTIMONIALS -->
     {{ yield section_header(lhs="from the network", rhs="things people said after adding one command") }}
-    {{ yield testimonials() }}
+    {{ yield mesh_testimonials() }}
 
     <!-- PRICING -->
     {{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
@@ -353,5 +353,5 @@
     </div>
 
     <!-- FOOT -->
-    {{ yield foot() }}
+    {{ yield mesh_foot() }}
 {{ end }}

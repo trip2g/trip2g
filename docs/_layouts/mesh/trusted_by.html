@@ -1,4 +1,4 @@
-{{ block _style_trusted_by() }}
+{{ block _style_$name() }}
 .trusted-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -15,7 +15,7 @@
 .trusted-topic { font-family: var(--sans); font-size: 12px; color: var(--muted); }
 {{ end }}
 
-{{ block trusted_by() }}
+{{ block $name() }}
 <div class="trusted-grid">
   <div class="trusted-cell">
     <div class="trusted-id">CHANNEL_01</div>
