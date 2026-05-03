@@ -38,6 +38,27 @@ func makeYieldBlocksFunc(blockNames *[]string, warnSink *[]model.NoteWarning) fu
 	}
 }
 
+// expandBlockName replaces $name with the sanitized block name derived from sourceID,
+// and $$name with a literal $name (escape sequence).
+// sourceID examples: "/components/button.html" → "button", "card.html" → "card"
+func expandBlockName(content, sourceID string) string {
+	if !strings.Contains(content, "$name") {
+		return content
+	}
+	// derive block name: strip leading slash, strip extension, replace / with _
+	name := strings.TrimPrefix(sourceID, "/")
+	if idx := strings.LastIndex(name, "."); idx != -1 {
+		name = name[:idx]
+	}
+	name = strings.ReplaceAll(name, "/", "_")
+
+	const sentinel = "\x00dollar_name\x00"
+	content = strings.ReplaceAll(content, "$$name", sentinel)
+	content = strings.ReplaceAll(content, "$name", name)
+	content = strings.ReplaceAll(content, sentinel, "$name")
+	return content
+}
+
 func compileMatcher(p string) (func(string) bool, error) {
 	if len(p) >= 2 && p[0] == '/' && p[len(p)-1] == '/' {
 		re, err := regexp.Compile(p[1 : len(p)-1])

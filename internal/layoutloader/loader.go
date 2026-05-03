@@ -81,7 +81,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			}
 			content = jetContent
 		}
-		jl.templates[source.ID] = content
+		jl.templates[source.ID] = expandBlockName(content, source.ID)
 		jl.sourceIDs = append(jl.sourceIDs, source.ID)
 	}
 

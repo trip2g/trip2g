@@ -144,3 +144,27 @@ func TestYieldBlocks_PageBlocksNotInRegistry(t *testing.T) {
 	out := renderLayout(t, layouts, "/page.html")
 	require.Contains(t, out, "page-content")
 }
+
+func TestExpandBlockName(t *testing.T) {
+	tests := []struct {
+		sourceID string
+		content  string
+		want     string
+	}{
+		{"/components/button.html", "{{block $name()}}", "{{block components_button()}}"},
+		{"card.html", "_style_$name", "_style_card"},
+		{"/a/b/c.html", "$name", "a_b_c"},
+		// escape: $$name → literal $name
+		{"button.html", "var $$name = 1;", "var $name = 1;"},
+		// no $name → unchanged
+		{"button.html", "no placeholder", "no placeholder"},
+		// both in same string
+		{"button.html", "$name and $$name", "button and $name"},
+	}
+	for _, tt := range tests {
+		got := expandBlockName(tt.content, tt.sourceID)
+		if got != tt.want {
+			t.Errorf("expandBlockName(%q, %q) = %q, want %q", tt.sourceID, tt.content, got, tt.want)
+		}
+	}
+}
