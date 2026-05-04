@@ -54,7 +54,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
       - DEV=true # sign in code 000000
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
@@ -153,6 +153,128 @@ services:
       - ./testdata/seedvault:/app/testdata/seedvault:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20092/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Peer instance 2 for MCP federation e2e tests.
+  app-peer2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-test-app-peer2
+    depends_on:
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+    ports:
+      - "20093:20093"
+      - "20094:20094"
+    environment:
+      # Server
+      - LISTEN_ADDR=0.0.0.0:20093
+      - INTERNAL_LISTEN_ADDR=:20094
+      - DB_FILE=/data/peer2.sqlite3
+      - DEV=true
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
+
+      # MinIO (shared instance, separate prefix)
+      - MINIO_ENDPOINT=minio:29000
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_PREFIX=peer2/
+      - MINIO_USE_SSL=false
+
+      # Public URL (docker-internal so hub can reach peer)
+      - PUBLIC_URL=http://app-peer2:20093
+
+      # JWT
+      - JWT_SECRET=test-peer2-secret-key-do-not-use
+      - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer2
+
+      # Git API (seedvault2)
+      - GIT_API_REPO_PATH=/app/testdata/seedvault2
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock)
+      - RESEND_API_KEY=test-key
+      - MAIL_FROM=test@example.com
+
+      # MCP federation
+      - MCP_FEDERATION_MAX_DEPTH=3
+    volumes:
+      - ./tmp/data:/data
+      - ./testdata/seedvault2:/app/testdata/seedvault2:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20094/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Peer instance 3 for MCP federation e2e tests.
+  app-peer3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-test-app-peer3
+    depends_on:
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+    ports:
+      - "20095:20095"
+      - "20096:20096"
+    environment:
+      # Server
+      - LISTEN_ADDR=0.0.0.0:20095
+      - INTERNAL_LISTEN_ADDR=:20096
+      - DB_FILE=/data/peer3.sqlite3
+      - DEV=true
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
+
+      # MinIO (shared instance, separate prefix)
+      - MINIO_ENDPOINT=minio:29000
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_PREFIX=peer3/
+      - MINIO_USE_SSL=false
+
+      # Public URL (docker-internal so hub can reach peer)
+      - PUBLIC_URL=http://app-peer3:20095
+
+      # JWT
+      - JWT_SECRET=test-peer3-secret-key-do-not-use
+      - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer3
+
+      # Git API (seedvault3)
+      - GIT_API_REPO_PATH=/app/testdata/seedvault3
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock)
+      - RESEND_API_KEY=test-key
+      - MAIL_FROM=test@example.com
+
+      # MCP federation
+      - MCP_FEDERATION_MAX_DEPTH=3
+    volumes:
+      - ./tmp/data:/data
+      - ./testdata/seedvault3:/app/testdata/seedvault3:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20096/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
