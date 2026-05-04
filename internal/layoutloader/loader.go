@@ -158,13 +158,17 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		jl.log.Debug("detect blocks", "count", len(blockWalker.blocks))
 
 		assets := []model.LayoutAsset{}
+		seenAsset := make(map[string]struct{})
 
 		dir := filepath.Dir(source.Path)
 
 		for _, assetPath := range assetWalker.List {
-			assets = append(assets, model.LayoutAsset{
-				Path: filepath.Join(dir, assetPath),
-			})
+			full := filepath.Join(dir, assetPath)
+			if _, dup := seenAsset[full]; dup {
+				continue
+			}
+			seenAsset[full] = struct{}{}
+			assets = append(assets, model.LayoutAsset{Path: full})
 		}
 
 		var warnings []model.NoteWarning
