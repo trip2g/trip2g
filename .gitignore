@@ -57,5 +57,7 @@ docs/.obsidian
 docs/.sync-state.json
 .omx/
 /testdata/seedvault/.sync-state.json
+/testdata/seedvault2/.sync-state.json
+/testdata/seedvault3/.sync-state.json
 /docs/knowlume
 *.swp
