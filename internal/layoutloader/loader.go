@@ -251,6 +251,28 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string)
 	}
 	jl.templates[source.ID] = expandBlockName(content, source.ID)
 
+	// Auto-import: BFS the page's yield calls and inject component definitions
+	// via a {{if false}}...{{end}} preamble so that {{ yield component() }} resolves
+	// even without an explicit {{ import "component" }} in the page.
+	//
+	// We do this with a tmpViews set that uses the same loader. The preamble is
+	// injected by temporarily rewriting jl.templates[source.ID]; deferred restore
+	// ensures the original content is preserved for any subsequent re-reads.
+	originalContent := jl.templates[source.ID]
+	preambleApplied := false
+	defer func() {
+		if preambleApplied {
+			jl.templates[source.ID] = originalContent
+		}
+	}()
+	if preamble := jl.buildAutoImportPreamble(source.ID); preamble != "" {
+		// Jet requires {{ import }} statements at the very top of the template.
+		// Insert the preamble AFTER any leading import statements in the original
+		// content so we don't break explicit imports the page might already have.
+		jl.templates[source.ID] = injectAfterLeadingImports(originalContent, preamble)
+		preambleApplied = true
+	}
+
 	views := jet.NewSet(jl, jet.DevelopmentMode(true))
 
 	sourceDir := filepath.Dir(source.Path)

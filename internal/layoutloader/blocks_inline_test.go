@@ -145,6 +145,57 @@ func TestYieldBlocks_PageBlocksNotInRegistry(t *testing.T) {
 	require.Contains(t, out, "page-content")
 }
 
+// TestAutoImport_YieldWithoutExplicitImport verifies that a page can {{ yield X() }}
+// a block defined in a sibling component file WITHOUT an explicit {{ import }}.
+// This is the core auto-import contract: HTML blocks (not just CSS via yield_blocks)
+// must be available transparently.
+func TestAutoImport_YieldWithoutExplicitImport(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/mesh/ru_index",
+			Path: "mesh/ru_index.html",
+			// No explicit {{ import "/mesh/bar" }} — yield must still resolve.
+			Content: `<html><body>{{yield mesh_bar_ru()}}</body></html>`,
+		},
+		{
+			ID:      "/mesh/bar",
+			Path:    "mesh/bar.html",
+			Content: `{{block mesh_bar_ru()}}<header class="bar-ru">RU</header>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/mesh/ru_index")
+	require.Contains(t, out, `<header class="bar-ru">RU</header>`,
+		"yield mesh_bar_ru() must resolve via auto-import (no explicit import statement)")
+}
+
+// TestAutoImport_TransitiveYield verifies that auto-import follows transitive
+// yields: page yields A, A yields B, B's block must be parsed too.
+func TestAutoImport_TransitiveYield(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:      "/page",
+			Path:    "page.html",
+			Content: `<html>{{yield outer()}}</html>`,
+		},
+		{
+			ID:      "/comp_outer",
+			Path:    "comp_outer.html",
+			Content: `{{block outer()}}<div class="outer">{{yield inner()}}</div>{{end}}`,
+		},
+		{
+			ID:      "/comp_inner",
+			Path:    "comp_inner.html",
+			Content: `{{block inner()}}<span class="inner">x</span>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page")
+	require.Contains(t, out, `<div class="outer">`)
+	require.Contains(t, out, `<span class="inner">x</span>`,
+		"transitive yield must be resolved via BFS auto-import")
+}
+
 func TestExpandBlockName_Integration(t *testing.T) {
 	// Regression: jl.load() must apply expandBlockName so that @lid placeholders
 	// are resolved before Jet parses the template. Without the fix, block @lid()
