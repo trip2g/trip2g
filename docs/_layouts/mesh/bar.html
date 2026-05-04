@@ -5,18 +5,22 @@
   font-size: 11px;
   letter-spacing: 0.06em;
 }
-.mesh-bar > * { padding: 12px 16px; border-right: 1px solid var(--rule); }
-.mesh-bar > *:last-child { border-right: 0; }
-.mesh-bar__prompt { color: var(--accent); font-weight: 700; letter-spacing: 0.1em; }
+.mesh-bar__prompt {
+  padding: 12px 16px; border-right: 1px solid var(--rule);
+  color: var(--accent); font-weight: 700; letter-spacing: 0.1em;
+}
 .mesh-bar__prompt b { color: var(--fg); }
-.mesh-bar__pill { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.mesh-bar__pill {
+  padding: 12px 16px; border-right: 1px solid var(--rule);
+  display: inline-flex; align-items: center; gap: 8px; color: var(--muted);
+}
 .mesh-bar__pill-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
 }
-.mesh-bar__spacer { flex: 1; border-right: 1px solid var(--rule); padding: 0; }
-.mesh-bar__nav { display: flex; padding: 0; }
+.mesh-bar__spacer { flex: 1; border-right: 1px solid var(--rule); }
+.mesh-bar__nav { display: flex; }
 .mesh-bar__nav-link {
   padding: 12px 14px;
   color: var(--fg); text-decoration: none;

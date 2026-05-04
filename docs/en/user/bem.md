@@ -16,6 +16,12 @@ BEM stands for Block, Element, Modifier. Every class name is one of three things
 
 That's the entire system. No nesting in the names, no context-dependent selectors.
 
+Key rules:
+
+- **Flat element names** — never encode DOM depth in the class name: `.card__body` not `.card__content__body`
+- **No global modifiers** — `.card--hidden` not `.hidden` (global classes collide across components)
+- **Mixin** — one element can carry two block classes: `class="button nav__item"` applies both blocks' styles
+
 ### Why trip2g templates use BEM
 
 Template components are loaded independently and their CSS is assembled per-page by `yield_blocks`. Without a naming convention, two components can easily define `.title` or `.wrapper` and overwrite each other.
