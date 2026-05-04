@@ -258,7 +258,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			noteSg.RequireSignin = dbSg.RequireSignin
 		}
 	}
-
 	l.log.Debug("load layouts")
 
 	layoutOptions := layoutloader.Options{

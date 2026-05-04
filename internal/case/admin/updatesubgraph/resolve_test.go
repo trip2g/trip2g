@@ -18,9 +18,12 @@ import (
 type Env interface {
 	UpdateAdminSubgraph(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	PrepareLiveNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
 type envMock = EnvMock
+
+func noopPrepareLive(_ context.Context) (*appmodel.NoteViews, error) { return nil, nil }
 
 func TestResolve(t *testing.T) {
 	tests := []struct {
@@ -39,7 +42,10 @@ func TestResolve(t *testing.T) {
 				RequireSignin: true,
 			},
 			env: &envMock{
-				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
+				},
+				PrepareLiveNotesFunc: noopPrepareLive,
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{
 						ID:            123,
@@ -63,7 +69,10 @@ func TestResolve(t *testing.T) {
 				Color: "",
 			},
 			env: &envMock{
-				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
+				},
+				PrepareLiveNotesFunc: noopPrepareLive,
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{
 						ID: 456,
@@ -83,7 +92,10 @@ func TestResolve(t *testing.T) {
 				Color: "#00ff00",
 			},
 			env: &envMock{
-				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) { return nil, nil },
+				PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+					return nil, nil
+				},
+				PrepareLiveNotesFunc: noopPrepareLive,
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{}, errors.New("database error")
 				},
@@ -120,6 +132,34 @@ func TestResolve(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestResolve_ReloadsBothNoteLoaders verifies that Resolve reloads both the
+// latest and live note loaders after updating a subgraph. Without reloading
+// the live loader, guests served via LiveNoteViews() would not see the updated
+// RequireSignin flag (e.g. sign-in wall would not trigger).
+func TestResolve_ReloadsBothNoteLoaders(t *testing.T) {
+	latestCalled := false
+	liveCalled := false
+
+	env := &envMock{
+		UpdateAdminSubgraphFunc: func(_ context.Context, _ db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
+			return db.Subgraph{ID: 1}, nil
+		},
+		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			latestCalled = true
+			return nil, nil
+		},
+		PrepareLiveNotesFunc: func(_ context.Context) (*appmodel.NoteViews, error) {
+			liveCalled = true
+			return nil, nil
+		},
+	}
+
+	_, err := updatesubgraph.Resolve(context.Background(), env, model.UpdateSubgraphInput{ID: 1})
+	require.NoError(t, err)
+	require.True(t, latestCalled, "PrepareLatestNotes must be called")
+	require.True(t, liveCalled, "PrepareLiveNotes must be called — live loader serves guest requests")
 }
 
 func stringPtr(s string) *string {

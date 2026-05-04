@@ -11,6 +11,7 @@ import (
 type Env interface {
 	UpdateAdminSubgraph(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	PrepareLiveNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
 type Input = model.UpdateSubgraphInput
@@ -33,9 +34,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to update subgraph: %w", err)
 	}
 
-	// Reload notes so noteloader re-enriches NoteSubgraph.RequireSignin from DB.
+	// Reload both note loaders so NoteSubgraph.RequireSignin is refreshed.
+	// PrepareLatestNotes updates the draft/admin view; PrepareLiveNotes updates
+	// the published view used by guest requests via LiveNoteViews().
 	if _, err = env.PrepareLatestNotes(ctx, true); err != nil {
-		return nil, fmt.Errorf("failed to reload notes after subgraph update: %w", err)
+		return nil, fmt.Errorf("failed to reload latest notes after subgraph update: %w", err)
+	}
+	if _, err = env.PrepareLiveNotes(ctx); err != nil {
+		return nil, fmt.Errorf("failed to reload live notes after subgraph update: %w", err)
 	}
 
 	response := model.UpdateSubgraphPayload{

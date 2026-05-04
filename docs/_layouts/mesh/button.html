@@ -1,18 +1,16 @@
 {{ block _style_@lid() }}
 .@did {
-  display: inline-flex; align-items: center;
-  padding: 10px 20px;
+  padding: 14px 22px;
   border: 1px solid var(--fg);
   color: var(--fg); text-decoration: none;
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--mono);
 }
-.@did:hover { background: var(--fg); color: var(--bg); }
-.@did--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.@did--primary:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .@did + .@did { border-left: 0; }
+.@did--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.@did:hover:not(.@did--primary) { background: var(--fg); color: var(--bg); }
 {{ end }}
 
 {{ block @lid(label="", href="", variant="", modifier="", target="") }}

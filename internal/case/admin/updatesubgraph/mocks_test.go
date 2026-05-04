@@ -24,6 +24,9 @@ var _ updatesubgraph.Env = &EnvMock{}
 //			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
 //			},
+//			PrepareLiveNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+//				panic("mock out the PrepareLiveNotes method")
+//			},
 //			UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 //				panic("mock out the UpdateAdminSubgraph method")
 //			},
@@ -37,6 +40,9 @@ type EnvMock struct {
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
 	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 
+	// PrepareLiveNotesFunc mocks the PrepareLiveNotes method.
+	PrepareLiveNotesFunc func(ctx context.Context) (*appmodel.NoteViews, error)
+
 	// UpdateAdminSubgraphFunc mocks the UpdateAdminSubgraph method.
 	UpdateAdminSubgraphFunc func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
 
@@ -49,6 +55,11 @@ type EnvMock struct {
 			// Partial is the partial argument value.
 			Partial bool
 		}
+		// PrepareLiveNotes holds details about calls to the PrepareLiveNotes method.
+		PrepareLiveNotes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// UpdateAdminSubgraph holds details about calls to the UpdateAdminSubgraph method.
 		UpdateAdminSubgraph []struct {
 			// Ctx is the ctx argument value.
@@ -58,6 +69,7 @@ type EnvMock struct {
 		}
 	}
 	lockPrepareLatestNotes  sync.RWMutex
+	lockPrepareLiveNotes    sync.RWMutex
 	lockUpdateAdminSubgraph sync.RWMutex
 }
 
@@ -94,6 +106,38 @@ func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
 	mock.lockPrepareLatestNotes.RLock()
 	calls = mock.calls.PrepareLatestNotes
 	mock.lockPrepareLatestNotes.RUnlock()
+	return calls
+}
+
+// PrepareLiveNotes calls PrepareLiveNotesFunc.
+func (mock *EnvMock) PrepareLiveNotes(ctx context.Context) (*appmodel.NoteViews, error) {
+	if mock.PrepareLiveNotesFunc == nil {
+		panic("EnvMock.PrepareLiveNotesFunc: method is nil but Env.PrepareLiveNotes was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockPrepareLiveNotes.Lock()
+	mock.calls.PrepareLiveNotes = append(mock.calls.PrepareLiveNotes, callInfo)
+	mock.lockPrepareLiveNotes.Unlock()
+	return mock.PrepareLiveNotesFunc(ctx)
+}
+
+// PrepareLiveNotesCalls gets all the calls that were made to PrepareLiveNotes.
+// Check the length with:
+//
+//	len(mockedEnv.PrepareLiveNotesCalls())
+func (mock *EnvMock) PrepareLiveNotesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockPrepareLiveNotes.RLock()
+	calls = mock.calls.PrepareLiveNotes
+	mock.lockPrepareLiveNotes.RUnlock()
 	return calls
 }
 
