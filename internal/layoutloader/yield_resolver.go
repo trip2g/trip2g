@@ -15,6 +15,10 @@ func (w *blockNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
+	// Fix jet panic: YieldNode.Parameters can be nil for partially-parsed templates.
+	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
+		y.Parameters = &jet.BlockParameterList{}
+	}
 	if b, ok := node.(*jet.BlockNode); ok {
 		w.names = append(w.names, b.Name)
 	}
@@ -28,8 +32,13 @@ func (w *yieldNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
-	if y, ok := node.(*jet.YieldNode); ok && !y.IsContent {
-		w.names = append(w.names, y.Name)
+	if y, ok := node.(*jet.YieldNode); ok {
+		if y.Parameters == nil {
+			y.Parameters = &jet.BlockParameterList{}
+		}
+		if !y.IsContent {
+			w.names = append(w.names, y.Name)
+		}
 	}
 	vc.Visit(node)
 }

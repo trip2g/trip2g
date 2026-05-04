@@ -840,6 +840,9 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
 	}
 
 	params := mcp.CallToolParams{
@@ -1051,6 +1054,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return nil
+			},
 		}
 
 		params := mcp.CallToolParams{
@@ -1094,6 +1100,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return nil
 			},
 		}
 

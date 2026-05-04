@@ -1,5 +1,5 @@
-{{ block _style_$fileID() }}
-.mesh-philo {
+{{ block _style_@lid() }}
+.@did {
   padding: 32px 40px;
   border-bottom: 1px solid var(--rule);
   display: grid;
@@ -7,20 +7,20 @@
   gap: 32px;
   align-items: baseline;
 }
-.mesh-philo__eyebrow {
+.@did__eyebrow {
   font-family: var(--mono); font-size: 10px;
   letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--muted);
 }
-.mesh-philo__eyebrow::before { content: "// "; color: var(--accent); }
-.mesh-philo__text {
+.@did__eyebrow::before { content: "// "; color: var(--accent); }
+.@did__text {
   font-family: var(--sans); font-size: 17px; line-height: 1.5;
   letter-spacing: -0.005em;
   color: color-mix(in oklab, var(--fg) 92%, transparent);
   margin: 0;
   max-width: 64ch;
 }
-.mesh-philo__text em {
+.@did__text em {
   font-style: normal;
   background: var(--accent);
   color: var(--bg);
@@ -29,38 +29,38 @@
   font-size: 0.78em;
   padding: 0 0.18em;
 }
-.mesh-philo__link {
+.@did__link {
   color: var(--accent); text-decoration: none;
   font-family: var(--mono); font-size: 12px;
   letter-spacing: 0.06em; text-transform: uppercase;
   margin-left: 6px;
 }
-.mesh-philo__link:hover { color: var(--fg); }
+.@did__link:hover { color: var(--fg); }
 @media (max-width: 900px) {
-  .mesh-philo { grid-template-columns: 1fr; padding: 24px 20px; }
+  .@did { grid-template-columns: 1fr; padding: 24px 20px; }
 }
 {{ end }}
 
-{{ block $fileID() }}
-<section class="mesh-philo">
-  <div class="mesh-philo__eyebrow">philosophy</div>
-  <p class="mesh-philo__text">
+{{ block @lid() }}
+<section class="@did">
+  <div class="@did__eyebrow">philosophy</div>
+  <p class="@did__text">
     A second brain isn't one person's vault — it's the shared knowledge of people who think about
     the same things. trip2g doesn't own that knowledge; it gives every person and every community
     a way to connect their bases and stay in control.
-    <a href="#" class="mesh-philo__link">read full →</a>
+    <a href="#" class="@did__link">read full →</a>
   </p>
 </section>
 {{ end }}
 
-{{ block $fileID_ru() }}
-<section class="mesh-philo">
-  <div class="mesh-philo__eyebrow">философия</div>
-  <p class="mesh-philo__text">
+{{ block @lid_ru() }}
+<section class="@did">
+  <div class="@did__eyebrow">философия</div>
+  <p class="@did__text">
     Второй мозг — это не личный vault. Это общие знания людей которые думают об одном.
     trip2g не владеет этими знаниями — он даёт каждому человеку и каждому сообществу
     способ объединить свои базы и оставаться под контролем.
-    <a href="#" class="mesh-philo__link">читать полностью →</a>
+    <a href="#" class="@did__link">читать полностью →</a>
   </p>
 </section>
 {{ end }}

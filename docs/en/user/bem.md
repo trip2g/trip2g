@@ -105,31 +105,31 @@ Avoid generic class names inside component CSS blocks — they will conflict the
 {{end}}
 ```
 
-### Using `$fileID` to guarantee unique block names
+### Using `@lid` / `@did` to guarantee unique block names
 
 Block names in Jet are global. If two component files both define a block called `hero`, one silently overwrites the other. This can happen in any multi-component project — BEM scopes CSS class names, but it does not scope Jet block names.
 
-`$fileID` solves this at the block-name level. Before parsing, the engine replaces `$fileID` in block names with a sanitized version of the file path:
+`@lid` solves this at the block-name level. Before parsing, the engine replaces `@lid` in block names with a sanitized version of the file path (underscores). `@did` does the same with hyphens, for use in CSS class names:
 
-- `components/button.html` → `$fileID` = `components_button`
-- `ui/nav/header.html` → `$fileID` = `ui_nav_header`
+- `components/button.html` → `@lid` = `components_button`, `@did` = `components-button`
+- `ui/nav/header.html` → `@lid` = `ui_nav_header`, `@did` = `ui-nav-header`
 
-The recommended pattern combines BEM class names with `$fileID` block names:
+The recommended pattern combines BEM class names using `@did` with `@lid` block names:
 
 ```html
-{{block _style_$fileID()}}
-.button { display: inline-flex; padding: 8px 20px; }
-.button--primary { background: #0070f3; color: #fff; }
+{{block _style_@lid()}}
+.@did { display: inline-flex; padding: 8px 20px; }
+.@did--primary { background: #0070f3; color: #fff; }
 {{end}}
 
-{{block $fileID(label="Click", variant="")}}
-<button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
+{{block @lid(label="Click", variant="")}}
+<button class="@did{{if variant}} @did--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
-BEM keeps CSS classes unique across the page. `$fileID` keeps Jet block names unique across all component files. Use both together in every component file.
+BEM keeps CSS classes unique across the page. `@lid` keeps Jet block names unique across all component files. Use both together in every component file.
 
 ### Related
 
-- [[en/user/yield_blocks|yield_blocks: per-page CSS and JS]] — how style blocks are collected and emitted, and the full `$fileID` reference
+- [[en/user/yield_blocks|yield_blocks: per-page CSS and JS]] — how style blocks are collected and emitted, and the full `@lid`/`@did` reference
 - [[en/user/templates|Custom templates]] — template basics and Jet syntax

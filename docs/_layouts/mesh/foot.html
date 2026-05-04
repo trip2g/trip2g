@@ -1,27 +1,27 @@
-{{ block _style_$fileID() }}
-.mesh-foot {
+{{ block _style_@lid() }}
+.@did {
   padding: 32px 40px;
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr 1fr;
   gap: 32px;
   border-bottom: 1px solid var(--rule);
 }
-.mesh-foot__heading {
+.@did__heading {
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--muted); margin: 0 0 12px; font-weight: 500;
 }
-.mesh-foot__list { list-style: none; padding: 0; margin: 0; }
-.mesh-foot__item { margin: 0 0 8px; }
-.mesh-foot__link {
+.@did__list { list-style: none; padding: 0; margin: 0; }
+.@did__item { margin: 0 0 8px; }
+.@did__link {
   color: var(--fg); text-decoration: none;
   font-size: 13px; font-family: var(--mono);
 }
-.mesh-foot__link:hover { color: var(--accent); }
-.mesh-foot__about {
+.@did__link:hover { color: var(--accent); }
+.@did__about {
   font-family: var(--sans); font-size: 13px; line-height: 1.5;
   color: var(--muted); margin: 0;
 }
-.mesh-foot__cta {
+.@did__cta {
   display: inline-block;
   margin-top: 16px;
   padding: 14px 22px;
@@ -32,93 +32,93 @@
   text-transform: uppercase;
   font-family: var(--mono);
 }
-.mesh-foot__cta:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-.mesh-foot__coda {
+.@did__cta:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.@did__coda {
   padding: 14px 40px;
   font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--muted);
   display: flex; justify-content: space-between;
 }
 @media (max-width: 900px) {
-  .mesh-foot { grid-template-columns: 1fr 1fr; padding: 24px 20px; }
+  .@did { grid-template-columns: 1fr 1fr; padding: 24px 20px; }
 }
 {{ end }}
 
-{{ block $fileID() }}
-<footer class="mesh-foot">
+{{ block @lid() }}
+<footer class="@did">
   <div>
-    <h4 class="mesh-foot__heading">// trip2g</h4>
-    <p class="mesh-foot__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
-    <a class="mesh-foot__cta" href="/simple">start →</a>
+    <h4 class="@did__heading">// trip2g</h4>
+    <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
+    <a class="@did__cta" href="/simple">start →</a>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Philosophy</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/thoughts/three_zones">/three_zones</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/thoughts/why_not_book">/why_not_book</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+    <h4 class="@did__heading">Philosophy</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/three_zones">/three_zones</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/why_not_book">/why_not_book</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Docs</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/user/getting_started">/getting-started</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/user/federation">/federation</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/user/telegram">/telegram</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/en/user/webhooks">/webhooks</a></li>
+    <h4 class="@did__heading">Docs</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/en/user/getting_started">/getting-started</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/federation">/federation</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/telegram">/telegram</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/webhooks">/webhooks</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Contact</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+    <h4 class="@did__heading">Contact</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+      <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
     </ul>
   </div>
 </footer>
-<div class="mesh-foot__coda">
+<div class="@did__coda">
   <span>© trip2g.com · 2026 · MIT</span>
   <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
 </div>
 {{ end }}
 
-{{ block $fileID_ru() }}
-<footer class="mesh-foot">
+{{ block @lid_ru() }}
+<footer class="@did">
   <div>
-    <h4 class="mesh-foot__heading">// trip2g</h4>
-    <p class="mesh-foot__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
-    <a class="mesh-foot__cta" href="/ru/simple">начать →</a>
+    <h4 class="@did__heading">// trip2g</h4>
+    <p class="@did__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
+    <a class="@did__cta" href="/ru/simple">начать →</a>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Философия</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/thoughts/knowledge_graph">/knowledge_graph</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/thoughts/three_zones">/three_zones</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/thoughts/why_not_book">/why_not_book</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+    <h4 class="@did__heading">Философия</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/knowledge_graph">/knowledge_graph</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/three_zones">/three_zones</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/why_not_book">/why_not_book</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Документация</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/user/nachalo_rabotyi">/getting-started</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/user/federation">/federation</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/user/telegram">/telegram</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="/ru/user/webhooks">/webhooks</a></li>
+    <h4 class="@did__heading">Документация</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/ru/user/nachalo_rabotyi">/getting-started</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/user/federation">/federation</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/user/telegram">/telegram</a></li>
+      <li class="@did__item"><a class="@did__link" href="/ru/user/webhooks">/webhooks</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="mesh-foot__heading">Контакты</h4>
-    <ul class="mesh-foot__list">
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-      <li class="mesh-foot__item"><a class="mesh-foot__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+    <h4 class="@did__heading">Контакты</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+      <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
     </ul>
   </div>
 </footer>
-<div class="mesh-foot__coda">
+<div class="@did__coda">
   <span>© trip2g.com · 2026 · MIT</span>
   <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
 </div>

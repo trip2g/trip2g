@@ -299,7 +299,9 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	l.Lock()
 	l.nvs = nvs
-	l.searchIndex = searchIndex
+	if !options.SkipSearchIndex {
+		l.searchIndex = searchIndex
+	}
 	l.layouts = layouts
 	l.chunks = chunks
 	l.Unlock()

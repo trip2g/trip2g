@@ -1,21 +1,21 @@
-{{ block _style_$fileID() }}
-.mesh-hero {
+{{ block _style_@lid() }}
+.@did {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
   border-bottom: 1px solid var(--rule);
 }
-.mesh-hero__left {
+.@did__left {
   padding: 56px 40px 40px;
   border-right: 1px solid var(--rule);
 }
-.mesh-hero__eyebrow {
+.@did__eyebrow {
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
 }
-.mesh-hero__eyebrow::before { content: "// "; color: var(--accent); }
-.mesh-hero__title {
+.@did__eyebrow::before { content: "// "; color: var(--accent); }
+.@did__title {
   font-family: var(--sans);
   font-weight: 800;
   font-size: 60px;
@@ -23,7 +23,7 @@
   letter-spacing: -0.025em;
   margin: 18px 0 0;
 }
-.mesh-hero__title-hl {
+.@did__title-hl {
   background: var(--accent);
   color: var(--bg);
   font-family: var(--mono);
@@ -31,7 +31,7 @@
   font-size: 0.78em;
   padding: 0 0.18em;
 }
-.mesh-hero__blurb {
+.@did__blurb {
   margin: 28px 0 0;
   font-family: var(--sans);
   font-size: 15px;
@@ -39,8 +39,8 @@
   max-width: 46ch;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
-.mesh-hero__cta-row { margin-top: 28px; display: flex; }
-.mesh-hero__cta {
+.@did__cta-row { margin-top: 28px; display: flex; }
+.@did__cta {
   padding: 14px 22px;
   border: 1px solid var(--fg);
   color: var(--fg); text-decoration: none;
@@ -49,24 +49,24 @@
   text-transform: uppercase;
   font-family: var(--mono);
 }
-.mesh-hero__cta + .mesh-hero__cta { border-left: 0; }
-.mesh-hero__cta--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.mesh-hero__cta:hover:not(.mesh-hero__cta--primary) { background: var(--fg); color: var(--bg); }
-.mesh-hero__right {
+.@did__cta + .@did__cta { border-left: 0; }
+.@did__cta--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.@did__cta:hover:not(.@did__cta--primary) { background: var(--fg); color: var(--bg); }
+.@did__right {
   padding: 18px;
   display: grid;
   grid-template-rows: 1fr auto;
   gap: 14px;
   min-height: 540px;
 }
-.mesh-hero__frame {
+.@did__frame {
   border: 1px solid var(--rule);
   background: rgba(245,245,242,0.02);
   padding: 14px 16px;
   display: grid;
   grid-template-rows: auto 1fr;
 }
-.mesh-hero__frame-head {
+.@did__frame-head {
   display: flex; justify-content: space-between; align-items: center;
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -76,15 +76,15 @@
   border-bottom: 1px dashed var(--rule);
   margin-bottom: 10px;
 }
-.mesh-hero__live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-.mesh-hero__live::before {
+.@did__live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.@did__live::before {
   content: ""; width: 6px; height: 6px; background: var(--accent);
   animation: mesh-hero-blink 1.4s steps(2) infinite;
 }
 @keyframes mesh-hero-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.2; } }
-.mesh-hero__frame--graph svg { width: 100%; height: auto; min-height: 320px; display: block; }
-.mesh-hero__frame--trace { min-height: 200px; }
-.mesh-hero__trace-stream {
+.@did__frame--graph svg { width: 100%; height: auto; min-height: 320px; display: block; }
+.@did__frame--trace { min-height: 200px; }
+.@did__trace-stream {
   font-size: 11.5px;
   line-height: 1.55;
   color: var(--muted);
@@ -92,88 +92,88 @@
   overflow: hidden;
 }
 /* JS in _blocks.html injects elements with these legacy class names; keep them targetable. */
-.mesh-hero__trace-stream .log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
-.mesh-hero__trace-stream .log-line.is-on { opacity: 1; color: var(--fg); }
-.mesh-hero__trace-stream .log-num { color: var(--accent); font-weight: 700; }
-.mesh-hero__graph svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
-.mesh-hero__graph .mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
-.mesh-hero__graph .mg-pipe-flow {
+.@did__trace-stream .log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
+.@did__trace-stream .log-line.is-on { opacity: 1; color: var(--fg); }
+.@did__trace-stream .log-num { color: var(--accent); font-weight: 700; }
+.@did__graph svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
+.@did__graph .mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
+.@did__graph .mg-pipe-flow {
   stroke: var(--muted-2); stroke-width: 1;
   stroke-dasharray: 5 7;
   opacity: 0.5;
   animation: mesh-hero-dashflow 1.6s linear infinite;
 }
-.mesh-hero__graph .mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.9; }
+.@did__graph .mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.9; }
 @keyframes mesh-hero-dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
 @media (max-width: 900px) {
-  .mesh-hero { grid-template-columns: 1fr; }
-  .mesh-hero__right { display: none; }
-  .mesh-hero__left { padding: 32px 20px 28px; border-right: 0; }
-  .mesh-hero__title { font-size: 38px; }
+  .@did { grid-template-columns: 1fr; }
+  .@did__right { display: none; }
+  .@did__left { padding: 32px 20px 28px; border-right: 0; }
+  .@did__title { font-size: 38px; }
 }
 {{ end }}
 
-{{ block $fileID() }}
-<section class="mesh-hero">
-  <div class="mesh-hero__left">
-    <div class="mesh-hero__eyebrow">Your second brain was always meant to be shared.</div>
-    <h1 class="mesh-hero__title">Join the network.<br>Your agents will<br>find the rest.</h1>
-    <p class="mesh-hero__blurb">
+{{ block @lid() }}
+<section class="@did">
+  <div class="@did__left">
+    <div class="@did__eyebrow">Your second brain was always meant to be shared.</div>
+    <h1 class="@did__title">Join the network.<br>Your agents will<br>find the rest.</h1>
+    <p class="@did__blurb">
       You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent — let's add it to the network. Your piece is the last missing part of the puzzle.
     </p>
-    <div class="mesh-hero__cta-row">
-      <a class="mesh-hero__cta mesh-hero__cta--primary" href="/simple">start →</a>
-      <a class="mesh-hero__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-      <a class="mesh-hero__cta" href="/en/user">docs</a>
+    <div class="@did__cta-row">
+      <a class="@did__cta mesh-hero__cta--primary" href="/simple">start →</a>
+      <a class="@did__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+      <a class="@did__cta" href="/en/user">docs</a>
     </div>
   </div>
-  <div class="mesh-hero__right">
-    <div class="mesh-hero__frame mesh-hero__frame--graph mesh-hero__graph">
-      <div class="mesh-hero__frame-head">
+  <div class="@did__right">
+    <div class="@did__frame mesh-hero__frame--graph mesh-hero__graph">
+      <div class="@did__frame-head">
         <span>fig.01 · mesh.trace · query.route</span>
-        <span class="mesh-hero__live">LIVE</span>
+        <span class="@did__live">LIVE</span>
       </div>
       <div id="mesh-svg-mount"></div>
     </div>
-    <div class="mesh-hero__frame mesh-hero__frame--trace">
-      <div class="mesh-hero__frame-head">
+    <div class="@did__frame mesh-hero__frame--trace">
+      <div class="@did__frame-head">
         <span>stdout · /var/log/mesh.trace</span>
         <span style="color: var(--muted)">tail -f</span>
       </div>
-      <div class="mesh-hero__trace-stream" id="trace-stream"></div>
+      <div class="@did__trace-stream" id="trace-stream"></div>
     </div>
   </div>
 </section>
 {{ end }}
 
-{{ block $fileID_ru() }}
-<section class="mesh-hero">
-  <div class="mesh-hero__left">
-    <div class="mesh-hero__eyebrow">Второй мозг всегда должен был быть общим.</div>
-    <h1 class="mesh-hero__title">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
-    <p class="mesh-hero__blurb">
+{{ block @lid_ru() }}
+<section class="@did">
+  <div class="@did__left">
+    <div class="@did__eyebrow">Второй мозг всегда должен был быть общим.</div>
+    <h1 class="@did__title">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
+    <p class="@did__blurb">
       У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
     </p>
-    <div class="mesh-hero__cta-row">
-      <a class="mesh-hero__cta mesh-hero__cta--primary" href="/ru/simple">начать →</a>
-      <a class="mesh-hero__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-      <a class="mesh-hero__cta" href="/ru/user">документация</a>
+    <div class="@did__cta-row">
+      <a class="@did__cta mesh-hero__cta--primary" href="/ru/simple">начать →</a>
+      <a class="@did__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+      <a class="@did__cta" href="/ru/user">документация</a>
     </div>
   </div>
-  <div class="mesh-hero__right">
-    <div class="mesh-hero__frame mesh-hero__frame--graph mesh-hero__graph">
-      <div class="mesh-hero__frame-head">
+  <div class="@did__right">
+    <div class="@did__frame mesh-hero__frame--graph mesh-hero__graph">
+      <div class="@did__frame-head">
         <span>fig.01 · mesh.trace · query.route</span>
-        <span class="mesh-hero__live">LIVE</span>
+        <span class="@did__live">LIVE</span>
       </div>
       <div id="mesh-svg-mount"></div>
     </div>
-    <div class="mesh-hero__frame mesh-hero__frame--trace">
-      <div class="mesh-hero__frame-head">
+    <div class="@did__frame mesh-hero__frame--trace">
+      <div class="@did__frame-head">
         <span>stdout · /var/log/mesh.trace</span>
         <span style="color: var(--muted)">tail -f</span>
       </div>
-      <div class="mesh-hero__trace-stream" id="trace-stream"></div>
+      <div class="@did__trace-stream" id="trace-stream"></div>
     </div>
   </div>
 </section>

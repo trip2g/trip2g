@@ -145,21 +145,49 @@ func TestYieldBlocks_PageBlocksNotInRegistry(t *testing.T) {
 	require.Contains(t, out, "page-content")
 }
 
+func TestExpandBlockName_Integration(t *testing.T) {
+	// Regression: jl.load() must apply expandBlockName so that @lid placeholders
+	// are resolved before Jet parses the template. Without the fix, block @lid()
+	// stays literal and yield mesh_bar() / yield_blocks("_style_") find nothing.
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/mesh/index",
+			Path: "mesh/index.html",
+			Content: `{{ import "/mesh/bar" }}` + "\n" +
+				`<style>{{yield_blocks("_style_")}}</style>` + "\n" +
+				`{{yield mesh_bar()}}`,
+		},
+		{
+			ID:   "/mesh/bar",
+			Path: "mesh/bar.html",
+			Content: `{{block _style_@lid()}}.bar{}{{end}}` + "\n" +
+				`{{block @lid()}}<header class="bar"></header>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/mesh/index")
+	require.Contains(t, out, ".bar{}", "component CSS must be injected via yield_blocks")
+	require.Contains(t, out, `<header class="bar">`, "component HTML must render via yield mesh_bar()")
+}
+
 func TestExpandBlockName(t *testing.T) {
 	tests := []struct {
 		sourceID string
 		content  string
 		want     string
 	}{
-		{"/components/button.html", "{{block $fileID()}}", "{{block components_button()}}"},
-		{"card.html", "_style_$fileID", "_style_card"},
-		{"/a/b/c.html", "$fileID", "a_b_c"},
-		// escape: $$fileID → literal $fileID
-		{"button.html", "var $$fileID = 1;", "var $fileID = 1;"},
-		// no $fileID → unchanged
+		{"/components/button.html", "{{block @lid()}}", "{{block components_button()}}"},
+		{"card.html", "_style_@lid", "_style_card"},
+		{"/a/b/c.html", "@lid", "a_b_c"},
+		{"/a/b/c.html", "@did", "a-b-c"},
+		// escape: @@lid → literal @lid
+		{"button.html", "var @@lid = 1;", "var @lid = 1;"},
+		// CSS usage with @did
+		{"button.html", ".@did__nav { }", ".button__nav { }"},
+		// no placeholder → unchanged
 		{"button.html", "no placeholder", "no placeholder"},
 		// both in same string
-		{"button.html", "$fileID and $$fileID", "button and $fileID"},
+		{"button.html", "@lid and @@lid", "button and @lid"},
 	}
 	for _, tt := range tests {
 		got := expandBlockName(tt.content, tt.sourceID)

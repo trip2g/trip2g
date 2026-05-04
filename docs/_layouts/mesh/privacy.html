@@ -1,28 +1,28 @@
-{{ block _style_$fileID() }}
-.mesh-privacy {
+{{ block _style_@lid() }}
+.@did {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   border-bottom: 1px solid var(--rule);
 }
-.mesh-privacy__text {
+.@did__text {
   padding: 36px 40px;
   border-right: 1px solid var(--rule);
 }
-.mesh-privacy__title {
+.@did__title {
   font-family: var(--sans);
   font-weight: 800; font-size: 32px; letter-spacing: -0.02em;
   margin: 0 0 16px; line-height: 1.05;
 }
-.mesh-privacy__p {
+.@did__p {
   font-family: var(--sans); font-size: 15px; line-height: 1.55;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
   margin: 0 0 12px;
 }
-.mesh-privacy__list {
+.@did__list {
   list-style: none; padding: 0; margin: 18px 0 0;
   font-family: var(--mono); font-size: 13px;
 }
-.mesh-privacy__item {
+.@did__item {
   padding: 8px 0;
   border-bottom: 1px dashed var(--rule);
   display: grid;
@@ -30,40 +30,40 @@
   gap: 12px;
   align-items: baseline;
 }
-.mesh-privacy__item::before { content: "✓"; color: var(--accent); }
-.mesh-privacy__item-key { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
-.mesh-privacy__diag {
+.@did__item::before { content: "✓"; color: var(--accent); }
+.@did__item-key { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
+.@did__diag {
   padding: 36px 40px;
   display: grid; place-items: center;
 }
-.mesh-privacy__diag svg { width: 100%; max-width: 360px; height: auto; }
+.@did__diag svg { width: 100%; max-width: 360px; height: auto; }
 @media (max-width: 900px) {
-  .mesh-privacy { grid-template-columns: 1fr; }
-  .mesh-privacy__diag { display: none; }
-  .mesh-privacy__text { padding: 24px 20px; border-right: 0; }
+  .@did { grid-template-columns: 1fr; }
+  .@did__diag { display: none; }
+  .@did__text { padding: 24px 20px; border-right: 0; }
 }
 {{ end }}
 
-{{ block $fileID() }}
-<section class="mesh-privacy">
-  <div class="mesh-privacy__text">
-    <h2 class="mesh-privacy__title">Data lives where<br>you put it.</h2>
-    <p class="mesh-privacy__p">
+{{ block @lid() }}
+<section class="@did">
+  <div class="@did__text">
+    <h2 class="@did__title">Data lives where<br>you put it.</h2>
+    <p class="@did__p">
       trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
       pixel, no shadow copy of your notes on someone else's box.
     </p>
-    <p class="mesh-privacy__p">
+    <p class="@did__p">
       Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
     </p>
-    <ul class="mesh-privacy__list">
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">access</span><span>per-base toggle · pause anytime</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">peers</span><span>opt-in only · revocable trust</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">code</span><span>MIT · audit, fork, run</span></li>
+    <ul class="@did__list">
+      <li class="@did__item"><span class="@did__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
+      <li class="@did__item"><span class="@did__item-key">access</span><span>per-base toggle · pause anytime</span></li>
+      <li class="@did__item"><span class="@did__item-key">peers</span><span>opt-in only · revocable trust</span></li>
+      <li class="@did__item"><span class="@did__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
+      <li class="@did__item"><span class="@did__item-key">code</span><span>MIT · audit, fork, run</span></li>
     </ul>
   </div>
-  <div class="mesh-privacy__diag" aria-hidden="true">
+  <div class="@did__diag" aria-hidden="true">
     <svg viewBox="0 0 360 280">
       <!-- your perimeter -->
       <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
@@ -99,26 +99,26 @@
 </section>
 {{ end }}
 
-{{ block $fileID_ru() }}
-<section class="mesh-privacy">
-  <div class="mesh-privacy__text">
-    <h2 class="mesh-privacy__title">Данные хранятся там,<br>где вы решите.</h2>
-    <p class="mesh-privacy__p">
+{{ block @lid_ru() }}
+<section class="@did">
+  <div class="@did__text">
+    <h2 class="@did__title">Данные хранятся там,<br>где вы решите.</h2>
+    <p class="@did__p">
       trip2g — это протокол, а не вендор. Нет центрального сервера, от которого вы зависите,
       нет пикселя аналитики, нет теневой копии ваших заметок на чужом сервере.
     </p>
-    <p class="mesh-privacy__p">
+    <p class="@did__p">
       Каждый хаб владеет своими данными и сам решает — по каждому подключению и каждой базе — что доступно для запросов, а что нет.
     </p>
-    <ul class="mesh-privacy__list">
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">хранение</span><span>ваш диск · ваш S3 · или наш sandbox 100MB</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">доступ</span><span>переключатель на уровне базы · пауза в любой момент</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">peer'ы</span><span>только по согласию · доверие отзывается</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">сеть</span><span>прямое hub ⇄ hub · без relay</span></li>
-      <li class="mesh-privacy__item"><span class="mesh-privacy__item-key">код</span><span>MIT · аудит, форк, запуск</span></li>
+    <ul class="@did__list">
+      <li class="@did__item"><span class="@did__item-key">хранение</span><span>ваш диск · ваш S3 · или наш sandbox 100MB</span></li>
+      <li class="@did__item"><span class="@did__item-key">доступ</span><span>переключатель на уровне базы · пауза в любой момент</span></li>
+      <li class="@did__item"><span class="@did__item-key">peer'ы</span><span>только по согласию · доверие отзывается</span></li>
+      <li class="@did__item"><span class="@did__item-key">сеть</span><span>прямое hub ⇄ hub · без relay</span></li>
+      <li class="@did__item"><span class="@did__item-key">код</span><span>MIT · аудит, форк, запуск</span></li>
     </ul>
   </div>
-  <div class="mesh-privacy__diag" aria-hidden="true">
+  <div class="@did__diag" aria-hidden="true">
     <svg viewBox="0 0 360 280">
       <!-- your perimeter -->
       <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />

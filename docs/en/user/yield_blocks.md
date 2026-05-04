@@ -88,40 +88,41 @@ For JS, place a `<script>` tag the same way:
 
 If `card.html` internally yields `button`, the loader includes `button.html` automatically. You do not need to list dependencies manually — the loader walks the full component graph.
 
-### Block name uniqueness and `$fileID`
+### Block name uniqueness and `@lid` / `@did`
 
 Block names in Jet are **global** across all included files. If `hero.html` and `card.html` both define `{{block hero()}}`, the second definition silently overwrites the first. This is a real risk in multi-component projects where different developers add files independently.
 
-`$fileID` solves this by substituting the file path into block names before parsing. The substitution happens automatically — no configuration needed.
+`@lid` solves this by substituting the file path into block names before parsing. The substitution happens automatically — no configuration needed.
 
-| File path | `$fileID` value |
-|-----------|---------------|
-| `button.html` | `button` |
-| `components/button.html` | `components_button` |
-| `ui/nav/header.html` | `ui_nav_header` |
+| File path | `@lid` value | `@did` value |
+|-----------|-------------|-------------|
+| `button.html` | `button` | `button` |
+| `components/button.html` | `components_button` | `components-button` |
+| `ui/nav/header.html` | `ui_nav_header` | `ui-nav-header` |
 
-Path separators become underscores. The value is derived from the file ID, not the block name.
+`@lid` uses underscores (for Jet block names). `@did` uses hyphens (for BEM CSS class names). Both are derived from the file ID, not the block name.
 
-Use `$fileID` as a suffix in all block names inside a component file:
+Use `@lid` in block names and `@did` in CSS class names:
 
 ```html
-{{block _style_$fileID()}}
-.button { display: inline-flex; padding: 8px 20px; }
+{{block _style_@lid()}}
+.@did { display: inline-flex; padding: 8px 20px; }
+.@did--primary { background: #0070f3; color: #fff; }
 {{end}}
 
-{{block $fileID(label="Click", variant="")}}
-<button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
+{{block @lid(label="Click", variant="")}}
+<button class="@did{{if variant}} @did--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
-For `button.html`, this expands to `_style_button` and `button`. For `components/button.html`, it expands to `_style_components_button` and `components_button`. The `yield_blocks("_style_")` prefix pattern still matches both, because the prefix is checked against the expanded name.
+For `button.html`, this expands to `_style_button`, `.button`, and `button`. For `components/button.html`, it expands to `_style_components_button`, `.components-button`, and `components_button`. The `yield_blocks("_style_")` prefix pattern still matches both, because the prefix is checked against the expanded name.
 
-**Escaping.** If you need the literal string `$fileID` in output — for example, as a JavaScript variable — write `$$fileID`:
+**Escaping.** If you need the literal string `@lid` in output — for example, as a JavaScript variable — write `@@lid`:
 
 ```html
-{{block _js_$fileID()}}
-var $$fileID = document.querySelector('.$fileID-root');
-$$fileID.addEventListener('click', () => { ... });
+{{block _js_@lid()}}
+var @@lid = document.querySelector('.@did-root');
+@@lid.addEventListener('click', () => { ... });
 {{end}}
 ```
 
@@ -129,12 +130,12 @@ After substitution (for `button.html`):
 
 ```html
 {{block _js_button()}}
-var $fileID = document.querySelector('.button-root');
-$fileID.addEventListener('click', () => { ... });
+var @lid = document.querySelector('.button-root');
+@lid.addEventListener('click', () => { ... });
 {{end}}
 ```
 
-`$$fileID` becomes `$fileID` in the output; `$fileID` (single `$`) becomes the file-derived value.
+`@@lid` becomes `@lid` in the output; `@lid` (single `@`) becomes the file-derived value.
 
 ### Warnings
 

@@ -27,7 +27,7 @@ The MCP server turns your knowledge base into an AI consultant. Connect it to an
 | Method | Description |
 |--------|-------------|
 | `search(query)` | Vector search across the knowledge base |
-| `note_html(path)` | Full content of a specific note |
+| `note_html(path, toc_path?)` | Full note or a specific section |
 | `similar(path)` | Notes similar to the given note |
 | `instructions()` | Author-defined AI instructions |
 | `editor_role()` | Answer style instructions |
@@ -104,7 +104,7 @@ Your answers MUST be grounded in the knowledge base content.
 1. search(query) → find relevant notes
 2. Pick the 3 most relevant notes
 3. Ask a clarifying question to confirm direction
-4. Load full content with note_html(path)
+4. Load content with note_html(path) — use toc_path from search results to fetch only the relevant section of long notes
 5. Synthesize an answer through the lens of these notes
 6. Cite sources with links
 ```

@@ -105,31 +105,31 @@ BEM-именование классов внутри этих блоков га�
 {{end}}
 ```
 
-### `$fileID` для уникальности имён блоков
+### `@lid` / `@did` для уникальности имён блоков
 
 Имена блоков в Jet глобальны. Если два файла компонентов оба определяют блок с именем `hero`, один молча перезапишет другой. BEM делает уникальными имена CSS-классов, но не имена блоков Jet.
 
-`$fileID` решает проблему на уровне имён блоков. Перед разбором шаблона движок заменяет `$fileID` в именах блоков на значение, производное от пути к файлу:
+`@lid` решает проблему на уровне имён блоков. Перед разбором шаблона движок заменяет `@lid` на значение с подчёркиваниями, производное от пути к файлу. `@did` делает то же самое с дефисами — для CSS-классов:
 
-- `components/button.html` → `$fileID` = `components_button`
-- `ui/nav/header.html` → `$fileID` = `ui_nav_header`
+- `components/button.html` → `@lid` = `components_button`, `@did` = `components-button`
+- `ui/nav/header.html` → `@lid` = `ui_nav_header`, `@did` = `ui-nav-header`
 
-Рекомендуемый паттерн сочетает BEM-именование классов с `$fileID` в именах блоков:
+Рекомендуемый паттерн сочетает BEM-именование классов через `@did` с `@lid` в именах блоков:
 
 ```html
-{{block _style_$fileID()}}
-.button { display: inline-flex; padding: 8px 20px; }
-.button--primary { background: #0070f3; color: #fff; }
+{{block _style_@lid()}}
+.@did { display: inline-flex; padding: 8px 20px; }
+.@did--primary { background: #0070f3; color: #fff; }
 {{end}}
 
-{{block $fileID(label="Нажмите", variant="")}}
-<button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
+{{block @lid(label="Нажмите", variant="")}}
+<button class="@did{{if variant}} @did--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
-BEM делает уникальными CSS-классы на странице. `$fileID` делает уникальными имена блоков Jet во всех файлах компонентов. Используйте оба подхода в каждом файле компонента.
+BEM делает уникальными CSS-классы на странице. `@lid` делает уникальными имена блоков Jet во всех файлах компонентов. Используйте оба подхода в каждом файле компонента.
 
 ### Смотрите также
 
-- [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]] — как собираются блоки стилей и полная документация по `$fileID`
+- [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]] — как собираются блоки стилей и полная документация по `@lid`/`@did`
 - [[ru/user/templates|Шаблоны]] — основы шаблонов и синтаксис Jet

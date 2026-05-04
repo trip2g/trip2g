@@ -106,7 +106,7 @@ test.describe.serial('Personal tokens', () => {
     const hubJwt = await graphqlSignIn(hubRequest);
     hubCookie = `trip2g_e2e=${hubJwt}`;
 
-    const peerJwt = await graphqlSignIn(peerRequest);
+    const peerJwt = await graphqlSignIn(peerRequest, 'hello@example.com', '111111', { useCache: false });
     peerCookie = `trip2g_e2e_peer=${peerJwt}`;
   });
 

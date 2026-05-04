@@ -88,40 +88,41 @@ _layouts/
 
 Если `card.html` внутри себя вызывает `button`, загрузчик автоматически включает `button.html`. Перечислять зависимости вручную не нужно — загрузчик обходит полный граф компонентов.
 
-### Уникальность имён блоков и `$fileID`
+### Уникальность имён блоков и `@lid` / `@did`
 
 Имена блоков в Jet **глобальны** для всех включённых файлов. Если `hero.html` и `card.html` оба определяют `{{block hero()}}`, второе определение молча перезапишет первое. В проектах с несколькими компонентами, которые разрабатываются независимо, это реальная проблема.
 
-`$fileID` решает её: перед разбором шаблона плейсхолдер автоматически заменяется значением, производным от пути к файлу. Никакой настройки не требуется.
+`@lid` решает её: перед разбором шаблона плейсхолдер автоматически заменяется значением, производным от пути к файлу. Никакой настройки не требуется.
 
-| Путь к файлу | Значение `$fileID` |
-|--------------|-----------------|
-| `button.html` | `button` |
-| `components/button.html` | `components_button` |
-| `ui/nav/header.html` | `ui_nav_header` |
+| Путь к файлу | Значение `@lid` | Значение `@did` |
+|--------------|----------------|----------------|
+| `button.html` | `button` | `button` |
+| `components/button.html` | `components_button` | `components-button` |
+| `ui/nav/header.html` | `ui_nav_header` | `ui-nav-header` |
 
-Разделители пути заменяются на `_`. Значение берётся из ID файла, а не из имени блока.
+`@lid` использует подчёркивания (для имён блоков Jet). `@did` использует дефисы (для BEM CSS-классов). Оба значения берутся из ID файла, а не из имени блока.
 
-Используйте `$fileID` как суффикс во всех именах блоков файла компонента:
+Используйте `@lid` в именах блоков и `@did` в CSS-классах:
 
 ```html
-{{block _style_$fileID()}}
-.button { display: inline-flex; padding: 8px 20px; }
+{{block _style_@lid()}}
+.@did { display: inline-flex; padding: 8px 20px; }
+.@did--primary { background: #0070f3; color: #fff; }
 {{end}}
 
-{{block $fileID(label="Нажмите", variant="")}}
-<button class="button{{if variant}} button--{{variant}}{{end}}">{{label}}</button>
+{{block @lid(label="Нажмите", variant="")}}
+<button class="@did{{if variant}} @did--{{variant}}{{end}}">{{label}}</button>
 {{end}}
 ```
 
-Для `button.html` это раскрывается в `_style_button` и `button`. Для `components/button.html` — в `_style_components_button` и `components_button`. Паттерн `yield_blocks("_style_")` по-прежнему найдёт оба варианта, потому что префикс проверяется по уже раскрытому имени.
+Для `button.html` это раскрывается в `_style_button`, `.button` и `button`. Для `components/button.html` — в `_style_components_button`, `.components-button` и `components_button`. Паттерн `yield_blocks("_style_")` по-прежнему найдёт оба варианта, потому что префикс проверяется по уже раскрытому имени.
 
-**Экранирование.** Если в выводе нужна буквальная строка `$fileID` — например, как переменная JavaScript — напишите `$$fileID`:
+**Экранирование.** Если в выводе нужна буквальная строка `@lid` — например, как переменная JavaScript — напишите `@@lid`:
 
 ```html
-{{block _js_$fileID()}}
-var $$fileID = document.querySelector('.$fileID-root');
-$$fileID.addEventListener('click', () => { ... });
+{{block _js_@lid()}}
+var @@lid = document.querySelector('.@did-root');
+@@lid.addEventListener('click', () => { ... });
 {{end}}
 ```
 
@@ -129,12 +130,12 @@ $$fileID.addEventListener('click', () => { ... });
 
 ```html
 {{block _js_button()}}
-var $fileID = document.querySelector('.button-root');
-$fileID.addEventListener('click', () => { ... });
+var @lid = document.querySelector('.button-root');
+@lid.addEventListener('click', () => { ... });
 {{end}}
 ```
 
-`$$fileID` превращается в `$fileID` в выводе; `$fileID` (одиночный `$`) — в значение, производное от пути файла.
+`@@lid` превращается в `@lid` в выводе; `@lid` (одиночный `@`) — в значение, производное от пути файла.
 
 ### Предупреждения
 

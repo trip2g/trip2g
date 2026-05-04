@@ -1,6 +1,10 @@
 // @ts-check
+import fs from 'fs';
+import path from 'path';
 
 export const USER_TOKEN_COOKIE_NAME = process.env.USER_TOKEN_COOKIE_NAME || 'trip2g_token';
+
+export const ADMIN_JWT_CACHE_PATH = path.join(process.cwd(), 'tmp', '.test-admin-jwt');
 
 /**
  * Create a personal token via GraphQL mutation.
@@ -110,9 +114,20 @@ export async function signInAsAdmin(page) {
  * @param {import('@playwright/test').APIRequestContext} request
  * @param {string} email - Email address (default: hello@example.com)
  * @param {string} code - Auth code (default: 111111 dev code)
+ * @param {{ useCache?: boolean }} options
  * @returns {Promise<string>} Bearer token for Authorization header
  */
-export async function graphqlSignIn(request, email = 'hello@example.com', code = '111111') {
+export async function graphqlSignIn(request, email = 'hello@example.com', code = '111111', { useCache = true } = {}) {
+  // Return cached admin JWT to avoid parallel sign-in code contention.
+  if (useCache && email === 'hello@example.com') {
+    try {
+      const cached = fs.readFileSync(ADMIN_JWT_CACHE_PATH, 'utf8').trim();
+      if (cached) return cached;
+    } catch {
+      // cache miss — fall through to full sign-in
+    }
+  }
+
   // 1. Request email code
   const requestCodeResponse = await request.post('/graphql', {
     data: {
@@ -139,8 +154,9 @@ export async function graphqlSignIn(request, email = 'hello@example.com', code =
   }
 
   const requestCodeData = await requestCodeResponse.json();
-  if (requestCodeData.data.requestEmailSignInCode.__typename === 'ErrorPayload') {
-    throw new Error(`Request code failed: ${requestCodeData.data.requestEmailSignInCode.message}`);
+  const requestCodeResult = requestCodeData.data.requestEmailSignInCode;
+  if (requestCodeResult.message) {
+    throw new Error(`Request code failed: ${requestCodeResult.message}`);
   }
 
   // 2. Sign in with code
@@ -170,8 +186,8 @@ export async function graphqlSignIn(request, email = 'hello@example.com', code =
 
   const signInData = await signInResponse.json();
 
-  // Check for error payload
-  if (signInData.data.signInByEmail.__typename === 'ErrorPayload') {
+  // Check for error payload (message field is only set on ErrorPayload)
+  if (signInData.data.signInByEmail.message) {
     throw new Error(`Sign in failed: ${signInData.data.signInByEmail.message}`);
   }
 

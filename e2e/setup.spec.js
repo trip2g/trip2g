@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { signInAsAdmin } from './helpers/auth.js';
+import { signInAsAdmin, ADMIN_JWT_CACHE_PATH } from './helpers/auth.js';
 
 /**
  * Setup test - runs first
@@ -71,5 +71,14 @@ test.describe.serial('Setup', () => {
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');
     fs.writeFileSync(apiKeyPath, apiKey, 'utf8');
     console.log(`✓ API Key saved to ${apiKeyPath}`);
+
+    // Save admin JWT so parallel beforeAll hooks can reuse it without competing for sign-in codes
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(c => c.name === process.env.USER_TOKEN_COOKIE_NAME || c.name === 'trip2g_e2e');
+    if (sessionCookie) {
+      fs.mkdirSync(path.join(process.cwd(), 'tmp'), { recursive: true });
+      fs.writeFileSync(ADMIN_JWT_CACHE_PATH, sessionCookie.value, 'utf8');
+      console.log(`✓ Admin JWT cached to ${ADMIN_JWT_CACHE_PATH}`);
+    }
   });
 });

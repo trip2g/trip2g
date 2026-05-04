@@ -1,5 +1,5 @@
-{{ block _style_$fileID() }}
-.mesh-news {
+{{ block _style_@lid() }}
+.@did {
   padding: 48px 40px;
   border-bottom: 1px solid var(--rule);
   display: grid;
@@ -7,41 +7,41 @@
   gap: 48px;
   align-items: end;
 }
-.mesh-news__title {
+.@did__title {
   font-family: var(--sans);
   font-weight: 800; font-size: 36px; letter-spacing: -0.02em;
   margin: 0 0 14px; line-height: 1.05;
 }
-.mesh-news__title em {
+.@did__title em {
   font-style: normal;
   background: var(--accent); color: var(--bg);
   font-family: var(--mono); font-weight: 600;
   font-size: 0.65em; padding: 0 0.18em; vertical-align: 0.18em;
 }
-.mesh-news__p {
+.@did__p {
   font-family: var(--sans); font-size: 14px; line-height: 1.55;
   color: var(--muted); margin: 0; max-width: 50ch;
 }
-.mesh-news__form {
+.@did__form {
   display: flex; align-items: stretch;
   border: 1px solid var(--fg);
   background: rgba(245,245,242,0.02);
 }
-.mesh-news__input {
+.@did__input {
   flex: 1; background: transparent; border: 0; outline: 0;
   color: var(--fg); font-family: var(--mono); font-size: 14px;
   padding: 14px 16px;
 }
-.mesh-news__input::placeholder { color: var(--muted-2); }
-.mesh-news__submit {
+.@did__input::placeholder { color: var(--muted-2); }
+.@did__submit {
   background: var(--accent); color: var(--bg);
   border: 0; border-left: 1px solid var(--fg);
   font-family: var(--mono); font-size: 12px;
   letter-spacing: 0.1em; text-transform: uppercase;
   padding: 0 22px; cursor: pointer;
 }
-.mesh-news__submit:hover { background: var(--fg); }
-.mesh-news__meta {
+.@did__submit:hover { background: var(--fg); }
+.@did__meta {
   grid-column: 1 / -1;
   display: flex; gap: 24px;
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
@@ -50,8 +50,8 @@
   border-top: 1px dashed var(--rule);
   margin-top: 4px;
 }
-.mesh-news__meta b { color: var(--fg); font-weight: 600; }
-.mesh-news__joke {
+.@did__meta b { color: var(--fg); font-weight: 600; }
+.@did__joke {
   display: none;
   grid-column: 1 / -1;
   padding: 18px;
@@ -59,66 +59,66 @@
   font-family: var(--mono); font-size: 13px;
   color: var(--fg);
 }
-.mesh-news__joke--shown { display: block; }
-.mesh-news__joke-hint { color: var(--muted); }
-.mesh-news__joke-code { color: var(--accent); }
-.mesh-news__joke-link {
+.@did__joke--shown { display: block; }
+.@did__joke-hint { color: var(--muted); }
+.@did__joke-code { color: var(--accent); }
+.@did__joke-link {
   color: var(--accent); text-decoration: none;
   letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px;
 }
 @media (max-width: 900px) {
-  .mesh-news { grid-template-columns: 1fr; padding: 32px 20px; gap: 24px; }
+  .@did { grid-template-columns: 1fr; padding: 32px 20px; gap: 24px; }
 }
 {{ end }}
 
-{{ block $fileID() }}
-<section class="mesh-news" id="newsletter">
+{{ block @lid() }}
+<section class="@did" id="newsletter">
   <div>
-    <h2 class="mesh-news__title">Changelog &amp; <em>field notes</em></h2>
-    <p class="mesh-news__p">
+    <h2 class="@did__title">Changelog &amp; <em>field notes</em></h2>
+    <p class="@did__p">
       One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.
     </p>
   </div>
-  <form class="mesh-news__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.mesh-news__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
-    <input class="mesh-news__input" type="email" placeholder="you@somewhere" aria-label="email" required>
-    <button class="mesh-news__submit" type="submit">subscribe →</button>
+  <form class="@did__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.@did__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
+    <input class="@did__input" type="email" placeholder="you@somewhere" aria-label="email" required>
+    <button class="@did__submit" type="submit">subscribe →</button>
   </form>
-  <div class="mesh-news__meta">
+  <div class="@did__meta">
     <span><b>~1×/month</b></span>
     <span>unsubscribe in one click</span>
     <span>archive at <b>trip2g.com/notes</b></span>
   </div>
-  <div class="mesh-news__joke">
+  <div class="@did__joke">
     We don't need your email.<br>
-    <span class="mesh-news__joke-hint">Here's everything you actually need:</span><br><br>
-    <code class="mesh-news__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
-    <a href="/simple" class="mesh-news__joke-link">→ /simple</a>
+    <span class="@did__joke-hint">Here's everything you actually need:</span><br><br>
+    <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+    <a href="/simple" class="@did__joke-link">→ /simple</a>
   </div>
 </section>
 {{ end }}
 
-{{ block $fileID_ru() }}
-<section class="mesh-news" id="newsletter">
+{{ block @lid_ru() }}
+<section class="@did" id="newsletter">
   <div>
-    <h2 class="mesh-news__title">Changelog и <em>заметки</em></h2>
-    <p class="mesh-news__p">
+    <h2 class="@did__title">Changelog и <em>заметки</em></h2>
+    <p class="@did__p">
       Одно письмо когда выходит релиз. Заметки о том как работают сети общих знаний на практике — что мы узнали строя это. Без маркетинга.
     </p>
   </div>
-  <form class="mesh-news__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.mesh-news__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
-    <input class="mesh-news__input" type="email" placeholder="you@somewhere" aria-label="email" required>
-    <button class="mesh-news__submit" type="submit">подписаться →</button>
+  <form class="@did__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.@did__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
+    <input class="@did__input" type="email" placeholder="you@somewhere" aria-label="email" required>
+    <button class="@did__submit" type="submit">подписаться →</button>
   </form>
-  <div class="mesh-news__meta">
+  <div class="@did__meta">
     <span><b>~1×/месяц</b></span>
     <span>отписка в один клик</span>
     <span>архив на <b>trip2g.com/notes</b></span>
   </div>
-  <div class="mesh-news__joke">
+  <div class="@did__joke">
     Нам не нужен твой email.<br>
-    <span class="mesh-news__joke-hint">Вот всё что тебе нужно на самом деле:</span><br><br>
-    <code class="mesh-news__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
-    <a href="/ru/simple" class="mesh-news__joke-link">→ /simple</a>
+    <span class="@did__joke-hint">Вот всё что тебе нужно на самом деле:</span><br><br>
+    <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+    <a href="/ru/simple" class="@did__joke-link">→ /simple</a>
   </div>
 </section>
 {{ end }}

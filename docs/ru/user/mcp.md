@@ -73,7 +73,7 @@ Your answers MUST be grounded in the knowledge base content.
 1. search(query) → find relevant notes
 2. Pick 3 most relevant notes
 3. Ask clarifying question to confirm direction
-4. Load full content with note_html(path)
+4. Load content with note_html(path) — use toc_path from search results to fetch only the relevant section of long notes
 5. Synthesize answer through the lens of these notes
 6. Cite sources with links
 ```
@@ -90,7 +90,7 @@ Your answers MUST be grounded in the knowledge base content.
 | Метод | Описание |
 |-------|----------|
 | `search(query)` | Векторный поиск по базе |
-| `note_html(path)` | Полный контент заметки |
+| `note_html(path, toc_path?)` | Полная заметка или отдельный раздел |
 | `similar(path)` | Похожие заметки |
 | `instructions()` | Инструкции автора для AI |
 | `editor_role()` | Стиль редактуры ответов |

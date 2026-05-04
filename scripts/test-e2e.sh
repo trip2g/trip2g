@@ -152,7 +152,7 @@ cleanup() {
   #docker compose -f docker-compose.test.yml down -v
 
   # Remove temporary files
-  rm -f .test-api-key
+  rm -f .test-api-key tmp/.test-admin-jwt
   # rm -rf tmp/testvault0 tmp/testvault1
 
   echo -e "${GREEN}✓ Cleanup complete${NC}"

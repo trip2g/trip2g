@@ -38,24 +38,31 @@ func makeYieldBlocksFunc(blockNames *[]string, warnSink *[]model.NoteWarning) fu
 	}
 }
 
-// expandBlockName replaces $fileID with the sanitized file identifier derived from sourceID,
-// and $$fileID with a literal $fileID (escape sequence).
-// sourceID examples: "/mesh/button.html" → "mesh_button", "card.html" → "card"
+// expandBlockName replaces @lid and @did placeholders derived from sourceID.
+// @lid = lodash id (underscores): used for Jet block names.
+// @did = dash id (hyphens): used for BEM CSS class names.
+// @@lid and @@did are escape sequences that produce literal @lid / @did.
+// sourceID examples: "/mesh/bar.html" → @lid="mesh_bar", @did="mesh-bar"
 func expandBlockName(content, sourceID string) string {
-	if !strings.Contains(content, "$fileID") {
+	if !strings.Contains(content, "@lid") && !strings.Contains(content, "@did") {
 		return content
 	}
-	// derive file id: strip leading slash, strip extension, replace / with _
-	fileID := strings.TrimPrefix(sourceID, "/")
-	if idx := strings.LastIndex(fileID, "."); idx != -1 {
-		fileID = fileID[:idx]
+	// derive base: strip leading slash, strip extension
+	base := strings.TrimPrefix(sourceID, "/")
+	if idx := strings.LastIndex(base, "."); idx != -1 {
+		base = base[:idx]
 	}
-	fileID = strings.ReplaceAll(fileID, "/", "_")
+	lid := strings.ReplaceAll(base, "/", "_") // lodash id
+	did := strings.ReplaceAll(base, "/", "-") // dash id (hyphens throughout)
 
-	const sentinel = "\x00dollar_fileid\x00"
-	content = strings.ReplaceAll(content, "$$fileID", sentinel)
-	content = strings.ReplaceAll(content, "$fileID", fileID)
-	content = strings.ReplaceAll(content, sentinel, "$fileID")
+	const sentinelLid = "\x00at_lid\x00"
+	const sentinelDid = "\x00at_did\x00"
+	content = strings.ReplaceAll(content, "@@lid", sentinelLid)
+	content = strings.ReplaceAll(content, "@@did", sentinelDid)
+	content = strings.ReplaceAll(content, "@lid", lid)
+	content = strings.ReplaceAll(content, "@did", did)
+	content = strings.ReplaceAll(content, sentinelLid, "@lid")
+	content = strings.ReplaceAll(content, sentinelDid, "@did")
 	return content
 }
 

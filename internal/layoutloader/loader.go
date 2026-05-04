@@ -249,7 +249,7 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string)
 		}
 		content = jetContent
 	}
-	jl.templates[source.ID] = content
+	jl.templates[source.ID] = expandBlockName(content, source.ID)
 
 	views := jet.NewSet(jl, jet.DevelopmentMode(true))
 

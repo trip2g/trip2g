@@ -68,9 +68,9 @@ test.describe.serial('Federation', () => {
     const hubToken = await graphqlSignIn(hubRequest);
     hubCookie = `trip2g_e2e=${hubToken}`;
 
-    // Sign into peer (different cookie name)
+    // Sign into peer (different cookie name, different JWT secret — skip cache)
     peerRequest = await playwright.request.newContext({ baseURL: PEER_URL });
-    const peerToken = await graphqlSignIn(peerRequest);
+    const peerToken = await graphqlSignIn(peerRequest, 'hello@example.com', '111111', { useCache: false });
     peerCookie = `trip2g_e2e_peer=${peerToken}`;
   });
 
