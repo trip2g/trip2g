@@ -19,8 +19,9 @@
 .@did__link:hover { color: var(--accent); }
 .@did__about {
   font-family: var(--sans); font-size: 13px; line-height: 1.5;
-  color: var(--muted); margin: 0;
+  color: var(--muted); margin: 0 0 20px;
 }
+.mesh-foot__cta { display: block; align-self: flex-start; }
 .@did__coda {
   padding: 14px 40px;
   font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
@@ -37,7 +38,7 @@
   <div>
     <h4 class="@did__heading">// trip2g</h4>
     <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
-    {{yield mesh_button(label="start →", href="/simple", modifier="mesh-foot__cta")}}
+    {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-foot__cta")}}
   </div>
   <div>
     <h4 class="@did__heading">Philosophy</h4>
@@ -77,7 +78,7 @@
   <div>
     <h4 class="@did__heading">// trip2g</h4>
     <p class="@did__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
-    {{yield mesh_button(label="начать →", href="/ru/simple", modifier="mesh-foot__cta")}}
+    {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-foot__cta")}}
   </div>
   <div>
     <h4 class="@did__heading">Философия</h4>
