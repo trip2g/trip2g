@@ -196,6 +196,37 @@ func TestAutoImport_TransitiveYield(t *testing.T) {
 		"transitive yield must be resolved via BFS auto-import")
 }
 
+// TestYieldBlocks_StyleMeshTransitive is the exact scenario from the bug report:
+// page yields mesh_hero (via @lid), hero yields mesh_button (via @lid),
+// yield_blocks("_style_mesh_") must collect CSS from BOTH hero and button.
+func TestYieldBlocks_StyleMeshTransitive(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/mesh/index",
+			Path: "mesh/index.html",
+			Content: `<html><head><style>{{yield_blocks("_style_mesh_")}}</style></head>` +
+				`<body>{{yield mesh_hero()}}</body></html>`,
+		},
+		{
+			ID:   "/mesh/hero",
+			Path: "mesh/hero.html",
+			Content: `{{block _style_@lid()}}.mesh-hero{color:red}{{end}}` +
+				`{{block @lid()}}<section>{{yield mesh_button()}}</section>{{end}}`,
+		},
+		{
+			ID:   "/mesh/button",
+			Path: "mesh/button.html",
+			Content: `{{block _style_@lid()}}.mesh-button{display:inline-flex}{{end}}` +
+				`{{block @lid()}}<button class="mesh-button">click</button>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/mesh/index")
+	require.Contains(t, out, ".mesh-hero{color:red}", "hero CSS must appear via yield_blocks")
+	require.Contains(t, out, ".mesh-button{display:inline-flex}",
+		"button CSS must appear via yield_blocks — transitive dep through hero")
+}
+
 func TestExpandBlockName_Integration(t *testing.T) {
 	// Regression: jl.load() must apply expandBlockName so that @lid placeholders
 	// are resolved before Jet parses the template. Without the fix, block @lid()
