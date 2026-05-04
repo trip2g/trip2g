@@ -10,9 +10,9 @@ type LayoutAsset struct {
 type Layout struct {
 	VersionID int64
 	Path      string
-	View      *jet.Template
+	View      *jet.Template `json:"-"`
 	Assets    []LayoutAsset
-	Content   string // Processed Jet template content
+	Content   string `json:"-"` // omit large template content from debug output
 
 	// OriginalContent stores the original file content (JSON for .html.json, HTML for .html)
 	// Used for syncing back to clients
@@ -39,7 +39,7 @@ type LayoutSourceFile struct {
 type Layouts struct {
 	Map    map[string]Layout
 	Blocks LayoutBlocks
-	Load   func(source LayoutSourceFile) Layout
+	Load   func(source LayoutSourceFile) Layout `json:"-"`
 }
 
 // LayoutBlocks provides block lookup by name or full name.
