@@ -373,3 +373,114 @@ if (tryCopyBtn && tryPromptText) {
   }
 })();
 
+// ============================================================
+// TURBO MODE — 50 req/s
+// ============================================================
+(function() {
+  const mount = document.getElementById("mesh-svg-mount");
+  if (!mount) return;
+
+  const TURBO_ROUTES = [
+    ["you","youhub","frhub","f_work"],
+    ["friend","frhub","youhub","y_notes"],
+    ["you","youhub","y_book1"],
+    ["you","youhub","y_book2"],
+    ["friend","frhub","f_proj"],
+    ["you","youhub","frhub","friend"],
+    ["friend","frhub","youhub","you"],
+    ["you","youhub","frhub","f_work","frhub","friend"],
+    ["friend","frhub","youhub","y_book2","youhub","frhub"],
+    ["you","youhub","y_notes","youhub","frhub","f_proj"],
+  ];
+
+  let turboOn = false;
+  const turboPackets = [];
+  let spawnTimer = null;
+
+  // Separate layer so we don't conflict with fxG clear/redraw
+  const turboG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  SVG.appendChild(turboG);
+
+  function spawnPacket() {
+    const route = TURBO_ROUTES[Math.floor(Math.random() * TURBO_ROUTES.length)];
+    turboPackets.push({ route, t0: performance.now() / 1000, speed: 0.3 + Math.random() * 0.3 });
+  }
+
+  function renderTurbo(now) {
+    const t = now / 1000;
+    while (turboG.firstChild) turboG.removeChild(turboG.firstChild);
+
+    for (let i = turboPackets.length - 1; i >= 0; i--) {
+      const p = turboPackets[i];
+      const LEG = p.speed;
+      const total = (p.route.length - 1) * LEG;
+      const tt = t - p.t0;
+      if (tt > total + 0.2) { turboPackets.splice(i, 1); continue; }
+
+      const legIdx = Math.min(Math.floor(tt / LEG), p.route.length - 2);
+      const legPct = Math.min(1, (tt - legIdx * LEG) / LEG);
+      const e = legPct < 0.5 ? 2*legPct*legPct : 1 - Math.pow(-2*legPct+2,2)/2;
+
+      const fn = NODES.find(n => n.id === p.route[legIdx]);
+      const tn = NODES.find(n => n.id === p.route[legIdx + 1]);
+      if (!fn || !tn) continue;
+
+      const { p1, p2 } = edgePoint(fn, tn);
+      const px = p1.x + (p2.x - p1.x) * e;
+      const py = p1.y + (p2.y - p1.y) * e;
+      const fade = Math.min(1, (total - tt) / 0.2);
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("transform", `translate(${px},${py})`);
+      const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      glow.setAttribute("r","6"); glow.setAttribute("fill","var(--accent)");
+      glow.setAttribute("opacity", String(0.18 * fade));
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("r","2.5"); dot.setAttribute("fill","var(--accent)");
+      dot.setAttribute("opacity", String(0.75 * fade));
+      g.appendChild(glow); g.appendChild(dot);
+      turboG.appendChild(g);
+    }
+    requestAnimationFrame(renderTurbo);
+  }
+  requestAnimationFrame(renderTurbo);
+
+  // Button: rectangle + square handle in bottom-right of graph frame
+  const graphFrame = mount.closest(".mesh-hero__graph") || mount.parentElement;
+  graphFrame.style.position = "relative";
+
+  const btn = document.createElement("button");
+  btn.style.cssText = [
+    "position:absolute","bottom:10px","right:10px",
+    "display:flex","align-items:center","gap:7px",
+    "background:rgba(14,14,12,0.72)","border:1px solid var(--muted-2)",
+    "padding:6px 10px 6px 8px","cursor:pointer",
+    "font-family:'JetBrains Mono',monospace","font-size:9px",
+    "letter-spacing:0.14em","text-transform:uppercase","color:var(--muted)",
+    "z-index:10","transition:border-color .15s,color .15s"
+  ].join(";");
+
+  const sq = document.createElement("span");
+  sq.style.cssText = "display:inline-block;width:9px;height:9px;border:1px solid var(--muted-2);background:transparent;flex-shrink:0;transition:background .15s,border-color .15s";
+
+  btn.appendChild(sq);
+  btn.appendChild(document.createTextNode("turbo"));
+  graphFrame.appendChild(btn);
+
+  btn.addEventListener("click", () => {
+    turboOn = !turboOn;
+    if (turboOn) {
+      btn.style.borderColor = "var(--accent)";
+      btn.style.color = "var(--accent)";
+      sq.style.background = "var(--accent)";
+      sq.style.borderColor = "var(--accent)";
+      spawnTimer = setInterval(spawnPacket, 20);
+    } else {
+      btn.style.borderColor = "var(--muted-2)";
+      btn.style.color = "var(--muted)";
+      sq.style.background = "transparent";
+      sq.style.borderColor = "var(--muted-2)";
+      clearInterval(spawnTimer);
+    }
+  });
+})();
