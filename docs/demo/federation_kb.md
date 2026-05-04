@@ -1,4 +1,5 @@
 ---
+free: true
 mcp_federation_kb_url: http://app-peer:20091/_system/mcp
 mcp_federation_kb_id: peer
 ---
