@@ -794,12 +794,14 @@
 </header>
 {{ end }}
 
-{{ block pricing_card(tag="", title="", price="", period="", cta_href="", cta_class="", cta_text="", cls="") }}
+{{ block pricing_card(tag="", title="", price="", period="", cta_href="", cta_class="", cta_text="", cta2_href="", cta2_text="", cls="") }}
 <div class="price {{ cls }}">
   <div class="price-tag">{{ tag }}</div>
   <h3 class="price-h">{{ title }}</h3>
   <div class="price-num">{{ price | unsafe }}<span>{{ period }}</span></div>
   {{ yield content }}
+  {{ if cta_href }}<a href="{{ cta_href }}" class="cta {{ cta_class }}">{{ cta_text }}</a>{{ end }}
+  {{ if cta2_href }}<a href="{{ cta2_href }}" class="cta cta--ghost">{{ cta2_text }}</a>{{ end }}
 </div>
 {{ end }}
 

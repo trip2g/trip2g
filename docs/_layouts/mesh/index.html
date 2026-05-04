@@ -322,7 +322,7 @@
     <!-- PRICING -->
     {{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
     <div class="pricing">
-      {{ yield pricing_card(tag="FREE · OSS", title="Self-hosted", price="$ 0", period="/forever", cta_href="/en/user/selfhosted", cta_text="install →") content }}
+      {{ yield pricing_card(tag="FREE · OSS", title="Self-hosted", price="$ 0", period="/forever", cta_href="/en/user/selfhosted", cta_text="install →", cta2_href="https://github.com/trip2g/trip2g", cta2_text="★ GitHub") content }}
         <ul class="price-list">
           <li>Open source — MIT</li>
           <li>One-line install on your own box</li>
@@ -330,12 +330,12 @@
           <li>Full federation, MCP, webhooks</li>
         </ul>
       {{ end }}
-      {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox instance", price="$ 0", period="· 100 MB", cta_href="#try", cta_class="cta--primary", cta_text="try free →") content }}
+      {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox instance", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_class="cta--primary", cta_text="try free →") content }}
         <ul class="price-list">
           <li>One instance per account</li>
           <li>Try federation without setup</li>
           <li>All features, capped at 100&nbsp;MB</li>
-          <li>Sub-domain on simplecloud.2pub.me</li>
+          <li>Your own subdomain on *.2pub.me</li>
         </ul>
       {{ end }}
       {{ yield pricing_card(tag="CUSTOM", title="Need more?", price="let's talk", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="contact →") content }}
