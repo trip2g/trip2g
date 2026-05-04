@@ -5,19 +5,19 @@ const NODES = [
   { id: "you",     label: "you + agent",     kind: "self",     x:  60,  y: 360, sub: "MCP" },
   { id: "obs",     label: "obsidian",        kind: "glyph",    x:  60,  y: 540, sub: "sync", icon: "obsidian" },
   { id: "youhub",  label: "your trip2g",     kind: "hub",      x: 320,  y: 450, sub: "cms · proxy" },
-  { id: "y_tg",    label: "telegram",        kind: "source",   x: 540,  y:  80, sub: "history" },
-  { id: "y_drive", label: "drive",           kind: "source",   x: 540,  y: 220, sub: "vector index" },
-  { id: "y_book1", label: "'thinking fast'", kind: "book",     x: 540,  y: 380, sub: "principles" },
-  { id: "y_book2", label: "project · q3",    kind: "book",     x: 540,  y: 600, sub: "ideas" },
-  { id: "y_raw",   label: "raw MCP",         kind: "external", x: 540,  y: 740, sub: "non-trip2g" },
-  { id: "f_book",  label: "'infinity'",      kind: "book",     x: 800,  y:  80, sub: "principles" },
-  { id: "f_drive", label: "drive",           kind: "source",   x: 800,  y: 220, sub: "vector index" },
-  { id: "f_proj",  label: "hr-2026",         kind: "book",     x: 800,  y: 540, sub: "resumes" },
-  { id: "f_other", label: "alice's notion",  kind: "external", x: 800,  y: 600, sub: "non-trip2g" },
-  { id: "f_tg",    label: "telegram",        kind: "source",   x: 800,  y: 740, sub: "history" },
+  { id: "y_tg",    label: "telegram",        kind: "source",   x: 130,  y: 165, sub: "history" },
+  { id: "y_drive", label: "drive",           kind: "source",   x: 378,  y: 126, sub: "vector index" },
+  { id: "y_book1", label: "'thinking fast'", kind: "book",     x: 510,  y: 272, sub: "principles" },
+  { id: "y_book2", label: "project · q3",    kind: "book",     x: 463,  y: 628, sub: "ideas" },
+  { id: "y_raw",   label: "raw MCP",         kind: "external", x: 258,  y: 723, sub: "non-trip2g" },
+  { id: "f_book",  label: "'infinity'",      kind: "book",     x: 1092, y:  96, sub: "principles" },
+  { id: "f_drive", label: "drive",           kind: "source",   x: 907,  y: 186, sub: "vector index" },
+  { id: "f_proj",  label: "hr-2026",         kind: "book",     x: 819,  y: 557, sub: "resumes" },
+  { id: "f_other", label: "alice's notion",  kind: "external", x: 915,  y: 670, sub: "non-trip2g" },
+  { id: "f_tg",    label: "telegram",        kind: "source",   x: 1165, y: 672, sub: "history" },
   { id: "frhub",   label: "alice.trip2g",    kind: "hub",      x: 1020, y: 450, sub: "cms · proxy" },
-  { id: "friend",  label: "alice + agent",   kind: "peer",     x: 1280, y: 360, sub: "MCP" },
-  { id: "friend2", label: "obsidian",        kind: "glyph",    x: 1280, y: 540, sub: "sync", icon: "obsidian" },
+  { id: "friend",  label: "alice + agent",   kind: "peer",     x: 1188, y: 321, sub: "MCP" },
+  { id: "friend2", label: "obsidian",        kind: "glyph",    x: 1227, y: 489, sub: "sync", icon: "obsidian" },
 ];
 const EDGES = [
   ["obs", "youhub"], ["you", "youhub"],
@@ -27,8 +27,8 @@ const EDGES = [
   ["frhub", "friend"], ["frhub", "friend2"],
 ];
 const LANES = [
-  { route: ["you", "youhub", "frhub", "f_proj", "frhub", "youhub", "you"], offset: 0,   speed: 0.95 },
-  { route: ["friend", "frhub", "youhub", "y_book1", "youhub", "frhub", "friend"], offset: 1.6, speed: 0.95 },
+  { route: ["you", "youhub", "frhub", "f_proj", "frhub", "youhub", "you"], offset: 0,   speed: 1.8 },
+  { route: ["friend", "frhub", "youhub", "y_book1", "youhub", "frhub", "friend"], offset: 3.0, speed: 1.8 },
 ];
 const KIND = {
   self:    { glyph: "◉", fill: "var(--fg)",     text: "var(--bg)", strong: true,  raised: true },
@@ -118,18 +118,15 @@ SVG.appendChild(labelG);
 const pipesG = svg("g");
 SVG.appendChild(pipesG);
 const pipeFlowEls = {}; // edgeKey -> flow line element
+const pipeBaseEls = {}; // edgeKey -> base line element
 
 for (const [a, b] of EDGES) {
   const na = nodeById(a), nb = nodeById(b);
   const { p1, p2 } = edgePoint(na, nb);
-  pipesG.appendChild(svg("line", {
-    x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y,
-    class: "mg-pipe-base"
-  }));
-  const flow = svg("line", {
-    x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y,
-    class: "mg-pipe-flow"
-  });
+  const base = svg("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, class: "mg-pipe-base" });
+  pipesG.appendChild(base);
+  pipeBaseEls[`${a}-${b}`] = base;
+  const flow = svg("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, class: "mg-pipe-flow" });
   pipesG.appendChild(flow);
   pipeFlowEls[`${a}-${b}`] = flow;
 }
@@ -203,6 +200,9 @@ for (const n of NODES) {
       }));
     }
   }
+  n._el = g;
+  n._w = w; n._h = h;
+  n._bx = n.x; n._by = n.y; // original build position
   cardsG.appendChild(g);
 }
 
@@ -248,45 +248,43 @@ function frame(now) {
     return { px, py, fromId, toId, legProgress };
   });
 
-  // activate flow lines
-  for (const l of lanes) {
-    const fwd = pipeFlowEls[`${l.fromId}-${l.toId}`];
-    const rev = pipeFlowEls[`${l.toId}-${l.fromId}`];
-    if (fwd) fwd.classList.add("is-active");
-    if (rev) rev.classList.add("is-active");
-  }
-
-  // activate cards (highlight target while traversing)
-  for (const l of lanes) {
-    if (l.legProgress > 0.4) {
-      const r = cardStrokeEls[l.toId];
-      if (r) {
-        r.setAttribute("stroke", "var(--accent)");
-        r.setAttribute("stroke-width", "1.6");
-      }
-    }
-  }
-
-  // pulses + packets
+  // packets: trail + shrink-into-node on arrival
   for (let i = 0; i < lanes.length; i++) {
     const l = lanes[i];
-    const target = nodeById(l.toId);
-    if (target && l.legProgress > 0.05) {
-      const r = 22 + l.legProgress * 18;
-      const op = (1 - l.legProgress) * 0.7;
+    const LEG = LANES[i].speed;
+    const { p1, p2 } = edgePoint(nodeById(l.fromId), nodeById(l.toId));
+
+    // trail: 3 fading dots behind the packet
+    for (let s = 1; s <= 4; s++) {
+      const trailPct = Math.max(0, l.legProgress - s * 0.06);
+      const tE = trailPct < 0.5 ? 2*trailPct*trailPct : 1 - Math.pow(-2*trailPct+2,2)/2;
+      const tx = p1.x + (p2.x - p1.x) * tE;
+      const ty = p1.y + (p2.y - p1.y) * tE;
       fxG.appendChild(svg("circle", {
-        cx: target.x, cy: target.y, r,
-        fill: "none", stroke: "var(--accent)", "stroke-width": 1, opacity: op
+        cx: tx, cy: ty, r: 2.5 - s * 0.4,
+        fill: "var(--accent)", opacity: (0.45 - s * 0.09).toFixed(2)
       }));
     }
-    const pkt = svg("g", { transform: `translate(${l.px}, ${l.py})` });
-    pkt.appendChild(svg("circle", { r: 9, fill: "var(--accent)", opacity: 0.22 }));
-    pkt.appendChild(svg("circle", { r: 5, fill: "var(--accent)" }));
-    fxG.appendChild(pkt);
+
+    // packet: scale to 0 as it enters node, spring in from start
+    const arrFade  = l.legProgress > 0.8 ? Math.max(0, 1 - (l.legProgress - 0.8) / 0.2) : 1;
+    const startFade = l.legProgress < 0.08 ? l.legProgress / 0.08 : 1;
+    const ps = Math.min(arrFade, startFade);
+    if (ps > 0.02) {
+      const pkt = svg("g", { transform: `translate(${l.px}, ${l.py})` });
+      pkt.appendChild(svg("circle", { r: 9 * ps, fill: "var(--accent)", opacity: 0.18 }));
+      pkt.appendChild(svg("circle", { r: 5 * ps, fill: "var(--accent)" }));
+      fxG.appendChild(pkt);
+    }
   }
-  // query label follows lane 0
-  queryLabel.setAttribute("x", lanes[0].px);
-  queryLabel.setAttribute("y", lanes[0].py - 12);
+  // query label follows lane 0 with opacity+scale pulse
+  const pulse = 0.65 + 0.35 * Math.sin(t * 4.2);
+  const pscale = 0.88 + 0.12 * Math.sin(t * 3.1);
+  const qx = lanes[0].px, qy = lanes[0].py - 12;
+  queryLabel.setAttribute("x", qx);
+  queryLabel.setAttribute("y", qy);
+  queryLabel.setAttribute("opacity", pulse.toFixed(3));
+  queryLabel.setAttribute("transform", `translate(${qx},${qy}) scale(${pscale.toFixed(3)}) translate(${-qx},${-qy})`);
 
   requestAnimationFrame(frame);
 }
@@ -407,6 +405,15 @@ if (tryCopyBtn && tryPromptText) {
   const turboPackets = [];
   let spawnTimer = null;
 
+  function enableTurbo() {
+    turboOn = true;
+    spawnTimer = setInterval(spawnPacket, 20);
+  }
+  function disableTurbo() {
+    turboOn = false;
+    clearInterval(spawnTimer);
+  }
+
   // Separate layer so we don't conflict with fxG clear/redraw
   const turboG = document.createElementNS("http://www.w3.org/2000/svg", "g");
   SVG.appendChild(turboG);
@@ -439,14 +446,15 @@ if (tryCopyBtn && tryPromptText) {
       const px = p1.x + (p2.x - p1.x) * e;
       const py = p1.y + (p2.y - p1.y) * e;
       const fade = Math.min(1, (total - tt) / 0.2);
+      const ts = 1 + 0.7 * (1 - Math.sin(legPct * Math.PI));
 
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("transform", `translate(${px},${py})`);
       const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      glow.setAttribute("r","6"); glow.setAttribute("fill","var(--accent)");
+      glow.setAttribute("r", String(6 * ts)); glow.setAttribute("fill","var(--accent)");
       glow.setAttribute("opacity", String(0.18 * fade));
       const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      dot.setAttribute("r","2.5"); dot.setAttribute("fill","var(--accent)");
+      dot.setAttribute("r", String(2.5 * ts)); dot.setAttribute("fill","var(--accent)");
       dot.setAttribute("opacity", String(0.75 * fade));
       g.appendChild(glow); g.appendChild(dot);
       turboG.appendChild(g);
@@ -461,14 +469,16 @@ if (tryCopyBtn && tryPromptText) {
 
   const btn = document.createElement("button");
   btn.style.cssText = [
-    "position:absolute","bottom:10px","right:10px",
-    "display:flex","align-items:center","gap:7px",
-    "background:rgba(14,14,12,0.72)","border:1px solid var(--muted-2)",
-    "padding:6px 10px 6px 8px","cursor:pointer",
-    "font-family:'JetBrains Mono',monospace","font-size:9px",
-    "letter-spacing:0.14em","text-transform:uppercase","color:var(--muted)",
-    "z-index:10","transition:border-color .15s,color .15s"
+    "position:absolute","bottom:8px","right:8px",
+    "display:flex","align-items:center","gap:5px",
+    "background:none","border:none",
+    "padding:4px 6px","cursor:pointer",
+    "font-family:'JetBrains Mono',monospace","font-size:8px",
+    "letter-spacing:0.14em","text-transform:uppercase","color:var(--muted-2)",
+    "opacity:0.35","z-index:10","transition:opacity .2s,color .15s"
   ].join(";");
+  btn.addEventListener("mouseenter", () => { if (!turboOn) btn.style.opacity = "0.75"; });
+  btn.addEventListener("mouseleave", () => { if (!turboOn) btn.style.opacity = "0.35"; });
 
   const sq = document.createElement("span");
   sq.style.cssText = "display:inline-block;width:9px;height:9px;border:1px solid var(--muted-2);background:transparent;flex-shrink:0;transition:background .15s,border-color .15s";
@@ -477,89 +487,20 @@ if (tryCopyBtn && tryPromptText) {
   btn.appendChild(document.createTextNode("turbo"));
   graphFrame.appendChild(btn);
 
+  function setTurboStyle(on) {
+    btn.style.opacity = on ? "1" : "0.35";
+    btn.style.color = on ? "var(--accent)" : "var(--muted-2)";
+    sq.style.background = on ? "var(--accent)" : "transparent";
+  }
+
   btn.addEventListener("click", () => {
     turboOn = !turboOn;
-    if (turboOn) {
-      btn.style.borderColor = "var(--accent)";
-      btn.style.color = "var(--accent)";
-      sq.style.background = "var(--accent)";
-      sq.style.borderColor = "var(--accent)";
-      spawnTimer = setInterval(spawnPacket, 20);
-    } else {
-      btn.style.borderColor = "var(--muted-2)";
-      btn.style.color = "var(--muted)";
-      sq.style.background = "transparent";
-      sq.style.borderColor = "var(--muted-2)";
-      clearInterval(spawnTimer);
-    }
-  });
-})();
-
-// ============================================================
-// DRAG NODES (dev tool — rearrange, get coords via console)
-// ============================================================
-(function() {
-  const mount = document.getElementById("mesh-svg-mount");
-  if (!mount) return;
-
-  // Log current coords on every drag-end
-  function logCoords() {
-    console.log("// NODES coords:\n" + NODES.map(n =>
-      `  { id: "${n.id}", x: ${Math.round(n.x)}, y: ${Math.round(n.y)} }`
-    ).join(",\n"));
-  }
-
-  // Make each card group draggable
-  const svgEl = mount.querySelector("svg");
-  if (!svgEl) return;
-
-  // Map node id → the top-level <g> card element
-  const cardGroups = {};
-  svgEl.querySelectorAll("g[data-node-id]").forEach(g => {
-    cardGroups[g.dataset.nodeId] = g;
+    if (turboOn) enableTurbo(); else disableTurbo();
+    setTurboStyle(turboOn);
   });
 
-  // If cards aren't tagged yet, tag them by rebuild — simpler: intercept pointer on SVG
-  let drag = null; // { nodeId, startSVGx, startSVGy, origX, origY }
-
-  function svgPoint(e) {
-    const pt = svgEl.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
-    return pt.matrixTransform(svgEl.getScreenCTM().inverse());
-  }
-
-  // Find which node is nearest the pointer
-  function nearestNode(svgX, svgY) {
-    let best = null, bestD = 40;
-    for (const n of NODES) {
-      const d = Math.hypot(n.x - svgX, n.y - svgY);
-      if (d < bestD) { bestD = d; best = n; }
-    }
-    return best;
-  }
-
-  svgEl.addEventListener("pointerdown", e => {
-    if (!e.altKey) return; // hold Alt to drag
-    const p = svgPoint(e);
-    const n = nearestNode(p.x, p.y);
-    if (!n) return;
-    drag = { node: n, ox: p.x - n.x, oy: p.y - n.y };
-    svgEl.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  });
-
-  svgEl.addEventListener("pointermove", e => {
-    if (!drag) return;
-    const p = svgPoint(e);
-    drag.node.x = Math.round(p.x - drag.ox);
-    drag.node.y = Math.round(p.y - drag.oy);
-  });
-
-  svgEl.addEventListener("pointerup", e => {
-    if (!drag) return;
-    drag = null;
-    logCoords();
-  });
-
-  console.log("[mesh] drag nodes: hold Alt + drag a node. Coords logged on drop.");
+  // auto-start turbo, turn off after 3s
+  enableTurbo();
+  setTurboStyle(true);
+  setTimeout(() => { disableTurbo(); setTurboStyle(false); }, 1000);
 })();
