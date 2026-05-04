@@ -1,0 +1,118 @@
+{{ block _style_@lid() }}
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+.col {
+  padding: 28px;
+  border-right: 1px solid var(--rule);
+}
+.col:last-child { border-right: 0; }
+.col-h {
+  font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.col-h::before {
+  content: ""; width: 8px; height: 8px;
+}
+.col.shipped .col-h { color: var(--accent); }
+.col.shipped .col-h::before { background: var(--accent); }
+.col.progress .col-h::before { background: var(--fg); }
+.col.planned .col-h::before { border: 1px solid var(--muted); width: 6px; height: 6px; }
+.col ul { list-style: none; padding: 0; margin: 0; }
+.col li {
+  font-family: var(--sans); font-size: 14px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--rule);
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 10px;
+  color: color-mix(in oklab, var(--fg) 88%, transparent);
+}
+.col li::before {
+  font-family: var(--mono);
+  font-size: 11px; padding-top: 2px;
+}
+.col.shipped li::before { content: "[x]"; color: var(--accent); }
+.col.progress li::before { content: "[~]"; color: var(--fg); }
+.col.planned li::before { content: "[ ]"; color: var(--muted); }
+.col li small {
+  font-family: var(--mono);
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 0.04em;
+  display: block; margin-top: 2px;
+}
+@media (max-width: 900px) {
+  .roadmap { grid-template-columns: 1fr; }
+  .col { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .col:last-child { border-bottom: 0; }
+}
+{{ end }}
+
+{{ block @lid() }}
+{{ yield section_header(lhs="roadmap", rhs="v0.3 · feedback driven · public") }}
+<div class="roadmap">
+  {{ yield roadmap_col(cls="shipped", label="shipped") content }}
+    <ul>
+      <li>Self-hosted hub <small>docker · MIT</small></li>
+      <li>Obsidian two-way sync <small>vault ⇄ hub</small></li>
+      <li>MCP federation <small>hub ⇄ hub</small></li>
+      <li>Per-base connect / pause <small>granular trust</small></li>
+      <li>Telegram &amp; Drive adapters <small>read + publish</small></li>
+    </ul>
+  {{ end }}
+  {{ yield roadmap_col(cls="progress", label="in progress") content }}
+    <ul>
+      <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
+      <li>Notion adapter <small>workspace → bases</small></li>
+      <li>Trust scopes &amp; audit log <small>per-peer permissions</small></li>
+      <li>Webhooks · cron <small>events out</small></li>
+    </ul>
+  {{ end }}
+  {{ yield roadmap_col(cls="planned", label="planned") content }}
+    <ul>
+      <li>Linear / Slack archive adapters</li>
+      <li>Org-grade SSO &amp; SCIM <small>company internal</small></li>
+      <li>Encrypted-at-rest vaults <small>e2e for sensitive bases</small></li>
+      <li>Mesh registry <small>discover public-by-choice peers</small></li>
+    </ul>
+  {{ end }}
+</div>
+{{ end }}
+
+{{ block @lid_ru() }}
+{{ yield section_header(lhs="роадмап", rhs="v0.3 · обратная связь · публично") }}
+<div class="roadmap">
+  {{ yield roadmap_col(cls="shipped", label="готово") content }}
+    <ul>
+      <li>Свой hub <small>docker · MIT</small></li>
+      <li>Двусторонняя синхронизация Obsidian <small>vault ⇄ hub</small></li>
+      <li>MCP federation <small>hub ⇄ hub</small></li>
+      <li>Подключение / пауза на уровне базы <small>гранулярное доверие</small></li>
+      <li>Адаптеры Telegram &amp; Drive <small>чтение + публикация</small></li>
+    </ul>
+  {{ end }}
+  {{ yield roadmap_col(cls="progress", label="в разработке") content }}
+    <ul>
+      <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
+      <li>Адаптер Notion <small>workspace → базы</small></li>
+      <li>Области доверия &amp; журнал аудита <small>права на уровне peer'а</small></li>
+      <li>Webhooks · cron <small>события наружу</small></li>
+    </ul>
+  {{ end }}
+  {{ yield roadmap_col(cls="planned", label="запланировано") content }}
+    <ul>
+      <li>Адаптеры Linear / Slack archive</li>
+      <li>SSO &amp; SCIM для организаций <small>внутри компании</small></li>
+      <li>Зашифрованные vault'ы <small>e2e для чувствительных баз</small></li>
+      <li>Реестр mesh <small>поиск публичных peer'ов</small></li>
+    </ul>
+  {{ end }}
+</div>
+{{ end }}

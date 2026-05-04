@@ -1,0 +1,113 @@
+{{ block _style_@lid() }}
+.@did {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+.@did__text {
+  padding: 40px 48px;
+  border-right: 1px solid var(--rule);
+}
+.@did__eyebrow {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.16em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.@did__title {
+  font-family: var(--sans);
+  font-size: 32px; font-weight: 800; letter-spacing: -0.02em;
+  line-height: 1.1; margin-bottom: 16px;
+}
+.@did__body {
+  font-family: var(--sans);
+  font-size: 15px; line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 28px; max-width: 48ch;
+}
+.@did__cta {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 14px 28px;
+  font-family: var(--mono);
+  font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.@did__timer-box {
+  padding: 40px 48px;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  gap: 8px;
+}
+.@did__timer-label {
+  font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.@did__timer {
+  font-family: var(--sans);
+  font-size: 72px; font-weight: 800;
+  letter-spacing: -0.04em; line-height: 1;
+  color: var(--accent);
+}
+.@did__timer-units {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted);
+  display: flex; gap: 32px;
+  margin-top: 8px;
+}
+.@did__note {
+  margin-top: 24px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+@media (max-width: 900px) {
+  .@did { grid-template-columns: 1fr; }
+  .@did__text { border-right: 0; padding: 28px 20px; }
+  .@did__timer-box { padding: 28px 20px; }
+  .@did__timer { font-size: 48px; }
+}
+{{ end }}
+
+{{ block @lid_ru() }}
+<section class="@did">
+  <div class="@did__text">
+    <div class="@did__eyebrow">// ЗАКРЫТОЕ СООБЩЕСТВО</div>
+    <div class="@did__title">Вступи пока<br>это бесплатно.</div>
+    <div class="@did__body">Закрытая группа для тех кто строит сети знаний. Лидеры мнений, первые участники, прямой доступ к команде. После запуска — $100/месяц. Сейчас — бесплатно для первых.</div>
+    <a class="@did__cta" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">вступай — или завтра будет платно →</a>
+  </div>
+  <div class="@did__timer-box">
+    <div class="@did__timer-label">ПРЕДЛОЖЕНИЕ ИСТЕКАЕТ ЧЕРЕЗ</div>
+    <div id="community-timer" class="@did__timer">00:00:00</div>
+    <div class="@did__timer-units">
+      <span>ЧЧ</span><span>ММ</span><span>СС</span>
+    </div>
+    <div class="@did__note">После полуночи<br>цена $100/мес</div>
+  </div>
+</section>
+<script>
+(function() {
+  function updateTimer() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const diff = midnight - now;
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    const el = document.getElementById('community-timer');
+    if (el) el.textContent = h + ':' + m + ':' + s;
+  }
+  updateTimer();
+  setInterval(updateTimer, 1000);
+})();
+</script>
+{{ end }}

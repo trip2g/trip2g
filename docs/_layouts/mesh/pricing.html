@@ -1,0 +1,95 @@
+{{ block _style_@lid() }}
+.pricing {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+.price {
+  padding: 28px;
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.price:last-child { border-right: 0; }
+.price-tag { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.price-h { font-family: var(--sans); font-size: 26px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+.price-num { font-family: var(--sans); font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.price-num span {
+  font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.1em;
+  color: var(--muted); margin-left: 8px;
+}
+.price-mid .price-num { color: var(--accent); }
+.price-list { list-style: none; padding: 0; margin: 6px 0 12px; font-family: var(--sans); font-size: 14px; }
+.price-list li {
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--rule);
+  color: color-mix(in oklab, var(--fg) 85%, transparent);
+}
+.price-list li::before { content: "[+] "; font-family: var(--mono); color: var(--accent); margin-right: 6px; }
+.mesh-pricing__cta { margin-top: auto; align-self: flex-start; }
+@media (max-width: 900px) {
+  .pricing { grid-template-columns: 1fr; }
+  .price { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .price:last-child { border-bottom: 0; }
+}
+{{ end }}
+
+{{ block @lid() }}
+{{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
+<div class="pricing">
+  {{ yield pricing_card(tag="FREE · OSS", title="Self-hosted", price="$ 0", period="/forever", cta_href="/en/user/selfhosted", cta_text="install →") content }}
+    <ul class="price-list">
+      <li>Open source — MIT · <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">★ github</a></li>
+      <li>One-line install on your own box</li>
+      <li>Unlimited vaults, peers, storage</li>
+      <li>Full federation, MCP, webhooks</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox instance", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text="try free →") content }}
+    <ul class="price-list">
+      <li>One instance per account</li>
+      <li>Try federation without setup</li>
+      <li>All features, capped at 100&nbsp;MB</li>
+      <li>Your own subdomain on *.2pub.me</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(tag="CUSTOM", title="Need more?", price="let's talk", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="contact →") content }}
+    <ul class="price-list">
+      <li>Larger storage, dedicated host</li>
+      <li>Team mesh setup &amp; migration</li>
+      <li>Custom adapters (Notion, Drive…)</li>
+      <li>SLAs only if you really need them</li>
+    </ul>
+  {{ end }}
+</div>
+{{ end }}
+
+{{ block @lid_ru() }}
+{{ yield section_header(lhs="цены — их почти нет", rhs="open source · свой сервер или sandbox") }}
+<div class="pricing">
+  {{ yield pricing_card(tag="FREE · OSS", title="Свой сервер", price="$ 0", period="/навсегда", cta_href="/ru/user/selfhosted", cta_text="установить →") content }}
+    <ul class="price-list">
+      <li>Open source — MIT</li>
+      <li>Установка одной командой на своём сервере</li>
+      <li>Неограниченные vault'ы, peer'ы, хранилище</li>
+      <li>Полная federation, MCP, webhooks</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox", price="$ 0", period="· 100 MB", cta_href="#try", cta_class="primary", cta_text="попробовать →") content }}
+    <ul class="price-list">
+      <li>Один инстанс на аккаунт</li>
+      <li>Попробуйте federation без настройки</li>
+      <li>Все возможности, лимит 100&nbsp;MB</li>
+      <li>Поддомен на simplecloud.2pub.me</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(tag="CUSTOM", title="Нужно больше?", price="поговорим", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="написать →") content }}
+    <ul class="price-list">
+      <li>Больше хранилища, выделенный хост</li>
+      <li>Настройка team mesh &amp; миграция</li>
+      <li>Кастомные адаптеры (Notion, Drive…)</li>
+      <li>SLA — только если действительно нужен</li>
+    </ul>
+  {{ end }}
+</div>
+{{ end }}
