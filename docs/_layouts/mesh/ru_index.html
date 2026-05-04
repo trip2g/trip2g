@@ -1,71 +1,19 @@
 {{ import "_blocks" }}
+{{ import "bar" }}
+{{ import "hero" }}
+{{ import "privacy" }}
+{{ import "philo" }}
+{{ import "matrix" }}
+{{ import "try_now" }}
+{{ import "newsletter" }}
+{{ import "trusted_by" }}
+{{ import "testimonials" }}
+{{ import "foot" }}
 
 {{ yield index_layout() content }}
-    <!-- TOP BAR -->
-    <header class="bar">
-      <div class="prompt">$ <b>trip2g</b></div>
-      <div class="pill"><span class="dot"></span>демо-сеть · 10 баз онлайн</div>
-      <a class="pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
-      <div class="bar-spacer"></div>
-      <nav class="nav">
-        <a href="#" class="k" onclick="document.getElementById('mcp-hint').style.display='flex'; return false;">⌘K</a>
-        <a href="/ru/user">Документация</a>
-        <a href="/ru/user/use_cases">Сценарии</a>
-        <a href="/ru/thoughts">Философия</a>
-        <a href="/">EN</a>
-        <a href="/ru" class="k">RU</a>
-        <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">★ star us</a>
-        <a href="/ru/simple">начать →</a>
-      </nav>
-    </header>
-    <div id="mcp-hint" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(14,14,12,0.88); z-index:1000; align-items:center; justify-content:center;">
-      <div style="background:var(--bg); border:1px solid var(--fg); max-width:560px; width:90%; padding:40px 48px; font-family:var(--mono); position:relative;">
-        <div style="font-size:10px; letter-spacing:0.16em; color:var(--accent); margin-bottom:20px;">// ВАШ АГЕНТ ЖДЁТ</div>
-        <div style="font-family:var(--sans); font-size:22px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px;">Добавь это своему агенту.</div>
-        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:28px;">Затем спроси что угодно — быстрее чем читать эту страницу.</div>
-        <div style="border:1px solid var(--rule); margin-bottom:24px;">
-          <div style="padding:10px 16px; border-bottom:1px dashed var(--rule); font-size:10px; letter-spacing:0.12em; color:var(--muted); display:flex; justify-content:space-between; align-items:center;">
-            <span>// команда для агента</span>
-            <button onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='скопировано ✓'; setTimeout(()=>this.textContent='скопировать',1800)" style="background:var(--accent); color:var(--bg); border:0; padding:4px 12px; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; cursor:pointer;">скопировать</button>
-          </div>
-          <div style="padding:16px 18px; font-size:14px; color:var(--fg);">mcp:add https://trip2g.com/_system/mcp</div>
-        </div>
-        <a href="/ru/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">начать →</a>
-        <div onclick="document.getElementById('mcp-hint').style.display='none'" style="position:absolute; top:16px; right:20px; cursor:pointer; color:var(--muted); font-size:12px; letter-spacing:0.1em;">[ esc ]</div>
-      </div>
-    </div>
+    {{ yield mesh_bar_ru() }}
 
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-left">
-        <div class="eyebrow">Второй мозг всегда должен был быть общим.</div>
-        <h1 class="h1">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
-        <p class="blurb">
-          У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
-        </p>
-        <div class="cta-row" style="margin-top:28px;">
-          <a class="cta cta--primary" href="/ru/simple">начать →</a>
-          <a class="cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-          <a class="cta" href="/ru/user">документация</a>
-        </div>
-      </div>
-      <div class="hero-right">
-        <div class="frame graph-frame mg">
-          <div class="frame-head">
-            <span>fig.01 · mesh.trace · query.route</span>
-            <span class="live">LIVE</span>
-          </div>
-          <div id="mesh-svg-mount"></div>
-        </div>
-        <div class="frame trace-frame">
-          <div class="frame-head">
-            <span>stdout · /var/log/mesh.trace</span>
-            <span style="color: var(--muted)">tail -f</span>
-          </div>
-          <div class="trace-stream" id="trace-stream"></div>
-        </div>
-      </div>
-    </section>
+    {{ yield mesh_hero_ru() }}
 
     <!-- HOW IT WORKS -->
     {{ yield section_header(lhs="как это работает", rhs="3 шага · за минуту") }}
@@ -319,58 +267,7 @@
 
     <!-- PRIVACY -->
     {{ yield section_header(lhs="ваши данные остаются вашими", rhs="ваш hub · ваши данные · ваш выбор") }}
-    <section class="privacy">
-      <div class="privacy-text">
-        <h2 class="privacy-h">Данные хранятся там,<br>где вы решите.</h2>
-        <p class="privacy-p">
-          trip2g — это протокол, а не вендор. Нет центрального сервера, от которого вы зависите,
-          нет пикселя аналитики, нет теневой копии ваших заметок на чужом сервере.
-        </p>
-        <p class="privacy-p">
-          Каждый хаб владеет своими данными и сам решает — по каждому подключению и каждой базе — что доступно для запросов, а что нет.
-        </p>
-        <ul class="privacy-list">
-          <li><span class="key">хранение</span><span>ваш диск · ваш S3 · или наш sandbox 100MB</span></li>
-          <li><span class="key">доступ</span><span>переключатель на уровне базы · пауза в любой момент</span></li>
-          <li><span class="key">peer'ы</span><span>только по согласию · доверие отзывается</span></li>
-          <li><span class="key">сеть</span><span>прямое hub ⇄ hub · без relay</span></li>
-          <li><span class="key">код</span><span>MIT · аудит, форк, запуск</span></li>
-        </ul>
-      </div>
-      <div class="privacy-diag" aria-hidden="true">
-        <svg viewBox="0 0 360 280">
-          <!-- your perimeter -->
-          <rect x="10" y="10" width="170" height="260" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
-          <text x="20" y="28" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.16em" fill="#8c8c84">YOUR BOX</text>
-
-          <rect x="50" y="80"  width="90" height="34" fill="oklch(0.78 0.18 145)" />
-          <text x="95" y="101" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#0e0e0c">your hub</text>
-
-          <rect x="50" y="130" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
-          <text x="95" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">notes/</text>
-          <rect x="50" y="158" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
-          <text x="95" y="174" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">books/</text>
-          <rect x="50" y="186" width="90" height="22" fill="#0e0e0c" stroke="#f5f5f2" />
-          <text x="95" y="202" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#f5f5f2" letter-spacing="0.08em">tg/</text>
-
-          <!-- the wire -->
-          <line x1="180" y1="97" x2="280" y2="97" stroke="oklch(0.78 0.18 145)" stroke-width="1.5" stroke-dasharray="6 6">
-            <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="1.6s" repeatCount="indefinite" />
-          </line>
-          <text x="230" y="88" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#a3e635" letter-spacing="0.12em">SCOPED QUERY</text>
-
-          <!-- friend perimeter -->
-          <rect x="280" y="60" width="70" height="170" fill="none" stroke="#5a5a55" stroke-dasharray="4 4" />
-          <text x="290" y="78" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.12em" fill="#8c8c84">PEER</text>
-          <rect x="295" y="90" width="40" height="20" fill="oklch(0.78 0.18 145)" />
-          <text x="315" y="103" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#0e0e0c">hub</text>
-          <rect x="295" y="118" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
-          <rect x="295" y="136" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" />
-          <rect x="295" y="154" width="40" height="14" fill="#0e0e0c" stroke="#f5f5f2" stroke-dasharray="2 2" />
-          <text x="315" y="178" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8c8c84">2/3 shared</text>
-        </svg>
-      </div>
-    </section>
+    {{ yield mesh_privacy_ru() }}
 
     <!-- ROADMAP -->
     {{ yield section_header(lhs="роадмап", rhs="v0.3 · обратная связь · публично") }}
@@ -402,159 +299,13 @@
       {{ end }}
     </div>
 
-    <!-- PHILOSOPHY (small) -->
-    <section class="philo">
-      <div class="philo-eyebrow">философия</div>
-      <p class="philo-text">
-        Второй мозг — это не личный vault. Это общие знания людей которые думают об одном. trip2g не владеет этими знаниями — он даёт каждому человеку и каждому сообществу способ объединить свои базы и оставаться под контролем.
-        <a href="#">читать полностью →</a>
-      </p>
-    </section>
+    {{ yield mesh_philo_ru() }}
 
-    <!-- MATRIX -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--rule);">
-      <div style="padding:40px 48px; border-right:1px solid var(--rule);">
-        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--accent); margin:0 0 24px;">
-  ██████╗ ███████╗██████╗
-  ██╔══██╗██╔════╝██╔══██╗
-  ██████╔╝█████╗  ██║  ██║
-  ██╔══██╗██╔══╝  ██║  ██║</pre>
-        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Возьми красную таблетку.</div>
-        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
-        <a href="/ru/simple" style="display:inline-block; background:var(--accent); color:var(--bg); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;">mcp:add →</a>
-      </div>
-      <div style="padding:40px 48px; opacity:0.45;">
-        <pre style="font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--muted); margin:0 0 24px;">
-  ██████╗ ██╗     ██╗   ██╗███████╗
-  ██╔══██╗██║     ██║   ██║██╔════╝
-  ██████╔╝██║     ██║   ██║█████╗
-  ██╔══██╗██║     ██║   ██║██╔══╝</pre>
-        <div style="font-family:var(--sans); font-size:18px; font-weight:700; margin-bottom:8px;">Возьми синюю таблетку.</div>
-        <div style="font-family:var(--sans); font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Закрой вкладку. Вернись читать лендинги. История заканчивается. Ты просыпаешься и веришь во что хочешь.</div>
-        <span style="display:inline-block; border:1px solid var(--rule); color:var(--muted); padding:12px 24px; font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:default;">закрыть вкладку</span>
-      </div>
-    </div>
+    {{ yield mesh_matrix_ru() }}
 
-    <!-- TRY NOW -->
-    <header class="section" id="try">
-      <span class="lhs">попробовать · 5 минут · без установки</span>
-      <span class="rhs">подключить mcp → спросить агента → пропустить лендинг</span>
-    </header>
-    <section class="try">
-      <div class="try-left">
-        <h2 class="try-h">Пропусти лендинг.<br>Спроси <em>агента</em>.</h2>
-        <p class="try-sub">
-          Не читай эту страницу. Вставь адрес MCP в Claude Code, Codex, Cursor или любой MCP-клиент — он подключится к живой демо-сети знаний и ответит на любой вопрос о trip2g. Быстрее чем читать.
-        </p>
-        <div class="try-prompt">
-          <div class="try-prompt-head">
-            <span><b>// agent prompt</b> · paste as-is</span>
-            <button type="button" class="try-copy-btn" id="try-copy">copy</button>
-          </div>
-<pre id="try-prompt-text"><span class="c"># Подключи эту сеть знаний:</span>
-mcp:add <span class="a">https://trip2g.com/_system/mcp</span>
+    {{ yield mesh_try_now_ru() }}
 
-<span class="c"># Теперь спроси что угодно, например:</span>
-- что такое trip2g и как работает сеть знаний?
-- как подключить свой Obsidian vault?
-- какая модель приватности? где хранятся данные?
-- покажи минимальный конфиг чтобы поделиться базами с другом
-- сравни trip2g с централизованным RAG сервисом
-
-<span class="c"># Когда будешь готов:</span>
-mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># свой хаб, 100MB бесплатно</span></pre>
-        </div>
-      </div>
-
-      <div class="try-right">
-        <ol class="try-steps">
-          <li class="try-step">
-            <div class="try-step-num">step 01</div>
-            <div>
-              <h4 class="try-step-h">Возьмите MCP-агента</h4>
-              <p class="try-step-p">
-                Если ещё нет — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
-                <kbd>Cursor</kbd> или любой MCP-клиент. Пять минут на установку.
-              </p>
-              <div class="try-step-links">
-                <a class="try-chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
-                <a class="try-chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
-                <a class="try-chip" href="/ru/user/mcp">другие клиенты</a>
-              </div>
-            </div>
-          </li>
-
-          <li class="try-step">
-            <div class="try-step-num">step 02</div>
-            <div>
-              <h4 class="try-step-h">Вставьте адрес → спросите что угодно</h4>
-              <p class="try-step-p">
-                Агент подключается к нашей публичной демо-сети по MCP и отвечает из реальных баз знаний. Без регистрации, без API-ключа.
-              </p>
-            </div>
-          </li>
-
-          <li class="try-step">
-            <div class="try-step-num">step 03</div>
-            <div>
-              <h4 class="try-step-h">Запустите свой хаб</h4>
-              <p class="try-step-p">
-                Убедились? Получите бесплатный sandbox на 100MB в нашем облаке — без docker, без
-                терминала — и начните добавлять базы (Obsidian, Drive, TG). Перейдите на self-host, когда вырастете.
-              </p>
-              <div class="try-step-links">
-                <a class="try-chip is-accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
-                <a class="try-chip" href="/ru/user/selfhosted">руководство по self-host</a>
-              </div>
-            </div>
-          </li>
-
-          <li class="try-step">
-            <div class="try-step-num">step 04</div>
-            <div>
-              <h4 class="try-step-h">Нужно больше? Напишите нам</h4>
-              <p class="try-step-p">
-                Федерация команды или двух компаний, кастомные адаптеры, on-prem? Вступайте в сообщество
-                или запишитесь на 30-минутную консультацию — разберём вашу топологию.
-              </p>
-              <div class="try-step-links">
-                <a class="try-chip" href="#" target="_blank" rel="noopener">сообщество ↗</a>
-                <a class="try-chip" href="#" target="_blank" rel="noopener">записаться ↗</a>
-                <a class="try-chip" href="#" target="_blank" rel="noopener">github ↗</a>
-              </div>
-            </div>
-          </li>
-        </ol>
-        <div style="margin-top:24px; padding-top:18px; border-top:1px dashed var(--rule);">
-          <a class="cta cta--primary" href="/ru/simple" style="display:inline-block;">начать →</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- NEWSLETTER -->
-    <section class="news" id="newsletter">
-      <div>
-        <h2 class="news-h">Changelog и <em>заметки</em></h2>
-        <p class="news-p">
-          Одно письмо когда выходит релиз. Заметки о том как работают сети общих знаний на практике — что мы узнали строя это. Без маркетинга.
-        </p>
-      </div>
-      <form class="news-form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.news-joke').style.display='block'; this.style.display='none';">
-        <input type="email" placeholder="you@somewhere" aria-label="email" required>
-        <button type="submit">подписаться →</button>
-      </form>
-      <div class="news-meta">
-        <span><b>~1×/месяц</b></span>
-        <span>отписка в один клик</span>
-        <span>архив на <b>trip2g.com/notes</b></span>
-      </div>
-      <div class="news-joke" style="display:none; grid-column:1/-1; padding:18px; border:1px solid var(--accent); font-family:var(--mono); font-size:13px; color:var(--fg);">
-  Нам не нужен твой email.<br>
-  <span style="color:var(--muted);">Вот всё что тебе нужно на самом деле:</span><br><br>
-  <code style="color:var(--accent);">mcp:add https://trip2g.com/_system/mcp</code><br><br>
-  <a href="/ru/simple" style="color:var(--accent); text-decoration:none; letter-spacing:0.06em; text-transform:uppercase; font-size:11px;">→ /simple</a>
-</div>
-    </section>
+    {{ yield mesh_newsletter_ru() }}
 
     <!-- DOCS -->
     {{ yield section_header(lhs="tree docs/", rhs="начни здесь · обновлено 2026-04-30") }}
@@ -562,91 +313,11 @@ mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># св
 
     <!-- TRUSTED BY -->
     {{ yield section_header(lhs="уже в сети", rhs="их знания отвечают на ваши вопросы каждый день") }}
-    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_01</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI · продуктивность</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_02</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">строю публично</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_03</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">вайб-кодинг</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_04</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">продукт · стартап</div>
-      </div>
-      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_05</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">знания · PKM</div>
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--rule);">
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_06</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">AI инструменты</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_07</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">сообщество · системы</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_08</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">инди хакер</div>
-      </div>
-      <div style="padding:24px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_09</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">исследования · deep work</div>
-      </div>
-      <div style="padding:24px 28px; display:flex; flex-direction:column; gap:6px;">
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--accent);">КАНАЛ_10</div>
-        <div style="font-family:var(--sans); font-weight:700; font-size:15px;">Placeholder</div>
-        <div style="font-family:var(--sans); font-size:12px; color:var(--muted);">будущее · инструменты</div>
-      </div>
-    </div>
+    {{ yield mesh_trusted_by_ru() }}
 
     <!-- TESTIMONIALS -->
     {{ yield section_header(lhs="из сети", rhs="что люди говорили после одной команды") }}
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
-      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Я просто добавил одну команду. Теперь мы с новым другом строим бизнес о котором наши агенты уже договорились."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_01 · вайб-кодер</div>
-      </div>
-      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Я задал вопрос который думал неделями. Агент ответил из знаний трёх людей которых я никогда не встречал. Вот что такое сеть."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_02 · строитель</div>
-      </div>
-      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Все говорили мне построить второй мозг. Оказалось он был неполным без людей вокруг меня."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_03 · PKM-задрот</div>
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule);">
-      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Мои знания были разбросаны по 12 инструментам. После одной команды агент знает где всё. И агенты моих друзей тоже."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_04 · инди хакер</div>
-      </div>
-      <div style="padding:32px 28px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Добавил MCP. Спросил. Перешёл на /simple и прочитал цитату Фроста. Всё понял."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_05 · наблюдатель → строитель</div>
-      </div>
-      <div style="padding:32px 28px; display:flex; flex-direction:column; gap:16px;">
-        <p style="font-family:var(--sans); font-size:15px; line-height:1.6; color:var(--fg); margin:0;">"Не читай лендинг. Просто добавь команду. Доверься процессу."</p>
-        <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--muted); margin-top:auto;">— @HANDLE_06 · ранний последователь</div>
-      </div>
-    </div>
+    {{ yield mesh_testimonials_ru() }}
 
     <!-- COMMUNITY -->
     <div style="display:grid; grid-template-columns:1.2fr 1fr; border-bottom:1px solid var(--rule);">
@@ -712,42 +383,6 @@ mcp:add <span class="a">https://mcp.trip2g.com/me</span>  <span class="c"># св
       {{ end }}
     </div>
 
-    <!-- FOOT -->
-    <footer class="foot">
-      <div>
-        <h4>// trip2g</h4>
-        <p>Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
-        <a class="cta cta--primary" href="/ru/simple" style="margin-top:16px; display:inline-block;">начать →</a>
-      </div>
-      <div>
-        <h4>Философия</h4>
-        <ul>
-          <li><a href="/ru/thoughts/knowledge_graph">/knowledge_graph</a></li>
-          <li><a href="/ru/thoughts/three_zones">/three_zones</a></li>
-          <li><a href="/ru/thoughts/why_not_book">/why_not_book</a></li>
-          <li><a href="/ru/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Документация</h4>
-        <ul>
-          <li><a href="/ru/user/nachalo_rabotyi">/getting-started</a></li>
-          <li><a href="/ru/user/federation">/federation</a></li>
-          <li><a href="/ru/user/telegram">/telegram</a></li>
-          <li><a href="/ru/user/webhooks">/webhooks</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Контакты</h4>
-        <ul>
-          <li><a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
-          <li><a href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-          <li><a href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
-        </ul>
-      </div>
-    </footer>
-    <div class="coda">
-      <span>© trip2g.com · 2026 · MIT</span>
-      <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
-    </div>
+    {{ yield mesh_foot_ru() }}
+    <style>{{ yield_blocks("_style_mesh_") }}</style>
 {{ end }}

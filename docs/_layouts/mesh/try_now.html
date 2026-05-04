@@ -212,3 +212,100 @@ mcp:add <span class="mesh-try__token--accent">https://mcp.trip2g.com/me</span>  
   </div>
 </section>
 {{ end }}
+
+{{ block $fileID_ru() }}
+<header class="mesh-try__header" id="try">
+  <span class="mesh-try__header-lhs">попробовать · 5 минут · без установки</span>
+  <span class="mesh-try__header-rhs">подключить mcp → спросить агента → пропустить лендинг</span>
+</header>
+<section class="mesh-try">
+  <div class="mesh-try__left">
+    <h2 class="mesh-try__title">Пропусти лендинг.<br>Спроси <em>агента</em>.</h2>
+    <p class="mesh-try__sub">
+      Не читай эту страницу. Вставь адрес MCP в Claude Code, Codex, Cursor или любой MCP-клиент — он подключится к живой демо-сети знаний и ответит на любой вопрос о trip2g. Быстрее чем читать.
+    </p>
+    <div class="mesh-try__prompt">
+      <div class="mesh-try__prompt-head">
+        <span><b>// agent prompt</b> · paste as-is</span>
+        <button type="button" class="mesh-try__copy-btn" id="try-copy">copy</button>
+      </div>
+<pre class="mesh-try__prompt-pre" id="try-prompt-text"><span class="mesh-try__token--comment"># Подключи эту сеть знаний:</span>
+mcp:add <span class="mesh-try__token--accent">https://trip2g.com/_system/mcp</span>
+
+<span class="mesh-try__token--comment"># Теперь спроси что угодно, например:</span>
+- что такое trip2g и как работает сеть знаний?
+- как подключить свой Obsidian vault?
+- какая модель приватности? где хранятся данные?
+- покажи минимальный конфиг чтобы поделиться базами с другом
+- сравни trip2g с централизованным RAG сервисом
+
+<span class="mesh-try__token--comment"># Когда будешь готов:</span>
+mcp:add <span class="mesh-try__token--accent">https://mcp.trip2g.com/me</span>  <span class="mesh-try__token--comment"># свой хаб, 100MB бесплатно</span></pre>
+    </div>
+  </div>
+
+  <div class="mesh-try__right">
+    <ol class="mesh-try__steps">
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 01</div>
+        <div>
+          <h4 class="mesh-try__step-title">Возьмите MCP-агента</h4>
+          <p class="mesh-try__step-p">
+            Если ещё нет — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
+            <kbd>Cursor</kbd> или любой MCP-клиент. Пять минут на установку.
+          </p>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
+            <a class="mesh-try__chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
+            <a class="mesh-try__chip" href="/ru/user/mcp">другие клиенты</a>
+          </div>
+        </div>
+      </li>
+
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 02</div>
+        <div>
+          <h4 class="mesh-try__step-title">Вставьте адрес → спросите что угодно</h4>
+          <p class="mesh-try__step-p">
+            Агент подключается к нашей публичной демо-сети по MCP и отвечает из реальных баз знаний. Без регистрации, без API-ключа.
+          </p>
+        </div>
+      </li>
+
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 03</div>
+        <div>
+          <h4 class="mesh-try__step-title">Запустите свой хаб</h4>
+          <p class="mesh-try__step-p">
+            Убедились? Получите бесплатный sandbox на 100MB в нашем облаке — без docker, без
+            терминала — и начните добавлять базы (Obsidian, Drive, TG). Перейдите на self-host, когда вырастете.
+          </p>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
+            <a class="mesh-try__chip" href="/ru/user/selfhosted">руководство по self-host</a>
+          </div>
+        </div>
+      </li>
+
+      <li class="mesh-try__step">
+        <div class="mesh-try__step-num">step 04</div>
+        <div>
+          <h4 class="mesh-try__step-title">Нужно больше? Напишите нам</h4>
+          <p class="mesh-try__step-p">
+            Федерация команды или двух компаний, кастомные адаптеры, on-prem? Вступайте в сообщество
+            или запишитесь на 30-минутную консультацию — разберём вашу топологию.
+          </p>
+          <div class="mesh-try__step-links">
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">сообщество ↗</a>
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">записаться ↗</a>
+            <a class="mesh-try__chip" href="#" target="_blank" rel="noopener">github ↗</a>
+          </div>
+        </div>
+      </li>
+    </ol>
+    <div class="mesh-try__footer">
+      <a class="mesh-try__cta" href="/ru/simple">начать →</a>
+    </div>
+  </div>
+</section>
+{{ end }}

@@ -96,3 +96,29 @@
   </div>
 </section>
 {{ end }}
+
+{{ block $fileID_ru() }}
+<section class="mesh-news" id="newsletter">
+  <div>
+    <h2 class="mesh-news__title">Changelog и <em>заметки</em></h2>
+    <p class="mesh-news__p">
+      Одно письмо когда выходит релиз. Заметки о том как работают сети общих знаний на практике — что мы узнали строя это. Без маркетинга.
+    </p>
+  </div>
+  <form class="mesh-news__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.mesh-news__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
+    <input class="mesh-news__input" type="email" placeholder="you@somewhere" aria-label="email" required>
+    <button class="mesh-news__submit" type="submit">подписаться →</button>
+  </form>
+  <div class="mesh-news__meta">
+    <span><b>~1×/месяц</b></span>
+    <span>отписка в один клик</span>
+    <span>архив на <b>trip2g.com/notes</b></span>
+  </div>
+  <div class="mesh-news__joke">
+    Нам не нужен твой email.<br>
+    <span class="mesh-news__joke-hint">Вот всё что тебе нужно на самом деле:</span><br><br>
+    <code class="mesh-news__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+    <a href="/ru/simple" class="mesh-news__joke-link">→ /simple</a>
+  </div>
+</section>
+{{ end }}

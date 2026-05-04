@@ -145,3 +145,36 @@
   </div>
 </section>
 {{ end }}
+
+{{ block $fileID_ru() }}
+<section class="mesh-hero">
+  <div class="mesh-hero__left">
+    <div class="mesh-hero__eyebrow">Второй мозг всегда должен был быть общим.</div>
+    <h1 class="mesh-hero__title">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
+    <p class="mesh-hero__blurb">
+      У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
+    </p>
+    <div class="mesh-hero__cta-row">
+      <a class="mesh-hero__cta mesh-hero__cta--primary" href="/ru/simple">начать →</a>
+      <a class="mesh-hero__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
+      <a class="mesh-hero__cta" href="/ru/user">документация</a>
+    </div>
+  </div>
+  <div class="mesh-hero__right">
+    <div class="mesh-hero__frame mesh-hero__frame--graph mesh-hero__graph">
+      <div class="mesh-hero__frame-head">
+        <span>fig.01 · mesh.trace · query.route</span>
+        <span class="mesh-hero__live">LIVE</span>
+      </div>
+      <div id="mesh-svg-mount"></div>
+    </div>
+    <div class="mesh-hero__frame mesh-hero__frame--trace">
+      <div class="mesh-hero__frame-head">
+        <span>stdout · /var/log/mesh.trace</span>
+        <span style="color: var(--muted)">tail -f</span>
+      </div>
+      <div class="mesh-hero__trace-stream" id="trace-stream"></div>
+    </div>
+  </div>
+</section>
+{{ end }}

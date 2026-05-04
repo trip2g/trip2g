@@ -126,3 +126,38 @@
   </div>
 </div>
 {{ end }}
+
+{{ block $fileID_ru() }}
+<header class="mesh-bar">
+  <div class="mesh-bar__prompt">$ <b>trip2g</b></div>
+  <div class="mesh-bar__pill"><span class="mesh-bar__pill-dot"></span>демо-сеть · 10 баз онлайн</div>
+  <a class="mesh-bar__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
+  <div class="mesh-bar__spacer"></div>
+  <nav class="mesh-bar__nav">
+    <a href="#" class="mesh-bar__nav-link mesh-bar__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('mesh-bar__overlay--open'); return false;">⌘K</a>
+    <a href="/ru/user" class="mesh-bar__nav-link">Документация</a>
+    <a href="/ru/user/use_cases" class="mesh-bar__nav-link">Сценарии</a>
+    <a href="/ru/thoughts" class="mesh-bar__nav-link">Философия</a>
+    <a href="/" class="mesh-bar__nav-link">EN</a>
+    <a href="/ru" class="mesh-bar__nav-link mesh-bar__nav-link--key">RU</a>
+    <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="mesh-bar__nav-link">★ star us</a>
+    <a href="/ru/simple" class="mesh-bar__nav-link">начать →</a>
+  </nav>
+</header>
+<div id="mcp-hint" class="mesh-bar__overlay" onclick="if(event.target===this)this.classList.remove('mesh-bar__overlay--open')">
+  <div class="mesh-bar__dialog">
+    <div class="mesh-bar__dialog-eyebrow">// ВАШ АГЕНТ ЖДЁТ</div>
+    <div class="mesh-bar__dialog-title">Добавь это своему агенту.</div>
+    <div class="mesh-bar__dialog-sub">Затем спроси что угодно — быстрее чем читать эту страницу.</div>
+    <div class="mesh-bar__snippet">
+      <div class="mesh-bar__snippet-head">
+        <span>// команда для агента</span>
+        <button class="mesh-bar__snippet-copy" onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='скопировано ✓'; setTimeout(()=>this.textContent='скопировать',1800)">скопировать</button>
+      </div>
+      <div class="mesh-bar__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
+    </div>
+    <a href="/ru/simple" class="mesh-bar__cta">начать →</a>
+    <div class="mesh-bar__close" onclick="document.getElementById('mcp-hint').classList.remove('mesh-bar__overlay--open')">[ esc ]</div>
+  </div>
+</div>
+{{ end }}
