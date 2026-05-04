@@ -85,12 +85,12 @@ Defined in `_blocks.html` `<style>`, available in all component CSS:
 
 When writing a new component file, use these placeholders — they are expanded at load time based on the file path:
 
-| Placeholder | Expands to | Used for |
-|-------------|-----------|---------|
-| `@lid` | `mesh_bar` (underscores) | Jet block names |
-| `@did` | `mesh-bar` (hyphens) | BEM CSS class names |
-| `@@lid` | literal `@lid` | Escaping in JS/CSS content |
-| `@@did` | literal `@did` | Escaping in JS/CSS content |
+| Placeholder | Full name | Expands to | Used for |
+|-------------|-----------|-----------|---------|
+| `@lid` | **l**odash **id** | `mesh_bar` (underscores) | Jet block names |
+| `@did` | **d**ash **id** | `mesh-bar` (hyphens) | BEM CSS class names |
+| `@@lid` | escape | literal `@lid` | In JS/CSS where `@lid` should stay as-is |
+| `@@did` | escape | literal `@did` | In JS/CSS where `@did` should stay as-is |
 
 ## New component template
 

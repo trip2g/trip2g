@@ -100,7 +100,7 @@ Block names in Jet are **global** across all included files. If `hero.html` and 
 | `components/button.html` | `components_button` | `components-button` |
 | `ui/nav/header.html` | `ui_nav_header` | `ui-nav-header` |
 
-`@lid` uses underscores (for Jet block names). `@did` uses hyphens (for BEM CSS class names). Both are derived from the file ID, not the block name.
+`@lid` and `@did` are **preprocessor variables** — the layout loader substitutes them before Jet parses the template. `@lid` (**l**odash **id** — underscores) is used in Jet block names. `@did` (**d**ash **id** — hyphens) is used in BEM CSS class names. Both are derived from the file path, not the block name. Use `@@lid` / `@@did` to emit a literal `@lid` / `@did` in JS or CSS.
 
 Use `@lid` in block names and `@did` in CSS class names:
 
