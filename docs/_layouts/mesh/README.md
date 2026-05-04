@@ -22,8 +22,6 @@ free: true
 
 ```html
 {{ import "_blocks" }}
-{{ import "bar" }}
-{{ import "foot" }}
 
 {{ yield index_layout() content }}
   {{ yield mesh_bar() }}
@@ -35,7 +33,7 @@ free: true
 {{ end }}
 ```
 
-That's it. The layout file controls the HTML structure; the note provides the title and any custom frontmatter.
+That's it. Only `_blocks.html` needs an explicit import — it contains `index_layout` and shared blocks that are not auto-discovered. All component files (`bar.html`, `foot.html`, etc.) are imported automatically by the loader based on `{{ yield }}` calls.
 
 ## Components
 
@@ -136,14 +134,10 @@ No body content needed unless the layout uses `{{ note.Body() }}`.
 
 ### File 2: the layout (`docs/_layouts/mesh/<slug>.html`)
 
-Pick the components you need from the table above, import them, yield them in order:
+Pick the components you need from the table above, yield them in order. Only `_blocks.html` needs an explicit import:
 
 ```html
 {{ import "_blocks" }}
-{{ import "bar" }}
-{{ import "hero" }}
-{{ import "try_now" }}
-{{ import "foot" }}
 
 {{ yield index_layout() content }}
   {{ yield mesh_bar() }}
@@ -222,11 +216,9 @@ At load time:
 {{ end }}
 ```
 
-2. Import and yield in the layout:
+2. Yield in the layout — no import needed, the loader auto-discovers it:
 
 ```html
-{{ import "myblock" }}
-...
 {{ yield mesh_myblock(title="Hello", body="World") }}
 ```
 
