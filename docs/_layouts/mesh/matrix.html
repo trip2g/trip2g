@@ -21,14 +21,6 @@
   font-family: var(--sans); font-size: 14px;
   color: var(--muted); margin-bottom: 24px; line-height: 1.5;
 }
-.@did__cta {
-  display: inline-block;
-  background: var(--accent); color: var(--bg);
-  padding: 12px 24px;
-  font-family: var(--mono); font-size: 12px;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  text-decoration: none;
-}
 .@did__nocta {
   display: inline-block;
   border: 1px solid var(--rule); color: var(--muted);
@@ -49,7 +41,7 @@
   ██╔══██╗██╔══╝  ██║  ██║</pre>
     <div class="@did__title">Take the red pill.</div>
     <div class="@did__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
-    <a href="/simple" class="@did__cta">mcp:add →</a>
+    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="mesh-matrix__cta")}}
   </div>
   <div class="@did__cell mesh-matrix__cell--blue">
     <pre class="@did__ascii mesh-matrix__ascii--blue">
@@ -74,7 +66,7 @@
   ██╔══██╗██╔══╝  ██║  ██║</pre>
     <div class="@did__title">Возьми красную таблетку.</div>
     <div class="@did__desc">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
-    <a href="/ru/simple" class="@did__cta">mcp:add →</a>
+    {{yield mesh_button(label="mcp:add →", href="/ru/simple", modifier="mesh-matrix__cta")}}
   </div>
   <div class="@did__cell mesh-matrix__cell--blue">
     <pre class="@did__ascii mesh-matrix__ascii--blue">

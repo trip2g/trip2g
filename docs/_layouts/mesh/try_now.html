@@ -95,17 +95,6 @@
   margin-top: 24px; padding-top: 18px;
   border-top: 1px dashed var(--rule);
 }
-.@did__cta {
-  display: inline-block;
-  padding: 14px 22px;
-  border: 1px solid var(--accent);
-  background: var(--accent); color: var(--bg);
-  text-decoration: none;
-  font-size: 12px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: var(--mono);
-}
-.@did__cta:hover { background: var(--fg); border-color: var(--fg); }
 @media (max-width: 900px) {
   .@did { grid-template-columns: 1fr; }
   .@did__left, .@did__right { padding: 24px 20px; border-right: 0; }
@@ -207,7 +196,7 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       </li>
     </ol>
     <div class="@did__footer">
-      <a class="@did__cta" href="/simple">start now →</a>
+      {{yield mesh_button(label="start now →", href="/simple", modifier="mesh-try-now__cta")}}
     </div>
   </div>
 </section>
@@ -304,7 +293,7 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       </li>
     </ol>
     <div class="@did__footer">
-      <a class="@did__cta" href="/ru/simple">начать →</a>
+      {{yield mesh_button(label="начать →", href="/ru/simple", modifier="mesh-try-now__cta")}}
     </div>
   </div>
 </section>

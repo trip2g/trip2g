@@ -21,18 +21,6 @@
   font-family: var(--sans); font-size: 13px; line-height: 1.5;
   color: var(--muted); margin: 0;
 }
-.@did__cta {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 14px 22px;
-  border: 1px solid var(--accent);
-  background: var(--accent); color: var(--bg);
-  text-decoration: none;
-  font-size: 12px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: var(--mono);
-}
-.@did__cta:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .@did__coda {
   padding: 14px 40px;
   font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
@@ -49,7 +37,7 @@
   <div>
     <h4 class="@did__heading">// trip2g</h4>
     <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
-    <a class="@did__cta" href="/simple">start →</a>
+    {{yield mesh_button(label="start →", href="/simple", modifier="mesh-foot__cta")}}
   </div>
   <div>
     <h4 class="@did__heading">Philosophy</h4>
@@ -89,7 +77,7 @@
   <div>
     <h4 class="@did__heading">// trip2g</h4>
     <p class="@did__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
-    <a class="@did__cta" href="/ru/simple">начать →</a>
+    {{yield mesh_button(label="начать →", href="/ru/simple", modifier="mesh-foot__cta")}}
   </div>
   <div>
     <h4 class="@did__heading">Философия</h4>

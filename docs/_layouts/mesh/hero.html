@@ -40,18 +40,6 @@
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
 .@did__cta-row { margin-top: 28px; display: flex; }
-.@did__cta {
-  padding: 14px 22px;
-  border: 1px solid var(--fg);
-  color: var(--fg); text-decoration: none;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: var(--mono);
-}
-.@did__cta + .@did__cta { border-left: 0; }
-.@did__cta--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.@did__cta:hover:not(.@did__cta--primary) { background: var(--fg); color: var(--bg); }
 .@did__right {
   padding: 18px;
   display: grid;
@@ -122,9 +110,9 @@
       You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent — let's add it to the network. Your piece is the last missing part of the puzzle.
     </p>
     <div class="@did__cta-row">
-      <a class="@did__cta mesh-hero__cta--primary" href="/simple">start →</a>
-      <a class="@did__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-      <a class="@did__cta" href="/en/user">docs</a>
+      {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
     </div>
   </div>
   <div class="@did__right">
@@ -155,9 +143,9 @@
       У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
     </p>
     <div class="@did__cta-row">
-      <a class="@did__cta mesh-hero__cta--primary" href="/ru/simple">начать →</a>
-      <a class="@did__cta" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-      <a class="@did__cta" href="/ru/user">документация</a>
+      {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
     </div>
   </div>
   <div class="@did__right">

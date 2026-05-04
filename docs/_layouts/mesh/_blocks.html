@@ -79,18 +79,6 @@
       margin-top: 28px;
       display: flex;
     }
-    .cta {
-      padding: 14px 22px;
-      border: 1px solid var(--fg);
-      color: var(--fg); text-decoration: none;
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-family: var(--mono);
-    }
-    .cta + .cta { border-left: 0; }
-    .cta--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-    .cta:hover:not(.cta--primary) { background: var(--fg); color: var(--bg); }
 
     .frame {
       border: 1px solid var(--rule);
@@ -191,7 +179,7 @@
       color: color-mix(in oklab, var(--fg) 85%, transparent);
     }
     .price-list li::before { content: "[+] "; font-family: var(--mono); color: var(--accent); margin-right: 6px; }
-    .price .cta { margin-top: auto; align-self: flex-start; }
+    .mesh-pricing__cta { margin-top: auto; align-self: flex-start; }
 
     /* HOW IT WORKS */
     .how {
@@ -800,7 +788,7 @@
   <h3 class="price-h">{{ title }}</h3>
   <div class="price-num">{{ price | unsafe }}<span>{{ period }}</span></div>
   {{ yield content }}
-  {{ if cta_href }}<a href="{{ cta_href }}" class="cta {{ cta_class }}">{{ cta_text }}</a>{{ end }}
+  {{ if cta_href }}{{yield mesh_button(label=cta_text, href=cta_href, variant=cta_class, modifier="mesh-pricing__cta")}}{{ end }}
 </div>
 {{ end }}
 

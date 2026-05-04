@@ -1,0 +1,21 @@
+{{ block _style_@lid() }}
+.@did {
+  display: inline-flex; align-items: center;
+  padding: 10px 20px;
+  border: 1px solid var(--fg);
+  color: var(--fg); text-decoration: none;
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.@did:hover { background: var(--fg); color: var(--bg); }
+.@did--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.@did--primary:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.@did + .@did { border-left: 0; }
+{{ end }}
+
+{{ block @lid(label="", href="", variant="", modifier="", target="") }}
+<a class="@did{{ if variant }} @did--{{ variant }}{{ end }}{{ if modifier }} {{ modifier }}{{ end }}"
+   href="{{ href }}"{{ if target }} target="{{ target }}" rel="noopener"{{ end }}>{{ label }}</a>
+{{ end }}

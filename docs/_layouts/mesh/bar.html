@@ -75,13 +75,6 @@
 .@did__snippet-body {
   padding: 16px 18px; font-size: 14px; color: var(--fg);
 }
-.@did__cta {
-  display: inline-block;
-  background: var(--accent); color: var(--bg);
-  padding: 12px 24px;
-  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
-  text-transform: uppercase; text-decoration: none;
-}
 .@did__close {
   position: absolute; top: 16px; right: 20px;
   cursor: pointer; color: var(--muted);
@@ -125,7 +118,7 @@
       </div>
       <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
     </div>
-    <a href="/simple" class="@did__cta">start →</a>
+    {{yield mesh_button(label="start →", href="/simple", modifier="mesh-bar__cta")}}
     <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('mesh-bar__overlay--open')">[ esc ]</div>
   </div>
 </div>
@@ -160,7 +153,7 @@
       </div>
       <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
     </div>
-    <a href="/ru/simple" class="@did__cta">начать →</a>
+    {{yield mesh_button(label="начать →", href="/ru/simple", modifier="mesh-bar__cta")}}
     <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('mesh-bar__overlay--open')">[ esc ]</div>
   </div>
 </div>
