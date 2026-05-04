@@ -49,3 +49,26 @@ docker-deps:
 
 air: docker-deps
 	go tool github.com/air-verse/air
+
+# bench: 60s load test against http://localhost:8081/ + cpu profile saved to /tmp/trip2g-bench-*
+# Usage: make bench              — test homepage
+#        make bench URL=/ru      — test specific path
+#        make bench RATE=500 DUR=30s  — custom rate and duration
+URL  ?= /
+RATE ?= 1000
+DUR  ?= 60s
+PPROF_PORT ?= 8082
+BENCH_TS := $(shell date +%Y%m%d_%H%M%S)
+
+bench:
+	@echo "==> Starting CPU profile ($(DUR))..."
+	@curl -s "http://localhost:$(PPROF_PORT)/debug/pprof/profile?seconds=$(DUR)" \
+		-o /tmp/trip2g-cpu-$(BENCH_TS).prof & PROF_PID=$$!; \
+	sleep 0.5; \
+	echo "==> Running vegeta: $(RATE) req/s for $(DUR) against http://localhost:8081$(URL)"; \
+	echo "GET http://localhost:8081$(URL)" \
+		| $(HOME)/go/bin/vegeta attack -rate=$(RATE) -duration=$(DUR) \
+		| $(HOME)/go/bin/vegeta report -type=text; \
+	wait $$PROF_PID; \
+	echo "==> CPU profile saved: /tmp/trip2g-cpu-$(BENCH_TS).prof"; \
+	echo "==> View: go tool pprof -http=:6060 /tmp/trip2g-cpu-$(BENCH_TS).prof"
