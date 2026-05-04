@@ -111,6 +111,16 @@ Federation reuses your existing subgraph access control.
 
 **Inbound (what you see from peers).** KB-notes are regular notes — you can assign them to a subgraph. If you later open your hub to colleagues, they only see KB-notes whose subgraph they have local access to.
 
+**KB-note visibility tiers.** Because a KB-note is just a note, the same visibility rules apply:
+
+| KB-note frontmatter | Anonymous MCP caller | Authenticated subscriber | Admin |
+|---------------------|---------------------|--------------------------|-------|
+| `free: true` | ✓ routes through | ✓ routes through | ✓ routes through |
+| _(none)_ | ✗ "not configured" | ✓ routes through | ✓ routes through |
+| `subgraphs: team` | ✗ "not configured" | only if subscribed to `team` | ✓ routes through |
+
+A KB-note with no `free:` and no `subgraphs:` is not admin-only — it is visible to any authenticated subscriber. To make a KB-note visible only to admins, put it in a dedicated subgraph that no non-admin users have access to (e.g. `subgraphs: admin-only`). The `federated_search` response for an inaccessible `kb_id` is always "not configured" — identical to a `kb_id` that does not exist, so the peer's existence is not disclosed.
+
 ### Revoking access
 
 Admin → Federation → find the row → Revoke. The row goes grey. Any future request from that `kid` gets a 401 response. No coordination with the peer is needed — their calls simply start failing immediately.
