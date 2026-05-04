@@ -128,6 +128,80 @@ sync_seedvault_to_peer() {
   echo -e "${GREEN}✓ Seedvault pushed to peer${NC}"
 }
 
+sync_seedvault2_to_peer2() {
+  local PEER_URL="http://localhost:20093"
+  local PEER_GRAPHQL="$PEER_URL/graphql"
+
+  echo "🔄 Setting up peer2 instance (seedvault2 push)..."
+
+  curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { requestEmailSignInCode(input: { email: \"hello@example.com\" }) { ... on RequestEmailSignInCodePayload { success } } }"}' > /dev/null
+
+  local PEER_TOKEN
+  PEER_TOKEN=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { signInByEmail(input: { email: \"hello@example.com\", code: \"111111\" }) { ... on SignInPayload { token } } }"}' \
+    | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_TOKEN" ]; then
+    echo -e "${RED}✗ Failed to sign in to peer2${NC}"
+    return 1
+  fi
+
+  local PEER_API_KEY
+  PEER_API_KEY=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -H "Cookie: trip2g_e2e_peer2=$PEER_TOKEN" \
+    -d '{"query":"mutation AdminCreateApiKey($input: CreateApiKeyInput!) { admin { createApiKey(input: $input) { ... on ErrorPayload { message } ... on CreateApiKeyPayload { value } } } }","variables":{"input":{"description":"demo"}}}' \
+    | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_API_KEY" ]; then
+    echo -e "${RED}✗ Failed to create peer2 API key${NC}"
+    return 1
+  fi
+
+  npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/seedvault2 --api-key "$PEER_API_KEY" --api-url "$PEER_GRAPHQL"
+  echo -e "${GREEN}✓ Seedvault2 pushed to peer2${NC}"
+}
+
+sync_seedvault3_to_peer3() {
+  local PEER_URL="http://localhost:20095"
+  local PEER_GRAPHQL="$PEER_URL/graphql"
+
+  echo "🔄 Setting up peer3 instance (seedvault3 push)..."
+
+  curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { requestEmailSignInCode(input: { email: \"hello@example.com\" }) { ... on RequestEmailSignInCodePayload { success } } }"}' > /dev/null
+
+  local PEER_TOKEN
+  PEER_TOKEN=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -d '{"query":"mutation { signInByEmail(input: { email: \"hello@example.com\", code: \"111111\" }) { ... on SignInPayload { token } } }"}' \
+    | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_TOKEN" ]; then
+    echo -e "${RED}✗ Failed to sign in to peer3${NC}"
+    return 1
+  fi
+
+  local PEER_API_KEY
+  PEER_API_KEY=$(curl -sf -X POST "$PEER_GRAPHQL" \
+    -H 'Content-Type: application/json' \
+    -H "Cookie: trip2g_e2e_peer3=$PEER_TOKEN" \
+    -d '{"query":"mutation AdminCreateApiKey($input: CreateApiKeyInput!) { admin { createApiKey(input: $input) { ... on ErrorPayload { message } ... on CreateApiKeyPayload { value } } } }","variables":{"input":{"description":"demo"}}}' \
+    | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
+
+  if [ -z "$PEER_API_KEY" ]; then
+    echo -e "${RED}✗ Failed to create peer3 API key${NC}"
+    return 1
+  fi
+
+  npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/seedvault3 --api-key "$PEER_API_KEY" --api-url "$PEER_GRAPHQL"
+  echo -e "${GREEN}✓ Seedvault3 pushed to peer3${NC}"
+}
+
 # NOTE: presigned MinIO URLs contain "minio:29000" hostname.
 # Add "127.0.0.1 minio" to /etc/hosts for local testing.
 # In CI this is done in the workflow file.
@@ -223,6 +297,17 @@ docker compose -f docker-compose.test.yml up -d --build
   exit 1
 }
 
+# Wait for peer2 and peer3 instances (federation ACL e2e)
+./scripts/waitfor localhost:20093 || {
+  echo -e "${RED}✗ Peer2 service failed to start${NC}"
+  exit 1
+}
+
+./scripts/waitfor localhost:20095 || {
+  echo -e "${RED}✗ Peer3 service failed to start${NC}"
+  exit 1
+}
+
 # Run setup test to create API key
 echo "🔑 Running setup test (create API key)..."
 echo ""
@@ -258,6 +343,18 @@ echo ""
 # Push seedvault to peer instance for federation tests
 sync_seedvault_to_peer || {
   echo -e "${RED}✗ Peer seedvault sync failed${NC}"
+  exit 1
+}
+echo ""
+
+sync_seedvault2_to_peer2 || {
+  echo -e "${RED}✗ Peer2 seedvault sync failed${NC}"
+  exit 1
+}
+echo ""
+
+sync_seedvault3_to_peer3 || {
+  echo -e "${RED}✗ Peer3 seedvault sync failed${NC}"
   exit 1
 }
 echo ""
