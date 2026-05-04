@@ -58,3 +58,4 @@ docs/.sync-state.json
 .omx/
 /testdata/seedvault/.sync-state.json
 /docs/knowlume
+*.swp
