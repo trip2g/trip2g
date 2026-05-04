@@ -203,6 +203,34 @@ A `card` component with BEM classes:
 
 `.card__title` can never conflict with `.hero__title` — the block name is part of every class. See [[en/user/bem|BEM naming in templates]] for the full convention.
 
+### Static assets: `asset()`
+
+A layout can reference static files (JS, CSS, SVG, images) that live next to it using `asset()`:
+
+```html
+<script defer src="{{ asset("scripts.js") }}"></script>
+<img src="{{ asset("logo.svg") }}" alt="logo">
+```
+
+`asset()` resolves the path relative to the layout's own directory. If your layout is at `_layouts/mesh/index.html`, then `{{ asset("scripts.js") }}` serves `_layouts/mesh/scripts.js`.
+
+In production the URL includes a cache-busting hash so browsers pick up updates immediately. In development the hash is omitted for readability.
+
+Any static file can sit next to the layout — JS, SVG, images, fonts. The engine serves them automatically; no build step or extra configuration needed.
+
+**Example layout structure:**
+
+```
+_layouts/
+└── mesh/
+    ├── _blocks.html
+    ├── index.html
+    ├── scripts.js      ← {{ asset("scripts.js") }}
+    └── logo.svg        ← {{ asset("logo.svg") }}
+```
+
+Contrast this with `yield_blocks`, which collects inline CSS/JS from component blocks at render time. Use `asset()` when the file is a standalone static asset that does not need template processing.
+
 ### Related
 
 - [[templates|Custom templates]] — template basics, Jet syntax, `note` and `nvs` variables
