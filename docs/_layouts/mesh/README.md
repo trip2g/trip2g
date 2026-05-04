@@ -235,3 +235,97 @@ BEM rules to follow:
 - Elements: `.@did__name` — parts of the block (flat, no nesting: `.@did__el` not `.@did__parent__el`)
 - Modifiers: `.@did__el--state` — variants (always used with the base class)
 - No global classes, no tag selectors, no IDs in CSS
+
+## Building your own design system for one-shot landings
+
+The mesh layout is a working example of a component-based design system inside trip2g. You can fork this approach for your own themes.
+
+### What a design system looks like here
+
+```
+_layouts/
+└── mytheme/
+    ├── _blocks.html        ← page shell (HTML, head, CSS variables, shared blocks)
+    ├── README.md           ← this file — component catalog for agents and humans
+    ├── button.html         ← shared primitive: @lid/@did, variant, modifier
+    ├── nav.html            ← navigation component
+    ├── hero.html           ← hero section
+    ├── features.html       ← features grid
+    ├── pricing.html        ← pricing cards
+    ├── footer.html         ← footer
+    └── index.html          ← page: imports + yields + yield_blocks
+```
+
+### Step 1: define your design tokens in `_blocks.html`
+
+```html
+{{ block page_shell() }}
+<!doctype html>
+<html>
+<head>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111111;
+      --accent: #3b82f6;
+      --muted: #6b7280;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  {{ yield content }}
+  <style>{{ yield_blocks("_style_") }}</style>
+</body>
+</html>
+{{ end }}
+```
+
+### Step 2: create atomic components first
+
+Start with primitives that everything else uses:
+
+- `button.html` — links and buttons with variants
+- `tag.html` — labels, badges
+- `input.html` — form inputs
+
+Then build section components that compose the primitives:
+
+```html
+{{ block @lid(title="", cta_label="", cta_href="") }}
+<section class="@did">
+  <h1 class="@did__title">{{ title }}</h1>
+  {{yield mesh_button(label=cta_label, href=cta_href, variant="primary")}}
+</section>
+{{ end }}
+```
+
+### Step 3: write a README.md for your theme
+
+Document every component with its block name and parameters. This file is what agents read to generate landings. Include:
+
+- Component table (name, block, parameters, description)
+- CSS variable reference
+- `@lid`/`@did` placeholder explanation
+- A minimal page template agents can copy
+
+### Step 4: generate a landing with one prompt
+
+Give the agent:
+1. This README (or your theme's README)
+2. A prompt: _"Create a landing for a SaaS tool that does X. Use components: hero, features (3 items), pricing (2 tiers), footer."_
+
+The agent produces two files:
+- `docs/mypage.md` — frontmatter with `layout: mytheme/mypage`
+- `docs/_layouts/mytheme/mypage.html` — imports + yields in order
+
+No build step. No config. Reload the vault and the page is live.
+
+### Key principles
+
+1. **One file = one component.** CSS, HTML (EN), HTML (RU) all in one `.html` file.
+2. **`@lid` for block names, `@did` for CSS classes.** Preprocessor variables — no manual renaming when copying components.
+3. **`yield_blocks` collects CSS automatically.** Place `<style>{{ yield_blocks("_style_") }}</style>` once at end of body. Only CSS for used components is emitted.
+4. **Modifier = BEM mixin.** Pass `modifier="parent-block__child"` to inject a component into a parent's layout context without breaking its own BEM scope.
+5. **Auto-import.** No `{{ import "button" }}` needed. The loader resolves transitive dependencies from `{{ yield }}` calls.
