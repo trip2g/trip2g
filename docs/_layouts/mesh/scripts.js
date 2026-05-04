@@ -381,16 +381,26 @@ if (tryCopyBtn && tryPromptText) {
   if (!mount) return;
 
   const TURBO_ROUTES = [
-    ["you","youhub","frhub","f_work"],
-    ["friend","frhub","youhub","y_notes"],
-    ["you","youhub","y_book1"],
-    ["you","youhub","y_book2"],
-    ["friend","frhub","f_proj"],
+    ["you","youhub","y_tg"],
+    ["you","youhub","y_drive"],
+    ["you","youhub","y_raw"],
+    ["obs","youhub","y_book1"],
+    ["obs","youhub","y_book2"],
+    ["you","youhub","frhub","f_book"],
+    ["you","youhub","frhub","f_drive"],
+    ["you","youhub","frhub","f_other"],
+    ["you","youhub","frhub","f_tg"],
     ["you","youhub","frhub","friend"],
-    ["friend","frhub","youhub","you"],
-    ["you","youhub","frhub","f_work","frhub","friend"],
-    ["friend","frhub","youhub","y_book2","youhub","frhub"],
-    ["you","youhub","y_notes","youhub","frhub","f_proj"],
+    ["friend","frhub","friend2"],
+    ["friend","frhub","youhub","obs"],
+    ["friend","frhub","youhub","y_raw"],
+    ["friend","frhub","f_proj","frhub","f_book"],
+    ["you","youhub","frhub","f_drive","frhub","f_tg"],
+    ["obs","youhub","frhub","friend2"],
+    ["friend","frhub","youhub","y_tg"],
+    ["friend","frhub","youhub","y_drive"],
+    ["you","youhub","y_book1","youhub","y_book2"],
+    ["obs","youhub","frhub","f_other","frhub","f_proj"],
   ];
 
   let turboOn = false;
@@ -483,4 +493,73 @@ if (tryCopyBtn && tryPromptText) {
       clearInterval(spawnTimer);
     }
   });
+})();
+
+// ============================================================
+// DRAG NODES (dev tool — rearrange, get coords via console)
+// ============================================================
+(function() {
+  const mount = document.getElementById("mesh-svg-mount");
+  if (!mount) return;
+
+  // Log current coords on every drag-end
+  function logCoords() {
+    console.log("// NODES coords:\n" + NODES.map(n =>
+      `  { id: "${n.id}", x: ${Math.round(n.x)}, y: ${Math.round(n.y)} }`
+    ).join(",\n"));
+  }
+
+  // Make each card group draggable
+  const svgEl = mount.querySelector("svg");
+  if (!svgEl) return;
+
+  // Map node id → the top-level <g> card element
+  const cardGroups = {};
+  svgEl.querySelectorAll("g[data-node-id]").forEach(g => {
+    cardGroups[g.dataset.nodeId] = g;
+  });
+
+  // If cards aren't tagged yet, tag them by rebuild — simpler: intercept pointer on SVG
+  let drag = null; // { nodeId, startSVGx, startSVGy, origX, origY }
+
+  function svgPoint(e) {
+    const pt = svgEl.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svgEl.getScreenCTM().inverse());
+  }
+
+  // Find which node is nearest the pointer
+  function nearestNode(svgX, svgY) {
+    let best = null, bestD = 40;
+    for (const n of NODES) {
+      const d = Math.hypot(n.x - svgX, n.y - svgY);
+      if (d < bestD) { bestD = d; best = n; }
+    }
+    return best;
+  }
+
+  svgEl.addEventListener("pointerdown", e => {
+    if (!e.altKey) return; // hold Alt to drag
+    const p = svgPoint(e);
+    const n = nearestNode(p.x, p.y);
+    if (!n) return;
+    drag = { node: n, ox: p.x - n.x, oy: p.y - n.y };
+    svgEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  svgEl.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const p = svgPoint(e);
+    drag.node.x = Math.round(p.x - drag.ox);
+    drag.node.y = Math.round(p.y - drag.oy);
+  });
+
+  svgEl.addEventListener("pointerup", e => {
+    if (!drag) return;
+    drag = null;
+    logCoords();
+  });
+
+  console.log("[mesh] drag nodes: hold Alt + drag a node. Coords logged on drop.");
 })();
