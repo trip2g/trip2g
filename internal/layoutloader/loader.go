@@ -126,12 +126,27 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 
 		assetWalker := assetFinder{}
 		utils.Walk(view, &assetWalker)
+		// utils.Walk does not recurse into {{ import }} templates — walk them explicitly.
+		if views, ok := jl.sets[source.ID]; ok {
+			for _, importPath := range extractImportPaths(source.Content) {
+				if imported, err := views.GetTemplate(importPath); err == nil {
+					utils.Walk(imported, &assetWalker)
+				}
+			}
+		}
 
 		jl.log.Debug("detect assets", "assets", assetWalker.List)
 
 		// Find block definitions
 		blockWalker := blockFinder{sourceID: source.ID}
 		utils.Walk(view, &blockWalker)
+		if views, ok := jl.sets[source.ID]; ok {
+			for _, importPath := range extractImportPaths(source.Content) {
+				if imported, err := views.GetTemplate(importPath); err == nil {
+					utils.Walk(imported, &blockWalker)
+				}
+			}
+		}
 
 		for _, block := range blockWalker.blocks {
 			// Add to ByName (last one wins if duplicate names)

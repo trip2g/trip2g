@@ -1211,3 +1211,35 @@ $10/month
 	// Should NOT contain Performance (we only requested Security)
 	require.NotContains(t, result, "Performance")
 }
+
+func TestResolveAssets_InsideImportedTemplate(t *testing.T) {
+	// Regression: asset() calls inside {{ import }} templates must be discovered.
+	// utils.Walk does not recurse into imported templates, so we walk them explicitly.
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/mesh/page",
+			Path: "_layouts/mesh/page.html",
+			Content: `{{ import "_blocks" }}
+{{ yield page_shell() content }}hello{{ end }}`,
+			Assets: map[string]*model.NoteAssetReplace{
+				"_layouts/mesh/scripts.js": {URL: "https://cdn/scripts.js", Hash: "abc"},
+			},
+		},
+		{
+			ID:   "/mesh/_blocks",
+			Path: "_layouts/mesh/_blocks.html",
+			Content: `{{block page_shell()}}
+<script defer src="{{ asset("scripts.js") }}"></script>
+{{yield content}}
+{{end}}`,
+		},
+	}
+
+	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
+	require.NoError(t, err)
+
+	layout := layouts.Map["/mesh/page"]
+	require.NotNil(t, layout.View)
+	require.Len(t, layout.Assets, 1, "scripts.js must be discovered from imported _blocks.html")
+	require.Equal(t, "_layouts/mesh/scripts.js", layout.Assets[0].Path)
+}
