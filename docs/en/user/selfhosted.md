@@ -6,6 +6,8 @@ lang_redirect: "[[ru/user/selfhosted]]"
 
 Minimal self-hosted setup for trip2g: `ghcr.io/trip2g/trip2g:latest` + `MinIO` + `Caddy`.
 
+[★ GitHub — github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
+
 This setup is for a single server, a single `docker-compose.yml`, and a straightforward `docker compose up -d`.
 
 ## What this setup runs
