@@ -66,6 +66,8 @@ type Ctx struct {
 	UserToken       *usertoken.Data
 	Lang            string
 
+	EnableRSS bool
+
 	TelegramLinks []model.TelegramPostLink
 	SimilarNotes  []*model.NoteView
 

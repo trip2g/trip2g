@@ -489,6 +489,7 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 			string(req.Req.Request.Header.Cookie(langCookieName)),
 			string(req.Req.Request.Header.Peek("Accept-Language")),
 		),
+		EnableRSS:     env.SiteConfig(context.Background()).EnableRSS,
 		UserToken:     resp.UserToken,
 		TelegramLinks: resp.TelegramLinks,
 		LayoutSections: func() []model.LayoutSectionEntry {

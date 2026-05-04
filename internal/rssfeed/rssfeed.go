@@ -16,9 +16,10 @@ import (
 
 // RSSFeed represents an RSS 2.0 feed.
 type RSSFeed struct {
-	XMLName xml.Name   `xml:"rss"`
-	Version string     `xml:"version,attr"`
-	Channel RSSChannel `xml:"channel"`
+	XMLName   xml.Name   `xml:"rss"`
+	Version   string     `xml:"version,attr"`
+	ContentNS string     `xml:"xmlns:content,attr"`
+	Channel   RSSChannel `xml:"channel"`
 }
 
 // RSSChannel represents an RSS channel.
@@ -31,11 +32,12 @@ type RSSChannel struct {
 
 // RSSItem represents an RSS item.
 type RSSItem struct {
-	Title       string `xml:"title"`
-	Link        string `xml:"link"`
-	Description string `xml:"description,omitempty"`
-	PubDate     string `xml:"pubDate,omitempty"`
-	GUID        string `xml:"guid"`
+	Title          string `xml:"title"`
+	Link           string `xml:"link"`
+	Description    string `xml:"description,omitempty"`
+	ContentEncoded string `xml:",innerxml"` // raw <content:encoded><![CDATA[...]]></content:encoded>
+	PubDate        string `xml:"pubDate,omitempty"`
+	GUID           string `xml:"guid"`
 }
 
 // link is an extracted link from the AST.
@@ -69,7 +71,8 @@ func Generate(note *model.NoteView, publicURL string, notes *model.NoteViews) ([
 	}
 
 	feed := RSSFeed{
-		Version: "2.0",
+		Version:   "2.0",
+		ContentNS: "http://purl.org/rss/1.0/modules/content/",
 		Channel: RSSChannel{
 			Title:       feedTitle,
 			Link:        publicURL + note.Permalink,
@@ -196,6 +199,10 @@ func enrichItem(item *RSSItem, notes *model.NoteViews, path string) {
 
 	if target.Description != nil {
 		item.Description = *target.Description
+	}
+
+	if target.HTML != "" {
+		item.ContentEncoded = "<content:encoded><![CDATA[" + string(target.HTML) + "]]></content:encoded>"
 	}
 
 	if !target.CreatedAt.IsZero() {
