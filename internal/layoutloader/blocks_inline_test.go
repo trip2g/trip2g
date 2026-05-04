@@ -278,3 +278,29 @@ func TestExpandBlockName(t *testing.T) {
 		}
 	}
 }
+
+func TestYieldBlocks_ButtonCSSViaTransitiveDep(t *testing.T) {
+	// page → hero → button (transitive). yield_blocks("_style_mesh_") must include button CSS.
+	sources := []model.LayoutSourceFile{
+		{
+			ID: "/mesh/page.html", Path: "/mesh/page.html",
+			Content: `{{yield mesh_hero()}}` + "\n" + `<style>{{yield_blocks("_style_mesh_")}}</style>`,
+		},
+		{
+			ID: "/mesh/hero.html", Path: "/mesh/hero.html",
+			Content: `{{block _style_@lid()}}.@did{color:red}{{end}}` + "\n" +
+				`{{block @lid()}}{{yield mesh_button(label="start",href="/",variant="primary")}}{{end}}`,
+		},
+		{
+			ID: "/mesh/button.html", Path: "/mesh/button.html",
+			Content: `{{block _style_@lid()}}.@did{border:1px solid white}.@did--primary{background:green}{{end}}` + "\n" +
+				`{{block @lid(label="",href="",variant="",modifier="")}}` +
+				`<a class="@did{{if variant}} @did--{{variant}}{{end}}" href="{{href}}">{{label}}</a>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/mesh/page.html")
+	require.Contains(t, out, ".mesh-button", "base button CSS must be in output")
+	require.Contains(t, out, ".mesh-button--primary", "primary button CSS must be in output")
+	require.Contains(t, out, "background:green", "primary green background must be in output")
+}
