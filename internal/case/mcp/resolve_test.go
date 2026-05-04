@@ -61,6 +61,9 @@ func TestResolve(t *testing.T) {
 					PathMap: map[string]*appmodel.NoteView{},
 				}
 			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
 		}
 
 		req := mcp.Request{
@@ -107,6 +110,9 @@ soul_profile:
 					List:    []*appmodel.NoteView{note},
 					PathMap: map[string]*appmodel.NoteView{},
 				}
+			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
@@ -164,7 +170,7 @@ soul_profile:
 		}, toolNames)
 	})
 
-	t.Run("tools/list ignores dynamic methods", func(t *testing.T) {
+	t.Run("tools/list includes accessible dynamic methods", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			MCPMethod:      "code-review",
 			MCPDescription: "Detailed code review",
@@ -177,6 +183,9 @@ soul_profile:
 					List:    []*appmodel.NoteView{note},
 					PathMap: map[string]*appmodel.NoteView{},
 				}
+			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
@@ -194,8 +203,13 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Len(t, toolNames, 6)
-		require.NotContains(t, toolNames, "code-review")
+		require.Len(t, toolNames, 7)
+		require.Contains(t, toolNames, "code-review")
+
+		// Dynamic tool carries description and empty schema
+		dynTool := result.Tools[6]
+		require.Equal(t, "code-review", dynTool.Name)
+		require.Equal(t, "Detailed code review", dynTool.Description)
 	})
 
 	t.Run("method not found returns error", func(t *testing.T) {
@@ -931,6 +945,9 @@ func TestStripFrontmatter(t *testing.T) {
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
 		}
 
 		params := mcp.CallToolParams{
@@ -967,6 +984,9 @@ func TestStripFrontmatter(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 
@@ -1005,6 +1025,9 @@ func TestStripFrontmatter(t *testing.T) {
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
 			},
 		}
 

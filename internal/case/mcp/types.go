@@ -9,10 +9,11 @@ import (
 // JSON-RPC 2.0 types
 
 type Request struct {
-	JSONRPC string          `json:"jsonrpc"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
-	ID      any             `json:"id"`
+	JSONRPC        string          `json:"jsonrpc"`
+	Method         string          `json:"method"`
+	Params         json.RawMessage `json:"params,omitempty"`
+	ID             any             `json:"id"`
+	MethodOverride string          `json:"-"` // from ?method= query param, overrides initialize instructions source
 }
 
 type Response struct {

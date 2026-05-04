@@ -1,5 +1,6 @@
 ---
 mcp_method: initialize
+free: true
 ---
 
 You are connected to a self-describing RAG server for Marcus Aurelius.

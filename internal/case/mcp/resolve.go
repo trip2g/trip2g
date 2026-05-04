@@ -89,12 +89,12 @@ func structuredToolResult(text string, structured any) CallToolResult {
 func Resolve(ctx context.Context, env Env, req Request) Response {
 	switch req.Method {
 	case MCPMethodInitialize:
-		return handleInitialize(env, req.ID)
+		return handleInitialize(ctx, env, req.ID, req.MethodOverride)
 	case "notifications/initialized":
 		// Client notification, no response needed
 		return Response{JSONRPC: "2.0", ID: req.ID, Result: map[string]any{}}
 	case "tools/list":
-		return handleToolsList(env, req.ID)
+		return handleToolsList(ctx, env, req.ID)
 	case "tools/call":
 		return handleToolsCall(ctx, env, req)
 	default:
@@ -102,7 +102,7 @@ func Resolve(ctx context.Context, env Env, req Request) Response {
 	}
 }
 
-func handleInitialize(env Env, id any) Response {
+func handleInitialize(ctx context.Context, env Env, id any, methodOverride string) Response {
 	result := map[string]any{
 		"protocolVersion": "2024-11-05",
 		"capabilities": map[string]any{
@@ -114,20 +114,54 @@ func handleInitialize(env Env, id any) Response {
 		},
 	}
 
-	// Look for note with mcp_method: initialize
+	target := methodOverride
+	if target == "" {
+		target = MCPMethodInitialize
+	}
+
 	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod == MCPMethodInitialize {
-			content := string(note.Content)
-			content = stripFrontmatter(content)
-			result["instructions"] = content
+		if note.MCPMethod != target {
+			continue
+		}
+		ok, err := canReadMCPNote(ctx, env, note)
+		if err != nil {
+			return errorResponse(id, ErrCodeInternal, "Instructions access check failed: "+err.Error())
+		}
+		if !ok {
+			// Note exists but user cannot read it.
+			// For explicit ?method= overrides this is an error; for default initialize it is a silent skip.
+			if methodOverride != "" {
+				return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+target)
+			}
 			break
+		}
+		content := string(note.Content)
+		content = stripFrontmatter(content)
+		result["instructions"] = content
+		break
+	}
+
+	// Explicit ?method= with no matching (or inaccessible) note is an error
+	if methodOverride != "" {
+		if _, hasInstructions := result["instructions"]; !hasInstructions {
+			return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+methodOverride)
 		}
 	}
 
 	return successResponse(id, result)
 }
 
-func handleToolsList(env Env, id any) Response {
+var reservedMCPTools = map[string]bool{
+	"search":             true,
+	"similar":            true,
+	"note_html":          true,
+	"federated_search":   true,
+	"federated_similar":  true,
+	"federated_note_html": true,
+	MCPMethodInitialize:  true,
+}
+
+func handleToolsList(ctx context.Context, env Env, id any) Response {
 	tools := []Tool{
 		{
 			Name:        "search",
@@ -217,6 +251,26 @@ func handleToolsList(env Env, id any) Response {
 		},
 	}
 
+	// Append dynamic tools from notes with mcp_method (excluding reserved names)
+	for _, note := range env.LatestNoteViews().List {
+		if note.MCPMethod == "" || reservedMCPTools[note.MCPMethod] {
+			continue
+		}
+		ok, err := canReadMCPNote(ctx, env, note)
+		if err != nil || !ok {
+			continue
+		}
+		desc := note.MCPDescription
+		if desc == "" {
+			desc = note.Title
+		}
+		tools = append(tools, Tool{
+			Name:        note.MCPMethod,
+			Description: desc,
+			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
+		})
+	}
+
 	return successResponse(id, ListToolsResult{Tools: tools})
 }
 
@@ -241,7 +295,7 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 	case "federated_note_html":
 		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
 	default:
-		return handleDynamicMethod(env, req.ID, params.Name)
+		return handleDynamicMethod(ctx, env, req.ID, params.Name)
 	}
 }
 
@@ -717,18 +771,26 @@ func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *m
 	return nil
 }
 
-func handleDynamicMethod(env Env, id any, methodName string) Response {
+func handleDynamicMethod(ctx context.Context, env Env, id any, methodName string) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleDynamicMethod")
 
 	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod == methodName {
-			content := string(note.Content)
-			content = stripFrontmatter(content)
-
-			log.Debug("dynamic method executed", "method", methodName, "note_path", note.Path)
-
-			return successResponse(id, textToolResult(content))
+		if note.MCPMethod != methodName {
+			continue
 		}
+		ok, err := canReadMCPNote(ctx, env, note)
+		if err != nil {
+			log.Error("dynamic method access check failed", "error", err, "method", methodName)
+			return errorResponse(id, ErrCodeInternal, "Access check failed: "+err.Error())
+		}
+		if !ok {
+			log.Warn("dynamic method access denied", "method", methodName, "note_path", note.Path)
+			return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+methodName)
+		}
+		content := string(note.Content)
+		content = stripFrontmatter(content)
+		log.Debug("dynamic method executed", "method", methodName, "note_path", note.Path)
+		return successResponse(id, textToolResult(content))
 	}
 
 	log.Warn("dynamic method not found", "method", methodName)

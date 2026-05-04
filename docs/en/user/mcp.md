@@ -109,11 +109,76 @@ Your answers MUST be grounded in the knowledge base content.
 6. Cite sources with links
 ```
 
+#### Step 2b. Add system instructions (initialize)
+
+To send instructions automatically when a client connects, create a note with `mcp_method: initialize`:
+
+```yaml
+---
+mcp_method: initialize
+free: true
+---
+```
+
+The client receives these instructions during the MCP handshake, before any tool calls. Add `free: true` if you want anonymous users to receive them as well.
+
 #### Step 3. Configure access
 
 Enable the MCP server in site settings. Access can be:
 - **Open** — for everyone
 - **Subscription-only** — for paying subscribers only
+
+### Custom tools and discovery
+
+Any note with a `mcp_method` frontmatter value (other than the reserved names `initialize`, `search`, `similar`, `note_html`, `federated_search`, `federated_similar`, `federated_note_html`) becomes a callable tool. The tool appears in `tools/list` automatically — no configuration needed.
+
+```yaml
+---
+mcp_method: wiki_guide
+mcp_description: How to navigate this wiki
+---
+```
+
+Add `mcp_description` to control the tool description shown to the AI. If omitted, the note title is used.
+
+Access control applies: a note in a subscription-only subgraph is only visible to authenticated users with that subgraph. Anonymous users and non-subscribers will not see it in `tools/list` and cannot call it.
+
+### Named entry points (`?method=`)
+
+One knowledge base can serve multiple agent roles. Each role has its own instructions note, selected via the `?method=` URL parameter:
+
+```
+/_system/mcp?method=wiki
+/_system/mcp?method=support
+/_system/mcp?method=onboarding
+```
+
+When a client connects to `/_system/mcp?method=wiki`, the server sends the content of the note with `mcp_method: wiki` as the `initialize` instructions — instead of the default `mcp_method: initialize` note. All tools remain the same; only the system instructions change.
+
+**Entry point access control** follows the same rules as regular notes. If the entry point note is in a paid subgraph, only subscribers can use that entry point. Anonymous users receive a `Method not found` error. This lets you gate premium agent personas behind a paywall.
+
+**Example setup:**
+
+```yaml
+---
+mcp_method: wiki
+free: true
+---
+You are a wiki assistant. Search the knowledge base and answer concisely.
+```
+
+```yaml
+---
+mcp_method: premium_advisor
+subgraphs: premium
+---
+You are a senior advisor. Provide in-depth analysis. Subscribers only.
+```
+
+Clients connect as:
+- `/_system/mcp` — default persona (mcp_method: initialize)
+- `/_system/mcp?method=wiki` — public wiki assistant
+- `/_system/mcp?method=premium_advisor` — premium advisor (requires subscription)
 
 ### Personal access tokens
 

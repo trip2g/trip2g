@@ -59,6 +59,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	// Handle request
+	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
 	resp := Resolve(resolveCtx, env, rpcReq)
 	return writeJSONResponse(req, resp)
 }
