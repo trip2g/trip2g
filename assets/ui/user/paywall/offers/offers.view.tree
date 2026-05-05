@@ -14,13 +14,13 @@ $trip2g_user_paywall_offers $mol_view
 			\У вас уже есть аккаунт и возможно купленный контент. Пожалуйста, авторизуйтесь, чтобы мы все проверили.
 			<= ShowSignIn $mol_button_major
 				title \SignIn
-				click? <=> to_sign_in null
+				click? <=> to_sign_in? null
 	Waiting $mol_view
 		sub /
 			\Ждем оплаты заказа... Если окно не открылось, нажмите на кнопку ниже.
 			<= open_payment_page_button $mol_button_major
 				title \Open payment page
-				click? <=> to_payment_page null
+				click? <=> to_payment_page? null
 	SignIn $trip2g_auth
 		entered_email? <=> current_email? \
 		reload_me <= reload_me null
@@ -29,7 +29,7 @@ $trip2g_user_paywall_offers $mol_view
 		<= List
 
 $trip2g_user_paywall_offers_enter_email $mol_form
-	to_sign_in null
+	to_sign_in? null
 	handle_email? \
 	body /
 		<= Email_field $mol_form_field
@@ -47,7 +47,7 @@ $trip2g_user_paywall_offers_enter_email $mol_form
 
 $trip2g_user_paywall_offers_list $mol_view
 	offers *
-	buy* null
+	buy*? null
 	waitlist null any
 	Empty $trip2g_user_paywall_conversationprompt
 		waitlist <= waitlist

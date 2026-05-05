@@ -27,7 +27,7 @@ $trip2g_user_search_panel $mol_view
 		sub /
 			<= CloseButtonButton $mol_button_major
 				title \Закрыть поиск
-				click? <=> close null
+				click? <=> close? null
 	sub /
 		<= Form $mol_view
 			sub /
