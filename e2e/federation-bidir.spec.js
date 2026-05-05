@@ -187,7 +187,7 @@ test.describe.serial('Bidirectional Federation', () => {
     expect(errorMsg.toLowerCase()).toContain('max depth');
   });
 
-  test('revoke peer→hub outbound: peer fan-out no longer returns hub content', async () => {
+  test('revoke peer→hub outbound: targeted federated_search to hub returns revocation error', async () => {
     const revokeQ = `mutation($id: Int64!) { admin { revokeFederationSecret(id: $id) {
       ... on RevokeFederationSecretPayload { revokedId }
       ... on ErrorPayload { message }
@@ -196,11 +196,12 @@ test.describe.serial('Bidirectional Federation', () => {
     expect(revokeData.admin.revokeFederationSecret.revokedId).toBe(outboundBId);
     outboundBId = null; // already revoked, skip afterAll cleanup
 
+    // Targeted call: peer must not silently downgrade to anonymous access for a previously-configured KB
     const result = await mcpCall(peerRequest, PEER_MCP, 'federated_search', {
-      query: 'team status federation',
+      query: 'federation knowledge base',
+      kb_id: 'hub',
     });
-    const text = result.result?.content?.[0]?.text ?? '';
-    // Hub was a configured KB with a now-revoked secret — must surface error, not silent downgrade
+    const text = result.result?.content?.[0]?.text ?? result.error?.message ?? '';
     expect(text.toLowerCase()).toMatch(/revoked|no active|secret/);
   });
 });
