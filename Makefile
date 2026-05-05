@@ -72,3 +72,14 @@ bench:
 	wait $$PROF_PID; \
 	echo "==> CPU profile saved: /tmp/trip2g-cpu-$(BENCH_TS).prof"; \
 	echo "==> View: go tool pprof -http=:6060 /tmp/trip2g-cpu-$(BENCH_TS).prof"
+
+bench-max:
+	@echo "==> Unlimited rate test ($(DUR)) — finding saturation point..."
+	@curl -s "http://localhost:$(PPROF_PORT)/debug/pprof/profile?seconds=$(DUR)" \
+		-o /tmp/trip2g-cpu-max-$(BENCH_TS).prof & PROF_PID=$$!; \
+	sleep 0.5; \
+	echo "GET http://localhost:8081$(URL)" \
+		| $(HOME)/go/bin/vegeta attack -rate=0 -workers=50 -duration=$(DUR) \
+		| $(HOME)/go/bin/vegeta report -type=text; \
+	wait $$PROF_PID; \
+	echo "==> CPU profile: /tmp/trip2g-cpu-max-$(BENCH_TS).prof"

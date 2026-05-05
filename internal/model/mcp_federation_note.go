@@ -20,7 +20,7 @@ func (n *NoteView) extractMCPFederationFields() {
 	}
 
 	n.MCPFederationKBURL = strings.TrimSpace(url)
-	if id, ok := n.RawMeta["mcp_federation_kb_id"].(string); ok {
+	if id, idOk := n.RawMeta["mcp_federation_kb_id"].(string); idOk {
 		n.MCPFederationKBID = strings.TrimSpace(id)
 	}
 	n.MCPFederationKBMaxDepth = parseMCPFederationKBMaxDepth(n.RawMeta["mcp_federation_kb_max_depth"])

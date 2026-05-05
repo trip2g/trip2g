@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"trip2g/internal/appreq"
+	"trip2g/internal/db"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
@@ -107,6 +108,17 @@ func (e *liveNoteLoaderEnv) RawNoteChunks(ctx context.Context) ([]noteloader.Raw
 	return rawNoteChunksFromLive(ctx, e.env(ctx))
 }
 
+// ListAllSubgraphs proxies through env(ctx) to pick up the active write-transaction.
+// Without this proxy the embedded *app.Queries hits the read-only pool, which cannot
+// see uncommitted writes from the write connection. In practice: when a mutation calls
+// PrepareLatestNotes / PrepareLiveNotes before its transaction commits, the read pool
+// returns the pre-update value of require_signin and the noteloader enrichment silently
+// stores stale flags — subgraph gating (e.g. sign-in wall) then has no effect until the
+// next WAL checkpoint triggers a full reload.
+func (e *liveNoteLoaderEnv) ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error) {
+	return e.env(ctx).ListAllSubgraphs(ctx)
+}
+
 // just copy-paste the same code for latest notes loader
 // because sqlc generates different structs for live and latest queries.
 // please, fix it if you know better way to handle this.
@@ -128,6 +140,11 @@ func (e *latestNoteLoaderEnv) env(ctx context.Context) *app {
 	}
 
 	return e.app
+}
+
+// See liveNoteLoaderEnv.ListAllSubgraphs for rationale.
+func (e *latestNoteLoaderEnv) ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error) {
+	return e.env(ctx).ListAllSubgraphs(ctx)
 }
 
 func (e *latestNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNote, error) {

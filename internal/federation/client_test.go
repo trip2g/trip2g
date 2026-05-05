@@ -24,7 +24,7 @@ func TestClientCallsSixFederationTools(t *testing.T) {
 	var names []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "POST", r.Method)
-		require.Equal(t, "2", r.Header.Get("X-MCP-Federation-Depth"))
+		require.Equal(t, "2", r.Header.Get("X-Mcp-Federation-Depth"))
 		requireJWTKid(t, r.Header.Get("Authorization"), "kid-1")
 
 		var req struct {

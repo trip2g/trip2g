@@ -46,7 +46,7 @@ func newFasthttpCtxWithQueryToken(token string) *fasthttp.RequestCtx {
 }
 
 // validPersonalUser returned by mock resolver on success.
-var validPersonalUser = &usertoken.Data{ID: 42, Role: "user"}
+var validPersonalUser = &usertoken.Data{ID: 42, Role: "user"} //nolint:gochecknoglobals
 
 // fakeJWTCookie simulates a valid cookie value; Manager.Extract will fail on it
 // (no valid secret), which returns nil, nil (anonymous) — sufficient for tests

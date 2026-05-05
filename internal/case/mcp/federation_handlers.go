@@ -30,7 +30,8 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		if kb == nil {
 			return federationNotConfiguredResponse(id, args.KBID)
 		}
-		client, err := env.FederationClient(kb.ID)
+		var client model.Federation
+		client, err = env.FederationClient(kb.ID)
 		if err != nil {
 			return errorResponse(id, ErrCodeInternal, err.Error())
 		}

@@ -134,7 +134,7 @@ func parseGlobSectionWidgets(raw interface{}, notePath string) []WidgetRef {
 			widgets = append(widgets, WidgetRef{Kind: WidgetContent, Value: notePath})
 			continue
 		}
-		if w, ok := parseWidgetRef(item); ok {
+		if w, wOk := parseWidgetRef(item); wOk {
 			widgets = append(widgets, w)
 		}
 	}

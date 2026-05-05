@@ -78,6 +78,9 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	case strings.HasPrefix(path, "/debug/layouts/latest"):
 		return a.handleDebugLayoutsLatest(ctx)
 
+	case strings.HasPrefix(path, "/debug/nvs/subgraphs"):
+		return a.handleDebugNvsSubgraphs(ctx)
+
 	case strings.HasPrefix(path, "/debug/nvs/latest"):
 		return a.handleDebugNvsLatest(ctx)
 
@@ -107,12 +110,48 @@ func (a *app) handleDebugLayoutsLatest(ctx *fasthttp.RequestCtx) bool {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
-	data, err := json.Marshal(a.Layouts()) //nolint:musttag,staticcheck // debug endpoint, func fields skipped by json
+	data, err := json.Marshal(a.Layouts()) //nolint:musttag // debug endpoint, func fields skipped by json
 	if err != nil {
 		a.log.Error("failed to marshal latest note views", "error", err)
 		return true
 	}
 
+	ctx.SetBody(data)
+	return true
+}
+
+type debugSubgraphInfo struct {
+	RequireSignin bool `json:"require_signin"`
+}
+
+func (a *app) handleDebugNvsSubgraphs(ctx *fasthttp.RequestCtx) bool {
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+
+	type result struct {
+		Latest map[string]debugSubgraphInfo `json:"latest"`
+		Live   map[string]debugSubgraphInfo `json:"live"`
+	}
+
+	toDebugMap := func(sgs map[string]*model.NoteSubgraph) map[string]debugSubgraphInfo {
+		m := make(map[string]debugSubgraphInfo, len(sgs))
+		for k, v := range sgs {
+			m[k] = debugSubgraphInfo{RequireSignin: v.RequireSignin}
+		}
+		return m
+	}
+
+	res := result{
+		Latest: toDebugMap(a.latestNoteLoader.NoteViews().Subgraphs),
+		Live:   toDebugMap(a.liveNoteLoader.NoteViews().Subgraphs),
+	}
+
+	data, err := json.Marshal(res)
+	if err != nil {
+		a.log.Error("failed to marshal subgraphs", "error", err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		return true
+	}
 	ctx.SetBody(data)
 	return true
 }

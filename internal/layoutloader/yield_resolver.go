@@ -90,5 +90,5 @@ func resolveNeededFiles(
 			}
 		}
 	}
-	return
+	return neededFileIDs, inlinedBlockNames, warnings
 }

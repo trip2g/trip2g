@@ -98,6 +98,7 @@ test.describe('Sign-in Wall', () => {
 
     try {
       await page.goto('/signin_wall');
+      await page.waitForTimeout(1000);
 
       // Sign-in wall widget should be visible
       const signinWall = page.locator('mol_view[trip2g_user_signinwall_container]');
@@ -126,6 +127,7 @@ test.describe('Sign-in Wall', () => {
 
     try {
       await page.goto('/signin_wall');
+      await page.waitForTimeout(1000);
 
       // Confirm sign-in wall is shown
       await expect(page.locator('mol_view[trip2g_user_signinwall_container]')).toBeVisible();

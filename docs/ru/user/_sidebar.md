@@ -5,6 +5,7 @@ title: "Навигация"
 ### Начало работы
 
 - [[ru/user/Начало работы|Начало работы]]
+- [[ru/user/protocol|Как работает trip2g]]
 - [[ru/user/hosting|Хостинг]]
 - [[ru/user/selfhosted|Self-hosted]]
 - [[ru/user/Свойства заметок|Свойства заметок]]

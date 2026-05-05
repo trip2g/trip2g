@@ -524,9 +524,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews {
-			return appmodel.NewNoteViews()
-		},
+		LatestNoteViewsFunc: appmodel.NewNoteViews,
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},

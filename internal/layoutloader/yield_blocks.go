@@ -42,7 +42,7 @@ func makeYieldBlocksFunc(blockNames *[]string, warnSink *[]model.NoteWarning) fu
 // @lid = lodash id (underscores): used for Jet block names.
 // @did = dash id (hyphens): used for BEM CSS class names.
 // @@lid and @@did are escape sequences that produce literal @lid / @did.
-// sourceID examples: "/mesh/bar.html" → @lid="mesh_bar", @did="mesh-bar"
+// sourceID examples: "/mesh/bar.html" → @lid="mesh_bar", @did="mesh-bar".
 func expandBlockName(content, sourceID string) string {
 	if !strings.Contains(content, "@lid") && !strings.Contains(content, "@did") {
 		return content

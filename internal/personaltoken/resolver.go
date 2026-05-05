@@ -41,7 +41,7 @@ func (r *Resolver) Resolve(ctx context.Context, plaintext string) (*usertoken.Da
 	hash := Hash(plaintext)
 
 	if v, ok := r.cache.Load(hash); ok {
-		entry := v.(cacheEntry)
+		entry := v.(cacheEntry) //nolint:errcheck
 		if time.Since(entry.fetchedAt) < cacheTTL {
 			r.maybeUpdateLastUsed(entry.tokenID)
 			return entry.data, nil
@@ -71,7 +71,7 @@ func (r *Resolver) Resolve(ctx context.Context, plaintext string) (*usertoken.Da
 func (r *Resolver) maybeUpdateLastUsed(tokenID string) {
 	now := time.Now()
 	if v, ok := r.used.Load(tokenID); ok {
-		if now.Sub(v.(time.Time)) < throttleTTL {
+		if now.Sub(v.(time.Time)) < throttleTTL { //nolint:errcheck
 			return
 		}
 	}

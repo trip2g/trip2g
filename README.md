@@ -1,108 +1,104 @@
 # trip2g
 
-**Your Obsidian vault → website + Telegram channel + AI assistant. You own everything.**
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Go](https://img.shields.io/badge/go-1.24-blue.svg)](https://golang.org)
 
-trip2g is a self-hosted publishing platform for knowledge creators. Write in Obsidian, publish to a website with subscription paywalls, sync to Telegram channels, and let AI answer questions from your knowledge base.
+**Open-source MCP knowledge mesh.** Self-host your knowledge bases, expose them via MCP, and federate with peers — no SaaS in the middle.
 
-## Get started
+Unlike Obsidian Publish or Quartz, trip2g is a live server: subscriptions, webhook agents, federation between hubs, and an MCP endpoint out of the box.
 
-- **Cloud** — [simplecloud.2pub.me](https://simplecloud.2pub.me) (hosted, no setup)
-- **Self-hosted** — run on your own server ([guide](docs/en/user/selfhosted.md))
+[Try the public hub →](#try-it-now) · [Self-host](#self-host) · [Docs](https://trip2g.com/en/user)
 
-## What it does
+![trip2g landing](docs/assets/screenshot.webp)
 
-- **Publish from Obsidian** — push markdown notes to your site. Internal wikilinks work. One note = one page.
-- **Paywall by subgraph** — mark groups of notes as paid. Free notes are public; paid notes require a subscription.
-- **Telegram channel sync** — notes become Telegram posts on a schedule. Formatting preserved.
-- **AI over your knowledge base** — vector search + MCP server. Readers connect their AI client and ask questions answered by your notes.
-- **You own everything** — notes stay as plain markdown files on your computer. Switch platforms anytime.
-
-## Features
-
-### Publishing
-
-- Markdown rendering with wikilinks, backlinks (`inlinks`), forward links (`outlinks`)
-- Properties-based page layout: header, footer, sidebars, magazine grid — configured per-note via frontmatter
-- Asset upload to S3/MinIO (images, files)
-- Full-text search (bleve)
-- Multi-domain routing — serve notes on custom domains via frontmatter ([docs](docs/multidomain.md))
-- Multilingual content — automatic redirects, `hreflang` SEO tags, language switcher ([docs](docs/multilang.md))
-- RSS feeds — any note is an RSS feed ([docs](docs/rss.md))
-- Sitemap.xml — auto-generated from all published notes ([docs](docs/sitemap.md))
-
-### Monetization
-
-- Subgraph-based paywalls (group notes into paid products)
-- Crypto payments via [NowPayments](https://nowpayments.io)
-- Patreon and Boosty integration — grant access to existing subscribers
-
-### Telegram
-
-- Publish notes as channel posts
-- Scheduled publishing with calendar view
-- Edit/delete posts when notes are updated
-- Publish via Telegram user accounts (MTProto) — long posts, custom emoji ([docs](docs/telegram_publish_through_accounts.md))
-- Export channels to Markdown
-
-### AI
-
-- Vector search (semantic similarity)
-- MCP (Model Context Protocol) server — connect Claude, Cursor, or any MCP-compatible AI client to your knowledge base
-- Knowledge bot: Telegram bot that answers questions from your notes, tracks unanswered questions
-
-### Obsidian Plugin
-
-- One-click sync from Obsidian to your trip2g instance
-- Push only changed files (hash-based diff)
-
-### Webhooks & Automation
-
-- **Change webhooks** — notify external agents when notes are created, updated, or removed. Agent receives a POST with changed content and can write notes back via API. Supports glob patterns, HMAC signing, recursion protection. See [docs/change_webhooks.md](docs/change_webhooks.md).
-- **Cron webhooks** — call external agents on a schedule (e.g. `0 9 * * *`). Agent can generate digests, reports, or any content and push it back as notes. See [docs/cron_webhooks.md](docs/cron_webhooks.md).
-
-### Admin
-
-- User management, ban/unban
-- Subgraph access control
-- Asset browser
-
-## Tech stack
-
-| Layer | Tech |
-|---|---|
-| Backend | Go 1.26, FastHTTP, gqlgen (GraphQL) |
-| Database | SQLite + [Litestream](https://litestream.io) replication |
-| Migrations | dbmate |
-| Frontend | [mol.hyoo.ru](https://mol.hyoo.ru), TypeScript, Tiptap editor |
-| Search | bleve (FTS), pgvector / SQLite-vec (semantic) |
-| Assets | S3-compatible (MinIO for dev) |
-
-## Obsidian plugin
-
-Install the trip2g Obsidian plugin:
-
-1. In Obsidian: Settings → Community plugins → Browse → search "trip2g"
-2. Or manually: download from the [plugin repository](https://github.com/trip2g/obsidian-sync) and place in `.obsidian/plugins/trip2g/`
-3. Configure: Settings → trip2g → enter your instance URL and API key
-
-### Publishing a note
-
-Add frontmatter to any note:
-
-```yaml
 ---
-subgraph: my-course      # which paid product this belongs to (omit for free)
-free: true               # explicitly mark as free (public)
-title: My Custom Title   # overrides filename in navigation
-slug: my-url             # custom URL slug
----
+
+## Try it now
+
+Add the public knowledge hub to your MCP client:
+
+```json
+{
+  "mcpServers": {
+    "trip2g": {
+      "url": "https://trip2g.com/_system/mcp"
+    }
+  }
+}
 ```
 
-Push from Obsidian: click the trip2g sync button. Only changed files are uploaded.
+Ask your agent anything. It searches all connected bases and returns answers with sources.
 
-## Page layout
+Want your own? [Free cloud instance](https://simplecloud.2pub.me) — no terminal needed.
 
-Configure page layout per-note using frontmatter properties:
+---
+
+## Core capabilities
+
+**Markdown → website**
+- Wikilinks (`[[note]]`), backlinks, outlinks — global resolution, just like Obsidian
+- Composable page layouts via frontmatter: sidebars, magazine grid, TOC, custom note embeds
+- Full-text search (bleve) + semantic search (pluggable embeddings)
+- Custom domains, multi-language with `hreflang`, RSS feeds, sitemap
+
+**MCP server** — built into every hub:
+```
+search_notes   full-text + semantic search
+get_note       retrieve by id or slug
+list_notes     list notes accessible to the caller
+```
+Access is scoped to the caller's subscription level.
+
+**Webhook agents**
+- *Change webhooks* — POST to an external agent on note create/update/remove. Agent writes notes back via API. Glob filtering, HMAC auth, depth tracking prevents recursion.
+- *Cron webhooks* — run an agent on a schedule (`0 9 * * *`). Sync or async. Optional instruction context.
+
+**Monetization**
+- Subgraph paywalls — group notes into paid products, free notes stay public
+- Crypto payments (NowPayments), Patreon and Boosty integration
+
+**Obsidian plugin** — one-click sync, hash-based diff, only changed files are uploaded
+
+---
+
+## Federation
+
+```mermaid
+graph LR
+    O[Obsidian vault] --> H[your hub]
+    T[Telegram]       --> H
+    H <-->|MCP federation| H2[peer hub]
+    H2 --> B[their bases]
+    H -->|/_system/mcp| A[agent]
+    H2 -->|/_system/mcp| A
+```
+
+Peer hubs with trusted people or orgs. Each hub controls access per base. One agent question reaches the union of all connected knowledge.
+
+| Topology | Setup | Result |
+|----------|-------|--------|
+| Solo | One hub, many bases | All your notes, books, courses — one query |
+| Friends | Each person runs a hub, hubs peer | Union of everyone's knowledge |
+| Company | Central hub + per-employee hubs | Tribal knowledge and docs — queryable |
+| B2B | Two star topologies, one bridge | Shared knowledge without merging systems |
+
+---
+
+## Sources
+
+| Source | Status |
+|--------|--------|
+| Obsidian | ready — vault stays local, two-way sync |
+| Telegram | ready — channel publish + history mirror |
+| Notion | in progress |
+| Google Drive | in progress |
+| Linear, Slack archive, RSS | planned |
+
+---
+
+## Template system
+
+Every page is a Jet template. Configure layout per-note via frontmatter — no code changes:
 
 ```yaml
 ---
@@ -113,29 +109,39 @@ left_sidebar:
 content:
   - magazine
   - selfcontent
-footer: "[[Footer]]"
-magazine_property: published_date
 magazine_include_files: "blog/**/*.md"
+magazine_sort_property: published_date
+footer: "[[Footer]]"
 ---
 ```
 
-See [docs/template-system.md](docs/template-system.md) for the full reference.
+Notes can render as any content type — HTML, JSON, RSS — via `content_type` frontmatter.
 
-## MCP server
+---
 
-Connect your knowledge base to any MCP-compatible AI client:
+## Self-host
 
-```json
-{
-  "mcpServers": {
-    "my-knowledge-base": {
-      "url": "https://yourdomain.com/_system/mcp"
-    }
-  }
-}
+```bash
+docker compose up
 ```
 
-The MCP server exposes: `search_notes`, `get_note`, `list_notes`. Access is scoped to the user's subscription level.
+[Full guide →](https://trip2g.com/en/user/selfhosted) · MIT · SQLite, no external dependencies required.
+
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| Backend | Go, FastHTTP, gqlgen (GraphQL) |
+| Database | SQLite (+ [Litestream](https://litestream.io), optional) |
+| Search | bleve (full-text) + pluggable embeddings (semantic) |
+| Markdown | Goldmark — wikilinks, frontmatter |
+| Templates | Jet template engine |
+| Frontend | [$mol](https://mol.hyoo.ru), TypeScript, Tiptap |
+| Assets | S3-compatible (MinIO for dev) |
+
+---
 
 ## License
 

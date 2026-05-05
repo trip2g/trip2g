@@ -97,12 +97,12 @@ func TestVerifyInboundSentinels(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("unknown kid", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid)
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid) //nolint:govet
 		require.True(t, errors.Is(err, ErrFedAuthUnknownKid))
 	})
 
 	t.Run("bad signature", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: []byte("other-secret")},
 			secretOK: true,
 		}, valid)
@@ -110,7 +110,7 @@ func TestVerifyInboundSentinels(t *testing.T) {
 	})
 
 	t.Run("expired", func(t *testing.T) {
-		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second)
+		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second) //nolint:govet
 		require.NoError(t, err)
 
 		_, _, err = verifyInbound(context.Background(), federationVerifyEnvMock{

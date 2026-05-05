@@ -143,11 +143,11 @@ func parseFederationJWT(token string) (federationJWTHeader, federationJWTClaims,
 	}
 
 	var header federationJWTHeader
-	if err := json.Unmarshal(headerBytes, &header); err != nil {
+	if e := json.Unmarshal(headerBytes, &header); e != nil {
 		return federationJWTHeader{}, federationJWTClaims{}, "", nil, ErrFedAuthBadSig
 	}
 	var claims federationJWTClaims
-	if err := json.Unmarshal(claimsBytes, &claims); err != nil {
+	if e := json.Unmarshal(claimsBytes, &claims); e != nil {
 		return federationJWTHeader{}, federationJWTClaims{}, "", nil, ErrFedAuthBadSig
 	}
 

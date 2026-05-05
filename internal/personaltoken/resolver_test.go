@@ -162,8 +162,8 @@ func TestResolver_IsPersonal_Filter(t *testing.T) {
 	require.False(t, personaltoken.IsPersonal("eyJhbGciOiJSUzI1NiJ9.e30.sig"))
 }
 
-// compile-time interface check
+// compile-time interface check.
 var _ personaltoken.Env = (*mockEnv)(nil)
 
-// satisfy usertoken import
+// satisfy usertoken import.
 var _ *usertoken.Data = (*usertoken.Data)(nil)

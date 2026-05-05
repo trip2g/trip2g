@@ -44,7 +44,7 @@ func buildMCPFasthttpCtx(body []byte, authHeader string) *fasthttp.RequestCtx {
 }
 
 // mcpInitBody is a valid MCP initialize request.
-var mcpInitBody = func() []byte {
+var mcpInitBody = func() []byte { //nolint:gochecknoglobals
 	b, _ := json.Marshal(mcp.Request{JSONRPC: "2.0", Method: "initialize", ID: 1})
 	return b
 }()
@@ -72,7 +72,7 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 
 // noopTokenManager is a minimal usertoken.Manager with a distinct cookie name that
 // will never match any test request, so Extract always returns ErrTokenMissing.
-var noopTokenManager = usertoken.NewManager(usertoken.Config{
+var noopTokenManager = usertoken.NewManager(usertoken.Config{ //nolint:gochecknoglobals
 	CookieName: "__noop_test_cookie__",
 	Secret:     "test-secret-32-bytes-long-filler!",
 })

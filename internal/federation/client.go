@@ -88,9 +88,9 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 		"X-MCP-Federation-Depth": strconv.Itoa(c.peer.Depth + 1),
 	}
 	if len(c.peer.Secret) > 0 && c.peer.KID != "" {
-		token, err := signOutbound(c.peer.Secret, c.peer.KID, c.peer.Issuer, rid)
-		if err != nil {
-			return model.FederationResult{}, fmt.Errorf("sign federation request: %w", err)
+		token, signErr := signOutbound(c.peer.Secret, c.peer.KID, c.peer.Issuer, rid)
+		if signErr != nil {
+			return model.FederationResult{}, fmt.Errorf("sign federation request: %w", signErr)
 		}
 		headers["Authorization"] = "Bearer " + token
 	}
@@ -101,8 +101,8 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}
 
 	var resp rpcResponse
-	if err := json.Unmarshal(raw, &resp); err != nil {
-		return model.FederationResult{}, fmt.Errorf("decode federation response: %w", err)
+	if e := json.Unmarshal(raw, &resp); e != nil {
+		return model.FederationResult{}, fmt.Errorf("decode federation response: %w", e)
 	}
 	if resp.Error != nil {
 		return model.FederationResult{}, fmt.Errorf("federation rpc error %d: %s", resp.Error.Code, resp.Error.Message)

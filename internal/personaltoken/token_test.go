@@ -16,7 +16,7 @@ func TestGenerate(t *testing.T) {
 
 func TestGenerateUniqueness(t *testing.T) {
 	seen := make(map[string]struct{}, 100)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		tok := personaltoken.Generate()
 		_, dup := seen[tok]
 		require.False(t, dup, "duplicate token generated")

@@ -32,8 +32,6 @@ func fanout(
 	var g errgroup.Group
 
 	for i, kb := range kbs {
-		i := i
-		kb := kb
 		results[i].KB = kb
 		g.Go(func() error {
 			start := time.Now()

@@ -253,11 +253,16 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	for _, sg := range dbSubgraphs {
 		dbSubgraphMap[sg.Name] = sg
 	}
+	var requireSigninNames []string
 	for name, noteSg := range nvs.Subgraphs {
 		if dbSg, ok := dbSubgraphMap[name]; ok {
 			noteSg.RequireSignin = dbSg.RequireSignin
 		}
+		if noteSg.RequireSignin {
+			requireSigninNames = append(requireSigninNames, name)
+		}
 	}
+	l.log.Info("subgraphs enriched", "total", len(nvs.Subgraphs), "require_signin", requireSigninNames)
 	l.log.Debug("load layouts")
 
 	layoutOptions := layoutloader.Options{

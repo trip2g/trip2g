@@ -157,7 +157,14 @@ test.describe.serial('Personal tokens', () => {
 
     expect(bearerResult.result).toBeDefined();
     expect(queryResult.result).toBeDefined();
-    expect(queryResult.result.content[0].text).toBe(bearerResult.result.content[0].text);
+    // Parallel workers may reindex between the two calls, flipping equal-score entries.
+    // Sort by content without the numeric prefix so "2. X" and "3. X" compare equal.
+    const sortedEntries = (text) => {
+      const [header, ...entries] = text.split(/\n\n(?=\d+\.)/);
+      const key = (e) => e.replace(/^\d+\.\s*/, '');
+      return [header, ...entries.sort((a, b) => key(a).localeCompare(key(b)))].join('\n\n');
+    };
+    expect(sortedEntries(queryResult.result.content[0].text)).toBe(sortedEntries(bearerResult.result.content[0].text));
   });
 
   test('4. Cookie of user A + Bearer of user B token -> cookie user (admin) wins', async ({ playwright }) => {

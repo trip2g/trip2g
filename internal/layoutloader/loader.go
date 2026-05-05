@@ -223,7 +223,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		utils.Walk(layout.View, validator)
 
 		// Merge all warnings into pendingWarnings so they end up on the layout.
-		allWarnings := append(regWarnings, resolveWarnings...)
+		allWarnings := append(regWarnings, resolveWarnings...) //nolint:gocritic
 		allWarnings = append(allWarnings, validator.warnings...)
 		if len(allWarnings) > 0 {
 			layout.Warnings = append(layout.Warnings, allWarnings...)
@@ -243,7 +243,7 @@ func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	}
 	if action, ok := node.(*jet.ActionNode); ok && !w.found {
 		if action.Pipe != nil && len(action.Pipe.Cmds) > 0 {
-			if ident, ok := action.Pipe.Cmds[0].BaseExpr.(*jet.IdentifierNode); ok && ident.Ident == "yield_blocks" {
+			if ident, identOk := action.Pipe.Cmds[0].BaseExpr.(*jet.IdentifierNode); identOk && ident.Ident == "yield_blocks" {
 				w.found = true
 				return
 			}

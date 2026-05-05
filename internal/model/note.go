@@ -930,7 +930,7 @@ func (n *NoteView) ExtractTitle() string {
 	nodeCount := 0
 	docTitle := ""
 
-	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) { //nolint:errcheck
 		if !entering {
 			return ast.WalkContinue, nil
 		}

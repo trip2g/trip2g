@@ -1561,16 +1561,16 @@ func (a *app) FederationClient(kbID string) (model.Federation, error) {
 			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
 		}
 		if ok {
-			secret, err := a.DecryptData(secretRow.SecretCrypt)
-			if err != nil {
-				return nil, err
+			secret, decErr := a.DecryptData(secretRow.SecretCrypt)
+			if decErr != nil {
+				return nil, decErr
 			}
 			peer.KID = secretRow.Kid
 			peer.Secret = secret
 		} else {
-			configured, err := a.HasFederationSecretForKBURL(ctx, kb.URL)
-			if err != nil {
-				return nil, fmt.Errorf("check federation secret history by kb url: %w", err)
+			configured, confErr := a.HasFederationSecretForKBURL(ctx, kb.URL)
+			if confErr != nil {
+				return nil, fmt.Errorf("check federation secret history by kb url: %w", confErr)
 			}
 			if configured {
 				return nil, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
