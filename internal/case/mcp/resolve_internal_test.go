@@ -71,7 +71,7 @@ func TestBuildSearchPayloadUsesChunkBasedMatchIDs(t *testing.T) {
 		MatchOrigin:        model.SearchMatchVector,
 		ChunkIndex:         &chunkIndex,
 		HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
-	}}, "https://markavrelii.2pub.me", nil)
+	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, nil)
 
 	require.Len(t, payload.Results, 1)
 	require.Len(t, payload.Results[0].Matches, 1)
@@ -93,7 +93,7 @@ func TestBuildSearchPayloadMapsTextSnippetToNearestChunkWhenClear(t *testing.T) 
 		Score:              1,
 		MatchOrigin:        model.SearchMatchText,
 		HighlightedContent: []string{"Лучший способ <mark>отомстить</mark> - не уподобляться обидчику."},
-	}}, "https://markavrelii.2pub.me", []model.NoteChunk{
+	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, []model.NoteChunk{
 		{
 			NotePath:   note.Path,
 			ChunkIndex: 1,
@@ -126,7 +126,7 @@ func TestBuildSearchPayloadLeavesTextMatchAsGenericWhenNoClearChunk(t *testing.T
 		Score:              1,
 		MatchOrigin:        model.SearchMatchText,
 		HighlightedContent: []string{"Фрагмент, которого нет в чанках."},
-	}}, "https://markavrelii.2pub.me", []model.NoteChunk{
+	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, []model.NoteChunk{
 		{
 			NotePath:   note.Path,
 			ChunkIndex: 1,

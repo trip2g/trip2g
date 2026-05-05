@@ -43,6 +43,7 @@ type Env interface {
 	LatestNoteChunks() []model.NoteChunk
 	OpenAI() *openai.Client
 	PublicURL() string
+	NoteURL(note *model.NoteView) string
 	Logger() logger.Logger
 	FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error)
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
@@ -151,14 +152,14 @@ func handleInitialize(ctx context.Context, env Env, id any, methodOverride strin
 	return successResponse(id, result)
 }
 
-var reservedMCPTools = map[string]bool{
-	"search":             true,
-	"similar":            true,
-	"note_html":          true,
-	"federated_search":   true,
-	"federated_similar":  true,
+var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable set of built-in tool names
+	"search":              true,
+	"similar":             true,
+	"note_html":           true,
+	"federated_search":    true,
+	"federated_similar":   true,
 	"federated_note_html": true,
-	MCPMethodInitialize:  true,
+	MCPMethodInitialize:   true,
 }
 
 func handleToolsList(ctx context.Context, env Env, id any) Response {
@@ -200,7 +201,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 					"note_id":       {Type: "number", Description: "Stable note id from search results"},
 					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
-					"toc_path":      {Type: "array", Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items."},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items.",
+					},
 				},
 			},
 		},
@@ -333,7 +337,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
 
-	payload := buildSearchPayload(args.Query, results, env.PublicURL(), env.LatestNoteChunks())
+	payload := buildSearchPayload(args.Query, results, env.NoteURL, env.LatestNoteChunks())
 
 	// Format response
 	var sb strings.Builder
@@ -407,14 +411,14 @@ func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, e
 	return env.CanReadNote(ctx, note)
 }
 
-func buildSearchPayload(query string, results []model.SearchResult, publicURL string, chunks []model.NoteChunk) SearchResultPayload {
+func buildSearchPayload(query string, results []model.SearchResult, noteURL func(*model.NoteView) string, chunks []model.NoteChunk) SearchResultPayload {
 	payload := SearchResultPayload{Query: query}
 	for _, r := range results {
 		if r.NoteView == nil {
 			continue
 		}
 
-		item := searchResultItemFromNote(r.NoteView, r.Score, publicURL)
+		item := searchResultItemFromNote(r.NoteView, r.Score, noteURL)
 		for i, snippet := range r.HighlightedContent {
 			matchID := fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1)
 			chunkIndex := 0
@@ -518,13 +522,13 @@ func overlapTokenScore(a string, b string) int {
 	return score
 }
 
-func searchResultItemFromNote(note *model.NoteView, score float64, publicURL string) SearchResultItem {
+func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(*model.NoteView) string) SearchResultItem {
 	item := SearchResultItem{
 		Title:    note.Title,
 		NoteID:   note.PathID,
 		NotePath: note.Path,
 		Href:     note.Permalink,
-		URL:      publicURL + note.Permalink,
+		URL:      noteURL(note),
 		Kind:     noteKind(note),
 		Score:    score,
 		TOC:      buildNoteTOC(note.Headings),
@@ -616,13 +620,13 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		sb.WriteString(fmt.Sprintf("Found %d similar notes:\n\n", len(results)))
 		for i, r := range results {
 			note := r.Note.NoteView
-			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, note.Title, r.Score, note.Path, env.PublicURL()+note.Permalink))
+			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, note.Title, r.Score, note.Path, env.NoteURL(note)))
 		}
 	}
 
 	log.Debug("similar search completed", "path", input.Path, "results", len(results))
 
-	return successResponse(id, structuredToolResult(sb.String(), buildSimilarPayload(sourceNote, results, env.PublicURL())))
+	return successResponse(id, structuredToolResult(sb.String(), buildSimilarPayload(sourceNote, results, env.NoteURL)))
 }
 
 func resolveSimilarReference(noteViews *model.NoteViews, args SimilarArguments) *model.NoteView {
@@ -652,15 +656,15 @@ func similarSourcePath(note *model.NoteView) string {
 	return note.Permalink
 }
 
-func buildSimilarPayload(sourceNote *model.NoteView, results []graphmodel.SimilarNote, publicURL string) SimilarResultPayload {
+func buildSimilarPayload(sourceNote *model.NoteView, results []graphmodel.SimilarNote, noteURL func(*model.NoteView) string) SimilarResultPayload {
 	payload := SimilarResultPayload{
-		Source: searchResultItemFromNote(sourceNote, 1, publicURL),
+		Source: searchResultItemFromNote(sourceNote, 1, noteURL),
 	}
 	for _, r := range results {
 		if r.Note == nil || r.Note.NoteView == nil {
 			continue
 		}
-		payload.Results = append(payload.Results, searchResultItemFromNote(r.Note.NoteView, r.Score, publicURL))
+		payload.Results = append(payload.Results, searchResultItemFromNote(r.Note.NoteView, r.Score, noteURL))
 	}
 	return payload
 }

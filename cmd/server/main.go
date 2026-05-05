@@ -30,7 +30,6 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/auditlogger"
-	"trip2g/internal/personaltoken"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
@@ -90,6 +89,7 @@ import (
 	"trip2g/internal/openai"
 	"trip2g/internal/patreon"
 	"trip2g/internal/patreonjobs"
+	"trip2g/internal/personaltoken"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
@@ -1498,6 +1498,10 @@ func (a *app) GeneratePurchaseID() string {
 
 func (a *app) PublicURL() string {
 	return a.config.PublicURL
+}
+
+func (a *app) NoteURL(note *model.NoteView) string {
+	return a.LatestNoteViews().ResolveFullURL(note, a.config.PublicURL)
 }
 
 func (a *app) FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {

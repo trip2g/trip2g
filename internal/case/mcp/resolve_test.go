@@ -296,6 +296,9 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		PublicURLFunc: func() string {
 			return "https://markavrelii.2pub.me"
 		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://markavrelii.2pub.me" + note.Permalink
+		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
@@ -367,6 +370,9 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 		PublicURLFunc: func() string {
 			return "https://hub.local"
 		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://hub.local" + note.Permalink
+		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
@@ -432,6 +438,9 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 		PublicURLFunc: func() string {
 			return "https://hub.local"
 		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://hub.local" + note.Permalink
+		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
@@ -492,6 +501,9 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 		},
 		PublicURLFunc: func() string {
 			return "https://peer.local"
+		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://peer.local" + note.Permalink
 		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
@@ -592,6 +604,9 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 		},
 		PublicURLFunc: func() string {
 			return "https://markavrelii.2pub.me"
+		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://markavrelii.2pub.me" + note.Permalink
 		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
@@ -849,6 +864,9 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 		PublicURLFunc: func() string {
 			return "https://markavrelii.2pub.me"
 		},
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://markavrelii.2pub.me" + note.Permalink
+		},
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
@@ -1072,6 +1090,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			PublicURLFunc: func() string {
 				return "https://example.test"
 			},
+			NoteURLFunc: func(note *appmodel.NoteView) string {
+				return "https://example.test" + note.Permalink
+			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
@@ -1118,6 +1139,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			},
 			PublicURLFunc: func() string {
 				return "https://example.test"
+			},
+			NoteURLFunc: func(note *appmodel.NoteView) string {
+				return "https://example.test" + note.Permalink
 			},
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}

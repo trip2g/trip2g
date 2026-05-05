@@ -57,6 +57,9 @@ var _ mcp.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			NoteURLFunc: func(note *model.NoteView) string {
+//				panic("mock out the NoteURL method")
+//			},
 //			OpenAIFunc: func() *openai.Client {
 //				panic("mock out the OpenAI method")
 //			},
@@ -105,6 +108,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// NoteURLFunc mocks the NoteURL method.
+	NoteURLFunc func(note *model.NoteView) string
 
 	// OpenAIFunc mocks the OpenAI method.
 	OpenAIFunc func() *openai.Client
@@ -170,6 +176,11 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// NoteURL holds details about calls to the NoteURL method.
+		NoteURL []struct {
+			// Note is the note argument value.
+			Note *model.NoteView
+		}
 		// OpenAI holds details about calls to the OpenAI method.
 		OpenAI []struct {
 		}
@@ -193,6 +204,7 @@ type EnvMock struct {
 	lockLatestNoteViews                    sync.RWMutex
 	lockListFederationSecretSubgraphsByKID sync.RWMutex
 	lockLogger                             sync.RWMutex
+	lockNoteURL                            sync.RWMutex
 	lockOpenAI                             sync.RWMutex
 	lockPublicURL                          sync.RWMutex
 	lockSearchLatestNotes                  sync.RWMutex
@@ -538,6 +550,38 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// NoteURL calls NoteURLFunc.
+func (mock *EnvMock) NoteURL(note *model.NoteView) string {
+	if mock.NoteURLFunc == nil {
+		panic("EnvMock.NoteURLFunc: method is nil but Env.NoteURL was just called")
+	}
+	callInfo := struct {
+		Note *model.NoteView
+	}{
+		Note: note,
+	}
+	mock.lockNoteURL.Lock()
+	mock.calls.NoteURL = append(mock.calls.NoteURL, callInfo)
+	mock.lockNoteURL.Unlock()
+	return mock.NoteURLFunc(note)
+}
+
+// NoteURLCalls gets all the calls that were made to NoteURL.
+// Check the length with:
+//
+//	len(mockedEnv.NoteURLCalls())
+func (mock *EnvMock) NoteURLCalls() []struct {
+	Note *model.NoteView
+} {
+	var calls []struct {
+		Note *model.NoteView
+	}
+	mock.lockNoteURL.RLock()
+	calls = mock.calls.NoteURL
+	mock.lockNoteURL.RUnlock()
 	return calls
 }
 
