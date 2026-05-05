@@ -745,3 +745,62 @@ func TestNoteView_IsSystem(t *testing.T) {
 		require.Equal(t, c.expect, n.IsSystem(), "path: %s", c.path)
 	}
 }
+
+func TestResolveFullURL(t *testing.T) {
+	const publicURL = "https://main.example.com"
+
+	t.Run("no custom domain returns publicURL+permalink", func(t *testing.T) {
+		nv := NewNoteViews()
+		note := &NoteView{PathID: 1, Permalink: "/my-note"}
+		require.Equal(t, "https://main.example.com/my-note", nv.ResolveFullURL(note, publicURL))
+	})
+
+	t.Run("first custom domain route is used", func(t *testing.T) {
+		nv := NewNoteViews()
+		note := &NoteView{
+			PathID:    2,
+			Permalink: "/my-note",
+			Routes: []ParsedRoute{
+				{Host: "custom.io", Path: "/custom-path"},
+			},
+		}
+		nv.RegisterNoteRoutes(note)
+		require.Equal(t, "https://custom.io/custom-path", nv.ResolveFullURL(note, publicURL))
+	})
+
+	t.Run("http scheme is preserved from publicURL", func(t *testing.T) {
+		nv := NewNoteViews()
+		note := &NoteView{
+			PathID:    3,
+			Permalink: "/note",
+			Routes:    []ParsedRoute{{Host: "custom.io", Path: "/path"}},
+		}
+		nv.RegisterNoteRoutes(note)
+		require.Equal(t, "http://custom.io/path", nv.ResolveFullURL(note, "http://localhost:8081"))
+	})
+
+	t.Run("empty route path falls back to permalink", func(t *testing.T) {
+		nv := NewNoteViews()
+		note := &NoteView{
+			PathID:    4,
+			Permalink: "/note-permalink",
+			Routes:    []ParsedRoute{{Host: "custom.io", Path: ""}},
+		}
+		nv.RegisterNoteRoutes(note)
+		require.Equal(t, "https://custom.io/note-permalink", nv.ResolveFullURL(note, publicURL))
+	})
+
+	t.Run("first of multiple custom domains wins", func(t *testing.T) {
+		nv := NewNoteViews()
+		note := &NoteView{
+			PathID:    5,
+			Permalink: "/note",
+			Routes: []ParsedRoute{
+				{Host: "first.io", Path: "/a"},
+				{Host: "second.io", Path: "/b"},
+			},
+		}
+		nv.RegisterNoteRoutes(note)
+		require.Equal(t, "https://first.io/a", nv.ResolveFullURL(note, publicURL))
+	})
+}

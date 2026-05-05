@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"net/url"
 	rl2 "trip2g/internal/russkayalatinica2"
 	"unicode"
 
@@ -310,6 +311,10 @@ type NoteViews struct {
 	// DomainSitemaps stores pre-generated sitemaps for each custom domain.
 	// Key = normalized domain (e.g., "foo.com").
 	DomainSitemaps map[string][]byte `json:"-"`
+
+	// customDomainRoutes is a reverse index: noteID -> first custom domain route.
+	// Populated during RegisterNoteRoutes. Used by ResolveFullURL.
+	customDomainRoutes map[int64]struct{ Host, Path string }
 
 	Version string
 
@@ -930,7 +935,7 @@ func (n *NoteView) ExtractTitle() string {
 	nodeCount := 0
 	docTitle := ""
 
-	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) { //nolint:errcheck
+	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) { //nolint:errcheck,gosec // ast.Walk callback never errors
 		if !entering {
 			return ast.WalkContinue, nil
 		}
@@ -941,7 +946,7 @@ func (n *NoteView) ExtractTitle() string {
 		}
 
 		if node.Kind() == ast.KindHeading {
-			heading := node.(*ast.Heading)
+			heading := node.(*ast.Heading) //nolint:errcheck // type assertion is safe: KindHeading always yields *ast.Heading
 			if heading.Level != 1 {
 				return ast.WalkContinue, nil
 			}
@@ -965,8 +970,9 @@ func NewNoteViews() *NoteViews {
 		Map:            make(map[string]*NoteView),
 		PathMap:        make(map[string]*NoteView),
 		Subgraphs:      make(map[string]*NoteSubgraph),
-		RouteMap:       make(map[string]map[string]*NoteView),
-		DomainSitemaps: make(map[string][]byte),
+		RouteMap:           make(map[string]map[string]*NoteView),
+		DomainSitemaps:     make(map[string][]byte),
+		customDomainRoutes: make(map[int64]struct{ Host, Path string }),
 	}
 }
 
@@ -977,6 +983,21 @@ func (nv *NoteViews) Copy() *NoteViews {
 
 func (nv *NoteViews) ResolveURL(note *NoteView) string {
 	return note.Permalink
+}
+
+// ResolveFullURL returns the full URL for a note.
+// If the note has a custom domain route, the first one is used with the scheme
+// derived from publicURL. Otherwise falls back to publicURL + note.Permalink.
+func (nv *NoteViews) ResolveFullURL(note *NoteView, publicURL string) string {
+	if r, ok := nv.customDomainRoutes[note.PathID]; ok {
+		u, _ := url.Parse(publicURL)
+		scheme := "https"
+		if u != nil && u.Scheme != "" {
+			scheme = u.Scheme
+		}
+		return scheme + "://" + r.Host + r.Path
+	}
+	return publicURL + note.Permalink
 }
 
 func (nv *NoteViews) ExtractNoteList() {
@@ -1262,6 +1283,12 @@ func (nv *NoteViews) RegisterNoteRoutes(note *NoteView) {
 			path = note.Permalink
 		}
 		nv.RouteMap[r.Host][path] = note
+		// Reverse index: first custom domain route wins.
+		if r.Host != "" {
+			if _, exists := nv.customDomainRoutes[note.PathID]; !exists {
+				nv.customDomainRoutes[note.PathID] = struct{ Host, Path string }{r.Host, path}
+			}
+		}
 	}
 }
 
