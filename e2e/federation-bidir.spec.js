@@ -21,7 +21,7 @@ const PEER_MCP = `${PEER_URL}/_system/mcp`;
 
 // Deterministic 64-hex secrets (32 bytes each).
 const SECRET_A = 'f0e1d2c3b4a5968778695a4b3c2d1e0ff0e1d2c3b4a5968778695a4b3c2d1e0f'; // hub→peer
-const SECRET_B = '1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80'; // peer→hub
+const SECRET_B = '1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f800'; // peer→hub
 const KID_A = `e2e-bidir-a-${crypto.randomBytes(4).toString('hex')}`;
 const KID_B = `e2e-bidir-b-${crypto.randomBytes(4).toString('hex')}`;
 

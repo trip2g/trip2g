@@ -388,13 +388,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --ui
 else
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot"
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation"
 fi
 
 TEST_EXIT_CODE=$?
