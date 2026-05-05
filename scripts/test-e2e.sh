@@ -462,6 +462,15 @@ if [ "${ENABLE_TG}" = "1" ]; then
   go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
 fi
 
+# Run bidirectional federation E2E tests
+echo ""
+echo "🔗 Running bidirectional federation E2E tests..."
+npx playwright test e2e/federation-bidir.spec.js || {
+  echo -e "${RED}✗ Bidirectional federation E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Bidirectional federation E2E tests passed${NC}"
+
 # Run webhook E2E tests AFTER all other tests (when job queue is empty)
 echo ""
 echo "🔗 Running webhook E2E tests..."
