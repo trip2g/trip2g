@@ -50,7 +50,7 @@ $trip2g_user_space $mol_view
 			<= Email $mol_view
 				sub / <= user_email
 			<= SignOut $mol_button_major
-				click? <=> signout? null
+				click? <=> signout?
 		spreads *
 			home <= Home $trip2g_user_space_home
 			subscriptions <= Subscriptions $trip2g_user_space_subscriptions
