@@ -20,11 +20,11 @@ import (
 // Override RequireSigninFunc to simulate DB subgraph changes between loads.
 func makeMinimalEnv(notes []noteloader.RawNote, requireSignin func() bool) *EnvMock {
 	return &EnvMock{
-		RawNotesFunc:    func(_ context.Context) ([]noteloader.RawNote, error) { return notes, nil },
-		RawAssetsFunc:   func(_ context.Context) ([]noteloader.RawAsset, error) { return nil, nil },
-		RawNoteChunksFunc: func(_ context.Context) ([]noteloader.RawNoteChunk, error) { return nil, nil },
+		RawNotesFunc:        func(_ context.Context) ([]noteloader.RawNote, error) { return notes, nil },
+		RawAssetsFunc:       func(_ context.Context) ([]noteloader.RawAsset, error) { return nil, nil },
+		RawNoteChunksFunc:   func(_ context.Context) ([]noteloader.RawNoteChunk, error) { return nil, nil },
 		NoteAssetExistsFunc: func(_ context.Context, _ db.NoteAsset) (bool, error) { return false, nil },
-		NoteAssetURLFunc:    func(_ context.Context, _ db.NoteAsset) (model.PresignedURL, error) {
+		NoteAssetURLFunc: func(_ context.Context, _ db.NoteAsset) (model.PresignedURL, error) {
 			return model.PresignedURL{}, nil
 		},
 		NoteAssetPathFunc: func(_ db.NoteAsset) string { return "" },

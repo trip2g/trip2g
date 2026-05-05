@@ -104,6 +104,14 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		},
 	}
 
+	jl.processTemplates(sourceFiles)
+	jl.wireYieldBlocks(sourceFiles)
+
+	return &jl.layouts, nil
+}
+
+// processTemplates is the second pass: load each template, walk for assets and blocks, store layout.
+func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 	for _, source := range sourceFiles {
 		view, parseErr := jl.load(source)
 		if parseErr != "" {
@@ -189,8 +197,10 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			Warnings: warnings,
 		}
 	}
+}
 
-	// Second pass: wire yield_blocks for each successfully parsed layout.
+// wireYieldBlocks is the third pass: wire yield_blocks for each successfully parsed layout.
+func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 	for _, source := range sourceFiles {
 		layout, ok := jl.layouts.Map[source.ID]
 		if !ok || layout.View == nil {
@@ -223,15 +233,13 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		utils.Walk(layout.View, validator)
 
 		// Merge all warnings into pendingWarnings so they end up on the layout.
-		allWarnings := append(regWarnings, resolveWarnings...) //nolint:gocritic
+		allWarnings := append(regWarnings, resolveWarnings...) //nolint:gocritic // correct: intentionally creates new combined slice
 		allWarnings = append(allWarnings, validator.warnings...)
 		if len(allWarnings) > 0 {
 			layout.Warnings = append(layout.Warnings, allWarnings...)
 			jl.layouts.Map[source.ID] = layout
 		}
 	}
-
-	return &jl.layouts, nil
 }
 
 // yieldBlocksUsageFinder checks whether a template contains a yield_blocks call.

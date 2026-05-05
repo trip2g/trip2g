@@ -44,26 +44,9 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 		return []model.SimilarNote{}, nil
 	}
 
-	// Calculate limit
-	limit := defaultLimit
-	if input.Limit != nil {
-		limit = int(*input.Limit)
-		if limit < 1 {
-			limit = 1
-		}
-		if limit > maxLimit {
-			limit = maxLimit
-		}
-	}
+	limit := clampLimit(input.Limit)
 
-	// Build chunk map indexed by note path (only chunks with embeddings).
-	allChunks := env.LatestNoteChunks()
-	chunkMap := make(map[string][]appmodel.NoteChunk, len(allChunks)/4+1)
-	for _, c := range allChunks {
-		if len(c.Embedding) > 0 {
-			chunkMap[c.NotePath] = append(chunkMap[c.NotePath], c)
-		}
-	}
+	chunkMap := buildChunkMap(env.LatestNoteChunks())
 
 	srcChunks := chunkMap[sourceNote.Path]
 	useChunks := len(srcChunks) > 0
@@ -72,7 +55,47 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 		return []model.SimilarNote{}, nil
 	}
 
-	// Calculate similarity scores. Prefer chunk-level matching when available.
+	scores := calculateScores(noteViews, sourceNote, srcChunks, useChunks, chunkMap)
+
+	// Sort by similarity score (descending)
+	sort.Slice(scores, func(i, j int) bool {
+		return scores[i].score > scores[j].score
+	})
+
+	return filterByPermissions(ctx, env, scores, limit)
+}
+
+func clampLimit(limit *int32) int {
+	if limit == nil {
+		return defaultLimit
+	}
+	v := int(*limit)
+	if v < 1 {
+		return 1
+	}
+	if v > maxLimit {
+		return maxLimit
+	}
+	return v
+}
+
+func buildChunkMap(allChunks []appmodel.NoteChunk) map[string][]appmodel.NoteChunk {
+	chunkMap := make(map[string][]appmodel.NoteChunk, len(allChunks)/4+1)
+	for _, c := range allChunks {
+		if len(c.Embedding) > 0 {
+			chunkMap[c.NotePath] = append(chunkMap[c.NotePath], c)
+		}
+	}
+	return chunkMap
+}
+
+func calculateScores(
+	noteViews *appmodel.NoteViews,
+	sourceNote *appmodel.NoteView,
+	srcChunks []appmodel.NoteChunk,
+	useChunks bool,
+	chunkMap map[string][]appmodel.NoteChunk,
+) []similarNoteScore {
 	scores := make([]similarNoteScore, 0, len(noteViews.List))
 	for _, note := range noteViews.List {
 		if note.VersionID == sourceNote.VersionID {
@@ -98,13 +121,10 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 
 		scores = append(scores, similarNoteScore{noteView: note, score: score})
 	}
+	return scores
+}
 
-	// Sort by similarity score (descending)
-	sort.Slice(scores, func(i, j int) bool {
-		return scores[i].score > scores[j].score
-	})
-
-	// Filter by permissions and build result
+func filterByPermissions(ctx context.Context, env Env, scores []similarNoteScore, limit int) ([]model.SimilarNote, error) {
 	result := make([]model.SimilarNote, 0, limit)
 	for _, s := range scores {
 		if len(result) >= limit {
@@ -124,7 +144,6 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 			Note:  model.ConvertNoteToPublic(s.noteView),
 		})
 	}
-
 	return result, nil
 }
 

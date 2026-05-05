@@ -45,7 +45,7 @@ func (w *yieldNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 
 // resolveNeededFiles BFS-walks yield deps from the page template.
 // Returns ordered list of sourceIDs to inline, flattened block names, and warnings.
-func resolveNeededFiles(
+func resolveNeededFiles( //nolint:nonamedreturns // named returns used throughout function body
 	views *jet.Set,
 	pageView *jet.Template,
 	registry map[string]blockRegistryEntry,

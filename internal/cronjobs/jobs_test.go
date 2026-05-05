@@ -30,24 +30,24 @@ func (m *mockEnv) UpdateCronJobExecution(_ context.Context, arg db.UpdateCronJob
 	return db.CronJobExecution{ID: arg.ID, Status: arg.Status}, nil
 }
 
-func (m *mockEnv) UpdateCronJobLastExec(_ context.Context, _ int64) error { return nil }
+func (m *mockEnv) UpdateCronJobLastExec(_ context.Context, _ int64) error          { return nil }
 func (m *mockEnv) UpsertCronJob(_ context.Context, _ db.UpsertCronJobParams) error { return nil }
 func (m *mockEnv) CronJobByName(_ context.Context, _ string) (db.CronJob, error) {
 	return db.CronJob{}, nil
 }
-func (m *mockEnv) ListAllCronJobs(_ context.Context) ([]db.CronJob, error) { return nil, nil }
-func (m *mockEnv) DeleteCronJobByName(_ context.Context, _ string) error   { return nil }
-func (m *mockEnv) Logger() logger.Logger                                    { return &logger.DummyLogger{} }
+func (m *mockEnv) ListAllCronJobs(_ context.Context) ([]db.CronJob, error)    { return nil, nil }
+func (m *mockEnv) DeleteCronJobByName(_ context.Context, _ string) error      { return nil }
+func (m *mockEnv) Logger() logger.Logger                                      { return &logger.DummyLogger{} }
 func (m *mockEnv) EnqueueJob(_ context.Context, _ model.BackgroundTask) error { return nil }
 func (m *mockEnv) RegisterJob(_ model.BackgroundQueueID, _ string, _ func(context.Context, []byte) error) {
 }
 
 type noopJob struct{ name string }
 
-func (j *noopJob) Name() string                                                    { return j.name }
-func (j *noopJob) Schedule() string                                                { return "0 0 * * * *" }
-func (j *noopJob) ExecuteAfterStart() bool                                         { return false }
-func (j *noopJob) Execute(_ context.Context, _ interface{}) (interface{}, error)   { return nil, nil }
+func (j *noopJob) Name() string                                                  { return j.name }
+func (j *noopJob) Schedule() string                                              { return "0 0 * * * *" }
+func (j *noopJob) ExecuteAfterStart() bool                                       { return false }
+func (j *noopJob) Execute(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil }
 
 // newTestCronJobs creates a CronJobs with pre-populated jobs map, bypassing New().
 func newTestCronJobs(env Env, jobIDs []int64) *CronJobs {
@@ -93,14 +93,14 @@ func TestExecuteJob_DoesNotHoldMutexDuringDBOps(t *testing.T) {
 	cj := newTestCronJobs(env, []int64{1, 2})
 
 	// Start job1 — it will block inside UpdateRunningCronJobExecutions.
-	go cj.executeJob(1) //nolint:errcheck
+	go cj.executeJob(1)
 
 	// Give job1 time to acquire the mutex and enter the DB call.
 	time.Sleep(10 * time.Millisecond)
 
 	// Start job2 concurrently. If runningMU is still held by job1, job2 cannot
 	// call UpdateRunningCronJobExecutions and job2Reached will not be closed.
-	go cj.executeJob(2) //nolint:errcheck
+	go cj.executeJob(2)
 
 	select {
 	case <-job2Reached:

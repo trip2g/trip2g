@@ -38,7 +38,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	secret, err := hex.DecodeString(input.SecretHex)
-	if err != nil || len(secret) != 32 { //nolint:nilerr
+	if err != nil || len(secret) != 32 { //nolint:nilerr // intentional: convert decode error to user-facing payload
 		return &model.ErrorPayload{Message: "secretHex must be exactly 32 bytes (64 hex characters)"}, nil
 	}
 

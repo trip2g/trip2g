@@ -2,7 +2,6 @@ package appreq
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"trip2g/internal/personaltoken"
@@ -27,12 +26,6 @@ func newFasthttpCtx() *fasthttp.RequestCtx {
 	return &fasthttp.RequestCtx{}
 }
 
-func newFasthttpCtxWithCookie(cookieName, cookieValue string) *fasthttp.RequestCtx {
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetCookie(cookieName, cookieValue)
-	return ctx
-}
-
 func newFasthttpCtxWithBearer(bearer string) *fasthttp.RequestCtx {
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.Header.Set("Authorization", "Bearer "+bearer)
@@ -46,7 +39,7 @@ func newFasthttpCtxWithQueryToken(token string) *fasthttp.RequestCtx {
 }
 
 // validPersonalUser returned by mock resolver on success.
-var validPersonalUser = &usertoken.Data{ID: 42, Role: "user"} //nolint:gochecknoglobals
+var validPersonalUser = &usertoken.Data{ID: 42, Role: "user"} //nolint:gochecknoglobals // test package global
 
 // fakeJWTCookie simulates a valid cookie value; Manager.Extract will fail on it
 // (no valid secret), which returns nil, nil (anonymous) — sufficient for tests
@@ -147,7 +140,7 @@ func TestUserToken_BearerPersonalTokenInvalid(t *testing.T) {
 	tok, err := req.UserToken()
 	require.Error(t, err)
 	require.Nil(t, tok)
-	require.True(t, errors.Is(err, personaltoken.ErrInvalidToken))
+	require.ErrorIs(t, err, personaltoken.ErrInvalidToken)
 
 	Release(req)
 }

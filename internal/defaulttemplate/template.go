@@ -152,20 +152,7 @@ func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 	raw := m.Get(key)
 
 	if raw == nil {
-		// Check glob-matched layout section before fallback.
-		if match := ctx.resolveLayoutSection(key); match != nil {
-			// If the layout section note declares content: [widget, ...], use those as widgets.
-			if sectionNote := ctx.Notes.ByPath(match.NotePath); sectionNote != nil {
-				if widgets := parseGlobSectionWidgets(sectionNote.M().Get("content"), match.NotePath); len(widgets) > 0 {
-					return widgets
-				}
-			}
-			return []WidgetRef{{Kind: WidgetContent, Value: match.NotePath}}
-		}
-		if ctx.noteExists(defaultName) {
-			return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
-		}
-		return nil
+		return ctx.sidebarWidgetsFromLayout(key, defaultName)
 	}
 
 	// Check for bool false (sidebar explicitly disabled).
@@ -199,6 +186,21 @@ func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 		return nil
 	}
 	return widgets
+}
+
+func (ctx *Ctx) sidebarWidgetsFromLayout(key, defaultName string) []WidgetRef {
+	if match := ctx.resolveLayoutSection(key); match != nil {
+		if sectionNote := ctx.Notes.ByPath(match.NotePath); sectionNote != nil {
+			if widgets := parseGlobSectionWidgets(sectionNote.M().Get("content"), match.NotePath); len(widgets) > 0 {
+				return widgets
+			}
+		}
+		return []WidgetRef{{Kind: WidgetContent, Value: match.NotePath}}
+	}
+	if ctx.noteExists(defaultName) {
+		return []WidgetRef{{Kind: WidgetContent, Value: defaultName}}
+	}
+	return nil
 }
 
 // ContentRefs returns the list of content blocks to render.

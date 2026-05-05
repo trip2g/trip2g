@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -64,10 +65,10 @@ func (c *Client) FederatedNoteHTML(ctx context.Context, params model.FederationN
 
 func (c *Client) callTool(ctx context.Context, name string, args any) (model.FederationResult, error) {
 	if c == nil {
-		return model.FederationResult{}, fmt.Errorf("federation client is nil")
+		return model.FederationResult{}, errors.New("federation client is nil")
 	}
 	if c.peer.KBURL == "" {
-		return model.FederationResult{}, fmt.Errorf("federation peer url is empty")
+		return model.FederationResult{}, errors.New("federation peer url is empty")
 	}
 
 	rid := strconv.FormatInt(time.Now().UnixNano(), 10)

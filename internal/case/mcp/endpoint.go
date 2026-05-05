@@ -41,18 +41,16 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if userToken == nil {
-		// No personal token authenticated — check for federation JWT Bearer.
-		if authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization"))); authHeader != "" {
-			token, ok := strings.CutPrefix(authHeader, "Bearer ")
-			if !ok || strings.TrimSpace(token) == "" {
-				resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token")
-				return writeJSONResponse(req, resp)
-			}
-
+		// No personal token — check for federation JWT Bearer.
+		authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
+		token, isBearerToken := strings.CutPrefix(authHeader, "Bearer ")
+		if authHeader != "" && (!isBearerToken || strings.TrimSpace(token) == "") {
+			return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token"))
+		}
+		if isBearerToken && strings.TrimSpace(token) != "" {
 			kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
 			if verifyErr != nil {
-				resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
-				return writeJSONResponse(req, resp)
+				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error()))
 			}
 			resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
 		}

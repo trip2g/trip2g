@@ -25,38 +25,69 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		return federationNotConfiguredResponse(id, args.KBID)
 	}
 
-	if args.KBID != "" {
-		kb, rest := findFederationKB(kbs, args.KBID)
-		if kb == nil {
-			return federationNotConfiguredResponse(id, args.KBID)
+	if args.KBID == "" {
+		selected := selectFederationKBs(kbs, "", args.KBIDs)
+		if len(selected) == 0 {
+			return federationNotConfiguredResponse(id, "")
 		}
-		var client model.Federation
-		client, err = env.FederationClient(kb.ID)
-		if err != nil {
-			return errorResponse(id, ErrCodeInternal, err.Error())
-		}
-		params := model.FederationSearchParams{Query: args.Query}
-		var result model.FederationResult
-		if rest == "" {
-			result, err = client.Search(ctx, params)
-		} else {
-			params.KBID = rest
-			result, err = client.FederatedSearch(ctx, params)
-		}
-		if err != nil {
-			return errorResponse(id, ErrCodeInternal, err.Error())
-		}
-		return successResponse(id, federationResultToToolResult(result))
+		results := fanout(ctx, env, selected, func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
+			return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
+		})
+		return successResponse(id, aggregateFederationResults(results))
 	}
 
-	selected := selectFederationKBs(kbs, "", args.KBIDs)
-	if len(selected) == 0 {
-		return federationNotConfiguredResponse(id, "")
+	kb, rest := findFederationKB(kbs, args.KBID)
+	if kb == nil {
+		return federationNotConfiguredResponse(id, args.KBID)
 	}
-	results := fanout(ctx, env, selected, func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
-		return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
-	})
-	return successResponse(id, aggregateFederationResults(results))
+	var client model.Federation
+	client, err = env.FederationClient(kb.ID)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, err.Error())
+	}
+	params := model.FederationSearchParams{Query: args.Query}
+	var result model.FederationResult
+	if rest == "" {
+		result, err = client.Search(ctx, params)
+	} else {
+		params.KBID = rest
+		result, err = client.FederatedSearch(ctx, params)
+	}
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, err.Error())
+	}
+	return successResponse(id, federationResultToToolResult(result))
+}
+
+// callFederatedSingleKB handles the common pattern: look up KB → get client → call → handle error → return.
+// The call closure receives the client and the "rest" portion of the KB ID (empty if direct, non-empty if federated).
+func callFederatedSingleKB(
+	ctx context.Context,
+	env Env,
+	id any,
+	kbID string,
+	call func(client model.Federation, rest string) (model.FederationResult, error),
+) Response {
+	kbs, err := accessibleKBNotes(ctx, env)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, err.Error())
+	}
+	if len(kbs) == 0 {
+		return federationNotConfiguredResponse(id, kbID)
+	}
+	kb, rest := findFederationKB(kbs, kbID)
+	if kb == nil {
+		return federationNotConfiguredResponse(id, kbID)
+	}
+	client, err := env.FederationClient(kb.ID)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, err.Error())
+	}
+	result, err := call(client, rest)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, err.Error())
+	}
+	return successResponse(id, federationResultToToolResult(result))
 }
 
 func handleFederatedSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
@@ -67,23 +98,6 @@ func handleFederatedSimilar(ctx context.Context, env Env, id any, argsRaw json.R
 	if args.KBID == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
-
-	kbs, err := accessibleKBNotes(ctx, env)
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
-	if len(kbs) == 0 {
-		return federationNotConfiguredResponse(id, args.KBID)
-	}
-
-	kb, rest := findFederationKB(kbs, args.KBID)
-	if kb == nil {
-		return federationNotConfiguredResponse(id, args.KBID)
-	}
-	client, err := env.FederationClient(kb.ID)
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
 	params := model.FederationSimilarParams{
 		PID:    args.PID,
 		NoteID: args.NoteID,
@@ -91,17 +105,13 @@ func handleFederatedSimilar(ctx context.Context, env Env, id any, argsRaw json.R
 		Href:   args.Href,
 		Limit:  args.Limit,
 	}
-	var result model.FederationResult
-	if rest == "" {
-		result, err = client.Similar(ctx, params)
-	} else {
+	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
+		if rest == "" {
+			return client.Similar(ctx, params)
+		}
 		params.KBID = rest
-		result, err = client.FederatedSimilar(ctx, params)
-	}
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
-	return successResponse(id, federationResultToToolResult(result))
+		return client.FederatedSimilar(ctx, params)
+	})
 }
 
 func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
@@ -112,23 +122,6 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 	if args.KBID == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
-
-	kbs, err := accessibleKBNotes(ctx, env)
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
-	if len(kbs) == 0 {
-		return federationNotConfiguredResponse(id, args.KBID)
-	}
-
-	kb, rest := findFederationKB(kbs, args.KBID)
-	if kb == nil {
-		return federationNotConfiguredResponse(id, args.KBID)
-	}
-	client, err := env.FederationClient(kb.ID)
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
 	params := model.FederationNoteHTMLParams{
 		PID:     args.PID,
 		NoteID:  args.NoteID,
@@ -136,17 +129,13 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 		Href:    args.Href,
 		MatchID: args.MatchID,
 	}
-	var result model.FederationResult
-	if rest == "" {
-		result, err = client.NoteHTML(ctx, params)
-	} else {
+	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
+		if rest == "" {
+			return client.NoteHTML(ctx, params)
+		}
 		params.KBID = rest
-		result, err = client.FederatedNoteHTML(ctx, params)
-	}
-	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
-	}
-	return successResponse(id, federationResultToToolResult(result))
+		return client.FederatedNoteHTML(ctx, params)
+	})
 }
 
 func federationNotConfiguredResponse(id any, kbID string) Response {

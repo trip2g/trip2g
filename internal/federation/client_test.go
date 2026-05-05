@@ -23,8 +23,8 @@ func TestClientImplementsFederationInterface(t *testing.T) {
 func TestClientCallsSixFederationTools(t *testing.T) {
 	var names []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "POST", r.Method)
-		require.Equal(t, "2", r.Header.Get("X-Mcp-Federation-Depth"))
+		require.Equal(t, "POST", r.Method)                            //nolint:testifylint // require safe: handler called synchronously via httptest
+		require.Equal(t, "2", r.Header.Get("X-Mcp-Federation-Depth")) //nolint:testifylint // require safe: handler called synchronously via httptest
 		requireJWTKid(t, r.Header.Get("Authorization"), "kid-1")
 
 		var req struct {
@@ -33,8 +33,8 @@ func TestClientCallsSixFederationTools(t *testing.T) {
 				Name string `json:"name"`
 			} `json:"params"`
 		}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-		require.Equal(t, "tools/call", req.Method)
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req)) //nolint:testifylint // require safe: handler called synchronously via httptest
+		require.Equal(t, "tools/call", req.Method)               //nolint:testifylint // require safe: handler called synchronously via httptest
 		names = append(names, req.Params.Name)
 
 		w.Header().Set("Content-Type", "application/json")

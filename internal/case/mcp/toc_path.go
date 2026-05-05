@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"strings"
 
-	"golang.org/x/net/html"
 	"trip2g/internal/model"
+
+	"golang.org/x/net/html"
 )
 
 // TOCItem represents one heading in a document's table of contents.
@@ -78,21 +79,26 @@ func tocPathForSnippet(noteHTML, snippet string) []string {
 func findDeepestSection(n *html.Node, target string, currentPath []string) ([]string, bool) {
 	if n.Type == html.ElementNode && n.Data == "div" {
 		if header := htmlNodeAttr(n, "data-header"); header != "" {
-			sectionText := strings.Join(strings.Fields(strings.ToLower(htmlNodeText(n))), " ")
-			if !strings.Contains(sectionText, target) {
-				return nil, false
-			}
-			newPath := append(append([]string(nil), currentPath...), header)
-			// Prefer the deepest (most specific) match from children.
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				if path, ok := findDeepestSection(c, target, newPath); ok {
-					return path, true
-				}
-			}
-			return newPath, true
+			return matchHeaderDiv(n, header, target, currentPath)
 		}
 	}
+	return walkHTMLChildren(n, target, currentPath)
+}
 
+func matchHeaderDiv(n *html.Node, header, target string, currentPath []string) ([]string, bool) {
+	sectionText := strings.Join(strings.Fields(strings.ToLower(htmlNodeText(n))), " ")
+	if !strings.Contains(sectionText, target) {
+		return nil, false
+	}
+	newPath := append(append([]string(nil), currentPath...), header)
+	// Prefer the deepest (most specific) match from children.
+	if path, ok := walkHTMLChildren(n, target, newPath); ok {
+		return path, true
+	}
+	return newPath, true
+}
+
+func walkHTMLChildren(n *html.Node, target string, currentPath []string) ([]string, bool) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if path, ok := findDeepestSection(c, target, currentPath); ok {
 			return path, true

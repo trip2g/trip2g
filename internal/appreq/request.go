@@ -127,19 +127,16 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 	}
 
 	// 2. Try Authorization: Bearer <value> where value starts with t2g_.
-	if bearer := string(c.Req.Request.Header.Peek("Authorization")); bearer != "" {
-		if value, ok := strings.CutPrefix(bearer, "Bearer "); ok {
-			if personaltoken.IsPersonal(value) {
-				data, resolveErr := c.resolvePersonalToken(value)
-				if resolveErr != nil {
-					return nil, resolveErr
-				}
-				c.token = data
-				c.tokenExtracted = true
-				return data, nil
-			}
-			// Non-t2g_ Bearer (e.g. federation JWT) — fall through to anonymous.
+	bearer := string(c.Req.Request.Header.Peek("Authorization"))
+	if value, ok := strings.CutPrefix(bearer, "Bearer "); ok && personaltoken.IsPersonal(value) {
+		data, resolveErr := c.resolvePersonalToken(value)
+		if resolveErr != nil {
+			return nil, resolveErr
 		}
+		c.token = data
+		c.tokenExtracted = true
+		return data, nil
+		// Non-t2g_ Bearer (e.g. federation JWT) falls through to anonymous.
 	}
 
 	// 3. Try ?token=<value> where value starts with t2g_.
@@ -161,7 +158,7 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 
 func (c *Request) resolvePersonalToken(plaintext string) (*usertoken.Data, error) {
 	if c.PersonalTokenResolver == nil {
-		return nil, fmt.Errorf("personal token resolver not configured")
+		return nil, errors.New("personal token resolver not configured")
 	}
 	return c.PersonalTokenResolver.Resolve(c.Req, plaintext)
 }

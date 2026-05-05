@@ -3,8 +3,9 @@ package personaltoken_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/personaltoken"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerate(t *testing.T) {

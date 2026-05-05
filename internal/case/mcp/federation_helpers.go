@@ -160,8 +160,8 @@ func hmacSHA256(secret, payload []byte) []byte {
 	return mac.Sum(nil)
 }
 
-func splitKBID(id string) (head, rest string) {
-	head, rest, _ = strings.Cut(id, "/")
+func splitKBID(id string) (string, string) {
+	head, rest, _ := strings.Cut(id, "/")
 	return head, rest
 }
 

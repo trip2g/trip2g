@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/db"
 	"trip2g/internal/personaltoken"
 	"trip2g/internal/usertoken"
+
+	"github.com/stretchr/testify/require"
 )
 
 // --- minimal hand-rolled mock for Env ---
@@ -18,11 +19,11 @@ import (
 type mockEnv struct {
 	mu sync.Mutex
 
-	tokenByHashFunc         func(ctx context.Context, hash string) (db.UserToken, error)
-	adminByUserIDFunc       func(ctx context.Context, userID int64) (db.Admin, error)
-	updateLastUsedFunc      func(ctx context.Context, id string) error
-	tokenByHashCalls        int
-	updateLastUsedCalls     int
+	tokenByHashFunc     func(ctx context.Context, hash string) (db.UserToken, error)
+	adminByUserIDFunc   func(ctx context.Context, userID int64) (db.Admin, error)
+	updateLastUsedFunc  func(ctx context.Context, id string) error
+	tokenByHashCalls    int
+	updateLastUsedCalls int
 }
 
 func (m *mockEnv) UserTokenByHash(ctx context.Context, hash string) (db.UserToken, error) {

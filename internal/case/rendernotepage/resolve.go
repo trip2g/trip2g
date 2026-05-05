@@ -261,7 +261,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	if note.InLinks != nil {
 		filtered := make(map[string]struct{}, len(note.InLinks))
 		for key := range note.InLinks {
-			if !(len(key) > 1 && key[1] == '_') {
+			if len(key) <= 1 || key[1] != '_' {
 				filtered[key] = struct{}{}
 			}
 		}

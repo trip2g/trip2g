@@ -50,7 +50,7 @@ func TestResolve_Success(t *testing.T) {
 	payload, ok := result.(*createusertoken.SuccessPayload)
 	require.True(t, ok, "expected SuccessPayload, got %T", result)
 	require.NotEmpty(t, payload.PlaintextToken)
-	require.True(t, len(payload.PlaintextToken) > 4)
+	require.Greater(t, len(payload.PlaintextToken), 4)
 	require.Equal(t, "test-uuid", payload.Token.ID)
 	require.Equal(t, int64(42), payload.Token.UserID)
 	require.Equal(t, "Claude Desktop", payload.Token.Name)

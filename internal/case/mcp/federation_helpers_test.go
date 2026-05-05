@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -97,30 +96,32 @@ func TestVerifyInboundSentinels(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("unknown kid", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid) //nolint:govet
-		require.True(t, errors.Is(err, ErrFedAuthUnknownKid))
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid) //nolint:govet // err in closure shadows outer test err intentionally
+		require.ErrorIs(t, err, ErrFedAuthUnknownKid)
 	})
 
 	t.Run("bad signature", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: []byte("other-secret")},
 			secretOK: true,
 		}, valid)
-		require.True(t, errors.Is(err, ErrFedAuthBadSig))
+		require.ErrorIs(t, err, ErrFedAuthBadSig)
 	})
 
 	t.Run("expired", func(t *testing.T) {
-		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second) //nolint:govet
+		//nolint:govet // err in closure shadows outer test err intentionally
+		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second)
 		require.NoError(t, err)
 
 		_, _, err = verifyInbound(context.Background(), federationVerifyEnvMock{
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret},
 			secretOK: true,
 		}, token)
-		require.True(t, errors.Is(err, ErrFedAuthExpired))
+		require.ErrorIs(t, err, ErrFedAuthExpired)
 	})
 
 	t.Run("future iat", func(t *testing.T) {
+		//nolint:govet // err in closure shadows outer test err intentionally
 		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(10*time.Second), 30*time.Second)
 		require.NoError(t, err)
 
@@ -128,14 +129,14 @@ func TestVerifyInboundSentinels(t *testing.T) {
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret},
 			secretOK: true,
 		}, token)
-		require.True(t, errors.Is(err, ErrFedAuthFutureIAT))
+		require.ErrorIs(t, err, ErrFedAuthFutureIAT)
 	})
 
 	t.Run("revoked", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret, RevokedAt: &now},
 			secretOK: true,
 		}, valid)
-		require.True(t, errors.Is(err, ErrFedAuthRevoked))
+		require.ErrorIs(t, err, ErrFedAuthRevoked)
 	})
 }

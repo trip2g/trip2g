@@ -43,7 +43,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	secret, err := resolveSecret(input.SecretHex)
 	if err != nil {
-		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // intentional: convert internal error to user-facing payload
 	}
 
 	encrypted, err := env.EncryptData(secret)
