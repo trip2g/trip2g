@@ -2550,6 +2550,11 @@ func (r *noteViewResolver) HTML(ctx context.Context, obj *appmodel.NoteView) (st
 	return string(obj.HTML), nil
 }
 
+// URL is the resolver for the url field.
+func (r *noteViewResolver) URL(ctx context.Context, obj *appmodel.NoteView) (string, error) {
+	return r.env(ctx).LatestNoteViews().ResolveFullURL(obj, r.env(ctx).PublicURL()), nil
+}
+
 // Warnings is the resolver for the warnings field.
 func (r *noteViewResolver) Warnings(ctx context.Context, obj *appmodel.NoteView) ([]appmodel.NoteWarning, error) {
 	return obj.Warnings, nil

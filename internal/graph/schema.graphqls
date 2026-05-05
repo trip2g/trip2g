@@ -152,6 +152,7 @@ type NoteView {
   content: String!
   html: String!
   permalink: String!
+  url: String! @goField(forceResolver: true)
   free: Boolean!
   pathId: Int64!
   versionId: Int64!

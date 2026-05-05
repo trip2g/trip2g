@@ -702,6 +702,8 @@ type NoteViewResolver interface {
 	Content(ctx context.Context, obj *model1.NoteView) (string, error)
 	HTML(ctx context.Context, obj *model1.NoteView) (string, error)
 
+	URL(ctx context.Context, obj *model1.NoteView) (string, error)
+
 	Warnings(ctx context.Context, obj *model1.NoteView) ([]model1.NoteWarning, error)
 	InLinks(ctx context.Context, obj *model1.NoteView) ([]model1.NoteView, error)
 	GraphPosition(ctx context.Context, obj *model1.NoteView) (*model.Vector2, error)
@@ -9947,6 +9949,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -16171,6 +16175,8 @@ func (ec *executionContext) fieldContext_AdminQuery_recentlyModifiedNoteViews(_ 
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -17730,6 +17736,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -19498,6 +19506,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -20987,6 +20997,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_noteView(_ con
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -27655,6 +27667,8 @@ func (ec *executionContext) fieldContext_NotePath_latestNoteView(_ context.Conte
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -28017,6 +28031,35 @@ func (ec *executionContext) fieldContext_NoteView_permalink(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteView_url(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteView_url,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteView().URL(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteView_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteView_free(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28204,6 +28247,8 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -32984,6 +33029,8 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 				return ec.fieldContext_NoteView_html(ctx, field)
 			case "permalink":
 				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
 			case "free":
 				return ec.fieldContext_NoteView_free(ctx, field)
 			case "pathId":
@@ -61456,6 +61503,42 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "url":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_url(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "free":
 			out.Values[i] = ec._NoteView_free(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
