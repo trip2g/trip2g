@@ -15,7 +15,7 @@ type Federation interface {
 }
 
 type FederationClientFactory interface {
-	FederationClient(kbID string) (Federation, error)
+	FederationClient(ctx context.Context, kbID string) (Federation, error)
 }
 
 type FederationPeer struct {

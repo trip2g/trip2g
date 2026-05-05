@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"trip2g/internal/appreq"
@@ -28,7 +29,17 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeJSONResponse(req, resp)
 	}
 
+	// Enforce federation hop depth limit.
 	resolveCtx := context.Context(req.Req)
+	depthHeader := req.Req.Request.Header.Peek("X-MCP-Federation-Depth")
+	if len(depthHeader) > 0 {
+		incomingDepth, _ := strconv.Atoi(string(depthHeader))
+		if incomingDepth >= env.FederationMaxDepth() {
+			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "federation max depth exceeded")
+			return writeJSONResponse(req, resp)
+		}
+		resolveCtx = contextWithFederationDepth(resolveCtx, incomingDepth)
+	}
 
 	// Resolve personal token first (t2g_* Bearer or ?token= — handled by appreq.UserToken).
 	// If a user is present in ctx, the personal token authenticated successfully; skip federation verifyInbound.

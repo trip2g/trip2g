@@ -72,7 +72,7 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 			return true, nil
 		},
-		FederationClientFunc: func(kbID string) (appmodel.Federation, error) {
+		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
 			require.Equal(t, "bob", kbID)
 			return federation, nil
 		},
@@ -122,7 +122,7 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 			return true, nil
 		},
-		FederationClientFunc: func(kbID string) (appmodel.Federation, error) {
+		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
 			require.Equal(t, "bob", kbID)
 			return federation, nil
 		},

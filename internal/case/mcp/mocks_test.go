@@ -33,7 +33,7 @@ var _ mcp.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
-//			FederationClientFunc: func(kbID string) (model.Federation, error) {
+//			FederationClientFunc: func(ctx context.Context, kbID string) (model.Federation, error) {
 //				panic("mock out the FederationClient method")
 //			},
 //			FederationMaxDepthFunc: func() int {
@@ -86,7 +86,7 @@ type EnvMock struct {
 	FeaturesFunc func() features.Features
 
 	// FederationClientFunc mocks the FederationClient method.
-	FederationClientFunc func(kbID string) (model.Federation, error)
+	FederationClientFunc func(ctx context.Context, kbID string) (model.Federation, error)
 
 	// FederationMaxDepthFunc mocks the FederationMaxDepth method.
 	FederationMaxDepthFunc func() int
@@ -140,6 +140,8 @@ type EnvMock struct {
 		}
 		// FederationClient holds details about calls to the FederationClient method.
 		FederationClient []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// KbID is the kbID argument value.
 			KbID string
 		}
@@ -306,19 +308,21 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 }
 
 // FederationClient calls FederationClientFunc.
-func (mock *EnvMock) FederationClient(kbID string) (model.Federation, error) {
+func (mock *EnvMock) FederationClient(ctx context.Context, kbID string) (model.Federation, error) {
 	if mock.FederationClientFunc == nil {
 		panic("EnvMock.FederationClientFunc: method is nil but Env.FederationClient was just called")
 	}
 	callInfo := struct {
+		Ctx  context.Context
 		KbID string
 	}{
+		Ctx:  ctx,
 		KbID: kbID,
 	}
 	mock.lockFederationClient.Lock()
 	mock.calls.FederationClient = append(mock.calls.FederationClient, callInfo)
 	mock.lockFederationClient.Unlock()
-	return mock.FederationClientFunc(kbID)
+	return mock.FederationClientFunc(ctx, kbID)
 }
 
 // FederationClientCalls gets all the calls that were made to FederationClient.
@@ -326,9 +330,11 @@ func (mock *EnvMock) FederationClient(kbID string) (model.Federation, error) {
 //
 //	len(mockedEnv.FederationClientCalls())
 func (mock *EnvMock) FederationClientCalls() []struct {
+	Ctx  context.Context
 	KbID string
 } {
 	var calls []struct {
+		Ctx  context.Context
 		KbID string
 	}
 	mock.lockFederationClient.RLock()

@@ -404,6 +404,18 @@ func federationAuthFromContext(ctx context.Context) (federationAuthContext, bool
 	return auth, ok
 }
 
+type federationDepthContextKey struct{}
+
+func contextWithFederationDepth(ctx context.Context, depth int) context.Context {
+	return context.WithValue(ctx, federationDepthContextKey{}, depth)
+}
+
+// FederationDepthFromContext returns the federation hop depth stored in ctx, or 0 if not set.
+func FederationDepthFromContext(ctx context.Context) int {
+	depth, _ := ctx.Value(federationDepthContextKey{}).(int)
+	return depth
+}
+
 func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 	if auth, ok := federationAuthFromContext(ctx); ok {
 		return canreadnote.ResolveWithSubgraphs(ctx, env, note, auth.AllowedSubgraphs)

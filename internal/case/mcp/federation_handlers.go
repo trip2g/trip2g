@@ -41,7 +41,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		return federationNotConfiguredResponse(id, args.KBID)
 	}
 	var client model.Federation
-	client, err = env.FederationClient(kb.ID)
+	client, err = env.FederationClient(ctx, kb.ID)
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
@@ -79,7 +79,7 @@ func callFederatedSingleKB(
 	if kb == nil {
 		return federationNotConfiguredResponse(id, kbID)
 	}
-	client, err := env.FederationClient(kb.ID)
+	client, err := env.FederationClient(ctx, kb.ID)
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}

@@ -159,7 +159,7 @@ func TestPersonalTokenAdminSeesAllKBNotes(t *testing.T) {
 	env := buildDispatchEnv(t, true)
 	env.LatestNoteViewsFunc = func() *appmodel.NoteViews { return nvs }
 	env.CanReadNoteFunc = func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil }
-	env.FederationClientFunc = func(kbID string) (appmodel.Federation, error) {
+	env.FederationClientFunc = func(_ context.Context, kbID string) (appmodel.Federation, error) {
 		federationQueriedKBIDs = append(federationQueriedKBIDs, kbID)
 		return &federationMock{
 			searchFunc: func(_ context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
@@ -207,7 +207,7 @@ func TestPersonalTokenNonAdminKBNoteFiltered(t *testing.T) {
 	env.CanReadNoteFunc = func(_ context.Context, note *appmodel.NoteView) (bool, error) {
 		return note.PathID == allowedKB.PathID, nil
 	}
-	env.FederationClientFunc = func(kbID string) (appmodel.Federation, error) {
+	env.FederationClientFunc = func(_ context.Context, kbID string) (appmodel.Federation, error) {
 		queriedKBIDs = append(queriedKBIDs, kbID)
 		return &federationMock{
 			searchFunc: func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
@@ -227,6 +227,73 @@ func TestPersonalTokenNonAdminKBNoteFiltered(t *testing.T) {
 	require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
 	require.Nil(t, resp.Error)
 	require.Equal(t, []string{"a"}, queriedKBIDs, "non-admin should only query KB notes they can access")
+}
+
+func TestMCPEndpointDepthEnforcement(t *testing.T) {
+	buildEnvWithMaxDepth := func(t *testing.T, maxDepth int) *EnvMock {
+		t.Helper()
+		env := buildDispatchEnv(t, false)
+		env.FederationMaxDepthFunc = func() int { return maxDepth }
+		return env
+	}
+
+	buildCtxWithDepth := func(body []byte, depthHeader string) *fasthttp.RequestCtx {
+		ctx := buildMCPFasthttpCtx(body, "")
+		if depthHeader != "" {
+			ctx.Request.Header.Set("X-MCP-Federation-Depth", depthHeader)
+		}
+		return ctx
+	}
+
+	t.Run("no depth header passes through", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 3)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.Nil(t, resp.Error)
+	})
+
+	t.Run("depth below max passes through", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 3)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "2")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.Nil(t, resp.Error)
+	})
+
+	t.Run("depth equal to max is rejected", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 3)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "3")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.NotNil(t, resp.Error)
+		require.Contains(t, resp.Error.Message, "max depth")
+	})
+
+	t.Run("depth above max is rejected", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 3)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "10")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.NotNil(t, resp.Error)
+		require.Contains(t, resp.Error.Message, "max depth")
+	})
 }
 
 func mustMarshalRaw(v interface{}) json.RawMessage {

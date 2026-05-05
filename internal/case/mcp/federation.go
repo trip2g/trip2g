@@ -35,7 +35,7 @@ func fanout(
 		results[i].KB = kb
 		g.Go(func() error {
 			start := time.Now()
-			client, err := env.FederationClient(kb.ID)
+			client, err := env.FederationClient(ctx, kb.ID)
 			if err == nil {
 				results[i].Result, err = call(ctx, client)
 			}
