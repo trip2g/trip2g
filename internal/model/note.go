@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"net/url"
 	rl2 "trip2g/internal/russkayalatinica2"
 	"unicode"
 
@@ -967,9 +966,9 @@ func (n *NoteView) ExtractTitle() string {
 
 func NewNoteViews() *NoteViews {
 	return &NoteViews{
-		Map:            make(map[string]*NoteView),
-		PathMap:        make(map[string]*NoteView),
-		Subgraphs:      make(map[string]*NoteSubgraph),
+		Map:                make(map[string]*NoteView),
+		PathMap:            make(map[string]*NoteView),
+		Subgraphs:          make(map[string]*NoteSubgraph),
 		RouteMap:           make(map[string]map[string]*NoteView),
 		DomainSitemaps:     make(map[string][]byte),
 		customDomainRoutes: make(map[int64]struct{ Host, Path string }),
@@ -990,10 +989,9 @@ func (nv *NoteViews) ResolveURL(note *NoteView) string {
 // derived from publicURL. Otherwise falls back to publicURL + note.Permalink.
 func (nv *NoteViews) ResolveFullURL(note *NoteView, publicURL string) string {
 	if r, ok := nv.customDomainRoutes[note.PathID]; ok {
-		u, _ := url.Parse(publicURL)
 		scheme := "https"
-		if u != nil && u.Scheme != "" {
-			scheme = u.Scheme
+		if strings.HasPrefix(publicURL, "http://") {
+			scheme = "http"
 		}
 		return scheme + "://" + r.Host + r.Path
 	}
