@@ -1956,6 +1956,7 @@ export type CommitNotesOrErrorPayload = CommitNotesPayload | ErrorPayload;
 export type CommitNotesPayload = {
   __typename?: 'CommitNotesPayload';
   success: Scalars['Boolean']['output'];
+  updated: Array<PushedNote>;
 };
 
 export type CreateAdminInput = {
@@ -2643,6 +2644,7 @@ export type NoteView = {
   subgraphNames: Array<Scalars['String']['output']>;
   title: Scalars['String']['output'];
   toc: Array<NoteTocItem>;
+  url: Scalars['String']['output'];
   versionId: Scalars['Int64']['output'];
   warnings: Array<NoteWarning>;
 };
@@ -2731,6 +2733,7 @@ export type PushNotesOrErrorPayload = ErrorPayload | PushNotesPayload;
 export type PushNotesPayload = {
   __typename?: 'PushNotesPayload';
   notes: Array<PushedNote>;
+  updated: Array<PushedNote>;
 };
 
 export type PushedNote = {
@@ -2738,6 +2741,8 @@ export type PushedNote = {
   assets: Array<PushedNoteAsset>;
   id: Scalars['Int64']['output'];
   path: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
+  warnings: Array<NoteWarning>;
 };
 
 export type PushedNoteAsset = {

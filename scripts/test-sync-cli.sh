@@ -50,6 +50,8 @@ OBSIDIAN_SYNC_DIR="$PROJECT_ROOT/obsidian-sync"
 TMP_DIR="$PROJECT_ROOT/tmp"
 VAULT0="$TMP_DIR/testvault0"
 VAULT1="$TMP_DIR/testvault1"
+SYNC_UPDATES_DIR="$TMP_DIR/sync-updates"
+SYNC_STEP=0
 
 # Colors
 GREEN='\033[0;32m'
@@ -88,23 +90,27 @@ log_section() {
     echo -e "${YELLOW}════════════════════════════════════════════════════════════${NC}"
 }
 
-# Sync a vault, returns output
+# Sync a vault, returns output; writes updated notes JSON to tmp/sync-updates/
 sync_vault() {
     local vault="$1"
     local extra_args="${2:-}"
+    SYNC_STEP=$((SYNC_STEP + 1))
+    local out_file="$SYNC_UPDATES_DIR/$(printf '%02d' $SYNC_STEP)-$(basename $vault).json"
 
-    log_info "Syncing $(basename $vault)..."
+    log_info "Syncing $(basename $vault)... (→ $out_file)"
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way $extra_args 2>&1
+    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1
 }
 
-# Sync a vault silently (for setup steps)
+# Sync a vault silently; still writes updated notes JSON to tmp/sync-updates/
 sync_vault_quiet() {
     local vault="$1"
     local extra_args="${2:-}"
+    SYNC_STEP=$((SYNC_STEP + 1))
+    local out_file="$SYNC_UPDATES_DIR/$(printf '%02d' $SYNC_STEP)-$(basename $vault).json"
 
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way $extra_args > /dev/null 2>&1
+    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args > /dev/null 2>&1
 }
 
 # Assert file exists
@@ -198,7 +204,8 @@ setup() {
 
     # Clean tmp directory
     rm -rf "$VAULT0" "$VAULT1"
-    mkdir -p "$TMP_DIR"
+    rm -rf "$SYNC_UPDATES_DIR"
+    mkdir -p "$TMP_DIR" "$SYNC_UPDATES_DIR"
 
     # Copy docs/demo to testvault0
     log_info "Copying docs/demo → tmp/testvault0"
