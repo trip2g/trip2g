@@ -7,5 +7,5 @@ free: true
 
 Weekly team status update for Q2 2026.
 
-All projects on track. Federation integration testing in progress.
+All projects on track. Integration testing in progress.
 Deployment scheduled for next sprint.
