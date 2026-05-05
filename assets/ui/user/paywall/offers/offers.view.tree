@@ -5,7 +5,7 @@ $trip2g_user_paywall_offers $mol_view
 	Empty $mol_view
 	List $trip2g_user_paywall_offers_list
 		offers <= offers
-		buy* <=> buy_item* null
+		buy*? <=> buy_item* null
 		waitlist <= waitlist null any
 	EnterEmail $trip2g_user_paywall_offers_enter_email
 		handle_email? <=> buy_by_email? null
@@ -58,5 +58,5 @@ $trip2g_user_paywall_offers_list $mol_view
 			<= row_formatted_price* \
 			<= BuyButton* $mol_button_major
 				title \Купить
-				click?event <=> buy*
+				click?event <=> buy*?
 	sub <= list_items /$mol_view
