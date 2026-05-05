@@ -640,6 +640,70 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	require.Len(t, payload.Results, 1)
 }
 
+func TestSearch_CustomDomainURL(t *testing.T) {
+	note := &appmodel.NoteView{
+		PathID:    99,
+		Path:      "custom-note.md",
+		Title:     "Custom Domain Note",
+		Permalink: "/custom-note",
+	}
+
+	env := &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return []appmodel.SearchResult{{
+				NoteView: note,
+				URL:      note.Permalink,
+				Score:    1.0,
+			}}, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+			return nil
+		},
+		FeaturesFunc: func() features.Features {
+			return features.Features{}
+		},
+		PublicURLFunc: func() string {
+			return "https://main.example.com"
+		},
+		NoteURLFunc: func(n *appmodel.NoteView) string {
+			if n.PathID == 99 {
+				return "https://customdomain.test/custom-path"
+			}
+			return "https://main.example.com" + n.Permalink
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{"query":"custom"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	req := mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	}
+
+	resp := mcp.Resolve(context.Background(), env, req)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.NotNil(t, result.StructuredContent)
+
+	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "https://customdomain.test/custom-path", payload.Results[0].URL)
+	// Href is always the permalink path, URL is the full domain-aware URL
+	require.Equal(t, "/custom-note", payload.Results[0].Href)
+}
+
 func TestHandleNoteHtml(t *testing.T) {
 	t.Run("returns note HTML", func(t *testing.T) {
 		note := &appmodel.NoteView{
