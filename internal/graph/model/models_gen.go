@@ -989,7 +989,8 @@ type ClearBackgroundQueuePayload struct {
 func (ClearBackgroundQueuePayload) IsClearBackgroundQueueOrErrorPayload() {}
 
 type CommitNotesPayload struct {
-	Success bool `json:"success"`
+	Success bool         `json:"success"`
+	Updated []PushedNote `json:"updated"`
 }
 
 func (CommitNotesPayload) IsCommitNotesOrErrorPayload() {}
@@ -1753,15 +1754,18 @@ type PushNotesInput struct {
 }
 
 type PushNotesPayload struct {
-	Notes []PushedNote `json:"notes"`
+	Notes   []PushedNote `json:"notes"`
+	Updated []PushedNote `json:"updated"`
 }
 
 func (PushNotesPayload) IsPushNotesOrErrorPayload() {}
 
 type PushedNote struct {
-	ID     int64             `json:"id"`
-	Path   string            `json:"path"`
-	Assets []PushedNoteAsset `json:"assets"`
+	ID       int64               `json:"id"`
+	Path     string              `json:"path"`
+	Assets   []PushedNoteAsset   `json:"assets"`
+	URL      *string             `json:"url,omitempty"`
+	Warnings []model.NoteWarning `json:"warnings"`
 }
 
 type PushedNoteAsset struct {

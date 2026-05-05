@@ -24332,6 +24332,47 @@ func (ec *executionContext) fieldContext_CommitNotesPayload_success(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _CommitNotesPayload_updated(ctx context.Context, field graphql.CollectedField, obj *model.CommitNotesPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CommitNotesPayload_updated,
+		func(ctx context.Context) (any, error) {
+			return obj.Updated, nil
+		},
+		nil,
+		ec.marshalNPushedNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CommitNotesPayload_updated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CommitNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PushedNote_id(ctx, field)
+			case "path":
+				return ec.fieldContext_PushedNote_path(ctx, field)
+			case "assets":
+				return ec.fieldContext_PushedNote_assets(ctx, field)
+			case "url":
+				return ec.fieldContext_PushedNote_url(ctx, field)
+			case "warnings":
+				return ec.fieldContext_PushedNote_warnings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PushedNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateAdminPayload_admin(ctx context.Context, field graphql.CollectedField, obj *model.CreateAdminPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29089,6 +29130,51 @@ func (ec *executionContext) fieldContext_PushNotesPayload_notes(_ context.Contex
 				return ec.fieldContext_PushedNote_path(ctx, field)
 			case "assets":
 				return ec.fieldContext_PushedNote_assets(ctx, field)
+			case "url":
+				return ec.fieldContext_PushedNote_url(ctx, field)
+			case "warnings":
+				return ec.fieldContext_PushedNote_warnings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PushedNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNotesPayload_updated(ctx context.Context, field graphql.CollectedField, obj *model.PushNotesPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushNotesPayload_updated,
+		func(ctx context.Context) (any, error) {
+			return obj.Updated, nil
+		},
+		nil,
+		ec.marshalNPushedNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushNotesPayload_updated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PushedNote_id(ctx, field)
+			case "path":
+				return ec.fieldContext_PushedNote_path(ctx, field)
+			case "assets":
+				return ec.fieldContext_PushedNote_assets(ctx, field)
+			case "url":
+				return ec.fieldContext_PushedNote_url(ctx, field)
+			case "warnings":
+				return ec.fieldContext_PushedNote_warnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PushedNote", field.Name)
 		},
@@ -29192,6 +29278,70 @@ func (ec *executionContext) fieldContext_PushedNote_assets(_ context.Context, fi
 				return ec.fieldContext_PushedNoteAsset_url(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PushedNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNote_url(ctx context.Context, field graphql.CollectedField, obj *model.PushedNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNote_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNote_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNote_warnings(ctx context.Context, field graphql.CollectedField, obj *model.PushedNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNote_warnings,
+		func(ctx context.Context) (any, error) {
+			return obj.Warnings, nil
+		},
+		nil,
+		ec.marshalNNoteWarning2ᚕtrip2gᚋinternalᚋmodelᚐNoteWarningᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNote_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "level":
+				return ec.fieldContext_NoteWarning_level(ctx, field)
+			case "message":
+				return ec.fieldContext_NoteWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteWarning", field.Name)
 		},
 	}
 	return fc, nil
@@ -58972,6 +59122,11 @@ func (ec *executionContext) _CommitNotesPayload(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updated":
+			out.Values[i] = ec._CommitNotesPayload_updated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -62300,6 +62455,11 @@ func (ec *executionContext) _PushNotesPayload(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updated":
+			out.Values[i] = ec._PushNotesPayload_updated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -62346,6 +62506,13 @@ func (ec *executionContext) _PushedNote(ctx context.Context, sel ast.SelectionSe
 			}
 		case "assets":
 			out.Values[i] = ec._PushedNote_assets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._PushedNote_url(ctx, field, obj)
+		case "warnings":
+			out.Values[i] = ec._PushedNote_warnings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

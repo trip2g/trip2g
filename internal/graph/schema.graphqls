@@ -1595,10 +1595,13 @@ type PushedNote {
   id: Int64!
   path: String!
   assets: [PushedNoteAsset!]!
+  url: String
+  warnings: [NoteWarning!]!
 }
 
 type PushNotesPayload {
   notes: [PushedNote!]!
+  updated: [PushedNote!]!
 }
 
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
@@ -1684,6 +1687,7 @@ union GenerateTgAttachCodeOrErrorPayload = GenerateTgAttachCodePayload | ErrorPa
 
 type CommitNotesPayload {
   success: Boolean!
+  updated: [PushedNote!]!
 }
 
 union CommitNotesOrErrorPayload = CommitNotesPayload | ErrorPayload
