@@ -123,13 +123,14 @@ test.describe.serial('Bidirectional Federation', () => {
 
   test('peer fan-out includes hub content', async () => {
     const result = await mcpCall(peerRequest, PEER_MCP, 'federated_search', {
-      query: 'team status federation',
+      query: 'federation knowledge base',
     });
     expect(result.error).toBeUndefined();
     const text = result.result?.content?.[0]?.text ?? '';
     // Fan-out labels results from each KB with [kb_id]
     expect(text).toContain('[hub]');
-    expect(text.toLowerCase()).toContain('team');
+    // federation_kb is the hub note that links to the peer — always present in federation queries
+    expect(text).toContain('federation_kb');
   });
 
   test('peer → hub direct: returns hub content', async () => {
