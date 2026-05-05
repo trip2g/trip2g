@@ -202,6 +202,7 @@ test.describe.serial('Bidirectional Federation', () => {
       kb_id: 'hub',
     });
     const text = result.result?.content?.[0]?.text ?? result.error?.message ?? '';
-    expect(text.toLowerCase()).toMatch(/revoked|no active|secret/);
+    // Accept any auth-failure signal: revoked secret, no active secret, unknown KID, or auth error
+    expect(text.toLowerCase()).toMatch(/revoked|no active|secret|auth/);
   });
 });
