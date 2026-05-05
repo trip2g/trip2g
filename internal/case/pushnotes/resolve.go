@@ -21,6 +21,7 @@ type Env interface {
 	Layouts() *appmodel.Layouts
 	LatestNoteViews() *appmodel.NoteViews
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
+	PublicURL() string
 }
 
 var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
@@ -49,8 +50,8 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// If no updates, just return current state without rebuilding
 	if len(input.Updates) == 0 {
 		nvs := env.LatestNoteViews()
-		pushedNotes := buildPushedNotes(nvs, env.Layouts())
-		return &model.PushNotesPayload{Notes: pushedNotes}, nil
+		pushedNotes := buildPushedNotes(nvs, env.Layouts(), env.PublicURL())
+		return &model.PushNotesPayload{Notes: pushedNotes, Updated: []model.PushedNote{}}, nil
 	}
 
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit
@@ -96,9 +97,10 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		}
 	}
 
-	pushedNotes := buildPushedNotes(nvs, env.Layouts())
+	pushedNotes := buildPushedNotes(nvs, env.Layouts(), env.PublicURL())
+	updatedNotes := buildUpdatedNotes(nvs, pathIDs, env.PublicURL())
 
-	return &model.PushNotesPayload{Notes: pushedNotes}, nil
+	return &model.PushNotesPayload{Notes: pushedNotes, Updated: updatedNotes}, nil
 }
 
 func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorPayload {
@@ -183,28 +185,61 @@ func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
 	return assets
 }
 
-func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts) []model.PushedNote {
+func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts, publicURL string) []model.PushedNote {
+	warnings := nvs.Warnings()
 	pushedNotes := []model.PushedNote{}
 
 	for _, note := range nvs.List {
 		assets := buildNoteAssets(note)
-
+		urlVal := nvs.ResolveFullURL(note, publicURL)
+		noteWarnings := warnings[note.Permalink]
+		if noteWarnings == nil {
+			noteWarnings = []appmodel.NoteWarning{}
+		}
 		pushedNotes = append(pushedNotes, model.PushedNote{
-			ID:     note.VersionID,
-			Path:   note.Path,
-			Assets: assets,
+			ID:       note.VersionID,
+			Path:     note.Path,
+			Assets:   assets,
+			URL:      &urlVal,
+			Warnings: noteWarnings,
 		})
 	}
 
 	for _, layout := range layouts.Map {
 		assets := buildLayoutAssets(layout)
-
 		pushedNotes = append(pushedNotes, model.PushedNote{
-			ID:     layout.VersionID,
-			Path:   layout.Path,
-			Assets: assets,
+			ID:       layout.VersionID,
+			Path:     layout.Path,
+			Assets:   assets,
+			URL:      nil,
+			Warnings: []appmodel.NoteWarning{},
 		})
 	}
 
 	return pushedNotes
+}
+
+// buildUpdatedNotes returns PushedNote entries for only the notes with the given pathIDs.
+// Notes not found in nvs (e.g. deleted) are silently skipped.
+func buildUpdatedNotes(nvs *appmodel.NoteViews, pathIDs []int64, publicURL string) []model.PushedNote {
+	result := make([]model.PushedNote, 0, len(pathIDs))
+	for _, id := range pathIDs {
+		note := nvs.GetByPathID(id)
+		if note == nil {
+			continue
+		}
+		urlVal := nvs.ResolveFullURL(note, publicURL)
+		noteWarnings := note.Warnings
+		if noteWarnings == nil {
+			noteWarnings = []appmodel.NoteWarning{}
+		}
+		result = append(result, model.PushedNote{
+			ID:       note.VersionID,
+			Path:     note.Path,
+			Assets:   buildNoteAssets(note),
+			URL:      &urlVal,
+			Warnings: noteWarnings,
+		})
+	}
+	return result
 }

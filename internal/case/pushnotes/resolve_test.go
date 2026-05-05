@@ -24,6 +24,7 @@ type Env interface {
 	Layouts() *appmodel.Layouts
 	LatestNoteViews() *appmodel.NoteViews
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
+	PublicURL() string
 }
 
 // newEnvMock returns an EnvMock with safe defaults for all methods.
@@ -32,6 +33,7 @@ func newEnvMock(log logger.Logger) *EnvMock {
 	return &EnvMock{
 		LoggerFunc:             func() logger.Logger { return log },
 		CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
+		PublicURLFunc:          func() string { return "" },
 	}
 }
 
@@ -179,4 +181,83 @@ func TestResolve(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResolve_UpdatedNotes(t *testing.T) {
+	ctx := context.Background()
+	mockLogger := &logger.TestLogger{}
+
+	makeNVS := func() *appmodel.NoteViews {
+		nvs := appmodel.NewNoteViews()
+		note := &appmodel.NoteView{
+			PathID:    42,
+			VersionID: 1,
+			Path:      "my-note.md",
+			Permalink: "/my-note",
+		}
+		note.AddWarning(appmodel.NoteWarningWarning, "broken link to [[missing]]")
+		nvs.RegisterNote(note)
+		nvs.ExtractNoteList()
+		return nvs
+	}
+
+	t.Run("updated contains pushed notes with url and warnings", func(t *testing.T) {
+		env := newEnvMock(mockLogger)
+		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
+			return 42, nil
+		}
+		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return makeNVS(), nil
+		}
+		env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+			return nil
+		}
+		env.LayoutsFunc = func() *appmodel.Layouts {
+			return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+		}
+		env.PublicURLFunc = func() string { return "https://example.com" }
+
+		input := model.PushNotesInput{
+			Updates: []model.PushNoteInput{
+				{Path: "my-note.md", Content: "# Hello"},
+			},
+		}
+
+		result, err := pushnotes.Resolve(ctx, env, input)
+		require.NoError(t, err)
+
+		payload, ok := result.(*model.PushNotesPayload)
+		require.True(t, ok)
+
+		require.Len(t, payload.Updated, 1)
+		require.Equal(t, "my-note.md", payload.Updated[0].Path)
+		require.NotNil(t, payload.Updated[0].URL)
+		require.Equal(t, "https://example.com/my-note", *payload.Updated[0].URL)
+		require.Len(t, payload.Updated[0].Warnings, 1)
+		require.Equal(t, "broken link to [[missing]]", payload.Updated[0].Warnings[0].Message)
+
+		require.Len(t, payload.Notes, 1)
+		require.NotNil(t, payload.Notes[0].URL)
+		require.Equal(t, "https://example.com/my-note", *payload.Notes[0].URL)
+	})
+
+	t.Run("updated is empty when no updates provided", func(t *testing.T) {
+		env := newEnvMock(mockLogger)
+		env.LatestNoteViewsFunc = func() *appmodel.NoteViews {
+			return makeNVS()
+		}
+		env.LayoutsFunc = func() *appmodel.Layouts {
+			return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+		}
+		env.PublicURLFunc = func() string { return "https://example.com" }
+
+		input := model.PushNotesInput{Updates: []model.PushNoteInput{}}
+
+		result, err := pushnotes.Resolve(ctx, env, input)
+		require.NoError(t, err)
+
+		payload, ok := result.(*model.PushNotesPayload)
+		require.True(t, ok)
+		require.Empty(t, payload.Updated)
+	})
 }

@@ -45,6 +45,9 @@ var _ pushnotes.Env = &EnvMock{}
 //			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
 //			},
+//			PublicURLFunc: func() string {
+//				panic("mock out the PublicURL method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires pushnotes.Env
@@ -75,6 +78,9 @@ type EnvMock struct {
 
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
 	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+
+	// PublicURLFunc mocks the PublicURL method.
+	PublicURLFunc func() string
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -122,6 +128,9 @@ type EnvMock struct {
 			// Partial is the partial argument value.
 			Partial bool
 		}
+		// PublicURL holds details about calls to the PublicURL method.
+		PublicURL []struct {
+		}
 	}
 	lockCheckStorageLimits         sync.RWMutex
 	lockHandleLatestNotesAfterSave sync.RWMutex
@@ -131,6 +140,7 @@ type EnvMock struct {
 	lockLayouts                    sync.RWMutex
 	lockLogger                     sync.RWMutex
 	lockPrepareLatestNotes         sync.RWMutex
+	lockPublicURL                  sync.RWMutex
 }
 
 // CheckStorageLimits calls CheckStorageLimitsFunc.
@@ -391,5 +401,32 @@ func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
 	mock.lockPrepareLatestNotes.RLock()
 	calls = mock.calls.PrepareLatestNotes
 	mock.lockPrepareLatestNotes.RUnlock()
+	return calls
+}
+
+// PublicURL calls PublicURLFunc.
+func (mock *EnvMock) PublicURL() string {
+	if mock.PublicURLFunc == nil {
+		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockPublicURL.Lock()
+	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
+	mock.lockPublicURL.Unlock()
+	return mock.PublicURLFunc()
+}
+
+// PublicURLCalls gets all the calls that were made to PublicURL.
+// Check the length with:
+//
+//	len(mockedEnv.PublicURLCalls())
+func (mock *EnvMock) PublicURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockPublicURL.RLock()
+	calls = mock.calls.PublicURL
+	mock.lockPublicURL.RUnlock()
 	return calls
 }
