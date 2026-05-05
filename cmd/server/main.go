@@ -1539,28 +1539,35 @@ func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bo
 	return false, nil
 }
 
-func (a *app) FederationClient(kbID string) (model.Federation, error) {
+func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Federation, error) {
 	nvs := a.LatestNoteViews()
 	if nvs == nil {
 		return nil, fmt.Errorf("federation kb %q not found", kbID)
 	}
+
+	depth := mcp.FederationDepthFromContext(reqCtx)
 
 	for _, kb := range nvs.MCPFederationNotes {
 		if kb == nil || kb.ID != kbID {
 			continue
 		}
 
+		if kb.MaxDepth > 0 && depth >= kb.MaxDepth {
+			return nil, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
+		}
+
 		peer := model.FederationPeer{
 			KBID:   kb.ID,
 			KBURL:  kb.URL,
 			Issuer: a.PublicURL(),
+			Depth:  depth,
 		}
 
-		ctx := a.ctx
-		if ctx == nil {
-			ctx = context.Background()
+		dbCtx := a.ctx
+		if dbCtx == nil {
+			dbCtx = context.Background()
 		}
-		secretRow, ok, err := a.FederationSecretByKBURL(ctx, kb.URL)
+		secretRow, ok, err := a.FederationSecretByKBURL(dbCtx, kb.URL)
 		if err != nil {
 			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
 		}
@@ -1572,7 +1579,7 @@ func (a *app) FederationClient(kbID string) (model.Federation, error) {
 			peer.KID = secretRow.Kid
 			peer.Secret = secret
 		} else {
-			configured, confErr := a.HasFederationSecretForKBURL(ctx, kb.URL)
+			configured, confErr := a.HasFederationSecretForKBURL(dbCtx, kb.URL)
 			if confErr != nil {
 				return nil, fmt.Errorf("check federation secret history by kb url: %w", confErr)
 			}
