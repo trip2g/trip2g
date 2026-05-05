@@ -9,7 +9,7 @@ $trip2g_auth $mol_view
 		entered_email? <=> entered_email?
 	CodeForm $trip2g_auth_code_form
 		reload_me <= reload_me
-		email? <= entered_email?
+		email <= entered_email?
 		code_sent? <=> code_sent?
 	AppView $mol_view
 		sub / \TODO: Replace AppView
@@ -44,7 +44,7 @@ $trip2g_auth_email_form $trip2g_form
 
 $trip2g_auth_code_form $trip2g_form
 	reload_me null
-	email? \
+	email \
 	code_sent? false
 	body /
 		<= Code_hint $mol_paragraph
