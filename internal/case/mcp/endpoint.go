@@ -52,18 +52,29 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if userToken == nil {
-		// No personal token — check for federation JWT Bearer.
-		authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
-		token, isBearerToken := strings.CutPrefix(authHeader, "Bearer ")
-		if authHeader != "" && (!isBearerToken || strings.TrimSpace(token) == "") {
-			return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token"))
-		}
-		if isBearerToken && strings.TrimSpace(token) != "" {
-			kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
-			if verifyErr != nil {
-				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error()))
+		// Check for API key auth.
+		apiKeyValue := strings.TrimSpace(string(req.Req.Request.Header.Peek("X-API-Key")))
+		if apiKeyValue != "" {
+			apiKey, keyErr := env.ResolveAPIKey(req.Req, apiKeyValue, "mcp")
+			if keyErr != nil {
+				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Auth failed: "+keyErr.Error()))
 			}
-			resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
+			adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
+			resolveCtx = contextWithMCPAPIKeyAuth(resolveCtx, adminTools)
+		} else {
+			// No API key — check for federation JWT Bearer.
+			authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
+			token, isBearerToken := strings.CutPrefix(authHeader, "Bearer ")
+			if authHeader != "" && (!isBearerToken || strings.TrimSpace(token) == "") {
+				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token"))
+			}
+			if isBearerToken && strings.TrimSpace(token) != "" {
+				kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
+				if verifyErr != nil {
+					return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error()))
+				}
+				resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
+			}
 		}
 	}
 
@@ -108,6 +119,7 @@ Send POST requests with a JSON-RPC 2.0 body.
 Authentication (one of):
   Authorization: Bearer t2g_<your-token>
   ?token=t2g_<your-token>
+  X-API-Key: <your-api-key>
 
 Get a token: your account → Tokens.
 

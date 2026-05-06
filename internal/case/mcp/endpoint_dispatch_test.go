@@ -296,6 +296,47 @@ func TestMCPEndpointDepthEnforcement(t *testing.T) {
 	})
 }
 
+func TestDispatch_APIKeyAuth_AdminTools(t *testing.T) {
+	env := buildDispatchEnv(t, true) // verifyInbound must NOT be called
+	adminTools := true
+	env.ResolveAPIKeyFunc = func(_ context.Context, value, action string) (*db.ApiKey, error) {
+		require.Equal(t, "test-api-key", value)
+		require.Equal(t, "mcp", action)
+		return &db.ApiKey{ID: 1, EnableMcpAdminTools: &adminTools}, nil
+	}
+
+	fasthttpCtx := buildMCPFasthttpCtx(mcpInitBody, "")
+	fasthttpCtx.Request.Header.Set("X-API-Key", "test-api-key")
+
+	req := wiredRequest(fasthttpCtx, env, nil)
+	defer appreq.Release(req)
+
+	_, err := (&mcp.Endpoint{}).Handle(req)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(env.ResolveAPIKeyCalls()))
+}
+
+func TestDispatch_APIKeyAuth_InvalidKey(t *testing.T) {
+	env := buildDispatchEnv(t, true) // verifyInbound must NOT be called
+	env.ResolveAPIKeyFunc = func(_ context.Context, _, _ string) (*db.ApiKey, error) {
+		return nil, errors.New("invalid API key")
+	}
+
+	fasthttpCtx := buildMCPFasthttpCtx(mcpInitBody, "")
+	fasthttpCtx.Request.Header.Set("X-API-Key", "bad-key")
+
+	req := wiredRequest(fasthttpCtx, env, nil)
+	defer appreq.Release(req)
+
+	_, err := (&mcp.Endpoint{}).Handle(req)
+	require.NoError(t, err) // error in JSON body, not Go error
+
+	var resp mcp.Response
+	require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+	require.NotNil(t, resp.Error)
+	require.Contains(t, resp.Error.Message, "Auth failed")
+}
+
 func mustMarshalRaw(v interface{}) json.RawMessage {
 	b, err := json.Marshal(v)
 	if err != nil {
