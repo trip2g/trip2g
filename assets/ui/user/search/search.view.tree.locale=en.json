@@ -1,0 +1,8 @@
+{
+	"$trip2g_user_search_toggle_hint": "Toggle Search",
+	"$trip2g_user_search_panel_result_score": "Score:",
+	"$trip2g_user_search_panel_ReadMore": "Read more",
+	"$trip2g_user_search_panel_messages_no_results": "No results found.",
+	"$trip2g_user_search_panel_messages_results_count": "Results found:",
+	"$trip2g_user_search_panel_VectorWarning_message": "No exact matches found. Showing loosely related results."
+}

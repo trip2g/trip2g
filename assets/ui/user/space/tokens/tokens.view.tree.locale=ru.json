@@ -15,9 +15,12 @@
 	"$trip2g_user_space_tokens_expiry_select_options_never": "Без ограничений",
 	"$trip2g_user_space_tokens_GenerateButton_title": "Создать",
 	"$trip2g_user_space_tokens_ModalTitle": "Токен создан",
+	"$trip2g_user_space_tokens_ModalTitle_sub": "Токен создан",
 	"$trip2g_user_space_tokens_PlaintextNote": "Скопируйте токен сейчас. Он больше не будет показан.",
+	"$trip2g_user_space_tokens_PlaintextNote_sub": "Скопируйте токен сейчас. Он больше не будет показан.",
 	"$trip2g_user_space_tokens_CopyTokenButton_title": "Скопировать токен",
 	"$trip2g_user_space_tokens_McpUrlLabel": "MCP URL",
+	"$trip2g_user_space_tokens_McpUrlLabel_sub": "MCP URL",
 	"$trip2g_user_space_tokens_CopyMcpButton_title": "Скопировать MCP URL",
 	"$trip2g_user_space_tokens_CloseModalButton_title": "Закрыть"
 }
