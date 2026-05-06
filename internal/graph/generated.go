@@ -357,6 +357,7 @@ type AdminMutationResolver interface {
 	DeleteAdmin(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
+	SetAPIKeyMcpAdminTools(ctx context.Context, obj *model1.AdminMutation, input model.SetAPIKeyMcpAdminToolsInput) (model.SetAPIKeyMcpAdminToolsOrErrorPayload, error)
 	CreateGitToken(ctx context.Context, obj *model1.AdminMutation, input model.CreateGitTokenInput) (model.CreateGitTokenOrErrorPayload, error)
 	DisableGitToken(ctx context.Context, obj *model1.AdminMutation, input model.DisableGitTokenInput) (model.DisableGitTokenOrErrorPayload, error)
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
@@ -910,6 +911,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSendTelegramPublishNoteNowInput,
 		ec.unmarshalInputSetActiveGitHubOAuthCredentialsInput,
 		ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput,
+		ec.unmarshalInputSetApiKeyMcpAdminToolsInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetConfigBoolValueInput,
 		ec.unmarshalInputSetConfigIntValueInput,
@@ -1685,6 +1687,17 @@ func (ec *executionContext) field_AdminMutation_setActiveGoogleOAuthCredentials_
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetActiveGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setApiKeyMcpAdminTools_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetApiKeyMcpAdminToolsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetAPIKeyMcpAdminToolsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3177,6 +3190,35 @@ func (ec *executionContext) fieldContext_AdminApiKey_disabledAt(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminApiKey_enableMcpAdminTools(ctx context.Context, field graphql.CollectedField, obj *db.ApiKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminApiKey_enableMcpAdminTools,
+		func(ctx context.Context) (any, error) {
+			return obj.EnableMcpAdminTools, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminApiKey_enableMcpAdminTools(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminApiKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminApiKeyLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ListAPIKeyLogsByAPIKeyIDRow) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3337,6 +3379,8 @@ func (ec *executionContext) fieldContext_AdminApiKeysConnection_nodes(_ context.
 				return ec.fieldContext_AdminApiKey_disabledBy(ctx, field)
 			case "disabledAt":
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
+			case "enableMcpAdminTools":
+				return ec.fieldContext_AdminApiKey_enableMcpAdminTools(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
 		},
@@ -10798,6 +10842,47 @@ func (ec *executionContext) fieldContext_AdminMutation_disableApiKey(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_disableApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setApiKeyMcpAdminTools(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setApiKeyMcpAdminTools,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetAPIKeyMcpAdminTools(ctx, obj, fc.Args["input"].(model.SetAPIKeyMcpAdminToolsInput))
+		},
+		nil,
+		ec.marshalNSetApiKeyMcpAdminToolsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetAPIKeyMcpAdminToolsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setApiKeyMcpAdminTools(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetApiKeyMcpAdminToolsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setApiKeyMcpAdminTools_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -24477,6 +24562,8 @@ func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Co
 				return ec.fieldContext_AdminApiKey_disabledBy(ctx, field)
 			case "disabledAt":
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
+			case "enableMcpAdminTools":
+				return ec.fieldContext_AdminApiKey_enableMcpAdminTools(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
 		},
@@ -26043,6 +26130,8 @@ func (ec *executionContext) fieldContext_DisableApiKeyPayload_apiKey(_ context.C
 				return ec.fieldContext_AdminApiKey_disabledBy(ctx, field)
 			case "disabledAt":
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
+			case "enableMcpAdminTools":
+				return ec.fieldContext_AdminApiKey_enableMcpAdminTools(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
 		},
@@ -27322,6 +27411,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
 			case "disableApiKey":
 				return ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
+			case "setApiKeyMcpAdminTools":
+				return ec.fieldContext_AdminMutation_setApiKeyMcpAdminTools(ctx, field)
 			case "createGitToken":
 				return ec.fieldContext_AdminMutation_createGitToken(ctx, field)
 			case "disableGitToken":
@@ -31332,6 +31423,51 @@ func (ec *executionContext) fieldContext_SetActiveGoogleOAuthCredentialsPayload_
 				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetApiKeyMcpAdminToolsPayload_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.SetAPIKeyMcpAdminToolsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetApiKeyMcpAdminToolsPayload_apiKey,
+		func(ctx context.Context) (any, error) {
+			return obj.APIKey, nil
+		},
+		nil,
+		ec.marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetApiKeyMcpAdminToolsPayload_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetApiKeyMcpAdminToolsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminApiKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminApiKey_createdAt(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminApiKey_description(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminApiKey_createdBy(ctx, field)
+			case "disabledBy":
+				return ec.fieldContext_AdminApiKey_disabledBy(ctx, field)
+			case "disabledAt":
+				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
+			case "enableMcpAdminTools":
+				return ec.fieldContext_AdminApiKey_enableMcpAdminTools(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
 		},
 	}
 	return fc, nil
@@ -39073,6 +39209,40 @@ func (ec *executionContext) unmarshalInputSetActiveGoogleOAuthCredentialsInput(c
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSetApiKeyMcpAdminToolsInput(ctx context.Context, obj any) (model.SetAPIKeyMcpAdminToolsInput, error) {
+	var it model.SetAPIKeyMcpAdminToolsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "enabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetBoostyTierSubgraphsInput(ctx context.Context, obj any) (model.SetBoostyTierSubgraphsInput, error) {
 	var it model.SetBoostyTierSubgraphsInput
 	asMap := map[string]any{}
@@ -42176,6 +42346,29 @@ func (ec *executionContext) _SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx c
 	}
 }
 
+func (ec *executionContext) _SetApiKeyMcpAdminToolsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetAPIKeyMcpAdminToolsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetAPIKeyMcpAdminToolsPayload:
+		return ec._SetApiKeyMcpAdminToolsPayload(ctx, sel, &obj)
+	case *model.SetAPIKeyMcpAdminToolsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetApiKeyMcpAdminToolsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _SetBoostyTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetBoostyTierSubgraphsOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -43305,6 +43498,8 @@ func (ec *executionContext) _AdminApiKey(ctx context.Context, sel ast.SelectionS
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "disabledAt":
 			out.Values[i] = ec._AdminApiKey_disabledAt(ctx, field, obj)
+		case "enableMcpAdminTools":
+			out.Values[i] = ec._AdminApiKey_enableMcpAdminTools(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -48624,6 +48819,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_disableApiKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setApiKeyMcpAdminTools":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setApiKeyMcpAdminTools(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -60663,7 +60894,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -63707,6 +63938,45 @@ func (ec *executionContext) _SetActiveGoogleOAuthCredentialsPayload(ctx context.
 			out.Values[i] = graphql.MarshalString("SetActiveGoogleOAuthCredentialsPayload")
 		case "credentials":
 			out.Values[i] = ec._SetActiveGoogleOAuthCredentialsPayload_credentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setApiKeyMcpAdminToolsPayloadImplementors = []string{"SetApiKeyMcpAdminToolsPayload", "SetApiKeyMcpAdminToolsOrErrorPayload"}
+
+func (ec *executionContext) _SetApiKeyMcpAdminToolsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetAPIKeyMcpAdminToolsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setApiKeyMcpAdminToolsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetApiKeyMcpAdminToolsPayload")
+		case "apiKey":
+			out.Values[i] = ec._SetApiKeyMcpAdminToolsPayload_apiKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -72197,6 +72467,21 @@ func (ec *executionContext) marshalNSetActiveGoogleOAuthCredentialsOrErrorPayloa
 		return graphql.Null
 	}
 	return ec._SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetApiKeyMcpAdminToolsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetAPIKeyMcpAdminToolsInput(ctx context.Context, v any) (model.SetAPIKeyMcpAdminToolsInput, error) {
+	res, err := ec.unmarshalInputSetApiKeyMcpAdminToolsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetApiKeyMcpAdminToolsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetAPIKeyMcpAdminToolsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetAPIKeyMcpAdminToolsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetApiKeyMcpAdminToolsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {

@@ -318,6 +318,10 @@ type SetActiveGoogleOAuthCredentialsOrErrorPayload interface {
 	IsSetActiveGoogleOAuthCredentialsOrErrorPayload()
 }
 
+type SetAPIKeyMcpAdminToolsOrErrorPayload interface {
+	IsSetAPIKeyMcpAdminToolsOrErrorPayload()
+}
+
 type SetBoostyTierSubgraphsOrErrorPayload interface {
 	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
@@ -1478,6 +1482,8 @@ func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
 
+func (ErrorPayload) IsSetAPIKeyMcpAdminToolsOrErrorPayload() {}
+
 func (ErrorPayload) IsCreateGitTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsDisableGitTokenOrErrorPayload() {}
@@ -1960,6 +1966,17 @@ type SetActiveGoogleOAuthCredentialsPayload struct {
 }
 
 func (SetActiveGoogleOAuthCredentialsPayload) IsSetActiveGoogleOAuthCredentialsOrErrorPayload() {}
+
+type SetAPIKeyMcpAdminToolsInput struct {
+	ID      int64 `json:"id"`
+	Enabled bool  `json:"enabled"`
+}
+
+type SetAPIKeyMcpAdminToolsPayload struct {
+	APIKey *db.ApiKey `json:"apiKey"`
+}
+
+func (SetAPIKeyMcpAdminToolsPayload) IsSetAPIKeyMcpAdminToolsOrErrorPayload() {}
 
 type SetBoostyTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

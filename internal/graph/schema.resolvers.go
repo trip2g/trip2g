@@ -836,6 +836,11 @@ func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel
 	return disableapikey.Resolve(ctx, r.env(ctx), input)
 }
 
+// SetAPIKeyMcpAdminTools is the resolver for the setApiKeyMcpAdminTools field.
+func (r *adminMutationResolver) SetAPIKeyMcpAdminTools(ctx context.Context, obj *appmodel.AdminMutation, input model.SetAPIKeyMcpAdminToolsInput) (model.SetAPIKeyMcpAdminToolsOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: SetAPIKeyMcpAdminTools - setApiKeyMcpAdminTools"))
+}
+
 // CreateGitToken is the resolver for the createGitToken field.
 func (r *adminMutationResolver) CreateGitToken(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateGitTokenInput) (model.CreateGitTokenOrErrorPayload, error) {
 	return creategittoken.Resolve(ctx, r.env(ctx), input)

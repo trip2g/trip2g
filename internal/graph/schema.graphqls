@@ -196,6 +196,7 @@ type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
   createdBy: AdminUser! @goField(forceResolver: true)
   disabledBy: AdminUser @goField(forceResolver: true)
   disabledAt: Time
+  enableMcpAdminTools: Boolean
 }
 
 type AdminApiKeysConnection {
@@ -1872,6 +1873,22 @@ type DisableApiKeyPayload {
 union DisableApiKeyOrErrorPayload = DisableApiKeyPayload | ErrorPayload
 
 #
+# setApiKeyMcpAdminTools
+# Toggles the enable_mcp_admin_tools flag on an API key.
+#
+
+input SetApiKeyMcpAdminToolsInput {
+  id: Int64!
+  enabled: Boolean!
+}
+
+type SetApiKeyMcpAdminToolsPayload {
+  apiKey: AdminApiKey!
+}
+
+union SetApiKeyMcpAdminToolsOrErrorPayload = SetApiKeyMcpAdminToolsPayload | ErrorPayload
+
+#
 # createGitToken
 #
 
@@ -2711,6 +2728,7 @@ type AdminMutation {
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
+  setApiKeyMcpAdminTools(input: SetApiKeyMcpAdminToolsInput!): SetApiKeyMcpAdminToolsOrErrorPayload!
 
   createGitToken(input: CreateGitTokenInput!): CreateGitTokenOrErrorPayload!
   disableGitToken(input: DisableGitTokenInput!): DisableGitTokenOrErrorPayload!
