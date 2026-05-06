@@ -187,6 +187,15 @@ type NoteHTMLArguments struct {
 	TocPath      []string `json:"toc_path,omitempty"`
 }
 
+type GraphQLIntrospectionArguments struct {
+	Pattern string `json:"pattern"`
+}
+
+type GraphQLRequestArguments struct {
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables,omitempty"`
+}
+
 // JSON-RPC error codes.
 const (
 	ErrCodeParseError     = -32700

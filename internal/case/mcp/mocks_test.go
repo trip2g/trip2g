@@ -45,6 +45,9 @@ var _ mcp.Env = &EnvMock{}
 //			FederationSecretByKIDFunc: func(ctx context.Context, kid string) (db.FederationSecret, bool, error) {
 //				panic("mock out the FederationSecretByKID method")
 //			},
+//			GraphQLRequestFunc: func(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
+//				panic("mock out the GraphQLRequest method")
+//			},
 //			LatestNoteChunksFunc: func() []model.NoteChunk {
 //				panic("mock out the LatestNoteChunks method")
 //			},
@@ -65,6 +68,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
+//			},
+//			ResolveAPIKeyFunc: func(ctx context.Context, value string, action string) (*db.ApiKey, error) {
+//				panic("mock out the ResolveAPIKey method")
 //			},
 //			SearchLatestNotesFunc: func(query string) ([]model.SearchResult, error) {
 //				panic("mock out the SearchLatestNotes method")
@@ -97,6 +103,9 @@ type EnvMock struct {
 	// FederationSecretByKIDFunc mocks the FederationSecretByKID method.
 	FederationSecretByKIDFunc func(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 
+	// GraphQLRequestFunc mocks the GraphQLRequest method.
+	GraphQLRequestFunc func(ctx context.Context, query string, variables map[string]any) ([]byte, error)
+
 	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
 	LatestNoteChunksFunc func() []model.NoteChunk
 
@@ -117,6 +126,9 @@ type EnvMock struct {
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
+
+	// ResolveAPIKeyFunc mocks the ResolveAPIKey method.
+	ResolveAPIKeyFunc func(ctx context.Context, value string, action string) (*db.ApiKey, error)
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
 	SearchLatestNotesFunc func(query string) ([]model.SearchResult, error)
@@ -162,6 +174,15 @@ type EnvMock struct {
 			// Kid is the kid argument value.
 			Kid string
 		}
+		// GraphQLRequest holds details about calls to the GraphQLRequest method.
+		GraphQLRequest []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Query is the query argument value.
+			Query string
+			// Variables is the variables argument value.
+			Variables map[string]any
+		}
 		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
 		LatestNoteChunks []struct {
 		}
@@ -189,6 +210,15 @@ type EnvMock struct {
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
+		// ResolveAPIKey holds details about calls to the ResolveAPIKey method.
+		ResolveAPIKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Value is the value argument value.
+			Value string
+			// Action is the action argument value.
+			Action string
+		}
 		// SearchLatestNotes holds details about calls to the SearchLatestNotes method.
 		SearchLatestNotes []struct {
 			// Query is the query argument value.
@@ -202,6 +232,7 @@ type EnvMock struct {
 	lockFederationMaxDepth                 sync.RWMutex
 	lockFederationSecretByKBURL            sync.RWMutex
 	lockFederationSecretByKID              sync.RWMutex
+	lockGraphQLRequest                     sync.RWMutex
 	lockLatestNoteChunks                   sync.RWMutex
 	lockLatestNoteViews                    sync.RWMutex
 	lockListFederationSecretSubgraphsByKID sync.RWMutex
@@ -209,6 +240,7 @@ type EnvMock struct {
 	lockNoteURL                            sync.RWMutex
 	lockOpenAI                             sync.RWMutex
 	lockPublicURL                          sync.RWMutex
+	lockResolveAPIKey                      sync.RWMutex
 	lockSearchLatestNotes                  sync.RWMutex
 }
 
@@ -442,6 +474,46 @@ func (mock *EnvMock) FederationSecretByKIDCalls() []struct {
 	return calls
 }
 
+// GraphQLRequest calls GraphQLRequestFunc.
+func (mock *EnvMock) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
+	if mock.GraphQLRequestFunc == nil {
+		panic("EnvMock.GraphQLRequestFunc: method is nil but Env.GraphQLRequest was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		Query     string
+		Variables map[string]any
+	}{
+		Ctx:       ctx,
+		Query:     query,
+		Variables: variables,
+	}
+	mock.lockGraphQLRequest.Lock()
+	mock.calls.GraphQLRequest = append(mock.calls.GraphQLRequest, callInfo)
+	mock.lockGraphQLRequest.Unlock()
+	return mock.GraphQLRequestFunc(ctx, query, variables)
+}
+
+// GraphQLRequestCalls gets all the calls that were made to GraphQLRequest.
+// Check the length with:
+//
+//	len(mockedEnv.GraphQLRequestCalls())
+func (mock *EnvMock) GraphQLRequestCalls() []struct {
+	Ctx       context.Context
+	Query     string
+	Variables map[string]any
+} {
+	var calls []struct {
+		Ctx       context.Context
+		Query     string
+		Variables map[string]any
+	}
+	mock.lockGraphQLRequest.RLock()
+	calls = mock.calls.GraphQLRequest
+	mock.lockGraphQLRequest.RUnlock()
+	return calls
+}
+
 // LatestNoteChunks calls LatestNoteChunksFunc.
 func (mock *EnvMock) LatestNoteChunks() []model.NoteChunk {
 	if mock.LatestNoteChunksFunc == nil {
@@ -642,6 +714,46 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 	mock.lockPublicURL.RLock()
 	calls = mock.calls.PublicURL
 	mock.lockPublicURL.RUnlock()
+	return calls
+}
+
+// ResolveAPIKey calls ResolveAPIKeyFunc.
+func (mock *EnvMock) ResolveAPIKey(ctx context.Context, value string, action string) (*db.ApiKey, error) {
+	if mock.ResolveAPIKeyFunc == nil {
+		panic("EnvMock.ResolveAPIKeyFunc: method is nil but Env.ResolveAPIKey was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Value  string
+		Action string
+	}{
+		Ctx:    ctx,
+		Value:  value,
+		Action: action,
+	}
+	mock.lockResolveAPIKey.Lock()
+	mock.calls.ResolveAPIKey = append(mock.calls.ResolveAPIKey, callInfo)
+	mock.lockResolveAPIKey.Unlock()
+	return mock.ResolveAPIKeyFunc(ctx, value, action)
+}
+
+// ResolveAPIKeyCalls gets all the calls that were made to ResolveAPIKey.
+// Check the length with:
+//
+//	len(mockedEnv.ResolveAPIKeyCalls())
+func (mock *EnvMock) ResolveAPIKeyCalls() []struct {
+	Ctx    context.Context
+	Value  string
+	Action string
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Value  string
+		Action string
+	}
+	mock.lockResolveAPIKey.RLock()
+	calls = mock.calls.ResolveAPIKey
+	mock.lockResolveAPIKey.RUnlock()
 	return calls
 }
 
