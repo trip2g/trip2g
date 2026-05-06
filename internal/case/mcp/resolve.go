@@ -282,6 +282,31 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		})
 	}
 
+	if mcpAdminToolsEnabled(ctx) {
+		tools = append(tools, Tool{
+			Name:        "graphql_introspection",
+			Description: "Inspect the GraphQL schema. Returns types and operations matching the pattern (regexp), plus all types they reference. Use this to discover available mutations and queries before calling graphql_request.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"pattern": {Type: "string", Description: "Regexp or substring to filter type and operation names"},
+				},
+				Required: []string{"pattern"},
+			},
+		}, Tool{
+			Name:        "graphql_request",
+			Description: "Execute a GraphQL query or mutation as admin. Use graphql_introspection first to find the right operation.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"query":     {Type: "string", Description: "GraphQL query or mutation string"},
+					"variables": {Type: "object", Description: "Optional variables map"},
+				},
+				Required: []string{"query"},
+			},
+		})
+	}
+
 	return successResponse(id, ListToolsResult{Tools: tools})
 }
 
@@ -305,6 +330,16 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleFederatedSimilar(ctx, env, req.ID, params.Arguments)
 	case "federated_note_html":
 		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
+	case "graphql_introspection":
+		if !mcpAdminToolsEnabled(ctx) {
+			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
+		}
+		return handleGraphQLIntrospection(ctx, env, req.ID, params.Arguments)
+	case "graphql_request":
+		if !mcpAdminToolsEnabled(ctx) {
+			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
+		}
+		return handleGraphQLRequest(ctx, env, req.ID, params.Arguments)
 	default:
 		return handleDynamicMethod(ctx, env, req.ID, params.Name)
 	}

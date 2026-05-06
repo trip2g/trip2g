@@ -1,0 +1,212 @@
+package mcp
+
+import (
+	"context"
+	"encoding/json"
+	"regexp"
+	"strings"
+)
+
+const fullIntrospectionQuery = `{
+  __schema {
+    queryType { name }
+    mutationType { name }
+    types {
+      kind name description
+      fields(includeDeprecated: true) {
+        name description
+        args { name description type { kind name ofType { kind name ofType { kind name } } } defaultValue }
+        type { kind name ofType { kind name ofType { kind name } } }
+      }
+      inputFields {
+        name description type { kind name ofType { kind name ofType { kind name } } } defaultValue
+      }
+      interfaces { kind name ofType { kind name } }
+      enumValues(includeDeprecated: true) { name description }
+      possibleTypes { kind name }
+    }
+  }
+}`
+
+func handleGraphQLIntrospection(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	args, errResp := unmarshalArgs[GraphQLIntrospectionArguments](argsRaw, id, "graphql_introspection")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.Pattern == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "pattern is required")
+	}
+
+	raw, err := env.GraphQLRequest(ctx, fullIntrospectionQuery, nil)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, "Introspection failed: "+err.Error())
+	}
+
+	filtered, err := filterIntrospection(raw, args.Pattern)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, "Filter failed: "+err.Error())
+	}
+
+	return successResponse(id, textToolResult(string(filtered)))
+}
+
+func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	args, errResp := unmarshalArgs[GraphQLRequestArguments](argsRaw, id, "graphql_request")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.Query == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "query is required")
+	}
+
+	result, err := env.GraphQLRequest(ctx, args.Query, args.Variables)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, "GraphQL request failed: "+err.Error())
+	}
+
+	return successResponse(id, textToolResult(string(result)))
+}
+
+type introspectionTypeRef struct {
+	Kind   string                `json:"kind"`
+	Name   string                `json:"name"`
+	OfType *introspectionTypeRef `json:"ofType,omitempty"`
+}
+
+type introspectionField struct {
+	Name        string               `json:"name"`
+	Description string               `json:"description,omitempty"`
+	Args        []introspectionArg   `json:"args,omitempty"`
+	Type        introspectionTypeRef `json:"type"`
+}
+
+type introspectionArg struct {
+	Name         string               `json:"name"`
+	Description  string               `json:"description,omitempty"`
+	Type         introspectionTypeRef `json:"type"`
+	DefaultValue *string              `json:"defaultValue,omitempty"`
+}
+
+type introspectionEnumValue struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+type introspectionType struct {
+	Kind          string                   `json:"kind"`
+	Name          string                   `json:"name"`
+	Description   string                   `json:"description,omitempty"`
+	Fields        []introspectionField     `json:"fields,omitempty"`
+	InputFields   []introspectionArg       `json:"inputFields,omitempty"`
+	Interfaces    []introspectionTypeRef   `json:"interfaces,omitempty"`
+	EnumValues    []introspectionEnumValue `json:"enumValues,omitempty"`
+	PossibleTypes []introspectionTypeRef   `json:"possibleTypes,omitempty"`
+}
+
+func typeRefName(ref *introspectionTypeRef) string {
+	if ref == nil {
+		return ""
+	}
+	if ref.Name != "" {
+		return ref.Name
+	}
+	return typeRefName(ref.OfType)
+}
+
+func collectReferencedNames(t introspectionType, out map[string]bool) {
+	for _, f := range t.Fields {
+		out[typeRefName(&f.Type)] = true
+		for _, a := range f.Args {
+			out[typeRefName(&a.Type)] = true
+		}
+	}
+	for _, f := range t.InputFields {
+		out[typeRefName(&f.Type)] = true
+	}
+	for _, i := range t.Interfaces {
+		ref := i
+		out[typeRefName(&ref)] = true
+	}
+	for _, p := range t.PossibleTypes {
+		ref := p
+		out[typeRefName(&ref)] = true
+	}
+}
+
+func filterIntrospection(data []byte, pattern string) ([]byte, error) {
+	var wrapper struct {
+		Data struct {
+			Schema struct {
+				QueryType    *struct {
+					Name string `json:"name"`
+				} `json:"queryType"`
+				MutationType *struct {
+					Name string `json:"name"`
+				} `json:"mutationType"`
+				Types []introspectionType `json:"types"`
+			} `json:"__schema"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return nil, err
+	}
+
+	re, err := regexp.Compile("(?i)" + pattern)
+	if err != nil {
+		re = regexp.MustCompile("(?i)" + regexp.QuoteMeta(pattern))
+	}
+
+	allTypes := wrapper.Data.Schema.Types
+	typeByName := make(map[string]introspectionType, len(allTypes))
+	for _, t := range allTypes {
+		typeByName[t.Name] = t
+	}
+
+	// Seed: types whose name matches, or types containing a matching field name.
+	needed := map[string]bool{}
+	for _, t := range allTypes {
+		if strings.HasPrefix(t.Name, "__") {
+			continue
+		}
+		if re.MatchString(t.Name) {
+			needed[t.Name] = true
+		}
+		for _, f := range t.Fields {
+			if re.MatchString(f.Name) {
+				needed[t.Name] = true
+			}
+		}
+	}
+
+	// Expand: include all transitively referenced types.
+	for changed := true; changed; {
+		changed = false
+		for name := range needed {
+			t, ok := typeByName[name]
+			if !ok {
+				continue
+			}
+			refs := map[string]bool{}
+			collectReferencedNames(t, refs)
+			for ref := range refs {
+				if ref == "" || strings.HasPrefix(ref, "__") {
+					continue
+				}
+				if !needed[ref] {
+					needed[ref] = true
+					changed = true
+				}
+			}
+		}
+	}
+
+	filtered := make([]introspectionType, 0, len(needed))
+	for _, t := range allTypes {
+		if needed[t.Name] {
+			filtered = append(filtered, t)
+		}
+	}
+	wrapper.Data.Schema.Types = filtered
+
+	return json.Marshal(wrapper)
+}
