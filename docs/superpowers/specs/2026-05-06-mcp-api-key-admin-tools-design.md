@@ -26,12 +26,9 @@ New detection order:
 ```
 
 For API key resolution:
-- Copy hashing + lookup logic from `checkapikey` (sha256 → hex, fallback to plaintext for old keys).
-- Log via `InsertAPIKeyLog` with action `"mcp"`.
-- Add `contextWithAPIKey(ctx, *db.ApiKey)` / `apiKeyFromContext(ctx)` — same pattern as `contextWithFederationAuth`.
+- `mcp.Env` gains a single method: `ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)`. The implementation in `cmd/server/main.go` handles hashing (sha256 → hex, fallback to plaintext for old keys), lookup, UpsertAPIKeyLogAction, UpsertAPIKeyLogIP, and InsertAPIKeyLog internally.
+- After resolution, store only the admin tools flag: `contextWithMCPAdminTools(ctx, bool)` / `mcpAdminToolsEnabled(ctx) bool`. The full `*db.ApiKey` is not kept in context.
 - Content access level: admin (all notes and subgraphs visible).
-
-`mcp.Env` gains: `ApiKeyByValue`, `InsertAPIKeyLog`, `UpsertAPIKeyLogAction`, `UpsertAPIKeyLogIP`.
 
 ### DB migration
 
@@ -43,7 +40,7 @@ Default is NULL (false). No NOT NULL constraint — consistent with SQLite nulla
 
 ### GraphQL tools
 
-Both tools appear in `tools/list` only when `apiKeyFromContext(ctx).EnableMcpAdminTools == true`. Not available for personal token sessions (out of scope for this iteration).
+Both tools appear in `tools/list` only when `mcpAdminToolsEnabled(ctx) == true`. Not available for personal token sessions (out of scope for this iteration).
 
 **`graphql_introspection(pattern string)`**
 
