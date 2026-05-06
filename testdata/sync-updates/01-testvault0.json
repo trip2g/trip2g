@@ -1,0 +1,486 @@
+[
+  {
+    "path": "File with spaces.md",
+    "url": "http://localhost:20081/file_with_spaces"
+  },
+  {
+    "path": "_banner.md",
+    "url": "http://localhost:20081/_banner"
+  },
+  {
+    "path": "_blog-footer.md",
+    "url": "http://localhost:20081/_blog_footer"
+  },
+  {
+    "path": "_blog-header.md",
+    "url": "http://localhost:20081/_blog_header"
+  },
+  {
+    "path": "_custom_test_header.md",
+    "url": "http://localhost:20081/_custom_test_header"
+  },
+  {
+    "path": "_header.md",
+    "url": "http://localhost:20081/_header"
+  },
+  {
+    "path": "_json_test_sidebar.md",
+    "url": "http://localhost:20081/_json_test_sidebar"
+  },
+  {
+    "path": "_mcp_initialize.md",
+    "url": "http://localhost:20081/_mcp_initialize"
+  },
+  {
+    "path": "_mcp_instructions.md",
+    "url": "http://localhost:20081/_mcp_instructions"
+  },
+  {
+    "path": "_mcp_premium_guide.md",
+    "url": "http://localhost:20081/_mcp_premium_guide"
+  },
+  {
+    "path": "_mcp_wiki.md",
+    "url": "http://localhost:20081/_mcp_wiki"
+  },
+  {
+    "path": "_scenarios.md",
+    "url": "http://localhost:20081/_scenarios"
+  },
+  {
+    "path": "_sidebar.md",
+    "url": "http://localhost:20081/_sidebar"
+  },
+  {
+    "path": "_sidebar_premium.md",
+    "url": "http://localhost:20081/_sidebar_premium"
+  },
+  {
+    "path": "_test_footer.md",
+    "url": "http://localhost:20081/_test_footer"
+  },
+  {
+    "path": "_test_sidebar.md",
+    "url": "http://localhost:20081/_test_sidebar"
+  },
+  {
+    "path": "article-with-outlinks.md",
+    "url": "http://localhost:20081/article_with_outlinks"
+  },
+  {
+    "path": "article-with-toc.md",
+    "url": "http://localhost:20081/article_with_toc"
+  },
+  {
+    "path": "blog/custom-header-test.md",
+    "url": "http://localhost:20081/blog/custom_header_test"
+  },
+  {
+    "path": "blog/layout-test.md",
+    "url": "http://localhost:20081/blog/layout_test"
+  },
+  {
+    "path": "broken_layout_test.md",
+    "url": "http://localhost:20081/broken_layout_test"
+  },
+  {
+    "path": "code_and_media.md",
+    "url": "http://localhost:20081/code_and_media"
+  },
+  {
+    "path": "complex_content.md",
+    "url": "http://localhost:20081/complex_content"
+  },
+  {
+    "path": "cyrillic_названия.md",
+    "url": "http://localhost:20081/cyrillic_nazvaniya"
+  },
+  {
+    "path": "dup.md",
+    "url": "http://localhost:20081/dup"
+  },
+  {
+    "path": "embedding.md",
+    "url": "http://localhost:20081/embedding"
+  },
+  {
+    "path": "federation_e2e.md",
+    "url": "http://localhost:20081/federation_e2e"
+  },
+  {
+    "path": "federation_kb.md",
+    "url": "http://localhost:20081/federation_kb"
+  },
+  {
+    "path": "federation_kb_private.md",
+    "url": "http://localhost:20081/federation_kb_private"
+  },
+  {
+    "path": "federation_kb_semi.md",
+    "url": "http://localhost:20081/federation_kb_semi"
+  },
+  {
+    "path": "folder/_banner.md",
+    "url": "http://localhost:20081/folder/_banner"
+  },
+  {
+    "path": "folder/deep.md",
+    "url": "http://localhost:20081/folder/deep"
+  },
+  {
+    "path": "folder/dup.md",
+    "url": "http://localhost:20081/folder/dup"
+  },
+  {
+    "path": "folder/folder/imgs.md",
+    "url": "http://localhost:20081/folder/folder/imgs"
+  },
+  {
+    "path": "folder/imgs.md",
+    "url": "http://localhost:20081/folder/imgs"
+  },
+  {
+    "path": "folder/slug_relative_nested.md",
+    "url": "http://localhost:20081/folder/my-custom-page"
+  },
+  {
+    "path": "folder/source.md",
+    "url": "http://localhost:20081/folder/source"
+  },
+  {
+    "path": "full-layout.md",
+    "url": "http://localhost:20081/full_layout"
+  },
+  {
+    "path": "headers.md",
+    "url": "http://localhost:20081/headers"
+  },
+  {
+    "path": "img-formats.md",
+    "url": "http://localhost:20081/img_formats"
+  },
+  {
+    "path": "img-test.md",
+    "url": "http://localhost:20081/img_test"
+  },
+  {
+    "path": "index.md",
+    "url": "http://localhost:20081/"
+  },
+  {
+    "path": "json_layout_missing_include.md",
+    "url": "http://localhost:20081/json_layout_missing_include"
+  },
+  {
+    "path": "json_layout_no_sidebar.md",
+    "url": "http://localhost:20081/json_layout_no_sidebar"
+  },
+  {
+    "path": "json_layout_test.md",
+    "url": "http://localhost:20081/json_layout_test"
+  },
+  {
+    "path": "lang_hub/english.md",
+    "url": "http://localhost:20081/lang_hub/english"
+  },
+  {
+    "path": "lang_hub/english_hub.md",
+    "url": "http://localhost:20081/lang_hub/english_hub"
+  },
+  {
+    "path": "lang_hub/english_hub_russian.md",
+    "url": "http://localhost:20081/lang_hub/english_hub_russian"
+  },
+  {
+    "path": "lang_hub/genman.md",
+    "url": "http://localhost:20081/lang_hub/genman"
+  },
+  {
+    "path": "lang_hub/german.md",
+    "url": "http://localhost:20081/lang_hub/german"
+  },
+  {
+    "path": "lang_hub/index.md",
+    "url": "http://localhost:20081/lang_hub"
+  },
+  {
+    "path": "lang_hub/russian.md",
+    "url": "http://localhost:20081/lang_hub/russian"
+  },
+  {
+    "path": "mcp-url-test.md",
+    "url": "http://customdomain.test/mcp-url-test"
+  },
+  {
+    "path": "mp3.md",
+    "url": "http://localhost:20081/mp3"
+  },
+  {
+    "path": "multidomain/about.md",
+    "url": "http://customdomain.test/about"
+  },
+  {
+    "path": "multidomain/domain-link-a.md",
+    "url": "http://customdomain.test/domain-link-a"
+  },
+  {
+    "path": "multidomain/domain-link-b.md",
+    "url": "http://customdomain.test/b-on-domain"
+  },
+  {
+    "path": "multidomain/multi_route.md",
+    "url": "http://customdomain.test/multi"
+  },
+  {
+    "path": "multidomain/no_route.md",
+    "url": "http://localhost:20081/multidomain/no_route"
+  },
+  {
+    "path": "multidomain/root.md",
+    "url": "http://customdomain.test/"
+  },
+  {
+    "path": "page-with-header-footer.md",
+    "url": "http://localhost:20081/page_with_header_footer"
+  },
+  {
+    "path": "paid_with_cut.md",
+    "url": "http://localhost:20081/paid_with_cut"
+  },
+  {
+    "path": "paid_with_preview.md",
+    "url": "http://localhost:20081/paid_with_preview"
+  },
+  {
+    "path": "patch_tests/_vault-patch-free.md",
+    "url": "http://localhost:20081/patch_tests/_vault_patch_free"
+  },
+  {
+    "path": "patch_tests/_vault-patch-malformed.md",
+    "url": "http://localhost:20081/patch_tests/_vault_patch_malformed"
+  },
+  {
+    "path": "patch_tests/_vault-patch-multi.md",
+    "url": "http://localhost:20081/patch_tests/_vault_patch_multi"
+  },
+  {
+    "path": "patch_tests/chained.md",
+    "url": "http://localhost:20081/patch_tests/chained"
+  },
+  {
+    "path": "patch_tests/conditional.md",
+    "url": "http://localhost:20081/patch_tests/conditional"
+  },
+  {
+    "path": "patch_tests/excluded.md",
+    "url": "http://localhost:20081/patch_tests/excluded"
+  },
+  {
+    "path": "patch_tests/has_layout.md",
+    "url": "http://localhost:20081/patch_tests/has_layout"
+  },
+  {
+    "path": "patch_tests/path_based.md",
+    "url": "http://localhost:20081/patch_tests/path_based"
+  },
+  {
+    "path": "patch_tests/simple.md",
+    "url": "http://localhost:20081/patch_tests/simple"
+  },
+  {
+    "path": "patch_tests/title_template.md",
+    "url": "http://localhost:20081/patch_tests/title_template"
+  },
+  {
+    "path": "patch_tests/vault-patch-visible.md",
+    "url": "http://localhost:20081/patch_tests/vault_patch_visible"
+  },
+  {
+    "path": "patch_tests/vault_target.md",
+    "url": "http://localhost:20081/patch_tests/vault_target"
+  },
+  {
+    "path": "patch_tests/vault_target2.md",
+    "url": "http://localhost:20081/patch_tests/vault_target2"
+  },
+  {
+    "path": "premium.md",
+    "url": "http://localhost:20081/premium"
+  },
+  {
+    "path": "projectA/README.md",
+    "url": "http://localhost:20081/projecta/readme"
+  },
+  {
+    "path": "projectA/_banner.md",
+    "url": "http://localhost:20081/projecta/_banner"
+  },
+  {
+    "path": "projectA/_index.md",
+    "url": "http://localhost:20081/projecta"
+  },
+  {
+    "path": "projectA/guide.md",
+    "url": "http://localhost:20081/projecta/guide"
+  },
+  {
+    "path": "projectA/imgs.md",
+    "url": "http://localhost:20081/projecta/imgs"
+  },
+  {
+    "path": "projectB/README.md",
+    "url": "http://localhost:20081/projectb/readme"
+  },
+  {
+    "path": "projectB/_banner.md",
+    "url": "http://localhost:20081/projectb/_banner"
+  },
+  {
+    "path": "projectB/_index.md",
+    "url": "http://localhost:20081/projectb"
+  },
+  {
+    "path": "projectB/guide.md",
+    "url": "http://localhost:20081/projectb/guide"
+  },
+  {
+    "path": "public.md",
+    "url": "http://localhost:20081/public"
+  },
+  {
+    "path": "redirect_test.md",
+    "url": "http://localhost:20081/redirect_test"
+  },
+  {
+    "path": "scenarios_test.md",
+    "url": "http://localhost:20081/scenarios_test"
+  },
+  {
+    "path": "search_astronomy.md",
+    "url": "http://localhost:20081/search_astronomy"
+  },
+  {
+    "path": "search_keywords.md",
+    "url": "http://localhost:20081/search_keywords"
+  },
+  {
+    "path": "signin_wall.md",
+    "url": "http://localhost:20081/signin_wall"
+  },
+  {
+    "path": "slug_absolute.md",
+    "url": "http://localhost:20081/archive/old-post"
+  },
+  {
+    "path": "slug_cyrillic.md",
+    "url": "http://localhost:20081/моя-страница"
+  },
+  {
+    "path": "slug_relative.md",
+    "url": "http://localhost:20081/custom-name"
+  },
+  {
+    "path": "slug_spaces.md",
+    "url": "http://localhost:20081/page with spaces"
+  },
+  {
+    "path": "slug_with_subdir.md",
+    "url": "http://localhost:20081/sub/nested/page"
+  },
+  {
+    "path": "software.md",
+    "url": "http://localhost:20081/software"
+  },
+  {
+    "path": "team-status.md",
+    "url": "http://localhost:20081/team_status"
+  },
+  {
+    "path": "telegram_image_with_emoji.md",
+    "url": "http://localhost:20081/telegram_image_with_emoji"
+  },
+  {
+    "path": "telegram_media_group.md",
+    "url": "http://localhost:20081/telegram_media_group"
+  },
+  {
+    "path": "telegram_one_photo.md",
+    "url": "http://localhost:20081/telegram_one_photo"
+  },
+  {
+    "path": "telegram_one_video.md",
+    "url": "http://localhost:20081/telegram_one_video"
+  },
+  {
+    "path": "telegram_publish_message_link.md",
+    "url": "http://localhost:20081/telegram_publish_message_link"
+  },
+  {
+    "path": "telegram_publish_message_link_parent.md",
+    "url": "http://localhost:20081/telegram_publish_message_link_parent"
+  },
+  {
+    "path": "telegram_text.md",
+    "url": "http://localhost:20081/telegram_text"
+  },
+  {
+    "path": "telegram_video_with_emoji.md",
+    "url": "http://localhost:20081/telegram_video_with_emoji"
+  },
+  {
+    "path": "template_backlinks_source1.md",
+    "url": "http://localhost:20081/template_backlinks_source1"
+  },
+  {
+    "path": "template_backlinks_source2.md",
+    "url": "http://localhost:20081/template_backlinks_source2"
+  },
+  {
+    "path": "template_backlinks_target.md",
+    "url": "http://localhost:20081/template_backlinks_target"
+  },
+  {
+    "path": "template_meta_defaults.md",
+    "url": "http://localhost:20081/template_meta_defaults"
+  },
+  {
+    "path": "template_meta_test.md",
+    "url": "http://localhost:20081/template_meta_test"
+  },
+  {
+    "path": "template_sidebar_test.md",
+    "url": "http://localhost:20081/template_sidebar_test"
+  },
+  {
+    "path": "toc_test.md",
+    "url": "http://localhost:20081/toc_test"
+  },
+  {
+    "path": "unique.md",
+    "url": "http://localhost:20081/unique"
+  },
+  {
+    "path": "with_layout.md",
+    "url": "http://localhost:20081/with_layout"
+  },
+  {
+    "path": "with_right_sidebar.md",
+    "url": "http://localhost:20081/with_right_sidebar"
+  },
+  {
+    "path": "yield_blocks_demo.md",
+    "url": "http://localhost:20081/yield_blocks_demo"
+  },
+  {
+    "path": "Моя страница.md",
+    "url": "http://localhost:20081/moya_stranica"
+  },
+  {
+    "path": "Сценарий. Курсы.md",
+    "url": "http://localhost:20081/scenarij_kursyi"
+  },
+  {
+    "path": "Сценарий. Ютубер.md",
+    "url": "http://localhost:20081/scenarij_yutuber"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "delete_modify.md",
+    "url": "http://localhost:20081/delete_modify"
+  },
+  {
+    "path": "from_vault1.md",
+    "url": "http://localhost:20081/from_vault1"
+  },
+  {
+    "path": "to_delete.md",
+    "url": "http://localhost:20081/to_delete"
+  }
+]

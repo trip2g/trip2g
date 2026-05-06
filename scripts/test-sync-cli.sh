@@ -18,6 +18,7 @@ set -e
 # Parse arguments
 API_KEY=""
 ENDPOINT="http://localhost:8081/graphql"
+UPDATE_SNAPSHOTS=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -29,12 +30,17 @@ while [[ $# -gt 0 ]]; do
             ENDPOINT="$2"
             shift 2
             ;;
+        --update-snapshots)
+            UPDATE_SNAPSHOTS=1
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 --api-key <key> [--endpoint <url>]"
+            echo "Usage: $0 --api-key <key> [--endpoint <url>] [--update-snapshots]"
             echo ""
             echo "Arguments:"
-            echo "  -k, --api-key    API key (required)"
-            echo "  -e, --endpoint   GraphQL endpoint (default: http://localhost:8081/graphql)"
+            echo "  -k, --api-key        API key (required)"
+            echo "  -e, --endpoint       GraphQL endpoint (default: http://localhost:8081/graphql)"
+            echo "  --update-snapshots   Overwrite golden snapshots in testdata/sync-updates/"
             exit 0
             ;;
         *)
@@ -48,6 +54,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OBSIDIAN_SYNC_DIR="$PROJECT_ROOT/obsidian-sync"
 TMP_DIR="$PROJECT_ROOT/tmp"
+TESTDATA_SYNC_UPDATES="$PROJECT_ROOT/testdata/sync-updates"
 VAULT0="$TMP_DIR/testvault0"
 VAULT1="$TMP_DIR/testvault1"
 SYNC_UPDATES_DIR="$TMP_DIR/sync-updates"
@@ -90,6 +97,33 @@ log_section() {
     echo -e "${YELLOW}════════════════════════════════════════════════════════════${NC}"
 }
 
+# Compare or update golden snapshot for a sync-updates file
+assert_sync_snapshot() {
+    local out_file="$1"
+    local golden="$TESTDATA_SYNC_UPDATES/$(basename "$out_file")"
+
+    if [ "$UPDATE_SNAPSHOTS" = "1" ]; then
+        [ -f "$out_file" ] || return 0
+        jq 'sort_by(.path)' "$out_file" > "$golden"
+        log_info "Updated snapshot: $(basename "$golden")"
+        return 0
+    fi
+
+    [ -f "$out_file" ] || return 0
+    [ -f "$golden" ] || return 0
+
+    local actual expected
+    actual=$(jq 'sort_by(.path)' "$out_file")
+    expected=$(jq 'sort_by(.path)' "$golden")
+
+    if [ "$actual" = "$expected" ]; then
+        log_success "Snapshot match: $(basename "$out_file")"
+    else
+        log_fail "Snapshot mismatch: $(basename "$out_file")"
+        diff <(echo "$expected") <(echo "$actual") | head -30 | sed 's/^/    /'
+    fi
+}
+
 # Sync a vault, returns output; writes updated notes JSON to tmp/sync-updates/
 sync_vault() {
     local vault="$1"
@@ -99,7 +133,10 @@ sync_vault() {
 
     log_info "Syncing $(basename $vault)... (→ $out_file)"
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1
+    local sync_exit=0
+    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1 || sync_exit=$?
+    assert_sync_snapshot "$out_file"
+    return $sync_exit
 }
 
 # Sync a vault silently; still writes updated notes JSON to tmp/sync-updates/
@@ -110,7 +147,10 @@ sync_vault_quiet() {
     local out_file="$SYNC_UPDATES_DIR/$(printf '%02d' $SYNC_STEP)-$(basename $vault).json"
 
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args > /dev/null 2>&1
+    local sync_exit=0
+    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args > /dev/null 2>&1 || sync_exit=$?
+    assert_sync_snapshot "$out_file"
+    return $sync_exit
 }
 
 # Assert file exists

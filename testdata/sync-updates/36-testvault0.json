@@ -1,0 +1,10 @@
+[
+  {
+    "path": "no_publish_field.md",
+    "url": "http://localhost:20081/no_publish_field"
+  },
+  {
+    "path": "publish_false.md",
+    "url": "http://localhost:20081/publish_false"
+  }
+]
