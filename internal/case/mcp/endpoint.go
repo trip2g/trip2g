@@ -93,3 +93,55 @@ func (*Endpoint) Path() string {
 func (*Endpoint) Method() string {
 	return http.MethodPost
 }
+
+// GetEndpoint serves a human-readable info page for agents that probe /_system/mcp via GET.
+type GetEndpoint struct{}
+
+func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
+	env := req.Env.(Env)
+	mcpURL := strings.TrimRight(env.PublicURL(), "/") + "/_system/mcp"
+
+	body := strings.ReplaceAll(`This is an MCP POST endpoint (Model Context Protocol, Streamable HTTP).
+
+Send POST requests with a JSON-RPC 2.0 body.
+
+Authentication (one of):
+  Authorization: Bearer t2g_<your-token>
+  ?token=t2g_<your-token>
+
+Get a token: your account → Tokens.
+
+Client config (Claude Desktop / Claude Code / Cursor / Copilot / Gemini CLI):
+  {
+    "mcpServers": {
+      "trip2g": {
+        "type": "http",
+        "url": "{{MCP_URL}}",
+        "headers": { "Authorization": "Bearer t2g_<your-token>" }
+      }
+    }
+  }
+
+Extend MCP via note frontmatter:
+  mcp_method: <name>    — expose a note as an MCP tool; the note's content becomes
+                          the tool's response.
+  mcp_method: initialize — default method shown when an agent requests tool info.
+                           Override which note handles it via ?method=<note-path>.
+Read more in the docs.
+
+Docs: https://trip2g.com/en/user/mcp
+`, "{{MCP_URL}}", mcpURL)
+
+	req.Req.SetContentType("text/plain; charset=utf-8")
+	req.Req.SetStatusCode(http.StatusOK)
+	req.Req.SetBodyString(body)
+	return nil, nil
+}
+
+func (*GetEndpoint) Path() string {
+	return "/_system/mcp"
+}
+
+func (*GetEndpoint) Method() string {
+	return http.MethodGet
+}

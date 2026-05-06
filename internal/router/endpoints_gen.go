@@ -30,6 +30,7 @@ var endpoints = []Endpoint{
 	&handlegooglecallbackhandlegooglecallback.Endpoint{},
 	&handlegooglestarthandlegooglestart.Endpoint{},
 	&mcpmcp.Endpoint{},
+	&mcpmcp.GetEndpoint{},
 	&processnotionwebookprocessnotionwebook.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&processpatreonwebhookprocesspatreonwebhook.Endpoint{},
