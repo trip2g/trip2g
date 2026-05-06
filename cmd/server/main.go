@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -104,6 +105,8 @@ import (
 	"trip2g/internal/webhookutil"
 	"trip2g/internal/zerologger"
 
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
@@ -235,6 +238,9 @@ type app struct {
 
 	*turnstile.Client
 	signinCounter *requestemailsignin.SignInCounter
+
+	gqlServer   *handler.Server
+	gqlExecutor graphql.GraphExecutor
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB, *sql.DB) {
@@ -2249,16 +2255,17 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 
 	gqlMetrics := metrics.NewGraphQLMetrics()
 
-	gqlHandler := graph.NewHandler(a)
-	gqlHandler.Use(gqlMetrics)
-	gqlHandler.AroundOperations(gqlMetrics.Middleware())
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(gqlHandler)
+	a.gqlServer = graph.NewHandler(a)
+	a.gqlServer.Use(gqlMetrics)
+	a.gqlServer.AroundOperations(gqlMetrics.Middleware())
+	a.gqlExecutor = graph.NewExecutor(a)
+	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(a.gqlServer)
 	compressedGraphqlHandler := fasthttp.CompressHandler(graphqlHandler)
 
 	// SSE uses a custom handler that does not pool the response writer,
 	// avoiding a data race in fasthttpadaptor where the pooled writer
 	// is recycled while the SSE goroutine is still writing to it.
-	sseHandler := fastgql.NewSSEHandler(gqlHandler)
+	sseHandler := fastgql.NewSSEHandler(a.gqlServer)
 
 	return func(ctx *fasthttp.RequestCtx, path string) bool {
 		if strings.HasPrefix(path, "/graphql") {
@@ -2517,4 +2524,64 @@ func (a *app) EnqueueDeliverChangeWebhook(ctx context.Context, params handlenote
 // EnqueueDeliverCronWebhook enqueues a cron webhook delivery job.
 func (a *app) EnqueueDeliverCronWebhook(ctx context.Context, params delivercronwebhook.DeliverCronParams) error {
 	return a.DeliverCronWebhookJob.EnqueueDeliverCronWebhook(ctx, params)
+}
+
+// ResolveAPIKey resolves an API key by value (tries sha256 hash first, then plain),
+// logs the action and IP, and returns the key record.
+func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error) {
+	// Try hashed value first (new keys), fall back to plain (old keys).
+	hash := sha256.Sum256([]byte(value))
+	hashedValue := hex.EncodeToString(hash[:])
+
+	apiKey, err := a.Queries.ApiKeyByValue(ctx, hashedValue)
+	if err != nil && !db.IsNoFound(err) {
+		return nil, fmt.Errorf("resolve api key: %w", err)
+	}
+	if db.IsNoFound(err) {
+		apiKey, err = a.Queries.ApiKeyByValue(ctx, value)
+		if err != nil && !db.IsNoFound(err) {
+			return nil, fmt.Errorf("resolve api key (plain): %w", err)
+		}
+		if db.IsNoFound(err) {
+			return nil, errors.New("invalid API key")
+		}
+	}
+
+	req, _ := appreq.FromCtx(ctx)
+	ip := req.Req.RemoteIP().String()
+
+	if err := a.WriteQueries.UpsertAPIKeyLogAction(ctx, action); err != nil {
+		return nil, fmt.Errorf("log action: %w", err)
+	}
+	if err := a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip); err != nil {
+		return nil, fmt.Errorf("log ip: %w", err)
+	}
+	if err := a.WriteQueries.InsertAPIKeyLog(ctx, db.InsertAPIKeyLogParams{
+		ApiKeyID: apiKey.ID,
+		Action:   action,
+		Ip:       ip,
+	}); err != nil {
+		return nil, fmt.Errorf("insert log: %w", err)
+	}
+
+	return &apiKey, nil
+}
+
+// GraphQLRequest executes a GraphQL query programmatically with admin privileges.
+func (a *app) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
+	ctx = appreq.WithAdminToken(ctx)
+
+	params := &graphql.RawParams{
+		Query:     query,
+		Variables: variables,
+	}
+
+	opCtx, errList := a.gqlExecutor.CreateOperationContext(ctx, params)
+	if errList != nil {
+		return nil, fmt.Errorf("graphql operation context: %v", errList)
+	}
+
+	responseHandler, respCtx := a.gqlExecutor.DispatchOperation(ctx, opCtx)
+	resp := responseHandler(respCtx)
+	return json.Marshal(resp)
 }

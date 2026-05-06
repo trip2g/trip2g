@@ -6,6 +6,7 @@ import (
 	"trip2g/internal/logger"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/executor"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -194,4 +195,17 @@ func selectionHasSkipTx(sel ast.SelectionSet, skipTx map[string]struct{}) bool {
 		}
 	}
 	return false
+}
+
+// NewExecutor builds an executable schema for env and returns a low-level
+// executor suitable for programmatic GraphQL dispatch (no HTTP transport).
+func NewExecutor(env Env) *executor.Executor {
+	config := Config{
+		Resolvers: &Resolver{DefaultEnv: env},
+	}
+	config.Directives.SkipTx = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
+		return next(ctx)
+	}
+	schema := NewExecutableSchema(config)
+	return executor.New(schema)
 }
