@@ -1032,7 +1032,7 @@ func (q *Queries) AllWaitListTgBotRequests(ctx context.Context) ([]AllWaitListTg
 }
 
 const apiKeyByValue = `-- name: ApiKeyByValue :one
-select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks from api_keys where value = ? and disabled_at is null limit 1
+select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools from api_keys where value = ? and disabled_at is null limit 1
 `
 
 func (q *Queries) ApiKeyByValue(ctx context.Context, value string) (ApiKey, error) {
@@ -1047,6 +1047,7 @@ func (q *Queries) ApiKeyByValue(ctx context.Context, value string) (ApiKey, erro
 		&i.DisabledBy,
 		&i.Description,
 		&i.SkipWebhooks,
+		&i.EnableMcpAdminTools,
 	)
 	return i, err
 }
@@ -3135,7 +3136,7 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 }
 
 const listAllAPIKeys = `-- name: ListAllAPIKeys :many
-select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks from api_keys order by created_by, created_at desc
+select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools from api_keys order by created_by, created_at desc
 `
 
 func (q *Queries) ListAllAPIKeys(ctx context.Context) ([]ApiKey, error) {
@@ -3156,6 +3157,7 @@ func (q *Queries) ListAllAPIKeys(ctx context.Context) ([]ApiKey, error) {
 			&i.DisabledBy,
 			&i.Description,
 			&i.SkipWebhooks,
+			&i.EnableMcpAdminTools,
 		); err != nil {
 			return nil, err
 		}

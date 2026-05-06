@@ -23,14 +23,15 @@ type Admin struct {
 }
 
 type ApiKey struct {
-	ID           int64      `json:"id"`
-	Value        string     `json:"value"`
-	CreatedAt    time.Time  `json:"created_at"`
-	CreatedBy    int64      `json:"created_by"`
-	DisabledAt   *time.Time `json:"disabled_at"`
-	DisabledBy   *int64     `json:"disabled_by"`
-	Description  string     `json:"description"`
-	SkipWebhooks bool       `json:"skip_webhooks"`
+	ID                  int64      `json:"id"`
+	Value               string     `json:"value"`
+	CreatedAt           time.Time  `json:"created_at"`
+	CreatedBy           int64      `json:"created_by"`
+	DisabledAt          *time.Time `json:"disabled_at"`
+	DisabledBy          *int64     `json:"disabled_by"`
+	Description         string     `json:"description"`
+	SkipWebhooks        bool       `json:"skip_webhooks"`
+	EnableMcpAdminTools *bool      `json:"enable_mcp_admin_tools"`
 }
 
 type ApiKeyLog struct {

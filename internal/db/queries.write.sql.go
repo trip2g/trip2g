@@ -584,7 +584,7 @@ const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
  where id = ?
-returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks
+returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools
 `
 
 type DisableApiKeyParams struct {
@@ -604,6 +604,7 @@ func (q *WriteQueries) DisableApiKey(ctx context.Context, arg DisableApiKeyParam
 		&i.DisabledBy,
 		&i.Description,
 		&i.SkipWebhooks,
+		&i.EnableMcpAdminTools,
 	)
 	return i, err
 }
@@ -722,7 +723,7 @@ func (q *WriteQueries) IncrementNoteVersionCount(ctx context.Context, arg Increm
 const insertAPIKey = `-- name: InsertAPIKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)
-returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks
+returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools
 `
 
 type InsertAPIKeyParams struct {
@@ -743,6 +744,7 @@ func (q *WriteQueries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams)
 		&i.DisabledBy,
 		&i.Description,
 		&i.SkipWebhooks,
+		&i.EnableMcpAdminTools,
 	)
 	return i, err
 }
@@ -2698,6 +2700,20 @@ update google_oauth_credentials set active = (id = ?)
 
 func (q *WriteQueries) SetActiveGoogleOAuthCredentials(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, setActiveGoogleOAuthCredentials, id)
+	return err
+}
+
+const setApiKeyMcpAdminTools = `-- name: SetApiKeyMcpAdminTools :exec
+update api_keys set enable_mcp_admin_tools = ?1 where id = ?2
+`
+
+type SetApiKeyMcpAdminToolsParams struct {
+	Enabled *bool `json:"enabled"`
+	ID      int64 `json:"id"`
+}
+
+func (q *WriteQueries) SetApiKeyMcpAdminTools(ctx context.Context, arg SetApiKeyMcpAdminToolsParams) error {
+	_, err := q.db.ExecContext(ctx, setApiKeyMcpAdminTools, arg.Enabled, arg.ID)
 	return err
 }
 

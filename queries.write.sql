@@ -148,6 +148,9 @@ update api_keys
  where id = ?
 returning *;
 
+-- name: SetApiKeyMcpAdminTools :exec
+update api_keys set enable_mcp_admin_tools = sqlc.arg(enabled) where id = sqlc.arg(id);
+
 -- name: InsertGitToken :one
 insert into git_tokens (value_sha256, admin_id, description, can_pull, can_push)
 values (?, ?, ?, ?, ?)
