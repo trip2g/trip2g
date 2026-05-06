@@ -157,12 +157,14 @@ test.describe.serial('Personal tokens', () => {
 
     expect(bearerResult.result).toBeDefined();
     expect(queryResult.result).toBeDefined();
-    // Parallel workers may reindex between the two calls, flipping equal-score entries.
-    // Sort by content without the numeric prefix so "2. X" and "3. X" compare equal.
+    // Equal-score entries may appear in different order between two calls.
+    // Sort by content (strip numeric prefix for comparison) and renumber so positions don't affect equality.
     const sortedEntries = (text) => {
       const [header, ...entries] = text.split(/\n\n(?=\d+\.)/);
       const key = (e) => e.replace(/^\d+\.\s*/, '');
-      return [header, ...entries.sort((a, b) => key(a).localeCompare(key(b)))].join('\n\n');
+      const sorted = entries.sort((a, b) => key(a).localeCompare(key(b)));
+      const renumbered = sorted.map((e, i) => e.replace(/^\d+\./, `${i + 1}.`));
+      return [header, ...renumbered].join('\n\n');
     };
     expect(sortedEntries(queryResult.result.content[0].text)).toBe(sortedEntries(bearerResult.result.content[0].text));
   });
