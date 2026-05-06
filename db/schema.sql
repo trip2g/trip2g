@@ -109,7 +109,8 @@ CREATE TABLE api_keys (
   disabled_at datetime,
   disabled_by integer references admins(user_id) on delete restrict,
   description text not null default '' -- the form field always has a value
-, skip_webhooks boolean not null default false);
+, skip_webhooks boolean not null default false
+, enable_mcp_admin_tools boolean);
 CREATE TABLE api_key_log_actions (
   id integer primary key autoincrement,
   name text not null unique
