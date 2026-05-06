@@ -266,5 +266,27 @@ func TestReset_NilsPersonalTokenResolver(t *testing.T) {
 	require.Nil(t, req.PersonalTokenResolver)
 }
 
+func TestWithAdminToken_ShadowsExistingToken(t *testing.T) {
+	fctx := newFasthttpCtx()
+	req := &Request{
+		Req: fctx,
+	}
+	req.SetUserToken(&usertoken.Data{Role: "user"})
+	req.StoreInContext()
+
+	adminCtx := WithAdminToken(fctx)
+
+	shadowed, err := FromCtx(adminCtx)
+	require.NoError(t, err)
+	tok, err := shadowed.UserToken()
+	require.NoError(t, err)
+	require.True(t, tok.IsAdmin())
+
+	// original appreq in fctx unchanged
+	orig, _ := FromCtx(fctx)
+	origTok, _ := orig.UserToken()
+	require.False(t, origTok.IsAdmin())
+}
+
 // Ensure the mock satisfies the interface at compile time.
 var _ PersonalTokenResolver = (*mockResolver)(nil)

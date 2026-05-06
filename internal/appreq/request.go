@@ -76,6 +76,22 @@ func FromCtx(ctx context.Context) (*Request, error) {
 	return c, nil
 }
 
+// WithAdminToken returns a context with a copy of the current appreq where
+// UserToken is pre-set to an admin token. Used for internal GraphQL calls.
+func WithAdminToken(ctx context.Context) context.Context {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return ctx
+	}
+	adminReq := &Request{
+		Req:          req.Req,
+		Env:          req.Env,
+		TokenManager: req.TokenManager,
+	}
+	adminReq.SetUserToken(&usertoken.Data{Role: "admin"})
+	return context.WithValue(ctx, ctxKey, adminReq)
+}
+
 func CtxEnv[T any](ctx context.Context, defaultValue T) T {
 	req, err := FromCtx(ctx)
 	if err != nil {
