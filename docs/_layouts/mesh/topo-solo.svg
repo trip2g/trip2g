@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 130">
+  <g stroke="#5a5a55" stroke-width="1" stroke-dasharray="3 4">
+    <line x1="100" y1="65" x2="40"  y2="25" />
+    <line x1="100" y1="65" x2="40"  y2="65" />
+    <line x1="100" y1="65" x2="40"  y2="105" />
+    <line x1="100" y1="65" x2="160" y2="25" />
+    <line x1="100" y1="65" x2="160" y2="65" />
+    <line x1="100" y1="65" x2="160" y2="105" />
+  </g>
+  <g fill="#0e0e0c" stroke="#f5f5f2" stroke-width="1">
+    <circle cx="40"  cy="25"  r="6" />
+    <circle cx="40"  cy="65"  r="6" />
+    <circle cx="40"  cy="105" r="6" />
+    <circle cx="160" cy="25"  r="6" />
+    <circle cx="160" cy="65"  r="6" />
+    <circle cx="160" cy="105" r="6" />
+  </g>
+  <circle cx="100" cy="65" r="14" fill="oklch(0.78 0.18 145)" />
+  <text x="100" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#0e0e0c">you</text>
+</svg>

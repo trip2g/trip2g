@@ -31,6 +31,8 @@ The MCP server turns your knowledge base into an AI consultant. Connect it to an
 | `similar(path)` | Notes similar to the given note |
 | `instructions()` | Author-defined AI instructions |
 | `editor_role()` | Answer style instructions |
+| `graphql_introspection(pattern)` | Inspect the GraphQL schema — returns types and operations matching the pattern, plus types they reference. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. |
+| `graphql_request(query, variables?)` | Execute any GraphQL query or mutation as admin. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. |
 
 #### `search` — TOC and match location
 
@@ -221,6 +223,33 @@ curl 'https://yoursite.com/_system/mcp/tools/call?token=t2g_…' \
 1. Go to **User → Tokens**
 2. Find the token and click **Revoke**
 3. The token stops working immediately (within ~30 seconds if cached)
+
+### API key authentication
+
+API keys (the same keys used by the Obsidian sync plugin) are accepted by the MCP endpoint. An agent that already has an API key from a pre-configured vault gets MCP access with no extra setup.
+
+#### Use the key
+
+```bash
+curl https://yoursite.com/_system/mcp \
+  -H "X-API-Key: <your-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+#### Access level
+
+API key auth gives admin-level content access (all notes and subgraphs) by default — same notes a site admin sees.
+
+#### Enable admin GraphQL tools
+
+To also expose `graphql_introspection` and `graphql_request`:
+
+1. Go to **Admin → API Keys**
+2. Find the key
+3. Enable **MCP admin tools**
+
+Once enabled, the agent can inspect the GraphQL schema and call any mutation. See [[en/user/agent_admin]] for the full workflow and examples.
 
 ### Use cases
 

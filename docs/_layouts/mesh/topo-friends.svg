@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 130">
+  <g stroke="oklch(0.78 0.18 145)" stroke-width="1" stroke-dasharray="3 4">
+    <line x1="100" y1="30"  x2="40"  y2="100" />
+    <line x1="100" y1="30"  x2="160" y2="100" />
+    <line x1="40"  y1="100" x2="160" y2="100" />
+    <line x1="100" y1="30"  x2="100" y2="100" />
+    <line x1="40"  y1="100" x2="100" y2="100" />
+    <line x1="100" y1="100" x2="160" y2="100" />
+  </g>
+  <g fill="oklch(0.78 0.18 145)">
+    <circle cx="100" cy="30"  r="10" />
+    <circle cx="40"  cy="100" r="10" />
+    <circle cx="100" cy="100" r="10" />
+    <circle cx="160" cy="100" r="10" />
+  </g>
+</svg>

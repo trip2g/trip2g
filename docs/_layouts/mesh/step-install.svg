@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+  <rect x="20" y="30" width="60" height="40" fill="none" stroke="#5a5a55" stroke-dasharray="3 3" />
+  <text x="50" y="55" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#8c8c84" letter-spacing="0.1em">SERVER</text>
+  <line x1="80" y1="50" x2="120" y2="50" stroke="#a3e635" stroke-width="1.4" />
+  <polygon points="120,46 128,50 120,54" fill="#a3e635" />
+  <rect x="130" y="30" width="50" height="40" fill="oklch(0.78 0.18 145)" />
+  <text x="155" y="56" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="11" fill="#0e0e0c">trip2g</text>
+</svg>
