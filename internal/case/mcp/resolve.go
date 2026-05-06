@@ -405,6 +405,26 @@ func federationAuthFromContext(ctx context.Context) (federationAuthContext, bool
 	return auth, ok
 }
 
+type mcpAPIKeyAuthContextKey struct{}
+
+type mcpAPIKeyAuthInfo struct {
+	adminTools bool
+}
+
+func contextWithMCPAPIKeyAuth(ctx context.Context, adminTools bool) context.Context {
+	return context.WithValue(ctx, mcpAPIKeyAuthContextKey{}, mcpAPIKeyAuthInfo{adminTools: adminTools})
+}
+
+func mcpAPIKeyAuthed(ctx context.Context) bool {
+	_, ok := ctx.Value(mcpAPIKeyAuthContextKey{}).(mcpAPIKeyAuthInfo)
+	return ok
+}
+
+func mcpAdminToolsEnabled(ctx context.Context) bool {
+	info, ok := ctx.Value(mcpAPIKeyAuthContextKey{}).(mcpAPIKeyAuthInfo)
+	return ok && info.adminTools
+}
+
 type federationDepthContextKey struct{}
 
 func contextWithFederationDepth(ctx context.Context, depth int) context.Context {
@@ -418,6 +438,9 @@ func FederationDepthFromContext(ctx context.Context) int {
 }
 
 func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
+	if mcpAPIKeyAuthed(ctx) {
+		return true, nil // API key = admin, sees all notes
+	}
 	if auth, ok := federationAuthFromContext(ctx); ok {
 		return canreadnote.ResolveWithSubgraphs(ctx, env, note, auth.AllowedSubgraphs)
 	}

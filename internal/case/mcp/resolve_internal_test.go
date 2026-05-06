@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -138,6 +139,21 @@ func TestBuildSearchPayloadLeavesTextMatchAsGenericWhenNoClearChunk(t *testing.T
 	require.Len(t, payload.Results[0].Matches, 1)
 	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
 	require.Equal(t, 0, payload.Results[0].Matches[0].ChunkIndex)
+}
+
+func TestMCPAPIKeyContext(t *testing.T) {
+	ctx := context.Background()
+
+	require.False(t, mcpAPIKeyAuthed(ctx))
+	require.False(t, mcpAdminToolsEnabled(ctx))
+
+	ctx = contextWithMCPAPIKeyAuth(ctx, false)
+	require.True(t, mcpAPIKeyAuthed(ctx))
+	require.False(t, mcpAdminToolsEnabled(ctx))
+
+	ctx = contextWithMCPAPIKeyAuth(ctx, true)
+	require.True(t, mcpAPIKeyAuthed(ctx))
+	require.True(t, mcpAdminToolsEnabled(ctx))
 }
 
 func TestMergeResultsUsesRRF(t *testing.T) {
