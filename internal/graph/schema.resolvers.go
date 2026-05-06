@@ -74,6 +74,7 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
+	"trip2g/internal/case/admin/setapikeymcpadmintools"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigintvalue"
@@ -838,7 +839,7 @@ func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel
 
 // SetAPIKeyMcpAdminTools is the resolver for the setApiKeyMcpAdminTools field.
 func (r *adminMutationResolver) SetAPIKeyMcpAdminTools(ctx context.Context, obj *appmodel.AdminMutation, input model.SetAPIKeyMcpAdminToolsInput) (model.SetAPIKeyMcpAdminToolsOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: SetAPIKeyMcpAdminTools - setApiKeyMcpAdminTools"))
+	return setapikeymcpadmintools.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateGitToken is the resolver for the createGitToken field.

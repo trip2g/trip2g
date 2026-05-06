@@ -154,6 +154,8 @@ type Env interface {
 	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	ListAllAPIKeys(ctx context.Context) ([]db.ApiKey, error)
+	ApiKeyByID(ctx context.Context, id int64) (db.ApiKey, error)
+	SetApiKeyMcpAdminTools(ctx context.Context, arg db.SetApiKeyMcpAdminToolsParams) error
 	ListAllGitTokens(ctx context.Context) ([]db.GitToken, error)
 	ListAllReleases(ctx context.Context) ([]db.Release, error)
 	ListAllAdmins(ctx context.Context) ([]db.Admin, error)

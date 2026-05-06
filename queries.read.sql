@@ -312,6 +312,9 @@ select value from acme_certs where key = ?;
 -- name: ApiKeyByValue :one
 select * from api_keys where value = ? and disabled_at is null limit 1;
 
+-- name: ApiKeyByID :one
+select * from api_keys where id = ? limit 1;
+
 -- name: ListAllAPIKeys :many
 select * from api_keys order by created_by, created_at desc;
 

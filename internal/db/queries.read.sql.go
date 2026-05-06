@@ -1031,6 +1031,27 @@ func (q *Queries) AllWaitListTgBotRequests(ctx context.Context) ([]AllWaitListTg
 	return items, nil
 }
 
+const apiKeyByID = `-- name: ApiKeyByID :one
+select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools from api_keys where id = ? limit 1
+`
+
+func (q *Queries) ApiKeyByID(ctx context.Context, id int64) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, apiKeyByID, id)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
+		&i.Description,
+		&i.SkipWebhooks,
+		&i.EnableMcpAdminTools,
+	)
+	return i, err
+}
+
 const apiKeyByValue = `-- name: ApiKeyByValue :one
 select id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools from api_keys where value = ? and disabled_at is null limit 1
 `
