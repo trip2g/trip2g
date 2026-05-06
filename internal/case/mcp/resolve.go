@@ -204,6 +204,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items.",
+						Items:       &Property{Type: "string"},
 					},
 				},
 			},
@@ -216,7 +217,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 				Properties: map[string]Property{
 					"query":  {Type: "string", Description: "Search query"},
 					"kb_id":  {Type: "string", Description: "Target knowledge base id"},
-					"kb_ids": {Type: "array", Description: "Target knowledge base ids"},
+					"kb_ids": {Type: "array", Description: "Target knowledge base ids", Items: &Property{Type: "string"}},
 				},
 				Required: []string{"query"},
 			},
