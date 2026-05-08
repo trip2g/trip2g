@@ -207,5 +207,7 @@ func NewExecutor(env Env) *executor.Executor {
 		return next(ctx)
 	}
 	schema := NewExecutableSchema(config)
-	return executor.New(schema)
+	exec := executor.New(schema)
+	exec.Use(extension.Introspection{})
+	return exec
 }

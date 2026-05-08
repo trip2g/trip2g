@@ -313,7 +313,7 @@ func TestDispatch_APIKeyAuth_AdminTools(t *testing.T) {
 
 	_, err := (&mcp.Endpoint{}).Handle(req)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(env.ResolveAPIKeyCalls()))
+	require.Len(t, env.ResolveAPIKeyCalls(), 1)
 }
 
 func TestDispatch_APIKeyAuth_InvalidKey(t *testing.T) {

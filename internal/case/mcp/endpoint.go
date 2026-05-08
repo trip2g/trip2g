@@ -52,36 +52,50 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if userToken == nil {
-		// Check for API key auth.
-		apiKeyValue := strings.TrimSpace(string(req.Req.Request.Header.Peek("X-API-Key")))
-		if apiKeyValue != "" {
-			apiKey, keyErr := env.ResolveAPIKey(req.Req, apiKeyValue, "mcp")
-			if keyErr != nil {
-				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Auth failed: "+keyErr.Error()))
-			}
-			adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
-			resolveCtx = contextWithMCPAPIKeyAuth(resolveCtx, adminTools)
-		} else {
-			// No API key — check for federation JWT Bearer.
-			authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
-			token, isBearerToken := strings.CutPrefix(authHeader, "Bearer ")
-			if authHeader != "" && (!isBearerToken || strings.TrimSpace(token) == "") {
-				return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: malformed bearer token"))
-			}
-			if isBearerToken && strings.TrimSpace(token) != "" {
-				kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, strings.TrimSpace(token))
-				if verifyErr != nil {
-					return writeJSONResponse(req, errorResponse(rpcReq.ID, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error()))
-				}
-				resolveCtx = contextWithFederationAuth(resolveCtx, kid, allowedSubgraphs)
-			}
+		newCtx, errResp := authenticateAnonymousRequest(resolveCtx, req, env, rpcReq.ID)
+		if errResp != nil {
+			return writeJSONResponse(req, *errResp)
 		}
+		resolveCtx = newCtx
 	}
 
 	// Handle request
 	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
 	resp := Resolve(resolveCtx, env, rpcReq)
 	return writeJSONResponse(req, resp)
+}
+
+// authenticateAnonymousRequest resolves API-key or federation-JWT auth when no
+// personal token is present. It returns the augmented context, or an error
+// response to send back unchanged when auth fails.
+func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env Env, id any) (context.Context, *Response) {
+	apiKeyValue := strings.TrimSpace(string(req.Req.Request.Header.Peek("X-API-Key")))
+	if apiKeyValue != "" {
+		apiKey, keyErr := env.ResolveAPIKey(req.Req, apiKeyValue, "mcp")
+		if keyErr != nil {
+			resp := errorResponse(id, ErrCodeInternal, "Auth failed: "+keyErr.Error())
+			return ctx, &resp
+		}
+		adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
+		return contextWithMCPAPIKeyAuth(ctx, adminTools), nil
+	}
+
+	authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
+	token, isBearerToken := strings.CutPrefix(authHeader, "Bearer ")
+	token = strings.TrimSpace(token)
+	if authHeader != "" && (!isBearerToken || token == "") {
+		resp := errorResponse(id, ErrCodeInternal, "Federation auth failed: malformed bearer token")
+		return ctx, &resp
+	}
+	if !isBearerToken || token == "" {
+		return ctx, nil
+	}
+	kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, token)
+	if verifyErr != nil {
+		resp := errorResponse(id, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
+		return ctx, &resp
+	}
+	return contextWithFederationAuth(ctx, kid, allowedSubgraphs), nil
 }
 
 func writeJSONResponse(req *appreq.Request, resp Response) (interface{}, error) {

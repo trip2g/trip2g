@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/case/admin/setapikeymcpadmintools"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolve_AdminCanEnable(t *testing.T) {

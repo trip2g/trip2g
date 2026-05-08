@@ -133,11 +133,60 @@ func collectReferencedNames(t introspectionType, out map[string]bool) {
 	}
 }
 
+func compilePattern(pattern string) *regexp.Regexp {
+	re, err := regexp.Compile("(?i)" + pattern)
+	if err != nil {
+		return regexp.MustCompile("(?i)" + regexp.QuoteMeta(pattern))
+	}
+	return re
+}
+
+func seedMatchingTypes(allTypes []introspectionType, re *regexp.Regexp) map[string]bool {
+	needed := map[string]bool{}
+	for _, t := range allTypes {
+		if strings.HasPrefix(t.Name, "__") {
+			continue
+		}
+		if re.MatchString(t.Name) {
+			needed[t.Name] = true
+			continue
+		}
+		for _, f := range t.Fields {
+			if re.MatchString(f.Name) {
+				needed[t.Name] = true
+				break
+			}
+		}
+	}
+	return needed
+}
+
+func expandReferenced(needed map[string]bool, typeByName map[string]introspectionType) {
+	for changed := true; changed; {
+		changed = false
+		for name := range needed {
+			t, ok := typeByName[name]
+			if !ok {
+				continue
+			}
+			refs := map[string]bool{}
+			collectReferencedNames(t, refs)
+			for ref := range refs {
+				if ref == "" || strings.HasPrefix(ref, "__") || needed[ref] {
+					continue
+				}
+				needed[ref] = true
+				changed = true
+			}
+		}
+	}
+}
+
 func filterIntrospection(data []byte, pattern string) ([]byte, error) {
 	var wrapper struct {
 		Data struct {
 			Schema struct {
-				QueryType    *struct {
+				QueryType *struct {
 					Name string `json:"name"`
 				} `json:"queryType"`
 				MutationType *struct {
@@ -151,54 +200,15 @@ func filterIntrospection(data []byte, pattern string) ([]byte, error) {
 		return nil, err
 	}
 
-	re, err := regexp.Compile("(?i)" + pattern)
-	if err != nil {
-		re = regexp.MustCompile("(?i)" + regexp.QuoteMeta(pattern))
-	}
-
+	re := compilePattern(pattern)
 	allTypes := wrapper.Data.Schema.Types
 	typeByName := make(map[string]introspectionType, len(allTypes))
 	for _, t := range allTypes {
 		typeByName[t.Name] = t
 	}
 
-	// Seed: types whose name matches, or types containing a matching field name.
-	needed := map[string]bool{}
-	for _, t := range allTypes {
-		if strings.HasPrefix(t.Name, "__") {
-			continue
-		}
-		if re.MatchString(t.Name) {
-			needed[t.Name] = true
-		}
-		for _, f := range t.Fields {
-			if re.MatchString(f.Name) {
-				needed[t.Name] = true
-			}
-		}
-	}
-
-	// Expand: include all transitively referenced types.
-	for changed := true; changed; {
-		changed = false
-		for name := range needed {
-			t, ok := typeByName[name]
-			if !ok {
-				continue
-			}
-			refs := map[string]bool{}
-			collectReferencedNames(t, refs)
-			for ref := range refs {
-				if ref == "" || strings.HasPrefix(ref, "__") {
-					continue
-				}
-				if !needed[ref] {
-					needed[ref] = true
-					changed = true
-				}
-			}
-		}
-	}
+	needed := seedMatchingTypes(allTypes, re)
+	expandReferenced(needed, typeByName)
 
 	filtered := make([]introspectionType, 0, len(needed))
 	for _, t := range allTypes {

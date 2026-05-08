@@ -6,10 +6,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mcpToolsListBody returns a JSON-RPC body for tools/list.
@@ -46,9 +47,9 @@ func mustJSON(t *testing.T, v any) json.RawMessage {
 // the API key has enable_mcp_admin_tools=true.
 func TestAPIKeyAdminTools_ToolsListVisibility(t *testing.T) {
 	cases := []struct {
-		name        string
-		adminTools  bool
-		shouldList  bool
+		name       string
+		adminTools bool
+		shouldList bool
 	}{
 		{"admin tools enabled exposes graphql tools", true, true},
 		{"admin tools disabled hides graphql tools", false, false},

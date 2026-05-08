@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -2550,18 +2551,18 @@ func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiK
 	req, _ := appreq.FromCtx(ctx)
 	ip := req.Req.RemoteIP().String()
 
-	if err := a.WriteQueries.UpsertAPIKeyLogAction(ctx, action); err != nil {
-		return nil, fmt.Errorf("log action: %w", err)
+	if logErr := a.WriteQueries.UpsertAPIKeyLogAction(ctx, action); logErr != nil {
+		return nil, fmt.Errorf("log action: %w", logErr)
 	}
-	if err := a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip); err != nil {
-		return nil, fmt.Errorf("log ip: %w", err)
+	if logErr := a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip); logErr != nil {
+		return nil, fmt.Errorf("log ip: %w", logErr)
 	}
-	if err := a.WriteQueries.InsertAPIKeyLog(ctx, db.InsertAPIKeyLogParams{
+	if logErr := a.WriteQueries.InsertAPIKeyLog(ctx, db.InsertAPIKeyLogParams{
 		ApiKeyID: apiKey.ID,
 		Action:   action,
 		Ip:       ip,
-	}); err != nil {
-		return nil, fmt.Errorf("insert log: %w", err)
+	}); logErr != nil {
+		return nil, fmt.Errorf("insert log: %w", logErr)
 	}
 
 	return &apiKey, nil
@@ -2570,15 +2571,41 @@ func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiK
 // GraphQLRequest executes a GraphQL query programmatically with admin privileges.
 func (a *app) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
 	ctx = appreq.WithAdminToken(ctx)
+	// gqlgen requires StartOperationTrace before CreateOperationContext;
+	// normally handler.Server.ServeHTTP does this — we bypass HTTP transport,
+	// so set it up manually.
+	ctx = graphql.StartOperationTrace(ctx)
+	now := graphql.Now()
+
+	// gqlgen's Int64 / int scalar UnmarshalGQL rejects float64 with
+	// "float64 is not an int64". gqlgen's transport.POST uses json.Decoder
+	// with UseNumber so values arrive as json.Number; reproduce that here.
+	convertedVars := variables
+	if len(variables) > 0 {
+		rawVars, marshalErr := json.Marshal(variables)
+		if marshalErr != nil {
+			return nil, fmt.Errorf("marshal variables: %w", marshalErr)
+		}
+		dec := json.NewDecoder(bytes.NewReader(rawVars))
+		dec.UseNumber()
+		convertedVars = map[string]any{}
+		if decodeErr := dec.Decode(&convertedVars); decodeErr != nil {
+			return nil, fmt.Errorf("decode variables: %w", decodeErr)
+		}
+	}
 
 	params := &graphql.RawParams{
 		Query:     query,
-		Variables: variables,
+		Variables: convertedVars,
+		ReadTime: graphql.TraceTiming{
+			Start: now,
+			End:   now,
+		},
 	}
 
 	opCtx, errList := a.gqlExecutor.CreateOperationContext(ctx, params)
 	if errList != nil {
-		return nil, fmt.Errorf("graphql operation context: %v", errList)
+		return nil, fmt.Errorf("graphql operation context: %w", errList)
 	}
 
 	responseHandler, respCtx := a.gqlExecutor.DispatchOperation(ctx, opCtx)
