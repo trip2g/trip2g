@@ -27,7 +27,7 @@ func (c *AdminAuthorizationChecker) Check(ctx context.Context, env Env) model.He
 	graphqlURL := publicURL + "/graphql"
 
 	// Query that requires admin authorization
-	adminQuery := "query { admin { latestConfig { timezone } } }"
+	adminQuery := "query { admin { allAdmins { nodes { id } } } }"
 
 	// Intentionally NOT setting authorization header
 	resp, err := makeGraphQLRequest(ctx, graphqlURL, adminQuery, nil)

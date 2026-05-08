@@ -25,6 +25,7 @@ func getCheckers() []Checker {
 		&GraphQLIntrospectionChecker{},
 		&AdminAuthorizationChecker{},
 		&APIKeyValidationChecker{},
+		&HomepageSizeChecker{},
 	}
 }
 
