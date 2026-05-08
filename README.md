@@ -1,15 +1,39 @@
 # trip2g
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/go-1.24-blue.svg)](https://golang.org)
+[![Go](https://img.shields.io/badge/go-1.26-blue.svg)](https://golang.org)
 
-**Open-source MCP knowledge mesh.** Self-host your knowledge bases, expose them via MCP, and federate with peers — no SaaS in the middle.
+**Open-source MCP knowledge mesh.** Self-host your knowledge bases, expose them to AI agents via MCP, and federate with peers — no SaaS in the middle.
 
 Unlike Obsidian Publish or Quartz, trip2g is a live server: subscriptions, webhook agents, federation between hubs, and an MCP endpoint out of the box.
 
 [Try the public hub →](#try-it-now) · [Self-host](#self-host) · [Docs](https://trip2g.com/en/user)
 
 ![trip2g landing](docs/assets/screenshot.webp)
+
+---
+
+## Second brain network for your agents
+
+> *A second brain isn't one person's vault — it's the shared knowledge of people who think about the same things.*
+
+Each person runs a hub with their own notes. Agents reach into it directly via MCP. Hubs peer with each other, so one question fans out across the network — your bases plus the ones your trusted peers share with you.
+
+```
+   human A           human B           human C
+      │                 │                 │
+      ▼                 ▼                 ▼
+   agent A           agent B           agent C
+      │                 │                 │
+      ▼                 ▼                 ▼
+  ┌────────┐  MCP  ┌────────┐  MCP  ┌────────┐
+  │ hub A  │ ◄───► │ hub B  │ ◄───► │ hub C  │
+  └────────┘       └────────┘       └────────┘
+       ▲                 ▲                 ▲
+       └─── humans browse · agents query ──┘
+```
+
+Same hub serves the human (a website with subscriptions, RSS, Telegram) and the agent (MCP). Data lives where you put it. trip2g is a protocol, not a vendor.
 
 ---
 
@@ -38,16 +62,20 @@ Want your own? [Free cloud instance](https://simplecloud.2pub.me) — no termina
 **Markdown → website**
 - Wikilinks (`[[note]]`), backlinks, outlinks — global resolution, just like Obsidian
 - Composable page layouts via frontmatter: sidebars, magazine grid, TOC, custom note embeds
-- Full-text search (bleve) + semantic search (pluggable embeddings)
-- Custom domains, multi-language with `hreflang`, RSS feeds, sitemap
+- Hybrid search: bleve full-text + OpenAI embeddings, merged via reciprocal rank fusion
+- Custom domains, multi-language with `hreflang`, RSS output, sitemap
 
 **MCP server** — built into every hub:
-```
-search_notes   full-text + semantic search
-get_note       retrieve by id or slug
-list_notes     list notes accessible to the caller
-```
-Access is scoped to the caller's subscription level.
+
+| Tool | Purpose |
+|------|---------|
+| `search` | Hybrid full-text + semantic search |
+| `note_html` | Read a note (or a section) by id, path, or match |
+| `similar` | Notes similar to a given note |
+| `federated_search` / `federated_similar` / `federated_note_html` | Same, fanned out to peer hubs |
+| `instructions` | Author-defined prompt for the agent |
+
+Access is scoped to the caller's subscription. Custom tools can be defined in note frontmatter (`mcp_method:`).
 
 **Webhook agents**
 - *Change webhooks* — POST to an external agent on note create/update/remove. Agent writes notes back via API. Glob filtering, HMAC auth, depth tracking prevents recursion.
@@ -57,7 +85,7 @@ Access is scoped to the caller's subscription level.
 - Subgraph paywalls — group notes into paid products, free notes stay public
 - Crypto payments (NowPayments), Patreon and Boosty integration
 
-**Obsidian plugin** — one-click sync, hash-based diff, only changed files are uploaded
+**Obsidian plugin** — one-click sync, hash-based diff, only changed files are uploaded.
 
 ---
 
@@ -90,32 +118,32 @@ Peer hubs with trusted people or orgs. Each hub controls access per base. One ag
 |--------|--------|
 | Obsidian | ready — vault stays local, two-way sync |
 | Telegram | ready — channel publish + history mirror |
-| Notion | in progress |
-| Google Drive | in progress |
-| Linear, Slack archive, RSS | planned |
+| RSS output | ready — every base exposes feeds |
+| Notion | planned |
+| Google Drive | planned |
+| Linear, Slack archive, RSS import | planned |
 
 ---
 
 ## Template system
 
-Every page is a Jet template. Configure layout per-note via frontmatter — no code changes:
+Two paths — pick one per knowledge base.
+
+**A. Default template** (no code, frontmatter-only). Built-in trip2g layout. Compose pages from widgets and content blocks via frontmatter:
 
 ```yaml
 ---
 header: "[[Navigation]]"
-left_sidebar:
-  - TOC
-  - inlinks
-content:
-  - magazine
-  - selfcontent
+left_sidebar: [TOC, inlinks]
+content: [selfcontent, magazine]
 magazine_include_files: "blog/**/*.md"
-magazine_sort_property: published_date
 footer: "[[Footer]]"
 ---
 ```
 
-Notes can render as any content type — HTML, JSON, RSS — via `content_type` frontmatter.
+Rendered through quicktemplate. Notes can also render as HTML, JSON, RSS via `content_type` frontmatter.
+
+**B. Custom Jet templates** (full control). Drop your own `.html` files into a layouts folder and switch via `layout: path/to/template`. Templates have access to the markdown AST — iterate sections, render specific parts, customize layout down to HTML. Built on the [Jet template engine](https://github.com/CloudyKit/jet).
 
 ---
 
@@ -134,10 +162,10 @@ docker compose up
 | | |
 |---|---|
 | Backend | Go, FastHTTP, gqlgen (GraphQL) |
-| Database | SQLite (+ [Litestream](https://litestream.io), optional) |
-| Search | bleve (full-text) + pluggable embeddings (semantic) |
-| Markdown | Goldmark — wikilinks, frontmatter |
-| Templates | Jet template engine |
+| Database | SQLite + [Litestream](https://litestream.io) for streaming backup |
+| Search | bleve (full-text) + OpenAI embeddings (semantic) |
+| Markdown | [Goldmark](https://github.com/yuin/goldmark) — wikilinks, frontmatter |
+| Templates | quicktemplate (default) + [Jet](https://github.com/CloudyKit/jet) (custom) |
 | Frontend | [$mol](https://mol.hyoo.ru), TypeScript, Tiptap |
 | Assets | S3-compatible (MinIO for dev) |
 
