@@ -171,6 +171,18 @@ Load assets:
 <link rel="stylesheet" href="{{ asset("style.css") }}">
 ```
 
+Include HTML injections from site settings (analytics scripts, custom `<head>` tags):
+
+```jet
+{{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+```
+
+```jet
+{{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+```
+
+Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `</body>`. This is how Google Analytics and other site-wide scripts reach custom Jet layouts.
+
 ### Splitting content into sections
 
 `PartialRenderer` breaks a markdown note into logical blocks — useful for landing pages, FAQs, and card grids:

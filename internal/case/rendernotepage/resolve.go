@@ -53,6 +53,7 @@ type Env interface {
 		ctx context.Context,
 		arg db.GetTelegramPostLinksByNoteVersionIDParams,
 	) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
+	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 }
 
 type Request struct {

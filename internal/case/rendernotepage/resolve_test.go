@@ -34,6 +34,7 @@ type Env interface {
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 	GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error)
+	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 }
 
 func TestResolve_FreeNoteWithSubgraph(t *testing.T) {

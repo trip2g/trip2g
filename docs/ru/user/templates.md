@@ -77,6 +77,20 @@ title: Моя страница
 <script src="{{ asset("app.js") }}"></script>
 ```
 
+#### htmlInjectionsHead / htmlInjectionsBodyEnd — HTML-инъекции из настроек сайта
+
+Скрипты и теги, добавленные в настройках сайта (Google Analytics, пиксели, кастомный `<head>`), доступны в шаблоне через две переменные:
+
+```jet
+{{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+```
+
+```jet
+{{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+```
+
+`htmlInjectionsHead` — вставлять перед `</head>`, `htmlInjectionsBodyEnd` — перед `</body>`.
+
 ### PartialRenderer — контент по частям
 
 `PartialRenderer` разбирает markdown на логические блоки. Полезно для лендингов, FAQ, карточек.

@@ -290,6 +290,21 @@ func renderLayout(
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
 
+	headInjections := []db.HtmlInjection{}
+	bodyEndInjections := []db.HtmlInjection{}
+	if active, iErr := env.ActiveHTMLInjections(context.Background()); iErr == nil {
+		for _, inj := range active {
+			switch inj.Placement {
+			case "head":
+				headInjections = append(headInjections, inj)
+			case "body_end":
+				bodyEndInjections = append(bodyEndInjections, inj)
+			}
+		}
+	}
+	vars["htmlInjectionsHead"] = reflect.ValueOf(headInjections)
+	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
+
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
 		if resp.UserToken.IsAdmin() {

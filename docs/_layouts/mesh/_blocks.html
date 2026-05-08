@@ -148,6 +148,7 @@
       .wrap { overflow: hidden; }
     }
   </style>
+  {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 </head>
 <body>
   <div class="wrap">
@@ -155,6 +156,7 @@
   </div>
 
   <script defer src="{{ asset("scripts.js") }}"></script>
+  {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 </body>
 </html>
 {{ end }}

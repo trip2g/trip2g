@@ -23,8 +23,14 @@ var _ rendernotepage.Env = &EnvMock{}
 //
 //		// make and configure a mocked rendernotepage.Env
 //		mockedEnv := &EnvMock{
+//			ActiveHTMLInjectionsFunc: func(ctx context.Context) ([]db.HtmlInjection, error) {
+//				panic("mock out the ActiveHTMLInjections method")
+//			},
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
+//			},
+//			FeaturesFunc: func() features.Features {
+//				panic("mock out the Features method")
 //			},
 //			GetTelegramChatNameFunc: func(ctx context.Context, telegramChatID int64) (string, error) {
 //				panic("mock out the GetTelegramChatName method")
@@ -40,6 +46,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			},
 //			LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 //				panic("mock out the LastUserNoteView method")
+//			},
+//			LatestNoteChunksFunc: func() []model.NoteChunk {
+//				panic("mock out the LatestNoteChunks method")
 //			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
@@ -78,14 +87,14 @@ var _ rendernotepage.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// ActiveHTMLInjectionsFunc mocks the ActiveHTMLInjections method.
+	ActiveHTMLInjectionsFunc func(ctx context.Context) ([]db.HtmlInjection, error)
+
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
-
-	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
-	LatestNoteChunksFunc func() []model.NoteChunk
 
 	// GetTelegramChatNameFunc mocks the GetTelegramChatName method.
 	GetTelegramChatNameFunc func(ctx context.Context, telegramChatID int64) (string, error)
@@ -101,6 +110,9 @@ type EnvMock struct {
 
 	// LastUserNoteViewFunc mocks the LastUserNoteView method.
 	LastUserNoteViewFunc func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+
+	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
+	LatestNoteChunksFunc func() []model.NoteChunk
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
@@ -134,6 +146,11 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// ActiveHTMLInjections holds details about calls to the ActiveHTMLInjections method.
+		ActiveHTMLInjections []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// CanReadNote holds details about calls to the CanReadNote method.
 		CanReadNote []struct {
 			// Ctx is the ctx argument value.
@@ -142,9 +159,8 @@ type EnvMock struct {
 			Note *model.NoteView
 		}
 		// Features holds details about calls to the Features method.
-		Features []struct{}
-		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
-		LatestNoteChunks []struct{}
+		Features []struct {
+		}
 		// GetTelegramChatName holds details about calls to the GetTelegramChatName method.
 		GetTelegramChatName []struct {
 			// Ctx is the ctx argument value.
@@ -179,6 +195,9 @@ type EnvMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.LastUserNoteViewParams
+		}
+		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
+		LatestNoteChunks []struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -229,14 +248,15 @@ type EnvMock struct {
 			Params db.UpsertUserNoteDailyViewParams
 		}
 	}
+	lockActiveHTMLInjections                sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
 	lockFeatures                            sync.RWMutex
-	lockLatestNoteChunks                    sync.RWMutex
 	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
 	lockIncreaseUserNoteViewCount           sync.RWMutex
 	lockInsertUserNoteView                  sync.RWMutex
 	lockLastUserNoteView                    sync.RWMutex
+	lockLatestNoteChunks                    sync.RWMutex
 	lockLatestNoteViews                     sync.RWMutex
 	lockLayouts                             sync.RWMutex
 	lockListActiveUserSubgraphs             sync.RWMutex
@@ -249,45 +269,35 @@ type EnvMock struct {
 	lockUpsertUserNoteDailyView             sync.RWMutex
 }
 
-// Features calls FeaturesFunc.
-func (mock *EnvMock) Features() features.Features {
-	if mock.FeaturesFunc == nil {
-		panic("EnvMock.FeaturesFunc: method is nil but Env.Features was just called")
+// ActiveHTMLInjections calls ActiveHTMLInjectionsFunc.
+func (mock *EnvMock) ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error) {
+	if mock.ActiveHTMLInjectionsFunc == nil {
+		panic("EnvMock.ActiveHTMLInjectionsFunc: method is nil but Env.ActiveHTMLInjections was just called")
 	}
-	callInfo := struct{}{}
-	mock.lockFeatures.Lock()
-	mock.calls.Features = append(mock.calls.Features, callInfo)
-	mock.lockFeatures.Unlock()
-	return mock.FeaturesFunc()
-}
-
-// FeaturesCalls gets all the calls that were made to Features.
-func (mock *EnvMock) FeaturesCalls() []struct{} {
-	var calls []struct{}
-	mock.lockFeatures.RLock()
-	calls = mock.calls.Features
-	mock.lockFeatures.RUnlock()
-	return calls
-}
-
-// LatestNoteChunks calls LatestNoteChunksFunc.
-func (mock *EnvMock) LatestNoteChunks() []model.NoteChunk {
-	if mock.LatestNoteChunksFunc == nil {
-		panic("EnvMock.LatestNoteChunksFunc: method is nil but Env.LatestNoteChunks was just called")
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
 	}
-	callInfo := struct{}{}
-	mock.lockLatestNoteChunks.Lock()
-	mock.calls.LatestNoteChunks = append(mock.calls.LatestNoteChunks, callInfo)
-	mock.lockLatestNoteChunks.Unlock()
-	return mock.LatestNoteChunksFunc()
+	mock.lockActiveHTMLInjections.Lock()
+	mock.calls.ActiveHTMLInjections = append(mock.calls.ActiveHTMLInjections, callInfo)
+	mock.lockActiveHTMLInjections.Unlock()
+	return mock.ActiveHTMLInjectionsFunc(ctx)
 }
 
-// LatestNoteChunksCalls gets all the calls that were made to LatestNoteChunks.
-func (mock *EnvMock) LatestNoteChunksCalls() []struct{} {
-	var calls []struct{}
-	mock.lockLatestNoteChunks.RLock()
-	calls = mock.calls.LatestNoteChunks
-	mock.lockLatestNoteChunks.RUnlock()
+// ActiveHTMLInjectionsCalls gets all the calls that were made to ActiveHTMLInjections.
+// Check the length with:
+//
+//	len(mockedEnv.ActiveHTMLInjectionsCalls())
+func (mock *EnvMock) ActiveHTMLInjectionsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockActiveHTMLInjections.RLock()
+	calls = mock.calls.ActiveHTMLInjections
+	mock.lockActiveHTMLInjections.RUnlock()
 	return calls
 }
 
@@ -324,6 +334,33 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
+	return calls
+}
+
+// Features calls FeaturesFunc.
+func (mock *EnvMock) Features() features.Features {
+	if mock.FeaturesFunc == nil {
+		panic("EnvMock.FeaturesFunc: method is nil but Env.Features was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFeatures.Lock()
+	mock.calls.Features = append(mock.calls.Features, callInfo)
+	mock.lockFeatures.Unlock()
+	return mock.FeaturesFunc()
+}
+
+// FeaturesCalls gets all the calls that were made to Features.
+// Check the length with:
+//
+//	len(mockedEnv.FeaturesCalls())
+func (mock *EnvMock) FeaturesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFeatures.RLock()
+	calls = mock.calls.Features
+	mock.lockFeatures.RUnlock()
 	return calls
 }
 
@@ -504,6 +541,33 @@ func (mock *EnvMock) LastUserNoteViewCalls() []struct {
 	mock.lockLastUserNoteView.RLock()
 	calls = mock.calls.LastUserNoteView
 	mock.lockLastUserNoteView.RUnlock()
+	return calls
+}
+
+// LatestNoteChunks calls LatestNoteChunksFunc.
+func (mock *EnvMock) LatestNoteChunks() []model.NoteChunk {
+	if mock.LatestNoteChunksFunc == nil {
+		panic("EnvMock.LatestNoteChunksFunc: method is nil but Env.LatestNoteChunks was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteChunks.Lock()
+	mock.calls.LatestNoteChunks = append(mock.calls.LatestNoteChunks, callInfo)
+	mock.lockLatestNoteChunks.Unlock()
+	return mock.LatestNoteChunksFunc()
+}
+
+// LatestNoteChunksCalls gets all the calls that were made to LatestNoteChunks.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteChunksCalls())
+func (mock *EnvMock) LatestNoteChunksCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteChunks.RLock()
+	calls = mock.calls.LatestNoteChunks
+	mock.lockLatestNoteChunks.RUnlock()
 	return calls
 }
 
