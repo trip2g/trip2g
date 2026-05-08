@@ -216,6 +216,26 @@ _layouts/
 {{ end }}
 ```
 
+### Assets across layout files
+
+`asset()` looks up URLs in a single table that merges assets from every layout file. So a block defined in `cases.html` can call `asset("topo.svg")` and still resolve correctly when the page is rendered through `index.html` (for example via `yield`).
+
+Keys are absolute paths (`_layouts/mesh/topo.svg`), so there are no collisions between layouts.
+
+The engine walks `import` and yield chains to discover `asset()` calls automatically. If a dependency hides in a non-obvious place, hint the discovery walker with a comment:
+
+```jet
+{{ import "blocks" }}
+
+<!-- {{ asset("style.css") }} -->
+
+{{ yield main_layout() content }}
+  ...
+{{ end }}
+```
+
+The comment is stripped from the rendered HTML, but the dependency is guaranteed to be picked up.
+
 ### Jet template syntax
 
 Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
