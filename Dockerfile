@@ -3,8 +3,7 @@ FROM node:25-bookworm-slim AS frontend
 
 RUN apt update && \
   apt install -y git && \
-  git clone https://github.com/hyoo-ru/mam.git /mam && \
-  cd /mam && git checkout 6a6b3a001afbeef77f2b82a8274aac6faa60292a
+  git clone https://github.com/hyoo-ru/mam.git /mam
 
 WORKDIR /mam
 
