@@ -12,7 +12,7 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg createusertoken_test . Env
 
 func TestResolve_Success(t *testing.T) {
 	ctx := context.Background()
