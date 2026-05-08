@@ -85,12 +85,29 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		jl.sourceIDs = append(jl.sourceIDs, source.ID)
 	}
 
+	// A page (e.g. _layouts/mesh/index.html) yields blocks from component files
+	// (cases.html, compat.html, ...). asset() calls inside those components are
+	// resolved through the page's closure (source.Assets), but note_version_assets
+	// links each SVG to the component file's version_id only — so the page's map
+	// is missing them. Asset keys are absolute paths (e.g. _layouts/mesh/x.svg),
+	// so a flat union across all layout source files is collision-safe.
+	mergedAssets := make(map[string]*model.NoteAssetReplace)
+	for _, source := range sourceFiles {
+		for k, v := range source.Assets {
+			mergedAssets[k] = v
+		}
+	}
+	for i := range sourceFiles {
+		sourceFiles[i].Assets = mergedAssets
+	}
+
 	jl.layouts = model.Layouts{
 		Map: make(map[string]model.Layout),
 		Blocks: model.LayoutBlocks{
 			ByName:     make(map[string]model.LayoutBlock),
 			ByFullName: make(map[string]model.LayoutBlock),
 		},
+		AssetReplaces: mergedAssets,
 		Load: func(source model.LayoutSourceFile) model.Layout {
 			view, parseErr := jl.load(source)
 			layout := model.Layout{View: view}

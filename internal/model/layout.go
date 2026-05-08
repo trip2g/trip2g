@@ -18,7 +18,10 @@ type Layout struct {
 	// Used for syncing back to clients
 	OriginalContent string
 
-	AssetReplaces map[string]*NoteAssetReplace
+	// AssetReplaces is the merged asset URL map shared across all layouts
+	// (see Layouts.AssetReplaces). Excluded from JSON to avoid duplication —
+	// debug output exposes the shared map once on Layouts.
+	AssetReplaces map[string]*NoteAssetReplace `json:"-"`
 
 	// Warnings contains issues detected during loading (e.g., parse errors).
 	Warnings []NoteWarning
@@ -39,7 +42,13 @@ type LayoutSourceFile struct {
 type Layouts struct {
 	Map    map[string]Layout
 	Blocks LayoutBlocks
-	Load   func(source LayoutSourceFile) Layout `json:"-"`
+	// AssetReplaces is the union of all layout-source assets keyed by absolute
+	// path. A page (e.g. _layouts/mesh/index.html) yields blocks from component
+	// files whose asset() calls must resolve through the page's closure; since
+	// note_version_assets links each asset to a single version_id, we merge
+	// across all layouts into one shared lookup table.
+	AssetReplaces map[string]*NoteAssetReplace
+	Load          func(source LayoutSourceFile) Layout `json:"-"`
 }
 
 // LayoutBlocks provides block lookup by name or full name.
