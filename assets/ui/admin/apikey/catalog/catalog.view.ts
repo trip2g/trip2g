@@ -16,6 +16,7 @@ namespace $.$$ {
 							id
 							email
 						}
+						enableMcpAdminTools
 					}
 				}
 			}
@@ -78,6 +79,10 @@ namespace $.$$ {
 
 		override row_disabled(id: any): boolean {
 			return !!this.row( id ).disabledAt
+		}
+
+		override row_enable_mcp_admin_tools(id: any): boolean {
+			return !!this.row( id ).enableMcpAdminTools
 		}
 	}
 }

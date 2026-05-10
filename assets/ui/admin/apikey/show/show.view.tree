@@ -2,8 +2,12 @@ $trip2g_admin_apikey_show $mol_page
 	title \API Key Details
 	apikey_id 0
 	disabled false
+	enable_mcp_admin_tools false
 	DisableButton $trip2g_admin_apikey_button_disable
 		id <= apikey_id
+	McpAdminToolsButton $trip2g_admin_apikey_button_mcpadmintools
+		id <= apikey_id
+		enabled <= enable_mcp_admin_tools
 	body /
 		<= Logs $mol_list
 			rows <= logs /

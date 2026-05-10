@@ -26,11 +26,8 @@ namespace $.$$ {
 		}
 
 		override body() {
-			if (this.disabled()) {
-				return super.body()
-			}
-
-			return [this.DisableButton(), ...super.body()]
+			const buttons = this.disabled() ? [] : [this.DisableButton()]
+			return [...buttons, this.McpAdminToolsButton(), ...super.body()]
 		}
 
 		override logs() {

@@ -9,6 +9,7 @@ $trip2g_admin_apikey_catalog $trip2g_admin_catalog
 	Content* $trip2g_admin_apikey_show
 		apikey_id <= row_id* 0
 		disabled <= row_disabled* false
+		enable_mcp_admin_tools <= row_enable_mcp_admin_tools* false
 	AddForm $trip2g_admin_apikey_create
 	menu_link_content* / <= ApiKeyItem* $mol_view
 		sub /
