@@ -138,17 +138,102 @@ body {
 
 // --- Lang switcher ---
 
+@mixin lang-flag {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 13px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 2px;
+}
+
 .lang-switcher {
   display: flex;
-  gap: 0.375rem;
   align-items: center;
-  justify-content: flex-start;
+  gap: 0.375rem;
   margin: 0 0 0.75rem 0;
 
   &__label {
     font-size: 0.8125rem;
     color: var(--pico-muted-color);
     white-space: nowrap;
+  }
+
+  &__picker {
+    position: relative;
+
+    &[open] .lang-switcher__current {
+      border-color: var(--pico-primary);
+      color: var(--pico-primary);
+
+      &::after {
+        transform: rotate(-135deg);
+        margin-bottom: -2px;
+      }
+    }
+  }
+
+  &__current {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+    color: var(--pico-color);
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    transition: border-color 0.15s, color 0.15s;
+    user-select: none;
+
+    &::-webkit-details-marker { display: none; }
+
+    &::before { @include lang-flag; }
+
+    &::after {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-right: 1.5px solid var(--pico-muted-color);
+      border-bottom: 1.5px solid var(--pico-muted-color);
+      transform: rotate(45deg);
+      margin-left: 0.25rem;
+      margin-bottom: 2px;
+      transition: transform 0.15s, margin-bottom 0.15s;
+    }
+
+    &--de::before { background-image: url('/assets/langs/de.png'); }
+    &--en::before { background-image: url('/assets/langs/us.png'); }
+    &--us::before { background-image: url('/assets/langs/us.png'); }
+    &--ru::before { background-image: url('/assets/langs/ru.png'); }
+    &--fr::before { background-image: url('/assets/langs/fr.png'); }
+    &--es::before { background-image: url('/assets/langs/es.png'); }
+    &--zh::before { background-image: url('/assets/langs/cn.png'); }
+    &--ja::before { background-image: url('/assets/langs/jp.png'); }
+    &--pt::before { background-image: url('/assets/langs/pt.png'); }
+    &--ar::before { background-image: url('/assets/langs/sa.png'); }
+    &--ko::before { background-image: url('/assets/langs/kr.png'); }
+  }
+
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 100;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 6px;
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 100%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   &__alt {
@@ -161,27 +246,19 @@ body {
     font-weight: 500;
     text-decoration: none;
     color: var(--pico-muted-color);
-    background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-muted-border-color);
-    transition: border-color 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
 
     &:hover {
       color: var(--pico-primary);
-      border-color: var(--pico-primary);
+      background: var(--pico-card-sectioning-background-color);
     }
 
-    &::before {
-      content: '';
-      display: inline-block;
-      width: 18px;
-      height: 13px;
-      background-size: cover;
-      background-position: center;
-      border-radius: 2px;
-    }
+    &::before { @include lang-flag; }
 
     &--de::before { background-image: url('/assets/langs/de.png'); }
-    &--en::before { background-image: url('/assets/langs/gb.png'); }
+    &--en::before { background-image: url('/assets/langs/us.png'); }
+    &--us::before { background-image: url('/assets/langs/us.png'); }
     &--ru::before { background-image: url('/assets/langs/ru.png'); }
     &--fr::before { background-image: url('/assets/langs/fr.png'); }
     &--es::before { background-image: url('/assets/langs/es.png'); }
@@ -190,14 +267,6 @@ body {
     &--pt::before { background-image: url('/assets/langs/pt.png'); }
     &--ar::before { background-image: url('/assets/langs/sa.png'); }
     &--ko::before { background-image: url('/assets/langs/kr.png'); }
-
-    &--tg::before {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%2326A5E4'/%3E%3Cpath d='M5.432 11.873l10.772-4.456c.5-.217.937.122.775.878l-1.835 8.66c-.137.618-.5.768-.997.478l-2.76-2.036-1.331 1.282c-.148.148-.272.272-.556.272l.198-2.808 5.1-4.608c.222-.198-.048-.307-.345-.11L8.3 14.576l-2.68-.836c-.582-.185-.593-.582.122-.86z' fill='%23fff'/%3E%3C/svg%3E");
-      background-size: cover;
-    }
   }
 }
 

@@ -40,11 +40,17 @@
     </style>
 
     {% if resp.NoteView.HasLangAlternatives() %}
-      <nav class="lang-switcher">
-        {% for _, alt := range resp.NoteView.LangAlternativesList() %}
-          <a href="{%s alt.Permalink() %}" class="lang-switcher__alt lang-switcher__alt--{%s alt.Lang() %}">{%s alt.Lang() %}</a>
-        {% endfor %}
-      </nav>
+      <div class="lang-switcher">
+        <span class="lang-switcher__label">Read in:</span>
+        <details class="lang-switcher__picker">
+          <summary class="lang-switcher__current lang-switcher__current--{%s resp.NoteView.Lang() %}">{%s resp.NoteView.Lang() %}</summary>
+          <div class="lang-switcher__dropdown">
+            {% for _, alt := range resp.NoteView.LangAlternativesList() %}
+            <a href="{%s alt.Permalink() %}" class="lang-switcher__alt lang-switcher__alt--{%s alt.Lang() %}">{%s alt.Lang() %}</a>
+            {% endfor %}
+          </div>
+        </details>
+      </div>
     {% endif %}
 
     <div class="noteview__content-header">

@@ -1229,271 +1229,284 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 		if ctx.Note != nil && ctx.Note.HasLangAlternatives() {
 //line views.html:295
 			qw422016.N().S(`
-  <nav class="lang-switcher">
+  <div class="lang-switcher">
     <span class="lang-switcher__label">Read in:</span>
-    `)
-//line views.html:298
+    <details class="lang-switcher__picker">
+      <summary class="lang-switcher__current lang-switcher__current--`)
+//line views.html:299
+			qw422016.N().S(ctx.Note.Lang())
+//line views.html:299
+			qw422016.N().S(`">`)
+//line views.html:299
+			qw422016.N().S(ctx.Note.Lang())
+//line views.html:299
+			qw422016.N().S(`</summary>
+      <div class="lang-switcher__dropdown">
+        `)
+//line views.html:301
 			for _, alt := range ctx.Note.LangAlternativesList() {
-//line views.html:298
+//line views.html:301
 				qw422016.N().S(`
-    <a href="`)
-//line views.html:299
+        <a href="`)
+//line views.html:302
 				qw422016.N().S(alt.PermalinkEncoded())
-//line views.html:299
+//line views.html:302
 				qw422016.N().S(`" class="lang-switcher__alt lang-switcher__alt--`)
-//line views.html:299
+//line views.html:302
 				qw422016.N().S(alt.Lang())
-//line views.html:299
+//line views.html:302
 				qw422016.N().S(`">`)
-//line views.html:299
+//line views.html:302
 				qw422016.N().S(alt.Lang())
-//line views.html:299
+//line views.html:302
 				qw422016.N().S(`</a>
-    `)
-//line views.html:300
+        `)
+//line views.html:303
 			}
-//line views.html:300
+//line views.html:303
 			qw422016.N().S(`
-  </nav>
+      </div>
+    </details>
+  </div>
   `)
-//line views.html:302
+//line views.html:307
 		}
-//line views.html:302
+//line views.html:307
 		qw422016.N().S(`
   `)
-//line views.html:303
+//line views.html:308
 		tgLinks := ctx.AllTelegramLinks()
 
-//line views.html:303
+//line views.html:308
 		qw422016.N().S(`
   `)
-//line views.html:304
+//line views.html:309
 		if len(tgLinks) > 0 {
-//line views.html:304
+//line views.html:309
 			qw422016.N().S(`
   <div class="tg-buttons">
     `)
-//line views.html:306
+//line views.html:311
 			for _, link := range tgLinks {
-//line views.html:306
+//line views.html:311
 				qw422016.N().S(`
     <a href="`)
-//line views.html:307
+//line views.html:312
 				qw422016.N().S(link.URL)
-//line views.html:307
+//line views.html:312
 				qw422016.N().S(`" class="tg-button" target="_blank" rel="noopener">
       <span class="tg-button__icon"></span>
       `)
-//line views.html:309
+//line views.html:314
 				if link.ChatTitle != "" {
-//line views.html:309
+//line views.html:314
 					qw422016.E().S(ctx.T("tg_read_on"))
-//line views.html:309
+//line views.html:314
 					qw422016.N().S(` @`)
-//line views.html:309
+//line views.html:314
 					qw422016.E().S(link.ChatTitle)
-//line views.html:309
+//line views.html:314
 				} else {
-//line views.html:309
+//line views.html:314
 					qw422016.E().S(ctx.T("tg_read"))
-//line views.html:309
+//line views.html:314
 				}
-//line views.html:309
+//line views.html:314
 				qw422016.N().S(`
     </a>
     `)
-//line views.html:311
+//line views.html:316
 			}
-//line views.html:311
+//line views.html:316
 			qw422016.N().S(`
   </div>
   `)
-//line views.html:313
+//line views.html:318
 		}
-//line views.html:313
+//line views.html:318
 		qw422016.N().S(`
   `)
-//line views.html:314
+//line views.html:319
 		if !ctx.Note.HasH1() {
-//line views.html:314
+//line views.html:319
 			qw422016.N().S(`<h1 class="content__title">`)
-//line views.html:314
+//line views.html:319
 			qw422016.E().S(ctx.Note.Title())
-//line views.html:314
+//line views.html:319
 			qw422016.N().S(`</h1>`)
-//line views.html:314
+//line views.html:319
 		}
-//line views.html:314
+//line views.html:319
 		qw422016.N().S(`
   <div class="content__body">`)
-//line views.html:315
+//line views.html:320
 		qw422016.N().S(ctx.Note.HTMLString())
-//line views.html:315
+//line views.html:320
 		qw422016.N().S(`</div>
 </article>
 `)
-//line views.html:317
+//line views.html:322
 	}
-//line views.html:317
+//line views.html:322
 	qw422016.N().S(`
 `)
-//line views.html:318
+//line views.html:323
 }
 
-//line views.html:318
+//line views.html:323
 func WriteSelfContent(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:318
+//line views.html:323
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:318
+//line views.html:323
 	StreamSelfContent(qw422016, ctx)
-//line views.html:318
+//line views.html:323
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:318
+//line views.html:323
 }
 
-//line views.html:318
+//line views.html:323
 func SelfContent(ctx *Ctx) string {
-//line views.html:318
+//line views.html:323
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:318
+//line views.html:323
 	WriteSelfContent(qb422016, ctx)
-//line views.html:318
+//line views.html:323
 	qs422016 := string(qb422016.B)
-//line views.html:318
+//line views.html:323
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:318
+//line views.html:323
 	return qs422016
-//line views.html:318
+//line views.html:323
 }
 
-//line views.html:320
+//line views.html:325
 func StreamMagazine(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:320
+//line views.html:325
 	qw422016.N().S(`
 `)
-//line views.html:321
+//line views.html:326
 	items := ctx.MagazineItems()
 
-//line views.html:321
+//line views.html:326
 	qw422016.N().S(`
 `)
-//line views.html:322
+//line views.html:327
 	if len(items) > 0 {
-//line views.html:322
+//line views.html:327
 		qw422016.N().S(`
 <div class="magazine">
   `)
-//line views.html:324
+//line views.html:329
 		StreamMagazineCard(qw422016, ctx, items[0], "")
-//line views.html:324
+//line views.html:329
 		qw422016.N().S(`
 
   `)
-//line views.html:326
+//line views.html:331
 		if len(items) > 1 {
-//line views.html:326
+//line views.html:331
 			qw422016.N().S(`
   `)
-//line views.html:328
+//line views.html:333
 			gridEnd := len(items)
 			if gridEnd > 5 {
 				gridEnd = 5
 			}
 
-//line views.html:330
+//line views.html:335
 			qw422016.N().S(`
   <div class="magazine__grid">
     `)
-//line views.html:332
+//line views.html:337
 			for _, item := range items[1:gridEnd] {
-//line views.html:332
+//line views.html:337
 				qw422016.N().S(`
     `)
-//line views.html:333
+//line views.html:338
 				StreamMagazineCard(qw422016, ctx, item, "magazine-item--grid")
-//line views.html:333
+//line views.html:338
 				qw422016.N().S(`
     `)
-//line views.html:334
+//line views.html:339
 			}
-//line views.html:334
+//line views.html:339
 			qw422016.N().S(`
   </div>
   `)
-//line views.html:336
+//line views.html:341
 		}
-//line views.html:336
+//line views.html:341
 		qw422016.N().S(`
 
   `)
-//line views.html:338
+//line views.html:343
 		if len(items) > 5 {
-//line views.html:338
+//line views.html:343
 			qw422016.N().S(`
   <div class="magazine__list">
     `)
-//line views.html:340
+//line views.html:345
 			for _, item := range items[5:] {
-//line views.html:340
+//line views.html:345
 				qw422016.N().S(`
     `)
-//line views.html:341
+//line views.html:346
 				StreamMagazineCard(qw422016, ctx, item, "")
-//line views.html:341
+//line views.html:346
 				qw422016.N().S(`
     `)
-//line views.html:342
+//line views.html:347
 			}
-//line views.html:342
+//line views.html:347
 			qw422016.N().S(`
   </div>
   `)
-//line views.html:344
+//line views.html:349
 		}
-//line views.html:344
+//line views.html:349
 		qw422016.N().S(`
 </div>
 `)
-//line views.html:346
-	}
-//line views.html:346
-	qw422016.N().S(`
-`)
-//line views.html:347
-}
-
-//line views.html:347
-func WriteMagazine(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:347
-	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:347
-	StreamMagazine(qw422016, ctx)
-//line views.html:347
-	qt422016.ReleaseWriter(qw422016)
-//line views.html:347
-}
-
-//line views.html:347
-func Magazine(ctx *Ctx) string {
-//line views.html:347
-	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:347
-	WriteMagazine(qb422016, ctx)
-//line views.html:347
-	qs422016 := string(qb422016.B)
-//line views.html:347
-	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:347
-	return qs422016
-//line views.html:347
-}
-
-//line views.html:349
-func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, extraClass string) {
-//line views.html:349
-	qw422016.N().S(`
-`)
 //line views.html:351
+	}
+//line views.html:351
+	qw422016.N().S(`
+`)
+//line views.html:352
+}
+
+//line views.html:352
+func WriteMagazine(qq422016 qtio422016.Writer, ctx *Ctx) {
+//line views.html:352
+	qw422016 := qt422016.AcquireWriter(qq422016)
+//line views.html:352
+	StreamMagazine(qw422016, ctx)
+//line views.html:352
+	qt422016.ReleaseWriter(qw422016)
+//line views.html:352
+}
+
+//line views.html:352
+func Magazine(ctx *Ctx) string {
+//line views.html:352
+	qb422016 := qt422016.AcquireByteBuffer()
+//line views.html:352
+	WriteMagazine(qb422016, ctx)
+//line views.html:352
+	qs422016 := string(qb422016.B)
+//line views.html:352
+	qt422016.ReleaseByteBuffer(qb422016)
+//line views.html:352
+	return qs422016
+//line views.html:352
+}
+
+//line views.html:354
+func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, extraClass string) {
+//line views.html:354
+	qw422016.N().S(`
+`)
+//line views.html:356
 	itemClass := "magazine-item magazine-item--list"
 	if item.Size == MagazineItemFeatured {
 		itemClass = "magazine-item magazine-item--featured"
@@ -1504,205 +1517,205 @@ func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, 
 		itemClass += " " + extraClass
 	}
 
-//line views.html:360
+//line views.html:365
 	qw422016.N().S(`
 <article class="`)
-//line views.html:361
+//line views.html:366
 	qw422016.N().S(itemClass)
-//line views.html:361
+//line views.html:366
 	qw422016.N().S(`">
 `)
-//line views.html:362
+//line views.html:367
 	if item.Size == MagazineItemFeatured {
-//line views.html:362
+//line views.html:367
 		qw422016.N().S(`
   <h2 class="magazine-item__title"><a class="magazine-item__link" href="`)
-//line views.html:363
+//line views.html:368
 		qw422016.N().S(item.Note.PermalinkEncoded())
-//line views.html:363
+//line views.html:368
 		qw422016.N().S(`">`)
-//line views.html:363
+//line views.html:368
 		qw422016.E().S(item.Note.Title())
-//line views.html:363
+//line views.html:368
 		qw422016.N().S(`</a></h2>
   `)
-//line views.html:364
+//line views.html:369
 	} else {
-//line views.html:364
+//line views.html:369
 		qw422016.N().S(`
   <h3 class="magazine-item__title"><a class="magazine-item__link" href="`)
-//line views.html:365
+//line views.html:370
 		qw422016.N().S(item.Note.PermalinkEncoded())
-//line views.html:365
+//line views.html:370
 		qw422016.N().S(`">`)
-//line views.html:365
+//line views.html:370
 		qw422016.E().S(item.Note.Title())
-//line views.html:365
+//line views.html:370
 		qw422016.N().S(`</a></h3>
   `)
-//line views.html:366
+//line views.html:371
 	}
-//line views.html:366
+//line views.html:371
 	qw422016.N().S(`
   `)
-//line views.html:367
+//line views.html:372
 	pr := item.Note.PartialRenderer()
 
-//line views.html:367
+//line views.html:372
 	qw422016.N().S(`
   `)
-//line views.html:368
+//line views.html:373
 	if pr != nil {
-//line views.html:368
+//line views.html:373
 		qw422016.N().S(`
   `)
-//line views.html:369
+//line views.html:374
 		intro := pr.Introduce()
 
-//line views.html:369
+//line views.html:374
 		qw422016.N().S(`
   `)
-//line views.html:370
+//line views.html:375
 		if intro.ContentHTML != "" {
-//line views.html:370
+//line views.html:375
 			qw422016.N().S(`
   <p class="magazine-item__excerpt">`)
-//line views.html:371
+//line views.html:376
 			qw422016.N().S(intro.ContentHTML)
-//line views.html:371
+//line views.html:376
 			qw422016.N().S(`</p>
   `)
-//line views.html:372
+//line views.html:377
 		}
-//line views.html:372
+//line views.html:377
 		qw422016.N().S(`
   `)
-//line views.html:373
+//line views.html:378
 	}
-//line views.html:373
+//line views.html:378
 	qw422016.N().S(`
   <div class="magazine-item__footer">
     <a class="magazine-item__readmore" href="`)
-//line views.html:375
+//line views.html:380
 	qw422016.N().S(item.Note.PermalinkEncoded())
-//line views.html:375
+//line views.html:380
 	qw422016.N().S(`">`)
-//line views.html:375
+//line views.html:380
 	qw422016.E().S(ctx.T("readmore"))
-//line views.html:375
+//line views.html:380
 	qw422016.N().S(`</a>
     <time class="magazine-item__date">`)
-//line views.html:376
+//line views.html:381
 	qw422016.E().S(item.Note.CreatedAt().Format("2006-01-02"))
-//line views.html:376
+//line views.html:381
 	qw422016.N().S(`</time>
   </div>
 </article>
 `)
-//line views.html:379
+//line views.html:384
 }
 
-//line views.html:379
+//line views.html:384
 func WriteMagazineCard(qq422016 qtio422016.Writer, ctx *Ctx, item MagazineItem, extraClass string) {
-//line views.html:379
+//line views.html:384
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:379
+//line views.html:384
 	StreamMagazineCard(qw422016, ctx, item, extraClass)
-//line views.html:379
+//line views.html:384
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:379
+//line views.html:384
 }
 
-//line views.html:379
+//line views.html:384
 func MagazineCard(ctx *Ctx, item MagazineItem, extraClass string) string {
-//line views.html:379
+//line views.html:384
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:379
+//line views.html:384
 	WriteMagazineCard(qb422016, ctx, item, extraClass)
-//line views.html:379
+//line views.html:384
 	qs422016 := string(qb422016.B)
-//line views.html:379
+//line views.html:384
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:379
+//line views.html:384
 	return qs422016
-//line views.html:379
+//line views.html:384
 }
 
-//line views.html:381
+//line views.html:386
 func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templateviews.Note, hasLeft bool, hasRight bool) {
-//line views.html:381
+//line views.html:386
 	qw422016.N().S(`
 <header class="site-header">
   <div class="site-header__content">
     `)
-//line views.html:384
+//line views.html:389
 	if hasLeft {
-//line views.html:384
+//line views.html:389
 		qw422016.N().S(`
     <button class="site-header__hamburger site-header__hamburger--left" aria-label="Open menu" id="btn-left">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     `)
-//line views.html:388
+//line views.html:393
 	}
-//line views.html:388
+//line views.html:393
 	qw422016.N().S(`
     `)
-//line views.html:389
+//line views.html:394
 	logoURL := headerNote.FirstImageURL()
 
-//line views.html:389
+//line views.html:394
 	qw422016.N().S(`
     `)
-//line views.html:390
+//line views.html:395
 	if logoURL != "" {
-//line views.html:390
+//line views.html:395
 		qw422016.N().S(`
     <a class="site-header__logo" href="/"><img src="`)
-//line views.html:391
+//line views.html:396
 		qw422016.N().S(logoURL)
-//line views.html:391
+//line views.html:396
 		qw422016.N().S(`" alt="Logo"></a>
     `)
-//line views.html:392
+//line views.html:397
 	}
-//line views.html:392
+//line views.html:397
 	qw422016.N().S(`
     `)
-//line views.html:393
+//line views.html:398
 	navHTML := headerNote.FirstListHTML()
 
-//line views.html:393
+//line views.html:398
 	qw422016.N().S(`
     `)
-//line views.html:394
+//line views.html:399
 	if navHTML != "" {
-//line views.html:394
+//line views.html:399
 		qw422016.N().S(`
     <nav class="site-header__nav">`)
-//line views.html:395
+//line views.html:400
 		qw422016.N().S(navHTML)
-//line views.html:395
+//line views.html:400
 		qw422016.N().S(`</nav>
     `)
-//line views.html:396
+//line views.html:401
 	}
-//line views.html:396
+//line views.html:401
 	qw422016.N().S(`
 
     <div class="site-header__space" mol_view_root="$trip2g_user_space"></div>
     `)
-//line views.html:399
+//line views.html:404
 	if hasRight {
-//line views.html:399
+//line views.html:404
 		qw422016.N().S(`
     <button class="site-header__hamburger site-header__hamburger--right" aria-label="Open related" id="btn-right">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     </button>
     `)
-//line views.html:403
+//line views.html:408
 	}
-//line views.html:403
+//line views.html:408
 	qw422016.N().S(`
   </div>
 </header>
@@ -1711,291 +1724,291 @@ func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templatev
   <div mol_view_root="$trip2g_user_search"></div>
 </div>
 `)
-//line views.html:410
+//line views.html:415
 }
 
-//line views.html:410
+//line views.html:415
 func WriteSiteHeader(qq422016 qtio422016.Writer, ctx *Ctx, headerNote *templateviews.Note, hasLeft bool, hasRight bool) {
-//line views.html:410
+//line views.html:415
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:410
+//line views.html:415
 	StreamSiteHeader(qw422016, ctx, headerNote, hasLeft, hasRight)
-//line views.html:410
+//line views.html:415
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:410
+//line views.html:415
 }
 
-//line views.html:410
+//line views.html:415
 func SiteHeader(ctx *Ctx, headerNote *templateviews.Note, hasLeft bool, hasRight bool) string {
-//line views.html:410
+//line views.html:415
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:410
+//line views.html:415
 	WriteSiteHeader(qb422016, ctx, headerNote, hasLeft, hasRight)
-//line views.html:410
+//line views.html:415
 	qs422016 := string(qb422016.B)
-//line views.html:410
+//line views.html:415
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:410
+//line views.html:415
 	return qs422016
-//line views.html:410
+//line views.html:415
 }
 
-//line views.html:412
+//line views.html:417
 func StreamSiteFooter(qw422016 *qt422016.Writer, ctx *Ctx, footerNote *templateviews.Note) {
-//line views.html:412
+//line views.html:417
 	qw422016.N().S(`
 <footer class="site-footer">
   <div class="site-footer__content">
     `)
-//line views.html:415
+//line views.html:420
 	intro := footerNote.PartialRenderer().Introduce()
 
-//line views.html:415
+//line views.html:420
 	qw422016.N().S(`
     `)
-//line views.html:416
+//line views.html:421
 	if intro.ContentHTML != "" {
-//line views.html:416
+//line views.html:421
 		qw422016.N().S(`
     <div class="site-footer__brand">
       `)
-//line views.html:418
+//line views.html:423
 		qw422016.N().S(intro.ContentHTML)
-//line views.html:418
+//line views.html:423
 		qw422016.N().S(`
     </div>
     `)
-//line views.html:420
+//line views.html:425
 	}
-//line views.html:420
+//line views.html:425
 	qw422016.N().S(`
     `)
-//line views.html:421
+//line views.html:426
 	sections := footerNote.PartialRenderer().Sections(3)
 
-//line views.html:421
+//line views.html:426
 	qw422016.N().S(`
     `)
-//line views.html:422
+//line views.html:427
 	if len(sections) > 1 {
-//line views.html:422
+//line views.html:427
 		qw422016.N().S(`
     <div class="site-footer__links site-footer__links--columns">
       `)
-//line views.html:424
+//line views.html:429
 		for _, sec := range sections {
-//line views.html:424
+//line views.html:429
 			qw422016.N().S(`
       <div class="site-footer__column">
         <p class="site-footer__column-title">`)
-//line views.html:426
+//line views.html:431
 			qw422016.N().S(sec.TitleHTML)
-//line views.html:426
+//line views.html:431
 			qw422016.N().S(`</p>
         `)
-//line views.html:427
+//line views.html:432
 			qw422016.N().S(sec.ContentHTML)
-//line views.html:427
+//line views.html:432
 			qw422016.N().S(`
       </div>
       `)
-//line views.html:429
+//line views.html:434
 		}
-//line views.html:429
+//line views.html:434
 		qw422016.N().S(`
     </div>
     `)
-//line views.html:431
+//line views.html:436
 	} else {
-//line views.html:431
+//line views.html:436
 		qw422016.N().S(`
     `)
-//line views.html:432
+//line views.html:437
 		listHTML := footerNote.FirstListHTML()
 
-//line views.html:432
+//line views.html:437
 		qw422016.N().S(`
     `)
-//line views.html:433
+//line views.html:438
 		if listHTML != "" {
-//line views.html:433
+//line views.html:438
 			qw422016.N().S(`
     <div class="site-footer__links site-footer__links--inline">`)
-//line views.html:434
+//line views.html:439
 			qw422016.N().S(listHTML)
-//line views.html:434
+//line views.html:439
 			qw422016.N().S(`</div>
     `)
-//line views.html:435
+//line views.html:440
 		}
-//line views.html:435
+//line views.html:440
 		qw422016.N().S(`
     `)
-//line views.html:436
+//line views.html:441
 	}
-//line views.html:436
+//line views.html:441
 	qw422016.N().S(`
   </div>
 </footer>
 `)
-//line views.html:439
+//line views.html:444
 }
 
-//line views.html:439
+//line views.html:444
 func WriteSiteFooter(qq422016 qtio422016.Writer, ctx *Ctx, footerNote *templateviews.Note) {
-//line views.html:439
+//line views.html:444
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:439
+//line views.html:444
 	StreamSiteFooter(qw422016, ctx, footerNote)
-//line views.html:439
+//line views.html:444
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:439
+//line views.html:444
 }
 
-//line views.html:439
+//line views.html:444
 func SiteFooter(ctx *Ctx, footerNote *templateviews.Note) string {
-//line views.html:439
+//line views.html:444
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:439
+//line views.html:444
 	WriteSiteFooter(qb422016, ctx, footerNote)
-//line views.html:439
+//line views.html:444
 	qs422016 := string(qb422016.B)
-//line views.html:439
+//line views.html:444
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:439
+//line views.html:444
 	return qs422016
-//line views.html:439
+//line views.html:444
 }
 
-//line views.html:441
+//line views.html:446
 func StreamSignInWall(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:441
+//line views.html:446
 	qw422016.N().S(`
 <div class="paywall-page">
   <div class="paywall-page__header">
     <a class="paywall-page__home" href="/">`)
-//line views.html:444
+//line views.html:449
 	qw422016.E().S(ctx.T("signinwall_home"))
-//line views.html:444
+//line views.html:449
 	qw422016.N().S(`</a>
     <div mol_view_root="$trip2g_user_space"></div>
   </div>
 
   `)
-//line views.html:448
+//line views.html:453
 	if ctx.SigninWallError != nil && ctx.SigninWallError.Note != nil {
-//line views.html:448
+//line views.html:453
 		qw422016.N().S(`
   <h1 class="content__title">`)
-//line views.html:449
+//line views.html:454
 		qw422016.E().S(ctx.SigninWallError.Note.Title())
-//line views.html:449
+//line views.html:454
 		qw422016.N().S(`</h1>
   `)
-//line views.html:450
+//line views.html:455
 		if ctx.SigninWallError.Note.Description() != "" {
-//line views.html:450
+//line views.html:455
 			qw422016.N().S(`
   <p>`)
-//line views.html:451
+//line views.html:456
 			qw422016.E().S(ctx.SigninWallError.Note.Description())
-//line views.html:451
+//line views.html:456
 			qw422016.N().S(`</p>
   `)
-//line views.html:452
+//line views.html:457
 		}
-//line views.html:452
+//line views.html:457
 		qw422016.N().S(`
   `)
-//line views.html:453
+//line views.html:458
 	}
-//line views.html:453
+//line views.html:458
 	qw422016.N().S(`
 
   <div id="signinwall" mol_view_root="$trip2g_user_signinwall"></div>
 </div>
 `)
-//line views.html:457
+//line views.html:462
 }
 
-//line views.html:457
+//line views.html:462
 func WriteSignInWall(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:457
+//line views.html:462
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:457
+//line views.html:462
 	StreamSignInWall(qw422016, ctx)
-//line views.html:457
+//line views.html:462
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:457
+//line views.html:462
 }
 
-//line views.html:457
+//line views.html:462
 func SignInWall(ctx *Ctx) string {
-//line views.html:457
+//line views.html:462
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:457
+//line views.html:462
 	WriteSignInWall(qb422016, ctx)
-//line views.html:457
+//line views.html:462
 	qs422016 := string(qb422016.B)
-//line views.html:457
+//line views.html:462
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:457
+//line views.html:462
 	return qs422016
-//line views.html:457
+//line views.html:462
 }
 
-//line views.html:459
+//line views.html:464
 func StreamPayWall(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:459
+//line views.html:464
 	qw422016.N().S(`
 <div class="paywall-page">
   <div class="paywall-page__header">
     <a class="paywall-page__home" href="/">`)
-//line views.html:462
+//line views.html:467
 	qw422016.E().S(ctx.T("paywall_home"))
-//line views.html:462
+//line views.html:467
 	qw422016.N().S(`</a>
     <div mol_view_root="$trip2g_user_space"></div>
   </div>
 
   `)
-//line views.html:466
+//line views.html:471
 	if ctx.Note != nil {
-//line views.html:466
+//line views.html:471
 		qw422016.N().S(`
   <h1 class="content__title">`)
-//line views.html:467
+//line views.html:472
 		qw422016.E().S(ctx.Note.Title())
-//line views.html:467
+//line views.html:472
 		qw422016.N().S(`</h1>
 
   `)
-//line views.html:469
+//line views.html:474
 		if ctx.Note.Description() != "" {
-//line views.html:469
+//line views.html:474
 			qw422016.N().S(`
   <p>`)
-//line views.html:470
+//line views.html:475
 			qw422016.E().S(ctx.Note.Description())
-//line views.html:470
+//line views.html:475
 			qw422016.N().S(`</p>
   `)
-//line views.html:471
+//line views.html:476
 		}
-//line views.html:471
+//line views.html:476
 		qw422016.N().S(`
 
   `)
-//line views.html:473
+//line views.html:478
 		if ctx.PaywallError != nil {
-//line views.html:473
+//line views.html:478
 			qw422016.N().S(`
   <script>
     window.__trip2g_paywall = {
       page_id: `)
-//line views.html:476
+//line views.html:481
 			qw422016.N().DL(ctx.Note.PathID())
-//line views.html:476
+//line views.html:481
 			qw422016.N().S(`,
     }
   </script>
@@ -2003,104 +2016,104 @@ func StreamPayWall(qw422016 *qt422016.Writer, ctx *Ctx) {
     id="paywall"
     mol_view_root="$trip2g_user_paywall"
     data-subgraphs="`)
-//line views.html:482
+//line views.html:487
 			qw422016.E().S(ctx.PaywallError.SubgraphsJSON)
-//line views.html:482
+//line views.html:487
 			qw422016.N().S(`"
     data-path-id="`)
-//line views.html:483
+//line views.html:488
 			qw422016.N().DL(ctx.Note.PathID())
-//line views.html:483
+//line views.html:488
 			qw422016.N().S(`"
   ></div>
   `)
-//line views.html:485
+//line views.html:490
 		}
-//line views.html:485
+//line views.html:490
 		qw422016.N().S(`
   `)
-//line views.html:486
+//line views.html:491
 	}
-//line views.html:486
+//line views.html:491
 	qw422016.N().S(`
 </div>
 `)
-//line views.html:488
+//line views.html:493
 }
 
-//line views.html:488
+//line views.html:493
 func WritePayWall(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:488
+//line views.html:493
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:488
+//line views.html:493
 	StreamPayWall(qw422016, ctx)
-//line views.html:488
+//line views.html:493
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:488
+//line views.html:493
 }
 
-//line views.html:488
+//line views.html:493
 func PayWall(ctx *Ctx) string {
-//line views.html:488
+//line views.html:493
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:488
+//line views.html:493
 	WritePayWall(qb422016, ctx)
-//line views.html:488
+//line views.html:493
 	qs422016 := string(qb422016.B)
-//line views.html:488
+//line views.html:493
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:488
+//line views.html:493
 	return qs422016
-//line views.html:488
+//line views.html:493
 }
 
-//line views.html:490
+//line views.html:495
 func StreamNotFound(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:490
+//line views.html:495
 	qw422016.N().S(`
 `)
-//line views.html:492
+//line views.html:497
 	headerRef := ctx.HeaderRef()
 	footerRef := ctx.FooterRef()
 
-//line views.html:494
+//line views.html:499
 	qw422016.N().S(`
 `)
-//line views.html:495
+//line views.html:500
 	var headerNote *templateviews.Note
 
-//line views.html:495
+//line views.html:500
 	qw422016.N().S(`
 `)
-//line views.html:496
+//line views.html:501
 	if headerRef.Kind != ContentRefNone {
-//line views.html:496
+//line views.html:501
 		qw422016.N().S(`
   `)
-//line views.html:497
+//line views.html:502
 		headerNote = ctx.resolveNoteRef(headerRef)
 
-//line views.html:497
+//line views.html:502
 		qw422016.N().S(`
 `)
-//line views.html:498
+//line views.html:503
 	}
-//line views.html:498
+//line views.html:503
 	qw422016.N().S(`
 `)
-//line views.html:499
+//line views.html:504
 	if headerNote != nil {
-//line views.html:499
+//line views.html:504
 		qw422016.N().S(`
   `)
-//line views.html:500
+//line views.html:505
 		StreamSiteHeader(qw422016, ctx, headerNote, false, false)
-//line views.html:500
+//line views.html:505
 		qw422016.N().S(`
 `)
-//line views.html:501
+//line views.html:506
 	}
-//line views.html:501
+//line views.html:506
 	qw422016.N().S(`
 <div class="layout layout--no-sidebars">
   <main class="notfound">
@@ -2110,75 +2123,75 @@ func StreamNotFound(qw422016 *qt422016.Writer, ctx *Ctx) {
   </main>
 </div>
 `)
-//line views.html:509
+//line views.html:514
 	if footerRef.Kind != ContentRefNone {
-//line views.html:509
+//line views.html:514
 		qw422016.N().S(`
   `)
-//line views.html:510
+//line views.html:515
 		footerNote := ctx.resolveNoteRef(footerRef)
 
-//line views.html:510
+//line views.html:515
 		qw422016.N().S(`
   `)
-//line views.html:511
+//line views.html:516
 		if footerNote != nil {
-//line views.html:511
+//line views.html:516
 			qw422016.N().S(`
     `)
-//line views.html:512
+//line views.html:517
 			StreamSiteFooter(qw422016, ctx, footerNote)
-//line views.html:512
+//line views.html:517
 			qw422016.N().S(`
   `)
-//line views.html:513
+//line views.html:518
 		}
-//line views.html:513
+//line views.html:518
 		qw422016.N().S(`
 `)
-//line views.html:514
+//line views.html:519
 	}
-//line views.html:514
+//line views.html:519
 	qw422016.N().S(`
 `)
-//line views.html:515
+//line views.html:520
 }
 
-//line views.html:515
+//line views.html:520
 func WriteNotFound(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:515
+//line views.html:520
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:515
+//line views.html:520
 	StreamNotFound(qw422016, ctx)
-//line views.html:515
+//line views.html:520
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:515
+//line views.html:520
 }
 
-//line views.html:515
+//line views.html:520
 func NotFound(ctx *Ctx) string {
-//line views.html:515
+//line views.html:520
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:515
+//line views.html:520
 	WriteNotFound(qb422016, ctx)
-//line views.html:515
+//line views.html:520
 	qs422016 := string(qb422016.B)
-//line views.html:515
+//line views.html:520
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:515
+//line views.html:520
 	return qs422016
-//line views.html:515
+//line views.html:520
 }
 
-//line views.html:517
+//line views.html:522
 func StreamOnboarding(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:517
+//line views.html:522
 	qw422016.N().S(`
 <div class="onboarding" data-onboarding>
   `)
-//line views.html:519
+//line views.html:524
 	if ctx.UserToken.IsAdmin() {
-//line views.html:519
+//line views.html:524
 		qw422016.N().S(`
   <h3>Welcome!</h3>
   <p>
@@ -2196,53 +2209,53 @@ func StreamOnboarding(qw422016 *qt422016.Writer, ctx *Ctx) {
     </a>
   </p>
   `)
-//line views.html:535
+//line views.html:540
 	} else {
-//line views.html:535
+//line views.html:540
 		qw422016.N().S(`
   <h3>`)
-//line views.html:536
+//line views.html:541
 		qw422016.E().S(ctx.T("onboarding_title"))
-//line views.html:536
+//line views.html:541
 		qw422016.N().S(`</h3>
   <p>`)
-//line views.html:537
+//line views.html:542
 		qw422016.E().S(ctx.T("onboarding_subtitle"))
-//line views.html:537
+//line views.html:542
 		qw422016.N().S(`</p>
   `)
-//line views.html:538
+//line views.html:543
 	}
-//line views.html:538
+//line views.html:543
 	qw422016.N().S(`
   <div mol_view_root="$trip2g_user_space"></div>
 </div>
 `)
-//line views.html:541
+//line views.html:546
 }
 
-//line views.html:541
+//line views.html:546
 func WriteOnboarding(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:541
+//line views.html:546
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:541
+//line views.html:546
 	StreamOnboarding(qw422016, ctx)
-//line views.html:541
+//line views.html:546
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:541
+//line views.html:546
 }
 
-//line views.html:541
+//line views.html:546
 func Onboarding(ctx *Ctx) string {
-//line views.html:541
+//line views.html:546
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:541
+//line views.html:546
 	WriteOnboarding(qb422016, ctx)
-//line views.html:541
+//line views.html:546
 	qs422016 := string(qb422016.B)
-//line views.html:541
+//line views.html:546
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:541
+//line views.html:546
 	return qs422016
-//line views.html:541
+//line views.html:546
 }
