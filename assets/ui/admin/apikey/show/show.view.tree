@@ -5,9 +5,11 @@ $trip2g_admin_apikey_show $mol_page
 	enable_mcp_admin_tools false
 	DisableButton $trip2g_admin_apikey_button_disable
 		id <= apikey_id
+	EnableButton $trip2g_admin_apikey_button_enable
+		id <= apikey_id
 	McpAdminToolsButton $trip2g_admin_apikey_button_mcpadmintools
 		id <= apikey_id
-		enabled <= enable_mcp_admin_tools
+		enabled_state <= enable_mcp_admin_tools
 	body /
 		<= Logs $mol_list
 			rows <= logs /

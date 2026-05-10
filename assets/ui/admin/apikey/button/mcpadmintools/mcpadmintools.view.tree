@@ -1,5 +1,5 @@
 $trip2g_admin_apikey_button_mcpadmintools $mol_button_major
 	id 0
-	enabled false
+	enabled_state false
 	title <= label \
 	click?event <=> handle_click? null

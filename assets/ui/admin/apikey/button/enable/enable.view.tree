@@ -1,0 +1,4 @@
+$trip2g_admin_apikey_button_enable $mol_button_major
+	id 0
+	title \Enable
+	click?event <=> handle_click? null

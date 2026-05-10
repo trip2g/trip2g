@@ -25,9 +25,11 @@ namespace $.$$ {
 			return $trip2g_graphql_make_map( res.admin.apiKeyLogs.nodes.map( ( row, id ) => ( { ...row, id } ) ) )
 		}
 
-		override body() {
-			const buttons = this.disabled() ? [] : [this.DisableButton()]
-			return [...buttons, this.McpAdminToolsButton(), ...super.body()]
+		override tools(): readonly ( $mol_view_content )[] {
+			const buttons = this.disabled()
+				? [this.EnableButton()]
+				: [this.DisableButton()]
+			return [...buttons, this.McpAdminToolsButton()]
 		}
 
 		override logs() {
