@@ -335,9 +335,13 @@ body {
 }
 
 .widget__title {
-  font-size: 1rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  margin-bottom: calc(var(--pico-spacing) * 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pico-muted-color);
+  margin: calc(var(--pico-spacing) * 1.25) 0 0.2rem 0;
+  .widget:first-child & { margin-top: 0; }
 }
 
 .widget__list {
@@ -454,8 +458,9 @@ body {
     letter-spacing: 0.06em;
     color: var(--pico-muted-color);
     margin: calc(var(--pico-spacing) * 1.25) 0 0.2rem 0;
-    [data-header]:first-child & { margin-top: 0; }
   }
+
+  .widget__content [data-header]:first-child h3 { margin-top: 0; }
 
   ul {
     list-style: none;
