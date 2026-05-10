@@ -983,6 +983,7 @@ func (a *app) AdminJSURL() string {
 
 func (a *app) UserJSURLs() []string {
 	return []string{
+		a.assetURL("/assets/defaulttemplate.js"),
 		a.assetURL("/assets/ui/user/-/web.js"),
 	}
 }

@@ -60,6 +60,7 @@
 :root {
   background: var(--pico-background-color) !important;
   --site-max-width: 1440px;
+  --header-h: 56px;
 }
 
 // Override mol_theme's :root background (dark by default).
@@ -328,7 +329,7 @@ body {
     display: block;
     padding: 0.375rem 0;
     text-decoration: none;
-    font-size: 1rem;
+    font-size: 0.8125rem;
     color: var(--pico-color);
     font-weight: 500;
     text-align: left;
@@ -383,6 +384,8 @@ body {
 .layout__sidebar {
   min-width: 0;
   font-size: 1rem; // picocss.com uses fixed 16px for aside
+  position: sticky;
+  top: calc(var(--header-h) + 1rem);
 
   &--left  { grid-area: left; }
   &--right { grid-area: right; }

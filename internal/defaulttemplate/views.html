@@ -83,27 +83,6 @@ window.__trip2g_settings = {
 {% for _, url := range ctx.JSURLs %}
 <script src="{%s url %}" defer></script>
 {% endfor %}
-<script>
-(function(){
-  var header = document.querySelector('.site-header');
-  if (header) {
-    window.addEventListener('scroll', function(){ header.classList.toggle('is-scrolled', window.scrollY > 0); }, { passive: true });
-  }
-  var backdrop = document.getElementById('backdrop');
-  var leftSidebar = document.querySelector('.layout__sidebar--left');
-  var rightSidebar = document.querySelector('.layout__sidebar--right');
-  function openSidebar(s){ s.classList.add('is-open'); if(backdrop) backdrop.classList.add('is-visible'); document.body.style.overflow='hidden'; }
-  function closeAll(){ leftSidebar&&leftSidebar.classList.remove('is-open'); rightSidebar&&rightSidebar.classList.remove('is-open'); if(backdrop) backdrop.classList.remove('is-visible'); document.body.style.overflow=''; }
-  var btnLeft = document.getElementById('btn-left');
-  if (btnLeft && leftSidebar) btnLeft.addEventListener('click', function(){ leftSidebar.classList.contains('is-open') ? closeAll() : openSidebar(leftSidebar); });
-  var btnRight = document.getElementById('btn-right');
-  if (btnRight && rightSidebar) btnRight.addEventListener('click', function(){ rightSidebar.classList.contains('is-open') ? closeAll() : openSidebar(rightSidebar); });
-  if (backdrop) backdrop.addEventListener('click', closeAll);
-  document.querySelectorAll('.layout__sidebar a[href]').forEach(function(a){
-    if (a.pathname === location.pathname) a.classList.add('is-active');
-  });
-})();
-</script>
 
 {% for _, injection := range ctx.HTMLInjections[injectionPlaceholderBodyEnd] %}
 {%s= injection.Content %}
