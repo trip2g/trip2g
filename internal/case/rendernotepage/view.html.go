@@ -182,7 +182,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:46
 		qw422016.N().S(`">`)
 //line view.html:46
-		qw422016.E().S(resp.NoteView.Lang())
+		qw422016.E().S(resp.NoteView.LangName())
 //line view.html:46
 		qw422016.N().S(`</summary>
           <div class="lang-switcher__dropdown">
@@ -201,7 +201,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:49
 			qw422016.N().S(`">`)
 //line view.html:49
-			qw422016.E().S(alt.Lang())
+			qw422016.E().S(alt.LangName())
 //line view.html:49
 			qw422016.N().S(`</a>
             `)

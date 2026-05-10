@@ -1238,7 +1238,7 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:299
 			qw422016.N().S(`">`)
 //line views.html:299
-			qw422016.N().S(ctx.Note.Lang())
+			qw422016.N().S(ctx.Note.LangName())
 //line views.html:299
 			qw422016.N().S(`</summary>
       <div class="lang-switcher__dropdown">
@@ -1257,7 +1257,7 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:302
 				qw422016.N().S(`">`)
 //line views.html:302
-				qw422016.N().S(alt.Lang())
+				qw422016.N().S(alt.LangName())
 //line views.html:302
 				qw422016.N().S(`</a>
         `)

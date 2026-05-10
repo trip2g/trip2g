@@ -296,10 +296,10 @@ window.__trip2g_settings = {
   <div class="lang-switcher">
     <span class="lang-switcher__label">Read in:</span>
     <details class="lang-switcher__picker">
-      <summary class="lang-switcher__current lang-switcher__current--{%s= ctx.Note.Lang() %}">{%s= ctx.Note.Lang() %}</summary>
+      <summary class="lang-switcher__current lang-switcher__current--{%s= ctx.Note.Lang() %}">{%s= ctx.Note.LangName() %}</summary>
       <div class="lang-switcher__dropdown">
         {% for _, alt := range ctx.Note.LangAlternativesList() %}
-        <a href="{%s= alt.PermalinkEncoded() %}" class="lang-switcher__alt lang-switcher__alt--{%s= alt.Lang() %}">{%s= alt.Lang() %}</a>
+        <a href="{%s= alt.PermalinkEncoded() %}" class="lang-switcher__alt lang-switcher__alt--{%s= alt.Lang() %}">{%s= alt.LangName() %}</a>
         {% endfor %}
       </div>
     </details>

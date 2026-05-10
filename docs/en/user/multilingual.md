@@ -54,6 +54,44 @@ lang_redirect: "[[en/user/multilingual]]"
 
 The language switcher shows only when the linked note exists and is accessible to the visitor.
 
+### Language switcher
+
+When `lang_redirect` is set, a language switcher appears automatically in the page header. It shows the current language with a flag icon and full native name. Clicking opens a dropdown with the available alternatives.
+
+Flag icons are built in for ten languages:
+
+| `lang` value | Flag | Displayed as |
+|---|---|---|
+| `en` | 🇺🇸 | English |
+| `ru` | 🇷🇺 | Русский |
+| `de` | 🇩🇪 | Deutsch |
+| `fr` | 🇫🇷 | Français |
+| `es` | 🇪🇸 | Español |
+| `zh` | 🇨🇳 | 中文 |
+| `ja` | 🇯🇵 | 日本語 |
+| `pt` | 🇵🇹 | Português |
+| `ar` | 🇸🇦 | العربية |
+| `ko` | 🇰🇷 | 한국어 |
+
+The `lang` value is case-insensitive. Common aliases are supported — `"English"`, `"RU"`, `"German"` are all normalized to the canonical code.
+
+For other languages, no flag is shown unless you add it via custom CSS:
+
+```css
+.lang-switcher__current--uk::before,
+.lang-switcher__alt--uk::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 13px;
+  background-image: url('/your-flag.png');
+  background-size: cover;
+  border-radius: 2px;
+}
+```
+
+Replace `uk` with your `lang` code (lowercased) and point `background-image` to your flag asset.
+
 ### Language-scoped sidebars
 
 Place a `_sidebar.md` inside a language folder and it applies to all notes in that folder and its subfolders:

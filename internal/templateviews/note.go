@@ -138,10 +138,57 @@ func (n *Note) Unwrap() *model.NoteView {
 	return n.nv
 }
 
-// Lang returns the note's language code (e.g., "en", "ru").
+var langAliases = map[string]string{
+	"english":    "en",
+	"russian":    "ru",
+	"deutsch":    "de",
+	"german":     "de",
+	"french":     "fr",
+	"español":    "es",
+	"spanish":    "es",
+	"chinese":    "zh",
+	"japanese":   "ja",
+	"portuguese": "pt",
+	"arabic":     "ar",
+	"korean":     "ko",
+	"us":         "en",
+}
+
+var langNames = map[string]string{
+	"en": "English",
+	"ru": "Русский",
+	"de": "Deutsch",
+	"fr": "Français",
+	"es": "Español",
+	"zh": "中文",
+	"ja": "日本語",
+	"pt": "Português",
+	"ar": "العربية",
+	"ko": "한국어",
+}
+
+func normalizeLang(lang string) string {
+	lower := strings.ToLower(strings.TrimSpace(lang))
+	if code, ok := langAliases[lower]; ok {
+		return code
+	}
+	return lower
+}
+
+// Lang returns the normalized language code (e.g., "en", "ru").
 // Empty string if not set.
 func (n *Note) Lang() string {
-	return n.nv.Lang
+	return normalizeLang(n.nv.Lang)
+}
+
+// LangName returns the native display name for the note's language.
+// Falls back to the normalized code if unknown.
+func (n *Note) LangName() string {
+	code := normalizeLang(n.nv.Lang)
+	if name, ok := langNames[code]; ok {
+		return name
+	}
+	return code
 }
 
 // HasLangAlternatives returns true if this note has language alternative versions.
