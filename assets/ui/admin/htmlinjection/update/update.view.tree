@@ -17,9 +17,7 @@ $trip2g_admin_htmlinjection_update $mol_page
 						value? <=> placement? \head
 						dictionary *
 							head \Head
-							body_start \Body Start
 							body_end \Body End
-							footer \Footer
 				<= Position_field $mol_form_field
 					name \Position
 					bid <= position_bid \

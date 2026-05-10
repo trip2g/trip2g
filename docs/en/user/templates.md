@@ -183,6 +183,18 @@ Include HTML injections from site settings (analytics scripts, custom `<head>` t
 
 Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `</body>`. This is how Google Analytics and other site-wide scripts reach custom Jet layouts.
 
+> **Tip:** If you use a custom Jet layout, add both variables so scripts configured in Admin → HTML Injections are automatically included:
+> ```jet
+> <head>
+>   ...
+>   {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+> </head>
+> <body>
+>   ...
+>   {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+> </body>
+> ```
+
 ### Splitting content into sections
 
 `PartialRenderer` breaks a markdown note into logical blocks — useful for landing pages, FAQs, and card grids:

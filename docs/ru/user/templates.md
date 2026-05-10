@@ -91,6 +91,18 @@ title: Моя страница
 
 `htmlInjectionsHead` — вставлять перед `</head>`, `htmlInjectionsBodyEnd` — перед `</body>`.
 
+> **Совет:** Если используете кастомный Jet-шаблон, добавьте обе переменные, чтобы скрипты из Admin → HTML Injections подключались автоматически:
+> ```jet
+> <head>
+>   ...
+>   {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+> </head>
+> <body>
+>   ...
+>   {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+> </body>
+> ```
+
 ### PartialRenderer — контент по частям
 
 `PartialRenderer` разбирает markdown на логические блоки. Полезно для лендингов, FAQ, карточек.
