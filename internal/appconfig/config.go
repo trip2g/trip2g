@@ -118,6 +118,8 @@ type Config struct {
 
 	SimpleBackup SimpleBackupConfig
 
+	CronJobs CronJobsConfig
+
 	// Storage limits (0 = no limit). Accept human-readable sizes: "1GB", "500MB".
 	StorageDBLimit     datasize.Size
 	StorageAssetsLimit datasize.Size
@@ -135,6 +137,11 @@ type Config struct {
 // SimpleBackupConfig holds simple backup system configuration.
 type SimpleBackupConfig struct {
 	Enabled bool
+}
+
+// CronJobsConfig holds cron jobs admin configuration.
+type CronJobsConfig struct {
+	AllowEdit bool
 }
 
 // Default values for configuration.
@@ -417,6 +424,7 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
+	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 
 	// Storage limits.
 	datasize.FlagVar(

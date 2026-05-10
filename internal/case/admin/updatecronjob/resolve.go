@@ -18,6 +18,7 @@ type Env interface {
 	CronJobByID(ctx context.Context, id int64) (db.CronJob, error)
 	RefreshCronJob(job db.CronJob) error
 	CheckCronjobExpression(val string) bool
+	CronJobsAllowEdit() bool
 }
 
 type Input = model.UpdateCronJobInput
@@ -35,6 +36,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	if !env.CronJobsAllowEdit() {
+		return &model.ErrorPayload{Message: "Not allowed. Enable with --cronjobs-allow-edit flag."}, nil
 	}
 
 	// Validate input

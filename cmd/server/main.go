@@ -34,6 +34,7 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/admin/renderpreview"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/case/backjob/extractnotionpages"
@@ -230,6 +231,8 @@ type app struct {
 	boostyClientManager  *boosty.ClientManager
 
 	gitAPI *gitapi.API
+
+	previewBuffer *renderpreview.PreviewBuffer
 
 	appQueues map[string]*appQueue
 
@@ -428,6 +431,8 @@ func main() {
 		panic(err)
 	}
 
+	a.previewBuffer = renderpreview.NewPreviewBuffer(a.config.RenderPreview)
+
 	a.notionClientManager = notion.NewClientManager(a, a.config.Notion)
 
 	// Initialize simple backup manager if enabled
@@ -585,6 +590,10 @@ func (a *app) GitCommit() string {
 
 func (a *app) DatabaseFilePath() string {
 	return a.config.DatabaseFile
+}
+
+func (a *app) CronJobsAllowEdit() bool {
+	return a.config.CronJobs.AllowEdit
 }
 
 func (a *app) StorageDBLimit() int64 {
@@ -1834,6 +1843,18 @@ func (a *app) LoadLatestLayout(source model.LayoutSourceFile) model.Layout {
 		return load(source)
 	}
 	return model.Layout{}
+}
+
+func (a *app) PreviewBuffer() *renderpreview.PreviewBuffer {
+	return a.previewBuffer
+}
+
+func (a *app) LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
+	layouts := a.latestNoteLoader.Layouts()
+	if layouts.LoadPreview != nil {
+		return layouts.LoadPreview(main, extra)
+	}
+	return model.Layout{}, []string{"preview renderer not initialized"}
 }
 
 func (a *app) IsDevMode() bool {
