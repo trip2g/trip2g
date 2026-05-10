@@ -1873,6 +1873,20 @@ type DisableApiKeyPayload {
 union DisableApiKeyOrErrorPayload = DisableApiKeyPayload | ErrorPayload
 
 #
+# enableApiKey
+#
+
+input EnableApiKeyInput {
+  id: Int64!
+}
+
+type EnableApiKeyPayload {
+  apiKey: AdminApiKey!
+}
+
+union EnableApiKeyOrErrorPayload = EnableApiKeyPayload | ErrorPayload
+
+#
 # setApiKeyMcpAdminTools
 # Toggles the enable_mcp_admin_tools flag on an API key.
 #
@@ -2728,6 +2742,7 @@ type AdminMutation {
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
+  enableApiKey(input: EnableApiKeyInput!): EnableApiKeyOrErrorPayload!
   setApiKeyMcpAdminTools(input: SetApiKeyMcpAdminToolsInput!): SetApiKeyMcpAdminToolsOrErrorPayload!
 
   createGitToken(input: CreateGitTokenInput!): CreateGitTokenOrErrorPayload!
@@ -2834,6 +2849,8 @@ type AdminMutation {
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
+
+  renderLayout(input: RenderLayoutInput!): RenderLayoutPayload!
 }
 
 #
@@ -3181,3 +3198,35 @@ type RemoveFederationSecretSubgraphPayload {
 }
 
 union RemoveFederationSecretSubgraphOrErrorPayload = RemoveFederationSecretSubgraphPayload | ErrorPayload
+
+#
+# renderLayout
+#
+
+input RenderLayoutFileInput {
+  path: String!
+  src:  String
+}
+
+input RenderLayoutInput {
+  layout:        RenderLayoutFileInput!
+  note:          RenderLayoutFileInput
+  overrideFiles: [RenderLayoutFileInput!]
+}
+
+type RenderLayoutFileWarning {
+  path:     String!
+  warnings: [String!]!
+}
+
+type RenderLayoutWarnings {
+  layout: [String!]!
+  note:   [String!]!
+  files:  [RenderLayoutFileWarning!]!
+}
+
+type RenderLayoutPayload {
+  previewID:  String!
+  previewURL: String!
+  warnings:   RenderLayoutWarnings!
+}

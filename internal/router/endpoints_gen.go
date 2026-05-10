@@ -20,6 +20,7 @@ import (
 	rendersearchpagerendersearchpage "trip2g/internal/case/rendersearchpage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
 	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
+	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 )
 
@@ -40,6 +41,8 @@ var endpoints = []Endpoint{
 	&rendersearchpagerendersearchpage.Endpoint{},
 	&signinbyhatsigninbyhat.Endpoint{},
 	&renderlayoutpreviewrenderlayoutpreview.Endpoint{},
+	&renderpreviewrenderpreview.Endpoint{},
+	&renderpreviewrenderpreview.GetEndpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 }
 
@@ -59,6 +62,7 @@ type RoutesEnv interface {
 	rendersearchpagerendersearchpage.Env
 	signinbyhatsigninbyhat.Env
 	renderlayoutpreviewrenderlayoutpreview.Env
+	renderpreviewrenderpreview.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 }
 

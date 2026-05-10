@@ -1,8 +1,9 @@
 {% code
 type CaseItem struct {
-	PackageName  string
-  PackageAlias string
-	ImportPath   string
+	PackageName    string
+	PackageAlias   string
+	ImportPath     string
+	HasGetEndpoint bool
 }
 %}
 
@@ -22,6 +23,9 @@ import (
 var endpoints = []Endpoint{
 {% for _, cs := range cases -%}
 	&{%s cs.PackageAlias %}.Endpoint{},
+{% if cs.HasGetEndpoint -%}
+	&{%s cs.PackageAlias %}.GetEndpoint{},
+{% endif -%}
 {% endfor -%}
 }
 

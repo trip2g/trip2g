@@ -48,7 +48,8 @@ type Layouts struct {
 	// note_version_assets links each asset to a single version_id, we merge
 	// across all layouts into one shared lookup table.
 	AssetReplaces map[string]*NoteAssetReplace
-	Load          func(source LayoutSourceFile) Layout `json:"-"`
+	Load          func(source LayoutSourceFile) Layout                                    `json:"-"`
+	LoadPreview   func(main LayoutSourceFile, extra map[string]string) (Layout, []string) `json:"-"`
 }
 
 // LayoutBlocks provides block lookup by name or full name.

@@ -119,6 +119,46 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			}
 			return layout
 		},
+		LoadPreview: func(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
+			// Snapshot the shared templates map under lock, then release immediately.
+			jl.mu.Lock()
+			snap := make(map[string]string, len(jl.templates)+len(extra))
+			for k, v := range jl.templates {
+				snap[k] = v
+			}
+			jl.mu.Unlock()
+
+			// Caller-supplied files override server files.
+			for k, v := range extra {
+				snap[k] = v
+			}
+
+			// If no inline content provided, fill from snapshot so load() does not
+			// overwrite the server template with an empty string.
+			if main.Content == "" {
+				main.Content = snap[main.ID]
+			}
+
+			// Fresh isolated loader — never touches the production jl.
+			preview := &jetLoader{
+				templates:            snap,
+				log:                  jl.log,
+				pendingWarnings:      make(map[string][]model.NoteWarning),
+				sets:                 make(map[string]*jet.Set),
+				yieldBlocksSlices:    make(map[string]*[]string),
+				yieldBlocksWarnSinks: make(map[string]*[]model.NoteWarning),
+			}
+
+			view, errStr := preview.load(main)
+			var warnings []string
+			if errStr != "" {
+				warnings = append(warnings, "compile: "+errStr)
+			}
+			if view == nil {
+				return model.Layout{}, warnings
+			}
+			return model.Layout{View: view}, warnings
+		},
 	}
 
 	jl.processTemplates(sourceFiles)

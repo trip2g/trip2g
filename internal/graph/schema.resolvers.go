@@ -59,12 +59,14 @@ import (
 	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
+	"trip2g/internal/case/admin/enableapikey"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
+	renderpreview "trip2g/internal/case/admin/renderpreview"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -837,6 +839,11 @@ func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel
 	return disableapikey.Resolve(ctx, r.env(ctx), input)
 }
 
+// EnableAPIKey is the resolver for the enableApiKey field.
+func (r *adminMutationResolver) EnableAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.EnableAPIKeyInput) (model.EnableAPIKeyOrErrorPayload, error) {
+	return enableapikey.Resolve(ctx, r.env(ctx), input)
+}
+
 // SetAPIKeyMcpAdminTools is the resolver for the setApiKeyMcpAdminTools field.
 func (r *adminMutationResolver) SetAPIKeyMcpAdminTools(ctx context.Context, obj *appmodel.AdminMutation, input model.SetAPIKeyMcpAdminToolsInput) (model.SetAPIKeyMcpAdminToolsOrErrorPayload, error) {
 	return setapikeymcpadmintools.Resolve(ctx, r.env(ctx), input)
@@ -1240,6 +1247,11 @@ func (r *adminMutationResolver) AddFederationSecretSubgraph(ctx context.Context,
 // RemoveFederationSecretSubgraph is the resolver for the removeFederationSecretSubgraph field.
 func (r *adminMutationResolver) RemoveFederationSecretSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error) {
 	return removefederationsecretsubgraph.Resolve(ctx, r.env(ctx), input)
+}
+
+// RenderLayout is the resolver for the renderLayout field.
+func (r *adminMutationResolver) RenderLayout(ctx context.Context, obj *appmodel.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error) {
+	return renderpreview.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.

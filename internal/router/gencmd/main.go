@@ -58,10 +58,23 @@ func scanDir(localDir string) []views.CaseItem {
 					ImportPath:   filepath.Join(importPath, entry.Name()),
 				}
 
+				// Detect GetEndpoint by scanning the endpoint.go source.
+				if hasGetEndpoint(casePath) {
+					cs.HasGetEndpoint = true
+				}
+
 				cases = append(cases, cs)
 			}
 		}
 	}
 
 	return cases
+}
+
+func hasGetEndpoint(endpointFile string) bool {
+	data, err := os.ReadFile(endpointFile)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "type GetEndpoint struct")
 }

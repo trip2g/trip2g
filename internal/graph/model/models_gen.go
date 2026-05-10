@@ -230,6 +230,10 @@ type DisableGitTokenOrErrorPayload interface {
 	IsDisableGitTokenOrErrorPayload()
 }
 
+type EnableAPIKeyOrErrorPayload interface {
+	IsEnableAPIKeyOrErrorPayload()
+}
+
 type GenerateTgAttachCodeOrErrorPayload interface {
 	IsGenerateTgAttachCodeOrErrorPayload()
 }
@@ -1411,6 +1415,16 @@ type DisableGitTokenPayload struct {
 
 func (DisableGitTokenPayload) IsDisableGitTokenOrErrorPayload() {}
 
+type EnableAPIKeyInput struct {
+	ID int64 `json:"id"`
+}
+
+type EnableAPIKeyPayload struct {
+	APIKey *db.ApiKey `json:"apiKey"`
+}
+
+func (EnableAPIKeyPayload) IsEnableAPIKeyOrErrorPayload() {}
+
 type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
@@ -1481,6 +1495,8 @@ func (ErrorPayload) IsDeleteAdminOrErrorPayload() {}
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
+
+func (ErrorPayload) IsEnableAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsSetAPIKeyMcpAdminToolsOrErrorPayload() {}
 
@@ -1843,6 +1859,34 @@ type RemoveFederationSecretSubgraphPayload struct {
 }
 
 func (RemoveFederationSecretSubgraphPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
+
+type RenderLayoutFileInput struct {
+	Path string  `json:"path"`
+	Src  *string `json:"src,omitempty"`
+}
+
+type RenderLayoutFileWarning struct {
+	Path     string   `json:"path"`
+	Warnings []string `json:"warnings"`
+}
+
+type RenderLayoutInput struct {
+	Layout        *RenderLayoutFileInput  `json:"layout"`
+	Note          *RenderLayoutFileInput  `json:"note,omitempty"`
+	OverrideFiles []RenderLayoutFileInput `json:"overrideFiles,omitempty"`
+}
+
+type RenderLayoutPayload struct {
+	PreviewID  string                `json:"previewID"`
+	PreviewURL string                `json:"previewURL"`
+	Warnings   *RenderLayoutWarnings `json:"warnings"`
+}
+
+type RenderLayoutWarnings struct {
+	Layout []string                  `json:"layout"`
+	Note   []string                  `json:"note"`
+	Files  []RenderLayoutFileWarning `json:"files"`
+}
 
 type RequestCaptchaPayload struct {
 	SiteKey string `json:"siteKey"`

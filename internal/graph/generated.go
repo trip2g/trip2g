@@ -357,6 +357,7 @@ type AdminMutationResolver interface {
 	DeleteAdmin(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
+	EnableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.EnableAPIKeyInput) (model.EnableAPIKeyOrErrorPayload, error)
 	SetAPIKeyMcpAdminTools(ctx context.Context, obj *model1.AdminMutation, input model.SetAPIKeyMcpAdminToolsInput) (model.SetAPIKeyMcpAdminToolsOrErrorPayload, error)
 	CreateGitToken(ctx context.Context, obj *model1.AdminMutation, input model.CreateGitTokenInput) (model.CreateGitTokenOrErrorPayload, error)
 	DisableGitToken(ctx context.Context, obj *model1.AdminMutation, input model.DisableGitTokenInput) (model.DisableGitTokenOrErrorPayload, error)
@@ -428,6 +429,7 @@ type AdminMutationResolver interface {
 	RevokeFederationSecret(ctx context.Context, obj *model1.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error)
 	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
+	RenderLayout(ctx context.Context, obj *model1.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -886,6 +888,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputDisableGitTokenInput,
+		ec.unmarshalInputEnableApiKeyInput,
 		ec.unmarshalInputGenerateTgAttachCodeInput,
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
@@ -900,6 +903,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRegenerateCronWebhookSecretInput,
 		ec.unmarshalInputRemoveExpiredTgChatMembersInput,
 		ec.unmarshalInputRemoveFederationSecretSubgraphInput,
+		ec.unmarshalInputRenderLayoutFileInput,
+		ec.unmarshalInputRenderLayoutInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputResetTelegramPublishNoteInput,
@@ -1518,6 +1523,17 @@ func (ec *executionContext) field_AdminMutation_disableGitToken_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_enableApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNEnableApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐEnableAPIKeyInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_importTelegramAccountChannel_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1588,6 +1604,17 @@ func (ec *executionContext) field_AdminMutation_removeFederationSecretSubgraph_a
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRemoveFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveFederationSecretSubgraphInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_renderLayout_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRenderLayoutInput2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutInput)
 	if err != nil {
 		return nil, err
 	}
@@ -10848,6 +10875,47 @@ func (ec *executionContext) fieldContext_AdminMutation_disableApiKey(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_enableApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_enableApiKey,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().EnableAPIKey(ctx, obj, fc.Args["input"].(model.EnableAPIKeyInput))
+		},
+		nil,
+		ec.marshalNEnableApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐEnableAPIKeyOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_enableApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type EnableApiKeyOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_enableApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_setApiKeyMcpAdminTools(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13742,6 +13810,55 @@ func (ec *executionContext) fieldContext_AdminMutation_removeFederationSecretSub
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_removeFederationSecretSubgraph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_renderLayout(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_renderLayout,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().RenderLayout(ctx, obj, fc.Args["input"].(model.RenderLayoutInput))
+		},
+		nil,
+		ec.marshalNRenderLayoutPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_renderLayout(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "previewID":
+				return ec.fieldContext_RenderLayoutPayload_previewID(ctx, field)
+			case "previewURL":
+				return ec.fieldContext_RenderLayoutPayload_previewURL(ctx, field)
+			case "warnings":
+				return ec.fieldContext_RenderLayoutPayload_warnings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RenderLayoutPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_renderLayout_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26186,6 +26303,51 @@ func (ec *executionContext) fieldContext_DisableGitTokenPayload_gitToken(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _EnableApiKeyPayload_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.EnableAPIKeyPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_EnableApiKeyPayload_apiKey,
+		func(ctx context.Context) (any, error) {
+			return obj.APIKey, nil
+		},
+		nil,
+		ec.marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_EnableApiKeyPayload_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnableApiKeyPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminApiKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminApiKey_createdAt(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminApiKey_description(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminApiKey_createdBy(ctx, field)
+			case "disabledBy":
+				return ec.fieldContext_AdminApiKey_disabledBy(ctx, field)
+			case "disabledAt":
+				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
+			case "enableMcpAdminTools":
+				return ec.fieldContext_AdminApiKey_enableMcpAdminTools(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27411,6 +27573,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
 			case "disableApiKey":
 				return ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
+			case "enableApiKey":
+				return ec.fieldContext_AdminMutation_enableApiKey(ctx, field)
 			case "setApiKeyMcpAdminTools":
 				return ec.fieldContext_AdminMutation_setApiKeyMcpAdminTools(ctx, field)
 			case "createGitToken":
@@ -27553,6 +27717,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_addFederationSecretSubgraph(ctx, field)
 			case "removeFederationSecretSubgraph":
 				return ec.fieldContext_AdminMutation_removeFederationSecretSubgraph(ctx, field)
+			case "renderLayout":
+				return ec.fieldContext_AdminMutation_renderLayout(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -30655,6 +30821,252 @@ func (ec *executionContext) fieldContext_RemoveFederationSecretSubgraphPayload_s
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutFileWarning_path(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutFileWarning) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutFileWarning_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutFileWarning_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutFileWarning",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutFileWarning_warnings(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutFileWarning) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutFileWarning_warnings,
+		func(ctx context.Context) (any, error) {
+			return obj.Warnings, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutFileWarning_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutFileWarning",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutPayload_previewID(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutPayload_previewID,
+		func(ctx context.Context) (any, error) {
+			return obj.PreviewID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutPayload_previewID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutPayload_previewURL(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutPayload_previewURL,
+		func(ctx context.Context) (any, error) {
+			return obj.PreviewURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutPayload_previewURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutPayload_warnings(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutPayload_warnings,
+		func(ctx context.Context) (any, error) {
+			return obj.Warnings, nil
+		},
+		nil,
+		ec.marshalNRenderLayoutWarnings2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutWarnings,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutPayload_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "layout":
+				return ec.fieldContext_RenderLayoutWarnings_layout(ctx, field)
+			case "note":
+				return ec.fieldContext_RenderLayoutWarnings_note(ctx, field)
+			case "files":
+				return ec.fieldContext_RenderLayoutWarnings_files(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RenderLayoutWarnings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutWarnings_layout(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutWarnings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutWarnings_layout,
+		func(ctx context.Context) (any, error) {
+			return obj.Layout, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutWarnings_layout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutWarnings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutWarnings_note(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutWarnings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutWarnings_note,
+		func(ctx context.Context) (any, error) {
+			return obj.Note, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutWarnings_note(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutWarnings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RenderLayoutWarnings_files(ctx context.Context, field graphql.CollectedField, obj *model.RenderLayoutWarnings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RenderLayoutWarnings_files,
+		func(ctx context.Context) (any, error) {
+			return obj.Files, nil
+		},
+		nil,
+		ec.marshalNRenderLayoutFileWarning2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileWarningᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RenderLayoutWarnings_files(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RenderLayoutWarnings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_RenderLayoutFileWarning_path(ctx, field)
+			case "warnings":
+				return ec.fieldContext_RenderLayoutFileWarning_warnings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RenderLayoutFileWarning", field.Name)
 		},
 	}
 	return fc, nil
@@ -38464,6 +38876,33 @@ func (ec *executionContext) unmarshalInputDisableGitTokenInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEnableApiKeyInput(ctx context.Context, obj any) (model.EnableAPIKeyInput, error) {
+	var it model.EnableAPIKeyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputGenerateTgAttachCodeInput(ctx context.Context, obj any) (model.GenerateTgAttachCodeInput, error) {
 	var it model.GenerateTgAttachCodeInput
 	asMap := map[string]any{}
@@ -38899,6 +39338,81 @@ func (ec *executionContext) unmarshalInputRemoveFederationSecretSubgraphInput(ct
 				return it, err
 			}
 			it.SubgraphID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRenderLayoutFileInput(ctx context.Context, obj any) (model.RenderLayoutFileInput, error) {
+	var it model.RenderLayoutFileInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "src"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "src":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Src = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRenderLayoutInput(ctx context.Context, obj any) (model.RenderLayoutInput, error) {
+	var it model.RenderLayoutInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"layout", "note", "overrideFiles"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "layout":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("layout"))
+			data, err := ec.unmarshalNRenderLayoutFileInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Layout = data
+		case "note":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("note"))
+			data, err := ec.unmarshalORenderLayoutFileInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Note = data
+		case "overrideFiles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overrideFiles"))
+			data, err := ec.unmarshalORenderLayoutFileInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverrideFiles = data
 		}
 	}
 
@@ -41821,6 +42335,29 @@ func (ec *executionContext) _DisableGitTokenOrErrorPayload(ctx context.Context, 
 			return graphql.Null
 		}
 		return ec._DisableGitTokenPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _EnableApiKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.EnableAPIKeyOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.EnableAPIKeyPayload:
+		return ec._EnableApiKeyPayload(ctx, sel, &obj)
+	case *model.EnableAPIKeyPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._EnableApiKeyPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -48845,6 +49382,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "enableApiKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_enableApiKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "setApiKeyMcpAdminTools":
 			field := field
 
@@ -51375,6 +51948,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_removeFederationSecretSubgraph(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "renderLayout":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_renderLayout(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -60894,7 +61503,46 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
+var enableApiKeyPayloadImplementors = []string{"EnableApiKeyPayload", "EnableApiKeyOrErrorPayload"}
+
+func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.EnableAPIKeyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, enableApiKeyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EnableApiKeyPayload")
+		case "apiKey":
+			out.Values[i] = ec._EnableApiKeyPayload_apiKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -63337,6 +63985,148 @@ func (ec *executionContext) _RemoveFederationSecretSubgraphPayload(ctx context.C
 			out.Values[i] = graphql.MarshalString("RemoveFederationSecretSubgraphPayload")
 		case "success":
 			out.Values[i] = ec._RemoveFederationSecretSubgraphPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var renderLayoutFileWarningImplementors = []string{"RenderLayoutFileWarning"}
+
+func (ec *executionContext) _RenderLayoutFileWarning(ctx context.Context, sel ast.SelectionSet, obj *model.RenderLayoutFileWarning) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, renderLayoutFileWarningImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RenderLayoutFileWarning")
+		case "path":
+			out.Values[i] = ec._RenderLayoutFileWarning_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._RenderLayoutFileWarning_warnings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var renderLayoutPayloadImplementors = []string{"RenderLayoutPayload"}
+
+func (ec *executionContext) _RenderLayoutPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RenderLayoutPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, renderLayoutPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RenderLayoutPayload")
+		case "previewID":
+			out.Values[i] = ec._RenderLayoutPayload_previewID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "previewURL":
+			out.Values[i] = ec._RenderLayoutPayload_previewURL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._RenderLayoutPayload_warnings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var renderLayoutWarningsImplementors = []string{"RenderLayoutWarnings"}
+
+func (ec *executionContext) _RenderLayoutWarnings(ctx context.Context, sel ast.SelectionSet, obj *model.RenderLayoutWarnings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, renderLayoutWarningsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RenderLayoutWarnings")
+		case "layout":
+			out.Values[i] = ec._RenderLayoutWarnings_layout(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "note":
+			out.Values[i] = ec._RenderLayoutWarnings_note(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "files":
+			out.Values[i] = ec._RenderLayoutWarnings_files(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -71135,6 +71925,21 @@ func (ec *executionContext) marshalNDisableGitTokenOrErrorPayload2trip2gᚋinter
 	return ec._DisableGitTokenOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNEnableApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐEnableAPIKeyInput(ctx context.Context, v any) (model.EnableAPIKeyInput, error) {
+	res, err := ec.unmarshalInputEnableApiKeyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNEnableApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐEnableAPIKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.EnableAPIKeyOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._EnableApiKeyOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {
 	return ec._FieldMessage(ctx, sel, &v)
 }
@@ -72213,6 +73018,93 @@ func (ec *executionContext) marshalNRemoveFederationSecretSubgraphOrErrorPayload
 		return graphql.Null
 	}
 	return ec._RemoveFederationSecretSubgraphOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRenderLayoutFileInput2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx context.Context, v any) (model.RenderLayoutFileInput, error) {
+	res, err := ec.unmarshalInputRenderLayoutFileInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRenderLayoutFileInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx context.Context, v any) (*model.RenderLayoutFileInput, error) {
+	res, err := ec.unmarshalInputRenderLayoutFileInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRenderLayoutFileWarning2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileWarning(ctx context.Context, sel ast.SelectionSet, v model.RenderLayoutFileWarning) graphql.Marshaler {
+	return ec._RenderLayoutFileWarning(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRenderLayoutFileWarning2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileWarningᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RenderLayoutFileWarning) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRenderLayoutFileWarning2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileWarning(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNRenderLayoutInput2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutInput(ctx context.Context, v any) (model.RenderLayoutInput, error) {
+	res, err := ec.unmarshalInputRenderLayoutInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRenderLayoutPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutPayload(ctx context.Context, sel ast.SelectionSet, v model.RenderLayoutPayload) graphql.Marshaler {
+	return ec._RenderLayoutPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRenderLayoutPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutPayload(ctx context.Context, sel ast.SelectionSet, v *model.RenderLayoutPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RenderLayoutPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRenderLayoutWarnings2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutWarnings(ctx context.Context, sel ast.SelectionSet, v *model.RenderLayoutWarnings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RenderLayoutWarnings(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
@@ -74056,6 +74948,32 @@ func (ec *executionContext) marshalOPublicNote2ᚖtrip2gᚋinternalᚋgraphᚋmo
 		return graphql.Null
 	}
 	return ec._PublicNote(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORenderLayoutFileInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInputᚄ(ctx context.Context, v any) ([]model.RenderLayoutFileInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.RenderLayoutFileInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRenderLayoutFileInput2trip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORenderLayoutFileInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐRenderLayoutFileInput(ctx context.Context, v any) (*model.RenderLayoutFileInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRenderLayoutFileInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx context.Context, sel ast.SelectionSet, v model.SearchResultDocument) graphql.Marshaler {

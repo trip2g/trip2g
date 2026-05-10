@@ -44,6 +44,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
+	"trip2g/internal/case/admin/enableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
@@ -51,6 +52,7 @@ import (
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
+	renderpreview "trip2g/internal/case/admin/renderpreview"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -247,6 +249,7 @@ type Env interface {
 	unbanuser.Env
 	createapikey.Env
 	disableapikey.Env
+	enableapikey.Env
 	creategittoken.Env
 	disablegittoken.Env
 	createrelease.Env
@@ -266,6 +269,7 @@ type Env interface {
 	createnotfoundignoredpattern.Env
 	updatenotfoundignoredpattern.Env
 	deletenotfoundignoredpattern.Env
+	renderpreview.Env
 	resetnotfoundpath.Env
 	createtgbot.Env
 	updatetgbot.Env
