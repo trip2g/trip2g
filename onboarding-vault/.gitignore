@@ -1,0 +1,4 @@
+# Files with real credentials — never commit
+.obsidian/plugins/trip2g/data.json
+.mcp.json
+codex.json

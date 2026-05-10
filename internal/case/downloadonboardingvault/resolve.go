@@ -28,6 +28,10 @@ type Env interface {
 const oldPrefix = "onboarding-vault/"
 const dataJSONPath = oldPrefix + ".obsidian/plugins/trip2g/data.json"
 const indexMDPath = oldPrefix + "_index.md"
+const mcpJSONPath = oldPrefix + ".mcp.json"
+const codexJSONPath = oldPrefix + "codex.json"
+const antigravityJSONPath = oldPrefix + "antigravity-mcp-config.json"
+const agentsMDPath = oldPrefix + "AGENTS.md"
 
 type pluginData struct {
 	SyncDirs             []syncDir `json:"syncDirs"`
@@ -39,6 +43,63 @@ type syncDir struct {
 	APIKey     string `json:"apiKey"`
 	APIURL     string `json:"apiUrl"`
 	TwoWaySync bool   `json:"twoWaySync"`
+}
+
+type mcpServer struct {
+	Type    string            `json:"type"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers,omitempty"`
+}
+
+type mcpConfig struct {
+	MCPServers map[string]mcpServer `json:"mcpServers"`
+}
+
+func generateMCPJSON(apiKey, publicURL string) ([]byte, error) {
+	cfg := mcpConfig{
+		MCPServers: map[string]mcpServer{
+			"my-trip2g-instance": {
+				Type: "http",
+				URL:  publicURL + "/_system/mcp",
+				Headers: map[string]string{
+					"Authorization": "Bearer " + apiKey,
+				},
+			},
+			"trip2g-docs-public-hub": {
+				Type: "http",
+				URL:  "https://trip2g.com/_system/mcp",
+			},
+		},
+	}
+	return json.MarshalIndent(cfg, "", "  ")
+}
+
+// antigravityServer uses serverUrl (not url) per Antigravity's MCP config format.
+type antigravityServer struct {
+	ServerURL string            `json:"serverUrl"`
+	Headers   map[string]string `json:"headers,omitempty"`
+}
+
+type antigravityConfig struct {
+	MCPServers map[string]antigravityServer `json:"mcpServers"`
+}
+
+// generateAntigravityJSON produces a template for ~/.gemini/antigravity/mcp_config.json.
+func generateAntigravityJSON(apiKey, publicURL string) ([]byte, error) {
+	cfg := antigravityConfig{
+		MCPServers: map[string]antigravityServer{
+			"my-trip2g-instance": {
+				ServerURL: publicURL + "/_system/mcp",
+				Headers: map[string]string{
+					"Authorization": "Bearer " + apiKey,
+				},
+			},
+			"trip2g-docs-public-hub": {
+				ServerURL: "https://trip2g.com/_system/mcp",
+			},
+		},
+	}
+	return json.MarshalIndent(cfg, "", "  ")
 }
 
 func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
@@ -80,9 +141,22 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 
 	publicURL := env.PublicURL()
 
-	// Prepare file replacements
+	mcpJSON, err := generateMCPJSON(apiKey, publicURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate mcp config: %w", err)
+	}
+
+	antigravityJSON, err := generateAntigravityJSON(apiKey, publicURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate antigravity mcp config: %w", err)
+	}
+
+	// Prepare file replacements (also used for new files not in the original zip).
 	replacements := map[string][]byte{
-		dataJSONPath: newDataJSON,
+		dataJSONPath:      newDataJSON,
+		mcpJSONPath:       mcpJSON,
+		codexJSONPath:     mcpJSON,
+		antigravityJSONPath: antigravityJSON,
 	}
 
 	// Check if /_index note exists, use its content instead of template.
@@ -142,10 +216,13 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, n
 	var buf bytes.Buffer
 	writer := zip.NewWriter(&buf)
 
+	written := make(map[string]bool, len(replacements))
+
 	for _, file := range reader.File {
 		outName := renamePath(file.Name, newPrefix)
 
 		if newContent, ok := replacements[file.Name]; ok {
+			written[file.Name] = true
 			// Replace with new content.
 			w, createErr := writer.Create(outName)
 			if createErr != nil {
@@ -160,8 +237,8 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, n
 			continue
 		}
 
-		// For _index.md, replace {{publicUrl}} placeholder.
-		if file.Name == indexMDPath {
+		// Replace {{publicUrl}} placeholder in select markdown files.
+		if file.Name == indexMDPath || file.Name == agentsMDPath {
 			content, readErr := readZipFileContent(file)
 			if readErr != nil {
 				return nil, fmt.Errorf("failed to read %s: %w", file.Name, readErr)
@@ -186,6 +263,22 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, n
 		err = copyZipFileRenamed(writer, file, outName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy file %s: %w", file.Name, err)
+		}
+	}
+
+	// Inject files not present in the original zip.
+	for name, content := range replacements {
+		if written[name] {
+			continue
+		}
+		outName := renamePath(name, newPrefix)
+		w, createErr := writer.Create(outName)
+		if createErr != nil {
+			return nil, fmt.Errorf("failed to create file %s in zip: %w", name, createErr)
+		}
+		_, writeErr := w.Write(content)
+		if writeErr != nil {
+			return nil, fmt.Errorf("failed to write file %s in zip: %w", name, writeErr)
 		}
 	}
 
