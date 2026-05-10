@@ -57,6 +57,7 @@ export type AdminApiKey = {
   description: Scalars['String']['output'];
   disabledAt?: Maybe<Scalars['Time']['output']>;
   disabledBy?: Maybe<AdminUser>;
+  enableMcpAdminTools?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['Int64']['output'];
 };
 
@@ -579,6 +580,7 @@ export type AdminMutation = {
   sendTelegramPublishNoteNow: SendTelegramPublishNoteNowOrErrorPayload;
   setActiveGitHubOAuthCredentials: SetActiveGitHubOAuthCredentialsOrErrorPayload;
   setActiveGoogleOAuthCredentials: SetActiveGoogleOAuthCredentialsOrErrorPayload;
+  setApiKeyMcpAdminTools: SetApiKeyMcpAdminToolsOrErrorPayload;
   setBoostyTierSubgraphs: SetBoostyTierSubgraphsOrErrorPayload;
   setConfigBoolValue: SetConfigBoolValuePayload;
   setConfigIntValue: SetConfigIntValuePayload;
@@ -891,6 +893,11 @@ export type AdminMutationSetActiveGitHubOAuthCredentialsArgs = {
 
 export type AdminMutationSetActiveGoogleOAuthCredentialsArgs = {
   input: SetActiveGoogleOAuthCredentialsInput;
+};
+
+
+export type AdminMutationSetApiKeyMcpAdminToolsArgs = {
+  input: SetApiKeyMcpAdminToolsInput;
 };
 
 
@@ -3024,6 +3031,18 @@ export type SetActiveGoogleOAuthCredentialsOrErrorPayload = ErrorPayload | SetAc
 export type SetActiveGoogleOAuthCredentialsPayload = {
   __typename?: 'SetActiveGoogleOAuthCredentialsPayload';
   credentials: AdminGoogleOAuthCredentials;
+};
+
+export type SetApiKeyMcpAdminToolsInput = {
+  enabled: Scalars['Boolean']['input'];
+  id: Scalars['Int64']['input'];
+};
+
+export type SetApiKeyMcpAdminToolsOrErrorPayload = ErrorPayload | SetApiKeyMcpAdminToolsPayload;
+
+export type SetApiKeyMcpAdminToolsPayload = {
+  __typename?: 'SetApiKeyMcpAdminToolsPayload';
+  apiKey: AdminApiKey;
 };
 
 export type SetBoostyTierSubgraphsInput = {
