@@ -205,6 +205,52 @@ func TestResolve(t *testing.T) {
 		require.Greater(t, result[0].Score, result[1].Score)
 	})
 
+	t.Run("excludes system notes", func(t *testing.T) {
+		sourceNote := &appmodel.NoteView{
+			VersionID: 1,
+			Path:      "docs/article.md",
+			Permalink: "/docs/article",
+			Embedding: []float32{1.0, 0.0, 0.0},
+		}
+		systemNote := &appmodel.NoteView{
+			VersionID: 2,
+			Path:      "_footer.md",
+			Permalink: "/_footer",
+			Embedding: []float32{0.99, 0.01, 0.0},
+		}
+		normalNote := &appmodel.NoteView{
+			VersionID: 3,
+			Path:      "docs/intro.md",
+			Permalink: "/docs/intro",
+			Embedding: []float32{0.8, 0.2, 0.0},
+		}
+
+		env := &EnvMock{
+			FeaturesFunc: func() features.Features {
+				return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
+			},
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{
+					Map: map[string]*appmodel.NoteView{
+						"/docs/article": sourceNote,
+						"/_footer":      systemNote,
+						"/docs/intro":   normalNote,
+					},
+					List: []*appmodel.NoteView{sourceNote, systemNote, normalNote},
+				}
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		result, err := similarnotes.Resolve(ctx, env, model.SimilarNotesInput{Path: "/docs/article"})
+		require.NoError(t, err)
+		require.Len(t, result, 1)
+		require.Equal(t, "/docs/intro", result[0].Note.NoteView.Permalink)
+	})
+
 	t.Run("filters notes user cannot read", func(t *testing.T) {
 		sourceNote := &appmodel.NoteView{
 			VersionID: 1,

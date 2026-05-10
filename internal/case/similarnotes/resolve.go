@@ -101,6 +101,9 @@ func calculateScores(
 		if note.VersionID == sourceNote.VersionID {
 			continue
 		}
+		if note.IsSystem() {
+			continue
+		}
 
 		tgtChunks := chunkMap[note.Path]
 		var score float64

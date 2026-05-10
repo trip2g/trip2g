@@ -57,3 +57,41 @@ func TestNVS_ByPath_NilNVS(t *testing.T) {
 	// Should not panic
 	require.Nil(t, wrapper)
 }
+
+func TestNVS_BackLinks_ExcludesSystemNotes(t *testing.T) {
+	nvs := model.NewNoteViews()
+
+	targetNote := &model.NoteView{
+		PathID:    1,
+		Path:      "docs/article.md",
+		Permalink: "/docs/article",
+		InLinks: map[string]struct{}{
+			"/_footer":    {},
+			"/docs/intro": {},
+		},
+	}
+	normalNote := &model.NoteView{
+		PathID:    2,
+		Path:      "docs/intro.md",
+		Permalink: "/docs/intro",
+	}
+	systemNote := &model.NoteView{
+		PathID:    3,
+		Path:      "_footer.md",
+		Permalink: "/_footer",
+	}
+
+	nvs.Map["/docs/article"] = targetNote
+	nvs.Map["/docs/intro"] = normalNote
+	nvs.Map["/_footer"] = systemNote
+	nvs.PathMap["docs/article.md"] = targetNote
+	nvs.PathMap["docs/intro.md"] = normalNote
+	nvs.PathMap["_footer.md"] = systemNote
+
+	wrapper := templateviews.NewNVS(nvs, "live")
+	target := wrapper.ByPath("docs/article.md")
+
+	backlinks := wrapper.BackLinks(target)
+	require.Len(t, backlinks, 1)
+	require.Equal(t, "docs/intro.md", backlinks[0].Path())
+}

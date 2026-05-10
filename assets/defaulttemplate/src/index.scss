@@ -454,7 +454,7 @@ body {
     letter-spacing: 0.06em;
     color: var(--pico-muted-color);
     margin: calc(var(--pico-spacing) * 1.25) 0 0.2rem 0;
-    &:first-child { margin-top: 0; }
+    [data-header]:first-child & { margin-top: 0; }
   }
 
   ul {

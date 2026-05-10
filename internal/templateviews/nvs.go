@@ -138,7 +138,7 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 
 	result := make([]*Note, 0, len(note.nv.InLinks))
 	for path := range note.nv.InLinks {
-		if linked := n.nvs.GetByPath(path); linked != nil {
+		if linked := n.nvs.GetByPath(path); linked != nil && !linked.IsSystem() {
 			result = append(result, NewNote(linked))
 		}
 	}
