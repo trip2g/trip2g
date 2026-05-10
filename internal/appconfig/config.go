@@ -12,6 +12,8 @@ import (
 
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/admin/renderpreview"
+	cleanupapikeylogs "trip2g/internal/case/cronjob/cleanupapikeylogs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/datasize"
 	"trip2g/internal/features"
@@ -106,6 +108,10 @@ type Config struct {
 
 	GitAPI gitapi.Config
 
+	RenderPreview renderpreview.Config
+
+	APIKeyLogs cleanupapikeylogs.Config
+
 	Notion notion.Config
 
 	DataEncryption dataencryption.Config
@@ -167,14 +173,16 @@ func DefaultStorageConfig() miniostorage.Config {
 // DefaultConfig returns a configuration with default values.
 func DefaultConfig() *Config {
 	return &Config{
-		ListenAddr:   DefaultListenAddr,
-		DatabaseFile: DefaultDatabaseFile,
-		DevMode:      DefaultDevMode,
-		AdminJSURL:   DefaultAdminJSURL,
-		LogLevel:     DefaultLogLevel,
-		AcmeDomains:  ArrayFlags{},
-		Storage:      DefaultStorageConfig(),
-		Metrics:      DefaultMetricsConfig(),
+		ListenAddr:    DefaultListenAddr,
+		DatabaseFile:  DefaultDatabaseFile,
+		DevMode:       DefaultDevMode,
+		AdminJSURL:    DefaultAdminJSURL,
+		LogLevel:      DefaultLogLevel,
+		AcmeDomains:   ArrayFlags{},
+		Storage:       DefaultStorageConfig(),
+		Metrics:       DefaultMetricsConfig(),
+		RenderPreview: renderpreview.DefaultConfig(),
+		APIKeyLogs:    cleanupapikeylogs.DefaultConfig(),
 	}
 }
 
@@ -449,6 +457,12 @@ func (c *Config) defineMinioFlags() {
 		"minio-url-expires-in",
 		c.Storage.URLExpiresIn,
 		"MinIO presigned URL expiration time",
+	)
+	flag.DurationVar(
+		&c.APIKeyLogs.Retention,
+		"api-key-logs-retention",
+		c.APIKeyLogs.Retention,
+		"How long to keep API key access logs (default 90d)",
 	)
 }
 

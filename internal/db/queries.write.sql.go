@@ -73,6 +73,15 @@ func (q *WriteQueries) ChangeLiveRelease(ctx context.Context, id int64) error {
 	return err
 }
 
+const cleanupOldAPIKeyLogs = `-- name: CleanupOldAPIKeyLogs :exec
+delete from api_key_logs where created_at < ?1
+`
+
+func (q *WriteQueries) CleanupOldAPIKeyLogs(ctx context.Context, cutoffTime time.Time) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldAPIKeyLogs, cutoffTime)
+	return err
+}
+
 const cleanupOldChangeWebhookDeliveries = `-- name: CleanupOldChangeWebhookDeliveries :exec
 delete from change_webhook_deliveries
 where created_at < datetime('now', '-30 days')
@@ -102,6 +111,15 @@ where created_at < datetime('now', '-1 days')
 // so logs accumulate fast. Keep only the last day.
 func (q *WriteQueries) CleanupOldDeliveryLogs(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, cleanupOldDeliveryLogs)
+	return err
+}
+
+const cleanupOrphanedAPIKeyLogIPs = `-- name: CleanupOrphanedAPIKeyLogIPs :exec
+delete from api_key_log_ips where id not in (select ip_id from api_key_logs)
+`
+
+func (q *WriteQueries) CleanupOrphanedAPIKeyLogIPs(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, cleanupOrphanedAPIKeyLogIPs)
 	return err
 }
 

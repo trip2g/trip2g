@@ -178,6 +178,12 @@ insert into api_key_log_ips (value)
 values (?)
 on conflict(value) do nothing;
 
+-- name: CleanupOldAPIKeyLogs :exec
+delete from api_key_logs where created_at < sqlc.arg(cutoff_time);
+
+-- name: CleanupOrphanedAPIKeyLogIPs :exec
+delete from api_key_log_ips where id not in (select ip_id from api_key_logs);
+
 -- name: InsertRelease :one
 insert into releases (created_by, title, home_note_version_id, is_live)
 values (?, ?, ?, ?)

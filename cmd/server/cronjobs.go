@@ -2,6 +2,7 @@ package main
 
 import (
 	"trip2g/internal/case/cronjob/applygitchanges"
+	"trip2g/internal/case/cronjob/cleanupapikeylogs"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
@@ -38,6 +39,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 
 		_ cleanupwebhookdeliverylogs.Env = app
 		_ cleanupwebhookdeliveries.Env   = app
+		_ cleanupapikeylogs.Env          = app
 	)
 
 	jobs := []cronjobs.Job{
@@ -53,6 +55,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&executecronwebhooks.Job{},
 		&cleanupwebhookdeliverylogs.Job{},
 		&cleanupwebhookdeliveries.Job{},
+		&cleanupapikeylogs.Job{Config: app.config.APIKeyLogs},
 	}
 
 	// Conditionally add simple backup job if enabled
