@@ -57,7 +57,13 @@ func (r *headingRenderer) renderHeading(w util.BufWriter, source []byte, node as
 			r.stack = r.stack[:len(r.stack)-1]
 		}
 		text := headingPlainText(source, heading)
-		_, _ = fmt.Fprintf(w, `<div data-header="%s" data-level="%d"><%s>`, escapeAttr(text), level, tag)
+		idAttr := ""
+		if rawID, ok := heading.AttributeString("id"); ok {
+			if idBytes, ok := rawID.([]byte); ok {
+				idAttr = ` id="` + string(idBytes) + `"`
+			}
+		}
+		_, _ = fmt.Fprintf(w, `<div data-header="%s" data-level="%d"><%s%s>`, escapeAttr(text), level, tag, idAttr)
 		r.stack = append(r.stack, level)
 	} else {
 		_, _ = fmt.Fprintf(w, `</%s>`, tag)
