@@ -690,6 +690,30 @@ func (q *WriteQueries) DisableWebhook(ctx context.Context, arg DisableWebhookPar
 	return err
 }
 
+const enableApiKey = `-- name: EnableApiKey :one
+update api_keys
+  set disabled_by = null, disabled_at = null
+ where id = ?
+returning id, value, created_at, created_by, disabled_at, disabled_by, description, skip_webhooks, enable_mcp_admin_tools
+`
+
+func (q *WriteQueries) EnableApiKey(ctx context.Context, id int64) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, enableApiKey, id)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
+		&i.Description,
+		&i.SkipWebhooks,
+		&i.EnableMcpAdminTools,
+	)
+	return i, err
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?

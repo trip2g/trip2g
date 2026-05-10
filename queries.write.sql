@@ -148,6 +148,12 @@ update api_keys
  where id = ?
 returning *;
 
+-- name: EnableApiKey :one
+update api_keys
+  set disabled_by = null, disabled_at = null
+ where id = ?
+returning *;
+
 -- name: SetApiKeyMcpAdminTools :exec
 update api_keys set enable_mcp_admin_tools = sqlc.arg(enabled) where id = sqlc.arg(id);
 
