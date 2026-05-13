@@ -109,8 +109,7 @@ CREATE TABLE api_keys (
   disabled_at datetime,
   disabled_by integer references admins(user_id) on delete restrict,
   description text not null default '' -- the form field always has a value
-, skip_webhooks boolean not null default false
-, enable_mcp_admin_tools boolean);
+, skip_webhooks boolean not null default false, enable_mcp_admin_tools boolean);
 CREATE TABLE api_key_log_actions (
   id integer primary key autoincrement,
   name text not null unique
@@ -769,6 +768,34 @@ CREATE TABLE user_tokens (
 );
 CREATE INDEX idx_user_tokens_user_id on user_tokens(user_id);
 CREATE INDEX idx_user_tokens_token_hash on user_tokens(token_hash);
+CREATE TABLE form_submits (
+    id              integer primary key,
+    note_version_id integer not null references note_versions(id),
+    form_id         text not null default '',
+    user_id         integer references users(id),
+    ip              text not null default '',
+    status          text not null default 'visible',
+    created_at      datetime not null default current_timestamp
+);
+CREATE INDEX form_submits_note_version_id on form_submits(note_version_id);
+CREATE TABLE form_string_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      text not null,
+    primary key (submit_id, field_name)
+);
+CREATE TABLE form_int_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      integer not null,
+    primary key (submit_id, field_name)
+);
+CREATE TABLE form_bool_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      integer not null,
+    primary key (submit_id, field_name)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -883,4 +910,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260330100000'),
   ('20260416132701'),
   ('20260427100000'),
-  ('20260430100000');
+  ('20260430100000'),
+  ('20260506120000'),
+  ('20260513120000');
