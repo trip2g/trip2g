@@ -961,6 +961,9 @@ func (n *NoteView) ExtractTitle() string {
 		return docTitle
 	}
 
+	if !strings.HasSuffix(n.Path, ".md") {
+		return ""
+	}
 	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
 }
 

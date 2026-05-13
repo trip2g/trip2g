@@ -9,7 +9,7 @@
   </style>
 </head>
 <body>
-  {% include "components/header.html" %}
+  {{ include "components/header.html" }}
   <main>
     <h1>{{ note.Title() }}</h1>
     {{ note.HTMLString() }}

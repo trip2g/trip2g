@@ -26,7 +26,7 @@ const KID_A = `e2e-bidir-a-${crypto.randomBytes(4).toString('hex')}`;
 const KID_B = `e2e-bidir-b-${crypto.randomBytes(4).toString('hex')}`;
 
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const response = await request.post(`${baseURL}/graphql`, {
+  const response = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });

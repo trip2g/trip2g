@@ -304,3 +304,15 @@ func TestYieldBlocks_ButtonCSSViaTransitiveDep(t *testing.T) {
 	require.Contains(t, out, ".mesh-button--primary", "primary button CSS must be in output")
 	require.Contains(t, out, "background:green", "primary green background must be in output")
 }
+
+// TestIncludeExprSyntax verifies that {{ include "file" }} (expression syntax)
+// does not cause a stack overflow in the jet AST visitor.
+func TestIncludeExprSyntax(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{ID: "/page.html", Path: "testdata/include_expr/page.html", Content: readFixture(t, "testdata/include_expr/page.html")},
+		{ID: "/header.html", Path: "testdata/include_expr/header.html", Content: readFixture(t, "testdata/include_expr/header.html")},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page.html")
+	require.Contains(t, out, "Header")
+}

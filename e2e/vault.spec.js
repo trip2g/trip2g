@@ -22,12 +22,14 @@ test.describe('Test Vault', () => {
     await page.goto('/lang_hub');
 
     await page.waitForURL(/\/lang_hub\/english/);
+    await page.locator('.lang-switcher__picker').click();
     await expect(page.locator('.lang-switcher a[href="/lang_hub/russian"]')).toBeVisible();
     await expect(page.locator('p').first()).toContainText('English version of the page.');
 
     // press to switch language
     await page.locator('.lang-switcher a[href="/lang_hub/russian"]').click();
     await page.waitForURL(/\/lang_hub\/russian/);
+    await page.locator('.lang-switcher__picker').click();
     await expect(page.locator('.lang-switcher a[href="/lang_hub/english"]')).toBeVisible();
     await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
 
@@ -50,6 +52,7 @@ test.describe('Test Vault', () => {
       await expect(page.locator('p').first()).toContainText('Русская версия страницы.');
 
       // press to switch language
+      await page.locator('.lang-switcher__picker').click();
       await page.locator('.lang-switcher a[href="/lang_hub/english"]').click();
       await page.waitForURL(/\/lang_hub\/english/);
       await expect(page.locator('p').first()).toContainText('English version of the page.');
@@ -62,11 +65,13 @@ test.describe('Test Vault', () => {
     await page.goto('/lang_hub/english_hub');
 
     await page.waitForURL(/\/lang_hub\/english/);
+    await page.locator('.lang-switcher__picker').click();
     await expect(page.locator('.lang-switcher a[href="/lang_hub/english_hub_russian"]')).toBeVisible();
     await expect(page.locator('p').first()).toContainText('English version for English people.');
 
     await page.locator('.lang-switcher a[href="/lang_hub/english_hub_russian"]').click();
     await page.waitForURL(/\/lang_hub\/english_hub_russian/);
+    await page.locator('.lang-switcher__picker').click();
     await expect(page.locator('.lang-switcher a[href="/lang_hub/english_hub"]')).toBeVisible();
     await expect(page.locator('p').first()).toContainText('Русская версия страницы как дополнение');
   })
@@ -599,7 +604,7 @@ test.describe('Frontmatter Patches', () => {
     const token = await graphqlSignIn(request);
     const authHeaders = { 'Cookie': `trip2g_e2e=${token}` };
 
-    const authPost = (query, variables) => request.post('/graphql', {
+    const authPost = (query, variables) => request.post('/_system/graphql', {
       headers: authHeaders,
       data: variables ? { query, variables } : { query }
     });

@@ -30,7 +30,7 @@ const HUB_DB = process.env.HUB_DB_PATH || './tmp/data/test.sqlite3';
 
 /** Execute GraphQL mutation/query with cookie auth. */
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const response = await request.post(`${baseURL}/graphql`, {
+  const response = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });
@@ -193,7 +193,7 @@ test.describe.serial('Personal tokens', () => {
       });
 
       // Post with explicit admin cookie + second user bearer — cookie wins (admin role)
-      const viewerResp = await hubRequest.post(`${HUB_URL}/graphql`, {
+      const viewerResp = await hubRequest.post(`${HUB_URL}/_system/graphql`, {
         headers: {
           'Content-Type': 'application/json',
           'Cookie': hubCookie,

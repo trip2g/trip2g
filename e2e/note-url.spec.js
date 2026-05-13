@@ -42,7 +42,7 @@ test.describe('NoteView.url field', () => {
   });
 
   test('custom domain note url uses the custom domain', async ({ request }) => {
-    const res = await request.post(`${APP_URL}/graphql`, {
+    const res = await request.post(`${APP_URL}/_system/graphql`, {
       headers: { 'Content-Type': 'application/json', Cookie: cookie },
       data: { query: NOTE_URL_QUERY },
     });
@@ -60,7 +60,7 @@ test.describe('NoteView.url field', () => {
   });
 
   test('regular note url uses APP_URL', async ({ request }) => {
-    const res = await request.post(`${APP_URL}/graphql`, {
+    const res = await request.post(`${APP_URL}/_system/graphql`, {
       headers: { 'Content-Type': 'application/json', Cookie: cookie },
       data: { query: REGULAR_NOTE_QUERY },
     });

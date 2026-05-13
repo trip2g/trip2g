@@ -23,7 +23,7 @@ import crypto from 'crypto';
 import { graphqlSignIn, createPersonalToken, revokePersonalToken, USER_TOKEN_COOKIE_NAME } from './helpers/auth.js';
 
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const res = await request.post(`${baseURL}/graphql`, {
+  const res = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });

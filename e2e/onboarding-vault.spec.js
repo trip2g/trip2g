@@ -14,7 +14,7 @@ test.describe('Onboarding vault download', () => {
   test('returns zip archive for admin', async ({ request }) => {
     const token = await graphqlSignIn(request);
     const res = await request.get(ENDPOINT, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Cookie: `trip2g_e2e=${token}` },
     });
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toBe('application/zip');

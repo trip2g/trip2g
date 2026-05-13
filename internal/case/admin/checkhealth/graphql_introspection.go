@@ -24,7 +24,7 @@ func (c *GraphQLIntrospectionChecker) Check(ctx context.Context, env Env) model.
 		}
 	}
 
-	graphqlURL := publicURL + "/graphql"
+	graphqlURL := publicURL + "/_system/graphql"
 
 	// Introspection query to test if introspection is disabled
 	introspectionQuery := "query IntrospectionQuery { __schema { queryType { name } } }"

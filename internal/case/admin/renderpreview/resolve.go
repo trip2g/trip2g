@@ -123,8 +123,11 @@ func renderMarkdownNote(content string) *model.NoteView {
 	doc := md.Parser().Parse(reader)
 	var buf bytes.Buffer
 	_ = md.Renderer().Render(&buf, src, doc)
-	return &model.NoteView{
+	nv := &model.NoteView{
 		Content: src,
 		HTML:    template.HTML(buf.String()), //nolint:gosec // goldmark output is trusted; content is user-supplied markdown rendered server-side
 	}
+	nv.SetAst(doc)
+	nv.Title = nv.ExtractTitle()
+	return nv
 }

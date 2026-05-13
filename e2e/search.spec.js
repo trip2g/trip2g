@@ -34,7 +34,7 @@ test.describe('Search: text (Bleve)', () => {
       baseURL: process.env.APP_URL || 'http://localhost:20081',
     });
     post = (query, variables) =>
-      apiContext.post('/graphql', { data: variables ? { query, variables } : { query } });
+      apiContext.post('/_system/graphql', { data: variables ? { query, variables } : { query } });
   });
 
   test.afterAll(async () => {
@@ -78,7 +78,7 @@ test.describe('Search: text (Bleve)', () => {
   });
 
   test('public search works without auth for public notes', async ({ request }) => {
-    const res = await request.post('/graphql', {
+    const res = await request.post('/_system/graphql', {
       data: { query: SEARCH_QUERY, variables: { input: { query: 'квантовый телескоп' } } },
     });
     expect(res.ok()).toBeTruthy();
@@ -106,7 +106,7 @@ test.describe('Search: hybrid (text + vector)', () => {
     });
     const headers = { Cookie: `trip2g_e2e=${token}` };
     post = (query, variables) =>
-      apiContext.post('/graphql', { headers, data: variables ? { query, variables } : { query } });
+      apiContext.post('/_system/graphql', { headers, data: variables ? { query, variables } : { query } });
   });
 
   test.afterAll(async () => {

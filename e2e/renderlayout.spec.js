@@ -44,7 +44,7 @@ const SIMPLE_LAYOUT = `<!DOCTYPE html>
 
 const LAYOUT_WITH_INCLUDE = `<!DOCTYPE html>
 <html><body>
-{% include "/preview_header.html" %}
+{{ include "/preview_header.html" }}
 <main>{{ note.Title() }}</main>
 </body></html>`;
 

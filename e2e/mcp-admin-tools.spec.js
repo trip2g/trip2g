@@ -26,7 +26,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:20081';
 const MCP_URL = `${APP_URL}/_system/mcp`;
 
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const res = await request.post(`${baseURL}/graphql`, {
+  const res = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });

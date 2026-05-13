@@ -24,7 +24,7 @@ func (c *AdminAuthorizationChecker) Check(ctx context.Context, env Env) model.He
 		}
 	}
 
-	graphqlURL := publicURL + "/graphql"
+	graphqlURL := publicURL + "/_system/graphql"
 
 	// Query that requires admin authorization
 	adminQuery := "query { admin { allAdmins { nodes { id } } } }"

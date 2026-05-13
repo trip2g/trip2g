@@ -235,9 +235,10 @@ cleanup() {
 # Set trap to cleanup on exit
 trap cleanup EXIT INT TERM
 
-# Clean up any existing test containers
+# Clean up any existing test containers (keep embedding running to avoid slow model reload)
 echo "🧹 Cleaning up existing test containers..."
-docker compose -f docker-compose.test.yml down -v 2>/dev/null || true
+docker compose -f docker-compose.test.yml stop app app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
+docker compose -f docker-compose.test.yml rm -f app app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
 
 # Prepare database
 export DB_PATH="tmp/data/test.sqlite3"
@@ -281,9 +282,10 @@ else
   "
 fi
 
-# Start services
+# Start services (embedding is kept alive between runs; start it without recreate if not running)
 echo "🚀 Starting services..."
-docker compose -f docker-compose.test.yml up -d --build
+docker compose -f docker-compose.test.yml up -d --no-recreate embedding 2>/dev/null || true
+docker compose -f docker-compose.test.yml up -d --build app app-peer app-peer2 app-peer3 minio
 
 # Wait for services
 ./scripts/waitfor localhost:20081 || {

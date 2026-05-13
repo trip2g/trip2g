@@ -64,7 +64,7 @@ namespace $ {
 		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
 
 		return (variables?: any, opts?: RequestOptions): any => {
-			const res = $.$mol_fetch.json('/graphql', {
+			const res = $.$mol_fetch.json('/_system/graphql', {
 				method: 'POST',
 				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },

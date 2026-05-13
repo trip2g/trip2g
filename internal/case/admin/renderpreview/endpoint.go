@@ -87,12 +87,15 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	// Default and ?live — require admin auth.
+	// Default and ?live — require admin auth or API key.
 	token, _ := req.UserToken()
 	if !token.IsAdmin() {
-		ctx.SetStatusCode(http.StatusUnauthorized)
-		ctx.SetBodyString("unauthorized")
-		return nil, nil
+		_, err := checkapikey.Resolve(ctx, req.Env.(checkapikey.Env), "render_preview")
+		if err != nil {
+			ctx.SetStatusCode(http.StatusUnauthorized)
+			ctx.SetBodyString("unauthorized")
+			return nil, nil
+		}
 	}
 
 	entry, ok := buf.Latest()

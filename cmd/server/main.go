@@ -2140,7 +2140,9 @@ func (a *app) prepareMiddlewares() []Middleware {
 }
 
 func (a *app) startServer() {
-	handleGraphQL := a.prepareGraphQLHandler()
+	makeGraphQLHandler := a.prepareGraphQLHandler()
+	handleGraphQL := makeGraphQLHandler("/_system/graphql")
+	handleGraphQLCompat := makeGraphQLHandler("/graphql")
 
 	rtr := router.New(a)
 
@@ -2191,6 +2193,10 @@ func (a *app) startServer() {
 			return
 		}
 
+		if handleGraphQLCompat(ctx, path) {
+			return
+		}
+
 		newPath := a.redirectManager.Match(path)
 		if newPath != nil {
 			ctx.SetStatusCode(http.StatusFound)
@@ -2209,6 +2215,10 @@ func (a *app) startServer() {
 		// TODO: remove this code because rendernotepage handles 404
 		if handled {
 			a.log.Debug("router handled request", "path", path)
+			return
+		}
+
+		if handleGraphQLCompat(ctx, path) {
 			return
 		}
 
@@ -2272,9 +2282,9 @@ func (a *app) startServer() {
 	}
 }
 
-func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string) bool {
+func (a *app) prepareGraphQLHandler() func(prefix string) func(ctx *fasthttp.RequestCtx, path string) bool {
 	// graphql.
-	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
+	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/_system/graphql"))
 
 	gqlMetrics := metrics.NewGraphQLMetrics()
 
@@ -2290,8 +2300,11 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 	// is recycled while the SSE goroutine is still writing to it.
 	sseHandler := fastgql.NewSSEHandler(a.gqlServer)
 
-	return func(ctx *fasthttp.RequestCtx, path string) bool {
-		if strings.HasPrefix(path, "/graphql") {
+	return func(prefix string) func(ctx *fasthttp.RequestCtx, path string) bool {
+		return func(ctx *fasthttp.RequestCtx, path string) bool {
+			if !strings.HasPrefix(path, prefix) {
+				return false
+			}
 			switch {
 			case string(ctx.Method()) == "GET":
 				playgroundHandler(ctx)
@@ -2300,11 +2313,8 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 			default:
 				compressedGraphqlHandler(ctx)
 			}
-
 			return true
 		}
-
-		return false
 	}
 }
 

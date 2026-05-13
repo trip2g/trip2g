@@ -87,7 +87,7 @@ func (c *APIKeyValidationChecker) Check(ctx context.Context, env Env) model.Heal
 		}
 	}
 
-	graphqlURL := publicURL + "/graphql"
+	graphqlURL := publicURL + "/_system/graphql"
 
 	// Query that requires API key
 	apiQuery := "query { notePaths { value } }"

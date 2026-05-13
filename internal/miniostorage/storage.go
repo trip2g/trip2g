@@ -89,7 +89,7 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 		}
 
 		err = minioClient.MakeBucket(ctx, config.Bucket, bucketOptions)
-		if err != nil {
+		if err != nil && minio.ToErrorResponse(err).Code != "BucketAlreadyOwnedByYou" {
 			return nil, fmt.Errorf("failed to create bucket: %w", err)
 		}
 	}

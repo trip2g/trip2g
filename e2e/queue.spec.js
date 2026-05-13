@@ -16,7 +16,7 @@ import { signInAsAdmin } from './helpers/auth.js';
  */
 
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
-const GRAPHQL_URL = `${APP_URL}/graphql`;
+const GRAPHQL_URL = `${APP_URL}/_system/graphql`;
 const QUEUE_ID = 'global_jobs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────

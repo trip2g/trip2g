@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"time"
 
 	"trip2g/internal/logger"
 
@@ -65,13 +66,16 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	if config.ReadOnly {
 		conn.SetMaxOpenConns(25)
 		conn.SetMaxIdleConns(25)
+		// Release idle read connections after 30s so WAL snapshots don't accumulate
+		// and prevent checkpoints, which causes SQLITE_BUSY_SNAPSHOT (517) for writers.
+		conn.SetConnMaxIdleTime(30 * time.Second)
 	} else {
 		conn.SetMaxOpenConns(1)
 		conn.SetMaxIdleConns(1)
+		conn.SetConnMaxIdleTime(0)
 	}
 
 	conn.SetConnMaxLifetime(0)
-	conn.SetConnMaxIdleTime(0)
 
 	// Enable SQLite pragmas
 	err = enablePragmas(conn)

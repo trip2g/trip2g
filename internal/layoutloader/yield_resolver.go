@@ -15,6 +15,11 @@ func (w *blockNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
+	// jet's visitIncludeNode re-visits the IncludeNode itself instead of its children,
+	// causing infinite recursion. Skip it — include nodes contain no blocks or yields.
+	if _, ok := node.(*jet.IncludeNode); ok {
+		return
+	}
 	// Fix jet panic: YieldNode.Parameters can be nil for partially-parsed templates.
 	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
 		y.Parameters = &jet.BlockParameterList{}
@@ -30,6 +35,9 @@ type yieldNameFinder struct{ names []string }
 
 func (w *yieldNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
+		return
+	}
+	if _, ok := node.(*jet.IncludeNode); ok {
 		return
 	}
 	if y, ok := node.(*jet.YieldNode); ok {

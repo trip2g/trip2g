@@ -28,7 +28,7 @@ const KID_P2 = `e2e-acl-p2-${crypto.randomBytes(4).toString('hex')}`;
 const KID_P3 = `e2e-acl-p3-${crypto.randomBytes(4).toString('hex')}`;
 
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const response = await request.post(`${baseURL}/graphql`, {
+  const response = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });

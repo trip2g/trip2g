@@ -19,7 +19,7 @@ test.describe('Sign-in Wall', () => {
     const authHeaders = { 'Cookie': `trip2g_e2e=${adminToken}` };
 
     // Find the "signin_required" subgraph and save its current settings
-    const listResponse = await request.post('/graphql', {
+    const listResponse = await request.post('/_system/graphql', {
       headers: authHeaders,
       data: {
         query: `{
@@ -49,7 +49,7 @@ test.describe('Sign-in Wall', () => {
       subgraphHidden = sg.hidden ?? false;
 
       // Set requireSignin=true on the signin_required subgraph
-      const updateResponse = await request.post('/graphql', {
+      const updateResponse = await request.post('/_system/graphql', {
         headers: authHeaders,
         data: {
           query: `

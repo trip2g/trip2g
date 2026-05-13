@@ -306,6 +306,9 @@ func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
+	if _, ok := node.(*jet.IncludeNode); ok {
+		return
+	}
 	if action, ok := node.(*jet.ActionNode); ok && !w.found {
 		if action.Pipe != nil && len(action.Pipe.Cmds) > 0 {
 			if ident, identOk := action.Pipe.Cmds[0].BaseExpr.(*jet.IdentifierNode); identOk && ident.Ident == "yield_blocks" {
@@ -420,6 +423,9 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
+	if _, ok := node.(*jet.IncludeNode); ok {
+		return
+	}
 
 	switch node := node.(type) {
 	case *jet.IdentifierNode:
@@ -454,6 +460,9 @@ type blockFinder struct {
 
 func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
+		return
+	}
+	if _, ok := node.(*jet.IncludeNode); ok {
 		return
 	}
 

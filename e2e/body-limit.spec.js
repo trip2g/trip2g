@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:8081';
-const GRAPHQL_URL = `${APP_URL}/graphql`;
+const GRAPHQL_URL = `${APP_URL}/_system/graphql`;
 
 test.describe('Body size limit', () => {
   test('GraphQL request exceeding body limit returns GraphQL-formatted 413 error', async () => {

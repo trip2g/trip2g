@@ -23,7 +23,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		WebhookPathPrefix: "/graphql/tg/webhook",
+		WebhookPathPrefix: "/_system/tg/webhook",
 	}
 }
 

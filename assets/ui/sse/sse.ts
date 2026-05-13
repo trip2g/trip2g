@@ -3,7 +3,7 @@ namespace $ {
 	export class $trip2g_sse_host extends $mol_object {
 
 		restart_delay() { return 3000 }
-		url() { return '/graphql' }
+		url() { return '/_system/graphql' }
 		query() { return '' }
 		variables() { return {} as Record<string, unknown> }
 

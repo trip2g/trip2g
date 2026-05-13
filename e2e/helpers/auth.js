@@ -15,7 +15,7 @@ export const ADMIN_JWT_CACHE_PATH = path.join(process.cwd(), 'tmp', '.test-admin
  * @returns {Promise<{ plaintextToken: string, id: string }>}
  */
 export async function createPersonalToken(request, baseURL, cookie, { name, expiresInDays = 90 }) {
-  const res = await request.post(`${baseURL}/graphql`, {
+  const res = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: {
       query: `
@@ -49,7 +49,7 @@ export async function createPersonalToken(request, baseURL, cookie, { name, expi
  * @returns {Promise<void>}
  */
 export async function revokePersonalToken(request, baseURL, cookie, id) {
-  const res = await request.post(`${baseURL}/graphql`, {
+  const res = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: {
       query: `
@@ -129,7 +129,7 @@ export async function graphqlSignIn(request, email = 'hello@example.com', code =
   }
 
   // 1. Request email code
-  const requestCodeResponse = await request.post('/graphql', {
+  const requestCodeResponse = await request.post('/_system/graphql', {
     data: {
       query: `
         mutation RequestCode($input: RequestEmailSignInCodeInput!) {
@@ -160,7 +160,7 @@ export async function graphqlSignIn(request, email = 'hello@example.com', code =
   }
 
   // 2. Sign in with code
-  const signInResponse = await request.post('/graphql', {
+  const signInResponse = await request.post('/_system/graphql', {
     data: {
       query: `
         mutation SignIn($input: SignInByEmailInput!) {

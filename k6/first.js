@@ -10,7 +10,7 @@ export const options = {
 };
 
 const BASE_URL = 'http://localhost:8081';
-const GRAPHQL_ENDPOINT = `${BASE_URL}/graphql`;
+const GRAPHQL_ENDPOINT = `${BASE_URL}/_system/graphql`;
 const TARGET_PAGE = '/ponedeljnik_9_iyunya_2025';
 
 // Helper function to make GraphQL requests

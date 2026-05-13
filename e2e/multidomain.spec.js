@@ -25,7 +25,7 @@ test.describe('Multi-domain routing', () => {
     const authHeaders = { Cookie: `${USER_TOKEN_COOKIE_NAME}=${token}` };
 
     const authPost = (query, variables) =>
-      request.post('/graphql', {
+      request.post('/_system/graphql', {
         headers: authHeaders,
         data: variables ? { query, variables } : { query },
       });

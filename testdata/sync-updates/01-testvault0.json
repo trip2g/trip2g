@@ -156,6 +156,10 @@
     "url": "http://localhost:20081/headers"
   },
   {
+    "path": "hello.md",
+    "url": "http://localhost:20081/hello"
+  },
+  {
     "path": "img-formats.md",
     "url": "http://localhost:20081/img_formats"
   },

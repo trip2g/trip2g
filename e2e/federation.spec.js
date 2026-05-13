@@ -16,8 +16,8 @@ import { graphqlSignIn } from './helpers/auth.js';
 
 const HUB_URL = process.env.APP_URL || 'http://localhost:20081';
 const PEER_URL = 'http://localhost:20091';
-const HUB_GRAPHQL = `${HUB_URL}/graphql`;
-const PEER_GRAPHQL = `${PEER_URL}/graphql`;
+const HUB_GRAPHQL = `${HUB_URL}/_system/graphql`;
+const PEER_GRAPHQL = `${PEER_URL}/_system/graphql`;
 const HUB_MCP = `${HUB_URL}/_system/mcp`;
 
 // Deterministic secret for reproducible test runs (64 hex chars = 32 bytes).
@@ -27,7 +27,7 @@ const KID = `e2e-${crypto.randomBytes(4).toString('hex')}`;
 
 /** Execute GraphQL mutation/query with cookie auth. */
 async function gql(request, baseURL, cookie, query, variables = {}) {
-  const response = await request.post(`${baseURL}/graphql`, {
+  const response = await request.post(`${baseURL}/_system/graphql`, {
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     data: { query, variables },
   });
