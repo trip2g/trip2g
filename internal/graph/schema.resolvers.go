@@ -130,6 +130,7 @@ import (
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
+	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/configregistry"
@@ -615,7 +616,7 @@ func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *mo
 
 // Nodes is the resolver for the nodes field.
 func (r *adminFormSubmitsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error) {
-	panic(fmt.Errorf("not implemented: Nodes - nodes"))
+	return r.env(ctx).GetFormSubmitsByNotePathID(ctx, obj.NotePathID)
 }
 
 // IncludePatterns is the resolver for the includePatterns field.
@@ -1890,7 +1891,7 @@ func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.Adm
 
 // FormSubmits is the resolver for the formSubmits field.
 func (r *adminQueryResolver) FormSubmits(ctx context.Context, obj *appmodel.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error) {
-	panic(fmt.Errorf("not implemented: FormSubmits - formSubmits"))
+	return &model.AdminFormSubmitsConnection{NotePathID: notePathID}, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -2318,22 +2319,55 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 
 // ID is the resolver for the id field.
 func (r *formSubmitResolver) ID(ctx context.Context, obj *db.FormSubmit) (int32, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
+	return int32(obj.ID), nil
 }
 
 // User is the resolver for the user field.
 func (r *formSubmitResolver) User(ctx context.Context, obj *db.FormSubmit) (*db.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return resolveOnePtr[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Status is the resolver for the status field.
 func (r *formSubmitResolver) Status(ctx context.Context, obj *db.FormSubmit) (model.FormSubmitStatus, error) {
-	panic(fmt.Errorf("not implemented: Status - status"))
+	return model.FormSubmitStatus(obj.Status), nil
 }
 
 // Fields is the resolver for the fields field.
 func (r *formSubmitResolver) Fields(ctx context.Context, obj *db.FormSubmit) ([]model.FormSubmitField, error) {
-	panic(fmt.Errorf("not implemented: Fields - fields"))
+	return loadFormSubmitFields(ctx, r.env(ctx), obj.ID)
+}
+
+func loadFormSubmitFields(ctx context.Context, env interface {
+	GetFormStringValuesBySubmitID(context.Context, int64) ([]db.GetFormStringValuesBySubmitIDRow, error)
+	GetFormIntValuesBySubmitID(context.Context, int64) ([]db.GetFormIntValuesBySubmitIDRow, error)
+	GetFormBoolValuesBySubmitID(context.Context, int64) ([]db.GetFormBoolValuesBySubmitIDRow, error)
+}, submitID int64) ([]model.FormSubmitField, error) {
+	fields := []model.FormSubmitField{}
+	strs, err := env.GetFormStringValuesBySubmitID(ctx, submitID)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range strs {
+		v := s.Value
+		fields = append(fields, model.FormSubmitField{Name: s.FieldName, StringValue: &v})
+	}
+	ints, err := env.GetFormIntValuesBySubmitID(ctx, submitID)
+	if err != nil {
+		return nil, err
+	}
+	for _, n := range ints {
+		v := int32(n.Value)
+		fields = append(fields, model.FormSubmitField{Name: n.FieldName, IntValue: &v})
+	}
+	bools, err := env.GetFormBoolValuesBySubmitID(ctx, submitID)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range bools {
+		v := b.Value != 0
+		fields = append(fields, model.FormSubmitField{Name: b.FieldName, BoolValue: &v})
+	}
+	return fields, nil
 }
 
 // Value is the resolver for the value field.
@@ -2417,7 +2451,46 @@ func (r *mutationResolver) CreateEmailWaitListRequest(ctx context.Context, input
 
 // SubmitForm is the resolver for the submitForm field.
 func (r *mutationResolver) SubmitForm(ctx context.Context, input model.SubmitFormInput) (model.SubmitFormOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: SubmitForm - submitForm"))
+	fields := make([]submitform.FieldValue, len(input.Fields))
+	for i, f := range input.Fields {
+		var intVal *int
+		if f.IntValue != nil {
+			v := int(*f.IntValue)
+			intVal = &v
+		}
+		fields[i] = submitform.FieldValue{
+			Name:        f.Name,
+			StringValue: f.StringValue,
+			IntValue:    intVal,
+			BoolValue:   f.BoolValue,
+			FilePresent: f.FileValue != nil,
+		}
+	}
+	var token string
+	if input.TurnstileToken != nil {
+		token = *input.TurnstileToken
+	}
+	formID := ""
+	if input.FormID != nil {
+		formID = *input.FormID
+	}
+	result, err := submitform.Resolve(ctx, r.env(ctx), submitform.Input{
+		NoteVersionID:  input.NoteVersionID,
+		FormID:         formID,
+		TurnstileToken: token,
+		Fields:         fields,
+	})
+	if err != nil {
+		return nil, err
+	}
+	switch p := result.(type) {
+	case *submitform.SuccessResult:
+		return &model.SubmitFormPayload{SubmitID: int32(p.SubmitID)}, nil
+	case *submitform.ErrorResult:
+		return &model.ErrorPayload{Message: p.Message}, nil
+	default:
+		return nil, fmt.Errorf("submitform: unexpected payload type %T", result)
+	}
 }
 
 // ToggleFavoriteNote is the resolver for the toggleFavoriteNote field.

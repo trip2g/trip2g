@@ -255,6 +255,34 @@ type FederationSecretSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type FormBoolValue struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+type FormIntValue struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+type FormStringValue struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     string `json:"value"`
+}
+
+type FormSubmit struct {
+	ID            int64     `json:"id"`
+	NoteVersionID int64     `json:"note_version_id"`
+	FormID        string    `json:"form_id"`
+	UserID        *int64    `json:"user_id"`
+	Ip            string    `json:"ip"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
 type GitToken struct {
 	ID          int64      `json:"id"`
 	CreatedAt   time.Time  `json:"created_at"`

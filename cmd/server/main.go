@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
+	"trip2g/internal/case/backjob/sendformsubmit"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/backjob/sendtelegramaccountmessage"
 	"trip2g/internal/case/backjob/sendtelegramaccountpost"
@@ -63,6 +64,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
+	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/updatesubgraphs"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/configregistry"
@@ -73,6 +75,7 @@ import (
 	"trip2g/internal/fastgql"
 	"trip2g/internal/features"
 	"trip2g/internal/federation"
+	"trip2g/internal/formspec"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/githubauth"
@@ -145,6 +148,7 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
+	*sendformsubmit.SendFormSubmitEmailJob
 	*sendtelegrampost.SendTelegramPostJob
 	*updatetelegrampost.UpdateTelegramPostJob
 	*sendtelegrammessage.SendTelegramMessageJob
@@ -503,6 +507,7 @@ func (a *app) initJobs(ctx context.Context) {
 	a.ImportTelegramChannelJob = importtelegramchannel.New(a)
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
+	a.SendFormSubmitEmailJob = sendformsubmit.New(a)
 	a.SendTelegramPostJob = sendtelegrampost.New(a)
 	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
@@ -2599,6 +2604,179 @@ func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiK
 
 	return &apiKey, nil
 }
+
+// UserID returns the current user ID from the request context, or nil if anonymous.
+func (a *app) UserID(ctx context.Context) *int64 {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil
+	}
+	token, err := req.UserToken()
+	if err != nil || token == nil || token.ID == 0 {
+		return nil
+	}
+	id := int64(token.ID)
+	return &id
+}
+
+// GetFormSpec loads form spec for the given note version and form id.
+func (a *app) GetFormSpec(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+	notes := a.LatestNoteViews()
+	note := notes.GetByVersionID(noteVersionID)
+	if note == nil {
+		return nil, nil
+	}
+	return resolveFormSpec(note, notes, formID)
+}
+
+func resolveFormSpec(note *model.NoteView, notes *model.NoteViews, formID string) (*formspec.FormSpec, error) {
+	rawMeta := note.RawMeta
+	if kind, value, ok := formspec.ParseFormRef(rawMeta); ok {
+		var ref *model.NoteView
+		switch kind {
+		case "wikilink":
+			ref = notes.Map[value]
+		case "path":
+			ref = notes.GetByPath(value)
+		}
+		if ref == nil {
+			return nil, nil
+		}
+		rawMeta = ref.RawMeta
+	}
+	if formsRaw, ok := rawMeta["forms"]; ok {
+		formsMap, ok := formsRaw.(map[string]interface{})
+		if !ok {
+			return nil, nil
+		}
+		formRaw, ok := formsMap[formID]
+		if !ok {
+			return nil, nil
+		}
+		return formspec.ParseFromRawMeta(map[string]interface{}{"form": formRaw})
+	}
+	return formspec.ParseFromRawMeta(rawMeta)
+}
+
+func (a *app) InsertFormSubmit(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
+	return a.WriteQueries.InsertFormSubmit(ctx, db.InsertFormSubmitParams{
+		NoteVersionID: noteVersionID,
+		FormID:        formID,
+		UserID:        userID,
+		Ip:            ip,
+	})
+}
+
+func (a *app) InsertFormStringValue(ctx context.Context, submitID int64, fieldName, value string) error {
+	return a.WriteQueries.InsertFormStringValue(ctx, db.InsertFormStringValueParams{
+		SubmitID: submitID, FieldName: fieldName, Value: value,
+	})
+}
+
+func (a *app) InsertFormIntValue(ctx context.Context, submitID int64, fieldName string, value int64) error {
+	return a.WriteQueries.InsertFormIntValue(ctx, db.InsertFormIntValueParams{
+		SubmitID: submitID, FieldName: fieldName, Value: value,
+	})
+}
+
+func (a *app) InsertFormBoolValue(ctx context.Context, submitID int64, fieldName string, value bool) error {
+	v := int64(0)
+	if value {
+		v = 1
+	}
+	return a.WriteQueries.InsertFormBoolValue(ctx, db.InsertFormBoolValueParams{
+		SubmitID: submitID, FieldName: fieldName, Value: v,
+	})
+}
+
+func (a *app) EnqueueSendFormSubmitEmail(ctx context.Context, submitID int64) error {
+	return a.SendFormSubmitEmailJob.EnqueueSendFormSubmit(ctx, submitID)
+}
+
+func (a *app) GetFormSubmitsByNotePathID(ctx context.Context, notePathID int64) ([]db.FormSubmit, error) {
+	return a.Queries.GetFormSubmitsByNotePathID(ctx, notePathID)
+}
+
+func (a *app) GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormStringValuesBySubmitIDRow, error) {
+	return a.Queries.GetFormStringValuesBySubmitID(ctx, submitID)
+}
+
+func (a *app) GetFormIntValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormIntValuesBySubmitIDRow, error) {
+	return a.Queries.GetFormIntValuesBySubmitID(ctx, submitID)
+}
+
+func (a *app) GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormBoolValuesBySubmitIDRow, error) {
+	return a.Queries.GetFormBoolValuesBySubmitID(ctx, submitID)
+}
+
+func (a *app) GetAdminEmails(ctx context.Context) ([]string, error) {
+	admins, err := a.Queries.ListAllAdmins(ctx)
+	if err != nil {
+		return nil, err
+	}
+	emails := make([]string, 0, len(admins))
+	for _, ad := range admins {
+		u, err := a.Queries.UserByID(ctx, ad.UserID)
+		if err != nil {
+			continue
+		}
+		if u.Email != nil && *u.Email != "" {
+			emails = append(emails, *u.Email)
+		}
+	}
+	return emails, nil
+}
+
+func (a *app) GetFormSubmitForEmail(ctx context.Context, submitID int64) (*sendformsubmit.Params, error) {
+	submit, err := a.Queries.GetFormSubmitByID(ctx, submitID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	notes := a.LatestNoteViews()
+	notePath := ""
+	if note := notes.GetByVersionID(submit.NoteVersionID); note != nil {
+		notePath = note.Path
+	}
+	userInfo := "guest"
+	if submit.UserID != nil {
+		userInfo = fmt.Sprintf("user:%d", *submit.UserID)
+	}
+
+	strs, _ := a.Queries.GetFormStringValuesBySubmitID(ctx, submitID)
+	ints, _ := a.Queries.GetFormIntValuesBySubmitID(ctx, submitID)
+	bools, _ := a.Queries.GetFormBoolValuesBySubmitID(ctx, submitID)
+
+	var fields []sendformsubmit.FieldEntry
+	for _, s := range strs {
+		fields = append(fields, sendformsubmit.FieldEntry{Name: s.FieldName, Value: s.Value})
+	}
+	for _, n := range ints {
+		fields = append(fields, sendformsubmit.FieldEntry{Name: n.FieldName, Value: fmt.Sprintf("%d", n.Value)})
+	}
+	for _, b := range bools {
+		boolVal := "false"
+		if b.Value != 0 {
+			boolVal = "true"
+		}
+		fields = append(fields, sendformsubmit.FieldEntry{Name: b.FieldName, Value: boolVal})
+	}
+
+	return &sendformsubmit.Params{
+		SubmitID:    submitID,
+		NotePath:    notePath,
+		SubmittedAt: submit.CreatedAt.Format("2006-01-02 15:04:05"),
+		UserInfo:    userInfo,
+		IP:          submit.Ip,
+		Fields:      fields,
+	}, nil
+}
+
+var _ submitform.Env = (*app)(nil)
+var _ sendformsubmit.Env = (*app)(nil)
 
 // GraphQLRequest executes a GraphQL query programmatically with admin privileges.
 func (a *app) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {

@@ -656,7 +656,8 @@ type AdminCronWebhooksConnection struct {
 }
 
 type AdminFormSubmitsConnection struct {
-	Nodes []db.FormSubmit `json:"nodes"`
+	Nodes      []db.FormSubmit `json:"nodes"`
+	NotePathID int64           `json:"-"`
 }
 
 type AdminFrontmatterPatchesConnection struct {

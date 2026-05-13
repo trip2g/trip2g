@@ -114,6 +114,7 @@ import (
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
+	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
@@ -178,6 +179,12 @@ type Env interface {
 	ListTelegramPublishTagsByNoteID(ctx context.Context, notePathID int64) ([]db.TelegramPublishTag, error)
 	ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
+
+	submitform.Env
+	GetFormSubmitsByNotePathID(ctx context.Context, notePathID int64) ([]db.FormSubmit, error)
+	GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormStringValuesBySubmitIDRow, error)
+	GetFormIntValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormIntValuesBySubmitIDRow, error)
+	GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormBoolValuesBySubmitIDRow, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
