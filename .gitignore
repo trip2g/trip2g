@@ -40,9 +40,7 @@ session.json
 .tgbottoken.*
 
 testdata/client
-testdata/vault/ryspaisensei
-testdata/vault/Docker_Ninja
-testdata/vault/hodljusthodl
+
 .tg_e2e_session
 /tge2e
 
