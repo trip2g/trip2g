@@ -1,0 +1,14 @@
+{% func PlainView(p *Params) %}
+New form submission on {%s p.NotePath %}
+
+Submitted: {%s p.SubmittedAt %}
+User: {%s p.UserInfo %}
+IP: {%s p.IP %}
+
+Fields:
+{% for _, f := range p.Fields %}
+  {%s f.Name %}: {%s f.Value %}
+{% endfor %}
+
+View in admin: {%s p.AdminURL %}
+{% endfunc %}
