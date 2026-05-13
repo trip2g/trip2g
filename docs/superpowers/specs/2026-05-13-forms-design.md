@@ -15,12 +15,27 @@ A `form_ref` field can point to another note's `form:` block to avoid duplicatin
 
 ## Frontmatter Spec
 
-Two options — inline spec or reference to another note:
+Three options — inline single form, multiple named forms, or reference to another note:
 
 ```yaml
-# Option A: inline spec
+# Option A: single inline form (form_id = "")
 form:
   can_submit: guest        # guest | paid_user | admin
+```
+
+```yaml
+# Option B: multiple named forms on one note
+forms:
+  contact:
+    can_submit: guest
+    fields:
+      - name: email
+        type: email
+  survey:
+    can_submit: paid_user
+    fields:
+      - name: rating
+        type: int
 ```
 
 ```yaml
@@ -97,12 +112,13 @@ form:
 ```sql
 -- One row per form submission
 CREATE TABLE form_submits (
-    id          INTEGER PRIMARY KEY,
-    note_path_id INTEGER NOT NULL REFERENCES note_paths(id),
-    user_id     INTEGER REFERENCES users(id),   -- NULL for guests
-    ip          TEXT NOT NULL,
-    status      TEXT NOT NULL DEFAULT 'visible', -- pending | visible | hidden
-    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id               INTEGER PRIMARY KEY,
+    note_version_id  INTEGER NOT NULL REFERENCES note_versions(id),
+    form_id          TEXT NOT NULL DEFAULT '',   -- "" for single form, named for forms: map
+    user_id          INTEGER REFERENCES users(id),
+    ip               TEXT NOT NULL DEFAULT '',
+    status           TEXT NOT NULL DEFAULT 'visible',
+    created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- EAV value tables
@@ -154,7 +170,8 @@ scalar Upload
 ```graphql
 type FormSubmit {
   id: Int!
-  notePathId: Int!
+  noteVersionId: Int64!
+  formId: String!
   user: User
   ip: String!           # visible to admin only
   status: FormSubmitStatus!
@@ -190,8 +207,9 @@ mutation {
 }
 
 input SubmitFormInput {
-  notePath: String!
-  turnstileToken: String    # required only when form has turnstile: true
+  noteVersionId: Int64!
+  formId: String            # "" (default) for single form, named key for forms: map
+  turnstileToken: String    # v2, ignored in MVP
   fields: [FormFieldValueInput!]!
 }
 
@@ -214,6 +232,18 @@ Status management for moderated forms (public comments). Not implemented in MVP.
 
 Public query for comments/public submits. Not implemented in MVP.
 
+### Query: adminFormSubmits (admin)
+
+```graphql
+query {
+  admin {
+    formSubmits(notePathId: Int64!, formId: String): AdminFormSubmitsConnection!
+  }
+}
+```
+
+`formId` is optional — omit to see all forms for a note, pass `""` or a named key to filter.
+
 ---
 
 ## Form Spec Embedding
@@ -223,14 +253,18 @@ When rendering a note that has a `form:` frontmatter key, the server embeds the 
 ```html
 <script id="form-spec" type="application/json">
 {
-  "fields": [...],
-  "validation": {...},
-  "turnstileSiteKey": "..."
+  "note_version_id": 123,
+  "forms": {
+    "": { "can_submit": "guest", "fields": [...] },
+    "survey": { "can_submit": "paid_user", "fields": [...] }
+  }
 }
 </script>
 ```
 
-The default JS renders the form at the end of the page. Users can suppress default rendering and implement their own by reading `#form-spec`.
+`forms` always uses string keys. Single `form:` frontmatter maps to key `""`. The `note_version_id` is included so the frontend can pass it directly to `submitForm`.
+
+The default JS renders the form for key `""` at the end of the page. Users can suppress default rendering and implement their own by reading `#form-spec`.
 
 ---
 
