@@ -1388,3 +1388,23 @@ select count(*) from user_tokens
 where user_id = ?
   and revoked_at is null
   and (expires_at is null or expires_at > datetime('now'));
+
+-- name: GetFormSubmitsByNotePathID :many
+select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+where nv.path_id = ?
+order by fs.created_at desc;
+
+-- name: GetFormSubmitByID :one
+select id, note_version_id, form_id, user_id, ip, status, created_at
+from form_submits where id = ?;
+
+-- name: GetFormStringValuesBySubmitID :many
+select field_name, value from form_string_values where submit_id = ?;
+
+-- name: GetFormIntValuesBySubmitID :many
+select field_name, value from form_int_values where submit_id = ?;
+
+-- name: GetFormBoolValuesBySubmitID :many
+select field_name, value from form_bool_values where submit_id = ?;

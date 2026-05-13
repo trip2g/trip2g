@@ -1194,6 +1194,79 @@ func (q *WriteQueries) InsertFederationSecretSubgraph(ctx context.Context, arg I
 	return err
 }
 
+const insertFormBoolValue = `-- name: InsertFormBoolValue :exec
+insert into form_bool_values (submit_id, field_name, value)
+values (?, ?, ?)
+`
+
+type InsertFormBoolValueParams struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+func (q *WriteQueries) InsertFormBoolValue(ctx context.Context, arg InsertFormBoolValueParams) error {
+	_, err := q.db.ExecContext(ctx, insertFormBoolValue, arg.SubmitID, arg.FieldName, arg.Value)
+	return err
+}
+
+const insertFormIntValue = `-- name: InsertFormIntValue :exec
+insert into form_int_values (submit_id, field_name, value)
+values (?, ?, ?)
+`
+
+type InsertFormIntValueParams struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+func (q *WriteQueries) InsertFormIntValue(ctx context.Context, arg InsertFormIntValueParams) error {
+	_, err := q.db.ExecContext(ctx, insertFormIntValue, arg.SubmitID, arg.FieldName, arg.Value)
+	return err
+}
+
+const insertFormStringValue = `-- name: InsertFormStringValue :exec
+insert into form_string_values (submit_id, field_name, value)
+values (?, ?, ?)
+`
+
+type InsertFormStringValueParams struct {
+	SubmitID  int64  `json:"submit_id"`
+	FieldName string `json:"field_name"`
+	Value     string `json:"value"`
+}
+
+func (q *WriteQueries) InsertFormStringValue(ctx context.Context, arg InsertFormStringValueParams) error {
+	_, err := q.db.ExecContext(ctx, insertFormStringValue, arg.SubmitID, arg.FieldName, arg.Value)
+	return err
+}
+
+const insertFormSubmit = `-- name: InsertFormSubmit :one
+insert into form_submits (note_version_id, form_id, user_id, ip)
+values (?, ?, ?, ?)
+returning id
+`
+
+type InsertFormSubmitParams struct {
+	NoteVersionID int64  `json:"note_version_id"`
+	FormID        string `json:"form_id"`
+	UserID        *int64 `json:"user_id"`
+	Ip            string `json:"ip"`
+}
+
+func (q *WriteQueries) InsertFormSubmit(ctx context.Context, arg InsertFormSubmitParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertFormSubmit,
+		arg.NoteVersionID,
+		arg.FormID,
+		arg.UserID,
+		arg.Ip,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertFrontmatterPatch = `-- name: InsertFrontmatterPatch :one
 
 insert into note_frontmatter_patches (include_patterns, exclude_patterns, jsonnet, priority, description, enabled, created_by)

@@ -1106,3 +1106,20 @@ returning *;
 update user_tokens
 set last_used_at = current_timestamp
 where id = ?;
+
+-- name: InsertFormSubmit :one
+insert into form_submits (note_version_id, form_id, user_id, ip)
+values (?, ?, ?, ?)
+returning id;
+
+-- name: InsertFormStringValue :exec
+insert into form_string_values (submit_id, field_name, value)
+values (?, ?, ?);
+
+-- name: InsertFormIntValue :exec
+insert into form_int_values (submit_id, field_name, value)
+values (?, ?, ?);
+
+-- name: InsertFormBoolValue :exec
+insert into form_bool_values (submit_id, field_name, value)
+values (?, ?, ?);

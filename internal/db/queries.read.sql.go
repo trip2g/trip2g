@@ -1707,6 +1707,161 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 	return items, nil
 }
 
+const getFormBoolValuesBySubmitID = `-- name: GetFormBoolValuesBySubmitID :many
+select field_name, value from form_bool_values where submit_id = ?
+`
+
+type GetFormBoolValuesBySubmitIDRow struct {
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+func (q *Queries) GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) ([]GetFormBoolValuesBySubmitIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFormBoolValuesBySubmitID, submitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFormBoolValuesBySubmitIDRow
+	for rows.Next() {
+		var i GetFormBoolValuesBySubmitIDRow
+		if err := rows.Scan(&i.FieldName, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormIntValuesBySubmitID = `-- name: GetFormIntValuesBySubmitID :many
+select field_name, value from form_int_values where submit_id = ?
+`
+
+type GetFormIntValuesBySubmitIDRow struct {
+	FieldName string `json:"field_name"`
+	Value     int64  `json:"value"`
+}
+
+func (q *Queries) GetFormIntValuesBySubmitID(ctx context.Context, submitID int64) ([]GetFormIntValuesBySubmitIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFormIntValuesBySubmitID, submitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFormIntValuesBySubmitIDRow
+	for rows.Next() {
+		var i GetFormIntValuesBySubmitIDRow
+		if err := rows.Scan(&i.FieldName, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormStringValuesBySubmitID = `-- name: GetFormStringValuesBySubmitID :many
+select field_name, value from form_string_values where submit_id = ?
+`
+
+type GetFormStringValuesBySubmitIDRow struct {
+	FieldName string `json:"field_name"`
+	Value     string `json:"value"`
+}
+
+func (q *Queries) GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]GetFormStringValuesBySubmitIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFormStringValuesBySubmitID, submitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFormStringValuesBySubmitIDRow
+	for rows.Next() {
+		var i GetFormStringValuesBySubmitIDRow
+		if err := rows.Scan(&i.FieldName, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormSubmitByID = `-- name: GetFormSubmitByID :one
+select id, note_version_id, form_id, user_id, ip, status, created_at
+from form_submits where id = ?
+`
+
+func (q *Queries) GetFormSubmitByID(ctx context.Context, id int64) (FormSubmit, error) {
+	row := q.db.QueryRowContext(ctx, getFormSubmitByID, id)
+	var i FormSubmit
+	err := row.Scan(
+		&i.ID,
+		&i.NoteVersionID,
+		&i.FormID,
+		&i.UserID,
+		&i.Ip,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getFormSubmitsByNotePathID = `-- name: GetFormSubmitsByNotePathID :many
+select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+where nv.path_id = ?
+order by fs.created_at desc
+`
+
+func (q *Queries) GetFormSubmitsByNotePathID(ctx context.Context, pathID int64) ([]FormSubmit, error) {
+	rows, err := q.db.QueryContext(ctx, getFormSubmitsByNotePathID, pathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSubmit
+	for rows.Next() {
+		var i FormSubmit
+		if err := rows.Scan(
+			&i.ID,
+			&i.NoteVersionID,
+			&i.FormID,
+			&i.UserID,
+			&i.Ip,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getGitHubOAuthCredentials = `-- name: GetGitHubOAuthCredentials :one
 select id, name, client_id, client_secret_encrypted, active, created_at, created_by from github_oauth_credentials where id = ?
 `
