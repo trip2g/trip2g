@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
+	onboardingvault "trip2g/onboarding-vault"
 )
 
 type Endpoint struct{}
@@ -12,12 +13,17 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
 	ctx := req.Req
 
+	if len(onboardingvault.ZipData) == 0 {
+		ctx.SetStatusCode(http.StatusNotFound)
+		return nil, nil
+	}
+
 	token, err := req.UserToken()
 	if err != nil {
 		return nil, err
 	}
 
-	if !token.IsAdmin() {
+	if token == nil || !token.IsAdmin() {
 		ctx.SetStatusCode(http.StatusUnauthorized)
 		return nil, nil
 	}
