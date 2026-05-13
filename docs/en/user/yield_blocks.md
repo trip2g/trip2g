@@ -53,18 +53,20 @@ The page template uses `{{yield}}` to call components. No imports needed — the
 ```html
 <!-- pages/home.html -->
 <html>
+<head>
+  <style>{{yield_blocks("_style_")}}</style>
+</head>
 <body>
   {{yield hero(title="Welcome")}}
   {{yield card(title="Feature", body="...")}}
   {{yield button(label="Get Started", variant="primary")}}
-  <style>{{yield_blocks("_style_")}}</style>
 </body>
 </html>
 ```
 
 `yield_blocks("_style_")` scans all `{{yield}}` calls in the page, finds every block whose name starts with `_style_`, and writes their CSS into the tag. The result is a single `<style>` block containing only what this page uses.
 
-Place `<style>{{yield_blocks("_style_")}}</style>` before `</body>`. Browsers apply inline styles regardless of position, but end-of-body is the conventional location.
+Place `<style>{{yield_blocks("_style_")}}</style>` in `<head>`. Because block names are resolved by static analysis at load time (before any rendering), the call works correctly in `<head>` and prevents a flash of unstyled content (FOUC) on the first paint.
 
 ### Pattern syntax
 
@@ -146,6 +148,14 @@ Two situations produce a non-fatal warning in the layout preview log:
 
 Neither warning crashes rendering. Check the layout preview log if styles are missing unexpectedly.
 
+### Rules for CSS blocks
+
+**Block parameters are not passed.** `yield_blocks` calls each CSS block with no arguments. All parameters default to their zero/empty values. A block like `{{block _style_@lid(theme="")}}{{if theme}}.box--{{theme}}...{{end}}{{end}}` will never emit the conditional part. Keep CSS blocks self-contained — do not branch on their own parameters.
+
+**Global functions work normally.** Globals such as `asset()` and `note` are available inside CSS blocks called by `yield_blocks`, exactly as in any other block.
+
+**Do not yield sibling CSS blocks manually.** If a CSS block calls `{{yield _style_other()}}` internally, and `_style_other` also matches the `yield_blocks` pattern, that CSS will appear twice. Let `yield_blocks` handle collection — CSS blocks must not yield each other.
+
 ### Full example
 
 ```
@@ -177,10 +187,12 @@ _layouts/theme/
 ```html
 <!DOCTYPE html>
 <html>
+<head>
+  <style>{{yield_blocks("_style_")}}</style>
+</head>
 <body>
   {{yield hero(title=note.Title())}}
   {{yield card(title="About", body=note.HTMLString())}}
-  <style>{{yield_blocks("_style_")}}</style>
 </body>
 </html>
 ```

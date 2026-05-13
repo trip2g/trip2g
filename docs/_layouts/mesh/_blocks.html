@@ -148,6 +148,7 @@
       .wrap { overflow: hidden; }
     }
   </style>
+  <style>{{ yield_blocks("_style_mesh_") }}</style>
   {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 </head>
 <body>

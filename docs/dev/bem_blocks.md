@@ -199,3 +199,19 @@ transitive dependencies: if `card.html` yields `button`, `button.html` is includ
 automatically.
 
 User-facing documentation: [yield_blocks user guide](docs/en/user/yield_blocks.md)
+
+### Limitations and rules
+
+**Block parameters are nil.** `yield_blocks` calls each collected block via `rt.YieldBlock(name, nil)` — no arguments are passed. All block parameters default to their zero/empty values. A CSS block with `{{ if theme }}.box--{{theme}}{{ end }}` will never emit the conditional part when called this way. Rule: CSS blocks must be self-contained and must not branch on their own parameters.
+
+**Global functions are available.** Globals registered via `AddGlobalFunc` (e.g. `asset`, `note`) are accessible inside CSS blocks called by `yield_blocks`, exactly as in any other block. No special handling is needed.
+
+**Do not yield sibling CSS blocks manually.** If a CSS block calls `{{ yield _style_other() }}` internally, and `_style_other` also matches the `yield_blocks` pattern, the output will contain that CSS twice — once from the explicit yield and once from `yield_blocks` collecting it independently. Let `yield_blocks` handle collection; CSS blocks must not yield each other.
+
+**Placement in `<head>` is safe.** Because block names are resolved by static analysis (third-pass wire) before any rendering occurs, `yield_blocks` can be placed in `<head>` rather than at the end of `<body>`. This is the recommended placement for CSS to avoid flash of unstyled content (FOUC):
+
+```html
+<head>
+  <style>{{ yield_blocks("_style_mesh_") }}</style>
+</head>
+```

@@ -307,6 +307,107 @@ func TestYieldBlocks_ButtonCSSViaTransitiveDep(t *testing.T) {
 
 // TestIncludeExprSyntax verifies that {{ include "file" }} (expression syntax)
 // does not cause a stack overflow in the jet AST visitor.
+// TestYieldBlocks_BlockArgsNotPassedByYieldBlocks documents a known limitation:
+// yield_blocks calls each block with nil arguments (rt.YieldBlock(name, nil)).
+// If a CSS block branches on its own parameters, those branches will not fire —
+// parameters default to their zero/empty value.
+//
+// Safe pattern: CSS blocks are self-contained and do not branch on caller-provided args.
+// Unsafe pattern: {{ block _style_@lid(theme="") }}{{ if theme }}.box--{{theme}}...{{ end }}{{ end }}
+func TestYieldBlocks_BlockArgsNotPassedByYieldBlocks(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/page.html",
+			Path: "page.html",
+			Content: `<html>` +
+				`<head><style>{{yield_blocks("_style_")}}</style></head>` +
+				`<body>{{yield themed_box(theme="dark")}}</body>` +
+				`</html>`,
+		},
+		{
+			ID:   "/comp.html",
+			Path: "comp.html",
+			// CSS block conditionally emits a theme rule based on the `theme` argument.
+			// When called via yield_blocks (nil args), theme="" so the branch is skipped.
+			Content: `{{block _style_themed_box(theme="")}}` +
+				`.box{border:1px solid red}` +
+				`{{if theme}}.box--{{theme}}{background:black}{{end}}` +
+				`{{end}}` +
+				`{{block themed_box(theme="")}}` +
+				`<div class="box box--{{theme}}">x</div>` +
+				`{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page.html")
+
+	// Base CSS is present — no parameter dependency.
+	require.Contains(t, out, ".box{border:1px solid red}")
+
+	// Theme CSS is absent — yield_blocks passes nil args, theme="" → if branch skipped.
+	// Documented limitation: CSS blocks must not branch on their own parameters.
+	require.NotContains(t, out, ".box--dark",
+		"yield_blocks limitation: block args are nil, parameter-conditional CSS is not emitted")
+
+	// HTML body still renders correctly — normal yield path passes args as usual.
+	require.Contains(t, out, `class="box box--dark"`)
+}
+
+// TestYieldBlocks_GlobalFuncAccessible documents that global functions (asset, note, etc.)
+// registered via AddGlobalFunc are accessible inside CSS blocks called by yield_blocks.
+// This works regardless of where yield_blocks appears (head or body).
+func TestYieldBlocks_GlobalFuncAccessible(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/page.html",
+			Path: "page.html",
+			Content: `<html><head><style>{{yield_blocks("_style_")}}</style></head>` +
+				`<body>{{yield comp()}}</body></html>`,
+		},
+		{
+			ID:   "/comp.html",
+			Path: "comp.html",
+			// asset() is a global function — must be callable inside a CSS block.
+			Content: `{{block _style_comp()}}.comp{background:url({{asset("bg.png")}})}{{end}}` +
+				`{{block comp()}}<div class="comp"></div>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page.html")
+	// asset() is stubbed to return "" in tests, but the call must not panic or produce garbage.
+	require.Contains(t, out, ".comp{background:url(", "global func asset() must be callable in CSS block")
+}
+
+// TestYieldBlocks_NestedYieldCausesDuplication documents a known pitfall:
+// if a CSS block calls {{ yield _style_other() }} internally, AND _style_other also
+// matches the yield_blocks pattern, the output will contain _style_other CSS twice.
+// CSS blocks must not manually yield sibling CSS blocks — let yield_blocks collect them.
+func TestYieldBlocks_NestedYieldCausesDuplication(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/page.html",
+			Path: "page.html",
+			Content: `<html><head><style>{{yield_blocks("_style_")}}</style></head>` +
+				`<body>{{yield comp()}}</body></html>`,
+		},
+		{
+			ID:   "/comp.html",
+			Path: "comp.html",
+			// _style_comp manually yields _style_button — which yield_blocks will ALSO call.
+			Content: `{{block _style_button()}}.button{color:red}{{end}}` +
+				`{{block _style_comp()}}{{yield _style_button()}}.comp{color:blue}{{end}}` +
+				`{{block comp()}}<div></div>{{end}}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page.html")
+	// _style_button CSS appears twice: once inside _style_comp, once from yield_blocks directly.
+	// Documented pitfall: do not yield sibling CSS blocks manually.
+	first := strings.Index(out, ".button{color:red}")
+	second := strings.LastIndex(out, ".button{color:red}")
+	require.NotEqual(t, first, second, "pitfall: nested yield duplicates CSS block output")
+}
+
 func TestIncludeExprSyntax(t *testing.T) {
 	sources := []model.LayoutSourceFile{
 		{ID: "/page.html", Path: "testdata/include_expr/page.html", Content: readFixture(t, "testdata/include_expr/page.html")},
