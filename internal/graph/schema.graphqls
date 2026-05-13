@@ -1223,6 +1223,8 @@ type AdminQuery {
   frontmatterPatch(id: Int64!): AdminFrontmatterPatch
 
   storageUsage: AdminStorageUsage!
+
+  formSubmits(notePathId: Int64!): AdminFormSubmitsConnection!
 }
 
 # Block definition from Jet templates
@@ -1693,6 +1695,57 @@ type CommitNotesPayload {
 
 union CommitNotesOrErrorPayload = CommitNotesPayload | ErrorPayload
 
+# ─── Forms ───────────────────────────────────────────────────────────────────
+
+type FormSubmit {
+  id: Int!
+  noteVersionId: Int64!
+  formId: String!
+  user: User
+  ip: String!
+  status: FormSubmitStatus!
+  createdAt: Time!
+  fields: [FormSubmitField!]!
+}
+
+type FormSubmitField {
+  name: String!
+  stringValue: String
+  intValue: Int
+  boolValue: Boolean
+}
+
+enum FormSubmitStatus {
+  pending
+  visible
+  hidden
+}
+
+type AdminFormSubmitsConnection {
+  nodes: [FormSubmit!]! @goField(forceResolver: true)
+}
+
+input SubmitFormInput {
+  noteVersionId: Int64!
+  formId: String
+  turnstileToken: String
+  fields: [FormFieldValueInput!]!
+}
+
+input FormFieldValueInput {
+  name: String!
+  stringValue: String
+  intValue: Int
+  boolValue: Boolean
+  fileValue: Upload
+}
+
+type SubmitFormPayload {
+  submitId: Int!
+}
+
+union SubmitFormOrErrorPayload = SubmitFormPayload | ErrorPayload
+
 type Subscription {
   currentTime(format: String = "2006-01-02 15:04:05"): String!
 }
@@ -1704,6 +1757,8 @@ type Mutation {
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
   createEmailWaitListRequest(input: CreateEmailWaitListRequestInput!): CreateEmailWaitListRequestOrErrorPayload!
+
+  submitForm(input: SubmitFormInput!): SubmitFormOrErrorPayload!
 
   toggleFavoriteNote(input: ToggleFavoriteNoteInput!): ToggleFavoriteNoteOrErrorPayload!
 

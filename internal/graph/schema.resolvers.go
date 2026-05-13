@@ -66,7 +66,7 @@ import (
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
-	renderpreview "trip2g/internal/case/admin/renderpreview"
+	"trip2g/internal/case/admin/renderpreview"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -611,6 +611,11 @@ func (r *adminCronWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context
 // Nodes is the resolver for the nodes field.
 func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error) {
 	return r.env(ctx).ListCronWebhooks(ctx)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminFormSubmitsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error) {
+	panic(fmt.Errorf("not implemented: Nodes - nodes"))
 }
 
 // IncludePatterns is the resolver for the includePatterns field.
@@ -1883,6 +1888,11 @@ func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.Adm
 	}, nil
 }
 
+// FormSubmits is the resolver for the formSubmits field.
+func (r *adminQueryResolver) FormSubmits(ctx context.Context, obj *appmodel.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error) {
+	panic(fmt.Errorf("not implemented: FormSubmits - formSubmits"))
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -2306,6 +2316,26 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 	return strings.Join(messages, ", "), nil
 }
 
+// ID is the resolver for the id field.
+func (r *formSubmitResolver) ID(ctx context.Context, obj *db.FormSubmit) (int32, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// User is the resolver for the user field.
+func (r *formSubmitResolver) User(ctx context.Context, obj *db.FormSubmit) (*db.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+
+// Status is the resolver for the status field.
+func (r *formSubmitResolver) Status(ctx context.Context, obj *db.FormSubmit) (model.FormSubmitStatus, error) {
+	panic(fmt.Errorf("not implemented: Status - status"))
+}
+
+// Fields is the resolver for the fields field.
+func (r *formSubmitResolver) Fields(ctx context.Context, obj *db.FormSubmit) ([]model.FormSubmitField, error) {
+	panic(fmt.Errorf("not implemented: Fields - fields"))
+}
+
 // Value is the resolver for the value field.
 func (r *layoutBlockParamResolver) Value(ctx context.Context, obj *appmodel.LayoutBlockParam) (model.LayoutBlockParamValue, error) {
 	switch obj.Type {
@@ -2383,6 +2413,11 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 // CreateEmailWaitListRequest is the resolver for the createEmailWaitListRequest field.
 func (r *mutationResolver) CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error) {
 	return createemailwaitlistrequest.Resolve(ctx, r.env(ctx), input)
+}
+
+// SubmitForm is the resolver for the submitForm field.
+func (r *mutationResolver) SubmitForm(ctx context.Context, input model.SubmitFormInput) (model.SubmitFormOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: SubmitForm - submitForm"))
 }
 
 // ToggleFavoriteNote is the resolver for the toggleFavoriteNote field.
@@ -3316,6 +3351,11 @@ func (r *Resolver) AdminCronWebhooksConnection() AdminCronWebhooksConnectionReso
 	return &adminCronWebhooksConnectionResolver{r}
 }
 
+// AdminFormSubmitsConnection returns AdminFormSubmitsConnectionResolver implementation.
+func (r *Resolver) AdminFormSubmitsConnection() AdminFormSubmitsConnectionResolver {
+	return &adminFormSubmitsConnectionResolver{r}
+}
+
 // AdminFrontmatterPatch returns AdminFrontmatterPatchResolver implementation.
 func (r *Resolver) AdminFrontmatterPatch() AdminFrontmatterPatchResolver {
 	return &adminFrontmatterPatchResolver{r}
@@ -3578,6 +3618,9 @@ func (r *Resolver) DeletePatreonCredentialsPayload() DeletePatreonCredentialsPay
 // ErrorPayload returns ErrorPayloadResolver implementation.
 func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
+// FormSubmit returns FormSubmitResolver implementation.
+func (r *Resolver) FormSubmit() FormSubmitResolver { return &formSubmitResolver{r} }
+
 // LayoutBlockParam returns LayoutBlockParamResolver implementation.
 func (r *Resolver) LayoutBlockParam() LayoutBlockParamResolver { return &layoutBlockParamResolver{r} }
 
@@ -3701,6 +3744,7 @@ type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
+type adminFormSubmitsConnectionResolver struct{ *Resolver }
 type adminFrontmatterPatchResolver struct{ *Resolver }
 type adminFrontmatterPatchesConnectionResolver struct{ *Resolver }
 type adminGitHubOAuthCredentialsResolver struct{ *Resolver }
@@ -3759,6 +3803,7 @@ type banUserPayloadResolver struct{ *Resolver }
 type deleteBoostyCredentialsPayloadResolver struct{ *Resolver }
 type deletePatreonCredentialsPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
+type formSubmitResolver struct{ *Resolver }
 type layoutBlockParamResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notePathResolver struct{ *Resolver }

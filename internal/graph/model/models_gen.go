@@ -378,6 +378,10 @@ type StopBackgroundQueueOrErrorPayload interface {
 	IsStopBackgroundQueueOrErrorPayload()
 }
 
+type SubmitFormOrErrorPayload interface {
+	IsSubmitFormOrErrorPayload()
+}
+
 type ToggleFavoriteNoteOrErrorPayload interface {
 	IsToggleFavoriteNoteOrErrorPayload()
 }
@@ -649,6 +653,10 @@ type AdminCronWebhookDeliveriesFilterInput struct {
 
 type AdminCronWebhooksConnection struct {
 	Nodes []db.CronWebhook `json:"nodes"`
+}
+
+type AdminFormSubmitsConnection struct {
+	Nodes []db.FormSubmit `json:"nodes"`
 }
 
 type AdminFrontmatterPatchesConnection struct {
@@ -1478,6 +1486,8 @@ func (ErrorPayload) IsGenerateTgAttachCodeOrErrorPayload() {}
 
 func (ErrorPayload) IsCommitNotesOrErrorPayload() {}
 
+func (ErrorPayload) IsSubmitFormOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
@@ -1650,6 +1660,21 @@ type FloatParamValue struct {
 }
 
 func (FloatParamValue) IsLayoutBlockParamValue() {}
+
+type FormFieldValueInput struct {
+	Name        string          `json:"name"`
+	StringValue *string         `json:"stringValue,omitempty"`
+	IntValue    *int32          `json:"intValue,omitempty"`
+	BoolValue   *bool           `json:"boolValue,omitempty"`
+	FileValue   *graphql.Upload `json:"fileValue,omitempty"`
+}
+
+type FormSubmitField struct {
+	Name        string  `json:"name"`
+	StringValue *string `json:"stringValue,omitempty"`
+	IntValue    *int32  `json:"intValue,omitempty"`
+	BoolValue   *bool   `json:"boolValue,omitempty"`
+}
 
 type GenerateTgAttachCodeInput struct {
 	BotID int64 `json:"botId"`
@@ -2195,6 +2220,19 @@ type SubgraphWaitList struct {
 
 func (SubgraphWaitList) IsViewerOffers() {}
 
+type SubmitFormInput struct {
+	NoteVersionID  int64                 `json:"noteVersionId"`
+	FormID         *string               `json:"formId,omitempty"`
+	TurnstileToken *string               `json:"turnstileToken,omitempty"`
+	Fields         []FormFieldValueInput `json:"fields"`
+}
+
+type SubmitFormPayload struct {
+	SubmitID int32 `json:"submitId"`
+}
+
+func (SubmitFormPayload) IsSubmitFormOrErrorPayload() {}
+
 type Subscription struct {
 }
 
@@ -2736,6 +2774,63 @@ func (e *CronJobExecutionStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e CronJobExecutionStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type FormSubmitStatus string
+
+const (
+	FormSubmitStatusPending FormSubmitStatus = "pending"
+	FormSubmitStatusVisible FormSubmitStatus = "visible"
+	FormSubmitStatusHidden  FormSubmitStatus = "hidden"
+)
+
+var AllFormSubmitStatus = []FormSubmitStatus{
+	FormSubmitStatusPending,
+	FormSubmitStatusVisible,
+	FormSubmitStatusHidden,
+}
+
+func (e FormSubmitStatus) IsValid() bool {
+	switch e {
+	case FormSubmitStatusPending, FormSubmitStatusVisible, FormSubmitStatusHidden:
+		return true
+	}
+	return false
+}
+
+func (e FormSubmitStatus) String() string {
+	return string(e)
+}
+
+func (e *FormSubmitStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FormSubmitStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FormSubmitStatus", str)
+	}
+	return nil
+}
+
+func (e FormSubmitStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FormSubmitStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FormSubmitStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
