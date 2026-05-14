@@ -5,6 +5,7 @@ $trip2g_admin_noteview_catalog $trip2g_admin_catalog
 	Empty $mol_status
 	Content* $trip2g_admin_noteview_show
 		noteview_id <= row_id* \
+		note_path_id <= row_path_id* 0
 	Permalink* $mol_view
 		dom_name \a
 		attr *

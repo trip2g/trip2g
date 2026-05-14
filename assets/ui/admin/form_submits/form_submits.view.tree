@@ -1,0 +1,32 @@
+$trip2g_admin_form_submits $mol_view
+	note_path_id 0
+	sub /
+		<= Submits $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_view
+					style *
+						flexDirection \column
+					sub /
+						<= Row_meta* $mol_row
+							minimal_height 24
+							sub /
+								<= Row_created_at_labeler* $mol_labeler
+									title @ \Date
+									Content <= Row_created_at* $trip2g_admin_cell
+										content <= row_created_at* \
+								<= Row_ip_labeler* $mol_labeler
+									title \IP
+									Content <= Row_ip* $trip2g_admin_cell
+										content <= row_ip* \
+								<= Row_form_id_labeler* $mol_labeler
+									title \Form
+									Content <= Row_form_id* $trip2g_admin_cell
+										content <= row_form_id* \
+								<= Row_status_labeler* $mol_labeler
+									title @ \Status
+									Content <= Row_status* $trip2g_admin_cell
+										content <= row_status* \
+						<= Row_fields_labeler* $mol_labeler
+							title @ \Fields
+							Content <= Row_fields* $trip2g_admin_cell
+								content <= row_fields_text* \

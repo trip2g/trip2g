@@ -9,6 +9,7 @@ namespace $.$$ {
 						title
 						free
 						permalink
+						pathId
 					}
 				}
 			}
@@ -58,6 +59,10 @@ namespace $.$$ {
 
 		override row_permalink( id: any ): string {
 			return this.row(id).permalink;
+		}
+
+		override row_path_id( id: any ): number {
+			return this.row(id).pathId;
 		}
 	}
 }

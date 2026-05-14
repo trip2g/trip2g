@@ -1,5 +1,6 @@
 $trip2g_admin_noteview_show $mol_page
 	noteview_id \
+	note_path_id 0
 	body /
 		<= Path_labeler $mol_labeler
 			title \Path
@@ -15,4 +16,6 @@ $trip2g_admin_noteview_show $mol_page
 				content <= permalink \
 		<= Text $mol_text
 			text <= content \
+		<= FormSubmits $trip2g_admin_form_submits
+			note_path_id <= note_path_id
 
