@@ -1,0 +1,21 @@
+$trip2g_admin_form_notes $trip2g_admin_catalog
+	menu_title @ \Form Submissions
+	body /
+		<= Items $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_row
+					minimal_height 32
+					minimal_width 500
+					sub <= row_content* /
+						<= Row_path_labeler* $mol_labeler
+							title @ \Note
+							Content <= Row_path* $trip2g_admin_cell
+								content <= row_path* \
+						<= Row_count_labeler* $mol_labeler
+							title @ \Submits
+							Content <= Row_count* $trip2g_admin_cell
+								content <= row_count* \
+						<= Row_last_labeler* $mol_labeler
+							title @ \Last Submit
+							Content <= Row_last* $trip2g_admin_cell
+								content <= row_last* \

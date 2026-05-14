@@ -11,10 +11,9 @@ namespace $.$$ {
 						status
 						createdAt
 						fields {
-							name
-							stringValue
-							intValue
-							boolValue
+							... on AdminFormStringValue { name value }
+							... on AdminFormIntValue { name value }
+							... on AdminFormBoolValue { name value }
 						}
 					}
 				}
@@ -60,16 +59,8 @@ namespace $.$$ {
 
 		override row_fields_text( i: number ): string {
 			const fields: any[] = this.row( i ).fields
-			if( !fields.length ) return '-'
-
-			return fields.map( f => {
-				let val: string
-				if( f.stringValue !== null && f.stringValue !== undefined ) val = f.stringValue
-				else if( f.intValue !== null && f.intValue !== undefined ) val = String( f.intValue )
-				else if( f.boolValue !== null && f.boolValue !== undefined ) val = String( f.boolValue )
-				else val = '-'
-				return `${ f.name }: ${ val }`
-			} ).join( ', ' )
+			if( !fields?.length ) return '-'
+			return fields.map( f => `${ f.name }: ${ f.value }` ).join( ', ' )
 		}
 	}
 }
