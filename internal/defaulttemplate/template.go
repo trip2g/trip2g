@@ -443,7 +443,20 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 		NoteVersionID: nv.VersionID,
 		Forms:         forms,
 	}
-	b, _ := json.Marshal(data)
+	b, err := json.Marshal(data)
+	if err != nil {
+		// RawMeta may contain map[interface{}]interface{} from goldmark-meta;
+		// if so, re-serialize forms through JSON-safe types and retry.
+		safeForms := make(map[string]interface{}, len(forms))
+		for k, v := range forms {
+			safeForms[k] = v
+		}
+		safeData := map[string]interface{}{
+			"note_version_id": nv.VersionID,
+			"forms":           safeForms,
+		}
+		b, _ = json.Marshal(safeData)
+	}
 	return b
 }
 

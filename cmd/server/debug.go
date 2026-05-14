@@ -84,6 +84,9 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	case strings.HasPrefix(path, "/debug/nvs/latest"):
 		return a.handleDebugNvsLatest(ctx)
 
+	case strings.HasPrefix(path, "/debug/form_spec"):
+		return a.handleDebugFormSpec(ctx)
+
 	case strings.HasPrefix(path, "/debug/wait_all_jobs"):
 		return a.handleDebugWaitAllJobs(ctx)
 
@@ -160,12 +163,89 @@ func (a *app) handleDebugNvsLatest(ctx *fasthttp.RequestCtx) bool {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
-	data, err := json.Marshal(a.LatestNoteViews()) //nolint:musttag // debug endpoint
+	type noteDebugInfo struct {
+		Path      string `json:"path"`
+		VersionID int64  `json:"version_id"`
+		PathID    int64  `json:"path_id"`
+		Title     string `json:"title"`
+		HasForm   bool   `json:"has_form"`
+	}
+
+	nvs := a.LatestNoteViews()
+	all := nvs.VisibleList()
+	notes := make([]noteDebugInfo, 0, len(all))
+	for _, nv := range all {
+		_, hasForm := nv.RawMeta["form"]
+		_, hasForms := nv.RawMeta["forms"]
+		_, hasFormRef := nv.RawMeta["form_ref"]
+		notes = append(notes, noteDebugInfo{
+			Path:      nv.Path,
+			VersionID: nv.VersionID,
+			PathID:    nv.PathID,
+			Title:     nv.Title,
+			HasForm:   hasForm || hasForms || hasFormRef,
+		})
+	}
+
+	data, err := json.Marshal(notes)
 	if err != nil {
-		a.log.Error("failed to marshal latest note views", "error", err)
+		a.log.Error("failed to marshal note debug list", "error", err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		return true
 	}
 
+	ctx.SetBody(data)
+	return true
+}
+
+func (a *app) handleDebugFormSpec(ctx *fasthttp.RequestCtx) bool {
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+
+	path := string(ctx.QueryArgs().Peek("path"))
+	if path == "" {
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString(`{"error":"missing path query param"}`)
+		return true
+	}
+
+	nvs := a.LatestNoteViews()
+	nv := nvs.GetByPath(path)
+	if nv == nil {
+		// try by permalink
+		for _, n := range nvs.VisibleList() {
+			if n.Permalink == path {
+				nv = n
+				break
+			}
+		}
+	}
+	if nv == nil {
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.SetBodyString(`{"error":"note not found"}`)
+		return true
+	}
+
+	type result struct {
+		Path      string                 `json:"path"`
+		VersionID int64                  `json:"version_id"`
+		RawMeta   map[string]interface{} `json:"raw_meta_keys"`
+		FormRaw   interface{}            `json:"form_raw"`
+	}
+
+	keys := make(map[string]interface{}, len(nv.RawMeta))
+	for k := range nv.RawMeta {
+		keys[k] = fmt.Sprintf("%T", nv.RawMeta[k])
+	}
+
+	res := result{
+		Path:      nv.Path,
+		VersionID: nv.VersionID,
+		RawMeta:   keys,
+		FormRaw:   fmt.Sprintf("%#v", nv.RawMeta["form"]),
+	}
+
+	data, _ := json.Marshal(res)
 	ctx.SetBody(data)
 	return true
 }
