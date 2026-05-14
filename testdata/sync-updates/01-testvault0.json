@@ -486,5 +486,9 @@
   {
     "path": "Сценарий. Ютубер.md",
     "url": "http://localhost:20081/scenarij_yutuber"
+  },
+  {
+    "path": "form_test_note.md",
+    "url": "http://localhost:20081/form_test_note"
   }
 ]
