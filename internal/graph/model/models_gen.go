@@ -34,6 +34,10 @@ type AdminConfigValue interface {
 	GetUpdatedBy() *db.User
 }
 
+type AdminFormValue interface {
+	IsAdminFormValue()
+}
+
 type AdminImportTelegramAccountChannelOrErrorPayload interface {
 	IsAdminImportTelegramAccountChannelOrErrorPayload()
 }
@@ -654,6 +658,35 @@ type AdminCronWebhookDeliveriesFilterInput struct {
 type AdminCronWebhooksConnection struct {
 	Nodes []db.CronWebhook `json:"nodes"`
 }
+
+type AdminFormBoolValue struct {
+	Name  string `json:"name"`
+	Value bool   `json:"value"`
+}
+
+func (AdminFormBoolValue) IsAdminFormValue() {}
+
+type AdminFormIntValue struct {
+	Name  string `json:"name"`
+	Value int32  `json:"value"`
+}
+
+func (AdminFormIntValue) IsAdminFormValue() {}
+
+type AdminFormNote struct {
+	ID           string          `json:"id"`
+	Path         string          `json:"path"`
+	Note         *model.NoteView `json:"note,omitempty"`
+	LastSubmitAt time.Time       `json:"lastSubmitAt"`
+	SubmitCount  int32           `json:"submitCount"`
+}
+
+type AdminFormStringValue struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func (AdminFormStringValue) IsAdminFormValue() {}
 
 type AdminFormSubmitsConnection struct {
 	Nodes      []db.FormSubmit `json:"nodes"`
@@ -1668,13 +1701,6 @@ type FormFieldValueInput struct {
 	IntValue    *int32          `json:"intValue,omitempty"`
 	BoolValue   *bool           `json:"boolValue,omitempty"`
 	FileValue   *graphql.Upload `json:"fileValue,omitempty"`
-}
-
-type FormSubmitField struct {
-	Name        string  `json:"name"`
-	StringValue *string `json:"stringValue,omitempty"`
-	IntValue    *int32  `json:"intValue,omitempty"`
-	BoolValue   *bool   `json:"boolValue,omitempty"`
 }
 
 type GenerateTgAttachCodeInput struct {

@@ -1408,3 +1408,11 @@ select field_name, value from form_int_values where submit_id = ?;
 
 -- name: GetFormBoolValuesBySubmitID :many
 select field_name, value from form_bool_values where submit_id = ?;
+
+-- name: GetNotesWithFormSubmits :many
+select np.value as path, MAX(fs.created_at) as last_submit_at, COUNT(*) as submit_count
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+join note_paths np on np.id = nv.path_id
+group by np.id
+order by last_submit_at desc;

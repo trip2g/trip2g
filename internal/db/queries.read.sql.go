@@ -2139,6 +2139,44 @@ func (q *Queries) GetNoteVersionEmbeddingsByVersionIDs(ctx context.Context, vers
 	return items, nil
 }
 
+const getNotesWithFormSubmits = `-- name: GetNotesWithFormSubmits :many
+select np.value as path, MAX(fs.created_at) as last_submit_at, COUNT(*) as submit_count
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+join note_paths np on np.id = nv.path_id
+group by np.id
+order by last_submit_at desc
+`
+
+type GetNotesWithFormSubmitsRow struct {
+	Path         string      `json:"path"`
+	LastSubmitAt interface{} `json:"last_submit_at"`
+	SubmitCount  int64       `json:"submit_count"`
+}
+
+func (q *Queries) GetNotesWithFormSubmits(ctx context.Context) ([]GetNotesWithFormSubmitsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getNotesWithFormSubmits)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNotesWithFormSubmitsRow
+	for rows.Next() {
+		var i GetNotesWithFormSubmitsRow
+		if err := rows.Scan(&i.Path, &i.LastSubmitAt, &i.SubmitCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
 select id, credentials_id, created_at, missed_at, campaign_id, attributes from patreon_campaigns
 where credentials_id = ?

@@ -73,6 +73,7 @@ type ResolverRoot interface {
 	AdminCronWebhook() AdminCronWebhookResolver
 	AdminCronWebhookDeliveriesConnection() AdminCronWebhookDeliveriesConnectionResolver
 	AdminCronWebhooksConnection() AdminCronWebhooksConnectionResolver
+	AdminFormNote() AdminFormNoteResolver
 	AdminFormSubmitsConnection() AdminFormSubmitsConnectionResolver
 	AdminFrontmatterPatch() AdminFrontmatterPatchResolver
 	AdminFrontmatterPatchesConnection() AdminFrontmatterPatchesConnectionResolver
@@ -295,6 +296,9 @@ type AdminCronWebhookDeliveriesConnectionResolver interface {
 }
 type AdminCronWebhooksConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error)
+}
+type AdminFormNoteResolver interface {
+	Note(ctx context.Context, obj *model.AdminFormNote) (*model1.NoteView, error)
 }
 type AdminFormSubmitsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error)
@@ -555,6 +559,7 @@ type AdminQueryResolver interface {
 	FrontmatterPatch(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error)
 	StorageUsage(ctx context.Context, obj *model1.AdminQuery) (*model.AdminStorageUsage, error)
 	FormSubmits(ctx context.Context, obj *model1.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error)
+	FormNotes(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminFormNote, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -690,7 +695,7 @@ type FormSubmitResolver interface {
 
 	Status(ctx context.Context, obj *db.FormSubmit) (model.FormSubmitStatus, error)
 
-	Fields(ctx context.Context, obj *db.FormSubmit) ([]model.FormSubmitField, error)
+	Fields(ctx context.Context, obj *db.FormSubmit) ([]model.AdminFormValue, error)
 }
 type LayoutBlockParamResolver interface {
 	Value(ctx context.Context, obj *model1.LayoutBlockParam) (model.LayoutBlockParamValue, error)
@@ -8554,6 +8559,367 @@ func (ec *executionContext) fieldContext_AdminFederationSecret_subgraphCount(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormBoolValue_name(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormBoolValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormBoolValue_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormBoolValue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormBoolValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormBoolValue_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormBoolValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormBoolValue_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormBoolValue_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormBoolValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormIntValue_name(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormIntValue_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormIntValue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormIntValue_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormIntValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormIntValue_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormIntValue_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormIntValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormNote_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormNote_path(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormNote_note(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_note,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFormNote().Note(ctx, obj)
+		},
+		nil,
+		ec.marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_note(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormNote_lastSubmitAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_lastSubmitAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastSubmitAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_lastSubmitAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormNote_submitCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_submitCount,
+		func(ctx context.Context) (any, error) {
+			return obj.SubmitCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_submitCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormStringValue_name(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormStringValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormStringValue_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormStringValue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormStringValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFormStringValue_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormStringValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormStringValue_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormStringValue_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormStringValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -19387,6 +19753,47 @@ func (ec *executionContext) fieldContext_AdminQuery_formSubmits(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_formNotes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_formNotes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().FormNotes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminFormNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormNoteᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_formNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminFormNote_id(ctx, field)
+			case "path":
+				return ec.fieldContext_AdminFormNote_path(ctx, field)
+			case "note":
+				return ec.fieldContext_AdminFormNote_note(ctx, field)
+			case "lastSubmitAt":
+				return ec.fieldContext_AdminFormNote_lastSubmitAt(ctx, field)
+			case "submitCount":
+				return ec.fieldContext_AdminFormNote_submitCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminFormNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26854,7 +27261,7 @@ func (ec *executionContext) _FormSubmit_fields(ctx context.Context, field graphq
 			return ec.resolvers.FormSubmit().Fields(ctx, obj)
 		},
 		nil,
-		ec.marshalNFormSubmitField2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitFieldᚄ,
+		ec.marshalNAdminFormValue2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormValueᚄ,
 		true,
 		true,
 	)
@@ -26867,133 +27274,7 @@ func (ec *executionContext) fieldContext_FormSubmit_fields(_ context.Context, fi
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_FormSubmitField_name(ctx, field)
-			case "stringValue":
-				return ec.fieldContext_FormSubmitField_stringValue(ctx, field)
-			case "intValue":
-				return ec.fieldContext_FormSubmitField_intValue(ctx, field)
-			case "boolValue":
-				return ec.fieldContext_FormSubmitField_boolValue(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FormSubmitField", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FormSubmitField_name(ctx context.Context, field graphql.CollectedField, obj *model.FormSubmitField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_FormSubmitField_name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_FormSubmitField_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FormSubmitField",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FormSubmitField_stringValue(ctx context.Context, field graphql.CollectedField, obj *model.FormSubmitField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_FormSubmitField_stringValue,
-		func(ctx context.Context) (any, error) {
-			return obj.StringValue, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_FormSubmitField_stringValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FormSubmitField",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FormSubmitField_intValue(ctx context.Context, field graphql.CollectedField, obj *model.FormSubmitField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_FormSubmitField_intValue,
-		func(ctx context.Context) (any, error) {
-			return obj.IntValue, nil
-		},
-		nil,
-		ec.marshalOInt2ᚖint32,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_FormSubmitField_intValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FormSubmitField",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FormSubmitField_boolValue(ctx context.Context, field graphql.CollectedField, obj *model.FormSubmitField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_FormSubmitField_boolValue,
-		func(ctx context.Context) (any, error) {
-			return obj.BoolValue, nil
-		},
-		nil,
-		ec.marshalOBoolean2ᚖbool,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_FormSubmitField_boolValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FormSubmitField",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type AdminFormValue does not have child fields")
 		},
 	}
 	return fc, nil
@@ -30649,6 +30930,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_storageUsage(ctx, field)
 			case "formSubmits":
 				return ec.fieldContext_AdminQuery_formSubmits(ctx, field)
+			case "formNotes":
+				return ec.fieldContext_AdminQuery_formNotes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -41888,6 +42171,36 @@ func (ec *executionContext) _AdminConfigValue(ctx context.Context, sel ast.Selec
 	}
 }
 
+func (ec *executionContext) _AdminFormValue(ctx context.Context, sel ast.SelectionSet, obj model.AdminFormValue) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.AdminFormStringValue:
+		return ec._AdminFormStringValue(ctx, sel, &obj)
+	case *model.AdminFormStringValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminFormStringValue(ctx, sel, obj)
+	case model.AdminFormIntValue:
+		return ec._AdminFormIntValue(ctx, sel, &obj)
+	case *model.AdminFormIntValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminFormIntValue(ctx, sel, obj)
+	case model.AdminFormBoolValue:
+		return ec._AdminFormBoolValue(ctx, sel, &obj)
+	case *model.AdminFormBoolValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminFormBoolValue(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _AdminImportTelegramAccountChannelOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AdminImportTelegramAccountChannelOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -48167,6 +48480,225 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 			out.Values[i] = ec._AdminFederationSecret_revokedAt(ctx, field, obj)
 		case "subgraphCount":
 			out.Values[i] = ec._AdminFederationSecret_subgraphCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFormBoolValueImplementors = []string{"AdminFormBoolValue", "AdminFormValue"}
+
+func (ec *executionContext) _AdminFormBoolValue(ctx context.Context, sel ast.SelectionSet, obj *model.AdminFormBoolValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFormBoolValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFormBoolValue")
+		case "name":
+			out.Values[i] = ec._AdminFormBoolValue_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._AdminFormBoolValue_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFormIntValueImplementors = []string{"AdminFormIntValue", "AdminFormValue"}
+
+func (ec *executionContext) _AdminFormIntValue(ctx context.Context, sel ast.SelectionSet, obj *model.AdminFormIntValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFormIntValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFormIntValue")
+		case "name":
+			out.Values[i] = ec._AdminFormIntValue_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._AdminFormIntValue_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFormNoteImplementors = []string{"AdminFormNote"}
+
+func (ec *executionContext) _AdminFormNote(ctx context.Context, sel ast.SelectionSet, obj *model.AdminFormNote) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFormNoteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFormNote")
+		case "id":
+			out.Values[i] = ec._AdminFormNote_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "path":
+			out.Values[i] = ec._AdminFormNote_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "note":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFormNote_note(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "lastSubmitAt":
+			out.Values[i] = ec._AdminFormNote_lastSubmitAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "submitCount":
+			out.Values[i] = ec._AdminFormNote_submitCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminFormStringValueImplementors = []string{"AdminFormStringValue", "AdminFormValue"}
+
+func (ec *executionContext) _AdminFormStringValue(ctx context.Context, sel ast.SelectionSet, obj *model.AdminFormStringValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminFormStringValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminFormStringValue")
+		case "name":
+			out.Values[i] = ec._AdminFormStringValue_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._AdminFormStringValue_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -56749,6 +57281,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "formNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_formNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -62673,51 +63241,6 @@ func (ec *executionContext) _FormSubmit(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var formSubmitFieldImplementors = []string{"FormSubmitField"}
-
-func (ec *executionContext) _FormSubmitField(ctx context.Context, sel ast.SelectionSet, obj *model.FormSubmitField) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, formSubmitFieldImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FormSubmitField")
-		case "name":
-			out.Values[i] = ec._FormSubmitField_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "stringValue":
-			out.Values[i] = ec._FormSubmitField_stringValue(ctx, field, obj)
-		case "intValue":
-			out.Values[i] = ec._FormSubmitField_intValue(ctx, field, obj)
-		case "boolValue":
-			out.Values[i] = ec._FormSubmitField_boolValue(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -70099,6 +70622,54 @@ func (ec *executionContext) marshalNAdminFederationSecret2ᚕtrip2gᚋinternal�
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminFormNote2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFormNote(ctx context.Context, sel ast.SelectionSet, v model.AdminFormNote) graphql.Marshaler {
+	return ec._AdminFormNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminFormNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormNoteᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminFormNote) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminFormNote2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFormNote(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNAdminFormSubmitsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminFormSubmitsConnection) graphql.Marshaler {
 	return ec._AdminFormSubmitsConnection(ctx, sel, &v)
 }
@@ -70111,6 +70682,60 @@ func (ec *executionContext) marshalNAdminFormSubmitsConnection2ᚖtrip2gᚋinter
 		return graphql.Null
 	}
 	return ec._AdminFormSubmitsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminFormValue2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFormValue(ctx context.Context, sel ast.SelectionSet, v model.AdminFormValue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminFormValue(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminFormValue2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormValueᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminFormValue) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminFormValue2trip2gᚋinternalᚋgraphᚋmodelᚐAdminFormValue(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNAdminFrontmatterPatch2trip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v db.NoteFrontmatterPatch) graphql.Marshaler {
@@ -73179,54 +73804,6 @@ func (ec *executionContext) marshalNFormSubmit2ᚕtrip2gᚋinternalᚋdbᚐFormS
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNFormSubmit2trip2gᚋinternalᚋdbᚐFormSubmit(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNFormSubmitField2trip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitField(ctx context.Context, sel ast.SelectionSet, v model.FormSubmitField) graphql.Marshaler {
-	return ec._FormSubmitField(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNFormSubmitField2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitFieldᚄ(ctx context.Context, sel ast.SelectionSet, v []model.FormSubmitField) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNFormSubmitField2trip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitField(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

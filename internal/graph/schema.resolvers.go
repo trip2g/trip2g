@@ -614,6 +614,12 @@ func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *mo
 	return r.env(ctx).ListCronWebhooks(ctx)
 }
 
+// Note is the resolver for the note field.
+func (r *adminFormNoteResolver) Note(ctx context.Context, obj *model.AdminFormNote) (*appmodel.NoteView, error) {
+	nv := r.env(ctx).LatestNoteViews().GetByPath(obj.Path)
+	return nv, nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminFormSubmitsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error) {
 	return r.env(ctx).GetFormSubmitsByNotePathID(ctx, obj.NotePathID)
@@ -1894,6 +1900,25 @@ func (r *adminQueryResolver) FormSubmits(ctx context.Context, obj *appmodel.Admi
 	return &model.AdminFormSubmitsConnection{NotePathID: notePathID}, nil
 }
 
+// FormNotes is the resolver for the formNotes field.
+func (r *adminQueryResolver) FormNotes(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminFormNote, error) {
+	rows, err := r.env(ctx).GetNotesWithFormSubmits(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.AdminFormNote, len(rows))
+	for i, row := range rows {
+		t := parseInterfaceTime(row.LastSubmitAt)
+		result[i] = model.AdminFormNote{
+			ID:           row.Path,
+			Path:         row.Path,
+			LastSubmitAt: t,
+			SubmitCount:  int32(row.SubmitCount),
+		}
+	}
+	return result, nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -2333,41 +2358,8 @@ func (r *formSubmitResolver) Status(ctx context.Context, obj *db.FormSubmit) (mo
 }
 
 // Fields is the resolver for the fields field.
-func (r *formSubmitResolver) Fields(ctx context.Context, obj *db.FormSubmit) ([]model.FormSubmitField, error) {
+func (r *formSubmitResolver) Fields(ctx context.Context, obj *db.FormSubmit) ([]model.AdminFormValue, error) {
 	return loadFormSubmitFields(ctx, r.env(ctx), obj.ID)
-}
-
-func loadFormSubmitFields(ctx context.Context, env interface {
-	GetFormStringValuesBySubmitID(context.Context, int64) ([]db.GetFormStringValuesBySubmitIDRow, error)
-	GetFormIntValuesBySubmitID(context.Context, int64) ([]db.GetFormIntValuesBySubmitIDRow, error)
-	GetFormBoolValuesBySubmitID(context.Context, int64) ([]db.GetFormBoolValuesBySubmitIDRow, error)
-}, submitID int64) ([]model.FormSubmitField, error) {
-	fields := []model.FormSubmitField{}
-	strs, err := env.GetFormStringValuesBySubmitID(ctx, submitID)
-	if err != nil {
-		return nil, err
-	}
-	for _, s := range strs {
-		v := s.Value
-		fields = append(fields, model.FormSubmitField{Name: s.FieldName, StringValue: &v})
-	}
-	ints, err := env.GetFormIntValuesBySubmitID(ctx, submitID)
-	if err != nil {
-		return nil, err
-	}
-	for _, n := range ints {
-		v := int32(n.Value)
-		fields = append(fields, model.FormSubmitField{Name: n.FieldName, IntValue: &v})
-	}
-	bools, err := env.GetFormBoolValuesBySubmitID(ctx, submitID)
-	if err != nil {
-		return nil, err
-	}
-	for _, b := range bools {
-		v := b.Value != 0
-		fields = append(fields, model.FormSubmitField{Name: b.FieldName, BoolValue: &v})
-	}
-	return fields, nil
 }
 
 // Value is the resolver for the value field.
@@ -3424,6 +3416,9 @@ func (r *Resolver) AdminCronWebhooksConnection() AdminCronWebhooksConnectionReso
 	return &adminCronWebhooksConnectionResolver{r}
 }
 
+// AdminFormNote returns AdminFormNoteResolver implementation.
+func (r *Resolver) AdminFormNote() AdminFormNoteResolver { return &adminFormNoteResolver{r} }
+
 // AdminFormSubmitsConnection returns AdminFormSubmitsConnectionResolver implementation.
 func (r *Resolver) AdminFormSubmitsConnection() AdminFormSubmitsConnectionResolver {
 	return &adminFormSubmitsConnectionResolver{r}
@@ -3817,6 +3812,7 @@ type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
+type adminFormNoteResolver struct{ *Resolver }
 type adminFormSubmitsConnectionResolver struct{ *Resolver }
 type adminFrontmatterPatchResolver struct{ *Resolver }
 type adminFrontmatterPatchesConnectionResolver struct{ *Resolver }
@@ -3902,3 +3898,22 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *adminNoteWithFormsResolver) Note(ctx context.Context, obj *model.AdminNoteWithForms) (*appmodel.NoteView, error) {
+	panic(fmt.Errorf("not implemented: Note - note"))
+}
+func (r *adminQueryResolver) NotesWithForms(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminNoteWithForms, error) {
+	panic(fmt.Errorf("not implemented: NotesWithForms - notesWithForms"))
+}
+func (r *Resolver) AdminNoteWithForms() AdminNoteWithFormsResolver {
+	return &adminNoteWithFormsResolver{r}
+}
+type adminNoteWithFormsResolver struct{ *Resolver }
+*/

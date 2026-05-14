@@ -2709,6 +2709,10 @@ func (a *app) GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) (
 	return a.Queries.GetFormBoolValuesBySubmitID(ctx, submitID)
 }
 
+func (a *app) GetNotesWithFormSubmits(ctx context.Context) ([]db.GetNotesWithFormSubmitsRow, error) {
+	return a.Queries.GetNotesWithFormSubmits(ctx)
+}
+
 func (a *app) GetAdminEmails(ctx context.Context) ([]string, error) {
 	admins, err := a.Queries.ListAllAdmins(ctx)
 	if err != nil {

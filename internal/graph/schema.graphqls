@@ -1225,6 +1225,7 @@ type AdminQuery {
   storageUsage: AdminStorageUsage!
 
   formSubmits(notePathId: Int64!): AdminFormSubmitsConnection!
+  formNotes: [AdminFormNote!]!
 }
 
 # Block definition from Jet templates
@@ -1705,15 +1706,25 @@ type FormSubmit {
   ip: String!
   status: FormSubmitStatus!
   createdAt: Time!
-  fields: [FormSubmitField!]!
+  fields: [AdminFormValue!]! @goField(forceResolver: true)
 }
 
-type FormSubmitField {
+type AdminFormStringValue {
   name: String!
-  stringValue: String
-  intValue: Int
-  boolValue: Boolean
+  value: String!
 }
+
+type AdminFormIntValue {
+  name: String!
+  value: Int!
+}
+
+type AdminFormBoolValue {
+  name: String!
+  value: Boolean!
+}
+
+union AdminFormValue = AdminFormStringValue | AdminFormIntValue | AdminFormBoolValue
 
 enum FormSubmitStatus {
   pending
@@ -1721,7 +1732,15 @@ enum FormSubmitStatus {
   hidden
 }
 
-type AdminFormSubmitsConnection {
+type AdminFormNote {
+  id: String!
+  path: String!
+  note: NoteView @goField(forceResolver: true)
+  lastSubmitAt: Time!
+  submitCount: Int!
+}
+
+type AdminFormSubmitsConnection @goExtraField(name: "NotePathID", type: "int64") {
   nodes: [FormSubmit!]! @goField(forceResolver: true)
 }
 
