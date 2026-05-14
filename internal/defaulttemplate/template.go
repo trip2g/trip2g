@@ -1,9 +1,11 @@
 package defaulttemplate
 
 import (
+	"encoding/json"
 	"strings"
 
 	"trip2g/internal/db"
+	"trip2g/internal/formspec"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 	"trip2g/internal/usertoken"
@@ -380,6 +382,69 @@ func (ctx *Ctx) resolveLayoutSection(section string) *model.LayoutSectionEntry {
 	}
 
 	return best
+}
+
+// FormSpecJSON returns JSON bytes embedding note_version_id and all forms for the current note,
+// or nil if the note has no form/forms/form_ref frontmatter.
+func (ctx *Ctx) FormSpecJSON() []byte {
+	if ctx.Note == nil {
+		return nil
+	}
+	nv := ctx.Note.Unwrap()
+	rawMeta := nv.RawMeta
+
+	// Resolve form_ref if present
+	if kind, value, ok := formspec.ParseFormRef(rawMeta); ok {
+		var ref *templateviews.Note
+		switch kind {
+		case "wikilink":
+			ref = ctx.Notes.ByPermalink(value)
+		case "path":
+			ref = ctx.Notes.ByPath(value)
+		}
+		if ref == nil {
+			return nil
+		}
+		rawMeta = ref.Unwrap().RawMeta
+	}
+
+	// Build forms map: key "" for single form:, named keys for forms: map
+	type formSpecJSON struct {
+		NoteVersionID int64                        `json:"note_version_id"`
+		Forms         map[string]*formspec.FormSpec `json:"forms"`
+	}
+	forms := make(map[string]*formspec.FormSpec)
+
+	if formsRaw, ok := rawMeta["forms"]; ok {
+		formsMap, ok := formsRaw.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		for key, fRaw := range formsMap {
+			spec, err := formspec.ParseFromRawMeta(map[string]interface{}{"form": fRaw})
+			if err != nil || spec == nil {
+				continue
+			}
+			forms[key] = spec
+		}
+	} else {
+		spec, err := formspec.ParseFromRawMeta(rawMeta)
+		if err != nil || spec == nil {
+			return nil
+		}
+		forms[""] = spec
+	}
+
+	if len(forms) == 0 {
+		return nil
+	}
+
+	data := formSpecJSON{
+		NoteVersionID: nv.VersionID,
+		Forms:         forms,
+	}
+	b, _ := json.Marshal(data)
+	return b
 }
 
 // matchAnyGlob returns true if any pattern matches the path.

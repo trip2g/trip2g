@@ -297,6 +297,9 @@ window.__trip2g_settings = {
   {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
+{% if specJSON := ctx.FormSpecJSON(); specJSON != nil %}
+<script id="form-spec" type="application/json">{%z= specJSON %}</script>
+{% endif %}
 </article>
 {% endif %}
 {% endfunc %}
