@@ -616,8 +616,7 @@ func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *mo
 
 // Note is the resolver for the note field.
 func (r *adminFormNoteResolver) Note(ctx context.Context, obj *model.AdminFormNote) (*appmodel.NoteView, error) {
-	nv := r.env(ctx).LatestNoteViews().GetByPath(obj.Path)
-	return nv, nil
+	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -1912,6 +1911,7 @@ func (r *adminQueryResolver) FormNotes(ctx context.Context, obj *appmodel.AdminQ
 		result[i] = model.AdminFormNote{
 			ID:           row.Path,
 			Path:         row.Path,
+			PathID:       row.PathID,
 			LastSubmitAt: t,
 			SubmitCount:  int32(row.SubmitCount),
 		}
@@ -3898,22 +3898,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *adminNoteWithFormsResolver) Note(ctx context.Context, obj *model.AdminNoteWithForms) (*appmodel.NoteView, error) {
-	panic(fmt.Errorf("not implemented: Note - note"))
-}
-func (r *adminQueryResolver) NotesWithForms(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminNoteWithForms, error) {
-	panic(fmt.Errorf("not implemented: NotesWithForms - notesWithForms"))
-}
-func (r *Resolver) AdminNoteWithForms() AdminNoteWithFormsResolver {
-	return &adminNoteWithFormsResolver{r}
-}
-type adminNoteWithFormsResolver struct{ *Resolver }
-*/

@@ -1955,8 +1955,18 @@ func (a *app) RequestIP(ctx context.Context) string {
 	if err != nil {
 		return ""
 	}
-
-	return string(req.Req.RemoteIP())
+	// Check X-Real-IP / X-Forwarded-For first (behind proxy)
+	if ip := string(req.Req.Request.Header.Peek("X-Real-IP")); ip != "" {
+		return ip
+	}
+	if ip := string(req.Req.Request.Header.Peek("X-Forwarded-For")); ip != "" {
+		return ip
+	}
+	ip := req.Req.RemoteIP()
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
 }
 
 func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {

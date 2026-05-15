@@ -1,0 +1,6 @@
+$trip2g_admin_formnotes_show $mol_page
+	note_path_id 0
+	title <= note_path \Form
+	body /
+		<= Submits $trip2g_admin_formsubmits_catalog
+			note_path_id <= note_path_id

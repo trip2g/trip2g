@@ -1,5 +1,9 @@
-$trip2g_admin_form_submits $mol_view
+$trip2g_admin_formsubmits_catalog $mol_view
 	note_path_id 0
+	CustomColumn* $mol_labeler
+		title <= row_fields_key* \
+		Content <= Row_field_value* $trip2g_admin_cell
+			content <= row_fields_value* \
 	sub /
 		<= Submits $mol_list
 			rows <= rows /$mol_view
@@ -9,11 +13,10 @@ $trip2g_admin_form_submits $mol_view
 					sub /
 						<= Row_meta* $mol_row
 							minimal_height 24
-							sub /
-								<= Row_created_at_labeler* $mol_labeler
-									title @ \Date
-									Content <= Row_created_at* $trip2g_admin_cell
-										content <= row_created_at* \
+							sub <= columns* /$mol_labeler
+								<= Row_created_at_labeler* $trip2g_admin_labeler_moment
+									format \YYYY-MM-DD hh:mm
+									value <= row_created_at* \
 								<= Row_ip_labeler* $mol_labeler
 									title \IP
 									Content <= Row_ip* $trip2g_admin_cell
@@ -26,7 +29,3 @@ $trip2g_admin_form_submits $mol_view
 									title @ \Status
 									Content <= Row_status* $trip2g_admin_cell
 										content <= row_status* \
-						<= Row_fields_labeler* $mol_labeler
-							title @ \Fields
-							Content <= Row_fields* $trip2g_admin_cell
-								content <= row_fields_text* \

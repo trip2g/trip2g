@@ -8738,6 +8738,35 @@ func (ec *executionContext) fieldContext_AdminFormNote_path(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminFormNote_pathId(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormNote_pathId,
+		func(ctx context.Context) (any, error) {
+			return obj.PathID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormNote_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminFormNote_note(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19781,6 +19810,8 @@ func (ec *executionContext) fieldContext_AdminQuery_formNotes(_ context.Context,
 				return ec.fieldContext_AdminFormNote_id(ctx, field)
 			case "path":
 				return ec.fieldContext_AdminFormNote_path(ctx, field)
+			case "pathId":
+				return ec.fieldContext_AdminFormNote_pathId(ctx, field)
 			case "note":
 				return ec.fieldContext_AdminFormNote_note(ctx, field)
 			case "lastSubmitAt":
@@ -48612,6 +48643,11 @@ func (ec *executionContext) _AdminFormNote(ctx context.Context, sel ast.Selectio
 			}
 		case "path":
 			out.Values[i] = ec._AdminFormNote_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "pathId":
+			out.Values[i] = ec._AdminFormNote_pathId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

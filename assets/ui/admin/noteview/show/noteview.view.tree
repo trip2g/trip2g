@@ -16,6 +16,6 @@ $trip2g_admin_noteview_show $mol_page
 				content <= permalink \
 		<= Text $mol_text
 			text <= content \
-		<= FormSubmits $trip2g_admin_form_submits
+		<= FormSubmits $trip2g_admin_formsubmits_catalog
 			note_path_id <= note_path_id
 

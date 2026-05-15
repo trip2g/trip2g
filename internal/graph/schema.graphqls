@@ -1735,6 +1735,7 @@ enum FormSubmitStatus {
 type AdminFormNote {
   id: String!
   path: String!
+  pathId: Int64!
   note: NoteView @goField(forceResolver: true)
   lastSubmitAt: Time!
   submitCount: Int!

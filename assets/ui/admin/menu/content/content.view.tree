@@ -14,5 +14,4 @@ $trip2g_admin_menu_content $trip2g_admin_catalog
 			close_icon <= Spread_close
 		frontmatterpatches <= ListFrontmatterPatches $trip2g_admin_frontmatterpatch_catalog
 			close_icon <= Spread_close
-		form_notes <= FormNotes $trip2g_admin_form_notes
-			close_icon <= Spread_close
+		form_notes <= FormNotes $trip2g_admin_formnotes_catalog

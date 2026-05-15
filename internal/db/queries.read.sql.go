@@ -2140,7 +2140,7 @@ func (q *Queries) GetNoteVersionEmbeddingsByVersionIDs(ctx context.Context, vers
 }
 
 const getNotesWithFormSubmits = `-- name: GetNotesWithFormSubmits :many
-select np.value as path, MAX(fs.created_at) as last_submit_at, COUNT(*) as submit_count
+select np.id as path_id, np.value as path, MAX(fs.created_at) as last_submit_at, COUNT(*) as submit_count
 from form_submits fs
 join note_versions nv on nv.id = fs.note_version_id
 join note_paths np on np.id = nv.path_id
@@ -2149,6 +2149,7 @@ order by last_submit_at desc
 `
 
 type GetNotesWithFormSubmitsRow struct {
+	PathID       int64       `json:"path_id"`
 	Path         string      `json:"path"`
 	LastSubmitAt interface{} `json:"last_submit_at"`
 	SubmitCount  int64       `json:"submit_count"`
@@ -2163,7 +2164,12 @@ func (q *Queries) GetNotesWithFormSubmits(ctx context.Context) ([]GetNotesWithFo
 	var items []GetNotesWithFormSubmitsRow
 	for rows.Next() {
 		var i GetNotesWithFormSubmitsRow
-		if err := rows.Scan(&i.Path, &i.LastSubmitAt, &i.SubmitCount); err != nil {
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Path,
+			&i.LastSubmitAt,
+			&i.SubmitCount,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

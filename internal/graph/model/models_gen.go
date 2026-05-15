@@ -676,6 +676,7 @@ func (AdminFormIntValue) IsAdminFormValue() {}
 type AdminFormNote struct {
 	ID           string          `json:"id"`
 	Path         string          `json:"path"`
+	PathID       int64           `json:"pathId"`
 	Note         *model.NoteView `json:"note,omitempty"`
 	LastSubmitAt time.Time       `json:"lastSubmitAt"`
 	SubmitCount  int32           `json:"submitCount"`
