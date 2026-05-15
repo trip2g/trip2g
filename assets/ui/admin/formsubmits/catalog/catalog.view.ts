@@ -41,9 +41,9 @@ namespace $.$$ {
 			return this.data()[ i ]
 		}
 
-		override row_created_at( i: number ) {
+		override row_created_at( i: number ): string {
 			const ts = this.row( i ).createdAt
-			return new $mol_time_moment( ts )
+			return new $mol_time_moment( ts ).toString( 'DD.MM.YYYY hh:mm:ss' )
 		}
 
 		override row_ip( i: number ): string {
@@ -88,9 +88,8 @@ namespace $.$$ {
 
 		override row_fields_value( parent_key: any ): string {
 			const [i, name] = String( parent_key ).split('_', 2)
-			const field = this.row( i ).fields.find((f: any) => f.name === name)
+			const field = this.row( parseInt( i ) ).fields.find((f: any) => f.name === name)
 			if (!field) return '-'
-			console.log(i, name, field)
 
 			switch(field.__typename) {
 				case 'AdminFormStringValue': return field.sv
