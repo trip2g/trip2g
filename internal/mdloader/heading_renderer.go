@@ -58,8 +58,8 @@ func (r *headingRenderer) renderHeading(w util.BufWriter, source []byte, node as
 		}
 		text := headingPlainText(source, heading)
 		idAttr := ""
-		if rawID, ok := heading.AttributeString("id"); ok {
-			if idBytes, ok := rawID.([]byte); ok {
+		if rawID, hasID := heading.AttributeString("id"); hasID {
+			if idBytes, isBytes := rawID.([]byte); isBytes {
 				idAttr = ` id="` + string(idBytes) + `"`
 			}
 		}

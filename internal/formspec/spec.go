@@ -71,8 +71,8 @@ func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {
 		Fields    []rawField `yaml:"fields"`
 	}
 	var raw rawSpec
-	if err := yaml.Unmarshal(b, &raw); err != nil {
-		return nil, fmt.Errorf("formspec: unmarshal: %w", err)
+	if unmarshalErr := yaml.Unmarshal(b, &raw); unmarshalErr != nil {
+		return nil, fmt.Errorf("formspec: unmarshal: %w", unmarshalErr)
 	}
 	spec := &FormSpec{
 		CanSubmit: raw.CanSubmit,
@@ -95,15 +95,18 @@ func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {
 	return spec, nil
 }
 
-func parseEnum(raw interface{}) (strs []string, ints []int, bools []bool) {
+func parseEnum(raw interface{}) ([]string, []int, []bool) {
 	items, ok := raw.([]interface{})
 	if !ok || len(items) == 0 {
 		return nil, nil, nil
 	}
+	var strs []string
+	var ints []int
+	var bools []bool
 	switch items[0].(type) {
 	case string:
 		for _, v := range items {
-			if s, ok := v.(string); ok {
+			if s, isStr := v.(string); isStr {
 				strs = append(strs, s)
 			}
 		}
@@ -120,17 +123,17 @@ func parseEnum(raw interface{}) (strs []string, ints []int, bools []bool) {
 		}
 	case bool:
 		for _, v := range items {
-			if b, ok := v.(bool); ok {
+			if b, isBool := v.(bool); isBool {
 				bools = append(bools, b)
 			}
 		}
 	}
-	return
+	return strs, ints, bools
 }
 
 // ParseFormRef extracts form_ref from rawMeta.
 // Returns kind ("wikilink" or "path"), value, and ok.
-func ParseFormRef(rawMeta map[string]interface{}) (kind, value string, ok bool) {
+func ParseFormRef(rawMeta map[string]interface{}) (string, string, bool) {
 	refRaw, exists := rawMeta["form_ref"]
 	if !exists {
 		return "", "", false

@@ -56,12 +56,12 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	subject := fmt.Sprintf("New form submission: %s | %s", full.NotePath, time.Now().Format("2006-01-02"))
 
 	for _, email := range emails {
-		if err := env.SendMail(ctx, model.Mail{
+		if sendErr := env.SendMail(ctx, model.Mail{
 			To:      email,
 			Subject: subject,
 			Plain:   body,
-		}); err != nil {
-			env.Logger().Error("sendformsubmit: send mail failed", "email", email, "error", err)
+		}); sendErr != nil {
+			env.Logger().Error("sendformsubmit: send mail failed", "email", email, "error", sendErr)
 		}
 	}
 	return nil

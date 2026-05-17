@@ -2655,12 +2655,12 @@ func resolveFormSpec(note *model.NoteView, notes *model.NoteViews, formID string
 		rawMeta = ref.RawMeta
 	}
 	if formsRaw, ok := rawMeta["forms"]; ok {
-		formsMap, ok := formsRaw.(map[string]interface{})
-		if !ok {
+		formsMap, isMap := formsRaw.(map[string]interface{})
+		if !isMap {
 			return nil, nil
 		}
-		formRaw, ok := formsMap[formID]
-		if !ok {
+		formRaw, hasForm := formsMap[formID]
+		if !hasForm {
 			return nil, nil
 		}
 		return formspec.ParseFromRawMeta(map[string]interface{}{"form": formRaw})
@@ -2730,8 +2730,8 @@ func (a *app) GetAdminEmails(ctx context.Context) ([]string, error) {
 	}
 	emails := make([]string, 0, len(admins))
 	for _, ad := range admins {
-		u, err := a.Queries.UserByID(ctx, ad.UserID)
-		if err != nil {
+		u, uErr := a.Queries.UserByID(ctx, ad.UserID)
+		if uErr != nil {
 			continue
 		}
 		if u.Email != nil && *u.Email != "" {
@@ -2769,7 +2769,7 @@ func (a *app) GetFormSubmitForEmail(ctx context.Context, submitID int64) (*sendf
 		fields = append(fields, sendformsubmit.FieldEntry{Name: s.FieldName, Value: s.Value})
 	}
 	for _, n := range ints {
-		fields = append(fields, sendformsubmit.FieldEntry{Name: n.FieldName, Value: fmt.Sprintf("%d", n.Value)})
+		fields = append(fields, sendformsubmit.FieldEntry{Name: n.FieldName, Value: strconv.FormatInt(n.Value, 10)})
 	}
 	for _, b := range bools {
 		boolVal := "false"

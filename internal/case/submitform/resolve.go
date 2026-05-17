@@ -44,7 +44,7 @@ type ErrorResult struct{ Message string }
 func (s *SuccessResult) isSubmitFormPayload() {}
 func (e *ErrorResult) isSubmitFormPayload()   {}
 
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nolint:gocognit
 	spec, err := env.GetFormSpec(ctx, input.NoteVersionID, input.FormID)
 	if err != nil {
 		return nil, fmt.Errorf("submitform: get form spec: %w", err)
@@ -53,8 +53,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return &ErrorResult{Message: "form_not_found"}, nil
 	}
 
-	if err := validateFields(spec, input.Fields); err != nil {
-		return &ErrorResult{Message: err.Error()}, nil
+	if valErr := validateFields(spec, input.Fields); valErr != nil {
+		return &ErrorResult{Message: valErr.Error()}, nil //nolint:nilerr // validation errors become ErrorResult, not Go errors
 	}
 
 	ip := env.RequestIP(ctx)
@@ -73,20 +73,20 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		switch field.Type {
 		case formspec.FieldTypeText, formspec.FieldTypeEmail:
 			if fv.StringValue != nil {
-				if err := env.InsertFormStringValue(ctx, submitID, fv.Name, *fv.StringValue); err != nil {
-					return nil, fmt.Errorf("submitform: insert string %q: %w", fv.Name, err)
+				if insertErr := env.InsertFormStringValue(ctx, submitID, fv.Name, *fv.StringValue); insertErr != nil {
+					return nil, fmt.Errorf("submitform: insert string %q: %w", fv.Name, insertErr)
 				}
 			}
 		case formspec.FieldTypeInt:
 			if fv.IntValue != nil {
-				if err := env.InsertFormIntValue(ctx, submitID, fv.Name, int64(*fv.IntValue)); err != nil {
-					return nil, fmt.Errorf("submitform: insert int %q: %w", fv.Name, err)
+				if insertErr := env.InsertFormIntValue(ctx, submitID, fv.Name, int64(*fv.IntValue)); insertErr != nil {
+					return nil, fmt.Errorf("submitform: insert int %q: %w", fv.Name, insertErr)
 				}
 			}
 		case formspec.FieldTypeBool:
 			if fv.BoolValue != nil {
-				if err := env.InsertFormBoolValue(ctx, submitID, fv.Name, *fv.BoolValue); err != nil {
-					return nil, fmt.Errorf("submitform: insert bool %q: %w", fv.Name, err)
+				if insertErr := env.InsertFormBoolValue(ctx, submitID, fv.Name, *fv.BoolValue); insertErr != nil {
+					return nil, fmt.Errorf("submitform: insert bool %q: %w", fv.Name, insertErr)
 				}
 			}
 		case formspec.FieldTypeFile:
@@ -96,14 +96,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 	}
 
-	if err := env.EnqueueSendFormSubmitEmail(ctx, submitID); err != nil {
-		_ = err // non-fatal
-	}
+	_ = env.EnqueueSendFormSubmitEmail(ctx, submitID) // non-fatal
 
 	return &SuccessResult{SubmitID: submitID}, nil
 }
 
-func validateFields(spec *formspec.FormSpec, values []FieldValue) error {
+func validateFields(spec *formspec.FormSpec, values []FieldValue) error { //nolint:gocognit,gocyclo,cyclop // field-by-field validation, complexity is inherent
 	valueMap := make(map[string]FieldValue, len(values))
 	for _, fv := range values {
 		valueMap[fv.Name] = fv
@@ -141,7 +139,7 @@ func validateFields(spec *formspec.FormSpec, values []FieldValue) error {
 				}
 				continue
 			}
-			if _, err := mail.ParseAddress(*fv.StringValue); err != nil {
+			if _, parseErr := mail.ParseAddress(*fv.StringValue); parseErr != nil {
 				return fmt.Errorf("%s: invalid email", field.Name)
 			}
 		case formspec.FieldTypeInt:
@@ -171,6 +169,8 @@ func validateFields(spec *formspec.FormSpec, values []FieldValue) error {
 			if len(field.BoolEnum) > 0 && !containsBool(field.BoolEnum, *fv.BoolValue) {
 				return fmt.Errorf("%s: invalid value", field.Name)
 			}
+		case formspec.FieldTypeFile:
+			// file uploads are not validated server-side
 		}
 	}
 	return nil

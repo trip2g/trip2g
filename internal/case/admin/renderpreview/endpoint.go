@@ -94,7 +94,7 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 		if err != nil {
 			ctx.SetStatusCode(http.StatusUnauthorized)
 			ctx.SetBodyString("unauthorized")
-			return nil, nil
+			return nil, nil //nolint:nilerr // HTTP handler sets status code; error is not propagated
 		}
 	}
 

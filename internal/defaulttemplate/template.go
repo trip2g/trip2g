@@ -410,14 +410,14 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 
 	// Build forms map: key "" for single form:, named keys for forms: map
 	type formSpecJSON struct {
-		NoteVersionID int64                        `json:"note_version_id"`
+		NoteVersionID int64                         `json:"note_version_id"`
 		Forms         map[string]*formspec.FormSpec `json:"forms"`
 	}
 	forms := make(map[string]*formspec.FormSpec)
 
 	if formsRaw, ok := rawMeta["forms"]; ok {
-		formsMap, ok := formsRaw.(map[string]interface{})
-		if !ok {
+		formsMap, isMap := formsRaw.(map[string]interface{})
+		if !isMap {
 			return nil
 		}
 		for key, fRaw := range formsMap {

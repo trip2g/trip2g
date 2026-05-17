@@ -43,7 +43,7 @@ namespace $.$$ {
 
 		override row_created_at( i: number ): string {
 			const ts = this.row( i ).createdAt
-			return new $mol_time_moment( ts ).toString( 'DD.MM.YYYY hh:mm:ss' )
+			return new $mol_time_moment( ts ).native.toISOString()
 		}
 
 		override row_ip( i: number ): string {

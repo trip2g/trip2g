@@ -3,8 +3,9 @@ package formspec_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/formspec"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseFromRawMeta_nil_when_no_form_key(t *testing.T) {

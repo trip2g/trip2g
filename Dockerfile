@@ -12,6 +12,7 @@ WORKDIR /mam
 RUN mkdir fragment && \
     mkdir filter && \
     mkdir id && \
+    mkdir note && \
     mkdir limit && \
     mkdir format && \
     mkdir input

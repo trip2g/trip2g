@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/formspec"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolve_form_not_found(t *testing.T) {
@@ -58,8 +59,8 @@ func TestResolve_file_type_not_supported(t *testing.T) {
 		InsertFormSubmitFunc: func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
 			return 1, nil
 		},
-		RequestIPFunc: func(ctx context.Context) string { return "" },
-		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		RequestIPFunc:                  func(ctx context.Context) string { return "" },
+		UserIDFunc:                     func(ctx context.Context) *int64 { return nil },
 		EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error { return nil },
 	}
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{

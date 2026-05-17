@@ -138,7 +138,7 @@ func (n *Note) Unwrap() *model.NoteView {
 	return n.nv
 }
 
-var langAliases = map[string]string{
+var langAliases = map[string]string{ //nolint:gochecknoglobals // package-level lookup table
 	"english":    "en",
 	"russian":    "ru",
 	"deutsch":    "de",
@@ -154,7 +154,7 @@ var langAliases = map[string]string{
 	"us":         "en",
 }
 
-var langNames = map[string]string{
+var langNames = map[string]string{ //nolint:gochecknoglobals // package-level lookup table
 	"en": "English",
 	"ru": "Русский",
 	"de": "Deutsch",

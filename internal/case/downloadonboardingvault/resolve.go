@@ -153,9 +153,9 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 
 	// Prepare file replacements (also used for new files not in the original zip).
 	replacements := map[string][]byte{
-		dataJSONPath:      newDataJSON,
-		mcpJSONPath:       mcpJSON,
-		codexJSONPath:     mcpJSON,
+		dataJSONPath:        newDataJSON,
+		mcpJSONPath:         mcpJSON,
+		codexJSONPath:       mcpJSON,
 		antigravityJSONPath: antigravityJSON,
 	}
 
@@ -207,7 +207,7 @@ func domainFromURL(rawURL string) string {
 	return host
 }
 
-func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, newPrefix string) ([]byte, error) {
+func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, newPrefix string) ([]byte, error) { //nolint:gocognit
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read zip: %w", err)

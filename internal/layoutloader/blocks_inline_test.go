@@ -313,7 +313,7 @@ func TestYieldBlocks_ButtonCSSViaTransitiveDep(t *testing.T) {
 // parameters default to their zero/empty value.
 //
 // Safe pattern: CSS blocks are self-contained and do not branch on caller-provided args.
-// Unsafe pattern: {{ block _style_@lid(theme="") }}{{ if theme }}.box--{{theme}}...{{ end }}{{ end }}
+// Unsafe pattern: {{ block _style_@lid(theme="") }}{{ if theme }}.box--{{theme}}...{{ end }}{{ end }}.
 func TestYieldBlocks_BlockArgsNotPassedByYieldBlocks(t *testing.T) {
 	sources := []model.LayoutSourceFile{
 		{
