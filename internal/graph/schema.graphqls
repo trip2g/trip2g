@@ -1644,6 +1644,57 @@ type HideNotesPayload {
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 
 #
+# updateNotes
+#
+
+input NoteChangeUpsertInput {
+  path: String!
+  content: String!
+  expectedHash: String
+}
+
+input NoteChangePatchInput {
+  path: String!
+  find: String!
+  replace: String!
+  expectedHash: String
+}
+
+input NoteChangeHideInput {
+  path: String!
+}
+
+input NoteChangeInput {
+  upsert: NoteChangeUpsertInput
+  patch: NoteChangePatchInput
+  hide: NoteChangeHideInput
+}
+
+input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
+  changes: [NoteChangeInput!]!
+}
+
+type UpdateNotesSuccessPayload {
+  paths: [String!]!
+}
+
+type UpdateNotesHashMismatchPayload {
+  path: String!
+  actualHash: String!
+}
+
+type UpdateNotesPatchNotFoundPayload {
+  path: String!
+  find: String!
+}
+
+union UpdateNotesOrErrorPayload =
+    UpdateNotesSuccessPayload
+  | UpdateNotesHashMismatchPayload
+  | UpdateNotesPatchNotFoundPayload
+  | ErrorPayload
+
+#
 # createEmailWaitListRequest
 #
 
@@ -1786,6 +1837,7 @@ type Mutation {
   X-Api-Key header must be set.
   """
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
+  updateNotes(input: UpdateNotesInput!): UpdateNotesOrErrorPayload!
 
   """
   X-Api-Key header must be set.

@@ -430,6 +430,10 @@ type UpdateNoteGraphPositionsOrErrorPayload interface {
 	IsUpdateNoteGraphPositionsOrErrorPayload()
 }
 
+type UpdateNotesOrErrorPayload interface {
+	IsUpdateNotesOrErrorPayload()
+}
+
 type UpdateOfferOrErrorPayload interface {
 	IsUpdateOfferOrErrorPayload()
 }
@@ -1513,6 +1517,8 @@ func (ErrorPayload) IsUploadNoteAssetOrErrorPayload() {}
 
 func (ErrorPayload) IsHideNotesOrErrorPayload() {}
 
+func (ErrorPayload) IsUpdateNotesOrErrorPayload() {}
+
 func (ErrorPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
 func (ErrorPayload) IsToggleFavoriteNoteOrErrorPayload() {}
@@ -1760,6 +1766,29 @@ type NoteAssetReplaceT struct {
 	URL          string `json:"url"`
 	Hash         string `json:"hash"`
 	AbsolutePath string `json:"absolutePath"`
+}
+
+type NoteChangeHideInput struct {
+	Path string `json:"path"`
+}
+
+type NoteChangeInput struct {
+	Upsert *NoteChangeUpsertInput `json:"upsert,omitempty"`
+	Patch  *NoteChangePatchInput  `json:"patch,omitempty"`
+	Hide   *NoteChangeHideInput   `json:"hide,omitempty"`
+}
+
+type NoteChangePatchInput struct {
+	Path         string  `json:"path"`
+	Find         string  `json:"find"`
+	Replace      string  `json:"replace"`
+	ExpectedHash *string `json:"expectedHash,omitempty"`
+}
+
+type NoteChangeUpsertInput struct {
+	Path         string  `json:"path"`
+	Content      string  `json:"content"`
+	ExpectedHash *string `json:"expectedHash,omitempty"`
 }
 
 type NoteInput struct {
@@ -2417,6 +2446,31 @@ type UpdateNoteGraphPositionsPayload struct {
 }
 
 func (UpdateNoteGraphPositionsPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
+
+type UpdateNotesHashMismatchPayload struct {
+	Path       string `json:"path"`
+	ActualHash string `json:"actualHash"`
+}
+
+func (UpdateNotesHashMismatchPayload) IsUpdateNotesOrErrorPayload() {}
+
+type UpdateNotesInput struct {
+	Changes []NoteChangeInput `json:"changes"`
+	ApiKey  db.ApiKey         `json:"-"`
+}
+
+type UpdateNotesPatchNotFoundPayload struct {
+	Path string `json:"path"`
+	Find string `json:"find"`
+}
+
+func (UpdateNotesPatchNotFoundPayload) IsUpdateNotesOrErrorPayload() {}
+
+type UpdateNotesSuccessPayload struct {
+	Paths []string `json:"paths"`
+}
+
+func (UpdateNotesSuccessPayload) IsUpdateNotesOrErrorPayload() {}
 
 type UpdateOfferInput struct {
 	ID          int64      `json:"id"`

@@ -2502,6 +2502,11 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesI
 	return pushnotes.Resolve(ctx, r.env(ctx), input)
 }
 
+// UpdateNotes is the resolver for the updateNotes field.
+func (r *mutationResolver) UpdateNotes(ctx context.Context, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: UpdateNotes - updateNotes"))
+}
+
 // HideNotes is the resolver for the hideNotes field.
 func (r *mutationResolver) HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error) {
 	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_notes")

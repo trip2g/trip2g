@@ -709,6 +709,7 @@ type MutationResolver interface {
 	SubmitForm(ctx context.Context, input model.SubmitFormInput) (model.SubmitFormOrErrorPayload, error)
 	ToggleFavoriteNote(ctx context.Context, input model.ToggleFavoriteNoteInput) (model.ToggleFavoriteNoteOrErrorPayload, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
+	UpdateNotes(ctx context.Context, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error)
 	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
 	CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error)
@@ -915,6 +916,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
+		ec.unmarshalInputNoteChangeHideInput,
+		ec.unmarshalInputNoteChangeInput,
+		ec.unmarshalInputNoteChangePatchInput,
+		ec.unmarshalInputNoteChangeUpsertInput,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
 		ec.unmarshalInputOAuthUrlInput,
@@ -965,6 +970,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
+		ec.unmarshalInputUpdateNotesInput,
 		ec.unmarshalInputUpdateOfferInput,
 		ec.unmarshalInputUpdateRedirectInput,
 		ec.unmarshalInputUpdateSubgraphInput,
@@ -2639,6 +2645,17 @@ func (ec *executionContext) field_Mutation_toggleFavoriteNote_args(ctx context.C
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNToggleFavoriteNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐToggleFavoriteNoteInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateNotes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotesInput)
 	if err != nil {
 		return nil, err
 	}
@@ -28115,6 +28132,47 @@ func (ec *executionContext) fieldContext_Mutation_pushNotes(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateNotes,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateNotes(ctx, fc.Args["input"].(model.UpdateNotesInput))
+		},
+		nil,
+		ec.marshalNUpdateNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotesOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateNotes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateNotesOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_hideNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -34648,6 +34706,151 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 	return fc, nil
 }
 
+func (ec *executionContext) _UpdateNotesHashMismatchPayload_path(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesHashMismatchPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesHashMismatchPayload_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesHashMismatchPayload_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesHashMismatchPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotesHashMismatchPayload_actualHash(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesHashMismatchPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesHashMismatchPayload_actualHash,
+		func(ctx context.Context) (any, error) {
+			return obj.ActualHash, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesHashMismatchPayload_actualHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesHashMismatchPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotesPatchNotFoundPayload_path(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesPatchNotFoundPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesPatchNotFoundPayload_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesPatchNotFoundPayload_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesPatchNotFoundPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotesPatchNotFoundPayload_find(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesPatchNotFoundPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesPatchNotFoundPayload_find,
+		func(ctx context.Context) (any, error) {
+			return obj.Find, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesPatchNotFoundPayload_find(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesPatchNotFoundPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotesSuccessPayload_paths(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesSuccessPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesSuccessPayload_paths,
+		func(ctx context.Context) (any, error) {
+			return obj.Paths, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesSuccessPayload_paths(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesSuccessPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UpdateOfferPayload_offer(ctx context.Context, field graphql.CollectedField, obj *model.UpdateOfferPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -39952,6 +40155,163 @@ func (ec *executionContext) unmarshalInputMakeReleaseLiveInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNoteChangeHideInput(ctx context.Context, obj any) (model.NoteChangeHideInput, error) {
+	var it model.NoteChangeHideInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteChangeInput(ctx context.Context, obj any) (model.NoteChangeInput, error) {
+	var it model.NoteChangeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"upsert", "patch", "hide"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "upsert":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upsert"))
+			data, err := ec.unmarshalONoteChangeUpsertInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeUpsertInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Upsert = data
+		case "patch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("patch"))
+			data, err := ec.unmarshalONoteChangePatchInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Patch = data
+		case "hide":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hide"))
+			data, err := ec.unmarshalONoteChangeHideInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeHideInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Hide = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteChangePatchInput(ctx context.Context, obj any) (model.NoteChangePatchInput, error) {
+	var it model.NoteChangePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "find", "replace", "expectedHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "find":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("find"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Find = data
+		case "replace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("replace"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Replace = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteChangeUpsertInput(ctx context.Context, obj any) (model.NoteChangeUpsertInput, error) {
+	var it model.NoteChangeUpsertInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "content", "expectedHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNoteInput(ctx context.Context, obj any) (model.NoteInput, error) {
 	var it model.NoteInput
 	asMap := map[string]any{}
@@ -41723,6 +42083,33 @@ func (ec *executionContext) unmarshalInputUpdateNoteGraphPositionsInput(ctx cont
 				return it, err
 			}
 			it.Positions = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateNotesInput(ctx context.Context, obj any) (model.UpdateNotesInput, error) {
+	var it model.UpdateNotesInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"changes"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "changes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changes"))
+			data, err := ec.unmarshalNNoteChangeInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Changes = data
 		}
 	}
 
@@ -44488,6 +44875,43 @@ func (ec *executionContext) _UpdateNoteGraphPositionsOrErrorPayload(ctx context.
 			return graphql.Null
 		}
 		return ec._UpdateNoteGraphPositionsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateNotesOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateNotesSuccessPayload:
+		return ec._UpdateNotesSuccessPayload(ctx, sel, &obj)
+	case *model.UpdateNotesSuccessPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateNotesSuccessPayload(ctx, sel, obj)
+	case model.UpdateNotesPatchNotFoundPayload:
+		return ec._UpdateNotesPatchNotFoundPayload(ctx, sel, &obj)
+	case *model.UpdateNotesPatchNotFoundPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateNotesPatchNotFoundPayload(ctx, sel, obj)
+	case model.UpdateNotesHashMismatchPayload:
+		return ec._UpdateNotesHashMismatchPayload(ctx, sel, &obj)
+	case *model.UpdateNotesHashMismatchPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateNotesHashMismatchPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -62950,7 +63374,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -63711,6 +64135,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "pushNotes":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_pushNotes(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateNotes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateNotes(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -67969,6 +68400,133 @@ func (ec *executionContext) _UpdateNoteGraphPositionsPayload(ctx context.Context
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateNotesHashMismatchPayloadImplementors = []string{"UpdateNotesHashMismatchPayload", "UpdateNotesOrErrorPayload"}
+
+func (ec *executionContext) _UpdateNotesHashMismatchPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateNotesHashMismatchPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateNotesHashMismatchPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateNotesHashMismatchPayload")
+		case "path":
+			out.Values[i] = ec._UpdateNotesHashMismatchPayload_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "actualHash":
+			out.Values[i] = ec._UpdateNotesHashMismatchPayload_actualHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateNotesPatchNotFoundPayloadImplementors = []string{"UpdateNotesPatchNotFoundPayload", "UpdateNotesOrErrorPayload"}
+
+func (ec *executionContext) _UpdateNotesPatchNotFoundPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateNotesPatchNotFoundPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateNotesPatchNotFoundPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateNotesPatchNotFoundPayload")
+		case "path":
+			out.Values[i] = ec._UpdateNotesPatchNotFoundPayload_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "find":
+			out.Values[i] = ec._UpdateNotesPatchNotFoundPayload_find(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateNotesSuccessPayloadImplementors = []string{"UpdateNotesSuccessPayload", "UpdateNotesOrErrorPayload"}
+
+func (ec *executionContext) _UpdateNotesSuccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateNotesSuccessPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateNotesSuccessPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateNotesSuccessPayload")
+		case "paths":
+			out.Values[i] = ec._UpdateNotesSuccessPayload_paths(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -74199,6 +74757,26 @@ func (ec *executionContext) marshalNNoteAssetReplaceT2ᚕtrip2gᚋinternalᚋgra
 	return ret
 }
 
+func (ec *executionContext) unmarshalNNoteChangeInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeInput(ctx context.Context, v any) (model.NoteChangeInput, error) {
+	res, err := ec.unmarshalInputNoteChangeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNoteChangeInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeInputᚄ(ctx context.Context, v any) ([]model.NoteChangeInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.NoteChangeInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNNoteChangeInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput(ctx context.Context, v any) (model.NoteInput, error) {
 	res, err := ec.unmarshalInputNoteInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -75844,6 +76422,21 @@ func (ec *executionContext) marshalNUpdateNoteGraphPositionsOrErrorPayload2trip2
 	return ec._UpdateNoteGraphPositionsOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUpdateNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotesInput(ctx context.Context, v any) (model.UpdateNotesInput, error) {
+	res, err := ec.unmarshalInputUpdateNotesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateNotesOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateNotesOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNUpdateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateOfferInput(ctx context.Context, v any) (model.UpdateOfferInput, error) {
 	res, err := ec.unmarshalInputUpdateOfferInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -76768,6 +77361,30 @@ func (ec *executionContext) marshalOLayoutBlockParamValue2trip2gᚋinternalᚋgr
 		return graphql.Null
 	}
 	return ec._LayoutBlockParamValue(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalONoteChangeHideInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeHideInput(ctx context.Context, v any) (*model.NoteChangeHideInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNoteChangeHideInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONoteChangePatchInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangePatchInput(ctx context.Context, v any) (*model.NoteChangePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNoteChangePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONoteChangeUpsertInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeUpsertInput(ctx context.Context, v any) (*model.NoteChangeUpsertInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNoteChangeUpsertInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalONotePathsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNotePathsFilter(ctx context.Context, v any) (*model.NotePathsFilter, error) {
