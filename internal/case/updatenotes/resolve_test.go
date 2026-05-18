@@ -28,10 +28,16 @@ func (m *mockEnv) LatestNoteViews() *appmodel.NoteViews {
 }
 
 func (m *mockEnv) InsertNote(ctx context.Context, note appmodel.RawNote) (int64, error) {
+	if m.insertNote == nil {
+		panic("unexpected call to InsertNote")
+	}
 	return m.insertNote(ctx, note)
 }
 
 func (m *mockEnv) HideNotePath(ctx context.Context, params db.HideNotePathParams) error {
+	if m.hideNotePath == nil {
+		panic("unexpected call to HideNotePath")
+	}
 	return m.hideNotePath(ctx, params)
 }
 
@@ -52,12 +58,12 @@ func hashContent(content string) string {
 func makeNVSWithNote(path, content string, pathID int64) *appmodel.NoteViews {
 	nvs := appmodel.NewNoteViews()
 	note := &appmodel.NoteView{
-		PathID:  pathID,
-		Path:    path,
-		Content: []byte(content),
+		PathID:    pathID,
+		Path:      path,
+		Permalink: path, // GetByPath uses nv.Map keyed by Permalink
+		Content:   []byte(content),
 	}
 	nvs.RegisterNote(note)
-	nvs.ExtractNoteList()
 	return nvs
 }
 
@@ -71,14 +77,18 @@ func TestResolve_UpsertBasic(t *testing.T) {
 	ctx := context.Background()
 
 	var insertedNote appmodel.RawNote
+	handleCalled := false
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
 		insertNote: func(_ context.Context, note appmodel.RawNote) (int64, error) {
 			insertedNote = note
 			return 10, nil
 		},
-		prepareLatestNotes:       noopPrepare,
-		handleLatestNotesAfterSave: noopHandle,
+		prepareLatestNotes: noopPrepare,
+		handleLatestNotesAfterSave: func(_ context.Context, ids []int64) error {
+			handleCalled = true
+			return nil
+		},
 	}
 
 	input := model.UpdateNotesInput{
@@ -95,6 +105,7 @@ func TestResolve_UpsertBasic(t *testing.T) {
 	require.Equal(t, []string{"note.md"}, payload.Paths)
 	require.Equal(t, "note.md", insertedNote.Path)
 	require.Equal(t, "hello", insertedNote.Content)
+	require.True(t, handleCalled, "HandleLatestNotesAfterSave must be called after successful writes")
 }
 
 func TestResolve_UpsertWithCorrectHash(t *testing.T) {
@@ -243,6 +254,7 @@ func TestResolve_PatchMultipleOccurrences(t *testing.T) {
 	result, err := updatenotes.Resolve(ctx, env, input)
 	require.NoError(t, err)
 
+	// Multiple occurrences are treated as "not found" to avoid ambiguous patching
 	payload, ok := result.(model.UpdateNotesPatchNotFoundPayload)
 	require.True(t, ok, "expected UpdateNotesPatchNotFoundPayload for multiple occurrences, got %T", result)
 	require.Equal(t, "note.md", payload.Path)
@@ -342,6 +354,7 @@ func TestResolve_Hide(t *testing.T) {
 }
 
 func TestResolve_EmptyChangeSkipped(t *testing.T) {
+	// malformed input: all change types nil → skip silently, do not error
 	ctx := context.Background()
 
 	env := &mockEnv{
