@@ -1226,6 +1226,7 @@ type AdminQuery {
 
   formSubmits(notePathId: Int64!): AdminFormSubmitsConnection!
   formNotes: [AdminFormNote!]!
+  unprocessedFormSubmitsCount: Int!
 }
 
 # Block definition from Jet templates
@@ -1757,6 +1758,9 @@ type FormSubmit {
   ip: String!
   status: FormSubmitStatus!
   createdAt: Time!
+  processedAt: Time
+  processedBy: User
+  comment: String!
   fields: [AdminFormValue!]! @goField(forceResolver: true)
 }
 
@@ -2978,6 +2982,8 @@ type AdminMutation {
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 
   renderLayout(input: RenderLayoutInput!): RenderLayoutPayload!
+
+  markFormSubmitProcessed(input: MarkFormSubmitProcessedInput!): MarkFormSubmitProcessedOrErrorPayload!
 }
 
 #
@@ -3357,3 +3363,16 @@ type RenderLayoutPayload {
   previewURL: String!
   warnings:   RenderLayoutWarnings!
 }
+
+# markFormSubmitProcessed
+
+input MarkFormSubmitProcessedInput {
+  submitId: Int64!
+  comment:  String
+}
+
+type MarkFormSubmitProcessedPayload {
+  submit: FormSubmit!
+}
+
+union MarkFormSubmitProcessedOrErrorPayload = MarkFormSubmitProcessedPayload | ErrorPayload

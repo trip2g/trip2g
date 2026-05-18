@@ -439,6 +439,7 @@ type AdminMutationResolver interface {
 	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
 	RenderLayout(ctx context.Context, obj *model1.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error)
+	MarkFormSubmitProcessed(ctx context.Context, obj *model1.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -560,6 +561,7 @@ type AdminQueryResolver interface {
 	StorageUsage(ctx context.Context, obj *model1.AdminQuery) (*model.AdminStorageUsage, error)
 	FormSubmits(ctx context.Context, obj *model1.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error)
 	FormNotes(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminFormNote, error)
+	UnprocessedFormSubmitsCount(ctx context.Context, obj *model1.AdminQuery) (int32, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -694,6 +696,8 @@ type FormSubmitResolver interface {
 	User(ctx context.Context, obj *db.FormSubmit) (*db.User, error)
 
 	Status(ctx context.Context, obj *db.FormSubmit) (model.FormSubmitStatus, error)
+
+	ProcessedBy(ctx context.Context, obj *db.FormSubmit) (*db.User, error)
 
 	Fields(ctx context.Context, obj *db.FormSubmit) ([]model.AdminFormValue, error)
 }
@@ -916,6 +920,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
+		ec.unmarshalInputMarkFormSubmitProcessedInput,
 		ec.unmarshalInputNoteChangeHideInput,
 		ec.unmarshalInputNoteChangeInput,
 		ec.unmarshalInputNoteChangePatchInput,
@@ -1578,6 +1583,17 @@ func (ec *executionContext) field_AdminMutation_makeReleaseLive_args(ctx context
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_markFormSubmitProcessed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMarkFormSubmitProcessedInput2trip2gᚋinternalᚋgraphᚋmodelᚐMarkFormSubmitProcessedInput)
 	if err != nil {
 		return nil, err
 	}
@@ -9009,6 +9025,12 @@ func (ec *executionContext) fieldContext_AdminFormSubmitsConnection_nodes(_ cont
 				return ec.fieldContext_FormSubmit_status(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_FormSubmit_createdAt(ctx, field)
+			case "processedAt":
+				return ec.fieldContext_FormSubmit_processedAt(ctx, field)
+			case "processedBy":
+				return ec.fieldContext_FormSubmit_processedBy(ctx, field)
+			case "comment":
+				return ec.fieldContext_FormSubmit_comment(ctx, field)
 			case "fields":
 				return ec.fieldContext_FormSubmit_fields(ctx, field)
 			}
@@ -14358,6 +14380,47 @@ func (ec *executionContext) fieldContext_AdminMutation_renderLayout(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_renderLayout_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_markFormSubmitProcessed(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_markFormSubmitProcessed,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().MarkFormSubmitProcessed(ctx, obj, fc.Args["input"].(model.MarkFormSubmitProcessedInput))
+		},
+		nil,
+		ec.marshalNMarkFormSubmitProcessedOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐMarkFormSubmitProcessedOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_markFormSubmitProcessed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MarkFormSubmitProcessedOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_markFormSubmitProcessed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19837,6 +19900,35 @@ func (ec *executionContext) fieldContext_AdminQuery_formNotes(_ context.Context,
 				return ec.fieldContext_AdminFormNote_submitCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminFormNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_unprocessedFormSubmitsCount(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_unprocessedFormSubmitsCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().UnprocessedFormSubmitsCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_unprocessedFormSubmitsCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -27299,6 +27391,103 @@ func (ec *executionContext) fieldContext_FormSubmit_createdAt(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _FormSubmit_processedAt(ctx context.Context, field graphql.CollectedField, obj *db.FormSubmit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FormSubmit_processedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ProcessedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FormSubmit_processedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FormSubmit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FormSubmit_processedBy(ctx context.Context, field graphql.CollectedField, obj *db.FormSubmit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FormSubmit_processedBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.FormSubmit().ProcessedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalOUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FormSubmit_processedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FormSubmit",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "subgraphAccesses":
+				return ec.fieldContext_User_subgraphAccesses(ctx, field)
+			case "favoriteNotes":
+				return ec.fieldContext_User_favoriteNotes(ctx, field)
+			case "tokens":
+				return ec.fieldContext_User_tokens(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FormSubmit_comment(ctx context.Context, field graphql.CollectedField, obj *db.FormSubmit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FormSubmit_comment,
+		func(ctx context.Context) (any, error) {
+			return obj.Comment, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FormSubmit_comment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FormSubmit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FormSubmit_fields(ctx context.Context, field graphql.CollectedField, obj *db.FormSubmit) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27811,6 +28000,59 @@ func (ec *executionContext) fieldContext_MakeReleaseLivePayload_release(_ contex
 				return ec.fieldContext_AdminRelease_isLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkFormSubmitProcessedPayload_submit(ctx context.Context, field graphql.CollectedField, obj *model.MarkFormSubmitProcessedPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkFormSubmitProcessedPayload_submit,
+		func(ctx context.Context) (any, error) {
+			return obj.Submit, nil
+		},
+		nil,
+		ec.marshalNFormSubmit2ᚖtrip2gᚋinternalᚋdbᚐFormSubmit,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkFormSubmitProcessedPayload_submit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkFormSubmitProcessedPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FormSubmit_id(ctx, field)
+			case "noteVersionId":
+				return ec.fieldContext_FormSubmit_noteVersionId(ctx, field)
+			case "formId":
+				return ec.fieldContext_FormSubmit_formId(ctx, field)
+			case "user":
+				return ec.fieldContext_FormSubmit_user(ctx, field)
+			case "ip":
+				return ec.fieldContext_FormSubmit_ip(ctx, field)
+			case "status":
+				return ec.fieldContext_FormSubmit_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FormSubmit_createdAt(ctx, field)
+			case "processedAt":
+				return ec.fieldContext_FormSubmit_processedAt(ctx, field)
+			case "processedBy":
+				return ec.fieldContext_FormSubmit_processedBy(ctx, field)
+			case "comment":
+				return ec.fieldContext_FormSubmit_comment(ctx, field)
+			case "fields":
+				return ec.fieldContext_FormSubmit_fields(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FormSubmit", field.Name)
 		},
 	}
 	return fc, nil
@@ -28630,6 +28872,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_removeFederationSecretSubgraph(ctx, field)
 			case "renderLayout":
 				return ec.fieldContext_AdminMutation_renderLayout(ctx, field)
+			case "markFormSubmitProcessed":
+				return ec.fieldContext_AdminMutation_markFormSubmitProcessed(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -31021,6 +31265,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_formSubmits(ctx, field)
 			case "formNotes":
 				return ec.fieldContext_AdminQuery_formNotes(ctx, field)
+			case "unprocessedFormSubmitsCount":
+				return ec.fieldContext_AdminQuery_unprocessedFormSubmitsCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -40155,6 +40401,40 @@ func (ec *executionContext) unmarshalInputMakeReleaseLiveInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMarkFormSubmitProcessedInput(ctx context.Context, obj any) (model.MarkFormSubmitProcessedInput, error) {
+	var it model.MarkFormSubmitProcessedInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"submitId", "comment"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "submitId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("submitId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubmitID = data
+		case "comment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Comment = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNoteChangeHideInput(ctx context.Context, obj any) (model.NoteChangeHideInput, error) {
 	var it model.NoteChangeHideInput
 	asMap := map[string]any{}
@@ -43863,6 +44143,29 @@ func (ec *executionContext) _MakeReleaseLiveOrErrorPayload(ctx context.Context, 
 			return graphql.Null
 		}
 		return ec._MakeReleaseLivePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _MarkFormSubmitProcessedOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.MarkFormSubmitProcessedOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.MarkFormSubmitProcessedPayload:
+		return ec._MarkFormSubmitProcessedPayload(ctx, sel, &obj)
+	case *model.MarkFormSubmitProcessedPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MarkFormSubmitProcessedPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -53770,6 +54073,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "markFormSubmitProcessed":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_markFormSubmitProcessed(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57751,6 +58090,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_formNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "unprocessedFormSubmitsCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_unprocessedFormSubmitsCount(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -63374,7 +63749,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -63662,6 +64037,46 @@ func (ec *executionContext) _FormSubmit(ctx context.Context, sel ast.SelectionSe
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._FormSubmit_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "processedAt":
+			out.Values[i] = ec._FormSubmit_processedAt(ctx, field, obj)
+		case "processedBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FormSubmit_processedBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "comment":
+			out.Values[i] = ec._FormSubmit_comment(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -64038,6 +64453,45 @@ func (ec *executionContext) _MakeReleaseLivePayload(ctx context.Context, sel ast
 			out.Values[i] = graphql.MarshalString("MakeReleaseLivePayload")
 		case "release":
 			out.Values[i] = ec._MakeReleaseLivePayload_release(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var markFormSubmitProcessedPayloadImplementors = []string{"MarkFormSubmitProcessedPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+
+func (ec *executionContext) _MarkFormSubmitProcessedPayload(ctx context.Context, sel ast.SelectionSet, obj *model.MarkFormSubmitProcessedPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, markFormSubmitProcessedPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarkFormSubmitProcessedPayload")
+		case "submit":
+			out.Values[i] = ec._MarkFormSubmitProcessedPayload_submit(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -74417,6 +74871,16 @@ func (ec *executionContext) marshalNFormSubmit2ᚕtrip2gᚋinternalᚋdbᚐFormS
 	return ret
 }
 
+func (ec *executionContext) marshalNFormSubmit2ᚖtrip2gᚋinternalᚋdbᚐFormSubmit(ctx context.Context, sel ast.SelectionSet, v *db.FormSubmit) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FormSubmit(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNFormSubmitStatus2trip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitStatus(ctx context.Context, v any) (model.FormSubmitStatus, error) {
 	var res model.FormSubmitStatus
 	err := res.UnmarshalGQL(v)
@@ -74707,6 +75171,21 @@ func (ec *executionContext) marshalNMakeReleaseLiveOrErrorPayload2trip2gᚋinter
 		return graphql.Null
 	}
 	return ec._MakeReleaseLiveOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMarkFormSubmitProcessedInput2trip2gᚋinternalᚋgraphᚋmodelᚐMarkFormSubmitProcessedInput(ctx context.Context, v any) (model.MarkFormSubmitProcessedInput, error) {
+	res, err := ec.unmarshalInputMarkFormSubmitProcessedInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMarkFormSubmitProcessedOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐMarkFormSubmitProcessedOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.MarkFormSubmitProcessedOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MarkFormSubmitProcessedOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNNoteAssetReplaceT2trip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceT(ctx context.Context, sel ast.SelectionSet, v model.NoteAssetReplaceT) graphql.Marshaler {

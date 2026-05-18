@@ -2506,6 +2506,38 @@ func (q *WriteQueries) MarkBoostyTiersAsMissed(ctx context.Context, arg MarkBoos
 	return err
 }
 
+const markFormSubmitProcessed = `-- name: MarkFormSubmitProcessed :one
+update form_submits
+set processed_at = current_timestamp, processed_by = ?, comment = coalesce(?, '')
+where id = ?
+returning id, note_version_id, form_id, user_id, ip, status, created_at,
+          processed_at, processed_by, comment
+`
+
+type MarkFormSubmitProcessedParams struct {
+	ProcessedBy *int64 `json:"processed_by"`
+	Comment     string `json:"comment"`
+	ID          int64  `json:"id"`
+}
+
+func (q *WriteQueries) MarkFormSubmitProcessed(ctx context.Context, arg MarkFormSubmitProcessedParams) (FormSubmit, error) {
+	row := q.db.QueryRowContext(ctx, markFormSubmitProcessed, arg.ProcessedBy, arg.Comment, arg.ID)
+	var i FormSubmit
+	err := row.Scan(
+		&i.ID,
+		&i.NoteVersionID,
+		&i.FormID,
+		&i.UserID,
+		&i.Ip,
+		&i.Status,
+		&i.CreatedAt,
+		&i.ProcessedAt,
+		&i.ProcessedBy,
+		&i.Comment,
+	)
+	return i, err
+}
+
 const markPatreonMembersAsMissed = `-- name: MarkPatreonMembersAsMissed :exec
 update patreon_members
 set status = 'missed'

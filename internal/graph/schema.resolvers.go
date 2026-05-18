@@ -121,7 +121,6 @@ import (
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
-	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
@@ -133,6 +132,7 @@ import (
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/toggleuserfavoritenote"
+	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/db"
@@ -1266,6 +1266,11 @@ func (r *adminMutationResolver) RenderLayout(ctx context.Context, obj *appmodel.
 	return renderpreview.Resolve(ctx, r.env(ctx), input)
 }
 
+// MarkFormSubmitProcessed is the resolver for the markFormSubmitProcessed field.
+func (r *adminMutationResolver) MarkFormSubmitProcessed(ctx context.Context, obj *appmodel.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: MarkFormSubmitProcessed - markFormSubmitProcessed"))
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1920,6 +1925,11 @@ func (r *adminQueryResolver) FormNotes(ctx context.Context, obj *appmodel.AdminQ
 	return result, nil
 }
 
+// UnprocessedFormSubmitsCount is the resolver for the unprocessedFormSubmitsCount field.
+func (r *adminQueryResolver) UnprocessedFormSubmitsCount(ctx context.Context, obj *appmodel.AdminQuery) (int32, error) {
+	panic(fmt.Errorf("not implemented: UnprocessedFormSubmitsCount - unprocessedFormSubmitsCount"))
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -2356,6 +2366,11 @@ func (r *formSubmitResolver) User(ctx context.Context, obj *db.FormSubmit) (*db.
 // Status is the resolver for the status field.
 func (r *formSubmitResolver) Status(ctx context.Context, obj *db.FormSubmit) (model.FormSubmitStatus, error) {
 	return model.FormSubmitStatus(obj.Status), nil
+}
+
+// ProcessedBy is the resolver for the processedBy field.
+func (r *formSubmitResolver) ProcessedBy(ctx context.Context, obj *db.FormSubmit) (*db.User, error) {
+	panic(fmt.Errorf("not implemented: ProcessedBy - processedBy"))
 }
 
 // Fields is the resolver for the fields field.

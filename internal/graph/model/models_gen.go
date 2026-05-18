@@ -254,6 +254,10 @@ type MakeReleaseLiveOrErrorPayload interface {
 	IsMakeReleaseLiveOrErrorPayload()
 }
 
+type MarkFormSubmitProcessedOrErrorPayload interface {
+	IsMarkFormSubmitProcessedOrErrorPayload()
+}
+
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
@@ -1691,6 +1695,8 @@ func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
 
+func (ErrorPayload) IsMarkFormSubmitProcessedOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -1757,6 +1763,17 @@ type MakeReleaseLivePayload struct {
 }
 
 func (MakeReleaseLivePayload) IsMakeReleaseLiveOrErrorPayload() {}
+
+type MarkFormSubmitProcessedInput struct {
+	SubmitID int64   `json:"submitId"`
+	Comment  *string `json:"comment,omitempty"`
+}
+
+type MarkFormSubmitProcessedPayload struct {
+	Submit *db.FormSubmit `json:"submit"`
+}
+
+func (MarkFormSubmitProcessedPayload) IsMarkFormSubmitProcessedOrErrorPayload() {}
 
 type Mutation struct {
 }

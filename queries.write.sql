@@ -1123,3 +1123,10 @@ values (?, ?, ?);
 -- name: InsertFormBoolValue :exec
 insert into form_bool_values (submit_id, field_name, value)
 values (?, ?, ?);
+
+-- name: MarkFormSubmitProcessed :one
+update form_submits
+set processed_at = current_timestamp, processed_by = ?, comment = coalesce(?, '')
+where id = ?
+returning id, note_version_id, form_id, user_id, ip, status, created_at,
+          processed_at, processed_by, comment;

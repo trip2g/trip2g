@@ -274,13 +274,16 @@ type FormStringValue struct {
 }
 
 type FormSubmit struct {
-	ID            int64     `json:"id"`
-	NoteVersionID int64     `json:"note_version_id"`
-	FormID        string    `json:"form_id"`
-	UserID        *int64    `json:"user_id"`
-	Ip            string    `json:"ip"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID            int64      `json:"id"`
+	NoteVersionID int64      `json:"note_version_id"`
+	FormID        string     `json:"form_id"`
+	UserID        *int64     `json:"user_id"`
+	Ip            string     `json:"ip"`
+	Status        string     `json:"status"`
+	CreatedAt     time.Time  `json:"created_at"`
+	ProcessedAt   *time.Time `json:"processed_at"`
+	ProcessedBy   *int64     `json:"processed_by"`
+	Comment       string     `json:"comment"`
 }
 
 type GitToken struct {

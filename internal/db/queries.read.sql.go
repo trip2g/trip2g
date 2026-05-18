@@ -1232,6 +1232,17 @@ func (q *Queries) CountNoteVersions(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countUnprocessedFormSubmits = `-- name: CountUnprocessedFormSubmits :one
+select count(*) from form_submits where processed_at is null
+`
+
+func (q *Queries) CountUnprocessedFormSubmits(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUnprocessedFormSubmits)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countUserSubgraphAccessByPurchaseID = `-- name: CountUserSubgraphAccessByPurchaseID :one
 select count(*) from user_subgraph_accesses where purchase_id = ?
 `
@@ -1804,7 +1815,8 @@ func (q *Queries) GetFormStringValuesBySubmitID(ctx context.Context, submitID in
 }
 
 const getFormSubmitByID = `-- name: GetFormSubmitByID :one
-select id, note_version_id, form_id, user_id, ip, status, created_at
+select id, note_version_id, form_id, user_id, ip, status, created_at,
+       processed_at, processed_by, comment
 from form_submits where id = ?
 `
 
@@ -1819,12 +1831,16 @@ func (q *Queries) GetFormSubmitByID(ctx context.Context, id int64) (FormSubmit, 
 		&i.Ip,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ProcessedAt,
+		&i.ProcessedBy,
+		&i.Comment,
 	)
 	return i, err
 }
 
 const getFormSubmitsByNotePathID = `-- name: GetFormSubmitsByNotePathID :many
-select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at
+select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at,
+       fs.processed_at, fs.processed_by, fs.comment
 from form_submits fs
 join note_versions nv on nv.id = fs.note_version_id
 where nv.path_id = ?
@@ -1848,6 +1864,9 @@ func (q *Queries) GetFormSubmitsByNotePathID(ctx context.Context, pathID int64) 
 			&i.Ip,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ProcessedAt,
+			&i.ProcessedBy,
+			&i.Comment,
 		); err != nil {
 			return nil, err
 		}

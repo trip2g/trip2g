@@ -1390,15 +1390,20 @@ where user_id = ?
   and (expires_at is null or expires_at > datetime('now'));
 
 -- name: GetFormSubmitsByNotePathID :many
-select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at
+select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at,
+       fs.processed_at, fs.processed_by, fs.comment
 from form_submits fs
 join note_versions nv on nv.id = fs.note_version_id
 where nv.path_id = ?
 order by fs.created_at desc;
 
 -- name: GetFormSubmitByID :one
-select id, note_version_id, form_id, user_id, ip, status, created_at
+select id, note_version_id, form_id, user_id, ip, status, created_at,
+       processed_at, processed_by, comment
 from form_submits where id = ?;
+
+-- name: CountUnprocessedFormSubmits :one
+select count(*) from form_submits where processed_at is null;
 
 -- name: GetFormStringValuesBySubmitID :many
 select field_name, value from form_string_values where submit_id = ?;

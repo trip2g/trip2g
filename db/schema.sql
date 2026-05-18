@@ -699,6 +699,45 @@ CREATE TABLE federation_secret_subgraphs (
   created_by integer not null references admins(user_id) on delete restrict,
   primary key (kid, subgraph_id)
 );
+CREATE TABLE user_tokens (
+  id text primary key,
+  user_id integer not null references users(id) on delete cascade,
+  name text not null default '',
+  token_hash text not null unique,
+  token_prefix text not null,
+  scope text not null default 'all',
+  created_at datetime not null default current_timestamp,
+  expires_at datetime,
+  last_used_at datetime,
+  revoked_at datetime
+);
+CREATE TABLE form_submits (
+    id              integer primary key,
+    note_version_id integer not null references note_versions(id),
+    form_id         text not null default '',
+    user_id         integer references users(id),
+    ip              text not null default '',
+    status          text not null default 'visible',
+    created_at      datetime not null default current_timestamp
+, processed_at datetime, processed_by integer references users(id), comment text not null default '');
+CREATE TABLE form_string_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      text not null,
+    primary key (submit_id, field_name)
+);
+CREATE TABLE form_int_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      integer not null,
+    primary key (submit_id, field_name)
+);
+CREATE TABLE form_bool_values (
+    submit_id  integer not null references form_submits(id) on delete cascade,
+    field_name text not null,
+    value      integer not null,
+    primary key (submit_id, field_name)
+);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);
@@ -741,6 +780,9 @@ CREATE INDEX idx_federation_secrets_kid
   on federation_secrets(kid);
 CREATE INDEX idx_federation_secrets_kb_url
   on federation_secrets(kb_url) where kb_url is not null;
+CREATE INDEX idx_user_tokens_user_id on user_tokens(user_id);
+CREATE INDEX idx_user_tokens_token_hash on user_tokens(token_hash);
+CREATE INDEX form_submits_note_version_id on form_submits(note_version_id);
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
@@ -754,48 +796,6 @@ after update on cron_webhooks
 begin
   update cron_webhooks set updated_at = datetime('now') where id = new.id;
 end;
-CREATE TABLE user_tokens (
-  id text primary key,
-  user_id integer not null references users(id) on delete cascade,
-  name text not null default '',
-  token_hash text not null unique,
-  token_prefix text not null,
-  scope text not null default 'all',
-  created_at datetime not null default current_timestamp,
-  expires_at datetime,
-  last_used_at datetime,
-  revoked_at datetime
-);
-CREATE INDEX idx_user_tokens_user_id on user_tokens(user_id);
-CREATE INDEX idx_user_tokens_token_hash on user_tokens(token_hash);
-CREATE TABLE form_submits (
-    id              integer primary key,
-    note_version_id integer not null references note_versions(id),
-    form_id         text not null default '',
-    user_id         integer references users(id),
-    ip              text not null default '',
-    status          text not null default 'visible',
-    created_at      datetime not null default current_timestamp
-);
-CREATE INDEX form_submits_note_version_id on form_submits(note_version_id);
-CREATE TABLE form_string_values (
-    submit_id  integer not null references form_submits(id) on delete cascade,
-    field_name text not null,
-    value      text not null,
-    primary key (submit_id, field_name)
-);
-CREATE TABLE form_int_values (
-    submit_id  integer not null references form_submits(id) on delete cascade,
-    field_name text not null,
-    value      integer not null,
-    primary key (submit_id, field_name)
-);
-CREATE TABLE form_bool_values (
-    submit_id  integer not null references form_submits(id) on delete cascade,
-    field_name text not null,
-    value      integer not null,
-    primary key (submit_id, field_name)
-);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -912,4 +912,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260427100000'),
   ('20260430100000'),
   ('20260506120000'),
-  ('20260513120000');
+  ('20260513120000'),
+  ('20260518072631');
