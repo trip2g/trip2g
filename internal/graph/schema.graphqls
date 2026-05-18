@@ -1665,6 +1665,7 @@ input NoteChangeHideInput {
 }
 
 input NoteChangeInput {
+  # exactly one of upsert/patch/hide must be set; validated server-side
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
