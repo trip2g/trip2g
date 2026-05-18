@@ -121,6 +121,7 @@ import (
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
@@ -2504,7 +2505,14 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesI
 
 // UpdateNotes is the resolver for the updateNotes field.
 func (r *mutationResolver) UpdateNotes(ctx context.Context, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: UpdateNotes - updateNotes"))
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "update_notes")
+	if err != nil {
+		return nil, err
+	}
+
+	input.ApiKey = *apiKey
+
+	return updatenotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // HideNotes is the resolver for the hideNotes field.
