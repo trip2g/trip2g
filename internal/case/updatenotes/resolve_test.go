@@ -60,7 +60,7 @@ func makeNVSWithNote(path, content string, pathID int64) *appmodel.NoteViews {
 	note := &appmodel.NoteView{
 		PathID:    pathID,
 		Path:      path,
-		Permalink: path, // NoteViews.Map is keyed by Permalink; set to path so GetByPath(path) finds it
+		Permalink: path, // must be non-empty so RegisterNote stores it in Map; PathMap[note.Path] is what the impl uses
 		Content:   []byte(content),
 	}
 	nvs.RegisterNote(note)
