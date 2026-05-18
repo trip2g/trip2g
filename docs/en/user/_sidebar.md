@@ -32,6 +32,7 @@ title: "Navigation"
 ### Automation
 
 - [[en/user/webhooks|Webhooks & automation]]
+- [[en/user/update_notes|updateNotes: programmatic editing]]
 - [[en/user/knowlume-adapter|Knowlume Adapter]]
 - [[en/user/rss|RSS feeds]]
 
