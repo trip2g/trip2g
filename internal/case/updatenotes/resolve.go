@@ -33,6 +33,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	var paths []string
 	var pathIDs []int64
 
+	// nvs.PathMap is keyed by note.Path (filesystem path, e.g. "todo.md").
+	// NoteViews.GetByPath uses the Permalink map (URL path), so PathMap is the correct lookup here.
+	//
 	// Note: if the same path appears more than once in changes, the second
 	// operation reads stale content — callers must not patch the same path twice per call.
 	for _, change := range input.Changes {
@@ -95,6 +98,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, patch.Path)
 
 		} else if change.Hide != nil {
+			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
+			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
 			err := env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
