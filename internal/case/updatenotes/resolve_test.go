@@ -283,8 +283,8 @@ func TestResolve_PatchNoteMissing(t *testing.T) {
 	result, err := updatenotes.Resolve(ctx, env, input)
 	require.NoError(t, err)
 
-	_, ok := result.(model.ErrorPayload)
-	require.True(t, ok, "expected ErrorPayload when note not found, got %T", result)
+	_, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected *ErrorPayload when note not found, got %T", result)
 }
 
 func TestResolve_PatchWithWrongHash(t *testing.T) {

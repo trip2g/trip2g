@@ -33,6 +33,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	var paths []string
 	var pathIDs []int64
 
+	// Note: if the same path appears more than once in changes, the second
+	// operation reads stale content — callers must not patch the same path twice per call.
 	for _, change := range input.Changes {
 		if change.Upsert == nil && change.Patch == nil && change.Hide == nil {
 			continue
@@ -55,7 +57,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			pathID, err := env.InsertNote(ctx, appmodel.RawNote{Path: upsert.Path, Content: upsert.Content})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("updatenotes: insert upsert %s: %w", upsert.Path, err)
 			}
 			pathIDs = append(pathIDs, pathID)
 			paths = append(paths, upsert.Path)
@@ -64,7 +66,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			patch := change.Patch
 			nv := nvs.PathMap[patch.Path]
 			if nv == nil {
-				return model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
+				return &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
 			}
 			if patch.ExpectedHash != nil {
 				actualHash := hashContent(nv.Content)
@@ -87,7 +89,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			newContent := content[:idx] + patch.Replace + content[idx+len(patch.Find):]
 			pathID, err := env.InsertNote(ctx, appmodel.RawNote{Path: patch.Path, Content: newContent})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("updatenotes: insert patch %s: %w", patch.Path, err)
 			}
 			pathIDs = append(pathIDs, pathID)
 			paths = append(paths, patch.Path)
@@ -99,18 +101,20 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				Value:    hide.Path,
 			})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("updatenotes: hide %s: %w", hide.Path, err)
 			}
 			paths = append(paths, hide.Path)
 		}
 	}
 
+	// Hide-only batches skip PrepareLatestNotes/HandleLatestNotesAfterSave,
+	// matching hidenotes behavior — hide is a metadata operation, not a content change.
 	if len(pathIDs) > 0 {
 		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("updatenotes: prepare latest notes: %w", err)
 		}
 		if err := env.HandleLatestNotesAfterSave(ctx, pathIDs); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("updatenotes: handle latest notes after save: %w", err)
 		}
 	}
 
