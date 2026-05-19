@@ -302,7 +302,7 @@ Always use parentheses: `debug(note.Title())` ✓ — `debug(note.Title)` ✗ (r
 {* → {"extra_content":["channels","prices"],"title":"My Page"} *}
 ```
 
-To test templates interactively without uploading files, use `/_system/renderlayout` — see [[renderlayout]] and `docs/skills/check_templates.md`.
+To test templates interactively without uploading files, use `/_system/renderlayout` — see [[renderlayout]] and [[skills/check_templates]].
 
 ### Querying notes in templates
 
