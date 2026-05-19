@@ -190,6 +190,32 @@ The `warnings.layout` array in the response will contain the Jet error. The AI a
 
 ---
 
+## CLI tool
+
+The repo ships `scripts/renderlayout.py` — a wrapper that reads the API key automatically from `.obsidian/plugins/trip2g/data.json`:
+
+```bash
+# run from your vault directory (where .obsidian/ lives)
+python3 ../scripts/renderlayout.py \
+  --layout-file _layouts/article.html \
+  --note-src "# Hello"
+
+# → http://localhost:8081/_system/renderlayout?preview_id=abc123
+
+# fetch rendered HTML directly
+python3 ../scripts/renderlayout.py \
+  --layout-src "{{ note.M().Debug() }}" --layout-path "/_debug.html" \
+  --note-path /my-note \
+  --fetch
+```
+
+Args: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`.
+Warnings and errors go to stderr; exit code 1 on failure.
+
+For agent-specific instructions and debugging tips (including the `debug()` template function), see `docs/skills/check_templates.md`.
+
+---
+
 ## AI agent workflow
 
 An agent working on a layout alongside a human can share intermediate results instantly — no deploy, no upload to the vault:

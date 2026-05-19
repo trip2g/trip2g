@@ -190,6 +190,32 @@ curl -X POST https://yoursite.com/_system/renderlayout \
 
 ---
 
+## CLI-инструмент
+
+В репозитории есть `scripts/renderlayout.py` — обёртка, которая автоматически читает API-ключ из `.obsidian/plugins/trip2g/data.json`:
+
+```bash
+# запускать из директории vault (где лежит .obsidian/)
+python3 ../scripts/renderlayout.py \
+  --layout-file _layouts/article.html \
+  --note-src "# Привет"
+
+# → http://localhost:8081/_system/renderlayout?preview_id=abc123
+
+# получить HTML сразу
+python3 ../scripts/renderlayout.py \
+  --layout-src "{{ note.M().Debug() }}" --layout-path "/_debug.html" \
+  --note-path /my-note \
+  --fetch
+```
+
+Аргументы: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`.
+Предупреждения и ошибки — в stderr; код выхода 1 при сбое.
+
+Инструкция для агентов и советы по отладке шаблонов (включая функцию `debug()`) — в `docs/skills/check_templates.md`.
+
+---
+
 ## Сценарий работы с AI-агентом
 
 Агент, работающий над лейаутом совместно с человеком, может показывать промежуточный результат мгновенно — без деплоя и без загрузки в vault:
