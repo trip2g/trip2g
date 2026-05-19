@@ -1243,3 +1243,30 @@ func TestResolveAssets_InsideImportedTemplate(t *testing.T) {
 	require.Len(t, layout.Assets, 1, "scripts.js must be discovered from imported _blocks.html")
 	require.Equal(t, "_layouts/mesh/scripts.js", layout.Assets[0].Path)
 }
+
+func TestNoteMetaGetStrings_InTemplate(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:   "/layout",
+		Path: "_layouts/layout.html",
+		Content: `{{ range i, item := note.M().GetStrings("extra_content") }}{{ item }},{{ end }}` +
+			`|missing:{{ range i, v := note.M().GetStrings("missing") }}{{ v }}{{ end }}`,
+	}}
+
+	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
+	require.NoError(t, err)
+
+	nv := &model.NoteView{
+		RawMeta: map[string]interface{}{
+			"extra_content": []interface{}{"channels", "prices", "faq"},
+		},
+	}
+	note := templateviews.NewNote(nv)
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(note)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/layout"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "channels,prices,faq,|missing:", buf.String())
+}

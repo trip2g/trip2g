@@ -274,10 +274,11 @@ Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 {{ value | unsafe }}                  — output HTML without escaping
 ```
 
-Two Jet rules to remember:
+Three Jet rules to remember:
 
 1. Block parameters need default values or named arguments won't bind: `{{ block card(title="", body="") }}`
 2. `content` is a reserved keyword — don't use it as a parameter name
+3. **Single-variable range iterates indices, not values.** `{{ range item := list }}` gives `item = 0, 1, 2…` (the index). To get values, always use two variables: `{{ range i, item := list }}`
 
 ### Querying notes in templates
 

@@ -100,15 +100,15 @@ func (m *Meta) Raw() map[string]interface{} {
 	return m.raw
 }
 
-// GetStringSlice returns a string slice or empty slice if not found/wrong type.
-func (m *Meta) GetStringSlice(key string) []string {
+// GetStrings returns a string list or empty list if not found/wrong type.
+func (m *Meta) GetStrings(key string) []string {
 	if m.raw == nil {
-		return nil
+		return []string{}
 	}
 
 	val, ok := m.raw[key]
 	if !ok {
-		return nil
+		return []string{}
 	}
 
 	switch v := val.(type) {
@@ -126,6 +126,6 @@ func (m *Meta) GetStringSlice(key string) []string {
 	case string:
 		return []string{v}
 	default:
-		return nil
+		return []string{}
 	}
 }
