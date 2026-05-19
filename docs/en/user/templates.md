@@ -280,6 +280,30 @@ Three Jet rules to remember:
 2. `content` is a reserved keyword — don't use it as a parameter name
 3. **Single-variable range iterates indices, not values.** `{{ range item := list }}` gives `item = 0, 1, 2…` (the index). To get values, always use two variables: `{{ range i, item := list }}`
 
+### Debugging templates
+
+**`debug(value)`** — prints Go type, value, and available methods of any expression:
+
+```jet
+{{ debug(note.M()) }}
+{* → *templateviews.Meta: &{raw:map[title:My Page extra_content:[a b]]}
+      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw] *}
+
+{{ debug(note.Title()) }}
+{* → string: My Page *}
+```
+
+Always use parentheses: `debug(note.Title())` ✓ — `debug(note.Title)` ✗ (returns a function reference).
+
+**`note.M().Debug()`** — compact JSON of all frontmatter keys:
+
+```jet
+{{ note.M().Debug() }}
+{* → {"extra_content":["channels","prices"],"title":"My Page"} *}
+```
+
+To test templates interactively without uploading files, use `/_system/renderlayout` — see [[renderlayout]] and `docs/skills/check_templates.md`.
+
 ### Querying notes in templates
 
 `nvs.ByGlob()` selects notes by path pattern and supports sorting and pagination:

@@ -334,6 +334,32 @@ Jet — движок шаблонов. Поддерживает наследов
 
 `extends` должен быть первой строкой шаблона.
 
+### Отладка шаблонов
+
+#### debug() — тип, значение и методы объекта
+
+Глобальная функция `debug()` возвращает строку с Go-типом, значением и списком методов любого выражения:
+
+```jet
+{{ debug(note.M()) }}
+{* → *templateviews.Meta: &{raw:map[title:My Page extra_content:[a b]]}
+      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw] *}
+
+{{ debug(note.Title()) }}
+{* → string: My Page *}
+```
+
+> Всегда добавляйте скобки при передаче методов: `debug(note.Title())` — правильно, `debug(note.Title)` — вернёт ссылку на функцию.
+
+#### Meta.Debug() — JSON frontmatter
+
+```jet
+{{ note.M().Debug() }}
+{* → {"extra_content":["channels","prices"],"title":"My Page"} *}
+```
+
+Для полного гайда по отладке шаблонов через `/_system/renderlayout` — см. [[skills/check_templates]].
+
 ### Полезные ссылки
 
 - [Официальная документация](https://github.com/CloudyKit/jet/wiki)
