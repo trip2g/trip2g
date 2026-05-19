@@ -1,6 +1,7 @@
 package layoutloader
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -390,6 +391,23 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string)
 	// Usage: {{ arg_type "paramName" "type" "description" }}
 	views.AddGlobalFunc("arg_type", func(a jet.Arguments) reflect.Value {
 		return reflect.ValueOf("")
+	})
+
+	// debug prints the Go type, value, and available methods of any template expression.
+	// Usage: {{ debug(note.M()) }} or {{ debug(note.Title) }}
+	views.AddGlobalFunc("debug", func(a jet.Arguments) reflect.Value {
+		a.RequireNumOfArguments("debug", 1, 1)
+		val := a.Get(0)
+		if !val.IsValid() {
+			return reflect.ValueOf("<nil>")
+		}
+		iface := val.Interface()
+		t := val.Type()
+		methods := make([]string, t.NumMethod())
+		for i := range methods {
+			methods[i] = t.Method(i).Name
+		}
+		return reflect.ValueOf(fmt.Sprintf("%T: %+v\nmethods: %v", iface, iface, methods))
 	})
 
 	// yield_blocks is registered with a mutable slice pointer so the second pass

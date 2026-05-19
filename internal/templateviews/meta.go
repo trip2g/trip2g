@@ -1,6 +1,7 @@
 package templateviews
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -98,6 +99,18 @@ func (m *Meta) GetBool(key string, def bool) bool {
 // Raw returns the underlying raw frontmatter map (for JSON serialization in templates).
 func (m *Meta) Raw() map[string]interface{} {
 	return m.raw
+}
+
+// Debug returns a JSON representation of the frontmatter map for template debugging.
+func (m *Meta) Debug() string {
+	if m.raw == nil {
+		return "{}"
+	}
+	data, err := json.Marshal(m.raw)
+	if err != nil {
+		return fmt.Sprintf("(marshal error: %v)", err)
+	}
+	return string(data)
 }
 
 // GetStrings returns a string list or empty list if not found/wrong type.

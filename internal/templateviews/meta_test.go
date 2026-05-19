@@ -6,6 +6,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMeta_Debug(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  map[string]interface{}
+		want string
+	}{
+		{
+			name: "nil raw returns empty object",
+			raw:  nil,
+			want: "{}",
+		},
+		{
+			name: "string value",
+			raw:  map[string]interface{}{"title": "My Page"},
+			want: `{"title":"My Page"}`,
+		},
+		{
+			name: "list value",
+			raw:  map[string]interface{}{"tags": []interface{}{"a", "b"}},
+			want: `{"tags":["a","b"]}`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &Meta{raw: tc.raw}
+			require.Equal(t, tc.want, m.Debug())
+		})
+	}
+}
+
 func TestMeta_GetStrings(t *testing.T) {
 	tests := []struct {
 		name string

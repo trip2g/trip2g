@@ -1244,6 +1244,36 @@ func TestResolveAssets_InsideImportedTemplate(t *testing.T) {
 	require.Equal(t, "_layouts/mesh/scripts.js", layout.Assets[0].Path)
 }
 
+func TestDebugFunc_InTemplate(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:   "/layout",
+		Path: "_layouts/layout.html",
+		Content: `{{ debug(note.Title()) }}|{{ debug(note.M()) }}`,
+	}}
+
+	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
+	require.NoError(t, err)
+
+	nv := &model.NoteView{
+		RawMeta: map[string]interface{}{"extra_content": []interface{}{"a", "b"}},
+	}
+	nv.Title = "Hello"
+	note := templateviews.NewNote(nv)
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(note)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/layout"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	out := buf.String()
+	require.Contains(t, out, "string: Hello", "debug(note.Title) should show type and value")
+	require.Contains(t, out, "*templateviews.Meta", "debug(note.M()) should show Meta type")
+	require.Contains(t, out, "methods:", "debug() should list methods")
+	require.Contains(t, out, "GetStrings", "debug(note.M()) should show GetStrings method")
+}
+
 func TestNoteMetaGetStrings_InTemplate(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
 		ID:   "/layout",
