@@ -19,6 +19,7 @@ type Env interface {
 	EnqueueSendFormSubmitEmail(ctx context.Context, submitID int64) error
 	RequestIP(ctx context.Context) string
 	UserID(ctx context.Context) *int64
+	IsAdmin(ctx context.Context) bool
 }
 
 type FieldValue struct {
@@ -40,9 +41,18 @@ type Payload interface{ isSubmitFormPayload() }
 
 type SuccessResult struct{ SubmitID int64 }
 type ErrorResult struct{ Message string }
+type DeniedResult struct{ Reason string }
 
 func (s *SuccessResult) isSubmitFormPayload() {}
 func (e *ErrorResult) isSubmitFormPayload()   {}
+func (d *DeniedResult) isSubmitFormPayload()  {}
+
+// Denial reason codes returned in DeniedResult.Reason.
+const (
+	DeniedAdminRequired = "admin_required"
+	DeniedPaidRequired  = "paid_required"
+	DeniedNotSupported  = "not_implemented"
+)
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nolint:gocognit
 	spec, err := env.GetFormSpec(ctx, input.NoteVersionID, input.FormID)
@@ -51,6 +61,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nol
 	}
 	if spec == nil {
 		return &ErrorResult{Message: "form_not_found"}, nil
+	}
+
+	if denial := checkCanSubmit(ctx, env, spec); denial != nil {
+		return denial, nil
 	}
 
 	if valErr := validateFields(spec, input.Fields); valErr != nil {
@@ -99,6 +113,26 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nol
 	_ = env.EnqueueSendFormSubmitEmail(ctx, submitID) // non-fatal
 
 	return &SuccessResult{SubmitID: submitID}, nil
+}
+
+// checkCanSubmit enforces spec.CanSubmit. Returns nil to allow, or a
+// *DeniedResult to short-circuit. An empty / unrecognised value falls back to
+// "guest" semantics (allow) so older specs and forward-compatible additions
+// don't accidentally lock everyone out.
+func checkCanSubmit(ctx context.Context, env Env, spec *formspec.FormSpec) *DeniedResult {
+	switch spec.CanSubmit {
+	case "", formspec.CanSubmitGuest:
+		return nil
+	case formspec.CanSubmitAdmin:
+		if env.IsAdmin(ctx) {
+			return nil
+		}
+		return &DeniedResult{Reason: DeniedAdminRequired}
+	case formspec.CanSubmitPaidUser:
+		return &DeniedResult{Reason: DeniedNotSupported}
+	default:
+		return nil
+	}
 }
 
 func validateFields(spec *formspec.FormSpec, values []FieldValue) error { //nolint:gocognit,gocyclo,cyclop // field-by-field validation, complexity is inherent

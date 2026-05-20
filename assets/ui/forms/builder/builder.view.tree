@@ -1,0 +1,4 @@
+$trip2g_forms_builder $mol_view
+	loc @ \loc
+	sub /
+		\Builder

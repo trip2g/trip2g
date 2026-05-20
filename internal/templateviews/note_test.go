@@ -54,3 +54,48 @@ func TestNote_PermalinkEncoded(t *testing.T) {
 	note2 := NewNote(nv2)
 	require.Equal(t, "/hello_world", note2.PermalinkEncoded())
 }
+
+func TestNote_FormSpecJSON(t *testing.T) {
+	t.Run("no form frontmatter returns empty", func(t *testing.T) {
+		nv := &model.NoteView{VersionID: 42, RawMeta: map[string]interface{}{"title": "x"}}
+		require.Empty(t, NewNote(nv).FormSpecJSON())
+	})
+
+	t.Run("single form maps to empty key", func(t *testing.T) {
+		nv := &model.NoteView{
+			VersionID: 42,
+			RawMeta: map[string]interface{}{
+				"form": map[string]interface{}{
+					"can_submit": "guest",
+					"fields": []interface{}{
+						map[string]interface{}{"name": "email", "type": "email", "required": true},
+					},
+				},
+			},
+		}
+		got := NewNote(nv).FormSpecJSON()
+		require.Contains(t, got, `"note_version_id":42`)
+		require.Contains(t, got, `"forms":{"":`)
+		require.Contains(t, got, `"can_submit":"guest"`)
+		require.Contains(t, got, `"name":"email"`)
+	})
+
+	t.Run("forms map keeps named keys", func(t *testing.T) {
+		nv := &model.NoteView{
+			VersionID: 7,
+			RawMeta: map[string]interface{}{
+				"forms": map[string]interface{}{
+					"contact": map[string]interface{}{
+						"can_submit": "guest",
+						"fields": []interface{}{
+							map[string]interface{}{"name": "email", "type": "email"},
+						},
+					},
+				},
+			},
+		}
+		got := NewNote(nv).FormSpecJSON()
+		require.Contains(t, got, `"note_version_id":7`)
+		require.Contains(t, got, `"contact":`)
+	})
+}

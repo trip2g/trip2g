@@ -39,9 +39,10 @@ type FormField struct {
 }
 
 type FormSpec struct {
-	CanSubmit CanSubmit   `yaml:"can_submit" json:"can_submit"`
-	Turnstile bool        `yaml:"turnstile"  json:"turnstile"`
-	Fields    []FormField `yaml:"fields"     json:"fields"`
+	CanSubmit  CanSubmit   `yaml:"can_submit"  json:"can_submit"`
+	Turnstile  bool        `yaml:"turnstile"   json:"turnstile"`
+	SuccessURL string      `yaml:"success_url" json:"success_url,omitempty"`
+	Fields     []FormField `yaml:"fields"      json:"fields"`
 }
 
 // ParseFromRawMeta extracts FormSpec from a note's RawMeta.
@@ -66,18 +67,20 @@ func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {
 		Enum      interface{} `yaml:"enum"`
 	}
 	type rawSpec struct {
-		CanSubmit CanSubmit  `yaml:"can_submit"`
-		Turnstile bool       `yaml:"turnstile"`
-		Fields    []rawField `yaml:"fields"`
+		CanSubmit  CanSubmit  `yaml:"can_submit"`
+		Turnstile  bool       `yaml:"turnstile"`
+		SuccessURL string     `yaml:"success_url"`
+		Fields     []rawField `yaml:"fields"`
 	}
 	var raw rawSpec
 	if unmarshalErr := yaml.Unmarshal(b, &raw); unmarshalErr != nil {
 		return nil, fmt.Errorf("formspec: unmarshal: %w", unmarshalErr)
 	}
 	spec := &FormSpec{
-		CanSubmit: raw.CanSubmit,
-		Turnstile: raw.Turnstile,
-		Fields:    make([]FormField, len(raw.Fields)),
+		CanSubmit:  raw.CanSubmit,
+		Turnstile:  raw.Turnstile,
+		SuccessURL: strings.TrimSpace(raw.SuccessURL),
+		Fields:     make([]FormField, len(raw.Fields)),
 	}
 	for i, rf := range raw.Fields {
 		f := FormField{

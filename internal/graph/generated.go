@@ -27517,6 +27517,35 @@ func (ec *executionContext) fieldContext_FormSubmit_fields(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _FormSubmitDeniedPayload_reason(ctx context.Context, field graphql.CollectedField, obj *model.FormSubmitDeniedPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FormSubmitDeniedPayload_reason,
+		func(ctx context.Context) (any, error) {
+			return obj.Reason, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FormSubmitDeniedPayload_reason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FormSubmitDeniedPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GenerateTgAttachCodePayload_code(ctx context.Context, field graphql.CollectedField, obj *model.GenerateTgAttachCodePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -44925,6 +44954,13 @@ func (ec *executionContext) _SubmitFormOrErrorPayload(ctx context.Context, sel a
 			return graphql.Null
 		}
 		return ec._SubmitFormPayload(ctx, sel, obj)
+	case model.FormSubmitDeniedPayload:
+		return ec._FormSubmitDeniedPayload(ctx, sel, &obj)
+	case *model.FormSubmitDeniedPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FormSubmitDeniedPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -64116,6 +64152,45 @@ func (ec *executionContext) _FormSubmit(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var formSubmitDeniedPayloadImplementors = []string{"FormSubmitDeniedPayload", "SubmitFormOrErrorPayload"}
+
+func (ec *executionContext) _FormSubmitDeniedPayload(ctx context.Context, sel ast.SelectionSet, obj *model.FormSubmitDeniedPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, formSubmitDeniedPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FormSubmitDeniedPayload")
+		case "reason":
+			out.Values[i] = ec._FormSubmitDeniedPayload_reason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

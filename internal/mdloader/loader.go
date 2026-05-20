@@ -834,6 +834,22 @@ func (ldr *loader) resolveLangRedirects() {
 	}
 }
 
+// langGroupContains reports whether `n` is part of `g` (as hub or version).
+func langGroupContains(g *model.LangGroup, n *model.NoteView) bool {
+	if g == nil {
+		return false
+	}
+	if g.Hub == n {
+		return true
+	}
+	for _, v := range g.Versions {
+		if v.Note == n {
+			return true
+		}
+	}
+	return false
+}
+
 // buildLangGroup creates a LangGroup for a hub page and populates
 // LangAlternatives on both the hub and each target note.
 func (ldr *loader) buildLangGroup(hub *model.NoteView) {
@@ -861,8 +877,14 @@ func (ldr *loader) buildLangGroup(hub *model.NoteView) {
 
 	for _, lr := range hub.LangRedirects {
 		if lr.Note.LangGroup != nil {
-			hub.AddWarning(model.NoteWarningWarning,
-				"lang_redirect target %s already belongs to another lang group, skipping", lr.Note.Path)
+			// If the existing group already lists `hub` (symmetric pair
+			// A↔B), the earlier pass wired up LangAlternatives correctly —
+			// silently skip. Only warn when an unrelated note has claimed
+			// the target, which is a real misconfiguration (A→C and B→C).
+			if !langGroupContains(lr.Note.LangGroup, hub) {
+				hub.AddWarning(model.NoteWarningWarning,
+					"lang_redirect target %s already belongs to another lang group, skipping", lr.Note.Path)
+			}
 			continue
 		}
 		lr.Note.LangGroup = group

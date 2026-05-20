@@ -44,6 +44,7 @@ title: "Навигация"
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
 - [[ru/user/cron_webhooks|Вебхуки по расписанию]]
 - [[ru/user/update_notes|updateNotes: редактирование через API]]
+- [[ru/user/forms|Формы в заметках]]
 - [[ru/user/Knowlume Adapter|Knowlume Adapter]]
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]
 - [[ru/user/rss-feeds|RSS-ленты]]

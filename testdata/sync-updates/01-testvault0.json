@@ -148,6 +148,10 @@
     "url": "http://localhost:20081/folder/source"
   },
   {
+    "path": "form_test_note.md",
+    "url": "http://localhost:20081/form_test_note"
+  },
+  {
     "path": "full-layout.md",
     "url": "http://localhost:20081/full_layout"
   },
@@ -464,6 +468,10 @@
     "url": "http://localhost:20081/unique"
   },
   {
+    "path": "updatenotes_test.md",
+    "url": "http://localhost:20081/updatenotes_test"
+  },
+  {
     "path": "with_layout.md",
     "url": "http://localhost:20081/with_layout"
   },
@@ -486,9 +494,5 @@
   {
     "path": "Сценарий. Ютубер.md",
     "url": "http://localhost:20081/scenarij_yutuber"
-  },
-  {
-    "path": "form_test_note.md",
-    "url": "http://localhost:20081/form_test_note"
   }
 ]

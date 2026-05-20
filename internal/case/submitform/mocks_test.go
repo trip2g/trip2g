@@ -38,6 +38,9 @@ var _ submitform.Env = &EnvMock{}
 //			InsertFormSubmitFunc: func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
 //				panic("mock out the InsertFormSubmit method")
 //			},
+//			IsAdminFunc: func(ctx context.Context) bool {
+//				panic("mock out the IsAdmin method")
+//			},
 //			RequestIPFunc: func(ctx context.Context) string {
 //				panic("mock out the RequestIP method")
 //			},
@@ -68,6 +71,9 @@ type EnvMock struct {
 
 	// InsertFormSubmitFunc mocks the InsertFormSubmit method.
 	InsertFormSubmitFunc func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error)
+
+	// IsAdminFunc mocks the IsAdmin method.
+	IsAdminFunc func(ctx context.Context) bool
 
 	// RequestIPFunc mocks the RequestIP method.
 	RequestIPFunc func(ctx context.Context) string
@@ -139,6 +145,11 @@ type EnvMock struct {
 			// IP is the ip argument value.
 			IP string
 		}
+		// IsAdmin holds details about calls to the IsAdmin method.
+		IsAdmin []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// RequestIP holds details about calls to the RequestIP method.
 		RequestIP []struct {
 			// Ctx is the ctx argument value.
@@ -156,6 +167,7 @@ type EnvMock struct {
 	lockInsertFormIntValue         sync.RWMutex
 	lockInsertFormStringValue      sync.RWMutex
 	lockInsertFormSubmit           sync.RWMutex
+	lockIsAdmin                    sync.RWMutex
 	lockRequestIP                  sync.RWMutex
 	lockUserID                     sync.RWMutex
 }
@@ -413,6 +425,38 @@ func (mock *EnvMock) InsertFormSubmitCalls() []struct {
 	mock.lockInsertFormSubmit.RLock()
 	calls = mock.calls.InsertFormSubmit
 	mock.lockInsertFormSubmit.RUnlock()
+	return calls
+}
+
+// IsAdmin calls IsAdminFunc.
+func (mock *EnvMock) IsAdmin(ctx context.Context) bool {
+	if mock.IsAdminFunc == nil {
+		panic("EnvMock.IsAdminFunc: method is nil but Env.IsAdmin was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockIsAdmin.Lock()
+	mock.calls.IsAdmin = append(mock.calls.IsAdmin, callInfo)
+	mock.lockIsAdmin.Unlock()
+	return mock.IsAdminFunc(ctx)
+}
+
+// IsAdminCalls gets all the calls that were made to IsAdmin.
+// Check the length with:
+//
+//	len(mockedEnv.IsAdminCalls())
+func (mock *EnvMock) IsAdminCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockIsAdmin.RLock()
+	calls = mock.calls.IsAdmin
+	mock.lockIsAdmin.RUnlock()
 	return calls
 }
 

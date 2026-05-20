@@ -17,6 +17,7 @@ func TestResolve_form_not_found(t *testing.T) {
 		},
 		RequestIPFunc: func(ctx context.Context) string { return "1.2.3.4" },
 		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
 	}
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{NoteVersionID: 1})
 	require.NoError(t, err)
@@ -36,6 +37,7 @@ func TestResolve_required_field_missing(t *testing.T) {
 		},
 		RequestIPFunc: func(ctx context.Context) string { return "" },
 		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
 	}
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
 		NoteVersionID: 1,
@@ -61,6 +63,7 @@ func TestResolve_file_type_not_supported(t *testing.T) {
 		},
 		RequestIPFunc:                  func(ctx context.Context) string { return "" },
 		UserIDFunc:                     func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:                    func(ctx context.Context) bool { return false },
 		EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error { return nil },
 	}
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
@@ -110,6 +113,7 @@ func TestResolve_success(t *testing.T) {
 		},
 		RequestIPFunc: func(ctx context.Context) string { return "1.2.3.4" },
 		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
 	}
 
 	nameVal := "Alice"
@@ -130,4 +134,82 @@ func TestResolve_success(t *testing.T) {
 	require.Equal(t, int64(7), gotVersionID)
 	require.Contains(t, gotStrings, "name:Alice")
 	require.True(t, emailEnqueued)
+}
+
+func TestResolve_can_submit_admin_denies_non_admin(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitAdmin,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
+	}
+	env := &EnvMock{
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		RequestIPFunc: func(ctx context.Context) string { return "" },
+		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
+	}
+	msg := "hi"
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
+	})
+	require.NoError(t, err)
+	denied, ok := payload.(*submitform.DeniedResult)
+	require.True(t, ok, "expected DeniedResult, got %T", payload)
+	require.Equal(t, submitform.DeniedAdminRequired, denied.Reason)
+	require.Empty(t, env.InsertFormSubmitCalls(), "no submit should be inserted when denied")
+}
+
+func TestResolve_can_submit_admin_allows_admin(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitAdmin,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
+	}
+	env := &EnvMock{
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		InsertFormSubmitFunc: func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
+			return 11, nil
+		},
+		InsertFormStringValueFunc:      func(ctx context.Context, submitID int64, fieldName, value string) error { return nil },
+		EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error { return nil },
+		RequestIPFunc:                  func(ctx context.Context) string { return "" },
+		UserIDFunc:                     func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:                    func(ctx context.Context) bool { return true },
+	}
+	msg := "hi"
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
+	})
+	require.NoError(t, err)
+	success, ok := payload.(*submitform.SuccessResult)
+	require.True(t, ok, "expected SuccessResult, got %T", payload)
+	require.Equal(t, int64(11), success.SubmitID)
+}
+
+func TestResolve_can_submit_paid_user_not_implemented(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitPaidUser,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
+	}
+	env := &EnvMock{
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		RequestIPFunc: func(ctx context.Context) string { return "" },
+		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return true },
+	}
+	msg := "hi"
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
+	})
+	require.NoError(t, err)
+	denied, ok := payload.(*submitform.DeniedResult)
+	require.True(t, ok, "expected DeniedResult, got %T", payload)
+	require.Equal(t, submitform.DeniedNotSupported, denied.Reason)
 }

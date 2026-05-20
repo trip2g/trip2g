@@ -1716,6 +1716,17 @@ type FormFieldValueInput struct {
 	FileValue   *graphql.Upload `json:"fileValue,omitempty"`
 }
 
+// Returned when the form is fetched successfully but the viewer is not
+// allowed to submit it. `reason` is one of:
+//   - "admin_required"   — form's can_submit is "admin" and viewer is not admin
+//   - "paid_required"    — form's can_submit is "paid_user" (not implemented yet)
+//   - "not_implemented"  — can_submit value is recognised but not enforced yet
+type FormSubmitDeniedPayload struct {
+	Reason string `json:"reason"`
+}
+
+func (FormSubmitDeniedPayload) IsSubmitFormOrErrorPayload() {}
+
 type GenerateTgAttachCodeInput struct {
 	BotID int64 `json:"botId"`
 }

@@ -55,6 +55,77 @@ test.describe('Forms in Notes', () => {
     expect(res.data.submitForm.submitId).toBeGreaterThan(0);
   });
 
+  test('admin-only form: anon submit is denied with admin_required', async ({ request, baseURL }) => {
+    const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
+    const html = await pageRes.text();
+    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    expect(match, 'form-spec script must be embedded on the admin-only note').toBeTruthy();
+    const spec = JSON.parse(match[1]);
+    expect(spec.forms[''].can_submit).toBe('admin');
+
+    const res = await gql(request, baseURL, `
+      mutation SubmitForm($input: SubmitFormInput!) {
+        submitForm(input: $input) {
+          __typename
+          ... on SubmitFormPayload { submitId }
+          ... on FormSubmitDeniedPayload { reason }
+          ... on ErrorPayload { message }
+        }
+      }
+    `, {
+      input: {
+        noteVersionId: spec.note_version_id,
+        fields: [
+          { name: 'email', stringValue: 'anon@example.com' },
+          { name: 'message', stringValue: 'should be denied' },
+        ],
+      },
+    });
+    expect(res.data.submitForm.__typename).toBe('FormSubmitDeniedPayload');
+    expect(res.data.submitForm.reason).toBe('admin_required');
+  });
+
+  test('admin-only form: admin submit succeeds', async ({ request, baseURL }) => {
+    const token = await graphqlSignIn(request);
+    const cookie = `trip2g_e2e=${token}`;
+
+    const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
+    const html = await pageRes.text();
+    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    expect(match).toBeTruthy();
+    const spec = JSON.parse(match[1]);
+
+    const res = await gql(request, baseURL, `
+      mutation SubmitForm($input: SubmitFormInput!) {
+        submitForm(input: $input) {
+          __typename
+          ... on SubmitFormPayload { submitId }
+          ... on FormSubmitDeniedPayload { reason }
+          ... on ErrorPayload { message }
+        }
+      }
+    `, {
+      input: {
+        noteVersionId: spec.note_version_id,
+        fields: [
+          { name: 'email', stringValue: 'admin@example.com' },
+          { name: 'message', stringValue: 'admin submission' },
+        ],
+      },
+    }, cookie);
+    expect(res.data.submitForm.__typename).toBe('SubmitFormPayload');
+    expect(res.data.submitForm.submitId).toBeGreaterThan(0);
+  });
+
+  test('form-spec exposes success_url', async ({ request, baseURL }) => {
+    const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
+    const html = await pageRes.text();
+    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    expect(match).toBeTruthy();
+    const spec = JSON.parse(match[1]);
+    expect(spec.forms[''].success_url).toBe('/form_admin_test_note?submitted=1');
+  });
+
   test('admin can query form submits', async ({ request, baseURL }) => {
     const token = await graphqlSignIn(request);
     const cookie = `trip2g_e2e=${token}`;

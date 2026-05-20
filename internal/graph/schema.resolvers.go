@@ -2494,6 +2494,8 @@ func (r *mutationResolver) SubmitForm(ctx context.Context, input model.SubmitFor
 	switch p := result.(type) {
 	case *submitform.SuccessResult:
 		return &model.SubmitFormPayload{SubmitID: int32(p.SubmitID)}, nil
+	case *submitform.DeniedResult:
+		return &model.FormSubmitDeniedPayload{Reason: p.Reason}, nil
 	case *submitform.ErrorResult:
 		return &model.ErrorPayload{Message: p.Message}, nil
 	default:

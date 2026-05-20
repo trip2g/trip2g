@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"trip2g/internal/formspec"
 	"trip2g/internal/model"
 
 	"golang.org/x/net/html"
@@ -276,6 +277,63 @@ func findFirstElement(n *html.Node, tag string) *html.Node {
 		}
 	}
 	return nil
+}
+
+// FormSpecJSON returns JSON for the <script id="form-spec"> tag a custom layout
+// embeds in the page. The payload mirrors the default template's form-spec:
+//
+//	{ "note_version_id": 123, "forms": { "": {...}, "named": {...} } }
+//
+// Returns "" if the note has neither `form:` nor `forms:` in frontmatter.
+// `form_ref:` is not resolved here — it requires a NVS context; layouts that
+// need it should keep the form spec inline on the rendered note.
+func (n *Note) FormSpecJSON() string {
+	if n.nv == nil {
+		return ""
+	}
+	rawMeta := n.nv.RawMeta
+
+	forms := make(map[string]*formspec.FormSpec)
+
+	if formsRaw, ok := rawMeta["forms"]; ok {
+		formsMap, isMap := formsRaw.(map[string]interface{})
+		if !isMap {
+			return ""
+		}
+		for key, fRaw := range formsMap {
+			spec, err := formspec.ParseFromRawMeta(map[string]interface{}{"form": fRaw})
+			if err != nil || spec == nil {
+				continue
+			}
+			forms[key] = spec
+		}
+	} else {
+		spec, err := formspec.ParseFromRawMeta(rawMeta)
+		if err != nil || spec == nil {
+			return ""
+		}
+		forms[""] = spec
+	}
+
+	if len(forms) == 0 {
+		return ""
+	}
+
+	payload := struct {
+		NoteVersionID int64                         `json:"note_version_id"`
+		Forms         map[string]*formspec.FormSpec `json:"forms"`
+	}{
+		NoteVersionID: n.nv.VersionID,
+		Forms:         forms,
+	}
+
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(true)
+	if err := enc.Encode(payload); err != nil {
+		return ""
+	}
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 // SubgraphNamesJSON returns JSON of note's SubgraphNames for paywall widget.

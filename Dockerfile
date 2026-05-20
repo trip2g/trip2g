@@ -26,6 +26,7 @@ COPY ./assets/ui ./trip2g
 RUN npm start trip2g && \
     npm start trip2g/user && \
     npm start trip2g/space && \
+    npm start trip2g/forms && \
     npm start trip2g/admin
 
 # Build server binary

@@ -1,0 +1,3 @@
+$trip2g_forms $mol_view
+	sub /
+		<= Builder $trip2g_forms_builder

@@ -2629,6 +2629,19 @@ func (a *app) UserID(ctx context.Context) *int64 {
 	return &id
 }
 
+// IsAdmin reports whether the current request's user token has admin role.
+func (a *app) IsAdmin(ctx context.Context) bool {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return false
+	}
+	token, err := req.UserToken()
+	if err != nil {
+		return false
+	}
+	return token.IsAdmin()
+}
+
 // GetFormSpec loads form spec for the given note version and form id.
 func (a *app) GetFormSpec(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 	notes := a.LatestNoteViews()
