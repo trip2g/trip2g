@@ -294,10 +294,7 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 // wireYieldBlocksForPreview wires yield_blocks for a single preview layout.
 // Unlike wireYieldBlocks, it works without LayoutSourceFile slice — uses the
 // templates map snapshot and sourceIDs already set on the preview loader.
-// Uses recover because Jet's utils.Walk may panic on YieldNodes without Content
-// (e.g. {{ yield block() }} without a content block).
 func (jl *jetLoader) wireYieldBlocksForPreview(sourceID string, view *jet.Template) {
-	defer func() { recover() }() //nolint:errcheck // panic from Jet AST walker; safe to ignore
 
 	views, hasSet := jl.sets[sourceID]
 	blockNamesPtr, hasSlice := jl.yieldBlocksSlices[sourceID]
@@ -366,6 +363,10 @@ func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 		return
 	}
 	if _, ok := node.(*jet.IncludeNode); ok {
+		return
+	}
+	// Skip YieldNodes — Jet's visitor panics on {{ yield content }} which has nil Parameters.
+	if _, ok := node.(*jet.YieldNode); ok {
 		return
 	}
 	if action, ok := node.(*jet.ActionNode); ok && !w.found {
