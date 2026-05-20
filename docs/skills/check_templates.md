@@ -48,6 +48,34 @@ Share the printed URL with the user — they can open it in browser.
 > `{{ debug(note.Title()) }}` ✓ → `string: My Title`
 > `{{ debug(note.Title) }}` ✗ → `func() string: 0x...` (method reference, not value)
 
+## Rendering a single BEM component
+
+To preview one component in isolation, explicitly import its file and yield the block.
+See [[en/user/bem]] for BEM conventions and `@lid`/`@did` naming.
+
+**Important caveats:**
+
+- Import paths must be **relative** to the layout path (after `/_layouts/` prefix is stripped).
+  From `/_layouts/mesh/_preview.html` → import `"bar"` resolves to `/mesh/bar` ✓
+- `yield_blocks()` returns **empty** in preview (wire phase is skipped). Yield style blocks directly instead.
+- Dependencies must be imported manually — autoimport doesn't work in preview.
+
+```bash
+# Render mesh/bar.html component with its styles
+python3 ../scripts/renderlayout.py \
+  --layout-path "/_layouts/mesh/_preview.html" \
+  --layout-src '{{ import "_blocks" }}{{ import "bar" }}{{ import "button" }}<style>{{ yield _style_mesh_bar() }}{{ yield _style_mesh_button() }}</style>{{ yield mesh_bar() }}' \
+  --note-src "hello"
+```
+
+Pattern:
+1. `{{ import "_blocks" }}` — shared layout wrapper (if needed)
+2. `{{ import "component" }}` — the component file (and its dependencies)
+3. `<style>{{ yield _style_component() }}</style>` — inline CSS (instead of `yield_blocks`)
+4. `{{ yield component() }}` — the HTML block
+
+**Tip:** `/_system/renderlayout` without params always serves the **latest** render — keep it open in a browser while iterating.
+
 ## Jet range gotcha
 
 Single-variable range gives the **index** (0, 1, 2…), not the value:
