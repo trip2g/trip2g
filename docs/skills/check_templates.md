@@ -20,8 +20,8 @@ python3 ../scripts/renderlayout.py \
 
 # test a layout file against a real note
 python3 ../scripts/renderlayout.py \
-  --layout-file _layouts/iiworker/landing.html \
-  --note-path /landings/sales_leads
+  --layout-file _layouts/mesh/index.html \
+  --note-path /en/user/templates
 
 # fetch rendered HTML directly
 python3 ../scripts/renderlayout.py \

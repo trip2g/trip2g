@@ -146,9 +146,15 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			}
 
 			// Fresh isolated loader — never touches the production jl.
+			sourceIDs := make([]string, 0, len(snap))
+			for k := range snap {
+				sourceIDs = append(sourceIDs, k)
+			}
 			preview := &jetLoader{
 				templates:            snap,
+				sourceIDs:            sourceIDs,
 				log:                  jl.log,
+				layouts:              model.Layouts{Map: make(map[string]model.Layout)},
 				pendingWarnings:      make(map[string][]model.NoteWarning),
 				sets:                 make(map[string]*jet.Set),
 				yieldBlocksSlices:    make(map[string]*[]string),
@@ -163,6 +169,11 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			if view == nil {
 				return model.Layout{}, warnings
 			}
+
+			// Wire yield_blocks so {{ yield_blocks("prefix") }} collects CSS blocks.
+			preview.layouts.Map[main.ID] = model.Layout{View: view}
+			preview.wireYieldBlocksForPreview(main.ID, view)
+
 			return model.Layout{View: view}, warnings
 		},
 	}
@@ -280,6 +291,31 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 }
 
 // wireYieldBlocks is the third pass: wire yield_blocks for each successfully parsed layout.
+// wireYieldBlocksForPreview wires yield_blocks for a single preview layout.
+// Unlike wireYieldBlocks, it works without LayoutSourceFile slice — uses the
+// templates map snapshot and sourceIDs already set on the preview loader.
+// Uses recover because Jet's utils.Walk may panic on YieldNodes without Content
+// (e.g. {{ yield block() }} without a content block).
+func (jl *jetLoader) wireYieldBlocksForPreview(sourceID string, view *jet.Template) {
+	defer func() { recover() }() //nolint:errcheck // panic from Jet AST walker; safe to ignore
+
+	views, hasSet := jl.sets[sourceID]
+	blockNamesPtr, hasSlice := jl.yieldBlocksSlices[sourceID]
+	if !hasSet || !hasSlice {
+		return
+	}
+
+	ybv := &yieldBlocksUsageFinder{}
+	utils.Walk(view, ybv)
+	if !ybv.found {
+		return
+	}
+
+	registry, _ := buildBlockRegistry(views, jl.sourceIDs, sourceID)
+	_, inlinedBlockNames, _ := resolveNeededFiles(views, view, registry)
+	*blockNamesPtr = inlinedBlockNames
+}
+
 func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 	for _, source := range sourceFiles {
 		layout, ok := jl.layouts.Map[source.ID]

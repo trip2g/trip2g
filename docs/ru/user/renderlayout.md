@@ -197,7 +197,7 @@ curl -X POST https://yoursite.com/_system/renderlayout \
 ```bash
 # запускать из директории vault (где лежит .obsidian/)
 python3 ../scripts/renderlayout.py \
-  --layout-file _layouts/article.html \
+  --layout-file _layouts/mesh/index.html \
   --note-src "# Привет"
 
 # → http://localhost:8081/_system/renderlayout?preview_id=abc123
@@ -213,6 +213,27 @@ python3 ../scripts/renderlayout.py \
 Предупреждения и ошибки — в stderr; код выхода 1 при сбое.
 
 Инструкция для агентов и советы по отладке шаблонов (включая функцию `debug()`) — в `docs/skills/check_templates.md`.
+
+---
+
+## Рендер отдельного BEM-компонента
+
+Чтобы просмотреть один компонент отдельно, импортируйте его файл явно и вызовите HTML- и стилевые блоки.
+Соглашения об именовании — в [[ru/user/bem]].
+
+```bash
+python3 ../scripts/renderlayout.py \
+  --layout-path "/_layouts/mesh/_preview.html" \
+  --layout-src '{{ import "_blocks" }}{{ import "bar" }}{{ import "button" }}<style>{{ yield _style_mesh_bar() }}{{ yield _style_mesh_button() }}</style>{{ yield mesh_bar() }}' \
+  --note-src "hello"
+```
+
+**Нюансы:**
+
+- Пути импортов — **относительные**: `"bar"`, не `"/_layouts/mesh/bar"`. Резолвятся от нормализованного ID: `/_layouts/mesh/_preview.html` → `/mesh/_preview`, поэтому `"bar"` → `/mesh/bar`.
+- **`yield_blocks()` возвращает пустую строку в preview** — фаза wire пропускается. Вызывайте стилевые блоки напрямую: `{{ yield _style_myblock() }}`.
+- Зависимости компонентов (например, `button` внутри `bar`) нужно импортировать вручную.
+- `GET /_system/renderlayout` без параметров всегда отдаёт **последний** рендер — держите в браузере открытым во время работы.
 
 ---
 

@@ -197,7 +197,7 @@ The repo ships `scripts/renderlayout.py` — a wrapper that reads the API key au
 ```bash
 # run from your vault directory (where .obsidian/ lives)
 python3 ../scripts/renderlayout.py \
-  --layout-file _layouts/article.html \
+  --layout-file _layouts/mesh/index.html \
   --note-src "# Hello"
 
 # → http://localhost:8081/_system/renderlayout?preview_id=abc123
@@ -213,6 +213,27 @@ Args: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-f
 Warnings and errors go to stderr; exit code 1 on failure.
 
 For agent-specific instructions and debugging tips (including the `debug()` template function), see `docs/skills/check_templates.md`.
+
+---
+
+## Rendering a single BEM component
+
+To preview one component in isolation, explicitly import its file and yield the HTML and style blocks.
+See [[en/user/bem]] for BEM naming conventions and `@lid`/`@did`.
+
+```bash
+python3 ../scripts/renderlayout.py \
+  --layout-path "/_layouts/mesh/_preview.html" \
+  --layout-src '{{ import "_blocks" }}{{ import "bar" }}{{ import "button" }}<style>{{ yield _style_mesh_bar() }}{{ yield _style_mesh_button() }}</style>{{ yield mesh_bar() }}' \
+  --note-src "hello"
+```
+
+**Caveats:**
+
+- Import paths must be **relative** — `"bar"` not `"/_layouts/mesh/bar"`. Paths are resolved from the normalized layout ID: `/_layouts/mesh/_preview.html` → `/mesh/_preview`, so `"bar"` → `/mesh/bar`.
+- **`yield_blocks()` returns empty in preview** — the block wiring phase is skipped. Yield each style block directly: `{{ yield _style_myblock() }}`.
+- Component dependencies (e.g. `button` used inside `bar`) must be imported manually.
+- `GET /_system/renderlayout` without params always returns the **latest** render — keep it open in a browser while iterating.
 
 ---
 
