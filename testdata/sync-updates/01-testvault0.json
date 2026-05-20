@@ -148,6 +148,14 @@
     "url": "http://localhost:20081/folder/source"
   },
   {
+    "path": "form_admin_test_note.md",
+    "url": "http://localhost:20081/form_admin_test_note"
+  },
+  {
+    "path": "form_example.md",
+    "url": "http://localhost:20081/form_example"
+  },
+  {
     "path": "form_test_note.md",
     "url": "http://localhost:20081/form_test_note"
   },

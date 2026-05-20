@@ -333,7 +333,7 @@ echo ""
 echo "🔄 Running CLI sync E2E tests..."
 echo ""
 
-./scripts/test-sync-cli.sh --api-key "$API_KEY" --endpoint "$ENDPOINT" --update-snapshots || {
+./scripts/test-sync-cli.sh --api-key "$API_KEY" --endpoint "$ENDPOINT" || {
   echo -e "${RED}✗ CLI sync tests failed${NC}"
   exit 1
 }

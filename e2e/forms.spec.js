@@ -123,7 +123,7 @@ test.describe('Forms in Notes', () => {
     const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
     expect(match).toBeTruthy();
     const spec = JSON.parse(match[1]);
-    expect(spec.forms[''].success_url).toBe('/form_admin_test_note?submitted=1');
+    expect(spec.forms[''].success_url).toBe('/demo/form_admin_test_note?submitted=1');
   });
 
   test('admin can query form submits', async ({ request, baseURL }) => {
