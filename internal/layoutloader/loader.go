@@ -134,6 +134,11 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 				snap[k] = v
 			}
 
+			// Normalize ID to match production format: strip /_layouts prefix and .html
+			// extension. Production loader strips these when building the templates map,
+			// so Jet import resolution (relative paths) only works with normalized IDs.
+			main.ID = normalizeLayoutID(main.ID)
+
 			// If no inline content provided, fill from snapshot so load() does not
 			// overwrite the server template with an empty string.
 			if main.Content == "" {
@@ -166,6 +171,23 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 	jl.wireYieldBlocks(sourceFiles)
 
 	return &jl.layouts, nil
+}
+
+// normalizeLayoutID converts a user-supplied layout path to the production ID format.
+// Production IDs strip the leading "/_layouts" prefix and ".html"/".html.json" extension,
+// which is required for Jet import resolution to work correctly inside the preview loader.
+// Examples: "/_layouts/mesh/index.html" → "/mesh/index"
+//           "/mesh/index.html"          → "/mesh/index"
+//           "/mesh/index"               → "/mesh/index" (already normalized)
+func normalizeLayoutID(id string) string {
+	id = strings.TrimPrefix(id, "/_layouts")
+	id = strings.TrimPrefix(id, "_layouts")
+	id = strings.TrimSuffix(id, ".html.json")
+	id = strings.TrimSuffix(id, ".html")
+	if !strings.HasPrefix(id, "/") {
+		id = "/" + id
+	}
+	return id
 }
 
 // processTemplates is the second pass: load each template, walk for assets and blocks, store layout.
