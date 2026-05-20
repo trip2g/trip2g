@@ -11,6 +11,8 @@ import (
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/yuin/goldmark"
+	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 
 	graphmodel "trip2g/internal/graph/model"
@@ -121,15 +123,16 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 }
 
 func renderMarkdownNote(content string) *model.NoteView {
-	md := goldmark.New()
+	md := goldmark.New(goldmark.WithExtensions(meta.Meta))
 	src := []byte(content)
-	reader := text.NewReader(src)
-	doc := md.Parser().Parse(reader)
+	ctx := parser.NewContext()
+	doc := md.Parser().Parse(text.NewReader(src), parser.WithContext(ctx))
 	var buf bytes.Buffer
 	_ = md.Renderer().Render(&buf, src, doc)
 	nv := &model.NoteView{
 		Content: src,
 		HTML:    template.HTML(buf.String()), //nolint:gosec // goldmark output is trusted; content is user-supplied markdown rendered server-side
+		RawMeta: meta.Get(ctx),
 	}
 	nv.SetAst(doc)
 	nv.Title = nv.ExtractTitle()

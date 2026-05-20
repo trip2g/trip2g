@@ -48,6 +48,18 @@ Share the printed URL with the user — they can open it in browser.
 > `{{ debug(note.Title()) }}` ✓ → `string: My Title`
 > `{{ debug(note.Title) }}` ✗ → `func() string: 0x...` (method reference, not value)
 
+## Preview vs production: known differences
+
+| Feature | Preview | Production |
+|---------|---------|------------|
+| autoimport components | ✅ works | ✅ works |
+| `yield_blocks()` CSS | ✅ works | ✅ works |
+| `{{ asset("file.css") }}` | ❌ returns path as-is | ✅ resolves to CDN URL |
+| `htmlInjectionsHead` | ✅ empty slice (no error) | ✅ real injections |
+| `note.M()` frontmatter | ✅ works (both `note.path` and `note.src`) | ✅ works |
+
+`{{ asset() }}` doesn't resolve in preview because assets are tied to note version IDs in the production loader. Use `note.path` to get real asset URLs, or inline CSS/JS directly in the template during development.
+
 ## Rendering a single BEM component
 
 To preview one component in isolation, explicitly import its file and yield the block.
