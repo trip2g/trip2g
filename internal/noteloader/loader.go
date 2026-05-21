@@ -274,6 +274,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to load layouts: %w", err)
 	}
 
+	smokeRenderLayouts(layouts, nvs, l.log, defaultSmokeRenderLimit)
+
 	var searchIndex bleve.Index
 
 	if !options.SkipSearchIndex {

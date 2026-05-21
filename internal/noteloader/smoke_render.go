@@ -1,0 +1,95 @@
+package noteloader
+
+import (
+	"fmt"
+	"io"
+	"reflect"
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
+
+	"github.com/CloudyKit/jet/v6"
+)
+
+const defaultSmokeRenderLimit = 10
+
+// smokeRenderLayouts executes each parsed layout against up to `limit` notes
+// that select it via frontmatter `layout:`. Runtime errors and panics from
+// Jet's Execute are turned into NoteWarning entries on the layout so that
+// CLI / pushNotes flows surface them without needing a browser request.
+//
+// Skipped:
+//   - layouts with parse errors (View == nil) — already have Critical warning
+//   - layouts no note uses — nothing meaningful to render against
+func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger.Logger, limit int) {
+	if layouts == nil || nvs == nil || limit <= 0 {
+		return
+	}
+
+	byLayout := make(map[string][]*model.NoteView)
+	for _, n := range nvs.List {
+		if n == nil || n.Layout == "" {
+			continue
+		}
+		key := "/" + n.Layout
+		if len(byLayout[key]) >= limit {
+			continue
+		}
+		byLayout[key] = append(byLayout[key], n)
+	}
+
+	for id, layout := range layouts.Map {
+		if layout.View == nil {
+			continue
+		}
+		notes, ok := byLayout[id]
+		if !ok {
+			continue
+		}
+		warnings := smokeRenderForLayout(layout.View, notes, nvs, log, id)
+		if len(warnings) > 0 {
+			layout.Warnings = append(layout.Warnings, warnings...)
+			layouts.Map[id] = layout
+		}
+	}
+}
+
+func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *model.NoteViews, log logger.Logger, layoutID string) []model.NoteWarning {
+	var warnings []model.NoteWarning
+	nvsWrap := templateviews.NewNVS(nvs, "")
+	for _, n := range notes {
+		if w := executeSmoke(view, n, nvsWrap); w != nil {
+			log.Warn("layout smoke render failed",
+				"layout", layoutID, "note", n.Path, "msg", w.Message)
+			warnings = append(warnings, *w)
+		}
+	}
+	return warnings
+}
+
+func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS) (w *model.NoteWarning) {
+	defer func() {
+		if r := recover(); r != nil {
+			w = &model.NoteWarning{
+				Level:   model.NoteWarningWarning,
+				Message: fmt.Sprintf("smoke render panic on %q: %v", note.Path, r),
+			}
+		}
+	}()
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(note)
+	vars["nvs"] = reflect.ValueOf(nvsWrap)
+	vars["title"] = reflect.ValueOf(note.Title)
+	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{})
+	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{})
+
+	if err := view.Execute(io.Discard, vars, nil); err != nil {
+		return &model.NoteWarning{
+			Level:   model.NoteWarningWarning,
+			Message: fmt.Sprintf("smoke render error on %q: %s", note.Path, err.Error()),
+		}
+	}
+	return nil
+}
