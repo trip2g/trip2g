@@ -28,6 +28,7 @@ func hashContent(content []byte) string {
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }
 
+//nolint:gocognit // per-change branches share state with the outer loop; extraction would require threading paths/pathIDs and a multi-return payload sentinel through helpers.
 func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error) {
 	nvs := env.LatestNoteViews()
 	var paths []string
@@ -39,11 +40,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	// Note: if the same path appears more than once in changes, the second
 	// operation reads stale content — callers must not patch the same path twice per call.
 	for _, change := range input.Changes {
-		if change.Upsert == nil && change.Patch == nil && change.Hide == nil {
-			continue
-		}
-
-		if change.Upsert != nil {
+		switch {
+		case change.Upsert != nil:
 			upsert := change.Upsert
 			if upsert.ExpectedHash != nil {
 				nv := nvs.PathMap[upsert.Path]
@@ -64,8 +62,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			pathIDs = append(pathIDs, pathID)
 			paths = append(paths, upsert.Path)
-
-		} else if change.Patch != nil {
+		case change.Patch != nil:
 			patch := change.Patch
 			nv := nvs.PathMap[patch.Path]
 			if nv == nil {
@@ -86,7 +83,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				return model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
 			}
 			// Check for multiple occurrences
-			if strings.Index(content[idx+len(patch.Find):], patch.Find) != -1 {
+			if strings.Contains(content[idx+len(patch.Find):], patch.Find) {
 				return model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
 			}
 			newContent := content[:idx] + patch.Replace + content[idx+len(patch.Find):]
@@ -96,8 +93,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			pathIDs = append(pathIDs, pathID)
 			paths = append(paths, patch.Path)
-
-		} else if change.Hide != nil {
+		case change.Hide != nil:
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
@@ -109,6 +105,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				return nil, fmt.Errorf("updatenotes: hide %s: %w", hide.Path, err)
 			}
 			paths = append(paths, hide.Path)
+		default:
+			continue
 		}
 	}
 

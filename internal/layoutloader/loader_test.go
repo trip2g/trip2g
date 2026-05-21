@@ -1246,8 +1246,8 @@ func TestResolveAssets_InsideImportedTemplate(t *testing.T) {
 
 func TestDebugFunc_InTemplate(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
-		ID:   "/layout",
-		Path: "_layouts/layout.html",
+		ID:      "/layout",
+		Path:    "_layouts/layout.html",
 		Content: `{{ debug(note.Title()) }}|{{ debug(note.M()) }}`,
 	}}
 

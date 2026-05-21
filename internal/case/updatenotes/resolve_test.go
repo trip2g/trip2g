@@ -16,10 +16,10 @@ import (
 
 // mockEnv is a hand-written mock implementing updatenotes.Env.
 type mockEnv struct {
-	latestNoteViews          func() *appmodel.NoteViews
-	insertNote               func(ctx context.Context, note appmodel.RawNote) (int64, error)
-	hideNotePath             func(ctx context.Context, params db.HideNotePathParams) error
-	prepareLatestNotes       func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	latestNoteViews            func() *appmodel.NoteViews
+	insertNote                 func(ctx context.Context, note appmodel.RawNote) (int64, error)
+	hideNotePath               func(ctx context.Context, params db.HideNotePathParams) error
+	prepareLatestNotes         func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	handleLatestNotesAfterSave func(ctx context.Context, pathIDs []int64) error
 }
 
@@ -79,7 +79,7 @@ func TestResolve_UpsertBasic(t *testing.T) {
 	var insertedNote appmodel.RawNote
 	handleCalled := false
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, note appmodel.RawNote) (int64, error) {
 			insertedNote = note
 			return 10, nil
@@ -120,7 +120,7 @@ func TestResolve_UpsertWithCorrectHash(t *testing.T) {
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (int64, error) {
 			return 11, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -152,7 +152,7 @@ func TestResolve_UpsertWithWrongHash(t *testing.T) {
 			t.Fatal("InsertNote should not be called on hash mismatch")
 			return 0, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -183,7 +183,7 @@ func TestResolve_PatchFound(t *testing.T) {
 			insertedNote = note
 			return 12, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -212,7 +212,7 @@ func TestResolve_PatchNotFound(t *testing.T) {
 			t.Fatal("InsertNote should not be called when find string is absent")
 			return 0, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -241,7 +241,7 @@ func TestResolve_PatchMultipleOccurrences(t *testing.T) {
 			t.Fatal("InsertNote should not be called on ambiguous patch")
 			return 0, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -265,12 +265,12 @@ func TestResolve_PatchNoteMissing(t *testing.T) {
 	ctx := context.Background()
 
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (int64, error) {
 			t.Fatal("InsertNote should not be called when note is missing")
 			return 0, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -301,7 +301,7 @@ func TestResolve_PatchWithWrongHash(t *testing.T) {
 			t.Fatal("InsertNote should not be called on hash mismatch")
 			return 0, nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -325,7 +325,7 @@ func TestResolve_Hide(t *testing.T) {
 
 	var hiddenPath string
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (int64, error) {
 			t.Fatal("InsertNote should not be called for hide")
 			return 0, nil
@@ -334,7 +334,7 @@ func TestResolve_Hide(t *testing.T) {
 			hiddenPath = params.Value
 			return nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -358,7 +358,7 @@ func TestResolve_EmptyChangeSkipped(t *testing.T) {
 	ctx := context.Background()
 
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (int64, error) {
 			t.Fatal("InsertNote should not be called for empty change")
 			return 0, nil
@@ -367,7 +367,7 @@ func TestResolve_EmptyChangeSkipped(t *testing.T) {
 			t.Fatal("HideNotePath should not be called for empty change")
 			return nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 
@@ -403,7 +403,7 @@ func TestResolve_MixedBatch(t *testing.T) {
 			hideCallCount++
 			return nil
 		},
-		prepareLatestNotes:       noopPrepare,
+		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
 

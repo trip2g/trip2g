@@ -188,8 +188,9 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 // Production IDs strip the leading "/_layouts" prefix and ".html"/".html.json" extension,
 // which is required for Jet import resolution to work correctly inside the preview loader.
 // Examples: "/_layouts/mesh/index.html" → "/mesh/index"
-//           "/mesh/index.html"          → "/mesh/index"
-//           "/mesh/index"               → "/mesh/index" (already normalized)
+//
+//	"/mesh/index.html"          → "/mesh/index"
+//	"/mesh/index"               → "/mesh/index" (already normalized)
 func normalizeLayoutID(id string) string {
 	id = strings.TrimPrefix(id, "/_layouts")
 	id = strings.TrimPrefix(id, "_layouts")
@@ -295,7 +296,6 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 // Unlike wireYieldBlocks, it works without LayoutSourceFile slice — uses the
 // templates map snapshot and sourceIDs already set on the preview loader.
 func (jl *jetLoader) wireYieldBlocksForPreview(sourceID string, view *jet.Template) {
-
 	views, hasSet := jl.sets[sourceID]
 	blockNamesPtr, hasSlice := jl.yieldBlocksSlices[sourceID]
 	if !hasSet || !hasSlice {
