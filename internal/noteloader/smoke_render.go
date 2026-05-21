@@ -83,8 +83,8 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["note"] = reflect.ValueOf(note)
 	vars["nvs"] = reflect.ValueOf(nvsWrap)
 	vars["title"] = reflect.ValueOf(note.Title)
-	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{})
-	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{})
+	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{}})
+	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{{}})
 
 	if err := view.Execute(io.Discard, vars, nil); err != nil {
 		return &model.NoteWarning{

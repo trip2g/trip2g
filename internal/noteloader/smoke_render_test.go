@@ -93,6 +93,50 @@ func TestSmokeRenderLayouts_LimitFirstN(t *testing.T) {
 		"11th note must not be smoke-tested when limit=10")
 }
 
+// Single-variable Jet range (`range inj := slice`) assigns the loop INDEX (int),
+// not the element — the same footgun as Go's `for i := range slice`.
+// The smoke render must catch this when the injection slice is non-empty.
+func TestSmokeRenderLayouts_SingleVarRangeOverInjectionsIsDetected(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{ID: "/broken", Path: "_layouts/broken.html",
+			Content: `{{ range inj := htmlInjectionsBodyEnd }}{{ inj.Content | unsafe }}{{ end }}`},
+	}
+	layouts := smokeLoadLayouts(t, sources)
+	nvs := &model.NoteViews{List: []*model.NoteView{
+		{Path: "p.md", Layout: "broken", Title: "p"},
+	}}
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	var found bool
+	for _, w := range layouts.Map["/broken"].Warnings {
+		if strings.Contains(w.Message, "smoke render") {
+			found = true
+		}
+	}
+	require.True(t, found,
+		"single-var range over injections must produce smoke warning, got: %+v",
+		layouts.Map["/broken"].Warnings)
+}
+
+// Two-variable range (`range i, inj := slice`) correctly binds the struct value.
+func TestSmokeRenderLayouts_TwoVarRangeOverInjectionsIsOK(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{ID: "/ok", Path: "_layouts/ok.html",
+			Content: `{{ range i, inj := htmlInjectionsBodyEnd }}{{ inj.Content | unsafe }}{{ end }}`},
+	}
+	layouts := smokeLoadLayouts(t, sources)
+	nvs := &model.NoteViews{List: []*model.NoteView{
+		{Path: "p.md", Layout: "ok", Title: "p"},
+	}}
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	for _, w := range layouts.Map["/ok"].Warnings {
+		if strings.Contains(w.Message, "smoke render") {
+			t.Fatalf("two-var range over injections must not produce smoke warning, got: %s", w.Message)
+		}
+	}
+}
+
 // Parse-broken layout already has Critical warning and View == nil.
 // Smoke must not touch it (no duplicate / crash).
 func TestSmokeRenderLayouts_SkipsLayoutsWithParseError(t *testing.T) {

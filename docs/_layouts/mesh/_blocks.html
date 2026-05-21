@@ -149,7 +149,7 @@
     }
   </style>
   <style>{{ yield_blocks("_style_mesh_") }}</style>
-  {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+  {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 </head>
 <body>
   <div class="wrap">
@@ -157,7 +157,7 @@
   </div>
 
   <script defer src="{{ asset("scripts.js") }}"></script>
-  {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+  {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 </body>
 </html>
 {{ end }}

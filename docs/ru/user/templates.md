@@ -82,11 +82,11 @@ title: Моя страница
 Скрипты и теги, добавленные в настройках сайта (Google Analytics, пиксели, кастомный `<head>`), доступны в шаблоне через две переменные:
 
 ```jet
-{{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+{{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 ```
 
 ```jet
-{{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 ```
 
 `htmlInjectionsHead` — вставлять перед `</head>`, `htmlInjectionsBodyEnd` — перед `</body>`.
@@ -95,11 +95,11 @@ title: Моя страница
 > ```jet
 > <head>
 >   ...
->   {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+>   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 > </head>
 > <body>
 >   ...
->   {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+>   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 > </body>
 > ```
 

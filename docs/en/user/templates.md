@@ -174,11 +174,11 @@ Load assets:
 Include HTML injections from site settings (analytics scripts, custom `<head>` tags):
 
 ```jet
-{{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+{{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 ```
 
 ```jet
-{{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 ```
 
 Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `</body>`. This is how Google Analytics and other site-wide scripts reach custom Jet layouts.
@@ -187,11 +187,11 @@ Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `<
 > ```jet
 > <head>
 >   ...
->   {{ range injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+>   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 > </head>
 > <body>
 >   ...
->   {{ range injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+>   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 > </body>
 > ```
 

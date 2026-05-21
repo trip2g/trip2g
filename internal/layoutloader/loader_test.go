@@ -63,6 +63,29 @@ func TestResolveAssets(t *testing.T) {
 	require.Equal(t, `https://storage/style.css, https://storage/main.js`, buf.String())
 }
 
+// Two-variable Jet range correctly binds struct values from a vars slice.
+// Regression for: single-var range assigns the loop index (int), not the element.
+func TestHTMLInjectionTwoVarRangeRendersContent(t *testing.T) {
+	type injection struct{ Content string }
+	sources := []model.LayoutSourceFile{{
+		ID:   "/page",
+		Path: "_layouts/page.html",
+		Content: `{{ range i, inj := htmlInjectionsBodyEnd }}{{ inj.Content | unsafe }}{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]injection{{Content: "<!-- tracking -->"}})
+
+	var buf bytes.Buffer
+	err = layouts.Map["/page"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "<!-- tracking -->", buf.String())
+}
+
 func TestYieldBlocks(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
 		ID:        "/trip2g/main",
