@@ -49,6 +49,7 @@ import (
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
@@ -181,11 +182,13 @@ type Env interface {
 	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 
 	submitform.Env
+	markformsubmitprocessed.Env
 	GetFormSubmitsByNotePathID(ctx context.Context, notePathID int64) ([]db.FormSubmit, error)
 	GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormStringValuesBySubmitIDRow, error)
 	GetFormIntValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormIntValuesBySubmitIDRow, error)
 	GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormBoolValuesBySubmitIDRow, error)
 	GetNotesWithFormSubmits(ctx context.Context) ([]db.GetNotesWithFormSubmitsRow, error)
+	CountUnprocessedFormSubmits(ctx context.Context) (int64, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

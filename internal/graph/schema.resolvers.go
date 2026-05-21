@@ -63,6 +63,7 @@ import (
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
@@ -1268,7 +1269,7 @@ func (r *adminMutationResolver) RenderLayout(ctx context.Context, obj *appmodel.
 
 // MarkFormSubmitProcessed is the resolver for the markFormSubmitProcessed field.
 func (r *adminMutationResolver) MarkFormSubmitProcessed(ctx context.Context, obj *appmodel.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: MarkFormSubmitProcessed - markFormSubmitProcessed"))
+	return markformsubmitprocessed.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -1927,7 +1928,11 @@ func (r *adminQueryResolver) FormNotes(ctx context.Context, obj *appmodel.AdminQ
 
 // UnprocessedFormSubmitsCount is the resolver for the unprocessedFormSubmitsCount field.
 func (r *adminQueryResolver) UnprocessedFormSubmitsCount(ctx context.Context, obj *appmodel.AdminQuery) (int32, error) {
-	panic(fmt.Errorf("not implemented: UnprocessedFormSubmitsCount - unprocessedFormSubmitsCount"))
+	count, err := r.env(ctx).CountUnprocessedFormSubmits(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return int32(count), nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -2370,7 +2375,7 @@ func (r *formSubmitResolver) Status(ctx context.Context, obj *db.FormSubmit) (mo
 
 // ProcessedBy is the resolver for the processedBy field.
 func (r *formSubmitResolver) ProcessedBy(ctx context.Context, obj *db.FormSubmit) (*db.User, error) {
-	panic(fmt.Errorf("not implemented: ProcessedBy - processedBy"))
+	return resolveOnePtr[db.User](ctx, obj.ProcessedBy, r.env(ctx).UserByID)
 }
 
 // Fields is the resolver for the fields field.
