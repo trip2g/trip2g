@@ -211,6 +211,52 @@ When file + payment + webhook land, a closed loop emerges:
 
 The site owner can ship a landing page with payment intake, lead processing, and access delivery — **with no separate backend**. Note is the landing. Form is intake. Webhook is orchestration. Agent is business logic. trip2g is the runtime.
 
+## Roadmap
+
+### forms variable in Jet templates
+
+Plan: `.omc/plans/forms-api-and-varmap.md`
+
+`forms` becomes a first-class template variable alongside `note` and `nvs`:
+
+```jet
+{{ forms.Get("/leads").Count() }}
+{{ range i, s := forms.Get("/leads").Submits() }}
+  {{ s.Field("email") }} — {{ s.CreatedAt() }}
+{{ end }}
+```
+
+Enables read-only dashboards built entirely in Jet — no separate backend, no admin UI.
+Access control: page-level gating is sufficient (if you can see the page, you see results).
+`userToken` injection deferred — add when per-field admin-only visibility is needed.
+
+Also: `BuildVarMap(TemplateVars)` unifies the 4 scattered `vars[""] = reflect.ValueOf(...)` sites.
+
+### Admin overlay
+
+Floating button on every page for admins → overlay panel with form results for the current note.
+Implemented as a mol component (`$trip2g_form_admin_overlay`).
+Triggered by `note.FormSpecJSON() != ""` — only shown when the note has a form.
+Data fetched lazily via GraphQL when overlay opens.
+
+### SQL queries in templates
+
+`db.Query("SELECT ...")` as a Jet template variable — read-only, template-scoped:
+
+```jet
+{{ range i, row := db.Query("SELECT field_value FROM form_string_values WHERE ...") }}
+  {{ row.Get("field_value") }}
+{{ end }}
+```
+
+Enables arbitrary analytics directly on a page. Since only admins edit templates, SQL injection risk is bounded to the template author.
+Similar to Datasette / Metabase but without a separate tool — the note IS the dashboard.
+Implementation: `DBQuerier` interface injected via `TemplateVars`, read-only SQLite connection only.
+
+### External SQL dashboard (alternative)
+
+If built-in SQL feels too heavy: [Datasette](https://datasette.io/) can serve the SQLite DB read-only with zero config. Suitable for internal analytics without custom template work.
+
 ## Known Gaps
 
 - `form_ref` is not resolved in custom layouts (`templateviews.Note.FormSpecJSON`) — only in the default template. Custom layouts that need a ref must inline the spec, or wait for a `NVS.FormSpecJSON(note)` helper.
