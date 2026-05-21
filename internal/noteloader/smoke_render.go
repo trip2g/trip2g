@@ -12,18 +12,18 @@ import (
 	"github.com/CloudyKit/jet/v6"
 )
 
-const defaultSmokeRenderLimit = 10
+const smokeRenderLimit = 10
 
-// smokeRenderLayouts executes each parsed layout against up to `limit` notes
-// that select it via frontmatter `layout:`. Runtime errors and panics from
-// Jet's Execute are turned into NoteWarning entries on the layout so that
+// smokeRenderLayouts executes each parsed layout against up to smokeRenderLimit
+// notes that select it via frontmatter `layout:`. Runtime errors and panics
+// from Jet's Execute are turned into NoteWarning entries on the layout so that
 // CLI / pushNotes flows surface them without needing a browser request.
 //
 // Skipped:
 //   - layouts with parse errors (View == nil) — already have Critical warning
 //   - layouts no note uses — nothing meaningful to render against
-func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger.Logger, limit int) {
-	if layouts == nil || nvs == nil || limit <= 0 {
+func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger.Logger) {
+	if layouts == nil || nvs == nil {
 		return
 	}
 
@@ -33,7 +33,7 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 			continue
 		}
 		key := "/" + n.Layout
-		if len(byLayout[key]) >= limit {
+		if len(byLayout[key]) >= smokeRenderLimit {
 			continue
 		}
 		byLayout[key] = append(byLayout[key], n)
@@ -68,6 +68,7 @@ func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *mode
 	return warnings
 }
 
+//nolint:nonamedreturns // named return required so deferred recover can set it
 func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS) (w *model.NoteWarning) {
 	defer func() {
 		if r := recover(); r != nil {

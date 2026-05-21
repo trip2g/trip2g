@@ -35,7 +35,7 @@ func TestSmokeRenderLayouts_RuntimeErrorBecomesWarning(t *testing.T) {
 		{Path: "page.md", Layout: "buggy", Title: "p"},
 	}}
 
-	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{}, 10)
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
 
 	warnings := layouts.Map["/buggy"].Warnings
 	require.NotEmpty(t, warnings, "expected smoke render warning")
@@ -61,7 +61,7 @@ func TestSmokeRenderLayouts_NoMatchingNotes_NoWarning(t *testing.T) {
 		{Path: "page.md", Layout: "other", Title: "p"},
 	}}
 
-	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{}, 10)
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
 
 	require.Empty(t, layouts.Map["/orphan"].Warnings,
 		"no notes => no smoke run => no warning")
@@ -77,7 +77,7 @@ func TestSmokeRenderLayouts_LimitFirstN(t *testing.T) {
 	layouts := smokeLoadLayouts(t, sources)
 
 	notes := make([]*model.NoteView, 0, 12)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		notes = append(notes, &model.NoteView{
 			Path: "ok.md", Layout: "cond", Title: "ok",
 		})
@@ -87,7 +87,7 @@ func TestSmokeRenderLayouts_LimitFirstN(t *testing.T) {
 	})
 	nvs := &model.NoteViews{List: notes}
 
-	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{}, 10)
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
 
 	require.Empty(t, layouts.Map["/cond"].Warnings,
 		"11th note must not be smoke-tested when limit=10")
@@ -103,14 +103,14 @@ func TestSmokeRenderLayouts_SkipsLayoutsWithParseError(t *testing.T) {
 	layouts := smokeLoadLayouts(t, sources)
 	require.Nil(t, layouts.Map["/broken"].View, "should be nil after parse error")
 	parseWarnings := len(layouts.Map["/broken"].Warnings)
-	require.Greater(t, parseWarnings, 0, "should have parse-time warning")
+	require.Positive(t, parseWarnings, "should have parse-time warning")
 
 	nvs := &model.NoteViews{List: []*model.NoteView{
 		{Path: "p.md", Layout: "broken", Title: "p"},
 	}}
 
-	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{}, 10)
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
 
-	require.Equal(t, parseWarnings, len(layouts.Map["/broken"].Warnings),
+	require.Len(t, layouts.Map["/broken"].Warnings, parseWarnings,
 		"smoke must not add warnings to layouts with parse errors")
 }
