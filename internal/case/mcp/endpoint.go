@@ -130,14 +130,28 @@ func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 Send POST requests with a JSON-RPC 2.0 body.
 
-Authentication (one of):
+Public access: no token required for open knowledge bases.
+
+Authentication (required for private/subscriber-only content):
   Authorization: Bearer t2g_<your-token>
   ?token=t2g_<your-token>
   X-API-Key: <your-api-key>
 
-Get a token: your account → Tokens.
+Get a personal token: your account → Tokens → Generate token.
 
 Client config (Claude Desktop / Claude Code / Cursor / Copilot / Gemini CLI):
+
+  Anonymous (public KB):
+  {
+    "mcpServers": {
+      "trip2g": {
+        "type": "http",
+        "url": "{{MCP_URL}}"
+      }
+    }
+  }
+
+  Authenticated (private pages):
   {
     "mcpServers": {
       "trip2g": {
