@@ -29,7 +29,6 @@ assets/ui/          ← symlink → ../mam/trip2g/
     space/          ← subscription space
   graphql/          ← generated types + mol adapter
   monkeypatch/      ← runtime patches (locale, URL)
-  externaldeps/     ← Docker layer cache trick
 ```
 
 `assets/ui/` is a symlink into the MAM workspace. All component names are prefixed `$trip2g_`.
@@ -128,16 +127,15 @@ mkdir filter id input limit format fragment note
 
 This is a known quirk — the directories are never used by the build, but their absence causes resolution errors.
 
-## Docker build and layer caching
+## Docker build
 
-Building all $mol dependencies is slow. The trick in `Dockerfile` is to split the build into two Docker layers:
+Building the $mol frontend takes ~65s in Docker. The mam build tool keeps its compilation cache in memory only — every new process starts cold. There is no disk cache and no incremental rebuild across `npm start` invocations.
 
-1. **Layer 1** — copy only `externaldeps/list.view.tree` and run `npm start trip2g/externaldeps`. This builds the entire mol stdlib and caches it in a Docker layer.
-2. **Layer 2** — copy the rest of `assets/ui/` and build the actual app components.
+Benchmarked approaches that do **not** help:
+- Splitting `COPY` into a separate `externaldeps` layer — mam rebuilds everything regardless of Docker layer cache
+- BuildKit cache mounts on `-` output dirs — saves ~9s at best, mam ignores its own prior output on restart
 
-As long as `externaldeps/list.view.tree` doesn't change, layer 1 is reused from cache and subsequent builds skip re-downloading and recompiling mol itself.
-
-`externaldeps/list.view.tree` is a dummy $mol component that lists every mol module the project depends on. Keep it up to date when adding new `$mol_*` primitives.
+The only architectural fix is to keep mam running in watch mode (where in-memory cache is preserved) and build outside Docker, then `COPY` the compiled artifacts in. Until that is implemented, the ~65s compile is the baseline cost.
 
 ## Monkeypatches
 

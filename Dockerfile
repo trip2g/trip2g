@@ -17,10 +17,6 @@ RUN mkdir fragment && \
     mkdir format && \
     mkdir input
 
-COPY ./assets/ui/externaldeps ./trip2g/externaldeps/
-
-RUN npm start trip2g/externaldeps
-
 COPY ./assets/ui ./trip2g
 
 RUN npm start trip2g && \
