@@ -3,6 +3,7 @@ free: true
 title: Form Admin Test Note
 form:
   can_submit: admin
+  turnstile: false
   success_url: /demo/form_admin_test_note?submitted=1
   fields:
     - name: email

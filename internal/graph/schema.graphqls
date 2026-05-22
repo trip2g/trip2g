@@ -1830,7 +1830,11 @@ type FormSubmitDeniedPayload {
   reason: String!
 }
 
-union SubmitFormOrErrorPayload = SubmitFormPayload | FormSubmitDeniedPayload | ErrorPayload
+type TurnstileRequiredPayload {
+  siteKey: String!
+}
+
+union SubmitFormOrErrorPayload = SubmitFormPayload | FormSubmitDeniedPayload | TurnstileRequiredPayload | ErrorPayload
 
 type Subscription {
   currentTime(format: String = "2006-01-02 15:04:05"): String!

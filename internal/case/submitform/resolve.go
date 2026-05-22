@@ -6,6 +6,8 @@ import (
 	"net/mail"
 
 	"trip2g/internal/formspec"
+	gmodel "trip2g/internal/graph/model"
+	"trip2g/internal/logger"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg submitform_test . Env
@@ -20,6 +22,9 @@ type Env interface {
 	RequestIP(ctx context.Context) string
 	UserID(ctx context.Context) *int64
 	IsAdmin(ctx context.Context) bool
+	VerifyTurnstile(ctx context.Context, token, ip string) error
+	TurnstileSiteKey() string
+	Logger() logger.Logger
 }
 
 type FieldValue struct {
@@ -37,38 +42,36 @@ type Input struct {
 	Fields         []FieldValue
 }
 
-type Payload interface{ isSubmitFormPayload() }
-
-type SuccessResult struct{ SubmitID int64 }
-type ErrorResult struct{ Message string }
-type DeniedResult struct{ Reason string }
-
-func (s *SuccessResult) isSubmitFormPayload() {}
-func (e *ErrorResult) isSubmitFormPayload()   {}
-func (d *DeniedResult) isSubmitFormPayload()  {}
-
-// Denial reason codes returned in DeniedResult.Reason.
+// Denial reason codes returned in FormSubmitDeniedPayload.Reason.
 const (
 	DeniedAdminRequired = "admin_required"
 	DeniedPaidRequired  = "paid_required"
 	DeniedNotSupported  = "not_implemented"
 )
 
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nolint:gocognit
+func Resolve(ctx context.Context, env Env, input Input) (gmodel.SubmitFormOrErrorPayload, error) { //nolint:gocognit
 	spec, err := env.GetFormSpec(ctx, input.NoteVersionID, input.FormID)
 	if err != nil {
 		return nil, fmt.Errorf("submitform: get form spec: %w", err)
 	}
 	if spec == nil {
-		return &ErrorResult{Message: "form_not_found"}, nil
+		return &gmodel.ErrorPayload{Message: "form_not_found"}, nil
 	}
 
 	if denial := checkCanSubmit(ctx, env, spec); denial != nil {
 		return denial, nil
 	}
 
+	if spec.Turnstile {
+		ip := env.RequestIP(ctx)
+		if verifyErr := env.VerifyTurnstile(ctx, input.TurnstileToken, ip); verifyErr != nil {
+			env.Logger().Warn("turnstile verification failed", "err", verifyErr)
+			return &gmodel.TurnstileRequiredPayload{SiteKey: env.TurnstileSiteKey()}, nil
+		}
+	}
+
 	if valErr := validateFields(spec, input.Fields); valErr != nil {
-		return &ErrorResult{Message: valErr.Error()}, nil //nolint:nilerr // validation errors become ErrorResult, not Go errors
+		return &gmodel.ErrorPayload{Message: valErr.Error()}, nil //nolint:nilerr // validation errors become ErrorPayload, not Go errors
 	}
 
 	ip := env.RequestIP(ctx)
@@ -105,21 +108,21 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nol
 			}
 		case formspec.FieldTypeFile:
 			if fv.FilePresent {
-				return &ErrorResult{Message: "file_upload_not_supported"}, nil
+				return &gmodel.ErrorPayload{Message: "file_upload_not_supported"}, nil
 			}
 		}
 	}
 
 	_ = env.EnqueueSendFormSubmitEmail(ctx, submitID) // non-fatal
 
-	return &SuccessResult{SubmitID: submitID}, nil
+	return &gmodel.SubmitFormPayload{SubmitID: int32(submitID)}, nil
 }
 
 // checkCanSubmit enforces spec.CanSubmit. Returns nil to allow, or a
-// *DeniedResult to short-circuit. An empty / unrecognised value falls back to
+// *FormSubmitDeniedPayload to short-circuit. An empty / unrecognised value falls back to
 // "guest" semantics (allow) so older specs and forward-compatible additions
 // don't accidentally lock everyone out.
-func checkCanSubmit(ctx context.Context, env Env, spec *formspec.FormSpec) *DeniedResult {
+func checkCanSubmit(ctx context.Context, env Env, spec *formspec.FormSpec) *gmodel.FormSubmitDeniedPayload {
 	switch spec.CanSubmit {
 	case "", formspec.CanSubmitGuest:
 		return nil
@@ -127,9 +130,9 @@ func checkCanSubmit(ctx context.Context, env Env, spec *formspec.FormSpec) *Deni
 		if env.IsAdmin(ctx) {
 			return nil
 		}
-		return &DeniedResult{Reason: DeniedAdminRequired}
+		return &gmodel.FormSubmitDeniedPayload{Reason: DeniedAdminRequired}
 	case formspec.CanSubmitPaidUser:
-		return &DeniedResult{Reason: DeniedNotSupported}
+		return &gmodel.FormSubmitDeniedPayload{Reason: DeniedNotSupported}
 	default:
 		return nil
 	}

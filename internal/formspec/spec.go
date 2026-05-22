@@ -68,7 +68,7 @@ func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {
 	}
 	type rawSpec struct {
 		CanSubmit  CanSubmit  `yaml:"can_submit"`
-		Turnstile  bool       `yaml:"turnstile"`
+		Turnstile  *bool      `yaml:"turnstile"`
 		SuccessURL string     `yaml:"success_url"`
 		Fields     []rawField `yaml:"fields"`
 	}
@@ -76,9 +76,13 @@ func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {
 	if unmarshalErr := yaml.Unmarshal(b, &raw); unmarshalErr != nil {
 		return nil, fmt.Errorf("formspec: unmarshal: %w", unmarshalErr)
 	}
+	turnstile := true
+	if raw.Turnstile != nil {
+		turnstile = *raw.Turnstile
+	}
 	spec := &FormSpec{
 		CanSubmit:  raw.CanSubmit,
-		Turnstile:  raw.Turnstile,
+		Turnstile:  turnstile,
 		SuccessURL: strings.TrimSpace(raw.SuccessURL),
 		Fields:     make([]FormField, len(raw.Fields)),
 	}

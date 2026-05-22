@@ -77,6 +77,23 @@ form:
 
 After a successful submit the layout navigates the browser to `success_url`. Relative URLs stay on the same domain; absolute URLs let you point at any page (e.g. an external receipt).
 
+### Spam protection — `turnstile`
+
+Cloudflare Turnstile is **on by default** on every form. To disable it, set `turnstile: false` explicitly:
+
+```yaml
+form:
+  turnstile: false   # accept submissions without a captcha
+```
+
+How it works:
+
+- When the form is submitted without a valid token, the server returns `TurnstileRequiredPayload { siteKey }`.
+- The default layout reads `siteKey`, renders the Turnstile widget, and resubmits with the token in `turnstileToken`.
+- Locally (no `turnstile-secret-key` configured) verification is a no-op — any submit succeeds. In production the secret key is set and the captcha gates every submit.
+
+Combine with `can_submit: admin` for sensitive forms; on public forms the captcha is the only defence against anonymous spam.
+
 ### Multiple forms on one note — `forms:`
 
 When one note hosts more than one form, use `forms:` (a map of named keys) instead of a single `form:`:
@@ -246,7 +263,7 @@ All notes under `blog/` then expose the shared form. Add `exclude: ["blog/drafts
 
 - **`type: file`** — file uploads return `file_upload_not_supported` on submit. Use a separate object-storage upload step for now.
 - **`can_submit: paid_user`** — recognised in frontmatter but server returns `FormSubmitDeniedPayload { reason: "not_implemented" }`. Use `admin` until this lands.
-- **Cloudflare Turnstile** (`turnstile: true`) — accepted in spec but not validated. Spam mitigation today relies on `can_submit: admin` or the existing user ban system.
+- **Captcha providers other than Cloudflare Turnstile** — hCaptcha and Yandex SmartCaptcha are on the roadmap (Turnstile is wired up and on by default; see "Spam protection" above).
 
 ### Related
 

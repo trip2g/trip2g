@@ -34513,6 +34513,35 @@ func (ec *executionContext) fieldContext_TriggerCronWebhookPayload_deliveryId(_ 
 	return fc, nil
 }
 
+func (ec *executionContext) _TurnstileRequiredPayload_siteKey(ctx context.Context, field graphql.CollectedField, obj *model.TurnstileRequiredPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TurnstileRequiredPayload_siteKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SiteKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TurnstileRequiredPayload_siteKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TurnstileRequiredPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UnbanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.UnbanUserPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -44947,6 +44976,13 @@ func (ec *executionContext) _SubmitFormOrErrorPayload(ctx context.Context, sel a
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case model.TurnstileRequiredPayload:
+		return ec._TurnstileRequiredPayload(ctx, sel, &obj)
+	case *model.TurnstileRequiredPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TurnstileRequiredPayload(ctx, sel, obj)
 	case model.SubmitFormPayload:
 		return ec._SubmitFormPayload(ctx, sel, &obj)
 	case *model.SubmitFormPayload:
@@ -68542,6 +68578,45 @@ func (ec *executionContext) _TriggerCronWebhookPayload(ctx context.Context, sel 
 			out.Values[i] = graphql.MarshalString("TriggerCronWebhookPayload")
 		case "deliveryId":
 			out.Values[i] = ec._TriggerCronWebhookPayload_deliveryId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var turnstileRequiredPayloadImplementors = []string{"TurnstileRequiredPayload", "SubmitFormOrErrorPayload"}
+
+func (ec *executionContext) _TurnstileRequiredPayload(ctx context.Context, sel ast.SelectionSet, obj *model.TurnstileRequiredPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, turnstileRequiredPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TurnstileRequiredPayload")
+		case "siteKey":
+			out.Values[i] = ec._TurnstileRequiredPayload_siteKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

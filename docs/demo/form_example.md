@@ -4,6 +4,7 @@ title: Form example
 layout: forms/example
 form:
   can_submit: admin
+  turnstile: false
   fields:
     - name: email
       type: email

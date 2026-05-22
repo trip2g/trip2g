@@ -2487,25 +2487,12 @@ func (r *mutationResolver) SubmitForm(ctx context.Context, input model.SubmitFor
 	if input.FormID != nil {
 		formID = *input.FormID
 	}
-	result, err := submitform.Resolve(ctx, r.env(ctx), submitform.Input{
+	return submitform.Resolve(ctx, r.env(ctx), submitform.Input{
 		NoteVersionID:  input.NoteVersionID,
 		FormID:         formID,
 		TurnstileToken: token,
 		Fields:         fields,
 	})
-	if err != nil {
-		return nil, err
-	}
-	switch p := result.(type) {
-	case *submitform.SuccessResult:
-		return &model.SubmitFormPayload{SubmitID: int32(p.SubmitID)}, nil
-	case *submitform.DeniedResult:
-		return &model.FormSubmitDeniedPayload{Reason: p.Reason}, nil
-	case *submitform.ErrorResult:
-		return &model.ErrorPayload{Message: p.Message}, nil
-	default:
-		return nil, fmt.Errorf("submitform: unexpected payload type %T", result)
-	}
 }
 
 // ToggleFavoriteNote is the resolver for the toggleFavoriteNote field.
@@ -3933,3 +3920,19 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *turnstileRequiredPayloadResolver) _(ctx context.Context, obj *model.TurnstileRequiredPayload) (*bool, error) {
+	panic(fmt.Errorf("not implemented: _ - _"))
+}
+func (r *Resolver) TurnstileRequiredPayload() TurnstileRequiredPayloadResolver {
+	return &turnstileRequiredPayloadResolver{r}
+}
+type turnstileRequiredPayloadResolver struct{ *Resolver }
+*/

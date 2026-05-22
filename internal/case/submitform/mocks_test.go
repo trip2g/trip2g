@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/formspec"
+	"trip2g/internal/logger"
 )
 
 // Ensure, that EnvMock does implement submitform.Env.
@@ -41,11 +42,20 @@ var _ submitform.Env = &EnvMock{}
 //			IsAdminFunc: func(ctx context.Context) bool {
 //				panic("mock out the IsAdmin method")
 //			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
+//			},
 //			RequestIPFunc: func(ctx context.Context) string {
 //				panic("mock out the RequestIP method")
 //			},
+//			TurnstileSiteKeyFunc: func() string {
+//				panic("mock out the TurnstileSiteKey method")
+//			},
 //			UserIDFunc: func(ctx context.Context) *int64 {
 //				panic("mock out the UserID method")
+//			},
+//			VerifyTurnstileFunc: func(ctx context.Context, token string, ip string) error {
+//				panic("mock out the VerifyTurnstile method")
 //			},
 //		}
 //
@@ -75,11 +85,20 @@ type EnvMock struct {
 	// IsAdminFunc mocks the IsAdmin method.
 	IsAdminFunc func(ctx context.Context) bool
 
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
+
 	// RequestIPFunc mocks the RequestIP method.
 	RequestIPFunc func(ctx context.Context) string
 
+	// TurnstileSiteKeyFunc mocks the TurnstileSiteKey method.
+	TurnstileSiteKeyFunc func() string
+
 	// UserIDFunc mocks the UserID method.
 	UserIDFunc func(ctx context.Context) *int64
+
+	// VerifyTurnstileFunc mocks the VerifyTurnstile method.
+	VerifyTurnstileFunc func(ctx context.Context, token string, ip string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -150,15 +169,30 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
 		// RequestIP holds details about calls to the RequestIP method.
 		RequestIP []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// TurnstileSiteKey holds details about calls to the TurnstileSiteKey method.
+		TurnstileSiteKey []struct {
+		}
 		// UserID holds details about calls to the UserID method.
 		UserID []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// VerifyTurnstile holds details about calls to the VerifyTurnstile method.
+		VerifyTurnstile []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Token is the token argument value.
+			Token string
+			// IP is the ip argument value.
+			IP string
 		}
 	}
 	lockEnqueueSendFormSubmitEmail sync.RWMutex
@@ -168,8 +202,11 @@ type EnvMock struct {
 	lockInsertFormStringValue      sync.RWMutex
 	lockInsertFormSubmit           sync.RWMutex
 	lockIsAdmin                    sync.RWMutex
+	lockLogger                     sync.RWMutex
 	lockRequestIP                  sync.RWMutex
+	lockTurnstileSiteKey           sync.RWMutex
 	lockUserID                     sync.RWMutex
+	lockVerifyTurnstile            sync.RWMutex
 }
 
 // EnqueueSendFormSubmitEmail calls EnqueueSendFormSubmitEmailFunc.
@@ -460,6 +497,33 @@ func (mock *EnvMock) IsAdminCalls() []struct {
 	return calls
 }
 
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
+	return calls
+}
+
 // RequestIP calls RequestIPFunc.
 func (mock *EnvMock) RequestIP(ctx context.Context) string {
 	if mock.RequestIPFunc == nil {
@@ -492,6 +556,33 @@ func (mock *EnvMock) RequestIPCalls() []struct {
 	return calls
 }
 
+// TurnstileSiteKey calls TurnstileSiteKeyFunc.
+func (mock *EnvMock) TurnstileSiteKey() string {
+	if mock.TurnstileSiteKeyFunc == nil {
+		panic("EnvMock.TurnstileSiteKeyFunc: method is nil but Env.TurnstileSiteKey was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTurnstileSiteKey.Lock()
+	mock.calls.TurnstileSiteKey = append(mock.calls.TurnstileSiteKey, callInfo)
+	mock.lockTurnstileSiteKey.Unlock()
+	return mock.TurnstileSiteKeyFunc()
+}
+
+// TurnstileSiteKeyCalls gets all the calls that were made to TurnstileSiteKey.
+// Check the length with:
+//
+//	len(mockedEnv.TurnstileSiteKeyCalls())
+func (mock *EnvMock) TurnstileSiteKeyCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTurnstileSiteKey.RLock()
+	calls = mock.calls.TurnstileSiteKey
+	mock.lockTurnstileSiteKey.RUnlock()
+	return calls
+}
+
 // UserID calls UserIDFunc.
 func (mock *EnvMock) UserID(ctx context.Context) *int64 {
 	if mock.UserIDFunc == nil {
@@ -521,5 +612,45 @@ func (mock *EnvMock) UserIDCalls() []struct {
 	mock.lockUserID.RLock()
 	calls = mock.calls.UserID
 	mock.lockUserID.RUnlock()
+	return calls
+}
+
+// VerifyTurnstile calls VerifyTurnstileFunc.
+func (mock *EnvMock) VerifyTurnstile(ctx context.Context, token string, ip string) error {
+	if mock.VerifyTurnstileFunc == nil {
+		panic("EnvMock.VerifyTurnstileFunc: method is nil but Env.VerifyTurnstile was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Token string
+		IP    string
+	}{
+		Ctx:   ctx,
+		Token: token,
+		IP:    ip,
+	}
+	mock.lockVerifyTurnstile.Lock()
+	mock.calls.VerifyTurnstile = append(mock.calls.VerifyTurnstile, callInfo)
+	mock.lockVerifyTurnstile.Unlock()
+	return mock.VerifyTurnstileFunc(ctx, token, ip)
+}
+
+// VerifyTurnstileCalls gets all the calls that were made to VerifyTurnstile.
+// Check the length with:
+//
+//	len(mockedEnv.VerifyTurnstileCalls())
+func (mock *EnvMock) VerifyTurnstileCalls() []struct {
+	Ctx   context.Context
+	Token string
+	IP    string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Token string
+		IP    string
+	}
+	mock.lockVerifyTurnstile.RLock()
+	calls = mock.calls.VerifyTurnstile
+	mock.lockVerifyTurnstile.RUnlock()
 	return calls
 }

@@ -68,8 +68,8 @@ func TestResolveAssets(t *testing.T) {
 func TestHTMLInjectionTwoVarRangeRendersContent(t *testing.T) {
 	type injection struct{ Content string }
 	sources := []model.LayoutSourceFile{{
-		ID:   "/page",
-		Path: "_layouts/page.html",
+		ID:      "/page",
+		Path:    "_layouts/page.html",
 		Content: `{{ range i, inj := htmlInjectionsBodyEnd }}{{ inj.Content | unsafe }}{{ end }}`,
 	}}
 

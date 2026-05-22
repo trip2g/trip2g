@@ -6,6 +6,8 @@ import (
 
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/formspec"
+	gmodel "trip2g/internal/graph/model"
+	"trip2g/internal/logger"
 
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +23,7 @@ func TestResolve_form_not_found(t *testing.T) {
 	}
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{NoteVersionID: 1})
 	require.NoError(t, err)
-	errP, ok := payload.(*submitform.ErrorResult)
+	errP, ok := payload.(*gmodel.ErrorPayload)
 	require.True(t, ok)
 	require.Equal(t, "form_not_found", errP.Message)
 }
@@ -44,7 +46,7 @@ func TestResolve_required_field_missing(t *testing.T) {
 		Fields:        []submitform.FieldValue{{Name: "email", StringValue: nil}},
 	})
 	require.NoError(t, err)
-	errP, ok := payload.(*submitform.ErrorResult)
+	errP, ok := payload.(*gmodel.ErrorPayload)
 	require.True(t, ok)
 	require.Contains(t, errP.Message, "email")
 }
@@ -71,7 +73,7 @@ func TestResolve_file_type_not_supported(t *testing.T) {
 		Fields:        []submitform.FieldValue{{Name: "attach", FilePresent: true}},
 	})
 	require.NoError(t, err)
-	errP, ok := payload.(*submitform.ErrorResult)
+	errP, ok := payload.(*gmodel.ErrorPayload)
 	require.True(t, ok)
 	require.Equal(t, "file_upload_not_supported", errP.Message)
 }
@@ -128,9 +130,9 @@ func TestResolve_success(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	result, ok := payload.(*submitform.SuccessResult)
-	require.True(t, ok, "expected SuccessResult got %T", payload)
-	require.Equal(t, int64(99), result.SubmitID)
+	result, ok := payload.(*gmodel.SubmitFormPayload)
+	require.True(t, ok, "expected SubmitFormPayload got %T", payload)
+	require.Equal(t, int32(99), result.SubmitID)
 	require.Equal(t, int64(7), gotVersionID)
 	require.Contains(t, gotStrings, "name:Alice")
 	require.True(t, emailEnqueued)
@@ -155,8 +157,8 @@ func TestResolve_can_submit_admin_denies_non_admin(t *testing.T) {
 		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
 	})
 	require.NoError(t, err)
-	denied, ok := payload.(*submitform.DeniedResult)
-	require.True(t, ok, "expected DeniedResult, got %T", payload)
+	denied, ok := payload.(*gmodel.FormSubmitDeniedPayload)
+	require.True(t, ok, "expected FormSubmitDeniedPayload, got %T", payload)
 	require.Equal(t, submitform.DeniedAdminRequired, denied.Reason)
 	require.Empty(t, env.InsertFormSubmitCalls(), "no submit should be inserted when denied")
 }
@@ -185,9 +187,9 @@ func TestResolve_can_submit_admin_allows_admin(t *testing.T) {
 		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
 	})
 	require.NoError(t, err)
-	success, ok := payload.(*submitform.SuccessResult)
-	require.True(t, ok, "expected SuccessResult, got %T", payload)
-	require.Equal(t, int64(11), success.SubmitID)
+	success, ok := payload.(*gmodel.SubmitFormPayload)
+	require.True(t, ok, "expected SubmitFormPayload, got %T", payload)
+	require.Equal(t, int32(11), success.SubmitID)
 }
 
 func TestResolve_can_submit_paid_user_not_implemented(t *testing.T) {
@@ -201,7 +203,7 @@ func TestResolve_can_submit_paid_user_not_implemented(t *testing.T) {
 		},
 		RequestIPFunc: func(ctx context.Context) string { return "" },
 		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
-		IsAdminFunc:   func(ctx context.Context) bool { return true },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
 	}
 	msg := "hi"
 	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
@@ -209,7 +211,69 @@ func TestResolve_can_submit_paid_user_not_implemented(t *testing.T) {
 		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
 	})
 	require.NoError(t, err)
-	denied, ok := payload.(*submitform.DeniedResult)
-	require.True(t, ok, "expected DeniedResult, got %T", payload)
+	denied, ok := payload.(*gmodel.FormSubmitDeniedPayload)
+	require.True(t, ok, "expected FormSubmitDeniedPayload, got %T", payload)
 	require.Equal(t, submitform.DeniedNotSupported, denied.Reason)
+}
+
+func TestResolve_turnstile_required_when_missing_token(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitGuest,
+		Turnstile: true,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
+	}
+	env := &EnvMock{
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		RequestIPFunc:        func(ctx context.Context) string { return "1.2.3.4" },
+		UserIDFunc:           func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:          func(ctx context.Context) bool { return false },
+		VerifyTurnstileFunc:  func(ctx context.Context, token, ip string) error { return context.Canceled },
+		TurnstileSiteKeyFunc: func() string { return "site-key-abc" },
+		LoggerFunc:           func() logger.Logger { return &logger.DummyLogger{} },
+	}
+	msg := "hi"
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
+	})
+	require.NoError(t, err)
+	tr, ok := payload.(*gmodel.TurnstileRequiredPayload)
+	require.True(t, ok, "expected TurnstileRequiredPayload, got %T", payload)
+	require.Equal(t, "site-key-abc", tr.SiteKey)
+	require.Empty(t, env.InsertFormSubmitCalls())
+}
+
+func TestResolve_turnstile_passes_with_valid_token(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitGuest,
+		Turnstile: true,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
+	}
+	env := &EnvMock{
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		InsertFormSubmitFunc: func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
+			return 42, nil
+		},
+		InsertFormStringValueFunc:      func(ctx context.Context, submitID int64, fieldName, value string) error { return nil },
+		EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error { return nil },
+		RequestIPFunc:                  func(ctx context.Context) string { return "1.2.3.4" },
+		UserIDFunc:                     func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:                    func(ctx context.Context) bool { return false },
+		VerifyTurnstileFunc:            func(ctx context.Context, token, ip string) error { return nil },
+		TurnstileSiteKeyFunc:           func() string { return "" },
+	}
+	msg := "hi"
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID:  1,
+		TurnstileToken: "valid-token",
+		Fields:         []submitform.FieldValue{{Name: "msg", StringValue: &msg}},
+	})
+	require.NoError(t, err)
+	success, ok := payload.(*gmodel.SubmitFormPayload)
+	require.True(t, ok, "expected SubmitFormPayload, got %T", payload)
+	require.Equal(t, int32(42), success.SubmitID)
 }

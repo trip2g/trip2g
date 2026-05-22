@@ -21,6 +21,7 @@ type EnvFlag struct {
 	envFlagDict       map[string]string
 	showEnvKeyInUsage bool
 	showEnvValInUsage bool
+	envPrefix         string
 	logger            logger.Logger
 }
 
@@ -31,7 +32,11 @@ type EnvFlagConfig struct {
 	EnvFlagDict       map[string]string
 	ShowEnvKeyInUsage bool
 	ShowEnvValInUsage bool
-	Logger            logger.Logger
+	// EnvPrefix, when set, restricts processing to env vars with this prefix.
+	// Prefixed vars that don't match any flag are treated as errors (likely typos).
+	// Example: "TRIP2G_" makes TRIP2G_LISTEN_ADDR map to flag listen-addr.
+	EnvPrefix string
+	Logger    logger.Logger
 }
 
 // DefaultEnvFlagConfig returns a default configuration.
@@ -42,6 +47,7 @@ func DefaultEnvFlagConfig() EnvFlagConfig {
 		EnvFlagDict:       make(map[string]string),
 		ShowEnvKeyInUsage: true,
 		ShowEnvValInUsage: true,
+		EnvPrefix:         "TRIP2G_",
 		Logger:            &logger.DummyLogger{},
 	}
 }
@@ -64,6 +70,7 @@ func New(cfg EnvFlagConfig) *EnvFlag {
 		envFlagDict:       cfg.EnvFlagDict,
 		showEnvKeyInUsage: cfg.ShowEnvKeyInUsage,
 		showEnvValInUsage: cfg.ShowEnvValInUsage,
+		envPrefix:         cfg.EnvPrefix,
 		logger:            cfg.Logger,
 	}
 }
@@ -127,7 +134,7 @@ func (ef *EnvFlag) updateUsageWithEnvKeys(flagEnvMap map[string]string) {
 
 		envKey, exists := flagEnvMap[f.Name]
 		if !exists {
-			envKey = flagToEnv(f.Name)
+			envKey = ef.envPrefix + flagToEnv(f.Name)
 		}
 
 		envPrefix := fmt.Sprintf("[%s]", envKey)
@@ -140,35 +147,69 @@ func (ef *EnvFlag) updateUsageWithEnvKeys(flagEnvMap map[string]string) {
 }
 
 // processEnvironmentVariables processes all environment variables and sets corresponding flags.
+// When a prefix is configured two passes are made: unprefixed vars first, then prefixed vars,
+// so prefixed values always take precedence. Unknown prefixed vars are aggregated into a single
+// error returned after all vars have been processed.
 func (ef *EnvFlag) processEnvironmentVariables(ctx context.Context, flagEnvMap map[string]string) error {
-	for _, envLine := range os.Environ() {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	envLines := os.Environ()
+	var unknownPrefixed []string
 
-		err := ef.processEnvLine(envLine, flagEnvMap)
-		if err != nil {
+	runPass := func(wantPrefixed bool) error {
+		for _, envLine := range envLines {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+			key, _, _ := strings.Cut(envLine, "=")
+			hasPfx := ef.envPrefix != "" && strings.HasPrefix(key, ef.envPrefix)
+			if hasPfx != wantPrefixed {
+				continue
+			}
+			unknown, err := ef.processEnvLine(envLine, flagEnvMap)
+			if err != nil {
+				return err
+			}
+			if unknown != "" {
+				unknownPrefixed = append(unknownPrefixed, unknown)
+			}
+		}
+		return nil
+	}
+
+	// Pass 1: unprefixed (or everything when no prefix is configured).
+	if err := runPass(false); err != nil {
+		return err
+	}
+	// Pass 2: prefixed vars override unprefixed ones.
+	if ef.envPrefix != "" {
+		if err := runPass(true); err != nil {
 			return err
 		}
+	}
+
+	if len(unknownPrefixed) > 0 {
+		fmt.Fprintf(os.Stderr,
+			"WRN unknown environment variables with prefix %q (possible typos): %s\n",
+			ef.envPrefix, strings.Join(unknownPrefixed, ", "),
+		)
 	}
 	return nil
 }
 
 // processEnvLine processes a single environment variable line.
-// not sure about flagEnvMap. It's just copied from the original repo.
-func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) error {
+// Returns the key if it carries the configured prefix but maps to no known flag (collected by
+// the caller for a deferred error), or an error for hard failures like flag.Set.
+func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) (string, error) {
 	envKV := strings.SplitN(envLine, "=", 2)
 	if len(envKV) == 0 {
-		return nil
+		return "", nil
 	}
 
 	key := envKV[0]
-	if len(key) < ef.minLength {
+	if ef.envPrefix == "" && len(key) < ef.minLength {
 		ef.logger.Debug("skipping environment variable (too short)", "key", key, "minLength", ef.minLength)
-		return nil
+		return "", nil
 	}
 
 	value := ""
@@ -179,8 +220,12 @@ func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) error {
 	flagKey := ef.getFlagKey(key)
 	f := ef.flagSet.Lookup(flagKey)
 	if f == nil {
+		if ef.envPrefix != "" && strings.HasPrefix(key, ef.envPrefix) {
+			ef.logger.Debug("unknown prefixed environment variable", "envKey", key, "flagKey", flagKey)
+			return key, nil // deferred error — caller aggregates
+		}
 		ef.logger.Debug("skipping environment variable (flag not defined)", "envKey", key, "flagKey", flagKey)
-		return nil
+		return "", nil
 	}
 
 	ef.logger.Debug("processing environment variable", "envKey", key, "flagKey", flagKey, "value", value)
@@ -198,7 +243,7 @@ func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) error {
 			"value", value,
 			"error", err,
 		)
-		return &ProcessError{
+		return "", &ProcessError{
 			Flag:  flagKey,
 			Value: value,
 			Err:   err,
@@ -206,7 +251,7 @@ func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) error {
 	}
 
 	ef.logger.Info("set flag from environment variable", "envKey", key, "flagKey", flagKey)
-	return nil
+	return "", nil
 }
 
 // getFlagKey returns the flag name for the given environment variable key.
@@ -214,7 +259,8 @@ func (ef *EnvFlag) getFlagKey(envKey string) string {
 	if flagName, exists := ef.envFlagDict[envKey]; exists {
 		return flagName
 	}
-	return envToFlag(envKey)
+	key := strings.TrimPrefix(envKey, ef.envPrefix)
+	return envToFlag(key)
 }
 
 // Parse processes environment variables and then parses command-line arguments.
@@ -299,6 +345,13 @@ func SetShowEnvValInUsage(v bool) {
 // SetLogger sets the logger for the standard instance.
 func SetLogger(log logger.Logger) {
 	std.SetLogger(log)
+}
+
+// SetEnvPrefix sets an environment variable prefix for the standard instance.
+// When set, only vars with this prefix are processed; unrecognised prefixed vars
+// return an error instead of being silently skipped.
+func SetEnvPrefix(v string) {
+	std.envPrefix = v
 }
 
 // envToFlag converts SCREAMING_SNAKE_CASE to kebab-case.

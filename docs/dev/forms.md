@@ -134,7 +134,7 @@ Sample custom layout: `docs/_layouts/forms/example.html` — builds fields from 
 
 - `can_submit: admin` removes anonymous spam entirely
 - The existing user-ban system covers authenticated abusers
-- `turnstile: true` in the spec is **not validated** — accepted but ignored in `submitform.Resolve`
+- **Cloudflare Turnstile is on by default**: `submitform.Resolve` calls `Env.VerifyTurnstile` whenever `spec.Turnstile` is true (the default if `turnstile:` is omitted). Forms that need to opt out set `turnstile: false`. The server returns `TurnstileRequiredPayload{siteKey}` when the token is missing or rejected — the client renders the widget keyed by `siteKey` and resubmits with `turnstileToken` filled in. Locally, `turnstile-secret-key` is unset so verification is a no-op; in production the key gates every submit.
 
 ## Not Implemented (Roadmap)
 
@@ -173,17 +173,17 @@ Largely composable from existing pieces: `webhooks` + `submitForm`. What still n
 
 Currently returns `not_implemented`. What's needed: `Env.HasPaidAccess(ctx, notePathID) bool`, backed by `ListActiveSubgraphAccessesByUserID` or a direct purchase check. Full integration with the paywall (`docs/dev/monetization.md`).
 
-### Captcha (any provider)
+### Captcha — other providers
 
-`turnstileToken` is already part of `SubmitFormInput`, but it's ignored in `submitform.Resolve`. The plan is broader than "turn Turnstile on":
+Cloudflare Turnstile is wired up and on by default (see "Current Spam Mitigation"). The remaining roadmap item is **pluggable providers** for cases where Turnstile is a bad fit:
 
-- Pluggable providers: Cloudflare Turnstile, hCaptcha, Yandex SmartCaptcha (the last one is required for RU users where Turnstile is unreliable)
+- hCaptcha, Yandex SmartCaptcha (the last one is required for RU users where Turnstile is unreliable)
 - Provider selection in admin config (site key + secret + provider id)
-- A `captcha: true` flag in the form spec — the provider isn't chosen in frontmatter
+- Rename the spec key from `turnstile: bool` to a provider-neutral `captcha: bool` — the provider isn't chosen in frontmatter
 - The spec JSON includes `captcha: { provider, site_key }` so the client knows which widget to render
-- The server validates the token with the matching provider based on `captcha.provider` from admin config
+- The server validates the token with the matching provider based on the admin config
 
-Without captcha, `can_submit: guest` is unsafe in production. With captcha, it is the only sane defence against anonymous spam.
+Without captcha, `can_submit: guest` is unsafe in production. With captcha (already on by default), it is the only sane defence against anonymous spam.
 
 ### Built-in JS for forms and comments
 

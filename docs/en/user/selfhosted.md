@@ -164,6 +164,21 @@ FEATURES={}
 # FEATURES={"vector_search":{"enabled":true,"model":"bge-m3","base_url":"https://embeddings.example.com/v1"}}
 ```
 
+## Using a `TRIP2G_` prefix
+
+By default, trip2g reads configuration from plain env vars like `LISTEN_ADDR` or `JWT_SECRET`.
+
+If you run trip2g alongside other services that share the same environment (e.g. a single `.env` file for multiple containers), you can prefix every trip2g var with `TRIP2G_` to avoid name collisions:
+
+```dotenv
+TRIP2G_PUBLIC_URL=https://docs.example.com
+TRIP2G_LISTEN_ADDR=0.0.0.0:8081
+TRIP2G_JWT_SECRET=replace-with-long-random-secret
+# … and so on for every setting
+```
+
+When a `TRIP2G_` var is present it takes precedence over the plain counterpart. Any `TRIP2G_` var that does not map to a known setting is logged as a warning on startup — useful for catching typos without crashing the server.
+
 ## What each setting does
 
 - `PUBLIC_URL` is the external URL of your site. trip2g uses it for links, email flows, and integrations.

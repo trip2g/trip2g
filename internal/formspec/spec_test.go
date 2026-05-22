@@ -86,3 +86,26 @@ func TestParseFormRef_absent(t *testing.T) {
 	_, _, ok := formspec.ParseFormRef(map[string]interface{}{})
 	require.False(t, ok)
 }
+
+func TestParseFromRawMeta_turnstile_defaults_to_true(t *testing.T) {
+	spec, err := formspec.ParseFromRawMeta(map[string]interface{}{
+		"form": map[string]interface{}{
+			"can_submit": "guest",
+			"fields":     []interface{}{},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, spec.Turnstile)
+}
+
+func TestParseFromRawMeta_turnstile_explicit_false(t *testing.T) {
+	spec, err := formspec.ParseFromRawMeta(map[string]interface{}{
+		"form": map[string]interface{}{
+			"can_submit": "guest",
+			"turnstile":  false,
+			"fields":     []interface{}{},
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, spec.Turnstile)
+}

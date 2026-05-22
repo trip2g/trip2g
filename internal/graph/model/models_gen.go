@@ -2357,6 +2357,12 @@ type TriggerCronWebhookPayload struct {
 
 func (TriggerCronWebhookPayload) IsTriggerCronWebhookOrErrorPayload() {}
 
+type TurnstileRequiredPayload struct {
+	SiteKey string `json:"siteKey"`
+}
+
+func (TurnstileRequiredPayload) IsSubmitFormOrErrorPayload() {}
+
 type UnbanUserInput struct {
 	UserID int64 `json:"userId"`
 }

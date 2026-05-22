@@ -1937,6 +1937,10 @@ func (a *app) TurnstileSiteKey() string {
 	return a.config.Turnstile.SiteKey
 }
 
+func (a *app) VerifyTurnstile(ctx context.Context, token, ip string) error {
+	return a.Client.VerifyCaptcha(ctx, token, ip)
+}
+
 func (a *app) IncrementAndCheckSigninCounter() bool {
 	threshold := a.CaptchaSigninThreshold()
 	return a.signinCounter.IncrementAndCheck(threshold)
