@@ -36,7 +36,7 @@ type FederationSearchParams struct {
 type FederationSimilarParams struct {
 	KBID   string `json:"kb_id,omitempty"`
 	PID    int64  `json:"pid,omitempty"`
-	NoteID int64  `json:"note_id,omitempty"`
+	NoteID string `json:"note_id,omitempty"`
 	Path   string `json:"path,omitempty"`
 	Href   string `json:"href,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
@@ -45,7 +45,7 @@ type FederationSimilarParams struct {
 type FederationNoteHTMLParams struct {
 	KBID         string `json:"kb_id,omitempty"`
 	PID          int64  `json:"pid,omitempty"`
-	NoteID       int64  `json:"note_id,omitempty"`
+	NoteID       string `json:"note_id,omitempty"`
 	Path         string `json:"path,omitempty"`
 	Href         string `json:"href,omitempty"`
 	MatchID      string `json:"match_id,omitempty"`

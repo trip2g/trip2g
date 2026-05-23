@@ -84,7 +84,7 @@ type FederatedSearchArguments struct {
 type FederatedSimilarArguments struct {
 	KBID   string `json:"kb_id"`
 	PID    int64  `json:"pid,omitempty"`
-	NoteID int64  `json:"note_id,omitempty"`
+	NoteID string `json:"note_id,omitempty"`
 	Path   string `json:"path,omitempty"`
 	Href   string `json:"href,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
@@ -93,7 +93,7 @@ type FederatedSimilarArguments struct {
 type FederatedNoteHTMLArguments struct {
 	KBID    string `json:"kb_id"`
 	PID     int64  `json:"pid,omitempty"`
-	NoteID  int64  `json:"note_id,omitempty"`
+	NoteID  string `json:"note_id,omitempty"`
 	Path    string `json:"path,omitempty"`
 	Href    string `json:"href,omitempty"`
 	MatchID string `json:"match_id,omitempty"`
