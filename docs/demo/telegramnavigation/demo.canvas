@@ -1,0 +1,25 @@
+{
+	"nodes":[
+		{"id":"intro","type":"text","text":"👋 Welcome!\n\nI'm @rnbwkpr's assistant. What brings you here today?","x":-600,"y":-40,"width":360,"height":140},
+		{"id":"pricing","type":"file","file":"demo/telegramnavigation/pricing.md","x":560,"y":-520,"width":320,"height":220},
+		{"id":"services","type":"file","file":"demo/telegramnavigation/services.md","x":-240,"y":-760,"width":320,"height":320},
+		{"id":"contact","type":"file","file":"demo/telegramnavigation/contact.md","x":400,"y":100,"width":320,"height":220},
+		{"id":"plans","type":"file","file":"demo/telegramnavigation/plans.md","x":1240,"y":-710,"width":320,"height":220},
+		{"id":"tip","type":"text","text":"💡 Tip: send /start anytime to return here.","x":1240,"y":-920,"width":320,"height":80},
+		{"id":"start","type":"text","text":"START","x":-880,"y":-10,"width":160,"height":80,"color":"4"},
+		{"id":"site","type":"link","url":"https://trip2g.com","x":1100,"y":50,"width":600,"height":320}
+	],
+	"edges":[
+		{"id":"intro-pricing","fromNode":"intro","fromSide":"right","toNode":"pricing","toSide":"left","label":"💰 See pricing"},
+		{"id":"intro-services","fromNode":"intro","fromSide":"right","toNode":"services","toSide":"bottom","label":"🛠 What you offer"},
+		{"id":"intro-contact","fromNode":"intro","fromSide":"right","toNode":"contact","toSide":"left","label":"✉️ Contact"},
+		{"id":"pricing-plans","fromNode":"pricing","fromSide":"right","toNode":"plans","toSide":"left","label":"📋 Full plan list"},
+		{"id":"pricing-contact","fromNode":"pricing","fromSide":"bottom","toNode":"contact","toSide":"top","label":"✉️ Ask a question"},
+		{"id":"services-pricing","fromNode":"services","fromSide":"right","toNode":"pricing","toSide":"left","label":"💰 Pricing"},
+		{"id":"contact-intro","fromNode":"contact","fromSide":"bottom","toNode":"intro","toSide":"bottom","label":"🏠 Start over"},
+		{"id":"contact-site","fromNode":"contact","fromSide":"right","toNode":"site","toSide":"left","label":"🌐 Open website"},
+		{"id":"plans-pricing","fromNode":"plans","fromSide":"bottom","toNode":"pricing","toSide":"right","label":"← Back to pricing"},
+		{"id":"plans-tip","fromNode":"plans","fromSide":"top","toNode":"tip","toSide":"bottom","label":"💡 Tip"},
+		{"id":"start-intro","fromNode":"start","fromSide":"right","toNode":"intro","toSide":"left"}
+	]
+}
