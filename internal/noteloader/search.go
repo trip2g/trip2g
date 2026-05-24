@@ -95,6 +95,12 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 			continue
 		}
 
+		// Raw files (.canvas, .base, .excalidraw) have no AST — skip indexing.
+		// They aren't markdown, no meaningful text to search anyway.
+		if note.Ast() == nil {
+			continue
+		}
+
 		content := noteContent{
 			Title: note.Title,
 			Body:  extractText(note.Ast(), note.Content),

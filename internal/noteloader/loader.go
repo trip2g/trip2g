@@ -174,7 +174,11 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 
 		switch ext {
-		case ".md":
+		case ".md", ".canvas", ".base", ".excalidraw":
+			// .canvas (JSON) and .base (YAML) are forwarded to mdloader as
+			// SourceFiles; mdloader's isRawFile branch stores them verbatim
+			// without markdown parsing. Without this case they'd hit the
+			// "unknown note extension" default and never reach NoteViews.
 			mdSources = append(mdSources, mdloader.SourceFile{
 				Path:      note.Path,
 				PathID:    note.PathID,
@@ -184,7 +188,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 				CreatedAt: note.CreatedAt,
 			})
 
-			if len(note.Embedding) > 0 {
+			if ext == ".md" && len(note.Embedding) > 0 {
 				embeddingMap[note.VersionID] = note.Embedding
 			}
 

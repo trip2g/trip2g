@@ -2137,3 +2137,55 @@ func TestWikilinkEscapedPipeInTable(t *testing.T) {
 	require.NotContains(t, indexHTML, `target\`,
 		"backslash should not appear in href")
 }
+
+func TestRawFileIngestion(t *testing.T) {
+	log := logger.TestLogger{}
+
+	canvasContent := []byte(`{"nodes":[{"id":"n1","type":"file","file":"intro.md","x":0,"y":0,"width":300,"height":200}],"edges":[]}`)
+	baseContent := []byte("type: base\nname: My Base\nfilters:\n  tags:\n    - project\n")
+	excalidrawContent := []byte(`{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{"gridSize":null,"viewBackgroundColor":"#ffffff"},"files":{}}`)
+
+	sourceFiles := []mdloader.SourceFile{
+		{Path: "index.md", Content: []byte("Hello"), PathID: 1, VersionID: 10},
+		{Path: "demo.canvas", Content: canvasContent, PathID: 2, VersionID: 20},
+		{Path: "mybase.base", Content: baseContent, PathID: 3, VersionID: 30},
+		{Path: "example.excalidraw", Content: excalidrawContent, PathID: 4, VersionID: 40},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{Sources: sourceFiles, Log: &log})
+	require.NoError(t, err)
+
+	// .canvas is stored in PathMap with raw content preserved
+	canvasView := pages.PathMap["demo.canvas"]
+	require.NotNil(t, canvasView, "demo.canvas must be in PathMap")
+	require.Equal(t, "demo.canvas", canvasView.Path)
+	require.Equal(t, canvasContent, canvasView.Content, "canvas content must be stored verbatim")
+	require.Equal(t, int64(2), canvasView.PathID)
+	require.Equal(t, int64(20), canvasView.VersionID)
+
+	// .base is stored in PathMap with raw content preserved
+	baseView := pages.PathMap["mybase.base"]
+	require.NotNil(t, baseView, "mybase.base must be in PathMap")
+	require.Equal(t, "mybase.base", baseView.Path)
+	require.Equal(t, baseContent, baseView.Content, "base content must be stored verbatim")
+
+	// .excalidraw is stored in PathMap with raw content preserved
+	excalidrawView := pages.PathMap["example.excalidraw"]
+	require.NotNil(t, excalidrawView, "example.excalidraw must be in PathMap")
+	require.Equal(t, "example.excalidraw", excalidrawView.Path)
+	require.Equal(t, excalidrawContent, excalidrawView.Content, "excalidraw content must be stored verbatim")
+	require.Equal(t, int64(4), excalidrawView.PathID)
+	require.Equal(t, int64(40), excalidrawView.VersionID)
+
+	// .md notes still process normally
+	mdView := pages.PathMap["index.md"]
+	require.NotNil(t, mdView, "index.md must be in PathMap")
+	require.NotEmpty(t, mdView.HTML, "markdown note must have rendered HTML")
+
+	// canvas/base/excalidraw must NOT appear in wikilink scan (no rendered HTML)
+	for _, nv := range pages.PathMap {
+		if nv.Path == "demo.canvas" || nv.Path == "mybase.base" || nv.Path == "example.excalidraw" {
+			require.Empty(t, nv.HTML, "raw file must not have rendered HTML")
+		}
+	}
+}

@@ -62,7 +62,98 @@ func TestResolve(t *testing.T) {
 			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
 				errPayload, ok := result.(*model.ErrorPayload)
 				require.True(t, ok)
-				require.Contains(t, errPayload.Message, ".md, .html, and .html.json")
+				require.Contains(t, errPayload.Message, ".canvas")
+				require.Contains(t, errPayload.Message, ".base")
+			},
+		},
+		{
+			name: "canvas file accepted",
+			input: model.PushNotesInput{
+				Updates: []model.PushNoteInput{
+					{Path: "demo.canvas", Content: `{"nodes":[],"edges":[]}`},
+				},
+			},
+			setupEnv: func() *EnvMock {
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+					require.Equal(t, "demo.canvas", note.Path)
+					return 1, nil
+				}
+				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+					nvs := appmodel.NewNoteViews()
+					nvs.ExtractNoteList()
+					return nvs, nil
+				}
+				env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+				env.LayoutsFunc = func() *appmodel.Layouts {
+					return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+				}
+				return env
+			},
+			wantErr: false,
+			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
+				_, ok := result.(*model.PushNotesPayload)
+				require.True(t, ok)
+			},
+		},
+		{
+			name: "excalidraw file accepted",
+			input: model.PushNotesInput{
+				Updates: []model.PushNoteInput{
+					{Path: "example.excalidraw", Content: `{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{},"files":{}}`},
+				},
+			},
+			setupEnv: func() *EnvMock {
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+					require.Equal(t, "example.excalidraw", note.Path)
+					return 3, nil
+				}
+				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+					nvs := appmodel.NewNoteViews()
+					nvs.ExtractNoteList()
+					return nvs, nil
+				}
+				env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+				env.LayoutsFunc = func() *appmodel.Layouts {
+					return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+				}
+				return env
+			},
+			wantErr: false,
+			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
+				_, ok := result.(*model.PushNotesPayload)
+				require.True(t, ok)
+			},
+		},
+		{
+			name: "base file accepted",
+			input: model.PushNotesInput{
+				Updates: []model.PushNoteInput{
+					{Path: "mybase.base", Content: "type: base\nname: My Base\n"},
+				},
+			},
+			setupEnv: func() *EnvMock {
+				env := newEnvMock(mockLogger)
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+					require.Equal(t, "mybase.base", note.Path)
+					return 2, nil
+				}
+				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+					nvs := appmodel.NewNoteViews()
+					nvs.ExtractNoteList()
+					return nvs, nil
+				}
+				env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+				env.LayoutsFunc = func() *appmodel.Layouts {
+					return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+				}
+				return env
+			},
+			wantErr: false,
+			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
+				_, ok := result.(*model.PushNotesPayload)
+				require.True(t, ok)
 			},
 		},
 		{

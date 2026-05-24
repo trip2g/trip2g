@@ -134,9 +134,20 @@ func Load(options Options) (*model.NoteViews, error) {
 		),
 	)
 
-	// Step 1: parse all sources → AST + rawMeta.
-	parsed := make([]*parsedSource, 0, len(options.Sources))
+	// Step 1a: register raw (non-markdown) files without any parsing or rendering.
+	// .canvas (JSON) and .base (YAML) are stored as-is; no wikilink scanning, no permalink generation.
+	mdSources := options.Sources[:0:0]
 	for _, src := range options.Sources {
+		if isRawFile(src.Path) {
+			ldr.registerRawFile(src)
+		} else {
+			mdSources = append(mdSources, src)
+		}
+	}
+
+	// Step 1: parse all sources → AST + rawMeta.
+	parsed := make([]*parsedSource, 0, len(mdSources))
+	for _, src := range mdSources {
 		ps := ldr.parseSource(src)
 		parsed = append(parsed, ps)
 	}
@@ -239,6 +250,36 @@ func Load(options Options) (*model.NoteViews, error) {
 	return ldr.nvs, nil
 }
 
+// isRawFile returns true for file types that must be stored as raw bytes
+// without markdown parsing, wikilink scanning, or permalink generation.
+func isRawFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	return ext == ".canvas" || ext == ".base" || ext == ".excalidraw"
+}
+
+// registerRawFile registers a .canvas or .base source as a NoteView with raw content,
+// bypassing the entire markdown pipeline.
+func (ldr *loader) registerRawFile(src SourceFile) {
+	nv := &model.NoteView{
+		Path:          src.Path,
+		PathID:        src.PathID,
+		VersionID:     src.VersionID,
+		CreatedAt:     src.CreatedAt,
+		Content:       src.Content,
+		InLinks:       make(map[string]struct{}),
+		Subgraphs:     make(map[string]*model.NoteSubgraph),
+		Assets:        make(map[string]struct{}),
+		ResolvedLinks: make(map[string]string),
+		AssetReplaces: src.Assets,
+		RawMeta:       map[string]interface{}{},
+		OriginalRawMeta: map[string]interface{}{},
+	}
+	// Use path as permalink (preserving extension so callers can look up by path).
+	nv.Permalink = "/" + src.Path
+	nv.PermalinkOriginal = nv.Permalink
+	ldr.nvs.RegisterNote(nv)
+}
+
 func (ldr *loader) markAsset(p *model.NoteView, dest []byte) {
 	d := string(dest)
 
@@ -251,6 +292,9 @@ func (ldr *loader) markAsset(p *model.NoteView, dest []byte) {
 
 func (ldr *loader) findAssets() error {
 	for id, p := range ldr.nvs.Map {
+		if p.Ast() == nil {
+			continue // raw file (e.g. .canvas, .base) — no AST to walk
+		}
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if !entering {
 				return ast.WalkContinue, nil
@@ -335,6 +379,9 @@ func (ldr *loader) generatePageHTMLs() error {
 
 	// Use PathMap to iterate over unique notes (Map contains duplicates under different URLs)
 	for _, p := range ldr.nvs.PathMap {
+		if p.Ast() == nil {
+			continue // raw file (e.g. .canvas, .base) — no HTML to generate
+		}
 		err := ldr.generatePageHTML(p)
 		if err != nil {
 			if errors.Is(err, errNoHTML) {
@@ -405,6 +452,9 @@ func (ldr *loader) buildBasenameIndex() {
 
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
+		if p.Ast() == nil {
+			continue // raw file (e.g. .canvas, .base) — no AST to walk
+		}
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil

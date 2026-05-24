@@ -25,8 +25,11 @@ type Env interface {
 }
 
 var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
-	".md":   {},
-	".html": {},
+	".md":          {},
+	".html":        {},
+	".canvas":      {},
+	".base":        {},
+	".excalidraw":  {},
 }
 
 var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
@@ -111,7 +114,7 @@ func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorP
 	}
 	if !allowed {
 		log.Info("unsupported file extension", "path", update.Path)
-		return &model.ErrorPayload{Message: "Only .md, .html, and .html.json files are supported"}
+		return &model.ErrorPayload{Message: "Only .md, .html, .html.json, .canvas, .base, and .excalidraw files are supported"}
 	}
 
 	contentType := http.DetectContentType([]byte(update.Content))

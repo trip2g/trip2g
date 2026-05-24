@@ -43,6 +43,65 @@ func makeMinimalEnv(notes []noteloader.RawNote, requireSignin func() bool) *EnvM
 	}
 }
 
+// TestLoader_RawFiles_DontPanicSearchIndex is the regression test for a
+// nil-AST panic in buildSearchIndex when the vault contains .canvas, .base
+// or .excalidraw files. Those NoteViews are stored verbatim (no markdown
+// parse), so Ast() is nil — feeding it to extractText panicked. Search
+// index must skip them gracefully and still index the .md notes alongside.
+func TestLoader_RawFiles_DontPanicSearchIndex(t *testing.T) {
+	notes := []noteloader.RawNote{
+		{
+			Path:      "intro.md",
+			PathID:    1,
+			VersionID: 1,
+			Content:   "---\ntitle: Intro\n---\nReal markdown body.",
+		},
+		{
+			Path:      "diagram.canvas",
+			PathID:    2,
+			VersionID: 2,
+			Content:   `{"nodes":[{"id":"a","type":"text","text":"hi","x":0,"y":0,"width":50,"height":50}],"edges":[]}`,
+		},
+		{
+			Path:      "data.base",
+			PathID:    3,
+			VersionID: 3,
+			Content:   "views:\n  - type: table\n    name: T\n",
+		},
+		{
+			Path:      "sketch.excalidraw",
+			PathID:    4,
+			VersionID: 4,
+			Content:   `{"type":"excalidraw","version":2,"source":"x","elements":[],"appState":{},"files":{}}`,
+		},
+	}
+
+	env := makeMinimalEnv(notes, func() bool { return false })
+	loader := noteloader.New("test", env, mdloader.Config{})
+
+	// SkipSearchIndex must be false so buildSearchIndex actually runs.
+	require.NotPanics(t, func() {
+		require.NoError(t, loader.Load(context.Background(), noteloader.LoadOptions{}))
+	})
+
+	nvs := loader.NoteViews()
+
+	require.NotNil(t, nvs.PathMap["intro.md"], "markdown note should be in PathMap")
+	require.NotNil(t, nvs.PathMap["diagram.canvas"], "canvas should be in PathMap")
+	require.NotNil(t, nvs.PathMap["data.base"], "base should be in PathMap")
+	require.NotNil(t, nvs.PathMap["sketch.excalidraw"], "excalidraw should be in PathMap")
+
+	// Raw files keep their bytes verbatim — no markdown processing.
+	require.Equal(t, notes[1].Content, string(nvs.PathMap["diagram.canvas"].Content))
+	require.Equal(t, notes[2].Content, string(nvs.PathMap["data.base"].Content))
+	require.Equal(t, notes[3].Content, string(nvs.PathMap["sketch.excalidraw"].Content))
+
+	// Raw files have no AST — assert that's still the case (guards rely on it).
+	require.Nil(t, nvs.PathMap["diagram.canvas"].Ast())
+	require.Nil(t, nvs.PathMap["data.base"].Ast())
+	require.Nil(t, nvs.PathMap["sketch.excalidraw"].Ast())
+}
+
 // TestLoader_RequireSignin_UpdatesAfterCacheHit is the regression test for the
 // stale-pointer bug: when note content is unchanged (NoteCache returns the old
 // NoteView), a subsequent Load must still propagate the updated RequireSignin
