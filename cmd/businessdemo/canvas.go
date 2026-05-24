@@ -90,32 +90,102 @@ func (c *Canvas) entry() string {
 
 var frontmatterRe = regexp.MustCompile(`(?s)\A---\r?\n.*?\r?\n---\r?\n*`)
 
+// frontmatterBlockRe captures the YAML inner block so we can scan for keys
+// like `image:` without pulling in a full YAML parser.
+var frontmatterBlockRe = regexp.MustCompile(`(?s)\A---\r?\n(.*?)\r?\n---\r?\n*`)
+
+// frontmatterImageRe pulls the value of an `image:` key from a YAML block.
+// Accepts quoted or unquoted values, single-line only (good enough for demos).
+var frontmatterImageRe = regexp.MustCompile(`(?m)^image:\s*"?([^"\r\n]+?)"?\s*$`)
+
+// embedRe matches an Obsidian wikilink embed `![[target]]` with optional
+// trailing newline so removing it doesn't leave double blank lines.
+var embedRe = regexp.MustCompile(`!\[\[([^\]\n]+)\]\]\n?`)
+
+// imageExtRe checks whether a wikilink target points at a media file.
+var imageExtRe = regexp.MustCompile(`(?i)\.(png|jpg|jpeg|gif|webp|bmp|svg)$`)
+
 func stripFrontmatter(s string) string {
 	return frontmatterRe.ReplaceAllString(s, "")
+}
+
+// extractFirstImage returns the first image reference for a note and the
+// body with frontmatter and the consumed image embed stripped. The
+// frontmatter `image:` key wins over any `![[…]]` embed in the body.
+// Non-image embeds (e.g., `![[other.md]]`) are left in place.
+func extractFirstImage(content string) (image, body string) {
+	if m := frontmatterBlockRe.FindStringSubmatch(content); len(m) > 1 {
+		if im := frontmatterImageRe.FindStringSubmatch(m[1]); len(im) > 1 {
+			image = strings.TrimSpace(im[1])
+		}
+	}
+
+	body = strings.TrimSpace(stripFrontmatter(content))
+
+	if image != "" {
+		return image, body
+	}
+
+	loc := embedRe.FindAllStringSubmatchIndex(body, -1)
+	for _, m := range loc {
+		target := body[m[2]:m[3]]
+		if !imageExtRe.MatchString(target) {
+			continue
+		}
+		image = target
+		body = strings.TrimSpace(body[:m[0]] + body[m[1]:])
+		break
+	}
+	return image, body
 }
 
 // nodeBody returns the message body for a node. File nodes are loaded from
 // disk relative to VaultRoot. `.base` files are placeholdered out since
 // Bases aren't supported yet.
 func (c *Canvas) nodeBody(n canvasNode) string {
+	text, _ := c.nodeContent(n)
+	return text
+}
+
+// nodeContent returns the message body plus an optional resolved local image
+// path. File nodes that carry an `image:` frontmatter or a `![[…]]` image
+// embed surface the first match here; the bot can then route the render
+// through sendPhoto+caption instead of plain sendMessage.
+func (c *Canvas) nodeContent(n canvasNode) (text, media string) {
 	switch n.Type {
 	case "text":
-		return n.Text
+		return n.Text, ""
 	case "file":
 		if strings.HasSuffix(strings.ToLower(n.File), ".base") {
-			return "Bases are not supported yet (file: " + n.File + ")"
+			return "Bases are not supported yet (file: " + n.File + ")", ""
 		}
 		raw, err := os.ReadFile(filepath.Join(c.VaultRoot, n.File))
 		if err != nil {
-			return fmt.Sprintf("(failed to load %s: %v)", n.File, err)
+			return fmt.Sprintf("(failed to load %s: %v)", n.File, err), ""
 		}
-		return strings.TrimSpace(stripFrontmatter(string(raw)))
+		image, body := extractFirstImage(string(raw))
+		body = strings.TrimSpace(body)
+		if image != "" {
+			return body, c.resolveImagePath(n.File, image)
+		}
+		return body, ""
 	case "link":
-		return "🌐 " + n.URL
+		return "🌐 " + n.URL, ""
 	case "group":
-		return "(group)"
+		return "(group)", ""
 	}
-	return "(unsupported node type: " + n.Type + ")"
+	return "(unsupported node type: " + n.Type + ")", ""
+}
+
+// resolveImagePath turns an image reference from a note's frontmatter or
+// `![[…]]` embed into an absolute filesystem path the bot can upload.
+// Refs starting with "/" are resolved against the vault root; everything
+// else relative to the note's directory (Obsidian default).
+func (c *Canvas) resolveImagePath(noteFile, imageRef string) string {
+	if strings.HasPrefix(imageRef, "/") {
+		return filepath.Join(c.VaultRoot, strings.TrimPrefix(imageRef, "/"))
+	}
+	return filepath.Join(c.VaultRoot, filepath.Dir(noteFile), imageRef)
 }
 
 func (c *Canvas) edgesFrom(nodeID string) []canvasEdge {
@@ -180,7 +250,7 @@ func renderLineHTML(line string) string {
 		level++
 	}
 	if level == 0 || level >= len(line) || line[level] != ' ' {
-		return htmlEscape(line)
+		return applyInlineMarkdown(htmlEscape(line))
 	}
 	title := strings.TrimSpace(line[level+1:])
 	if title == "" {
@@ -188,12 +258,31 @@ func renderLineHTML(line string) string {
 	}
 	switch {
 	case level == 1:
-		return "<b>" + htmlEscape(strings.ToUpper(title)) + "</b>"
+		return "<b>" + applyInlineMarkdown(htmlEscape(strings.ToUpper(title))) + "</b>"
 	case level == 2:
-		return "<b>" + htmlEscape(title) + "</b>"
+		return "<b>" + applyInlineMarkdown(htmlEscape(title)) + "</b>"
 	default:
-		return "<b><i>" + htmlEscape(title) + "</i></b>"
+		return "<b><i>" + applyInlineMarkdown(htmlEscape(title)) + "</i></b>"
 	}
+}
+
+// inlineMarkdown patterns are applied to text that has already been
+// HTML-escaped. Order matters: inline code first (so its contents are not
+// re-processed as bold/italic/link), bold before italic (since `**` would
+// otherwise be eaten as two italic boundaries), links last.
+var (
+	inlineCodeRe = regexp.MustCompile("`([^`\n]+)`")
+	boldRe       = regexp.MustCompile(`\*\*([^*\n]+?)\*\*`)
+	italicRe     = regexp.MustCompile(`\*([^*\n]+?)\*`)
+	mdLinkRe     = regexp.MustCompile(`\[([^\]\n]+)\]\(([^)\s\n]+)\)`)
+)
+
+func applyInlineMarkdown(escaped string) string {
+	escaped = inlineCodeRe.ReplaceAllString(escaped, "<code>$1</code>")
+	escaped = boldRe.ReplaceAllString(escaped, "<b>$1</b>")
+	escaped = italicRe.ReplaceAllString(escaped, "<i>$1</i>")
+	escaped = mdLinkRe.ReplaceAllString(escaped, `<a href="$2">$1</a>`)
+	return escaped
 }
 
 func htmlEscape(s string) string {

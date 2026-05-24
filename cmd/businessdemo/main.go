@@ -45,6 +45,8 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+	"trip2g/internal/telegram"
 )
 
 type bizUpdate struct {
@@ -109,8 +111,9 @@ var canvas *Canvas
 // ------------------------- nav state -----------------------------------------
 
 type navState struct {
-	current string
-	stack   []string
+	current   string
+	stack     []string
+	lastMedia string // non-empty if the last rendered message was sendPhoto
 }
 
 // states keyed by "<chat_id>|<business_connection_id>" so DM and business
@@ -123,18 +126,26 @@ func stateKey(chatID int64, bcID string) string {
 
 // ------------------------- rendering -----------------------------------------
 
-const telegramMessageMax = 3800
+const (
+	telegramMessageMax = 3800
+	telegramCaptionMax = 1000 // 1024 hard, leave headroom for HTML tags
+)
 
-func renderNode(nodeID string, stackLen int) (text string, markup string, ok bool) {
+func renderNode(nodeID string, stackLen int) (text, media, markup string, ok bool) {
 	n, found := canvas.node(nodeID)
 	if !found {
-		return "", "", false
+		return "", "", "", false
 	}
-	body := canvas.nodeBody(n)
-	if len(body) > telegramMessageMax {
-		body = body[:telegramMessageMax] + "\n\n…"
-	}
+	body, media := canvas.nodeContent(n)
 	text = renderBodyHTML(body)
+	limit := telegramMessageMax
+	if media != "" {
+		limit = telegramCaptionMax
+	}
+	// TruncateContent is HTML-aware: it counts only visible characters and
+	// closes any unclosed tags after the cut so Telegram doesn't 400 on the
+	// payload.
+	text = telegram.TruncateContent(text, limit)
 
 	var rows [][]map[string]string
 	seen := map[string]bool{}
@@ -168,7 +179,7 @@ func renderNode(nodeID string, stackLen int) (text string, markup string, ok boo
 	rows = append(rows, nav)
 
 	j, _ := json.Marshal(map[string]any{"inline_keyboard": rows})
-	return text, string(j), true
+	return text, media, string(j), true
 }
 
 func emptyMarkup() string {
@@ -211,6 +222,73 @@ func editText(bot *tgbotapi.BotAPI, chatID int64, messageID int, bcID, text, mar
 	return err
 }
 
+// sendNode dispatches to sendPhoto or sendMessage based on whether the node
+// carries a resolved media path. Returns the resulting message id so callers
+// can edit/delete it later.
+func sendNode(bot *tgbotapi.BotAPI, chatID int64, bcID, text, media, markup string) (int, error) {
+	if media == "" {
+		return sendMessageRaw(bot, chatID, bcID, text, markup)
+	}
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"caption":    text,
+		"parse_mode": "HTML",
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	resp, err := bot.UploadFiles("sendPhoto", p, []tgbotapi.RequestFile{{
+		Name: "photo",
+		Data: tgbotapi.FilePath(media),
+	}})
+	if err != nil {
+		return 0, err
+	}
+	return extractMessageID(resp.Result), nil
+}
+
+func sendMessageRaw(bot *tgbotapi.BotAPI, chatID int64, bcID, text, markup string) (int, error) {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	resp, err := bot.MakeRequest("sendMessage", p)
+	if err != nil {
+		return 0, err
+	}
+	return extractMessageID(resp.Result), nil
+}
+
+func deleteMessage(bot *tgbotapi.BotAPI, chatID int64, messageID int, bcID string) error {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"message_id": strconv.Itoa(messageID),
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	_, err := bot.MakeRequest("deleteMessage", p)
+	return err
+}
+
+func extractMessageID(raw json.RawMessage) int {
+	var m struct {
+		MessageID int `json:"message_id"`
+	}
+	_ = json.Unmarshal(raw, &m)
+	return m.MessageID
+}
+
 func editReplyMarkup(bot *tgbotapi.BotAPI, chatID int64, messageID int, bcID, markup string) error {
 	p := tgbotapi.Params{
 		"chat_id":      strconv.FormatInt(chatID, 10),
@@ -245,11 +323,15 @@ func startBrowse(bot *tgbotapi.BotAPI, chatID int64, bcID string) error {
 	}
 	st := &navState{current: entry}
 	states[stateKey(chatID, bcID)] = st
-	text, markup, ok := renderNode(entry, 0)
+	text, media, markup, ok := renderNode(entry, 0)
 	if !ok {
 		return sendText(bot, chatID, bcID, "Failed to render entry node.", "")
 	}
-	return sendText(bot, chatID, bcID, text, markup)
+	if _, err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
+		return err
+	}
+	st.lastMedia = media
+	return nil
 }
 
 func isStartCommand(text string) bool {
@@ -262,6 +344,29 @@ func handleMessage(bot *tgbotapi.BotAPI, m *bizMessage, bcID string) error {
 	if isStartCommand(m.Text) {
 		return startBrowse(bot, m.Chat.ID, bcID)
 	}
+	return nil
+}
+
+// renderTransition renders the current node of st onto the chat. When neither
+// the previous nor the new render involves a photo, it edits in place (smooth).
+// Otherwise it deletes the previous message (best-effort — fails silently if
+// the bot lacks the right) and sends a fresh photo/text message at the bottom.
+func renderTransition(bot *tgbotapi.BotAPI, st *navState, chatID int64, prevMsgID int, bcID string) error {
+	text, media, markup, ok := renderNode(st.current, len(st.stack))
+	if !ok {
+		return nil
+	}
+	if st.lastMedia == "" && media == "" {
+		st.lastMedia = ""
+		return editText(bot, chatID, prevMsgID, bcID, text, markup)
+	}
+	if err := deleteMessage(bot, chatID, prevMsgID, bcID); err != nil {
+		log.Printf("delete prev message (best-effort): %v", err)
+	}
+	if _, err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
+		return err
+	}
+	st.lastMedia = media
 	return nil
 }
 
@@ -303,8 +408,7 @@ func handleCallback(bot *tgbotapi.BotAPI, cq *bizCallbackQuery) error {
 		if err := answerCallback(bot, cq.ID, "", false); err != nil {
 			log.Printf("ack: %v", err)
 		}
-		text, markup, _ := renderNode(st.current, len(st.stack))
-		return editText(bot, chatID, msgID, bcID, text, markup)
+		return renderTransition(bot, st, chatID, msgID, bcID)
 
 	case "back":
 		if len(st.stack) == 0 {
@@ -315,8 +419,7 @@ func handleCallback(bot *tgbotapi.BotAPI, cq *bizCallbackQuery) error {
 		if err := answerCallback(bot, cq.ID, "", false); err != nil {
 			log.Printf("ack: %v", err)
 		}
-		text, markup, _ := renderNode(st.current, len(st.stack))
-		return editText(bot, chatID, msgID, bcID, text, markup)
+		return renderTransition(bot, st, chatID, msgID, bcID)
 
 	case "exit":
 		delete(states, key)
