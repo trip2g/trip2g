@@ -23,3 +23,8 @@ title: "Navigation"
 - [[en/thoughts/personal-navigation|Personal navigation]]
 - [[en/thoughts/knowledge-bot|Knowledge bot]]
 - [[en/thoughts/ai-changes-rules|AI changes the rules]]
+- [[en/thoughts/agent-team-reporting|The agent reports to the team]]
+- [[en/thoughts/agent-team-digest|The agent keeps a team journal]]
+
+**Tooling**
+- [[en/thoughts/patching-obsidian-canvas-on-minimal-linux|Patching Obsidian Canvas on minimal Linux]]
