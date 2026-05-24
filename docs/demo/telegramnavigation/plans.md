@@ -1,6 +1,5 @@
 ---
 title: Plans
-telegram_navigation: allow
 ---
 
 # Plans

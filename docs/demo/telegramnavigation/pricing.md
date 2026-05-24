@@ -1,6 +1,5 @@
 ---
 title: Pricing
-telegram_navigation: allow
 ---
 
 # Pricing

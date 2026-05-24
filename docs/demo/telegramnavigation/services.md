@@ -1,9 +1,10 @@
 ---
 title: Services
-telegram_navigation: allow
 ---
 
 # Services
+
+![[format.png]]
 
 Publishing Obsidian vaults as websites with subscriptions and Telegram bots.
 

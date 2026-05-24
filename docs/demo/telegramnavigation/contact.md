@@ -1,6 +1,5 @@
 ---
 title: Contact
-telegram_navigation: allow
 ---
 
 # Contact
