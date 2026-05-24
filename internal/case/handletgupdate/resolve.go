@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"trip2g/internal/case/handletgnavigationupdate"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -64,6 +65,7 @@ type Env interface {
 
 type UserStateData struct {
 	QuizStates map[string]QuizState `json:"quiz_states"`
+	Handler    string               `json:"handler,omitempty"` // "" = default, "navigation" = note browser
 }
 
 type UserState struct {
@@ -152,6 +154,12 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	}
 
 	req.userState = userState
+
+	// Delegate to navigation handler when user is in nav mode.
+	if userState.Handler == "navigation" {
+		req.userState = nil // prevent deferred state overwrite
+		return handletgnavigationupdate.Resolve(ctx, env, update)
+	}
 
 	defer func() {
 		if req.userState != nil {
@@ -268,6 +276,12 @@ func (req *request) handleCommands(ctx context.Context) error {
 		if strings.HasPrefix(args, "attach_") {
 			return req.handleAttachCode(ctx, args)
 		}
+		if strings.HasPrefix(args, "browse_") {
+			if pathID, err := strconv.ParseInt(args[7:], 10, 64); err == nil {
+				req.userState = nil
+				return handletgnavigationupdate.ResolveOpen(ctx, req.env, req.update, pathID)
+			}
+		}
 
 		questions, err := req.Questions(ctx)
 		if err != nil {
@@ -279,6 +293,13 @@ func (req *request) handleCommands(ctx context.Context) error {
 		}
 
 		return req.sendStartMenu(ctx)
+
+	case "browse":
+		if req.update.Message.Chat.ID < 0 {
+			return nil
+		}
+		req.userState = nil // nav handler manages its own state save
+		return handletgnavigationupdate.Resolve(ctx, req.env, req.update)
 
 	case "content":
 		if req.update.Message.Chat.ID < 0 {

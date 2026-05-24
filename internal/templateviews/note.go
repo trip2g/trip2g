@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/formspec"
@@ -69,6 +70,10 @@ func (n *Note) ContentString() string {
 // PathID returns the note path ID for data attributes.
 func (n *Note) PathID() int64 {
 	return n.nv.PathID
+}
+
+func (n *Note) VersionID() string {
+	return strconv.FormatInt(n.nv.VersionID, 10)
 }
 
 // Path returns the note path ID for data attributes.

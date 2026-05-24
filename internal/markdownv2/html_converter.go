@@ -80,13 +80,18 @@ type unpublishedLink struct {
 	publishAt time.Time
 }
 
+// NodeHandlerFunc is called for AST nodes not handled by HTMLConverter.
+// Write output via c.Write(). Return (status, true) to suppress the default warning+skip.
+type NodeHandlerFunc func(c *HTMLConverter, n ast.Node, src []byte, entering bool) (ast.WalkStatus, bool)
+
 type HTMLConverter struct {
 	CommonConverter
-	bufStack          []*strings.Builder
-	linkResolver      LinkResolver
-	skipClosingTag    map[ast.Node]bool
-	unpublishedLinks  []unpublishedLink
-	isUnpublishedLink map[ast.Node]bool
+	bufStack           []*strings.Builder
+	linkResolver       LinkResolver
+	skipClosingTag     map[ast.Node]bool
+	unpublishedLinks   []unpublishedLink
+	isUnpublishedLink  map[ast.Node]bool
+	UnknownNodeHandler NodeHandlerFunc
 }
 
 func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
@@ -433,6 +438,12 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			// TextBlock is a container for text within list items - just pass through
 
 		default:
+			if c.UnknownNodeHandler != nil {
+				status, handled := c.UnknownNodeHandler(c, n, src, entering)
+				if handled {
+					return status, nil
+				}
+			}
 			if entering {
 				msg := fmt.Sprintf("unexpected markdown node: %s", n.Kind())
 				res.Warnings = append(res.Warnings, msg)

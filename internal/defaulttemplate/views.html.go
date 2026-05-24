@@ -1327,7 +1327,11 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 		if specJSON := ctx.FormSpecJSON(); specJSON != nil {
 //line views.html:300
 			qw422016.N().S(`
-<script id="form-spec" type="application/json">`)
+<script id="form-spec" data-nvid="`)
+//line views.html:301
+			qw422016.N().S(ctx.Note.VersionID())
+//line views.html:301
+			qw422016.N().S(`" type="application/json">`)
 //line views.html:301
 			qw422016.N().Z(specJSON)
 //line views.html:301

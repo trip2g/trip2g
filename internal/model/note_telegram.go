@@ -188,6 +188,26 @@ func FormatImportKey(channelID int64, messageID int) string {
 	return formatImportKey(channelID, messageID)
 }
 
+// ExtractTelegramButtons returns wikilink strings from telegram_buttons frontmatter.
+// Each entry is expected to be "[[Target]]" or "[[Target|Display]]".
+func (note *NoteView) ExtractTelegramButtons() []string {
+	raw, ok := note.RawMeta["telegram_buttons"]
+	if !ok {
+		return nil
+	}
+	items, ok := raw.([]interface{})
+	if !ok {
+		return nil
+	}
+	var result []string
+	for _, item := range items {
+		if s, ok := item.(string); ok && s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
 func parseInt64(s string) (int64, error) {
 	var result int64
 	_, err := fmt.Sscanf(s, "%d", &result)
