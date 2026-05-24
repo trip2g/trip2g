@@ -1,0 +1,24 @@
+formulas:
+  content: formula.content
+  Untitled: ""
+properties:
+  formula.шыдлвдлacoa:
+    displayName: content
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - telegram_publish_at != ""
+  - type: table
+    name: telegram notes
+    filters:
+      and:
+        - "!telegram_publish_at.isEmpty()"
+    order:
+      - formula.Untitled
+      - file.backlinks
+      - title
+    sort:
+      - property: file.name
+        direction: DESC

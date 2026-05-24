@@ -76,6 +76,8 @@ window.__trip2g_settings = {
   {%= Onboarding(ctx) %}
 {% elseif ctx.NotFoundMode %}
   {%= NotFound(ctx) %}
+{% elseif ctx.UnsupportedFileExt != "" %}
+  {%= UnsupportedFile(ctx) %}
 {% else %}
   {%= NotePage(ctx) %}
 {% endif %}
@@ -499,6 +501,22 @@ window.__trip2g_settings = {
     {%= SiteFooter(ctx, footerNote) %}
   {% endif %}
 {% endif %}
+{% endfunc %}
+
+{% func UnsupportedFile(ctx *Ctx) %}
+<main class="layout__main">
+  <article class="content">
+    <div class="content__body">
+      {% if ctx.UnsupportedFileExt == ".canvas" %}
+      <p>Canvas files are not supported yet.</p>
+      {% elseif ctx.UnsupportedFileExt == ".excalidraw" %}
+      <p>Excalidraw files are not supported yet.</p>
+      {% else %}
+      <p>Bases are not supported yet.</p>
+      {% endif %}
+    </div>
+  </article>
+</main>
 {% endfunc %}
 
 {% func Onboarding(ctx *Ctx) %}

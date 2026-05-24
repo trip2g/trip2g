@@ -156,6 +156,17 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+
+	if resp.Note != nil {
+		if strings.HasSuffix(resp.Note.Path, ".canvas") {
+			dtCtx.UnsupportedFileExt = ".canvas"
+		} else if strings.HasSuffix(resp.Note.Path, ".base") {
+			dtCtx.UnsupportedFileExt = ".base"
+		} else if strings.HasSuffix(resp.Note.Path, ".excalidraw") {
+			dtCtx.UnsupportedFileExt = ".excalidraw"
+		}
+	}
+
 	defaulttemplate.WriteRender(ctx, dtCtx)
 	return nil, nil
 }
