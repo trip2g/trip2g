@@ -30,9 +30,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		comment = *input.Comment
 	}
 
+	var processedBy *int64
+	if token.ID != 0 {
+		processedBy = ptr.To(int64(token.ID))
+	}
+
 	submit, err := env.MarkFormSubmitProcessed(ctx, db.MarkFormSubmitProcessedParams{
 		ID:          input.SubmitID,
-		ProcessedBy: ptr.To(int64(token.ID)),
+		ProcessedBy: processedBy,
 		Comment:     comment,
 	})
 	if err != nil {
