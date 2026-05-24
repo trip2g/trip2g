@@ -89,6 +89,18 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	// Short-circuit for raw file types (.canvas, .base, .excalidraw): these are
+	// ingested infrastructure files, not content — paywall / signin checks do
+	// not apply. Render the "not supported yet" placeholder regardless of err.
+	if resp != nil && resp.Note != nil {
+		if ext := unsupportedFileExt(resp.Note.Path); ext != "" {
+			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+			dtCtx.UnsupportedFileExt = ext
+			defaulttemplate.WriteRender(ctx, dtCtx)
+			return nil, nil
+		}
+	}
+
 	if resp.OnboardingMode {
 		layoutParams.MetaRobots = "noindex"
 		ctx.Response.Header.Set("Cache-Control", "no-store")
@@ -156,19 +168,20 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
-
-	if resp.Note != nil {
-		if strings.HasSuffix(resp.Note.Path, ".canvas") {
-			dtCtx.UnsupportedFileExt = ".canvas"
-		} else if strings.HasSuffix(resp.Note.Path, ".base") {
-			dtCtx.UnsupportedFileExt = ".base"
-		} else if strings.HasSuffix(resp.Note.Path, ".excalidraw") {
-			dtCtx.UnsupportedFileExt = ".excalidraw"
-		}
-	}
-
 	defaulttemplate.WriteRender(ctx, dtCtx)
 	return nil, nil
+}
+
+func unsupportedFileExt(path string) string {
+	switch {
+	case strings.HasSuffix(path, ".canvas"):
+		return ".canvas"
+	case strings.HasSuffix(path, ".base"):
+		return ".base"
+	case strings.HasSuffix(path, ".excalidraw"):
+		return ".excalidraw"
+	}
+	return ""
 }
 
 func (Endpoint) Path() string {
