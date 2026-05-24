@@ -2,18 +2,19 @@
 // navigation scenario.
 //
 // Usage:
-//   export TELEGRAM_BOT_TOKEN="..."
-//   # optional overrides:
-//   export TRIP2G_CANVAS="docs/demo/telegramnavigation/demo.canvas"
-//   export TRIP2G_VAULT="docs"
-//   go run ./cmd/businessdemo
+//
+//	export TELEGRAM_BOT_TOKEN="..."
+//	# optional overrides:
+//	export TRIP2G_CANVAS="docs/demo/telegramnavigation/demo.canvas"
+//	export TRIP2G_VAULT="docs"
+//	go run ./cmd/businessdemo
 //
 // Setup before running:
-//   1. @BotFather -> Bot Settings -> Business Mode -> enable for the bot.
-//   2. In Telegram client (Premium account): Settings -> Telegram Business ->
-//      Chatbots -> add @<bot_username>, grant "Reply to messages" right.
-//      If the existing connection has wrong rights, you must DISCONNECT and
-//      RECONNECT — rights are baked at connection time and cannot be edited.
+//  1. @BotFather -> Bot Settings -> Business Mode -> enable for the bot.
+//  2. In Telegram client (Premium account): Settings -> Telegram Business ->
+//     Chatbots -> add @<bot_username>, grant "Reply to messages" right.
+//     If the existing connection has wrong rights, you must DISCONNECT and
+//     RECONNECT — rights are baked at connection time and cannot be edited.
 //
 // What this demo does:
 //   - Loads an Obsidian .canvas file at startup.
@@ -223,11 +224,12 @@ func editText(bot *tgbotapi.BotAPI, chatID int64, messageID int, bcID, text, mar
 }
 
 // sendNode dispatches to sendPhoto or sendMessage based on whether the node
-// carries a resolved media path. Returns the resulting message id so callers
-// can edit/delete it later.
-func sendNode(bot *tgbotapi.BotAPI, chatID int64, bcID, text, media, markup string) (int, error) {
+// carries a resolved media path. Demo-scope: callers don't persist the new
+// message id, so we only return error.
+func sendNode(bot *tgbotapi.BotAPI, chatID int64, bcID, text, media, markup string) error {
 	if media == "" {
-		return sendMessageRaw(bot, chatID, bcID, text, markup)
+		_, err := sendMessageRaw(bot, chatID, bcID, text, markup)
+		return err
 	}
 	p := tgbotapi.Params{
 		"chat_id":    strconv.FormatInt(chatID, 10),
@@ -240,14 +242,11 @@ func sendNode(bot *tgbotapi.BotAPI, chatID int64, bcID, text, media, markup stri
 	if bcID != "" {
 		p["business_connection_id"] = bcID
 	}
-	resp, err := bot.UploadFiles("sendPhoto", p, []tgbotapi.RequestFile{{
+	_, err := bot.UploadFiles("sendPhoto", p, []tgbotapi.RequestFile{{
 		Name: "photo",
 		Data: tgbotapi.FilePath(media),
 	}})
-	if err != nil {
-		return 0, err
-	}
-	return extractMessageID(resp.Result), nil
+	return err
 }
 
 func sendMessageRaw(bot *tgbotapi.BotAPI, chatID int64, bcID, text, markup string) (int, error) {
@@ -327,7 +326,7 @@ func startBrowse(bot *tgbotapi.BotAPI, chatID int64, bcID string) error {
 	if !ok {
 		return sendText(bot, chatID, bcID, "Failed to render entry node.", "")
 	}
-	if _, err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
+	if err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
 		return err
 	}
 	st.lastMedia = media
@@ -363,7 +362,7 @@ func renderTransition(bot *tgbotapi.BotAPI, st *navState, chatID int64, prevMsgI
 	if err := deleteMessage(bot, chatID, prevMsgID, bcID); err != nil {
 		log.Printf("delete prev message (best-effort): %v", err)
 	}
-	if _, err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
+	if err := sendNode(bot, chatID, bcID, text, media, markup); err != nil {
 		return err
 	}
 	st.lastMedia = media

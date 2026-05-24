@@ -84,7 +84,7 @@ func TestEntry_Missing(t *testing.T) {
 	raw := `{"nodes":[{"id":"a","type":"text","text":"hello"}],"edges":[]}`
 	c, err := Parse([]byte(raw))
 	require.NoError(t, err)
-	require.Equal(t, "", c.Entry())
+	require.Empty(t, c.Entry())
 }
 
 func TestEntry_CaseInsensitive(t *testing.T) {

@@ -17,13 +17,13 @@ func TestRenderNode_TextNode(t *testing.T) {
 	require.NoError(t, err)
 
 	env := &EnvMock{
-		LatestNoteViewsFunc: func() *model.NoteViews { return model.NewNoteViews() },
+		LatestNoteViewsFunc: model.NewNoteViews,
 		BotIDFunc:           func() int64 { return 1 },
 	}
 
 	text, media, markup := renderNode(env, canvas, "n1")
 	require.Contains(t, text, "<b>world</b>")
-	require.Equal(t, "", media)
+	require.Empty(t, media)
 	require.Contains(t, markup, "nav:back")
 	require.Contains(t, markup, "nav:exit")
 }
@@ -54,7 +54,7 @@ func TestRenderNode_FileNode(t *testing.T) {
 
 	text, media, _ := renderNode(env, canvas, "f1")
 	require.Equal(t, "<b>Test</b>\nBody", text)
-	require.Equal(t, "", media)
+	require.Empty(t, media)
 }
 
 func TestRenderNode_FileNodeWithMedia(t *testing.T) {
@@ -95,7 +95,7 @@ func TestRenderNode_LinkNode(t *testing.T) {
 	require.NoError(t, err)
 
 	env := &EnvMock{
-		LatestNoteViewsFunc: func() *model.NoteViews { return model.NewNoteViews() },
+		LatestNoteViewsFunc: model.NewNoteViews,
 		BotIDFunc:           func() int64 { return 1 },
 	}
 
@@ -115,7 +115,7 @@ func TestRenderNode_WithEdges(t *testing.T) {
 	require.NoError(t, err)
 
 	env := &EnvMock{
-		LatestNoteViewsFunc: func() *model.NoteViews { return model.NewNoteViews() },
+		LatestNoteViewsFunc: model.NewNoteViews,
 		BotIDFunc:           func() int64 { return 1 },
 	}
 
@@ -130,7 +130,7 @@ func TestRenderNode_NotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	env := &EnvMock{
-		LatestNoteViewsFunc: func() *model.NoteViews { return model.NewNoteViews() },
+		LatestNoteViewsFunc: model.NewNoteViews,
 		BotIDFunc:           func() int64 { return 1 },
 	}
 

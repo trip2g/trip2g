@@ -259,7 +259,7 @@ func TestResolve_CallbackExit(t *testing.T) {
 	require.Len(t, env.DeleteTgUserCanvasStateCalls(), 1)
 	// Should have cleared handler
 	require.Len(t, env.UpsertTgUserCurrentHandlerCalls(), 1)
-	require.Equal(t, "", env.UpsertTgUserCurrentHandlerCalls()[0].P.Value)
+	require.Empty(t, env.UpsertTgUserCurrentHandlerCalls()[0].P.Value)
 	// Should have sent exit message
 	sendCalls := env.SendMessageCalls()
 	require.GreaterOrEqual(t, len(sendCalls), 1)

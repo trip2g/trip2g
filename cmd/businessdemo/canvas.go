@@ -139,14 +139,6 @@ func extractFirstImage(content string) (image, body string) {
 	return image, body
 }
 
-// nodeBody returns the message body for a node. File nodes are loaded from
-// disk relative to VaultRoot. `.base` files are placeholdered out since
-// Bases aren't supported yet.
-func (c *Canvas) nodeBody(n canvasNode) string {
-	text, _ := c.nodeContent(n)
-	return text
-}
-
 // nodeContent returns the message body plus an optional resolved local image
 // path. File nodes that carry an `image:` frontmatter or a `![[…]]` image
 // embed surface the first match here; the bot can then route the render
@@ -215,6 +207,7 @@ func (c *Canvas) edgeLabel(e canvasEdge) string {
 //   - h1 → bold UPPERCASE (strongest emphasis)
 //   - h2 → bold
 //   - h3 and deeper (h4/h5/h6) → bold italic, all collapsed to one tier
+//
 // Everything else is HTML-escaped verbatim — no other Markdown is interpreted.
 func renderBodyHTML(s string) string {
 	parts := strings.Split(s, "```")

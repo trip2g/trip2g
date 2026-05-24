@@ -23,14 +23,14 @@ func TestExtractFirstImage_Embed(t *testing.T) {
 func TestExtractFirstImage_NonImageEmbed(t *testing.T) {
 	content := "Text\n![[other.md]]\nMore"
 	img, body := extractFirstImage(content)
-	require.Equal(t, "", img)
+	require.Empty(t, img)
 	require.Equal(t, "Text\n![[other.md]]\nMore", body)
 }
 
 func TestExtractFirstImage_NoImage(t *testing.T) {
 	content := "---\ntitle: Test\n---\n\nJust body."
 	img, body := extractFirstImage(content)
-	require.Equal(t, "", img)
+	require.Empty(t, img)
 	require.Equal(t, "Just body.", body)
 }
 
