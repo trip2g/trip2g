@@ -1389,13 +1389,34 @@ where user_id = ?
   and revoked_at is null
   and (expires_at is null or expires_at > datetime('now'));
 
--- name: GetFormSubmitsByNotePathID :many
+-- name: ListFormSubmits :many
 select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at,
        fs.processed_at, fs.processed_by, fs.comment
 from form_submits fs
 join note_versions nv on nv.id = fs.note_version_id
-where nv.path_id = ?
-order by fs.created_at desc;
+where (sqlc.narg(note_path_id) is null or nv.path_id = sqlc.narg(note_path_id))
+  and (sqlc.narg(form_id) is null or fs.form_id = sqlc.narg(form_id))
+  and (sqlc.narg(status) is null or fs.status = sqlc.narg(status))
+  and (sqlc.narg(processed_filter) is null
+       or (sqlc.narg(processed_filter) = 1 and fs.processed_at is not null)
+       or (sqlc.narg(processed_filter) = 0 and fs.processed_at is null))
+  and (sqlc.narg(created_at_gte) is null or fs.created_at >= sqlc.narg(created_at_gte))
+  and (sqlc.narg(created_at_lte) is null or fs.created_at <= sqlc.narg(created_at_lte))
+order by fs.created_at desc, fs.id desc
+limit sqlc.arg(lim) offset sqlc.arg(off);
+
+-- name: CountFormSubmits :one
+select count(*)
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+where (sqlc.narg(note_path_id) is null or nv.path_id = sqlc.narg(note_path_id))
+  and (sqlc.narg(form_id) is null or fs.form_id = sqlc.narg(form_id))
+  and (sqlc.narg(status) is null or fs.status = sqlc.narg(status))
+  and (sqlc.narg(processed_filter) is null
+       or (sqlc.narg(processed_filter) = 1 and fs.processed_at is not null)
+       or (sqlc.narg(processed_filter) = 0 and fs.processed_at is null))
+  and (sqlc.narg(created_at_gte) is null or fs.created_at >= sqlc.narg(created_at_gte))
+  and (sqlc.narg(created_at_lte) is null or fs.created_at <= sqlc.narg(created_at_lte));
 
 -- name: GetFormSubmitByID :one
 select id, note_version_id, form_id, user_id, ip, status, created_at,
@@ -1421,3 +1442,22 @@ join note_versions nv on nv.id = fs.note_version_id
 join note_paths np on np.id = nv.path_id
 group by np.id
 order by last_submit_at desc;
+
+-- name: GetTgBotDefaultHandler :one
+select default_handler from tg_bots where id = ?;
+
+-- name: GetTgBotDefaultCanvas :one
+select default_canvas from tg_bots where id = ?;
+
+-- name: GetTgUserCurrentHandler :one
+select value from tg_user_current_handlers
+ where bot_id = ? and business_connection_id = ? and user_id = ?;
+
+-- name: GetTgUserNavigationState :one
+select value from tg_user_navigation_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?;
+
+-- name: GetTgUserCanvasState :one
+select bot_id, business_connection_id, user_id, canvas_path, current_node, stack, last_media, message_id, updated_at
+  from tg_user_canvas_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?;

@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"trip2g/internal/case/gettelegramchatname"
+	"trip2g/internal/case/handletgcanvasupdate"
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
@@ -198,6 +201,17 @@ func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
 	return appmodel.TelegramAuthStateError
 }
 
+// tgHandlerEnv composes app and HandlerIO, resolving the Logger() ambiguity
+// in favor of the app logger (which carries the server-wide context).
+type tgHandlerEnv struct {
+	*app
+	*tgbots.HandlerIO
+}
+
+func (e *tgHandlerEnv) Logger() logger.Logger {
+	return e.app.log
+}
+
 func (a *app) initTelegramBots(ctx context.Context) error {
 	var err error
 
@@ -207,15 +221,37 @@ func (a *app) initTelegramBots(ctx context.Context) error {
 	}
 
 	a.TgBots.SetHandler(func(ctx context.Context, io *tgbots.HandlerIO, update tgbotapi.Update) error {
-		var be struct {
-			*app
-			*tgbots.HandlerIO
+		be := &tgHandlerEnv{app: a, HandlerIO: io}
+
+		userID := extractTelegramUserID(update)
+		bcID := extractBusinessConnectionID(update)
+
+		// /start canvas_<path> deep-link: write override, then route to canvas handler.
+		if startPath := extractDeepLinkCanvasPath(update); startPath != "" {
+			if upsertErr := a.UpsertTgUserCurrentHandler(ctx, db.UpsertTgUserCurrentHandlerParams{
+				BotID:                io.BotID(),
+				BusinessConnectionID: bcID,
+				UserID:               userID,
+				Value:                "canvas:" + startPath,
+			}); upsertErr != nil {
+				a.log.Error("failed to set user current handler", "error", upsertErr)
+			}
+			return handletgcanvasupdate.Resolve(ctx, be, handletgcanvasupdate.Input{
+				Update: update, CanvasPath: startPath,
+			})
 		}
 
-		be.app = a
-		be.HandlerIO = io
+		handlerValue := resolveHandlerValue(ctx, a, io.BotID(), bcID, userID)
 
-		return handletgupdate.Resolve(ctx, be, update)
+		switch {
+		case strings.HasPrefix(handlerValue, "canvas:"):
+			canvasPath := strings.TrimPrefix(handlerValue, "canvas:")
+			return handletgcanvasupdate.Resolve(ctx, be, handletgcanvasupdate.Input{
+				Update: update, CanvasPath: canvasPath,
+			})
+		default:
+			return handletgupdate.Resolve(ctx, be, update)
+		}
 	})
 
 	return nil
@@ -506,4 +542,80 @@ func (a *app) ResolveTelegramChatUsernameViaAccount(ctx context.Context, telegra
 // DecryptSessionData decrypts the encrypted session data from a telegram account.
 func (a *app) DecryptSessionData(encryptedSession []byte) ([]byte, error) {
 	return a.DecryptData(encryptedSession)
+}
+
+// --- Canvas dispatcher helpers ---
+
+func extractTelegramUserID(update tgbotapi.Update) int64 {
+	switch {
+	case update.Message != nil && update.Message.From != nil:
+		return update.Message.From.ID
+	case update.CallbackQuery != nil && update.CallbackQuery.From != nil:
+		return update.CallbackQuery.From.ID
+	case update.MyChatMember != nil:
+		return update.MyChatMember.From.ID
+	case update.ChatMember != nil:
+		return update.ChatMember.From.ID
+	default:
+		return 0
+	}
+}
+
+// extractBusinessConnectionID returns the business_connection_id from the update.
+// The standard tgbotapi v5 library does not expose BusinessConnection fields.
+// For now this returns "" (direct bot chats only). Business connection support
+// requires either a tgbotapi fork or JSON re-parse of the raw update, which is
+// deferred until the library is upgraded.
+func extractBusinessConnectionID(_ tgbotapi.Update) string {
+	return ""
+}
+
+// extractDeepLinkCanvasPath checks if the message is a /start canvas_<path> deep-link
+// and returns the canvas path portion, or "" if not a canvas deep-link.
+func extractDeepLinkCanvasPath(update tgbotapi.Update) string {
+	if update.Message == nil || !update.Message.IsCommand() {
+		return ""
+	}
+	if update.Message.Command() != "start" {
+		return ""
+	}
+	args := update.Message.CommandArguments()
+	if !strings.HasPrefix(args, "canvas_") {
+		return ""
+	}
+	path := strings.TrimPrefix(args, "canvas_")
+	if path == "" {
+		return ""
+	}
+	return path
+}
+
+// resolveHandlerValue determines the handler mode for a user.
+// Priority: per-user override, bot default canvas (prefixed "canvas:"),
+// bot default handler, then "" (legacy handletgupdate).
+func resolveHandlerValue(ctx context.Context, a *app, botID int64, bcID string, userID int64) string {
+	if userID == 0 {
+		return ""
+	}
+
+	// 1. Per-user override
+	if h, err := a.GetTgUserCurrentHandler(ctx, db.GetTgUserCurrentHandlerParams{
+		BotID:                botID,
+		BusinessConnectionID: bcID,
+		UserID:               userID,
+	}); err == nil && h != "" {
+		return h
+	}
+
+	// 2. Bot default canvas
+	if canvas, err := a.GetTgBotDefaultCanvas(ctx, botID); err == nil && canvas != "" {
+		return "canvas:" + canvas
+	}
+
+	// 3. Bot default handler
+	if h, err := a.queries.GetTgBotDefaultHandler(ctx, botID); err == nil && h != "" {
+		return h
+	}
+
+	return ""
 }

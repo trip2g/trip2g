@@ -29,6 +29,11 @@ func (ldr *loader) generateDomainHTMLs() {
 	}
 
 	for _, p := range ldr.nvs.PathMap {
+		// Raw files (.canvas, .base, .excalidraw) have no AST and no domain
+		// rendering applies to them.
+		if p.Ast() == nil {
+			continue
+		}
 		// Pass 1: custom domain re-render for notes with explicit custom domain routes.
 		if hasCustomDomainRoutes(p) {
 			for _, host := range ldr.uniqueHostsForNote(p) {

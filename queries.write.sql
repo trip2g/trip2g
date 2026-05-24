@@ -1130,3 +1130,30 @@ set processed_at = current_timestamp, processed_by = ?, comment = coalesce(?, ''
 where id = ?
 returning id, note_version_id, form_id, user_id, ip, status, created_at,
           processed_at, processed_by, comment;
+
+-- name: UpsertTgUserCurrentHandler :exec
+insert into tg_user_current_handlers (bot_id, business_connection_id, user_id, value, updated_at)
+values (?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set value = excluded.value, updated_at = current_timestamp;
+
+-- name: UpsertTgUserNavigationState :exec
+insert into tg_user_navigation_states (bot_id, business_connection_id, user_id, value, updated_at)
+values (?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set value = excluded.value, updated_at = current_timestamp;
+
+-- name: UpsertTgUserCanvasState :exec
+insert into tg_user_canvas_states (bot_id, business_connection_id, user_id, canvas_path, current_node, stack, last_media, message_id, updated_at)
+values (?, ?, ?, ?, ?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set canvas_path = excluded.canvas_path,
+              current_node = excluded.current_node,
+              stack = excluded.stack,
+              last_media = excluded.last_media,
+              message_id = excluded.message_id,
+              updated_at = current_timestamp;
+
+-- name: DeleteTgUserCanvasState :exec
+delete from tg_user_canvas_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?;

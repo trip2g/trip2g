@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
+	"trip2g/internal/obsidiancanvas"
 
 	jsonnet "github.com/google/go-jsonnet"
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
@@ -274,6 +275,16 @@ func (ldr *loader) registerRawFile(src SourceFile) {
 		RawMeta:       map[string]interface{}{},
 		OriginalRawMeta: map[string]interface{}{},
 	}
+	// Parse canvas JSON at load time so handlers can use the struct directly.
+	if strings.HasSuffix(strings.ToLower(src.Path), ".canvas") {
+		canvas, err := obsidiancanvas.Parse(src.Content)
+		if err != nil {
+			ldr.log.Warn("canvas parse failed", "path", src.Path, "error", err)
+		} else {
+			nv.Canvas = canvas
+		}
+	}
+
 	// Use path as permalink (preserving extension so callers can look up by path).
 	nv.Permalink = "/" + src.Path
 	nv.PermalinkOriginal = nv.Permalink

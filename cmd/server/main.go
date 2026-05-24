@@ -84,6 +84,7 @@ import (
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
+	"trip2g/internal/markdownv2"
 	"trip2g/internal/metrics"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
@@ -101,6 +102,7 @@ import (
 	"trip2g/internal/router"
 	"trip2g/internal/rssfeed"
 	"trip2g/internal/simplebackup"
+	"trip2g/internal/telegram"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
@@ -1304,6 +1306,50 @@ func (a *app) Logger() logger.Logger {
 
 func (a *app) LogLevel() string {
 	return a.config.LogLevel
+}
+
+// --- Canvas handler DB wrappers ---
+
+func (a *app) GetTgUserCanvasState(ctx context.Context, p db.GetTgUserCanvasStateParams) (db.TgUserCanvasState, error) {
+	return a.queries.GetTgUserCanvasState(ctx, p)
+}
+
+func (a *app) UpsertTgUserCanvasState(ctx context.Context, p db.UpsertTgUserCanvasStateParams) error {
+	return a.WriteQueries.UpsertTgUserCanvasState(ctx, p)
+}
+
+func (a *app) DeleteTgUserCanvasState(ctx context.Context, p db.DeleteTgUserCanvasStateParams) error {
+	return a.WriteQueries.DeleteTgUserCanvasState(ctx, p)
+}
+
+func (a *app) UpsertTgUserCurrentHandler(ctx context.Context, p db.UpsertTgUserCurrentHandlerParams) error {
+	return a.WriteQueries.UpsertTgUserCurrentHandler(ctx, p)
+}
+
+func (a *app) GetTgUserCurrentHandler(ctx context.Context, p db.GetTgUserCurrentHandlerParams) (string, error) {
+	return a.queries.GetTgUserCurrentHandler(ctx, p)
+}
+
+func (a *app) GetTgBotDefaultCanvas(ctx context.Context, botID int64) (string, error) {
+	return a.queries.GetTgBotDefaultCanvas(ctx, botID)
+}
+
+func (a *app) RenderNoteHTML(nv *model.NoteView) (string, string) {
+	converter := markdownv2.HTMLConverter{}
+	res := converter.Process(nv)
+	text := res.Content
+
+	firstMedia := ""
+	if nv.FirstImage != nil && *nv.FirstImage != "" {
+		firstMedia = *nv.FirstImage
+	}
+
+	limit := 3800
+	if firstMedia != "" {
+		limit = 1000
+	}
+	text = telegram.TruncateContent(text, limit)
+	return text, firstMedia
 }
 
 func (a *app) Features() features.Features {
@@ -2720,8 +2766,12 @@ func (a *app) EnqueueSendFormSubmitEmail(ctx context.Context, submitID int64) er
 	return a.SendFormSubmitEmailJob.EnqueueSendFormSubmit(ctx, submitID)
 }
 
-func (a *app) GetFormSubmitsByNotePathID(ctx context.Context, notePathID int64) ([]db.FormSubmit, error) {
-	return a.Queries.GetFormSubmitsByNotePathID(ctx, notePathID)
+func (a *app) ListFormSubmits(ctx context.Context, arg db.ListFormSubmitsParams) ([]db.FormSubmit, error) {
+	return a.Queries.ListFormSubmits(ctx, arg)
+}
+
+func (a *app) CountFormSubmits(ctx context.Context, arg db.CountFormSubmitsParams) (int64, error) {
+	return a.Queries.CountFormSubmits(ctx, arg)
 }
 
 func (a *app) GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormStringValuesBySubmitIDRow, error) {

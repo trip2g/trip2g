@@ -2188,4 +2188,66 @@ func TestRawFileIngestion(t *testing.T) {
 			require.Empty(t, nv.HTML, "raw file must not have rendered HTML")
 		}
 	}
+
+	// .canvas must have parsed Canvas struct attached at load time
+	require.NotNil(t, canvasView.Canvas, "canvas must be parsed at load time")
+	node, ok := canvasView.Canvas.Node("n1")
+	require.True(t, ok, "parsed canvas must contain node n1")
+	require.Equal(t, "file", node.Type)
+	require.Equal(t, "intro.md", node.File)
+
+	// .base must NOT have Canvas (not a canvas file)
+	require.Nil(t, baseView.Canvas, "non-canvas raw files must not have Canvas")
+}
+
+func TestRawFileCanvasParseError(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{
+		{Path: "broken.canvas", Content: []byte(`{invalid json`), PathID: 1, VersionID: 10},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{Sources: sourceFiles, Log: &log})
+	require.NoError(t, err)
+
+	nv := pages.PathMap["broken.canvas"]
+	require.NotNil(t, nv, "broken canvas must still be registered")
+	require.Nil(t, nv.Canvas, "malformed canvas must have nil Canvas")
+	require.Equal(t, []byte(`{invalid json`), nv.Content, "raw content must be preserved")
+}
+
+func TestRawFileCanvasWithEntry(t *testing.T) {
+	log := logger.TestLogger{}
+
+	canvasJSON := []byte(`{
+		"nodes":[
+			{"id":"start","type":"text","text":"START"},
+			{"id":"welcome","type":"text","text":"Hello!"},
+			{"id":"page2","type":"text","text":"Details"}
+		],
+		"edges":[
+			{"id":"e1","fromNode":"start","toNode":"welcome"},
+			{"id":"e2","fromNode":"welcome","toNode":"page2","label":"More"}
+		]
+	}`)
+
+	sourceFiles := []mdloader.SourceFile{
+		{Path: "nav.canvas", Content: canvasJSON, PathID: 1, VersionID: 10},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{Sources: sourceFiles, Log: &log})
+	require.NoError(t, err)
+
+	nv := pages.PathMap["nav.canvas"]
+	require.NotNil(t, nv)
+	require.NotNil(t, nv.Canvas, "valid canvas must be parsed")
+
+	// Entry resolves through single START edge to "welcome"
+	require.Equal(t, "welcome", nv.Canvas.Entry())
+
+	// Edges from welcome
+	edges := nv.Canvas.EdgesFrom("welcome")
+	require.Len(t, edges, 1)
+	require.Equal(t, "page2", edges[0].ToNode)
+	require.Equal(t, "More", edges[0].Label)
 }

@@ -827,7 +827,7 @@ func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredentia
 }
 
 const allTgBots = `-- name: AllTgBots :many
-select id, token, enabled, description, created_at, created_by, name from tg_bots
+select id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler from tg_bots
 order by created_at desc
 `
 
@@ -848,6 +848,8 @@ func (q *Queries) AllTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+			&i.DefaultCanvas,
+			&i.DefaultHandler,
 		); err != nil {
 			return nil, err
 		}
@@ -1194,6 +1196,43 @@ select count(*) from note_paths
 
 func (q *Queries) CountAllNotePaths(ctx context.Context) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countAllNotePaths)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countFormSubmits = `-- name: CountFormSubmits :one
+select count(*)
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+where (?1 is null or nv.path_id = ?1)
+  and (?2 is null or fs.form_id = ?2)
+  and (?3 is null or fs.status = ?3)
+  and (?4 is null
+       or (?4 = 1 and fs.processed_at is not null)
+       or (?4 = 0 and fs.processed_at is null))
+  and (?5 is null or fs.created_at >= ?5)
+  and (?6 is null or fs.created_at <= ?6)
+`
+
+type CountFormSubmitsParams struct {
+	NotePathID      interface{} `json:"note_path_id"`
+	FormID          interface{} `json:"form_id"`
+	Status          interface{} `json:"status"`
+	ProcessedFilter interface{} `json:"processed_filter"`
+	CreatedAtGte    interface{} `json:"created_at_gte"`
+	CreatedAtLte    interface{} `json:"created_at_lte"`
+}
+
+func (q *Queries) CountFormSubmits(ctx context.Context, arg CountFormSubmitsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countFormSubmits,
+		arg.NotePathID,
+		arg.FormID,
+		arg.Status,
+		arg.ProcessedFilter,
+		arg.CreatedAtGte,
+		arg.CreatedAtLte,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -1836,49 +1875,6 @@ func (q *Queries) GetFormSubmitByID(ctx context.Context, id int64) (FormSubmit, 
 		&i.Comment,
 	)
 	return i, err
-}
-
-const getFormSubmitsByNotePathID = `-- name: GetFormSubmitsByNotePathID :many
-select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at,
-       fs.processed_at, fs.processed_by, fs.comment
-from form_submits fs
-join note_versions nv on nv.id = fs.note_version_id
-where nv.path_id = ?
-order by fs.created_at desc
-`
-
-func (q *Queries) GetFormSubmitsByNotePathID(ctx context.Context, pathID int64) ([]FormSubmit, error) {
-	rows, err := q.db.QueryContext(ctx, getFormSubmitsByNotePathID, pathID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FormSubmit
-	for rows.Next() {
-		var i FormSubmit
-		if err := rows.Scan(
-			&i.ID,
-			&i.NoteVersionID,
-			&i.FormID,
-			&i.UserID,
-			&i.Ip,
-			&i.Status,
-			&i.CreatedAt,
-			&i.ProcessedAt,
-			&i.ProcessedBy,
-			&i.Comment,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const getGitHubOAuthCredentials = `-- name: GetGitHubOAuthCredentials :one
@@ -2754,6 +2750,93 @@ func (q *Queries) GetTelegramPublishSentMessagePostType(ctx context.Context, arg
 	var post_type string
 	err := row.Scan(&post_type)
 	return post_type, err
+}
+
+const getTgBotDefaultCanvas = `-- name: GetTgBotDefaultCanvas :one
+select default_canvas from tg_bots where id = ?
+`
+
+func (q *Queries) GetTgBotDefaultCanvas(ctx context.Context, id int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTgBotDefaultCanvas, id)
+	var default_canvas string
+	err := row.Scan(&default_canvas)
+	return default_canvas, err
+}
+
+const getTgBotDefaultHandler = `-- name: GetTgBotDefaultHandler :one
+select default_handler from tg_bots where id = ?
+`
+
+func (q *Queries) GetTgBotDefaultHandler(ctx context.Context, id int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTgBotDefaultHandler, id)
+	var default_handler string
+	err := row.Scan(&default_handler)
+	return default_handler, err
+}
+
+const getTgUserCanvasState = `-- name: GetTgUserCanvasState :one
+select bot_id, business_connection_id, user_id, canvas_path, current_node, stack, last_media, message_id, updated_at
+  from tg_user_canvas_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?
+`
+
+type GetTgUserCanvasStateParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+}
+
+func (q *Queries) GetTgUserCanvasState(ctx context.Context, arg GetTgUserCanvasStateParams) (TgUserCanvasState, error) {
+	row := q.db.QueryRowContext(ctx, getTgUserCanvasState, arg.BotID, arg.BusinessConnectionID, arg.UserID)
+	var i TgUserCanvasState
+	err := row.Scan(
+		&i.BotID,
+		&i.BusinessConnectionID,
+		&i.UserID,
+		&i.CanvasPath,
+		&i.CurrentNode,
+		&i.Stack,
+		&i.LastMedia,
+		&i.MessageID,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTgUserCurrentHandler = `-- name: GetTgUserCurrentHandler :one
+select value from tg_user_current_handlers
+ where bot_id = ? and business_connection_id = ? and user_id = ?
+`
+
+type GetTgUserCurrentHandlerParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+}
+
+func (q *Queries) GetTgUserCurrentHandler(ctx context.Context, arg GetTgUserCurrentHandlerParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTgUserCurrentHandler, arg.BotID, arg.BusinessConnectionID, arg.UserID)
+	var value string
+	err := row.Scan(&value)
+	return value, err
+}
+
+const getTgUserNavigationState = `-- name: GetTgUserNavigationState :one
+select value from tg_user_navigation_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?
+`
+
+type GetTgUserNavigationStateParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+}
+
+func (q *Queries) GetTgUserNavigationState(ctx context.Context, arg GetTgUserNavigationStateParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTgUserNavigationState, arg.BotID, arg.BusinessConnectionID, arg.UserID)
+	var value string
+	err := row.Scan(&value)
+	return value, err
 }
 
 const gitTokenByValueSHA256 = `-- name: GitTokenByValueSHA256 :one
@@ -4547,7 +4630,7 @@ func (q *Queries) ListEnabledTelegramAccountsByChatID(ctx context.Context, teleg
 }
 
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
-select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
+select id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler from tg_bots where enabled = true
 `
 
 func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
@@ -4567,6 +4650,8 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+			&i.DefaultCanvas,
+			&i.DefaultHandler,
 		); err != nil {
 			return nil, err
 		}
@@ -4711,6 +4796,77 @@ func (q *Queries) ListFederationSecrets(ctx context.Context) ([]ListFederationSe
 			&i.CreatedBy,
 			&i.RevokedAt,
 			&i.SubgraphCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFormSubmits = `-- name: ListFormSubmits :many
+select fs.id, fs.note_version_id, fs.form_id, fs.user_id, fs.ip, fs.status, fs.created_at,
+       fs.processed_at, fs.processed_by, fs.comment
+from form_submits fs
+join note_versions nv on nv.id = fs.note_version_id
+where (?1 is null or nv.path_id = ?1)
+  and (?2 is null or fs.form_id = ?2)
+  and (?3 is null or fs.status = ?3)
+  and (?4 is null
+       or (?4 = 1 and fs.processed_at is not null)
+       or (?4 = 0 and fs.processed_at is null))
+  and (?5 is null or fs.created_at >= ?5)
+  and (?6 is null or fs.created_at <= ?6)
+order by fs.created_at desc, fs.id desc
+limit ?8 offset ?7
+`
+
+type ListFormSubmitsParams struct {
+	NotePathID      interface{} `json:"note_path_id"`
+	FormID          interface{} `json:"form_id"`
+	Status          interface{} `json:"status"`
+	ProcessedFilter interface{} `json:"processed_filter"`
+	CreatedAtGte    interface{} `json:"created_at_gte"`
+	CreatedAtLte    interface{} `json:"created_at_lte"`
+	Off             int64       `json:"off"`
+	Lim             int64       `json:"lim"`
+}
+
+func (q *Queries) ListFormSubmits(ctx context.Context, arg ListFormSubmitsParams) ([]FormSubmit, error) {
+	rows, err := q.db.QueryContext(ctx, listFormSubmits,
+		arg.NotePathID,
+		arg.FormID,
+		arg.Status,
+		arg.ProcessedFilter,
+		arg.CreatedAtGte,
+		arg.CreatedAtLte,
+		arg.Off,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSubmit
+	for rows.Next() {
+		var i FormSubmit
+		if err := rows.Scan(
+			&i.ID,
+			&i.NoteVersionID,
+			&i.FormID,
+			&i.UserID,
+			&i.Ip,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ProcessedAt,
+			&i.ProcessedBy,
+			&i.Comment,
 		); err != nil {
 			return nil, err
 		}
@@ -5979,7 +6135,7 @@ func (q *Queries) ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.C
 }
 
 const listTgBots = `-- name: ListTgBots :many
-select id, token, enabled, description, created_at, created_by, name from tg_bots order by description
+select id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler from tg_bots order by description
 `
 
 func (q *Queries) ListTgBots(ctx context.Context) ([]TgBot, error) {
@@ -5999,6 +6155,8 @@ func (q *Queries) ListTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+			&i.DefaultCanvas,
+			&i.DefaultHandler,
 		); err != nil {
 			return nil, err
 		}
@@ -6730,7 +6888,7 @@ func (q *Queries) TgAttachCodeByCode(ctx context.Context, code string) (TgAttach
 }
 
 const tgBot = `-- name: TgBot :one
-select id, token, enabled, description, created_at, created_by, name from tg_bots
+select id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler from tg_bots
 where id = ?
 `
 
@@ -6745,6 +6903,8 @@ func (q *Queries) TgBot(ctx context.Context, id int64) (TgBot, error) {
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Name,
+		&i.DefaultCanvas,
+		&i.DefaultHandler,
 	)
 	return i, err
 }

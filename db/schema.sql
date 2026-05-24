@@ -188,7 +188,7 @@ CREATE TABLE tg_bots (
   description text not null default '',
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
-, name text not null default '');
+, name text not null default '', default_canvas text not null default '', default_handler text not null default '');
 CREATE TABLE tg_user_states (
   chat_id int not null,
   bot_id int not null references tg_bots(id) on delete restrict,
@@ -796,6 +796,36 @@ after update on cron_webhooks
 begin
   update cron_webhooks set updated_at = datetime('now') where id = new.id;
 end;
+CREATE TABLE tg_user_canvas_states (
+  bot_id                 int  not null references tg_bots(id) on delete cascade,
+  business_connection_id text not null default '',
+  user_id                int  not null,
+  canvas_path            text not null,
+  current_node           text not null,
+  stack                  text not null default '[]',
+  last_media             text not null default '',
+  message_id             int  not null default 0,
+  updated_at             datetime not null default current_timestamp,
+  primary key (bot_id, business_connection_id, user_id)
+);
+CREATE INDEX tg_user_canvas_states_by_path
+  on tg_user_canvas_states(bot_id, canvas_path);
+CREATE TABLE tg_user_current_handlers (
+  bot_id                 int  not null references tg_bots(id) on delete cascade,
+  business_connection_id text not null default '',
+  user_id                int  not null,
+  value                  text not null default '',
+  updated_at             datetime not null default current_timestamp,
+  primary key (bot_id, business_connection_id, user_id)
+);
+CREATE TABLE tg_user_navigation_states (
+  bot_id                 int  not null references tg_bots(id) on delete cascade,
+  business_connection_id text not null default '',
+  user_id                int  not null,
+  value                  text not null default '{}',
+  updated_at             datetime not null default current_timestamp,
+  primary key (bot_id, business_connection_id, user_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -913,4 +943,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260430100000'),
   ('20260506120000'),
   ('20260513120000'),
-  ('20260518072631');
+  ('20260518072631'),
+  ('20260524105748'),
+  ('20260524105749');

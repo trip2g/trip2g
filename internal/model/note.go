@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"trip2g/internal/obsidiancanvas"
 	rl2 "trip2g/internal/russkayalatinica2"
 	"unicode"
 
@@ -265,6 +266,10 @@ type NoteView struct {
 	// Populated on both hub page and each target page.
 	// Does NOT include the current note itself.
 	LangAlternatives map[string]*NoteView `json:"-"`
+
+	// Canvas holds the parsed Obsidian canvas structure for .canvas files.
+	// Parsed once at load time; nil for non-canvas notes or on parse error.
+	Canvas *obsidiancanvas.Canvas `json:"-"`
 
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`

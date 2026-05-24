@@ -685,13 +685,15 @@ type TgAttachCode struct {
 }
 
 type TgBot struct {
-	ID          int64     `json:"id"`
-	Token       string    `json:"token"`
-	Enabled     bool      `json:"enabled"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	CreatedBy   int64     `json:"created_by"`
-	Name        string    `json:"name"`
+	ID             int64     `json:"id"`
+	Token          string    `json:"token"`
+	Enabled        bool      `json:"enabled"`
+	Description    string    `json:"description"`
+	CreatedAt      time.Time `json:"created_at"`
+	CreatedBy      int64     `json:"created_by"`
+	Name           string    `json:"name"`
+	DefaultCanvas  string    `json:"default_canvas"`
+	DefaultHandler string    `json:"default_handler"`
 }
 
 type TgBotChat struct {
@@ -731,6 +733,34 @@ type TgChatSubgraphAccess struct {
 	ChatID     int64     `json:"chat_id"`
 	SubgraphID int64     `json:"subgraph_id"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+type TgUserCanvasState struct {
+	BotID                int64     `json:"bot_id"`
+	BusinessConnectionID string    `json:"business_connection_id"`
+	UserID               int64     `json:"user_id"`
+	CanvasPath           string    `json:"canvas_path"`
+	CurrentNode          string    `json:"current_node"`
+	Stack                string    `json:"stack"`
+	LastMedia            string    `json:"last_media"`
+	MessageID            int64     `json:"message_id"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+type TgUserCurrentHandler struct {
+	BotID                int64     `json:"bot_id"`
+	BusinessConnectionID string    `json:"business_connection_id"`
+	UserID               int64     `json:"user_id"`
+	Value                string    `json:"value"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+type TgUserNavigationState struct {
+	BotID                int64     `json:"bot_id"`
+	BusinessConnectionID string    `json:"business_connection_id"`
+	UserID               int64     `json:"user_id"`
+	Value                string    `json:"value"`
+	UpdatedAt            time.Time `json:"updated_at"`
 }
 
 type TgUserProfile struct {

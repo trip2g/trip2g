@@ -644,3 +644,55 @@ func TestHasCustomDomainRoutes(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateDomainHTMLs_SkipsRawFiles is the regression test for a
+// nil-AST panic in generateDomainHTMLs when the vault contains a custom-domain
+// note alongside .canvas / .base / .excalidraw files. The domain-render loop
+// iterates over every NoteView; raw files have Ast() == nil and must be
+// skipped before findEmbedTargets / buildDomainResolvedLinks dereference it.
+func TestGenerateDomainHTMLs_SkipsRawFiles(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{
+		{
+			Path: "index.md",
+			Content: []byte(`---
+free: true
+---
+Hello`),
+		},
+		// Custom-domain note: makes CustomDomains() non-empty so
+		// generateDomainHTMLs does not short-circuit.
+		{
+			Path: "anchor.md",
+			Content: []byte(`---
+free: true
+route: trigger.example.com/x
+---
+Anchor`),
+		},
+		{
+			Path:    "diagram.canvas",
+			Content: []byte(`{"nodes":[{"id":"a","type":"text","text":"hi","x":0,"y":0,"width":50,"height":50}],"edges":[]}`),
+		},
+		{
+			Path:    "data.base",
+			Content: []byte("views:\n  - type: table\n    name: T\n"),
+		},
+		{
+			Path:    "sketch.excalidraw",
+			Content: []byte(`{"type":"excalidraw","version":2,"source":"x","elements":[],"appState":{},"files":{}}`),
+		},
+	}
+
+	require.NotPanics(t, func() {
+		pages, err := mdloader.Load(mdloader.Options{
+			Sources: sourceFiles,
+			Log:     &log,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, pages.PathMap["diagram.canvas"], "canvas must be in PathMap")
+		require.NotNil(t, pages.PathMap["data.base"], "base must be in PathMap")
+		require.NotNil(t, pages.PathMap["sketch.excalidraw"], "excalidraw must be in PathMap")
+	})
+}

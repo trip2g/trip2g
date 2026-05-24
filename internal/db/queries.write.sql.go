@@ -583,6 +583,22 @@ func (q *WriteQueries) DeleteTgChatSubgraphInvitesByChatID(ctx context.Context, 
 	return err
 }
 
+const deleteTgUserCanvasState = `-- name: DeleteTgUserCanvasState :exec
+delete from tg_user_canvas_states
+ where bot_id = ? and business_connection_id = ? and user_id = ?
+`
+
+type DeleteTgUserCanvasStateParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+}
+
+func (q *WriteQueries) DeleteTgUserCanvasState(ctx context.Context, arg DeleteTgUserCanvasStateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTgUserCanvasState, arg.BotID, arg.BusinessConnectionID, arg.UserID)
+	return err
+}
+
 const deleteUserFavoriteNote = `-- name: DeleteUserFavoriteNote :exec
 delete from user_favorite_notes
 where user_id = ? and note_version_id = ?
@@ -2018,7 +2034,7 @@ func (q *WriteQueries) InsertTgAttachCode(ctx context.Context, arg InsertTgAttac
 const insertTgBot = `-- name: InsertTgBot :one
 insert into tg_bots (token, name, description, created_by)
 values (?, ?, ?, ?)
-returning id, token, enabled, description, created_at, created_by, name
+returning id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler
 `
 
 type InsertTgBotParams struct {
@@ -2044,6 +2060,8 @@ func (q *WriteQueries) InsertTgBot(ctx context.Context, arg InsertTgBotParams) (
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Name,
+		&i.DefaultCanvas,
+		&i.DefaultHandler,
 	)
 	return i, err
 }
@@ -3773,7 +3791,7 @@ update tg_bots
 set description = coalesce(?1, description),
     enabled = coalesce(?2, enabled)
 where id = ?3
-returning id, token, enabled, description, created_at, created_by, name
+returning id, token, enabled, description, created_at, created_by, name, default_canvas, default_handler
 `
 
 type UpdateTgBotParams struct {
@@ -3793,6 +3811,8 @@ func (q *WriteQueries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Name,
+		&i.DefaultCanvas,
+		&i.DefaultHandler,
 	)
 	return i, err
 }
@@ -4399,6 +4419,91 @@ func (q *WriteQueries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatP
 		arg.ChatTitle,
 		arg.CanInvite,
 		arg.BotID,
+	)
+	return err
+}
+
+const upsertTgUserCanvasState = `-- name: UpsertTgUserCanvasState :exec
+insert into tg_user_canvas_states (bot_id, business_connection_id, user_id, canvas_path, current_node, stack, last_media, message_id, updated_at)
+values (?, ?, ?, ?, ?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set canvas_path = excluded.canvas_path,
+              current_node = excluded.current_node,
+              stack = excluded.stack,
+              last_media = excluded.last_media,
+              message_id = excluded.message_id,
+              updated_at = current_timestamp
+`
+
+type UpsertTgUserCanvasStateParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+	CanvasPath           string `json:"canvas_path"`
+	CurrentNode          string `json:"current_node"`
+	Stack                string `json:"stack"`
+	LastMedia            string `json:"last_media"`
+	MessageID            int64  `json:"message_id"`
+}
+
+func (q *WriteQueries) UpsertTgUserCanvasState(ctx context.Context, arg UpsertTgUserCanvasStateParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTgUserCanvasState,
+		arg.BotID,
+		arg.BusinessConnectionID,
+		arg.UserID,
+		arg.CanvasPath,
+		arg.CurrentNode,
+		arg.Stack,
+		arg.LastMedia,
+		arg.MessageID,
+	)
+	return err
+}
+
+const upsertTgUserCurrentHandler = `-- name: UpsertTgUserCurrentHandler :exec
+insert into tg_user_current_handlers (bot_id, business_connection_id, user_id, value, updated_at)
+values (?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set value = excluded.value, updated_at = current_timestamp
+`
+
+type UpsertTgUserCurrentHandlerParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+	Value                string `json:"value"`
+}
+
+func (q *WriteQueries) UpsertTgUserCurrentHandler(ctx context.Context, arg UpsertTgUserCurrentHandlerParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTgUserCurrentHandler,
+		arg.BotID,
+		arg.BusinessConnectionID,
+		arg.UserID,
+		arg.Value,
+	)
+	return err
+}
+
+const upsertTgUserNavigationState = `-- name: UpsertTgUserNavigationState :exec
+insert into tg_user_navigation_states (bot_id, business_connection_id, user_id, value, updated_at)
+values (?, ?, ?, ?, current_timestamp)
+on conflict (bot_id, business_connection_id, user_id)
+do update set value = excluded.value, updated_at = current_timestamp
+`
+
+type UpsertTgUserNavigationStateParams struct {
+	BotID                int64  `json:"bot_id"`
+	BusinessConnectionID string `json:"business_connection_id"`
+	UserID               int64  `json:"user_id"`
+	Value                string `json:"value"`
+}
+
+func (q *WriteQueries) UpsertTgUserNavigationState(ctx context.Context, arg UpsertTgUserNavigationStateParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTgUserNavigationState,
+		arg.BotID,
+		arg.BusinessConnectionID,
+		arg.UserID,
+		arg.Value,
 	)
 	return err
 }

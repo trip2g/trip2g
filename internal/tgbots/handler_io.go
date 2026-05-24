@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"trip2g/internal/logger"
 
@@ -264,4 +265,132 @@ func (io *HandlerIO) UnbanChatMember(ctx context.Context, chatID, userID int64) 
 	}
 
 	return nil
+}
+
+// Logger exposes the handler's logger for consumers that embed HandlerIO.
+func (io *HandlerIO) Logger() logger.Logger {
+	return io.logger
+}
+
+// SendMessage sends a text message via raw MakeRequest, injecting business_connection_id when non-empty.
+func (io *HandlerIO) SendMessage(_ context.Context, chatID int64, bcID, text, markup string) (int, error) {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	resp, err := io.bot.MakeRequest("sendMessage", p)
+	if err != nil {
+		return 0, fmt.Errorf("sendMessage: %w", err)
+	}
+	return extractRawMessageID(resp.Result), nil
+}
+
+// SendPhoto uploads a photo from disk with an HTML caption, injecting business_connection_id.
+func (io *HandlerIO) SendPhoto(_ context.Context, chatID int64, bcID, mediaPath, caption, markup string) (int, error) {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"caption":    caption,
+		"parse_mode": "HTML",
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	resp, err := io.bot.UploadFiles("sendPhoto", p, []tgbotapi.RequestFile{{
+		Name: "photo",
+		Data: tgbotapi.FilePath(mediaPath),
+	}})
+	if err != nil {
+		return 0, fmt.Errorf("sendPhoto: %w", err)
+	}
+	return extractRawMessageID(resp.Result), nil
+}
+
+// EditMessageText edits a text message via raw MakeRequest.
+func (io *HandlerIO) EditMessageText(_ context.Context, chatID int64, messageID int, bcID, text, markup string) error {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"message_id": strconv.Itoa(messageID),
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	_, err := io.bot.MakeRequest("editMessageText", p)
+	if err != nil {
+		return fmt.Errorf("editMessageText: %w", err)
+	}
+	return nil
+}
+
+// EditMessageReplyMarkup edits only the inline keyboard of a message.
+func (io *HandlerIO) EditMessageReplyMarkup(_ context.Context, chatID int64, messageID int, bcID, markup string) error {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"message_id": strconv.Itoa(messageID),
+	}
+	if markup != "" {
+		p["reply_markup"] = markup
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	_, err := io.bot.MakeRequest("editMessageReplyMarkup", p)
+	if err != nil {
+		return fmt.Errorf("editMessageReplyMarkup: %w", err)
+	}
+	return nil
+}
+
+// DeleteMessage deletes a message via raw MakeRequest.
+func (io *HandlerIO) DeleteMessage(_ context.Context, chatID int64, messageID int, bcID string) error {
+	p := tgbotapi.Params{
+		"chat_id":    strconv.FormatInt(chatID, 10),
+		"message_id": strconv.Itoa(messageID),
+	}
+	if bcID != "" {
+		p["business_connection_id"] = bcID
+	}
+	_, err := io.bot.MakeRequest("deleteMessage", p)
+	if err != nil {
+		return fmt.Errorf("deleteMessage: %w", err)
+	}
+	return nil
+}
+
+// AnswerCallbackQuery acknowledges a callback query.
+func (io *HandlerIO) AnswerCallbackQuery(_ context.Context, callbackID, text string, alert bool) error {
+	p := tgbotapi.Params{"callback_query_id": callbackID}
+	if text != "" {
+		p["text"] = text
+	}
+	if alert {
+		p["show_alert"] = "true"
+	}
+	_, err := io.bot.MakeRequest("answerCallbackQuery", p)
+	if err != nil {
+		return fmt.Errorf("answerCallbackQuery: %w", err)
+	}
+	return nil
+}
+
+func extractRawMessageID(raw json.RawMessage) int {
+	var m struct {
+		MessageID int `json:"message_id"`
+	}
+	_ = json.Unmarshal(raw, &m)
+	return m.MessageID
 }
