@@ -30,7 +30,7 @@ test.describe('Forms in Notes', () => {
   test('submitForm mutation accepts a valid submission', async ({ request, baseURL }) => {
     const pageRes = await request.get(`${baseURL}/form_test_note`);
     const html = await pageRes.text();
-    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    const match = html.match(/<script id="form-spec"[^>]*type="application\/json">(.*?)<\/script>/s);
     expect(match).toBeTruthy();
     const spec = JSON.parse(match[1]);
     const noteVersionId = spec.note_version_id;
@@ -58,7 +58,7 @@ test.describe('Forms in Notes', () => {
   test('admin-only form: anon submit is denied with admin_required', async ({ request, baseURL }) => {
     const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
     const html = await pageRes.text();
-    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    const match = html.match(/<script id="form-spec"[^>]*type="application\/json">(.*?)<\/script>/s);
     expect(match, 'form-spec script must be embedded on the admin-only note').toBeTruthy();
     const spec = JSON.parse(match[1]);
     expect(spec.forms[''].can_submit).toBe('admin');
@@ -91,7 +91,7 @@ test.describe('Forms in Notes', () => {
 
     const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
     const html = await pageRes.text();
-    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    const match = html.match(/<script id="form-spec"[^>]*type="application\/json">(.*?)<\/script>/s);
     expect(match).toBeTruthy();
     const spec = JSON.parse(match[1]);
 
@@ -120,7 +120,7 @@ test.describe('Forms in Notes', () => {
   test('form-spec exposes success_url', async ({ request, baseURL }) => {
     const pageRes = await request.get(`${baseURL}/form_admin_test_note`);
     const html = await pageRes.text();
-    const match = html.match(/<script id="form-spec" type="application\/json">(.*?)<\/script>/s);
+    const match = html.match(/<script id="form-spec"[^>]*type="application\/json">(.*?)<\/script>/s);
     expect(match).toBeTruthy();
     const spec = JSON.parse(match[1]);
     expect(spec.forms[''].success_url).toBe('/demo/form_admin_test_note?submitted=1');
