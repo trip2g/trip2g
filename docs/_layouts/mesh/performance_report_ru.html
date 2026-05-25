@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ note.M().GetString("title", "trip2g · анатомия 15 месяцев") }}</title>
+  <meta name="description" content="{{ note.M().GetString("description", "Что внутри trip2g после 15 месяцев.") }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+  <style>
+    /* ============================================================
+       trip2g · anatomy page
+       Single-file deliverable. Vanilla HTML/CSS + 1 tiny <script>
+       (only to expand the waffle grids; replace with SSR if you like).
+       ============================================================ */
+
+
+    /* ----- 01 · DESIGN TOKENS ----- */
+    :root {
+      /* surfaces */
+      --bg:        #0e0e0c;
+      --fg:        #f5f5f2;
+      --rule:      #2a2a26;
+
+      /* text */
+      --muted:     #8c8c84;
+      --muted-2:   #5a5a55;
+
+      /* accents */
+      --accent:    oklch(0.78 0.18 145);   /* lime — own code */
+      --warn:      #f5b800;                /* yellow — codegen */
+      --info:      #6cc3ff;                /* blue — tests */
+      --quiet:     #7c7c74;                /* gray — vendor */
+      --purp:      #c084fc;                /* purple — typescript */
+
+      /* type */
+      --mono:      'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      --sans:      Inter, system-ui, -apple-system, sans-serif;
+
+      /* layout */
+      --gutter:    32px;
+      --max-w:     1440px;
+    }
+
+
+    /* ----- 02 · RESET + BASE ----- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+    p { margin: 0; }
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-family: var(--sans);
+      letter-spacing: -0.025em;
+    }
+
+
+    /* ----- 03 · TYPE SCALE ----- */
+    .h1 { font-weight: 800; font-size: 84px; line-height: 0.92; letter-spacing: -0.035em; }
+    .h2 { font-weight: 800; font-size: 44px; line-height: 1.02;  letter-spacing: -0.025em; }
+    .h3 { font-weight: 700; font-size: 22px; line-height: 1.15;  letter-spacing: -0.015em; }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .eyebrow::before { content: "// "; color: var(--accent); }
+
+    .label {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .label--key { color: var(--accent); font-weight: 700; }
+    .label--key::before { content: "// "; }
+    .label--warn { color: var(--warn); }
+    .label--info { color: var(--info); }
+    .label--quiet { color: var(--quiet); }
+
+    .body {
+      font-size: 15px;
+      line-height: 1.55;
+      color: color-mix(in oklab, var(--fg) 80%, transparent);
+      max-width: 56ch;
+    }
+    .body b { color: var(--fg); font-weight: 600; }
+    .body code {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(245,245,242,0.07);
+      padding: 1px 6px;
+      color: var(--fg);
+    }
+
+    .small {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: color-mix(in oklab, var(--fg) 75%, transparent);
+    }
+    .small b { color: var(--fg); }
+
+    /* highlight chip used inside headings */
+    .hl {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 0.7em;
+      padding: 0 0.18em;
+      vertical-align: 0.2em;
+    }
+    .h2 em { font-style: normal; color: var(--accent); }
+
+
+    /* ----- 04 · BIG NUMBER ----- */
+    .num {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 72px;
+      line-height: 0.88;
+      letter-spacing: -0.04em;
+    }
+    .num small {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-left: 8px;
+      vertical-align: 0.7em;
+    }
+    .num--xl  { font-size: 132px; }
+    .num--lg  { font-size: 96px; }
+    .num--md  { font-size: 52px; }
+    .num--sm  { font-size: 42px; }
+
+    .num--acc   { color: var(--accent); }
+    .num--warn  { color: var(--warn); }
+    .num--info  { color: var(--info); }
+    .num--quiet { color: var(--quiet); }
+
+
+    /* ----- 05 · LAYOUT · SHELL + GRID ----- */
+    .shell {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      border-left: 1px solid var(--rule);
+      border-right: 1px solid var(--rule);
+    }
+
+    .row12 {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      border-bottom: 1px solid var(--rule);
+    }
+    .row12 > * {
+      border-right: 1px solid var(--rule);
+    }
+    .row12 > *:last-child { border-right: 0; }
+
+    .cell {
+      padding: 36px var(--gutter);
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .cell--center { align-content: center; }
+    .cell--end    { align-content: end; }
+    .cell--soft   { background: rgba(245,245,242,0.02); }
+
+    /* column spans */
+    .c3  { grid-column: span 3; }
+    .c4  { grid-column: span 4; }
+    .c5  { grid-column: span 5; }
+    .c6  { grid-column: span 6; }
+    .c7  { grid-column: span 7; }
+    .c8  { grid-column: span 8; }
+    .c12 { grid-column: span 12; }
+
+
+    /* ----- 06 · TOP BAR ----- */
+    .topbar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+    .topbar > * {
+      padding: 14px 22px;
+      border-right: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar > *:last-child { border-right: 0; }
+
+    .topbar__brand {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .topbar__brand b { color: var(--fg); }
+
+    .topbar__spacer { padding: 0; }
+
+    @media (max-width: 640px) {
+      .topbar {
+        grid-template-columns: 1fr auto;
+      }
+      .topbar__spacer { display: none; }
+      .topbar__star {
+        grid-column: span 2;
+        border-right: 0;
+        justify-content: center;
+      }
+    }
+
+    .topbar__home {
+      color: var(--fg);
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .topbar__home:hover { background: var(--accent); color: var(--bg); }
+
+    .topbar__star {
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .topbar__star::before { content: "★ "; }
+    .topbar__star:hover { background: var(--fg); }
+
+
+    /* ----- 07 · SECTION BAND ----- */
+    .band {
+      padding: 14px var(--gutter);
+      border-bottom: 1px solid var(--rule);
+      background: rgba(245,245,242,0.02);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .band__l::before { content: "» "; color: var(--accent); }
+    .band__r         { color: var(--muted); }
+
+
+    /* ----- 08 · BAR ROW (stack composition + codegen detail) ----- */
+    .bar-row {
+      display: grid;
+      grid-template-columns: 200px 1fr 90px 70px;
+      border-bottom: 1px solid var(--rule);
+      align-items: stretch;
+    }
+    .bar-row:last-child  { border-bottom: 0; }
+    .bar-row > *         { padding: 18px 20px; display: grid; align-content: center; }
+
+    .bar-row__nm         { font-family: var(--mono); font-size: 12px; color: var(--fg); border-right: 1px solid var(--rule); }
+    .bar-row__nm b       { font-family: var(--sans); font-size: 16px; font-weight: 700; letter-spacing: -0.005em; display: block; margin-bottom: 4px; }
+    .bar-row__nm span    { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    .bar-row__bar-wrap {
+      background: rgba(245,245,242,0.02);
+      border-right: 1px solid var(--rule);
+      align-items: center;
+    }
+    .bar-row__bar {
+      height: 24px;
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fg) 18%, transparent);
+    }
+    .bar-row__bar--acc   { background: var(--accent); }
+    .bar-row__bar--warn  { background: var(--warn); }
+    .bar-row__bar--info  { background: var(--info); }
+    .bar-row__bar--quiet { background: var(--quiet); }
+    .bar-row__bar--purp  { background: var(--purp); }
+
+    .bar-row__v          { font-family: var(--mono); font-size: 13px; font-weight: 600; text-align: right; border-right: 1px solid var(--rule); }
+    .bar-row__p          { font-family: var(--mono); font-size: 11px;                  text-align: right; color: var(--muted); }
+
+
+    /* ----- 09 · SEGMENT BAR (total view) ----- */
+    .seg {
+      display: flex;
+      height: 52px;
+      border: 1px solid var(--rule);
+    }
+    .seg > div {
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: var(--bg);
+      border-right: 1px solid var(--bg);
+    }
+    .seg > div:last-child { border-right: 0; }
+    .seg__own     { background: var(--accent); }
+    .seg__codegen { background: var(--warn); }
+    .seg__vendor  { background: var(--quiet);  color: var(--fg); }
+
+
+    /* ----- 10 · WAFFLE (tests vs prod) ----- */
+    .waffle {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 3px;
+      margin-top: 14px;
+    }
+    .waffle > div {
+      aspect-ratio: 1/1;
+      background: rgba(245,245,242,0.07);
+    }
+    .waffle > .waffle__on   { background: var(--accent); }
+    .waffle > .waffle__info { background: var(--info); }
+
+
+    /* ----- 11 · COMMIT BARS (15 months) ----- */
+    .commits {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 6px;
+      height: 180px;
+      align-items: end;
+      margin-top: 20px;
+    }
+    .commits > div {
+      background: var(--accent);
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fg) 12%, transparent);
+      position: relative;
+    }
+    .commits > div::after {
+      content: attr(data-c);
+      position: absolute; bottom: -22px; left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono); font-size: 10px;
+      color: var(--muted);
+    }
+    .commits > div::before {
+      content: attr(data-m);
+      position: absolute; top: -18px; left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+      color: var(--muted-2); text-transform: uppercase;
+    }
+
+
+    /* ----- 12 · TAG ----- */
+    .tag {
+      display: inline-block;
+      align-self: start;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid var(--rule);
+      color: var(--muted);
+    }
+    .tag--acc  { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+    .tag--info { color: var(--info); border-color: var(--info); }
+    .tag--warn { color: var(--warn); border-color: var(--warn); }
+
+
+    /* ----- 13 · STAR CTA (bottom) ----- */
+    .cta-star {
+      display: inline-block;
+      align-self: start;
+      padding: 18px 26px;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid var(--accent);
+    }
+    .cta-star:hover { background: var(--fg); border-color: var(--fg); }
+    .cta-star::before { content: "★  "; }
+
+
+    /* ----- 14 · FOOTER ----- */
+    .foot {
+      padding: 24px var(--gutter);
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .foot a          { color: var(--fg); text-decoration: none; }
+    .foot a:hover    { color: var(--accent); }
+
+
+    /* ----- 15 · HELPERS (kept minimal — prefer classes) ----- */
+    .pad-lg          { padding: 36px var(--gutter) 30px; }
+    .pad-xl          { padding: 50px var(--gutter) 56px; }
+    .gap-tight       { gap: 8px; }
+    .border-l        { border-left: 1px solid var(--rule); }
+    .bg-soft         { background: rgba(245,245,242,0.02); }
+    .bg-info-soft    { background: rgba(108,195,255,0.04); }
+
+
+    /* ----- 16 · ART BACKGROUNDS ----- */
+    .art-bg {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .art-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+    .art-bg--schematic::before { background-image: url("{{ asset("art/bg-schematic.png") }}"); opacity: 0.18; }
+    .art-bg--topo::before      { background-image: url("{{ asset("art/bg-topo.png") }}");      opacity: 0.16; }
+    .art-bg--mesh::before      { background-image: url("{{ asset("art/bg-mesh.png") }}");      opacity: 0.55; background-size: cover; background-position: right center; }
+
+    .hero-mesh {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .hero-mesh::before {
+      content: "";
+      position: absolute;
+      inset: -8% -6%;
+      z-index: -2;
+      background: url("{{ asset("art/bg-mesh.png") }}") right center / cover no-repeat;
+      opacity: 0.75;
+      filter: url(#meshWarp);
+      will-change: filter;
+    }
+    .hero-mesh::after {
+      content: "";
+      position: absolute; inset: 0;
+      z-index: -1;
+      background: linear-gradient(90deg,
+        var(--bg) 0%,
+        var(--bg) 30%,
+        color-mix(in oklab, var(--bg) 85%, transparent) 55%,
+        color-mix(in oklab, var(--bg) 40%, transparent) 100%);
+    }
+    .mesh-warp-svg {
+      position: absolute; width: 0; height: 0; overflow: hidden;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-mesh::before { filter: none; }
+    }
+
+    .art-strip {
+      height: 96px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--bg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+    .art-strip--crt  { background-image: url("{{ asset("art/bg-crt-phosphor.png") }}"); height: 110px; }
+    .art-strip--topo { background-image: url("{{ asset("art/bg-topo.png") }}"); height: 140px; opacity: 0.6; }
+
+    /* ----- TABLET (900–1100px) ----- */
+    @media (max-width: 1100px) {
+      .h1      { font-size: 60px; }
+      .num--xl { font-size: 96px; }
+      .num--lg { font-size: 72px; }
+      .num     { font-size: 56px; }
+    }
+
+    /* ----- MOBILE ----- */
+    @media (max-width: 640px) {
+      /* collapse 12-col grid: every span → full row */
+      .c3, .c4, .c5, .c6, .c7, .c8, .c12 {
+        grid-column: span 12;
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .row12 > *:last-child { border-bottom: 0; }
+
+      /* scale down large typography */
+      .h1       { font-size: 42px; }
+      .h2       { font-size: 28px; }
+      .num      { font-size: 52px; }
+      .num--xl  { font-size: 80px; }
+      .num--lg  { font-size: 60px; }
+      .num--md  { font-size: 40px; }
+
+      /* tighter cell padding */
+      .cell   { padding: 24px 18px; }
+      .pad-lg { padding: 24px 18px 20px; }
+      .pad-xl { padding: 32px 18px 36px; }
+
+      /* band: stack left/right text */
+      .band { flex-direction: column; gap: 4px; }
+
+      /* bar-row: name full width, then bar, then value+% */
+      .bar-row {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+      }
+      .bar-row__nm {
+        grid-column: span 2;
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .bar-row__bar-wrap {
+        grid-column: 1;
+        border-right: 0;
+      }
+      .bar-row__v { grid-column: 2; border-right: 0; }
+      .bar-row__p { display: none; }
+
+      /* footer: stack */
+      .foot { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- ============================================================
+         TOP BAR
+         ============================================================ -->
+    <header class="topbar">
+      <div class="topbar__brand">~ <b>trip2g</b></div>
+      <a class="topbar__home" href="{{ note.M().GetString("home_url", "/") }}">← главная</a>
+      <div class="topbar__spacer"></div>
+      <a class="topbar__star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+        поставить звезду на github
+      </a>
+    </header>
+
+
+    <!-- ============================================================
+         MINTO TOP · the answer
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">сначала ответ</span>
+      <span class="band__r">одно главное, что стоит запомнить</span>
+    </div>
+
+    <div class="row12 hero-mesh">
+      <svg class="mesh-warp-svg" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="meshWarp" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="noise">
+              <animate attributeName="baseFrequency"
+                       dur="48s"
+                       values="0.010 0.016; 0.018 0.024; 0.012 0.018; 0.014 0.020; 0.010 0.016"
+                       repeatCount="indefinite"/>
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G">
+              <animate attributeName="scale"
+                       dur="40s"
+                       values="14; 26; 18; 30; 14"
+                       repeatCount="indefinite"/>
+            </feDisplacementMap>
+          </filter>
+        </defs>
+      </svg>
+      <div class="cell c8">
+        <span class="eyebrow">итог · 2025–2026</span>
+        <h1 class="h1"><span class="hl">Напечатал 5%</span>. Агенты и кодогенерация — всё остальное.</h1>
+        <p class="body">
+          <b>Боевой код</b> (Go-prod + TS + SQL, без тестов) — <b>128k строк</b>. Из них основатель написал вручную
+          <b>~{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> — только там, где архитектура, контракты и компромиссы складываются.
+          Claude Code написал остальное под контролем; gqlgen + sqlc + moq добавили ещё {{ note.M().GetString("loc_codegen", "139") }}k бесплатно.
+          Один человек, <b>×{{ note.M().GetString("leverage", "54") }} плечо</b> на {{ note.M().GetString("loc_own", "177") }}k строк собственного кода.
+        </p>
+      </div>
+      <div class="cell c4 cell--center border-l">
+        <span class="eyebrow">множитель человека</span>
+        <div class="num num--xl num--acc">{{ note.M().GetString("multiplier", "×54") }}</div>
+        <p class="small"><b>{{ note.M().GetString("loc_own", "177") }}k</b> собственного кода &nbsp;÷&nbsp; <b>{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> набрано вручную</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         HEADLINE NUMBERS · 4 equal cells
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">подтверждающие данные · ключевые цифры</span>
+      <span class="band__r">читать слева направо · важнее левее</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">собственный код</span>
+        <div class="num num--acc">{{ note.M().GetString("loc_own", "177") }}<small>k строк</small></div>
+        <p class="small">Написан на Go, TypeScript, SQL. <b>15 месяцев нажатий клавиш.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">кодогенерация</span>
+        <div class="num num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k строк</small></div>
+        <p class="small">Из схем, запросов, интерфейсов. <b>Никогда не редактируется вручную.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--quiet">вендор</span>
+        <div class="num num--quiet">{{ note.M().GetString("loc_vendor", "190") }}<small>k строк</small></div>
+        <p class="small">Бандл Tiptap + старый Milkdown. <b>Не наш для рефакторинга.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">ритм</span>
+        <div class="num num--info">{{ note.M().GetString("commits", "1,615") }}</div>
+        <p class="small">Коммитов за {{ note.M().GetString("months", "15") }} месяцев. <b>≈ {{ note.M().GetString("avg_commits_month", "108") }}/мес · {{ note.M().GetString("commits_per_day", "3.6") }}/день.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         SITUATION → ANSWER
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">ситуация → ответ</span>
+      <span class="band__r">почему это важно для соло-бэкенда</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">ситуация</span>
+        <h3 class="h3">Соло-бэкенд, растущая поверхность.</h3>
+        <p class="small">Платформа публикаций на Obsidian с Telegram-ботом, биллингом, мультиарендным хромом. Один бэкенд-разработчик.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">усложнение</span>
+        <h3 class="h3">Типобезопасность не должна тормозить поставку.</h3>
+        <p class="small">Написание GraphQL-резолверов, SQL-биндингов и моков вручную съело бы половину календаря.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">вопрос</span>
+        <h3 class="h3">Как оставаться типизированными без лишних затрат?</h3>
+        <p class="small">Где контракт кодогенерации заменит написанный вручную клей без потери безопасности?</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">ответ</span>
+        <h3 class="h3">Три контракта, три генератора.</h3>
+        <p class="small">Схема → gqlgen. Запросы → sqlc. Интерфейсы → moq. <b>139k строк появляются бесплатно.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         WHAT THE CODEBASE DOES · 4 jobs
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">зачем нужна кодовая база</span>
+      <span class="band__r">четыре задачи · один рантайм</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="tag tag--acc">01</span>
+        <h3 class="h3">AI-native CMS.</h3>
+        <p class="small"><b>Формы, шаблоны, markdown-слой.</b> Контентный слой, с первого дня спроектированный для чтения агентами, а не только людьми.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag tag--info">02</span>
+        <h3 class="h3">Второй мозг для агентов.</h3>
+        <p class="small">Заметки, источники, ссылки — как граф, по которому LLM может <b>ходить</b>, а не просто <b>читать</b>.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag" style="border-color: var(--accent); color: var(--accent);">03</span>
+        <h3 class="h3">Сеть знаний.</h3>
+        <p class="small">Федеративные меши: хабы публикуют, узлы подписываются, агенты собирают всё обратно.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag tag--warn">04</span>
+        <h3 class="h3">Внешний RAG.</h3>
+        <p class="small">Поверхность для вызова другими агентами. <b>Ваш контекст — на кране, с провенансом.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         STACK NOTES · founder voice
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">заметки о стеке · почему эти инструменты</span>
+      <span class="band__r">мнение {{ note.M().GetString("founder", "Алексея Юрченко") }}, основателя</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key label--warn">gqlgen</span>
+        <h3 class="h3">«Лучшая кодогенерация, что я видел за 15 лет.»</h3>
+        <p class="small">Schema-first GraphQL → типизированные Go-резолверы. <b>— {{ note.M().GetString("founder", "Алексей Юрченко") }}, основатель.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">graphql</span>
+        <h3 class="h3">«Просто хороший контракт между фронтом и бэком.»</h3>
+        <p class="small">Не магия. Не религия. <b>Типобезопасный интерфейс, с которым согласны обе стороны</b> — вот и весь смысл.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--purp" style="color: var(--purp);">$mol</span>
+        <h3 class="h3">«Потрясающий фреймворк. Безумный русский разработчик.»</h3>
+        <p class="small">Реактивный, атомарный, без виртуального DOM. <b>{{ note.M().GetString("loc_typescript_k", "41") }}k строк — и всё ещё быстрый.</b> Ставка окупилась.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">sqlite + litestream</span>
+        <h3 class="h3">«Данные на S3 с горячим кешем.»</h3>
+        <p class="small">Локальный SQLite для скорости, непрерывная репликация на S3 для надёжности. <b>Встроенная БД, облачная долговечность.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         ART STRIP · CRT phosphor divider
+         ============================================================ -->
+    <div class="art-strip art-strip--crt" aria-hidden="true" hidden></div>
+
+
+    <!-- ============================================================
+         BUILT TO LAST
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">построено надолго · не прототип за выходные</span>
+      <span class="band__r">вайб-код хрупок · этот — нет</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c7 art-bg art-bg--topo">
+        <span class="eyebrow">почему это не вайб-кодинг-демо</span>
+        <h2 class="h2">Половину из того, что вы видите, можно<br><em>вайб-кодить за выходные</em>. Вторая половина —<br>то, что выживает на второй месяц.</h2>
+        <p class="body">
+          Вайб-код хрупок: быстро появляется и ломается на третьем граничном случае. <b>Эта кодовая база
+          подвергалась нагрузкам больше года</b> — реальными пользователями, Claude, тестами, каждым рефакторингом. Соотношение тестов {{ note.M().GetString("test_ratio", "2.53") }}×,
+          {{ note.M().GetString("sql_migration_count", "120") }} однонаправленных миграций, типизированный клей от <code>schema.sql</code> до UI — это не украшение.
+          Это <b>разница между прототипом и надёжным markdown-движком.</b>
+        </p>
+      </div>
+      <div class="cell c5 cell--soft">
+        <span class="label label--key">тест на прочность</span>
+        <div class="num num--lg num--acc">{{ note.M().GetString("months", "15") }}<small>месяцев</small></div>
+        <p class="small"><b>{{ note.M().GetString("commits", "1,615") }} коммитов</b> рефакторингов, регрессий и реальных пользователей. <b>Соотношение тестов {{ note.M().GetString("test_ratio", "2.53") }}×</b> против production Go. <b>{{ note.M().GetString("sql_migration_count", "120") }} миграций</b>, все однонаправленные. <b>Litestream на S3</b> — данные переживут сервер.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         HUMAN MULTIPLIER · the math
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">множитель человека · математика</span>
+      <span class="band__r">как один человек поставляет {{ note.M().GetString("loc_own", "177") }}k строк</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">набрано вручную</span>
+        <div class="num num--md num--acc">{{ note.M().GetString("typed_by_hand", "6.4") }}<small>k строк</small></div>
+        <p class="small"><b>5%</b> боевого кода. Архитектура, контракты, места где неверное решение стоит месяца.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">написал claude</span>
+        <div class="num num--md num--info">{{ note.M().GetString("claude_drafted", "121.7") }}<small>k строк</small></div>
+        <p class="small"><b>95%</b> боевого кода. Написан под контролем. Читается как джун с бесконечным терпением и без своего мнения.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">сгенерировано</span>
+        <div class="num num--md num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k строк</small></div>
+        <p class="small">Из <code>schema.graphql</code>, <code>schema.sql</code>, Go-интерфейсов. Бесплатно — если контракт правильный.</p>
+      </div>
+      <div class="cell c3 cell--soft">
+        <span class="label label--key">плечо</span>
+        <div class="num num--lg num--acc">{{ note.M().GetString("multiplier", "×54") }}</div>
+        <p class="small"><b>{{ note.M().GetString("loc_own", "177") }}k</b> собственного (own + codegen) ÷ <b>{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> набрано вручную. На строку.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         STACK COMPOSITION · 5 bars
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">доказательства · состав стека</span>
+      <span class="band__r">где живут {{ note.M().GetString("loc_own", "177") }}k строк · по языкам</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-lg">
+        <div class="bar-row" style="border-top: 1px solid var(--rule);">
+          <div class="bar-row__nm"><b>TypeScript · $mol</b><span>фронтенд</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--purp" style="width: {{ note.M().GetString("bar_ts_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_typescript", "41,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_typescript_k", "41") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>Go · тесты</b><span>табличные</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--info" style="width: {{ note.M().GetString("bar_go_tests_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_go_tests", "81,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_go_tests_k", "81") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>Go · production</b><span>монолит</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_go_prod_pct", "39.5%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_go_prod", "32,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_go_prod_k", "32") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>SQL · запросы</b><span>чтение · запись</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_sql_q_pct", "3.2%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sql_queries", "2,600") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_sql_queries", "2,600") }}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>SQL · миграции</b><span>{{ note.M().GetString("sql_migration_count", "120") }} файлов</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_sql_m_pct", "3.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sql_migrations", "2,500") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_sql_migrations", "2,500") }}</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TESTS vs PRODUCTION · waffle grids
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">доказательства · тесты vs production · go-сторона</span>
+      <span class="band__r">200-ячеечный вафль · каждая ячейка ≈ 565 строк</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c6">
+        <span class="label label--key">production</span>
+        <h2 class="h2">{{ note.M().GetString("loc_go_prod_k", "32") }}k<br>рантайм.</h2>
+        <p class="body">Хендлеры, сервисы, GraphQL-резолверы, задачи, бот, биллинг — код, который работает в продакшене.</p>
+        <div class="waffle" id="waffle-prod"
+             data-prod-cells="{{ note.M().GetString("waffle_prod_cells", "57") }}"
+             aria-hidden="true"></div>
+      </div>
+
+      <div class="cell c6 bg-info-soft">
+        <span class="label label--key label--info">тесты · {{ note.M().GetString("test_ratio", "2.53") }}×</span>
+        <h2 class="h2" style="color: var(--info);">{{ note.M().GetString("loc_go_tests_k", "81") }}k<br>страховочная сеть.</h2>
+        <p class="body"><b>Табличные юнит-тесты, интеграция на реальном SQLite, GraphQL-снапшоты.</b> Это соотношение делает рефакторинги дешёвыми.</p>
+        <div class="waffle" id="waffle-tests"
+             data-test-cells="{{ note.M().GetString("waffle_test_cells", "143") }}"
+             aria-hidden="true"></div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         SQL THREE PARTS
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">доказательства · sql в трёх частях</span>
+      <span class="band__r">{{ note.M().GetString("sql_migration_count", "120") }} файлов миграций · типизированные запросы sqlc</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c4">
+        <span class="label label--key">миграции</span>
+        <div class="num">{{ note.M().GetString("loc_sql_migrations", "2,500") }}<small>строк</small></div>
+        <p class="small"><b>{{ note.M().GetString("sql_migration_count", "120") }} файлов</b>, по одному на каждое изменение схемы. Только вперёд, только добавление.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key label--info">чтение</span>
+        <div class="num num--info">{{ note.M().GetString("sql_reads", "1,476") }}<small>строк</small></div>
+        <p class="small">SELECT-запросы для GraphQL. <b>sqlc</b> генерирует из них типизированные Go-функции.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key label--warn">запись</span>
+        <div class="num num--warn">{{ note.M().GetString("sql_writes", "1,159") }}<small>строк</small></div>
+        <p class="small">INSERT / UPDATE / DELETE. Транзакционно там, где важно; идемпотентно там, где нужно.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         CODEGEN DETAIL · gqlgen / sqlc / moq
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">доказательства · множитель кодогенерации · детали</span>
+      <span class="band__r">{{ note.M().GetString("loc_codegen", "139") }}k сгенерировано · 134 файла</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c5 cell--center">
+        <span class="eyebrow">множитель · детали</span>
+        <h2 class="h2">{{ note.M().GetString("loc_go_prod_k", "32") }}k написано вручную.<br>{{ note.M().GetString("loc_codegen", "139") }}k <em>сгенерировано</em>.<br>плечо ×4.3.</h2>
+        <p class="body">
+          Описываем контракт один раз — <code>schema.graphql</code>, <code>schema.sql</code>,
+          Go-интерфейс — и тулчейн генерирует типизированный клей вплоть до точки вызова.
+          <b>Это соотношение и есть главная причина существования этих инструментов.</b>
+        </p>
+      </div>
+
+      <div class="cell c7 cell--center">
+        <div class="bar-row" style="border-top: 1px solid var(--rule);">
+          <div class="bar-row__nm"><b>gqlgen</b><span>graphql → go</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_gqlgen_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_gqlgen", "~78,000") }}</div>
+          <div class="bar-row__p">56%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>sqlc</b><span>sql → go</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_sqlc_pct", "55.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sqlc", "~43,000") }}</div>
+          <div class="bar-row__p">31%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>moq</b><span>iface → моки</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_moq_pct", "23.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_moq", "~18,000") }}</div>
+          <div class="bar-row__p">13%</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TOTAL · full repo (own + codegen + vendor)
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">итого · всё в репозитории</span>
+      <span class="band__r">{{ note.M().GetString("loc_total", "506") }}k строк · own {{ note.M().GetString("seg_own_pct", "35.0") }}% · gen {{ note.M().GetString("seg_codegen_pct", "27.5") }}% · vendor {{ note.M().GetString("seg_vendor_pct", "37.6") }}%</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-lg">
+        <div class="seg" aria-label="{{ note.M().GetString("loc_total", "506") }}k строк всего">
+          <div class="seg__own" style="width: {{ note.M().GetString("seg_own_pct", "35.0") }}%">OWN · {{ note.M().GetString("loc_own", "177") }}K</div>
+          <div class="seg__codegen" style="width: {{ note.M().GetString("seg_codegen_pct", "27.5") }}%">CODEGEN · {{ note.M().GetString("loc_codegen", "139") }}K</div>
+          <div class="seg__vendor" style="width: {{ note.M().GetString("seg_vendor_pct", "37.6") }}%">VENDOR · {{ note.M().GetString("loc_vendor", "190") }}K</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">собственный</span>
+        <div class="num num--md num--acc">{{ note.M().GetString("loc_own", "177") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_own_pct", "35.0") }}% · 15 месяцев написанного вручную кода.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">кодоген</span>
+        <div class="num num--md num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_codegen_pct", "27.5") }}% · получен из контрактов. Бесплатно.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--quiet">вендор</span>
+        <div class="num num--md num--quiet">{{ note.M().GetString("loc_vendor", "190") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_vendor_pct", "37.6") }}% · бандл Tiptap + старый Milkdown.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">итого</span>
+        <div class="num num--md">{{ note.M().GetString("loc_total", "506") }}<small>k</small></div>
+        <p class="small">100% · что видит линтер.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         CADENCE · commits per month bar chart (15 months)
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">ритм · {{ note.M().GetString("commits", "1,615") }} коммитов за {{ note.M().GetString("months", "15") }} месяцев</span>
+      <span class="band__r">сред. {{ note.M().GetString("avg_commits_month", "108") }}/мес · {{ note.M().GetString("commits_per_day", "3.6") }}/день · пик m06 · 140</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-xl">
+        <div class="commits" aria-label="Коммиты по месяцам за {{ note.M().GetString("months", "15") }} месяцев">
+          <div data-m="m01" data-c="74"  style="height: 53%;"></div>
+          <div data-m="m02" data-c="92"  style="height: 66%;"></div>
+          <div data-m="m03" data-c="118" style="height: 84%;"></div>
+          <div data-m="m04" data-c="104" style="height: 74%;"></div>
+          <div data-m="m05" data-c="128" style="height: 91%;"></div>
+          <div data-m="m06" data-c="140" style="height: 100%;"></div>
+          <div data-m="m07" data-c="96"  style="height: 69%;"></div>
+          <div data-m="m08" data-c="112" style="height: 80%;"></div>
+          <div data-m="m09" data-c="124" style="height: 89%;"></div>
+          <div data-m="m10" data-c="106" style="height: 76%;"></div>
+          <div data-m="m11" data-c="98"  style="height: 70%;"></div>
+          <div data-m="m12" data-c="116" style="height: 83%;"></div>
+          <div data-m="m13" data-c="130" style="height: 93%;"></div>
+          <div data-m="m14" data-c="86"  style="height: 61%;"></div>
+          <div data-m="m15" data-c="91"  style="height: 65%;"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TAKEAWAYS · 3 equal cells
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">выводы · что говорят цифры</span>
+      <span class="band__r">прочитайте эти три · остальное забудьте</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c4">
+        <span class="label label--key">01</span>
+        <h3 class="h3">5% набрано вручную. 95% написано или сгенерировано.</h3>
+        <p class="body">Основатель пишет ~{{ note.M().GetString("typed_by_hand", "6.4") }}k боевого кода (архитектура + сложные места). Claude пишет {{ note.M().GetString("claude_drafted", "121.7") }}k под контролем. Кодоген добавляет {{ note.M().GetString("loc_codegen", "139") }}k. <b>×{{ note.M().GetString("leverage", "54") }} плечо на {{ note.M().GetString("loc_own", "177") }}k собственного кода.</b></p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key">02</span>
+        <h3 class="h3">Один бинарник. Запускается за секунды.</h3>
+        <p class="body">Go-монолит + встроенный SQLite + Litestream на S3. Никакой оркестрации, танцев с миграциями, церемоний холодного старта — просто <code>./trip2g</code>.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key">03</span>
+        <h3 class="h3">Вертикальное масштабирование. Децентрализованный протокол.</h3>
+        <p class="body">SQLite не шардируется легко — но протокол федеративный. Один узел держит тысячи req/s; тысячи узлов образуют меш.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         READ MORE · related articles
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">читать дальше · связанные статьи</span>
+      <span class="band__r">глубже о паттернах за этими цифрами</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c6">
+        <span class="label label--key">анатомия</span>
+        <h3 class="h3"><a href="/ru/thoughts/anatomy-15-months" style="text-decoration: none; color: var(--fg);">Анатомия trip2g: 15 месяцев кода</a></h3>
+        <p class="small">Подробный разбор роста кодовой базы: что выходило первым, что рефакторилось и что бы мы сделали иначе.</p>
+        <a href="/ru/thoughts/anatomy-15-months" class="tag tag--acc" style="margin-top: 8px;">читать →</a>
+      </div>
+      <div class="cell c6">
+        <span class="label label--key label--warn">архитектура</span>
+        <h3 class="h3"><a href="/ru/thoughts/env-pattern" style="text-decoration: none; color: var(--fg);">Env-паттерн: один IO-позвоночник, переносимая бизнес-логика</a></h3>
+        <p class="small">Как один интерфейс держит каждый use case тестируемым, переносимым и свободным от привязки к фреймворку.</p>
+        <a href="/ru/thoughts/env-pattern" class="tag tag--warn" style="margin-top: 8px;">читать →</a>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         BOTTOM CTA · star us
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">поддержка · если это было полезно</span>
+      <span class="band__r">один клик — и всё</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c8 cell--center">
+        <span class="eyebrow">open source · MIT</span>
+        <h2 class="h2">Строили это публично.<br><em>Звезда</em> имеет значение.</h2>
+        <p class="body">
+          trip2g — платформа публикаций с открытым кодом. Если вы дочитали досюда, самый простой способ помочь —
+          поставить звезду: это сигнализирует проект другим разработчикам и помогает работе продолжаться.
+        </p>
+      </div>
+      <div class="cell c4 cell--center border-l bg-soft">
+        <span class="label">один клик · ноль затрат</span>
+        <a class="cta-star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+          звезда на github
+        </a>
+        <p class="small">github.com/trip2g · MIT</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer class="foot">
+      <span>// trip2g · anatomy · {{ note.M().GetString("version", "v1") }} · {{ note.M().GetString("date", "2026") }}</span>
+      <span><a href="{{ note.M().GetString("home_url", "/") }}">← главная</a> · <a href="#top">вверх</a></span>
+    </footer>
+  </div>
+
+
+  <script>
+    (function () {
+      function fillWaffle(id, fillCount, fillClass) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        for (var i = 0; i < 200; i++) {
+          var d = document.createElement('div');
+          if (i < fillCount) d.className = fillClass;
+          el.appendChild(d);
+        }
+      }
+      var prodEl   = document.getElementById('waffle-prod');
+      var testsEl  = document.getElementById('waffle-tests');
+      var prodCells  = prodEl  ? parseInt(prodEl.getAttribute('data-prod-cells')  || '57',  10) : 57;
+      var testCells  = testsEl ? parseInt(testsEl.getAttribute('data-test-cells') || '143', 10) : 143;
+      fillWaffle('waffle-prod',  prodCells,  'waffle__on');
+      fillWaffle('waffle-tests', testCells,  'waffle__info');
+    })();
+  </script>
+</body>
+</html>

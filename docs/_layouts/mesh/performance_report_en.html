@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ note.M().GetString("title", "trip2g · anatomy of 15 months") }}</title>
+  <meta name="description" content="{{ note.M().GetString("description", "What's inside trip2g after 15 months.") }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+  <style>
+    /* ============================================================
+       trip2g · anatomy page
+       Single-file deliverable. Vanilla HTML/CSS + 1 tiny <script>
+       (only to expand the waffle grids; replace with SSR if you like).
+       ============================================================ */
+
+
+    /* ----- 01 · DESIGN TOKENS ----- */
+    :root {
+      /* surfaces */
+      --bg:        #0e0e0c;
+      --fg:        #f5f5f2;
+      --rule:      #2a2a26;
+
+      /* text */
+      --muted:     #8c8c84;
+      --muted-2:   #5a5a55;
+
+      /* accents */
+      --accent:    oklch(0.78 0.18 145);   /* lime — own code */
+      --warn:      #f5b800;                /* yellow — codegen */
+      --info:      #6cc3ff;                /* blue — tests */
+      --quiet:     #7c7c74;                /* gray — vendor */
+      --purp:      #c084fc;                /* purple — typescript */
+
+      /* type */
+      --mono:      'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      --sans:      Inter, system-ui, -apple-system, sans-serif;
+
+      /* layout */
+      --gutter:    32px;
+      --max-w:     1440px;
+    }
+
+
+    /* ----- 02 · RESET + BASE ----- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+    p { margin: 0; }
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-family: var(--sans);
+      letter-spacing: -0.025em;
+    }
+
+
+    /* ----- 03 · TYPE SCALE ----- */
+    .h1 { font-weight: 800; font-size: 84px; line-height: 0.92; letter-spacing: -0.035em; }
+    .h2 { font-weight: 800; font-size: 44px; line-height: 1.02;  letter-spacing: -0.025em; }
+    .h3 { font-weight: 700; font-size: 22px; line-height: 1.15;  letter-spacing: -0.015em; }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .eyebrow::before { content: "// "; color: var(--accent); }
+
+    .label {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .label--key { color: var(--accent); font-weight: 700; }
+    .label--key::before { content: "// "; }
+    .label--warn { color: var(--warn); }
+    .label--info { color: var(--info); }
+    .label--quiet { color: var(--quiet); }
+
+    .body {
+      font-size: 15px;
+      line-height: 1.55;
+      color: color-mix(in oklab, var(--fg) 80%, transparent);
+      max-width: 56ch;
+    }
+    .body b { color: var(--fg); font-weight: 600; }
+    .body code {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(245,245,242,0.07);
+      padding: 1px 6px;
+      color: var(--fg);
+    }
+
+    .small {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: color-mix(in oklab, var(--fg) 75%, transparent);
+    }
+    .small b { color: var(--fg); }
+
+    /* highlight chip used inside headings */
+    .hl {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 0.7em;
+      padding: 0 0.18em;
+      vertical-align: 0.2em;
+    }
+    .h2 em { font-style: normal; color: var(--accent); }
+
+
+    /* ----- 04 · BIG NUMBER ----- */
+    .num {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 72px;
+      line-height: 0.88;
+      letter-spacing: -0.04em;
+    }
+    .num small {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-left: 8px;
+      vertical-align: 0.7em;
+    }
+    .num--xl  { font-size: 132px; }
+    .num--lg  { font-size: 96px; }
+    .num--md  { font-size: 52px; }
+    .num--sm  { font-size: 42px; }
+
+    .num--acc   { color: var(--accent); }
+    .num--warn  { color: var(--warn); }
+    .num--info  { color: var(--info); }
+    .num--quiet { color: var(--quiet); }
+
+
+    /* ----- 05 · LAYOUT · SHELL + GRID ----- */
+    .shell {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      border-left: 1px solid var(--rule);
+      border-right: 1px solid var(--rule);
+    }
+
+    .row12 {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      border-bottom: 1px solid var(--rule);
+    }
+    .row12 > * {
+      border-right: 1px solid var(--rule);
+    }
+    .row12 > *:last-child { border-right: 0; }
+
+    .cell {
+      padding: 36px var(--gutter);
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .cell--center { align-content: center; }
+    .cell--end    { align-content: end; }
+    .cell--soft   { background: rgba(245,245,242,0.02); }
+
+    /* column spans */
+    .c3  { grid-column: span 3; }
+    .c4  { grid-column: span 4; }
+    .c5  { grid-column: span 5; }
+    .c6  { grid-column: span 6; }
+    .c7  { grid-column: span 7; }
+    .c8  { grid-column: span 8; }
+    .c12 { grid-column: span 12; }
+
+
+    /* ----- 06 · TOP BAR ----- */
+    .topbar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+    .topbar > * {
+      padding: 14px 22px;
+      border-right: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar > *:last-child { border-right: 0; }
+
+    .topbar__brand {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .topbar__brand b { color: var(--fg); }
+
+    .topbar__spacer { padding: 0; }
+
+    @media (max-width: 640px) {
+      .topbar {
+        grid-template-columns: 1fr auto;
+      }
+      .topbar__spacer { display: none; }
+      .topbar__star {
+        grid-column: span 2;
+        border-right: 0;
+        justify-content: center;
+      }
+    }
+
+    .topbar__home {
+      color: var(--fg);
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .topbar__home:hover { background: var(--accent); color: var(--bg); }
+
+    .topbar__star {
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .topbar__star::before { content: "★ "; }
+    .topbar__star:hover { background: var(--fg); }
+
+
+    /* ----- 07 · SECTION BAND ----- */
+    .band {
+      padding: 14px var(--gutter);
+      border-bottom: 1px solid var(--rule);
+      background: rgba(245,245,242,0.02);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .band__l::before { content: "» "; color: var(--accent); }
+    .band__r         { color: var(--muted); }
+
+
+    /* ----- 08 · BAR ROW (stack composition + codegen detail) ----- */
+    .bar-row {
+      display: grid;
+      grid-template-columns: 200px 1fr 90px 70px;
+      border-bottom: 1px solid var(--rule);
+      align-items: stretch;
+    }
+    .bar-row:last-child  { border-bottom: 0; }
+    .bar-row > *         { padding: 18px 20px; display: grid; align-content: center; }
+
+    .bar-row__nm         { font-family: var(--mono); font-size: 12px; color: var(--fg); border-right: 1px solid var(--rule); }
+    .bar-row__nm b       { font-family: var(--sans); font-size: 16px; font-weight: 700; letter-spacing: -0.005em; display: block; margin-bottom: 4px; }
+    .bar-row__nm span    { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    .bar-row__bar-wrap {
+      background: rgba(245,245,242,0.02);
+      border-right: 1px solid var(--rule);
+      align-items: center;
+    }
+    .bar-row__bar {
+      height: 24px;
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fg) 18%, transparent);
+    }
+    .bar-row__bar--acc   { background: var(--accent); }
+    .bar-row__bar--warn  { background: var(--warn); }
+    .bar-row__bar--info  { background: var(--info); }
+    .bar-row__bar--quiet { background: var(--quiet); }
+    .bar-row__bar--purp  { background: var(--purp); }
+
+    .bar-row__v          { font-family: var(--mono); font-size: 13px; font-weight: 600; text-align: right; border-right: 1px solid var(--rule); }
+    .bar-row__p          { font-family: var(--mono); font-size: 11px;                  text-align: right; color: var(--muted); }
+
+
+    /* ----- 09 · SEGMENT BAR (total view) ----- */
+    .seg {
+      display: flex;
+      height: 52px;
+      border: 1px solid var(--rule);
+    }
+    .seg > div {
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: var(--bg);
+      border-right: 1px solid var(--bg);
+    }
+    .seg > div:last-child { border-right: 0; }
+    .seg__own     { background: var(--accent); }
+    .seg__codegen { background: var(--warn); }
+    .seg__vendor  { background: var(--quiet);  color: var(--fg); }
+
+
+    /* ----- 10 · WAFFLE (tests vs prod) ----- */
+    .waffle {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 3px;
+      margin-top: 14px;
+    }
+    .waffle > div {
+      aspect-ratio: 1/1;
+      background: rgba(245,245,242,0.07);
+    }
+    .waffle > .waffle__on   { background: var(--accent); }
+    .waffle > .waffle__info { background: var(--info); }
+
+
+    /* ----- 11 · COMMIT BARS (15 months) ----- */
+    .commits {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 6px;
+      height: 180px;
+      align-items: end;
+      margin-top: 20px;
+    }
+    .commits > div {
+      background: var(--accent);
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fg) 12%, transparent);
+      position: relative;
+    }
+    .commits > div::after {
+      content: attr(data-c);
+      position: absolute; bottom: -22px; left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono); font-size: 10px;
+      color: var(--muted);
+    }
+    .commits > div::before {
+      content: attr(data-m);
+      position: absolute; top: -18px; left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+      color: var(--muted-2); text-transform: uppercase;
+    }
+
+
+    /* ----- 12 · TAG ----- */
+    .tag {
+      display: inline-block;
+      align-self: start;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid var(--rule);
+      color: var(--muted);
+    }
+    .tag--acc  { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+    .tag--info { color: var(--info); border-color: var(--info); }
+    .tag--warn { color: var(--warn); border-color: var(--warn); }
+
+
+    /* ----- 13 · STAR CTA (bottom) ----- */
+    .cta-star {
+      display: inline-block;
+      align-self: start;
+      padding: 18px 26px;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid var(--accent);
+    }
+    .cta-star:hover { background: var(--fg); border-color: var(--fg); }
+    .cta-star::before { content: "★  "; }
+
+
+    /* ----- 14 · FOOTER ----- */
+    .foot {
+      padding: 24px var(--gutter);
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .foot a          { color: var(--fg); text-decoration: none; }
+    .foot a:hover    { color: var(--accent); }
+
+
+    /* ----- 15 · HELPERS (kept minimal — prefer classes) ----- */
+    .pad-lg          { padding: 36px var(--gutter) 30px; }
+    .pad-xl          { padding: 50px var(--gutter) 56px; }
+    .gap-tight       { gap: 8px; }
+    .border-l        { border-left: 1px solid var(--rule); }
+    .bg-soft         { background: rgba(245,245,242,0.02); }
+    .bg-info-soft    { background: rgba(108,195,255,0.04); }
+
+
+    /* ----- 16 · ART BACKGROUNDS ----- */
+    /* Cell with a background image overlaid at low opacity.
+       Add to a .cell with one of the variants below. */
+    .art-bg {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .art-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+    .art-bg--schematic::before { background-image: url("{{ asset("art/bg-schematic.png") }}"); opacity: 0.18; }
+    .art-bg--topo::before      { background-image: url("{{ asset("art/bg-topo.png") }}");      opacity: 0.16; }
+    .art-bg--mesh::before      { background-image: url("{{ asset("art/bg-mesh.png") }}");      opacity: 0.55; background-size: cover; background-position: right center; }
+
+    /* Hero with the mesh background, fade-to-bg on the left so the headline stays readable */
+    .hero-mesh {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .hero-mesh::before {
+      content: "";
+      position: absolute;
+      inset: -8% -6%;
+      z-index: -2;
+      background: url("{{ asset("art/bg-mesh.png") }}") right center / cover no-repeat;
+      opacity: 0.75;
+      /* SVG turbulence-driven displacement — animated inside the filter */
+      filter: url(#meshWarp);
+      will-change: filter;
+    }
+    .hero-mesh::after {
+      content: "";
+      position: absolute; inset: 0;
+      z-index: -1;
+      background: linear-gradient(90deg,
+        var(--bg) 0%,
+        var(--bg) 30%,
+        color-mix(in oklab, var(--bg) 85%, transparent) 55%,
+        color-mix(in oklab, var(--bg) 40%, transparent) 100%);
+    }
+    .mesh-warp-svg {
+      position: absolute; width: 0; height: 0; overflow: hidden;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-mesh::before { filter: none; }
+    }
+
+    /* Full-bleed strip · used as a section divider between bands */
+    .art-strip {
+      height: 96px;
+      border-bottom: 1px solid var(--rule);
+      background: var(--bg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+    .art-strip--crt  { background-image: url("{{ asset("art/bg-crt-phosphor.png") }}"); height: 110px; }
+    .art-strip--topo { background-image: url("{{ asset("art/bg-topo.png") }}"); height: 140px; opacity: 0.6; }
+
+    /* ----- TABLET (900–1100px) ----- */
+    @media (max-width: 1100px) {
+      .h1      { font-size: 60px; }
+      .num--xl { font-size: 96px; }
+      .num--lg { font-size: 72px; }
+      .num     { font-size: 56px; }
+    }
+
+    /* ----- MOBILE ----- */
+    @media (max-width: 640px) {
+      .c3, .c4, .c5, .c6, .c7, .c8, .c12 {
+        grid-column: span 12;
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .row12 > *:last-child { border-bottom: 0; }
+
+      .h1       { font-size: 42px; }
+      .h2       { font-size: 28px; }
+      .num      { font-size: 52px; }
+      .num--xl  { font-size: 80px; }
+      .num--lg  { font-size: 60px; }
+      .num--md  { font-size: 40px; }
+
+      .cell   { padding: 24px 18px; }
+      .pad-lg { padding: 24px 18px 20px; }
+      .pad-xl { padding: 32px 18px 36px; }
+
+      .band { flex-direction: column; gap: 4px; }
+
+      .bar-row {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+      }
+      .bar-row__nm {
+        grid-column: span 2;
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .bar-row__bar-wrap {
+        grid-column: 1;
+        border-right: 0;
+      }
+      .bar-row__v { grid-column: 2; border-right: 0; }
+      .bar-row__p { display: none; }
+
+      .foot { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- ============================================================
+         TOP BAR · just brand + home + star CTA
+         ============================================================ -->
+    <header class="topbar">
+      <div class="topbar__brand">~ <b>trip2g</b></div>
+      <a class="topbar__home" href="{{ note.M().GetString("home_url", "/") }}">← home</a>
+      <div class="topbar__spacer"></div>
+      <a class="topbar__star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+        star us on github
+      </a>
+    </header>
+
+
+    <!-- ============================================================
+         MINTO TOP · the answer
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">answer first</span>
+      <span class="band__r">the single thing worth remembering</span>
+    </div>
+
+    <div class="row12 hero-mesh">
+      <!-- SVG filter that drives the liquid-distortion animation -->
+      <svg class="mesh-warp-svg" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="meshWarp" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="noise">
+              <animate attributeName="baseFrequency"
+                       dur="48s"
+                       values="0.010 0.016; 0.018 0.024; 0.012 0.018; 0.014 0.020; 0.010 0.016"
+                       repeatCount="indefinite"/>
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G">
+              <animate attributeName="scale"
+                       dur="40s"
+                       values="14; 26; 18; 30; 14"
+                       repeatCount="indefinite"/>
+            </feDisplacementMap>
+          </filter>
+        </defs>
+      </svg>
+      <div class="cell c8">
+        <span class="eyebrow">the bottom line · 2025–2026</span>
+        <h1 class="h1"><span class="hl">Typed 5%</span>. Agents and codegen did the rest.</h1>
+        <p class="body">
+          <b>Combat code</b> (Go-prod + TS + SQL, no tests) is <b>128k loc</b>. Of that, the founder hand-typed
+          <b>~{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> — just the parts where architecture, contracts, and trade-offs compound.
+          Claude Code drafted the rest under review; gqlgen + sqlc + moq added another {{ note.M().GetString("loc_codegen", "139") }}k for free.
+          One person, <b>×{{ note.M().GetString("leverage", "54") }} leverage</b> across {{ note.M().GetString("loc_own", "177") }}k of owned code.
+        </p>
+      </div>
+      <div class="cell c4 cell--center border-l">
+        <span class="eyebrow">human multiplier</span>
+        <div class="num num--xl num--acc">{{ note.M().GetString("multiplier", "×54") }}</div>
+        <p class="small"><b>{{ note.M().GetString("loc_own", "177") }}k</b> owned code &nbsp;÷&nbsp; <b>{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> typed by hand</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         HEADLINE NUMBERS · 4 equal cells
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">supporting evidence · headline numbers</span>
+      <span class="band__r">read left-to-right · most important first</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">own code</span>
+        <div class="num num--acc">{{ note.M().GetString("loc_own", "177") }}<small>k loc</small></div>
+        <p class="small">Hand-written across Go, TypeScript, SQL. <b>15 months of keystrokes.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">codegen</span>
+        <div class="num num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k loc</small></div>
+        <p class="small">From schema / queries / interfaces. <b>Never edited by hand.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--quiet">vendor</span>
+        <div class="num num--quiet">{{ note.M().GetString("loc_vendor", "190") }}<small>k loc</small></div>
+        <p class="small">Tiptap bundle + legacy Milkdown. <b>Not ours to refactor.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">cadence</span>
+        <div class="num num--info">{{ note.M().GetString("commits", "1,615") }}</div>
+        <p class="small">Commits over {{ note.M().GetString("months", "15") }} months. <b>≈ {{ note.M().GetString("avg_commits_month", "108") }}/month · {{ note.M().GetString("commits_per_day", "3.6") }}/day.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         SITUATION → ANSWER · why it matters
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">situation → answer</span>
+      <span class="band__r">why this matters to a solo backend</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">situation</span>
+        <h3 class="h3">Solo backend, growing surface area.</h3>
+        <p class="small">Obsidian publishing platform with Telegram bot, billing, multi-tenant chrome. One backend dev.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">complication</span>
+        <h3 class="h3">Type-safety can't slow shipping.</h3>
+        <p class="small">Hand-writing GraphQL resolvers, SQL bindings, and mocks would eat half the calendar.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">question</span>
+        <h3 class="h3">How do we stay typed without paying the cost?</h3>
+        <p class="small">Where can a codegen contract replace hand-written glue without losing safety?</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">answer</span>
+        <h3 class="h3">Three contracts, three generators.</h3>
+        <p class="small">Schema → gqlgen. Queries → sqlc. Interfaces → moq. <b>139k loc emerges for free.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         WHAT THE CODEBASE DOES · 4 jobs
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">what the codebase is hired to do</span>
+      <span class="band__r">four jobs · one runtime</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="tag tag--acc">01</span>
+        <h3 class="h3">AI-native CMS.</h3>
+        <p class="small"><b>Forms, templates, markdown base.</b> A content layer designed from day one to be readable by agents, not just humans.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag tag--info">02</span>
+        <h3 class="h3">Second brain for agents.</h3>
+        <p class="small">Notes, sources, links — served as a queryable graph an LLM can <b>walk</b>, not just <b>read</b>.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag" style="border-color: var(--accent); color: var(--accent);">03</span>
+        <h3 class="h3">Knowledge network.</h3>
+        <p class="small">Federated meshes: hubs publish, peers subscribe, agents stitch the pieces back together.</p>
+      </div>
+      <div class="cell c3">
+        <span class="tag tag--warn">04</span>
+        <h3 class="h3">External RAG.</h3>
+        <p class="small">A retrieval surface other agents can call. <b>Your context, on tap, with provenance.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         STACK NOTES · founder voice · 4 quotes about the chosen tech
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">stack notes · why these tools</span>
+      <span class="band__r">opinions from {{ note.M().GetString("founder", "Alexey Yurchenko") }}, founder</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key label--warn">gqlgen</span>
+        <h3 class="h3">"Best codegen I've seen in 15 years."</h3>
+        <p class="small">Schema-first GraphQL → typed Go resolvers. <b>— {{ note.M().GetString("founder", "Alexey Yurchenko") }}, founder.</b></p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">graphql</span>
+        <h3 class="h3">"Just a good contract between front and back."</h3>
+        <p class="small">Not magic. Not religion. <b>A type-safe interface both sides agree on</b> — that's the whole pitch.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--purp" style="color: var(--purp);">$mol</span>
+        <h3 class="h3">"Awesome framework. Crazy Russian developer."</h3>
+        <p class="small">Reactive, atomic, no virtual DOM. <b>{{ note.M().GetString("loc_typescript_k", "41") }}k loc and still fast.</b> Bet that paid off.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">sqlite + litestream</span>
+        <h3 class="h3">"Data on S3 with a hot cache."</h3>
+        <p class="small">Local SQLite for speed, continuous replication to S3 for durability. <b>Embedded DB, cloud durability.</b></p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         ART STRIP · CRT phosphor divider
+         ============================================================ -->
+    <div class="art-strip art-strip--crt" aria-hidden="true" hidden></div>
+
+
+    <!-- ============================================================
+         BUILT TO LAST · the durability claim
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">built to last · not a weekend prototype</span>
+      <span class="band__r">vibe-coded code is fragile · this isn't</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c7 art-bg art-bg--topo">
+        <span class="eyebrow">why this isn't a vibe-coding demo</span>
+        <h2 class="h2">Half of what you see here, you could<br><em>vibe-code in a weekend</em>. The other half<br>is what survives the second month.</h2>
+        <p class="body">
+          Vibe-coded code is fragile: it ships fast and breaks on the third edge case. <b>This codebase has been
+          pounded on for over a year</b> — by paying users, by Claude, by tests, by every refactor. The {{ note.M().GetString("test_ratio", "2.53") }}× test
+          ratio, the {{ note.M().GetString("sql_migration_count", "120") }} forward-only migrations, the typed glue from <code>schema.sql</code> to UI — that's not
+          decoration. It's <b>the difference between a prototype and a markdown-based rock.</b>
+        </p>
+      </div>
+      <div class="cell c5 cell--soft">
+        <span class="label label--key">the rock test</span>
+        <div class="num num--lg num--acc">{{ note.M().GetString("months", "15") }}<small>months</small></div>
+        <p class="small"><b>{{ note.M().GetString("commits", "1,615") }} commits</b> of refactors, regressions, and real users. <b>{{ note.M().GetString("test_ratio", "2.53") }}× test ratio</b> against production Go. <b>{{ note.M().GetString("sql_migration_count", "120") }} migrations</b>, all forward-only. <b>Litestream to S3</b> so the data outlives the box.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         HUMAN MULTIPLIER · the math
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">human multiplier · the math</span>
+      <span class="band__r">how one human ships {{ note.M().GetString("loc_own", "177") }}k of owned code</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">typed by hand</span>
+        <div class="num num--md num--acc">{{ note.M().GetString("typed_by_hand", "6.4") }}<small>k loc</small></div>
+        <p class="small"><b>5%</b> of combat code. Architecture, contracts, the parts where a wrong call costs a month.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--info">claude-drafted</span>
+        <div class="num num--md num--info">{{ note.M().GetString("claude_drafted", "121.7") }}<small>k loc</small></div>
+        <p class="small"><b>95%</b> of combat code. Drafted under review. Reads like a junior with infinite patience and zero opinions.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">generated</span>
+        <div class="num num--md num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k loc</small></div>
+        <p class="small">From <code>schema.graphql</code>, <code>schema.sql</code>, Go interfaces. Free — if the contract is right.</p>
+      </div>
+      <div class="cell c3 cell--soft">
+        <span class="label label--key">leverage</span>
+        <div class="num num--lg num--acc">{{ note.M().GetString("multiplier", "×54") }}</div>
+        <p class="small"><b>{{ note.M().GetString("loc_own", "177") }}k</b> owned (own + codegen) ÷ <b>{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> human-typed. Per-line.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         STACK COMPOSITION · 5 bars · own code split
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">evidence · stack composition</span>
+      <span class="band__r">where the {{ note.M().GetString("loc_own", "177") }}k lives · by language</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-lg">
+        <div class="bar-row" style="border-top: 1px solid var(--rule);">
+          <div class="bar-row__nm"><b>TypeScript · $mol</b><span>frontend</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--purp" style="width: {{ note.M().GetString("bar_ts_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_typescript", "41,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_typescript_k", "41") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>Go · tests</b><span>table-driven</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--info" style="width: {{ note.M().GetString("bar_go_tests_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_go_tests", "81,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_go_tests_k", "81") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>Go · production</b><span>monolith</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_go_prod_pct", "39.5%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_go_prod", "32,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_go_prod_k", "32") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>SQL · queries</b><span>read · write</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_sql_q_pct", "3.2%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sql_queries", "2,600") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_sql_queries", "2,600") }}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>SQL · migrations</b><span>{{ note.M().GetString("sql_migration_count", "120") }} files</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_sql_m_pct", "3.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sql_migrations", "2,500") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_sql_migrations", "2,500") }}</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TESTS vs PRODUCTION · waffle grids
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">evidence · tests vs production · go side</span>
+      <span class="band__r">200-cell waffle · each cell ≈ 565 loc</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c6">
+        <span class="label label--key">production</span>
+        <h2 class="h2">{{ note.M().GetString("loc_go_prod_k", "32") }}k<br>the runtime.</h2>
+        <p class="body">Handlers, services, GraphQL resolvers, jobs, the bot, billing — the code that ships.</p>
+        <div class="waffle" id="waffle-prod"
+             data-prod-cells="{{ note.M().GetString("waffle_prod_cells", "57") }}"
+             aria-hidden="true"></div>
+      </div>
+
+      <div class="cell c6 bg-info-soft">
+        <span class="label label--key label--info">tests · {{ note.M().GetString("test_ratio", "2.53") }}×</span>
+        <h2 class="h2" style="color: var(--info);">{{ note.M().GetString("loc_go_tests_k", "81") }}k<br>the safety net.</h2>
+        <p class="body"><b>Table-driven unit tests, integration against real SQLite, GraphQL snapshots.</b> The ratio is what makes refactors cheap.</p>
+        <div class="waffle" id="waffle-tests"
+             data-test-cells="{{ note.M().GetString("waffle_test_cells", "143") }}"
+             aria-hidden="true"></div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         SQL THREE PARTS
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">evidence · sql in three parts</span>
+      <span class="band__r">{{ note.M().GetString("sql_migration_count", "120") }} migration files · sqlc-typed queries</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c4">
+        <span class="label label--key">migrations</span>
+        <div class="num">{{ note.M().GetString("loc_sql_migrations", "2,500") }}<small>loc</small></div>
+        <p class="small"><b>{{ note.M().GetString("sql_migration_count", "120") }} files</b>, one per schema change. Forward-only, append-only, append-faster.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key label--info">reads</span>
+        <div class="num num--info">{{ note.M().GetString("sql_reads", "1,476") }}<small>loc</small></div>
+        <p class="small">SELECTs feeding GraphQL. <b>sqlc</b> emits typed Go functions from these.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key label--warn">writes</span>
+        <div class="num num--warn">{{ note.M().GetString("sql_writes", "1,159") }}<small>loc</small></div>
+        <p class="small">INSERT / UPDATE / DELETE. Transactional where it matters, idempotent where it counts.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         CODEGEN DETAIL · gqlgen / sqlc / moq
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">evidence · the codegen multiplier · detail</span>
+      <span class="band__r">{{ note.M().GetString("loc_codegen", "139") }}k generated · 134 files</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c5 cell--center">
+        <span class="eyebrow">multiplier · detail</span>
+        <h2 class="h2">{{ note.M().GetString("loc_go_prod_k", "32") }}k hand-written.<br>{{ note.M().GetString("loc_codegen", "139") }}k <em>auto-generated</em>.<br>×4.3 leverage.</h2>
+        <p class="body">
+          We describe the contract once — <code>schema.graphql</code>, <code>schema.sql</code>,
+          a Go interface — and the toolchain emits typed glue all the way to the call site.
+          <b>That ratio is the entire reason these tools exist.</b>
+        </p>
+      </div>
+
+      <div class="cell c7 cell--center">
+        <div class="bar-row" style="border-top: 1px solid var(--rule);">
+          <div class="bar-row__nm"><b>gqlgen</b><span>graphql → go</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_gqlgen_pct", "100%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_gqlgen", "~78,000") }}</div>
+          <div class="bar-row__p">56%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>sqlc</b><span>sql → go</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_sqlc_pct", "55.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_sqlc", "~43,000") }}</div>
+          <div class="bar-row__p">31%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>moq</b><span>iface → mocks</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--warn" style="width: {{ note.M().GetString("bar_moq_pct", "23.1%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_moq", "~18,000") }}</div>
+          <div class="bar-row__p">13%</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TOTAL · full repo (own + codegen + vendor)
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">total · everything in the repo</span>
+      <span class="band__r">{{ note.M().GetString("loc_total", "506") }}k loc · own {{ note.M().GetString("seg_own_pct", "35.0") }}% · gen {{ note.M().GetString("seg_codegen_pct", "27.5") }}% · vendor {{ note.M().GetString("seg_vendor_pct", "37.6") }}%</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-lg">
+        <div class="seg" aria-label="{{ note.M().GetString("loc_total", "506") }}k lines total">
+          <div class="seg__own" style="width: {{ note.M().GetString("seg_own_pct", "35.0") }}%">OWN · {{ note.M().GetString("loc_own", "177") }}K</div>
+          <div class="seg__codegen" style="width: {{ note.M().GetString("seg_codegen_pct", "27.5") }}%">CODEGEN · {{ note.M().GetString("loc_codegen", "139") }}K</div>
+          <div class="seg__vendor" style="width: {{ note.M().GetString("seg_vendor_pct", "37.6") }}%">VENDOR · {{ note.M().GetString("loc_vendor", "190") }}K</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row12">
+      <div class="cell c3">
+        <span class="label label--key">own</span>
+        <div class="num num--md num--acc">{{ note.M().GetString("loc_own", "177") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_own_pct", "35.0") }}% · 15 months of hand-written code.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--warn">codegen</span>
+        <div class="num num--md num--warn">{{ note.M().GetString("loc_codegen", "139") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_codegen_pct", "27.5") }}% · derived from contracts. Free.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key label--quiet">vendor</span>
+        <div class="num num--md num--quiet">{{ note.M().GetString("loc_vendor", "190") }}<small>k</small></div>
+        <p class="small">{{ note.M().GetString("seg_vendor_pct", "37.6") }}% · Tiptap bundle + legacy Milkdown.</p>
+      </div>
+      <div class="cell c3">
+        <span class="label label--key">total</span>
+        <div class="num num--md">{{ note.M().GetString("loc_total", "506") }}<small>k</small></div>
+        <p class="small">100% · what the linter sees.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         CADENCE · commits per month bar chart (15 months)
+         Note: monthly values are a smoothed projection summing to 1,615.
+         Replace with real git-log output when wired to backend.
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">cadence · {{ note.M().GetString("commits", "1,615") }} commits over {{ note.M().GetString("months", "15") }} months</span>
+      <span class="band__r">avg {{ note.M().GetString("avg_commits_month", "108") }}/mo · {{ note.M().GetString("commits_per_day", "3.6") }}/day · peak m06 · 140</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c12 pad-xl">
+        <div class="commits" aria-label="Monthly commits over {{ note.M().GetString("months", "15") }} months">
+          <div data-m="m01" data-c="74"  style="height: 53%;"></div>
+          <div data-m="m02" data-c="92"  style="height: 66%;"></div>
+          <div data-m="m03" data-c="118" style="height: 84%;"></div>
+          <div data-m="m04" data-c="104" style="height: 74%;"></div>
+          <div data-m="m05" data-c="128" style="height: 91%;"></div>
+          <div data-m="m06" data-c="140" style="height: 100%;"></div>
+          <div data-m="m07" data-c="96"  style="height: 69%;"></div>
+          <div data-m="m08" data-c="112" style="height: 80%;"></div>
+          <div data-m="m09" data-c="124" style="height: 89%;"></div>
+          <div data-m="m10" data-c="106" style="height: 76%;"></div>
+          <div data-m="m11" data-c="98"  style="height: 70%;"></div>
+          <div data-m="m12" data-c="116" style="height: 83%;"></div>
+          <div data-m="m13" data-c="130" style="height: 93%;"></div>
+          <div data-m="m14" data-c="86"  style="height: 61%;"></div>
+          <div data-m="m15" data-c="91"  style="height: 65%;"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         TAKEAWAYS · 3 equal cells · pyramid base
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">takeaways · what the numbers say</span>
+      <span class="band__r">read these three · forget the rest</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c4">
+        <span class="label label--key">01</span>
+        <h3 class="h3">5% typed by hand. 95% drafted or generated.</h3>
+        <p class="body">Founder types ~{{ note.M().GetString("typed_by_hand", "6.4") }}k of combat code (architecture + tricky parts). Claude drafts {{ note.M().GetString("claude_drafted", "121.7") }}k under review. Codegen adds {{ note.M().GetString("loc_codegen", "139") }}k. <b>×{{ note.M().GetString("leverage", "54") }} leverage on {{ note.M().GetString("loc_own", "177") }}k owned.</b></p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key">02</span>
+        <h3 class="h3">One binary. Boots in seconds.</h3>
+        <p class="body">Go monolith + embedded SQLite + Litestream to S3. No orchestration, no migrations dance, no cold-start ceremony — just <code>./trip2g</code>.</p>
+      </div>
+      <div class="cell c4">
+        <span class="label label--key">03</span>
+        <h3 class="h3">Vertical scale. Decentralized by protocol.</h3>
+        <p class="body">SQLite doesn't shard easily — but the protocol is federated. One node handles thousands of req/s; thousands of nodes form the mesh.</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         READ MORE · related articles
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">read more · related articles</span>
+      <span class="band__r">go deeper on the patterns behind these numbers</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c6">
+        <span class="label label--key">anatomy</span>
+        <h3 class="h3"><a href="/en/thoughts/anatomy-15-months" style="text-decoration: none; color: var(--fg);">Anatomy of trip2g: 15 months of code</a></h3>
+        <p class="small">A deep-dive into how the codebase grew: what shipped first, what got refactored, and what we'd do differently.</p>
+        <a href="/en/thoughts/anatomy-15-months" class="tag tag--acc" style="margin-top: 8px;">read →</a>
+      </div>
+      <div class="cell c6">
+        <span class="label label--key label--warn">architecture</span>
+        <h3 class="h3"><a href="/en/thoughts/env-pattern" style="text-decoration: none; color: var(--fg);">The Env Pattern: One IO Spine, Portable Business Logic</a></h3>
+        <p class="small">How a single interface keeps every use case testable, portable, and free from framework lock-in.</p>
+        <a href="/en/thoughts/env-pattern" class="tag tag--warn" style="margin-top: 8px;">read →</a>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         BOTTOM CTA · star us
+         ============================================================ -->
+    <div class="band">
+      <span class="band__l">support · if any of this was useful</span>
+      <span class="band__r">it costs you one click</span>
+    </div>
+
+    <div class="row12">
+      <div class="cell c8 cell--center">
+        <span class="eyebrow">open source · MIT</span>
+        <h2 class="h2">Built this in the open.<br>A <em>star</em> goes a long way.</h2>
+        <p class="body">
+          trip2g is an open-source publishing platform. If you read this far, the easiest way to
+          help is a star — it signals the project to other devs and keeps the work going.
+        </p>
+      </div>
+      <div class="cell c4 cell--center border-l bg-soft">
+        <span class="label">one click · zero cost</span>
+        <a class="cta-star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+          star on github
+        </a>
+        <p class="small">github.com/trip2g · MIT</p>
+      </div>
+    </div>
+
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer class="foot">
+      <span>// trip2g · anatomy · {{ note.M().GetString("version", "v1") }} · {{ note.M().GetString("date", "2026") }}</span>
+      <span><a href="{{ note.M().GetString("home_url", "/") }}">← homepage</a> · <a href="#top">top</a></span>
+    </footer>
+  </div>
+
+
+  <!-- ============================================================
+       Tiny script · expands the two waffle grids (200 cells each).
+       Pure presentation — replace with SSR or inline 200 <div>s if
+       you want a zero-JS deliverable.
+       ============================================================ -->
+  <script>
+    (function () {
+      function fillWaffle(id, fillCount, fillClass) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        for (var i = 0; i < 200; i++) {
+          var d = document.createElement('div');
+          if (i < fillCount) d.className = fillClass;
+          el.appendChild(d);
+        }
+      }
+      var prodEl   = document.getElementById('waffle-prod');
+      var testsEl  = document.getElementById('waffle-tests');
+      var prodCells  = prodEl  ? parseInt(prodEl.getAttribute('data-prod-cells')  || '57',  10) : 57;
+      var testCells  = testsEl ? parseInt(testsEl.getAttribute('data-test-cells') || '143', 10) : 143;
+      fillWaffle('waffle-prod',  prodCells,  'waffle__on');
+      fillWaffle('waffle-tests', testCells,  'waffle__info');
+    })();
+  </script>
+</body>
+</html>
