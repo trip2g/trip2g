@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"trip2g/internal/model"
+	"trip2g/internal/ssrfsafe"
 
+	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
 )
 
@@ -30,7 +32,10 @@ type Client struct {
 
 func NewClient(peer model.FederationPeer, http *fasthttp.Client) *Client {
 	if http == nil {
-		http = &fasthttp.Client{MaxResponseBodySize: defaultMaxResponseBody}
+		http = &fasthttp.Client{
+			MaxResponseBodySize: defaultMaxResponseBody,
+			DialTimeout:         ssrfsafe.DialTimeout,
+		}
 	}
 	return &Client{
 		peer:    peer,
@@ -72,7 +77,7 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}
 
 	rid := strconv.FormatInt(time.Now().UnixNano(), 10)
-	body, err := json.Marshal(rpcRequest{
+	body, err := easyjson.Marshal(rpcRequest{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params: toolParams{
@@ -102,13 +107,21 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}
 
 	var resp rpcResponse
-	if e := json.Unmarshal(raw, &resp); e != nil {
+	if e := easyjson.Unmarshal(raw, &resp); e != nil {
 		return model.FederationResult{}, fmt.Errorf("decode federation response: %w", e)
 	}
 	if resp.Error != nil {
 		return model.FederationResult{}, fmt.Errorf("federation rpc error %d: %s", resp.Error.Code, resp.Error.Message)
 	}
-	return resp.Result, nil
+	content := make([]model.FederationContent, len(resp.Result.Content))
+	for i, c := range resp.Result.Content {
+		content[i] = model.FederationContent{Type: c.Type, Text: c.Text}
+	}
+	return model.FederationResult{
+		Content:           content,
+		StructuredContent: json.RawMessage(resp.Result.StructuredContent),
+		IsError:           resp.Result.IsError,
+	}, nil
 }
 
 func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers map[string]string, timeout time.Duration) ([]byte, error) {
@@ -145,28 +158,6 @@ func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers 
 	}
 
 	return append([]byte(nil), resp.Body()...), nil
-}
-
-type rpcRequest struct {
-	JSONRPC string     `json:"jsonrpc"`
-	Method  string     `json:"method"`
-	Params  toolParams `json:"params"`
-	ID      string     `json:"id"`
-}
-
-type toolParams struct {
-	Name      string `json:"name"`
-	Arguments any    `json:"arguments,omitempty"`
-}
-
-type rpcResponse struct {
-	Result model.FederationResult `json:"result"`
-	Error  *rpcError              `json:"error,omitempty"`
-}
-
-type rpcError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 type jwtHeader struct {

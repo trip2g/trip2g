@@ -1,5 +1,7 @@
 package model
 
+//go:generate go tool github.com/mailru/easyjson/easyjson -all ./federation.go
+
 import (
 	"context"
 	"encoding/json"

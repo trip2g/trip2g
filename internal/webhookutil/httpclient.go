@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"trip2g/internal/ssrfsafe"
+
 	"github.com/valyala/fasthttp"
 )
 
@@ -71,5 +73,6 @@ func NewClient() *fasthttp.Client {
 	return &fasthttp.Client{
 		MaxConnWaitTimeout:  connectTimeout,
 		MaxResponseBodySize: maxResponseBody,
+		DialTimeout:         ssrfsafe.DialTimeout,
 	}
 }
