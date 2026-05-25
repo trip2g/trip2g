@@ -65,7 +65,7 @@
 
 
     /* ----- 03 · TYPE SCALE ----- */
-    .h1 { font-weight: 800; font-size: 84px; line-height: 0.92; letter-spacing: -0.035em; }
+    .h1 { font-weight: 800; font-size: 56px; line-height: 0.92; letter-spacing: -0.035em; }
     .h2 { font-weight: 800; font-size: 44px; line-height: 1.02;  letter-spacing: -0.025em; }
     .h3 { font-weight: 700; font-size: 22px; line-height: 1.15;  letter-spacing: -0.015em; }
 
@@ -259,11 +259,13 @@
       letter-spacing: 0.16em;
       text-transform: uppercase;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
+      gap: 0;
     }
     .band__l::before { content: "» "; color: var(--accent); }
     .band__r         { color: var(--muted); }
+    .band__r::before { content: " · "; opacity: 0.3; }
 
 
     /* ----- 08 · BAR ROW (stack composition + codegen detail) ----- */
@@ -558,7 +560,7 @@
       <div class="topbar__brand">~ <b>trip2g</b></div>
       <a class="topbar__home" href="{{ note.M().GetString("home_url", "/") }}">← главная</a>
       <div class="topbar__spacer"></div>
-      <a class="topbar__star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+      <a class="topbar__star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g/trip2g") }}" target="_blank" rel="noopener">
         поставить звезду на github
       </a>
     </header>
@@ -569,7 +571,6 @@
          ============================================================ -->
     <div class="band">
       <span class="band__l">сначала ответ</span>
-      <span class="band__r">одно главное, что стоит запомнить</span>
     </div>
 
     <div class="row12 hero-mesh">
@@ -593,11 +594,12 @@
       </svg>
       <div class="cell c8">
         <span class="eyebrow">итог · 2025–2026</span>
-        <h1 class="h1"><span class="hl">Напечатал 5%</span>. Агенты и кодогенерация — всё остальное.</h1>
+        <h1 class="h1"><span class="hl">Создал руками 5%</span>. Агенты и кодогенерация — всё остальное.</h1>
         <p class="body">
-          <b>Боевой код</b> (Go-prod + TS + SQL, без тестов) — <b>128k строк</b>. Из них основатель написал вручную
+          <b>Один бэкенд-разработчик.</b> Telegram-интеграция, биллинг, векторный поиск, федерация, мультитенантность — полтора года фулл-тайма.
+          <b>Боевой код</b> (Go-prod + TS + SQL, без тестов) — <b>128k строк</b>. Из них написано вручную
           <b>~{{ note.M().GetString("typed_by_hand", "6.4") }}k</b> — только там, где архитектура, контракты и компромиссы складываются.
-          Claude Code написал остальное под контролем; gqlgen + sqlc + moq добавили ещё {{ note.M().GetString("loc_codegen", "139") }}k бесплатно.
+          Claude Code написал остальное под контролем; gqlgen + sqlc + moq добавили ещё {{ note.M().GetString("loc_codegen", "139") }}k бесплатно — статический код после кодогена, а не рефлексия в рантайме.
           Один человек, <b>×{{ note.M().GetString("leverage", "54") }} плечо</b> на {{ note.M().GetString("loc_own", "177") }}k строк собственного кода.
         </p>
       </div>
@@ -653,7 +655,7 @@
       <div class="cell c3">
         <span class="label label--key">ситуация</span>
         <h3 class="h3">Соло-бэкенд, растущая поверхность.</h3>
-        <p class="small">Платформа публикаций на Obsidian с Telegram-ботом, биллингом, мультиарендным хромом. Один бэкенд-разработчик.</p>
+        <p class="small">Obsidian-платформа с Telegram-ботом, биллингом и мультитенантностью. Один бэкенд-разработчик.</p>
       </div>
       <div class="cell c3">
         <span class="label label--key label--info">усложнение</span>
@@ -716,8 +718,8 @@
     <div class="row12">
       <div class="cell c3">
         <span class="label label--key label--warn">gqlgen</span>
-        <h3 class="h3">«Лучшая кодогенерация, что я видел за 15 лет.»</h3>
-        <p class="small">Schema-first GraphQL → типизированные Go-резолверы. <b>— {{ note.M().GetString("founder", "Алексей Юрченко") }}, основатель.</b></p>
+        <h3 class="h3">Видит что пишет программист — подстраивает кодоген.</h3>
+        <p class="small">Schema-first: нет поля в модели — резолвер появится сразу. Такие мелочи <b>плавно вливаются в процесс</b>, а не ломают его.</p>
       </div>
       <div class="cell c3">
         <span class="label label--key">graphql</span>
@@ -726,8 +728,8 @@
       </div>
       <div class="cell c3">
         <span class="label label--key label--purp" style="color: var(--purp);">$mol</span>
-        <h3 class="h3">«Потрясающий фреймворк. Безумный русский разработчик.»</h3>
-        <p class="small">Реактивный, атомарный, без виртуального DOM. <b>{{ note.M().GetString("loc_typescript_k", "41") }}k строк — и всё ещё быстрый.</b> Ставка окупилась.</p>
+        <h3 class="h3">Ставка на серую лошадь.</h3>
+        <p class="small">Не тупит на 40 CRUD-страницах. Claude Code понимает паттерн по примерам и уверенно продолжает. Реактивный, атомарный, без виртуального DOM — <b>{{ note.M().GetString("loc_typescript_k", "41") }}k строк</b>.</p>
       </div>
       <div class="cell c3">
         <span class="label label--key label--info">sqlite + litestream</span>
@@ -754,7 +756,7 @@
     <div class="row12">
       <div class="cell c7 art-bg art-bg--topo">
         <span class="eyebrow">почему это не вайб-кодинг-демо</span>
-        <h2 class="h2">Половину из того, что вы видите, можно<br><em>вайб-кодить за выходные</em>. Вторая половина —<br>то, что выживает на второй месяц.</h2>
+        <h2 class="h3">Половину из того, что вы видите, можно<br><em>вайб-кодить за выходные</em>. Вторая половина —<br>то, что выживает на второй месяц.</h2>
         <p class="body">
           Вайб-код хрупок: быстро появляется и ломается на третьем граничном случае. <b>Эта кодовая база
           подвергалась нагрузкам больше года</b> — реальными пользователями, Claude, тестами, каждым рефакторингом. Соотношение тестов {{ note.M().GetString("test_ratio", "2.53") }}×,
@@ -776,6 +778,12 @@
     <div class="band">
       <span class="band__l">множитель человека · математика</span>
       <span class="band__r">как один человек поставляет {{ note.M().GetString("loc_own", "177") }}k строк</span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 3fr 1fr; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;">
+      <div style="padding: 8px 22px; color: var(--accent); border-right: 3px solid var(--accent);">человек</div>
+      <div style="padding: 8px 22px; color: var(--muted); border-right: 1px solid var(--rule);">ии + инструменты</div>
+      <div style="padding: 8px 22px; color: var(--accent);">итого</div>
     </div>
 
     <div class="row12">
@@ -806,26 +814,26 @@
          STACK COMPOSITION · 5 bars
          ============================================================ -->
     <div class="band">
-      <span class="band__l">доказательства · состав стека</span>
+      <span class="band__l">состав стека</span>
       <span class="band__r">где живут {{ note.M().GetString("loc_own", "177") }}k строк · по языкам</span>
     </div>
 
     <div class="row12">
       <div class="cell c12 pad-lg">
         <div class="bar-row" style="border-top: 1px solid var(--rule);">
-          <div class="bar-row__nm"><b>TypeScript · $mol</b><span>фронтенд</span></div>
-          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--purp" style="width: {{ note.M().GetString("bar_ts_pct", "100%") }};"></div></div>
-          <div class="bar-row__v">{{ note.M().GetString("loc_typescript", "41,000") }}</div>
-          <div class="bar-row__p">{{ note.M().GetString("loc_typescript_k", "41") }}k</div>
-        </div>
-        <div class="bar-row">
           <div class="bar-row__nm"><b>Go · тесты</b><span>табличные</span></div>
           <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--info" style="width: {{ note.M().GetString("bar_go_tests_pct", "100%") }};"></div></div>
           <div class="bar-row__v">{{ note.M().GetString("loc_go_tests", "81,000") }}</div>
           <div class="bar-row__p">{{ note.M().GetString("loc_go_tests_k", "81") }}k</div>
         </div>
         <div class="bar-row">
-          <div class="bar-row__nm"><b>Go · production</b><span>монолит</span></div>
+          <div class="bar-row__nm"><b>TypeScript · $mol</b><span>фронтенд</span></div>
+          <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--purp" style="width: {{ note.M().GetString("bar_ts_pct", "50.6%") }};"></div></div>
+          <div class="bar-row__v">{{ note.M().GetString("loc_typescript", "41,000") }}</div>
+          <div class="bar-row__p">{{ note.M().GetString("loc_typescript_k", "41") }}k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-row__nm"><b>Go · production</b><span>рантайм · ≈5× human</span></div>
           <div class="bar-row__bar-wrap"><div class="bar-row__bar bar-row__bar--acc" style="width: {{ note.M().GetString("bar_go_prod_pct", "39.5%") }};"></div></div>
           <div class="bar-row__v">{{ note.M().GetString("loc_go_prod", "32,000") }}</div>
           <div class="bar-row__p">{{ note.M().GetString("loc_go_prod_k", "32") }}k</div>
@@ -850,7 +858,7 @@
          TESTS vs PRODUCTION · waffle grids
          ============================================================ -->
     <div class="band">
-      <span class="band__l">доказательства · тесты vs production · go-сторона</span>
+      <span class="band__l">тесты vs production · go-сторона</span>
       <span class="band__r">200-ячеечный вафль · каждая ячейка ≈ 565 строк</span>
     </div>
 
@@ -879,7 +887,7 @@
          SQL THREE PARTS
          ============================================================ -->
     <div class="band">
-      <span class="band__l">доказательства · sql в трёх частях</span>
+      <span class="band__l">sql в трёх частях</span>
       <span class="band__r">{{ note.M().GetString("sql_migration_count", "120") }} файлов миграций · типизированные запросы sqlc</span>
     </div>
 
@@ -906,7 +914,7 @@
          CODEGEN DETAIL · gqlgen / sqlc / moq
          ============================================================ -->
     <div class="band">
-      <span class="band__l">доказательства · множитель кодогенерации · детали</span>
+      <span class="band__l">кодогенерация · детали</span>
       <span class="band__r">{{ note.M().GetString("loc_codegen", "139") }}k сгенерировано · 134 файла</span>
     </div>
 
@@ -1087,7 +1095,7 @@
       </div>
       <div class="cell c4 cell--center border-l bg-soft">
         <span class="label">один клик · ноль затрат</span>
-        <a class="cta-star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g") }}" target="_blank" rel="noopener">
+        <a class="cta-star" href="{{ note.M().GetString("github_url", "https://github.com/trip2g/trip2g") }}" target="_blank" rel="noopener">
           звезда на github
         </a>
         <p class="small">github.com/trip2g · MIT</p>
