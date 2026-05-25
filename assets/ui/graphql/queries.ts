@@ -1165,6 +1165,35 @@ export type AdminNoteAsset = {
   url: Scalars['String']['output'];
 };
 
+export type AdminNoteVersionDetail = {
+  __typename?: 'AdminNoteVersionDetail';
+  content: Scalars['String']['output'];
+  createdAt: Scalars['Time']['output'];
+  path: Scalars['String']['output'];
+  version: Scalars['Int']['output'];
+  versionId: Scalars['Int64']['output'];
+};
+
+export type AdminNoteVersionHistoryConnection = {
+  __typename?: 'AdminNoteVersionHistoryConnection';
+  nodes: Array<AdminNoteVersionMeta>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type AdminNoteVersionHistoryFilter = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  path: Scalars['String']['input'];
+};
+
+export type AdminNoteVersionMeta = {
+  __typename?: 'AdminNoteVersionMeta';
+  contentLength: Scalars['Int']['output'];
+  createdAt: Scalars['Time']['output'];
+  version: Scalars['Int']['output'];
+  versionId: Scalars['Int64']['output'];
+};
+
 export type AdminOffer = {
   __typename?: 'AdminOffer';
   createdAt: Scalars['Time']['output'];
@@ -1325,6 +1354,8 @@ export type AdminQuery = {
   htmlInjection?: Maybe<AdminHtmlInjection>;
   layoutBlocks: Array<LayoutBlock>;
   noteAsset?: Maybe<AdminNoteAsset>;
+  noteVersion?: Maybe<AdminNoteVersionDetail>;
+  noteVersionHistory: AdminNoteVersionHistoryConnection;
   noteView?: Maybe<NoteView>;
   offer?: Maybe<AdminOffer>;
   patreonCredentials?: Maybe<AdminPatreonCredentials>;
@@ -1447,6 +1478,16 @@ export type AdminQueryHtmlInjectionArgs = {
 
 export type AdminQueryNoteAssetArgs = {
   id: Scalars['Int64']['input'];
+};
+
+
+export type AdminQueryNoteVersionArgs = {
+  versionId: Scalars['Int64']['input'];
+};
+
+
+export type AdminQueryNoteVersionHistoryArgs = {
+  filter: AdminNoteVersionHistoryFilter;
 };
 
 
