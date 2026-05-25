@@ -84,6 +84,10 @@
     "url": "http://localhost:20081/broken_layout_test"
   },
   {
+    "path": "canvas_link_test.md",
+    "url": "http://localhost:20081/canvas_link_test"
+  },
+  {
     "path": "code_and_media.md",
     "url": "http://localhost:20081/code_and_media"
   },
@@ -102,6 +106,14 @@
   {
     "path": "embedding.md",
     "url": "http://localhost:20081/embedding"
+  },
+  {
+    "path": "example.excalidraw",
+    "url": "http://localhost:20081/example.excalidraw"
+  },
+  {
+    "path": "example_base.base",
+    "url": "http://localhost:20081/example_base.base"
   },
   {
     "path": "federation_e2e.md",
@@ -442,6 +454,26 @@
   {
     "path": "telegram_video_with_emoji.md",
     "url": "http://localhost:20081/telegram_video_with_emoji"
+  },
+  {
+    "path": "telegramnavigation/contact.md",
+    "url": "http://localhost:20081/telegramnavigation/contact"
+  },
+  {
+    "path": "telegramnavigation/demo.canvas",
+    "url": "http://localhost:20081/telegramnavigation/demo.canvas"
+  },
+  {
+    "path": "telegramnavigation/plans.md",
+    "url": "http://localhost:20081/telegramnavigation/plans"
+  },
+  {
+    "path": "telegramnavigation/pricing.md",
+    "url": "http://localhost:20081/telegramnavigation/pricing"
+  },
+  {
+    "path": "telegramnavigation/services.md",
+    "url": "http://localhost:20081/telegramnavigation/services"
   },
   {
     "path": "template_backlinks_source1.md",
