@@ -781,6 +781,59 @@ test_dry_run() {
     sync_vault_quiet "$VAULT0"
 }
 
+test_exclude_flag() {
+    log_section "Test: --exclude hides excluded paths on server"
+
+    # A public note we will first publish, then exclude on a later sync.
+    cat > "$VAULT0/excluded_file.md" << 'EOF'
+---
+free: true
+---
+# Excluded File
+exclude-marker-content
+EOF
+
+    local pub_json="$TMP_DIR/exclude-pub.json"
+    cd "$OBSIDIAN_SYNC_DIR"
+
+    # 1. Publish WITHOUT --exclude → note goes live.
+    npx tsx src/sync/cli/cmd.ts --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
+        --updated-output "$pub_json" > /dev/null 2>&1
+
+    local url
+    url=$(jq -r '.[] | select(.path == "excluded_file.md") | .url' "$pub_json" 2>/dev/null | head -1)
+
+    if [ -n "$url" ] && [ "$url" != "null" ]; then
+        log_success "excluded_file.md published (url: $url)"
+    else
+        log_fail "Setup: excluded_file.md was not published (no url in $pub_json)"
+        return 1
+    fi
+
+    local code_before
+    code_before=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+    if [ "$code_before" = "200" ]; then
+        log_success "Page reachable before exclusion (HTTP 200)"
+    else
+        log_fail "Page should be reachable before exclusion (HTTP $code_before): $url"
+    fi
+
+    # 2. Re-sync WITH --exclude → excluded path is hidden on the server.
+    npx tsx src/sync/cli/cmd.ts --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
+        --exclude excluded_file.md > /dev/null 2>&1
+
+    local code_after
+    code_after=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+    if [ "$code_after" = "404" ]; then
+        log_success "Page hidden after exclusion (HTTP 404)"
+    else
+        log_fail "Excluded page should be hidden (expected HTTP 404, got $code_after): $url"
+    fi
+
+    # Local file is untouched by exclusion (only server-side hide).
+    assert_file_exists "$VAULT0/excluded_file.md" "Excluded file remains locally (not deleted)"
+}
+
 # ============ Main ============
 
 main() {
@@ -820,6 +873,9 @@ main() {
 
     # Other
     test_dry_run
+
+    # Exclude flag
+    test_exclude_flag
 
     # Summary
     log_section "Summary"
