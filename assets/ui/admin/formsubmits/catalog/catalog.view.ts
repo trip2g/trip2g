@@ -1,8 +1,9 @@
 namespace $.$$ {
 	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminFormSubmits($notePathId: Int64!) {
+		query AdminFormSubmits($filter: AdminFormSubmitsFilterInput) {
 			admin {
-				formSubmits(notePathId: $notePathId) {
+				formSubmits(filter: $filter) {
+					totalCount
 					nodes {
 						id
 						noteVersionId
@@ -28,7 +29,7 @@ namespace $.$$ {
 			const id = this.note_path_id()
 			if( !id ) return []
 
-			const res = request({ notePathId: id })
+			const res = request({ filter: { notePathId: id } })
 			return res.admin.formSubmits.nodes
 		}
 
