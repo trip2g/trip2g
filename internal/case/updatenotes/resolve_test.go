@@ -324,6 +324,7 @@ func TestResolve_Hide(t *testing.T) {
 	ctx := context.Background()
 
 	var hiddenPath string
+	prepareCount := 0
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (int64, error) {
@@ -334,8 +335,14 @@ func TestResolve_Hide(t *testing.T) {
 			hiddenPath = params.Value
 			return nil
 		},
-		prepareLatestNotes:         noopPrepare,
-		handleLatestNotesAfterSave: noopHandle,
+		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			prepareCount++
+			return appmodel.NewNoteViews(), nil
+		},
+		handleLatestNotesAfterSave: func(_ context.Context, _ []int64) error {
+			t.Fatal("HandleLatestNotesAfterSave should not be called for hide-only batch")
+			return nil
+		},
 	}
 
 	input := model.UpdateNotesInput{
@@ -351,6 +358,8 @@ func TestResolve_Hide(t *testing.T) {
 	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
 	require.Equal(t, []string{"gone.md"}, payload.Paths)
 	require.Equal(t, "gone.md", hiddenPath)
+	// Hide must reload NoteViews so the hidden path stops resolving on the site.
+	require.Equal(t, 1, prepareCount)
 }
 
 func TestResolve_EmptyChangeSkipped(t *testing.T) {

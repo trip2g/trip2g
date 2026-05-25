@@ -14,6 +14,7 @@ import (
 type Env interface {
 	HideNotePath(ctx context.Context, params db.HideNotePathParams) error
 	LatestNoteViews() *internalmodel.NoteViews
+	PrepareLatestNotes(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
 	Logger() logger.Logger
 }
 
@@ -46,6 +47,16 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		err := env.HideNotePath(ctx, params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to hide note path %s: %w", path, err)
+		}
+	}
+
+	// Reload NoteViews so hidden paths stop resolving on the public site.
+	// rendernotepage serves from the in-memory cache; without a reload the
+	// hidden note keeps returning 200 until the next full reload (asset-URL
+	// expiry or restart). The RawNotes source query filters hidden_by IS NULL.
+	if len(input.Paths) > 0 {
+		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
+			return nil, fmt.Errorf("failed to reload notes after hide: %w", err)
 		}
 	}
 

@@ -33,6 +33,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	nvs := env.LatestNoteViews()
 	var paths []string
 	var pathIDs []int64
+	hid := false
 
 	// nvs.PathMap is keyed by note.Path (filesystem path, e.g. "todo.md").
 	// NoteViews.GetByPath uses the Permalink map (URL path), so PathMap is the correct lookup here.
@@ -105,19 +106,26 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				return nil, fmt.Errorf("updatenotes: hide %s: %w", hide.Path, err)
 			}
 			paths = append(paths, hide.Path)
+			hid = true
 		default:
 			continue
 		}
 	}
 
-	// Hide-only batches skip PrepareLatestNotes/HandleLatestNotesAfterSave,
-	// matching hidenotes behavior — hide is a metadata operation, not a content change.
+	// Content changes reload NoteViews and run after-save handling.
+	// Hide-only batches still reload NoteViews so the hidden paths stop
+	// resolving on the public site (rendernotepage reads the in-memory cache),
+	// but skip HandleLatestNotesAfterSave since no content was saved.
 	if len(pathIDs) > 0 {
 		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
 			return nil, fmt.Errorf("updatenotes: prepare latest notes: %w", err)
 		}
 		if err := env.HandleLatestNotesAfterSave(ctx, pathIDs); err != nil {
 			return nil, fmt.Errorf("updatenotes: handle latest notes after save: %w", err)
+		}
+	} else if hid {
+		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
+			return nil, fmt.Errorf("updatenotes: prepare latest notes after hide: %w", err)
 		}
 	}
 

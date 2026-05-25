@@ -22,6 +22,9 @@ func newTestEnv(hideFunc func(ctx context.Context, params db.HideNotePathParams)
 	return &envMock{
 		HideNotePathFunc:    hideFunc,
 		LatestNoteViewsFunc: internalmodel.NewNoteViews,
+		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*internalmodel.NoteViews, error) {
+			return internalmodel.NewNoteViews(), nil
+		},
 		LoggerFunc: func() logger.Logger {
 			return slog.Default()
 		},
@@ -67,6 +70,9 @@ func TestResolve(t *testing.T) {
 				require.Equal(t, "/test/note.md", hideParams.Value)
 				require.NotNil(t, hideParams.HiddenBy)
 				require.Equal(t, int64(123), *hideParams.HiddenBy)
+
+				// Hiding must reload NoteViews so the page stops resolving.
+				require.Len(t, mockEnv.PrepareLatestNotesCalls(), 1)
 			},
 		},
 		{
@@ -96,6 +102,9 @@ func TestResolve(t *testing.T) {
 					require.NotNil(t, call.Params.HiddenBy)
 					require.Equal(t, int64(456), *call.Params.HiddenBy)
 				}
+
+				// A single reload covers the whole batch.
+				require.Len(t, mockEnv.PrepareLatestNotesCalls(), 1)
 			},
 		},
 		{
@@ -121,6 +130,9 @@ func TestResolve(t *testing.T) {
 				require.Equal(t, "/another/note.md", hideParams.Value)
 				require.NotNil(t, hideParams.HiddenBy)
 				require.Equal(t, int64(789), *hideParams.HiddenBy)
+
+				// Hide failed -> no reload.
+				require.Empty(t, mockEnv.PrepareLatestNotesCalls())
 			},
 		},
 		{
@@ -143,6 +155,8 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Empty(t, mockEnv.HideNotePathCalls())
+				// No paths -> nothing to hide, no reload.
+				require.Empty(t, mockEnv.PrepareLatestNotesCalls())
 			},
 		},
 	}

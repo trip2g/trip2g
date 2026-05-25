@@ -30,6 +30,9 @@ var _ Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*internalmodel.NoteViews, error) {
+//				panic("mock out the PrepareLatestNotes method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires Env
@@ -46,6 +49,9 @@ type EnvMock struct {
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
 
+	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
+	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// HideNotePath holds details about calls to the HideNotePath method.
@@ -61,10 +67,18 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
+		PrepareLatestNotes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Partial is the partial argument value.
+			Partial bool
+		}
 	}
-	lockHideNotePath    sync.RWMutex
-	lockLatestNoteViews sync.RWMutex
-	lockLogger          sync.RWMutex
+	lockHideNotePath       sync.RWMutex
+	lockLatestNoteViews    sync.RWMutex
+	lockLogger             sync.RWMutex
+	lockPrepareLatestNotes sync.RWMutex
 }
 
 // HideNotePath calls HideNotePathFunc.
@@ -154,5 +168,41 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// PrepareLatestNotes calls PrepareLatestNotesFunc.
+func (mock *EnvMock) PrepareLatestNotes(ctx context.Context, partial bool) (*internalmodel.NoteViews, error) {
+	if mock.PrepareLatestNotesFunc == nil {
+		panic("EnvMock.PrepareLatestNotesFunc: method is nil but Env.PrepareLatestNotes was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Partial bool
+	}{
+		Ctx:     ctx,
+		Partial: partial,
+	}
+	mock.lockPrepareLatestNotes.Lock()
+	mock.calls.PrepareLatestNotes = append(mock.calls.PrepareLatestNotes, callInfo)
+	mock.lockPrepareLatestNotes.Unlock()
+	return mock.PrepareLatestNotesFunc(ctx, partial)
+}
+
+// PrepareLatestNotesCalls gets all the calls that were made to PrepareLatestNotes.
+// Check the length with:
+//
+//	len(mockedEnv.PrepareLatestNotesCalls())
+func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
+	Ctx     context.Context
+	Partial bool
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Partial bool
+	}
+	mock.lockPrepareLatestNotes.RLock()
+	calls = mock.calls.PrepareLatestNotes
+	mock.lockPrepareLatestNotes.RUnlock()
 	return calls
 }
