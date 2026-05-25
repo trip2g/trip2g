@@ -93,7 +93,7 @@ type bizChat struct {
 	ID int64 `json:"id"`
 }
 
-var allowedUpdates = []string{
+var allowedUpdates = []string{ //nolint:gochecknoglobals // demo command state
 	"message",
 	"callback_query",
 	"business_connection",
@@ -103,11 +103,11 @@ var allowedUpdates = []string{
 
 // business_message fires for both incoming customer messages and outgoing
 // owner messages; owner_id from this map lets us skip the latter.
-var connections = map[string]int64{}
+var connections = map[string]int64{} //nolint:gochecknoglobals // demo command state
 
 // canvas is loaded once at startup. Demo-scope only — production handler will
 // pull from LatestNoteViews after the ingestion phase lands.
-var canvas *Canvas
+var canvas *Canvas //nolint:gochecknoglobals // demo command state
 
 // ------------------------- nav state -----------------------------------------
 
@@ -119,7 +119,7 @@ type navState struct {
 
 // states keyed by "<chat_id>|<business_connection_id>" so DM and business
 // chats stay isolated even for the same user id.
-var states = map[string]*navState{}
+var states = map[string]*navState{} //nolint:gochecknoglobals // demo command state
 
 func stateKey(chatID int64, bcID string) string {
 	return strconv.FormatInt(chatID, 10) + "|" + bcID
@@ -132,13 +132,13 @@ const (
 	telegramCaptionMax = 1000 // 1024 hard, leave headroom for HTML tags
 )
 
-func renderNode(nodeID string, stackLen int) (text, media, markup string, ok bool) {
+func renderNode(nodeID string, stackLen int) (string, string, string, bool) {
 	n, found := canvas.node(nodeID)
 	if !found {
 		return "", "", "", false
 	}
 	body, media := canvas.nodeContent(n)
-	text = renderBodyHTML(body)
+	text := renderBodyHTML(body)
 	limit := telegramMessageMax
 	if media != "" {
 		limit = telegramCaptionMax
@@ -160,7 +160,7 @@ func renderNode(nodeID string, stackLen int) (text, media, markup string, ok boo
 			continue
 		}
 		label := canvas.edgeLabel(e)
-		if target.Type == "link" && target.URL != "" {
+		if target.Type == nodeTypeLink && target.URL != "" {
 			rows = append(rows, []map[string]string{{
 				"text": label,
 				"url":  target.URL,
@@ -467,7 +467,8 @@ func main() {
 			log.Print("shutdown")
 			return
 		}
-		updates, err := getUpdates(bot, offset, allowed)
+		var updates []bizUpdate
+		updates, err = getUpdates(bot, offset, allowed)
 		if err != nil {
 			log.Printf("getUpdates: %v", err)
 			select {
@@ -506,14 +507,14 @@ func getUpdates(bot *tgbotapi.BotAPI, offset int64, allowed []byte) ([]bizUpdate
 		return nil, err
 	}
 	var raws []json.RawMessage
-	if err := json.Unmarshal(resp.Result, &raws); err != nil {
-		return nil, fmt.Errorf("unmarshal raw updates: %w", err)
+	if unmarshalErr := json.Unmarshal(resp.Result, &raws); unmarshalErr != nil {
+		return nil, fmt.Errorf("unmarshal raw updates: %w", unmarshalErr)
 	}
 	updates := make([]bizUpdate, 0, len(raws))
 	for _, raw := range raws {
 		var u bizUpdate
-		if err := json.Unmarshal(raw, &u); err != nil {
-			log.Printf("parse update failed: %v raw=%s", err, string(raw))
+		if parseErr := json.Unmarshal(raw, &u); parseErr != nil {
+			log.Printf("parse update failed: %v raw=%s", parseErr, string(raw))
 			continue
 		}
 		updates = append(updates, u)

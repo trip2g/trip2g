@@ -25,11 +25,11 @@ type Env interface {
 }
 
 var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
-	".md":          {},
-	".html":        {},
-	".canvas":      {},
-	".base":        {},
-	".excalidraw":  {},
+	".md":         {},
+	".html":       {},
+	".canvas":     {},
+	".base":       {},
+	".excalidraw": {},
 }
 
 var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant

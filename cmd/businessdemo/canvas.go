@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	nodeTypeText = "text"
+	nodeTypeLink = "link"
+)
+
 type canvasNode struct {
 	ID    string `json:"id"`
 	Type  string `json:"type"`
@@ -46,8 +51,8 @@ func loadCanvas(path, vaultRoot string) (*Canvas, error) {
 		return nil, fmt.Errorf("read canvas: %w", err)
 	}
 	var cf canvasFile
-	if err := json.Unmarshal(raw, &cf); err != nil {
-		return nil, fmt.Errorf("parse canvas: %w", err)
+	if parseErr := json.Unmarshal(raw, &cf); parseErr != nil {
+		return nil, fmt.Errorf("parse canvas: %w", parseErr)
 	}
 	c := &Canvas{
 		Path:      path,
@@ -73,7 +78,7 @@ func loadCanvas(path, vaultRoot string) (*Canvas, error) {
 func (c *Canvas) entry() string {
 	var startID string
 	for _, n := range c.nodesByID {
-		if n.Type == "text" && strings.EqualFold(strings.TrimSpace(n.Text), "START") {
+		if n.Type == nodeTypeText && strings.EqualFold(strings.TrimSpace(n.Text), "START") {
 			startID = n.ID
 			break
 		}
@@ -113,14 +118,15 @@ func stripFrontmatter(s string) string {
 // body with frontmatter and the consumed image embed stripped. The
 // frontmatter `image:` key wins over any `![[…]]` embed in the body.
 // Non-image embeds (e.g., `![[other.md]]`) are left in place.
-func extractFirstImage(content string) (image, body string) {
+func extractFirstImage(content string) (string, string) {
+	var image string
+	body := strings.TrimSpace(stripFrontmatter(content))
+
 	if m := frontmatterBlockRe.FindStringSubmatch(content); len(m) > 1 {
 		if im := frontmatterImageRe.FindStringSubmatch(m[1]); len(im) > 1 {
 			image = strings.TrimSpace(im[1])
 		}
 	}
-
-	body = strings.TrimSpace(stripFrontmatter(content))
 
 	if image != "" {
 		return image, body
@@ -143,9 +149,9 @@ func extractFirstImage(content string) (image, body string) {
 // path. File nodes that carry an `image:` frontmatter or a `![[…]]` image
 // embed surface the first match here; the bot can then route the render
 // through sendPhoto+caption instead of plain sendMessage.
-func (c *Canvas) nodeContent(n canvasNode) (text, media string) {
+func (c *Canvas) nodeContent(n canvasNode) (string, string) {
 	switch n.Type {
-	case "text":
+	case nodeTypeText:
 		return n.Text, ""
 	case "file":
 		if strings.HasSuffix(strings.ToLower(n.File), ".base") {
@@ -161,7 +167,7 @@ func (c *Canvas) nodeContent(n canvasNode) (text, media string) {
 			return body, c.resolveImagePath(n.File, image)
 		}
 		return body, ""
-	case "link":
+	case nodeTypeLink:
 		return "🌐 " + n.URL, ""
 	case "group":
 		return "(group)", ""
@@ -249,10 +255,10 @@ func renderLineHTML(line string) string {
 	if title == "" {
 		return htmlEscape(line)
 	}
-	switch {
-	case level == 1:
+	switch level {
+	case 1:
 		return "<b>" + applyInlineMarkdown(htmlEscape(strings.ToUpper(title))) + "</b>"
-	case level == 2:
+	case 2:
 		return "<b>" + applyInlineMarkdown(htmlEscape(title)) + "</b>"
 	default:
 		return "<b><i>" + applyInlineMarkdown(htmlEscape(title)) + "</i></b>"
@@ -290,7 +296,7 @@ func defaultNodeLabel(n canvasNode) string {
 	case "file":
 		base := filepath.Base(n.File)
 		return strings.TrimSuffix(base, filepath.Ext(base))
-	case "text":
+	case nodeTypeText:
 		for _, line := range strings.Split(n.Text, "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" {
@@ -302,7 +308,7 @@ func defaultNodeLabel(n canvasNode) string {
 			return line
 		}
 		return "(text)"
-	case "link":
+	case nodeTypeLink:
 		return n.URL
 	}
 	return n.ID

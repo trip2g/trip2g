@@ -27,6 +27,7 @@ import (
 
 type Endpoint struct{}
 
+//nolint:gocognit,funlen // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
 	if err != nil {

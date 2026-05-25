@@ -16,14 +16,15 @@ var (
 // extractFirstImage returns the first image reference from note content and
 // the body with frontmatter and consumed image embed stripped.
 // Used as fallback when NoteView doesn't have a pre-extracted first image.
-func extractFirstImage(content string) (image, body string) {
+func extractFirstImage(content string) (string, string) {
+	var image string
+	body := strings.TrimSpace(frontmatterRe.ReplaceAllString(content, ""))
+
 	if m := frontmatterBlockRe.FindStringSubmatch(content); len(m) > 1 {
 		if im := frontmatterImageRe.FindStringSubmatch(m[1]); len(im) > 1 {
 			image = strings.TrimSpace(im[1])
 		}
 	}
-
-	body = strings.TrimSpace(frontmatterRe.ReplaceAllString(content, ""))
 
 	if image != "" {
 		return image, body

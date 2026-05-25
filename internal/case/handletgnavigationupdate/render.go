@@ -1,14 +1,15 @@
 package handletgnavigationupdate
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
 
-	"github.com/yuin/goldmark/ast"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/yuin/goldmark/ast"
 )
 
 const maxNoteTextLen = 4000
@@ -16,9 +17,9 @@ const maxNoteTextLen = 4000
 // RenderNote builds the message text and inline keyboard for a note.
 // stack contains PathIDs of notes to return to (back button is shown when non-empty).
 // botLink is used to build deep links, e.g. "https://t.me/mybot".
-func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink string) (text string, keyboard *tgbotapi.InlineKeyboardMarkup, err error) {
+func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink string) (string, *tgbotapi.InlineKeyboardMarkup, error) {
 	if noteViews == nil {
-		return "", nil, fmt.Errorf("notes not loaded yet")
+		return "", nil, errors.New("notes not loaded yet")
 	}
 
 	note := noteByPathID(noteViews, pathID)
@@ -38,8 +39,7 @@ func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink
 		}, nil
 	})
 	converter.UnknownNodeHandler = func(c *markdownv2.HTMLConverter, n ast.Node, src []byte, entering bool) (ast.WalkStatus, bool) {
-		switch n.(type) {
-		case *ast.Heading:
+		if _, ok := n.(*ast.Heading); ok {
 			if entering {
 				c.Write("<b>")
 			} else {
@@ -51,7 +51,7 @@ func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink
 	}
 
 	result := converter.Process(note)
-	text = telegram.TruncateContent(result.Content, maxNoteTextLen)
+	text := telegram.TruncateContent(result.Content, maxNoteTextLen)
 
 	// Build keyboard: telegram_buttons from frontmatter, then ← Back if stack non-empty
 	var rows [][]tgbotapi.InlineKeyboardButton

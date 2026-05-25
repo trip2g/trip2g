@@ -48,10 +48,10 @@ func renderLineHTML(line string) string {
 	if title == "" {
 		return htmlEscape(line)
 	}
-	switch {
-	case level == 1:
+	switch level {
+	case 1:
 		return "<b>" + applyInlineMarkdown(strings.ToUpper(title)) + "</b>"
-	case level == 2:
+	case 2:
 		return "<b>" + applyInlineMarkdown(title) + "</b>"
 	default:
 		return "<b><i>" + applyInlineMarkdown(title) + "</i></b>"

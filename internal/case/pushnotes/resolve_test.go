@@ -100,7 +100,10 @@ func TestResolve(t *testing.T) {
 			name: "excalidraw file accepted",
 			input: model.PushNotesInput{
 				Updates: []model.PushNoteInput{
-					{Path: "example.excalidraw", Content: `{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{},"files":{}}`},
+					{
+						Path:    "example.excalidraw",
+						Content: `{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{},"files":{}}`,
+					},
 				},
 			},
 			setupEnv: func() *EnvMock {

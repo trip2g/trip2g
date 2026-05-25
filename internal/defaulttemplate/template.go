@@ -66,8 +66,8 @@ type Ctx struct {
 	UnsupportedFileExt string // non-empty for .canvas / .base files not yet rendered
 	PaywallError       *PaywallError
 	SigninWallError    *SigninWallError
-	UserToken       *usertoken.Data
-	Lang            string
+	UserToken          *usertoken.Data
+	Lang               string
 
 	EnableRSS bool
 

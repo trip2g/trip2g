@@ -17,6 +17,8 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
+const handlerNavigation = "navigation"
+
 type Env interface {
 	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
@@ -61,9 +63,9 @@ func ResolveOpen(ctx context.Context, env Env, update tgbotapi.Update, pathID in
 	}
 	frag.Nav.Current = pathID
 	frag.Nav.LastMsgID = 0 // deep link always opens a new message
-	frag.Handler = "navigation"
-	if err := saveState(ctx, env, chatID, rawState, frag); err != nil {
-		env.Logger().Error("nav: save state on deep link", "error", err)
+	frag.Handler = handlerNavigation
+	if saveErr := saveState(ctx, env, chatID, rawState, frag); saveErr != nil {
+		env.Logger().Error("nav: save state on deep link", "error", saveErr)
 	}
 	return sendNote(ctx, env, chatID, pathID, frag, rawState)
 }
@@ -112,15 +114,15 @@ func handleCallback(ctx context.Context, env Env, cb *tgbotapi.CallbackQuery, ch
 		}
 		pathID, err := strconv.ParseInt(parts[2], 10, 64)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // malformed callback data: ignore stale/invalid button
 		}
 		// Push current note onto stack before navigating
 		if frag.Nav.Current != 0 {
 			frag.Nav.Stack = append(frag.Nav.Stack, frag.Nav.Current)
 		}
 		frag.Nav.Current = pathID
-		if err := saveState(ctx, env, chatID, rawState, frag); err != nil {
-			env.Logger().Error("nav: save state", "error", err)
+		if saveErr := saveState(ctx, env, chatID, rawState, frag); saveErr != nil {
+			env.Logger().Error("nav: save state", "error", saveErr)
 		}
 		return sendNote(ctx, env, chatID, pathID, frag, rawState)
 
@@ -156,35 +158,7 @@ func handleMessage(ctx context.Context, env Env, msg *tgbotapi.Message, chatID i
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "browse", "start":
-			if args := msg.CommandArguments(); strings.HasPrefix(args, "browse_") {
-				if pathID, err := strconv.ParseInt(args[7:], 10, 64); err == nil {
-					if frag.Nav == nil {
-						frag.Nav = &navState{}
-					}
-					if frag.Nav.Current != 0 {
-						frag.Nav.Stack = append(frag.Nav.Stack, frag.Nav.Current)
-					}
-					frag.Nav.Current = pathID
-					frag.Nav.LastMsgID = 0 // deep link always opens a new message
-					frag.Handler = "navigation"
-					if err := saveState(ctx, env, chatID, rawState, frag); err != nil {
-						env.Logger().Error("nav: save state on deep link", "error", err)
-					}
-					return sendNote(ctx, env, chatID, pathID, frag, rawState)
-				}
-			}
-			note := FindStartNote(env.LatestNoteViews())
-			if note == nil {
-				reply := tgbotapi.NewMessage(chatID, "No _bot_start.md found in vault.")
-				_, _ = env.Send(reply)
-				return nil
-			}
-			frag.Nav = &navState{Current: note.PathID}
-			frag.Handler = "navigation"
-			if err := saveState(ctx, env, chatID, rawState, frag); err != nil {
-				env.Logger().Error("nav: save state on browse", "error", err)
-			}
-			return sendNote(ctx, env, chatID, note.PathID, frag, rawState)
+			return handleBrowseCommand(ctx, env, msg, chatID, rawState, frag)
 		}
 	}
 
@@ -193,12 +167,56 @@ func handleMessage(ctx context.Context, env Env, msg *tgbotapi.Message, chatID i
 	return nil
 }
 
+// handleBrowseCommand handles the /browse and /start commands.
+func handleBrowseCommand(ctx context.Context, env Env, msg *tgbotapi.Message, chatID int64, rawState string, frag *stateFragment) error {
+	if pathID, ok := parseBrowseDeepLink(msg.CommandArguments()); ok {
+		if frag.Nav == nil {
+			frag.Nav = &navState{}
+		}
+		if frag.Nav.Current != 0 {
+			frag.Nav.Stack = append(frag.Nav.Stack, frag.Nav.Current)
+		}
+		frag.Nav.Current = pathID
+		frag.Nav.LastMsgID = 0 // deep link always opens a new message
+		frag.Handler = handlerNavigation
+		if saveErr := saveState(ctx, env, chatID, rawState, frag); saveErr != nil {
+			env.Logger().Error("nav: save state on deep link", "error", saveErr)
+		}
+		return sendNote(ctx, env, chatID, pathID, frag, rawState)
+	}
+
+	note := FindStartNote(env.LatestNoteViews())
+	if note == nil {
+		reply := tgbotapi.NewMessage(chatID, "No _bot_start.md found in vault.")
+		_, _ = env.Send(reply)
+		return nil
+	}
+	frag.Nav = &navState{Current: note.PathID}
+	frag.Handler = handlerNavigation
+	if saveErr := saveState(ctx, env, chatID, rawState, frag); saveErr != nil {
+		env.Logger().Error("nav: save state on browse", "error", saveErr)
+	}
+	return sendNote(ctx, env, chatID, note.PathID, frag, rawState)
+}
+
+// parseBrowseDeepLink extracts the pathID from a "browse_<pathID>" command argument.
+func parseBrowseDeepLink(args string) (int64, bool) {
+	if !strings.HasPrefix(args, "browse_") {
+		return 0, false
+	}
+	pathID, err := strconv.ParseInt(args[7:], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return pathID, true
+}
+
 func sendNote(ctx context.Context, env Env, chatID, pathID int64, frag *stateFragment, rawState string) error {
 	text, keyboard, err := RenderNote(env.LatestNoteViews(), pathID, frag.Nav.Stack, env.BotLink())
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Note not found (%d).", pathID))
 		_, _ = env.Send(msg)
-		return nil
+		return nil //nolint:nilerr // render failure is reported to the user; don't fail the update
 	}
 
 	if frag.Nav.LastMsgID != 0 {
@@ -220,7 +238,7 @@ func sendNote(ctx context.Context, env Env, chatID, pathID int64, frag *stateFra
 	return sendErr
 }
 
-func loadState(ctx context.Context, env Env, chatID int64) (rawJSON string, frag *stateFragment, err error) {
+func loadState(ctx context.Context, env Env, chatID int64) (string, *stateFragment, error) {
 	state, dbErr := env.TgUserStateByBotIDAndChatID(ctx, db.TgUserStateByBotIDAndChatIDParams{
 		BotID:  env.BotID(),
 		ChatID: chatID,
@@ -233,7 +251,8 @@ func loadState(ctx context.Context, env Env, chatID int64) (rawJSON string, frag
 	}
 	var f stateFragment
 	if jsonErr := json.Unmarshal([]byte(state.Data), &f); jsonErr != nil {
-		return state.Data, &stateFragment{}, nil
+		// Corrupt state: keep raw data but reset our fragment (graceful degradation).
+		return state.Data, &stateFragment{}, nil //nolint:nilerr // intentionally reset on unparsable state
 	}
 	return state.Data, &f, nil
 }

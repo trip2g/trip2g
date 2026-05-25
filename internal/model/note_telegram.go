@@ -201,7 +201,7 @@ func (note *NoteView) ExtractTelegramButtons() []string {
 	}
 	var result []string
 	for _, item := range items {
-		if s, ok := item.(string); ok && s != "" {
+		if s, okStr := item.(string); okStr && s != "" {
 			result = append(result, s)
 		}
 	}

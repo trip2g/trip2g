@@ -2143,7 +2143,9 @@ func TestRawFileIngestion(t *testing.T) {
 
 	canvasContent := []byte(`{"nodes":[{"id":"n1","type":"file","file":"intro.md","x":0,"y":0,"width":300,"height":200}],"edges":[]}`)
 	baseContent := []byte("type: base\nname: My Base\nfilters:\n  tags:\n    - project\n")
-	excalidrawContent := []byte(`{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{"gridSize":null,"viewBackgroundColor":"#ffffff"},"files":{}}`)
+	excalidrawContent := []byte(
+		`{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[],"appState":{"gridSize":null,"viewBackgroundColor":"#ffffff"},"files":{}}`,
+	)
 
 	sourceFiles := []mdloader.SourceFile{
 		{Path: "index.md", Content: []byte("Hello"), PathID: 1, VersionID: 10},

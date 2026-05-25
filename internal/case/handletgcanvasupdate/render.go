@@ -12,12 +12,13 @@ import (
 
 // renderNode produces the Telegram message text, optional media path, and
 // inline keyboard markup JSON for a given canvas node.
-func renderNode(env Env, canvas *obsidiancanvas.Canvas, nodeID string) (text, media, markup string) {
+func renderNode(env Env, canvas *obsidiancanvas.Canvas, nodeID string) (string, string, string) {
 	node, ok := canvas.Node(nodeID)
 	if !ok {
 		return "(node not found)", "", ""
 	}
 
+	var text, media string
 	switch node.Type {
 	case "text":
 		text = renderBodyHTML(node.Text)
@@ -31,13 +32,13 @@ func renderNode(env Env, canvas *obsidiancanvas.Canvas, nodeID string) (text, me
 
 	// Build inline keyboard from outgoing edges
 	edges := canvas.EdgesFrom(nodeID)
-	markup = buildKeyboard(canvas, edges)
+	markup := buildKeyboard(canvas, edges)
 
 	return text, media, markup
 }
 
 // renderFileNode renders a file-type node using the HTMLConverter via Env.
-func renderFileNode(env Env, node obsidiancanvas.Node) (text, media string) {
+func renderFileNode(env Env, node obsidiancanvas.Node) (string, string) {
 	nvs := env.LatestNoteViews()
 	if nvs == nil {
 		return "(notes not loaded)", ""

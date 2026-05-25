@@ -262,17 +262,17 @@ func isRawFile(path string) bool {
 // bypassing the entire markdown pipeline.
 func (ldr *loader) registerRawFile(src SourceFile) {
 	nv := &model.NoteView{
-		Path:          src.Path,
-		PathID:        src.PathID,
-		VersionID:     src.VersionID,
-		CreatedAt:     src.CreatedAt,
-		Content:       src.Content,
-		InLinks:       make(map[string]struct{}),
-		Subgraphs:     make(map[string]*model.NoteSubgraph),
-		Assets:        make(map[string]struct{}),
-		ResolvedLinks: make(map[string]string),
-		AssetReplaces: src.Assets,
-		RawMeta:       map[string]interface{}{},
+		Path:            src.Path,
+		PathID:          src.PathID,
+		VersionID:       src.VersionID,
+		CreatedAt:       src.CreatedAt,
+		Content:         src.Content,
+		InLinks:         make(map[string]struct{}),
+		Subgraphs:       make(map[string]*model.NoteSubgraph),
+		Assets:          make(map[string]struct{}),
+		ResolvedLinks:   make(map[string]string),
+		AssetReplaces:   src.Assets,
+		RawMeta:         map[string]interface{}{},
 		OriginalRawMeta: map[string]interface{}{},
 	}
 	// Parse canvas JSON at load time so handlers can use the struct directly.
@@ -461,6 +461,7 @@ func (ldr *loader) buildBasenameIndex() {
 	ldr.basenameIndex = ldr.nvs.BasenameMap
 }
 
+//nolint:funlen // 1 line over limit; splitting would harm readability
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
 		if p.Ast() == nil {
