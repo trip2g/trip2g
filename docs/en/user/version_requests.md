@@ -6,7 +6,7 @@ lang_redirect: "[[ru/user/version_requests]]"
 
 A note was accidentally overwritten — content is gone, the current version is wrong. trip2g keeps every version of every note. You can retrieve any past version using two GraphQL queries via `graphql_request`.
 
-This requires admin tools enabled on the API key. See [[en/user/agent_admin]].
+This requires admin tools enabled on the API key. See [[en/user/agent_admin]]. The queries can also be run directly in the GraphiQL interface at `/_system/graphql` — see [[en/user/graphql]].
 
 ### Step 1. Find the overwrite
 
