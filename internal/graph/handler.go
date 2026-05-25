@@ -68,7 +68,6 @@ func NewHandler(env Env) *handler.Server {
 
 	srv.AddTransport(transport.SSE{})
 	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{
 		MaxUploadSize: maxBodySize,

@@ -168,6 +168,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
 	c.SetSecure(!e.insecure)
+	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
 	c.SetExpire(exp)
 	c.SetMaxAge(int(exp.Sub(now).Seconds()))
 
@@ -188,6 +189,7 @@ func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
 	c.SetSecure(!e.insecure)
+	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
 	c.SetExpire(fasthttp.CookieExpireDelete)
 
 	ctx.Response.Header.SetCookie(c)
