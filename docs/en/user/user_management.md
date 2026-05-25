@@ -97,6 +97,52 @@ mutation {
 
 Admin status gives full access to the admin panel and all GraphQL mutations. Use it for team members who need to manage the site, not for regular subscribers.
 
+### Use case: share a single page with one person by email
+
+You want to give someone access to one specific note — not the whole site, not a paid subgraph. The cleanest way:
+
+**1. Create the note**
+
+```
+shares/alice/intro.md
+```
+
+Frontmatter:
+```yaml
+---
+subgraph: alice
+---
+```
+
+Sync from Obsidian. The `alice` subgraph appears automatically.
+
+**2. Provision the user**
+
+```graphql
+# Create the user
+mutation { admin { createUser(input: { email: "alice@example.com" }) {
+  ... on CreateUserPayload { user { id } }
+} } }
+
+# Get the subgraph ID (look for name = "alice")
+{ admin { allSubgraphs { nodes { id name } } } }
+
+# Grant access
+mutation { admin { createUserSubgraphAccess(input: { userId: <id>, subgraphIds: [<subgraphId>] }) {
+  ... on CreateUserSubgraphAccessPayload { accesses { id } }
+} } }
+```
+
+**3. Send the user a message**
+
+> Hi Alice,
+>
+> I've shared a page with you: **https://yoursite.com/shares/alice/intro**
+>
+> To open it, click the link and sign in with this email. You'll receive a one-time code — no password needed.
+
+That's it. Alice sees only the `alice` subgraph. Add more notes to `shares/alice/` as needed.
+
 ### Lookup queries
 
 If you don't know a user's `id` or a subgraph's `id`, look them up first.
