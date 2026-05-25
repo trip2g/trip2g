@@ -39,8 +39,9 @@ registry: the notes in your vault *are* the topology.
   over MCP to harden a skill, without ever opening the talks.
 - **Marcus Aurelius — Meditations** — our own base: all 12 books in Russian,
   English, and Greek, with commentary, thematic chains, and extracted principles.
-- **Telegram channels** — a curated set of public channels behind a trip2g Telegram
-  adapter.
+- **Telegram channels** — a curated set of public channels behind a standalone node
+  (Qdrant + a Telegram indexer) that just speaks the federation protocol — not a
+  trip2g base at all. Proof the network isn't trip2g-only.
 
 Each entry is a bilingual pair listed in the [[en/hub/_index|hub index]]; adding the
 next one is one note ([[en/hub/_create|how]]).

@@ -68,4 +68,4 @@ A knowledge base about yourself instead of an "about me" page. The bot asks what
 
 ### [[en/thoughts/public-hub|One endpoint, many knowledge bases]]
 
-A public hub that federates several independent bases through one MCP endpoint. Public discovery, gated content — and a network to build a team, and a company, on.
+A public hub: one MCP endpoint searches across several independent bases at once. Public discovery, gated content — and a network to build a team, and a company, on. Search surfaces a note that points at another base, and routes the query there.
