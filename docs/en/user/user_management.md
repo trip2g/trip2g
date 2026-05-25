@@ -180,10 +180,14 @@ shares/a3f7c2d1-invoice-may.md
 ```yaml
 ---
 free: true
+created_at: 2026-05-25
+expires_at: 2026-06-25
 ---
 ```
 
 Anyone with the URL can open it, no sign-in needed. The unguessable path acts as the access token. Suitable for one-off documents, invoices, drafts — anything where the link itself is the secret.
+
+`expires_at` is metadata only for now — useful for future cleanup automation (cron that hides or deletes expired shares).
 
 ### Lookup queries
 
