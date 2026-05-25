@@ -145,15 +145,16 @@ test.describe.serial('Personal tokens', () => {
   });
 
   test('3. Same MCP call via ?token= query param returns identical result', async ({ playwright }) => {
-    const bearerResult = await mcpCallFresh(playwright, HUB_MCP, 'tools/call', {
-      name: 'search',
-      arguments: { query: 'federation' },
-    }, { bearer: adminHubToken });
-
-    const queryResult = await mcpCallFresh(playwright, HUB_MCP, 'tools/call', {
-      name: 'search',
-      arguments: { query: 'federation' },
-    }, { queryToken: adminHubToken });
+    const [bearerResult, queryResult] = await Promise.all([
+      mcpCallFresh(playwright, HUB_MCP, 'tools/call', {
+        name: 'search',
+        arguments: { query: 'federation' },
+      }, { bearer: adminHubToken }),
+      mcpCallFresh(playwright, HUB_MCP, 'tools/call', {
+        name: 'search',
+        arguments: { query: 'federation' },
+      }, { queryToken: adminHubToken }),
+    ]);
 
     expect(bearerResult.result).toBeDefined();
     expect(queryResult.result).toBeDefined();
