@@ -3,6 +3,8 @@ title: "Nick Senin Journal"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/nicksenin_journal]]"
+mcp_federation_kb_url: https://journal.nicksenin.com/_system/mcp
+mcp_federation_kb_id: nicksenin_journal
 ---
 
 # Nick Senin Journal

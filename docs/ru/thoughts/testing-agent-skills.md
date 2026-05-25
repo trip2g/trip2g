@@ -58,6 +58,7 @@ free: true
 
 ## Связанные материалы
 
+- [[ru/harness]] — что такое harness, когда он нужен, примеры и антипримеры
 - [Code with Claude 2026 — навигатор по кейсам](https://journal.nicksenin.com/code-with-claude) — собран агентом из транскриптов выступлений
 - [Knowlu.me](https://ru.knowlu.me) — инструмент извлечения смыслов из транскриптов, на котором собран journal
 - [MCP-эндпоинт journal.nicksenin.com](https://journal.nicksenin.com/_system/mcp) — через него мой агент получил доступ к этим знаниям

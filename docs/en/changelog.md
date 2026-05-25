@@ -8,6 +8,52 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.4.1 — 2026-05-25
+
+### MCP Federation — one hub across many knowledge bases
+
+- **What.** Your instance can act as a federation hub. A **KB-note** (a note with `mcp_federation_kb_url` in frontmatter) registers another MCP-compatible base, and `federated_search` / `federated_similar` / `federated_note_html` reach across all of them through your single MCP endpoint. Public bases need no auth; private peers use a shared HMAC secret.
+- **Why.** One endpoint, one auth surface — your agent searches your own notes, partner instances, and external adapters (GitHub, Telegram) together, without rewiring `.mcp.json`.
+- **How.**
+  - User docs: [`docs/en/user/federation.md`](./en/user/federation.md), [`docs/ru/user/federation.md`](./ru/user/federation.md)
+  - Public base: create a note with `mcp_federation_kb_url` (+ optional `mcp_federation_kb_id`) and `free: true`.
+  - Private peer: exchange a federation secret in Admin → Federation, then add the KB-note.
+
+### Public hub of curated bases
+
+- **What.** A `hub/` section with a bilingual index of the knowledge bases reachable through the hub (first entry: the Nick Senin Journal — filtered Code with Claude 2026 cases).
+- **Why.** A browsable, public entry point to federated bases.
+- **How.** See [`docs/en/hub/_index.md`](./en/hub/_index.md); add your own with [`docs/en/hub/_create.md`](./en/hub/_create.md).
+
+### Canvas, Base, and Excalidraw files
+
+- **What.** `.canvas`, `.base`, and `.excalidraw` files flow through ingestion and sync; URLs for types not renderable in the browser show a clear placeholder instead of breaking the page.
+- **Why.** Vaults using Obsidian Canvas / Bases / Excalidraw sync without errors.
+- **How.** Just sync them — the plugin and CLI now accept these extensions.
+
+### Telegram navigation & canvas bots
+
+- **What.** A wikilink-browser bot and canvas-driven navigation over a Telegram business connection.
+- **Why.** Readers can browse your vault graph from inside Telegram.
+- **How.** See the Telegram docs; enable on a business connection.
+
+### Admin & config
+
+- **What.** GraphQL API for note **version history**; admin **filter for form submits** (status / date / processed); environment variables accept a `TRIP2G_` prefix (unknown vars warn).
+- **Why.** Inspect and roll context, triage submissions, and configure self-hosted instances more safely.
+- **How.** Admin panels; prefix any env var with `TRIP2G_`.
+
+### Obsidian sync plugin + CLI
+
+- **What.**
+  - Accepts `.canvas`, `.base`, and `.excalidraw` files.
+  - Surfaces GraphQL error details on a failed push (no more silent failures).
+  - **New `--exclude <glob>` flag** (repeatable). Excluded paths are never pushed; if they already exist on the server they are **hidden**. A bare name like `dev` matches that directory and everything under it. Default: nothing is excluded — everything uploads.
+- **Why.** Keep test/demo or internal folders (e.g. `dev/`, `demo/`) in your repo but out of the published site — and reversibly hide them on the server.
+- **How.** `trip2g-sync ./docs --exclude dev --exclude demo`. Re-including a path re-publishes and automatically unhides it.
+
+---
+
 ## v0.4.0 — 2026-05-21
 
 ### updateNotes mutation — atomic find/replace across notes
