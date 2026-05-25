@@ -26,6 +26,7 @@ title: "Навигация"
 - [[ru/thoughts/testing-agent-skills|Тестирование скилов агента]]
 - [[ru/thoughts/agent-team-reporting|Агент докладывает команде сам]]
 - [[ru/thoughts/agent-team-digest|Агент ведёт дневник команды]]
+- [[ru/thoughts/public-hub|Один эндпоинт, много баз знаний]]
 
 **Инструменты**
 - [[ru/thoughts/patching-obsidian-canvas-on-minimal-linux|Чиним Obsidian Canvas на минимальном Linux]]

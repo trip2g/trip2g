@@ -65,3 +65,7 @@ Four ways to move through one knowledge base: freely, by track, by AI-generated 
 ### [[en/thoughts/knowledge-bot|Knowledge bot]]
 
 A knowledge base about yourself instead of an "about me" page. The bot asks what's interesting and shows what's relevant. And you see what people ask about most.
+
+### [[en/thoughts/public-hub|One endpoint, many knowledge bases]]
+
+A public hub that federates several independent bases through one MCP endpoint. Public discovery, gated content — and a network to build a team, and a company, on.
