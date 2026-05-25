@@ -1,4 +1,6 @@
 $trip2g_user_space_tokens $mol_view
+	style *
+		flexDirection \column
 	sub /
 		<= Page $mol_page
 			title @ \Personal Tokens
