@@ -217,34 +217,97 @@ mutation Submit($input: SubmitFormInput!) {
 
 #### Через API-ключ
 
-Чтобы вытаскивать сабмиты программно, используйте админский personal token (`Authorization: Bearer t2g_…`). Токен должен принадлежать админскому пользователю — иначе запрос вернёт `unauthorized`.
+Для программного получения сабмитов используйте админский personal token (`Authorization: Bearer t2g_…`). Токен должен принадлежать администратору — иначе запрос вернёт `unauthorized`. Все запросы отправляются на `/_system/graphql` с заголовками `Content-Type: application/json` и `Authorization: Bearer $TRIP2G_TOKEN`.
 
-```bash
-curl -sS https://yoursite.example/_system/graphql \
-  -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $TRIP2G_TOKEN" \
-  -d '{
-    "query": "query($p: Int64!) { admin { formSubmits(notePathId: $p) { nodes { id createdAt status fields { ... on AdminFormStringValue { name value } ... on AdminFormIntValue { name value } ... on AdminFormBoolValue { name value } } } } } }",
-    "variables": { "p": 4321 }
-  }'
-```
-
-Запрос `formNotes` возвращает список всех заметок с хотя бы одним сабмитом — удобно для дашбордов:
+**Найти заметки с сабмитами**
 
 ```graphql
 query { admin { formNotes { notePathId path title submitCount } } }
 ```
 
-Пометить сабмит как обработанный (чтобы счётчик в админке уменьшился):
+Используйте этот запрос первым — он даст `notePathId` для дальнейшей фильтрации.
+
+**Получить список сабмитов**
 
 ```graphql
-mutation Mark($input: MarkFormSubmitProcessedInput!) {
-  markFormSubmitProcessed(input: $input) {
-    ... on MarkFormSubmitProcessedPayload { submit { id processedAt } }
-    ... on ErrorPayload { message }
+query AdminFormSubmits($filter: AdminFormSubmitsFilterInput) {
+  admin {
+    formSubmits(filter: $filter) {
+      totalCount
+      nodes {
+        id
+        noteVersionId
+        formId
+        ip
+        status
+        createdAt
+        processedAt
+        comment
+        fields {
+          __typename
+          ... on AdminFormStringValue { name value }
+          ... on AdminFormIntValue    { name iv: value }
+          ... on AdminFormBoolValue   { name bv: value }
+        }
+      }
+    }
   }
 }
 ```
+
+Поля фильтра — все необязательны:
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `notePathId` | Int64 | Сабмиты конкретной заметки |
+| `formId` | String | Имя формы (`""` для одиночного `form:`) |
+| `status` | String | `"pending"` или `"processed"` |
+| `processed` | Boolean | `false` — только необработанные |
+| `createdAt.gte` / `.lte` | DateTime | Диапазон дат |
+| `limit` | Int | Размер страницы |
+| `offset` | Int | Смещение для пагинации |
+
+Пример — необработанные сабмиты конкретной заметки за май 2026:
+
+```json
+{
+  "filter": {
+    "notePathId": 123,
+    "formId": "contact",
+    "processed": false,
+    "createdAt": { "gte": "2026-05-01T00:00:00Z", "lte": "2026-05-31T23:59:59Z" },
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+**Пометить сабмит как обработанный**
+
+```graphql
+mutation MarkProcessed($input: MarkFormSubmitProcessedInput!) {
+  admin {
+    markFormSubmitProcessed(input: $input) {
+      __typename
+      ... on MarkFormSubmitProcessedPayload {
+        submit { id processedAt comment }
+      }
+      ... on ErrorPayload {
+        message
+        fields { name message }
+      }
+    }
+  }
+}
+```
+
+Переменные:
+
+```json
+{ "input": { "id": 17, "comment": "ответили по email" } }
+```
+
+Поле `comment` необязательно — удобно оставить заметку о том, как обработан сабмит.
 
 ### Массово: форма на всю папку
 

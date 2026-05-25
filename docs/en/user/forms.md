@@ -219,34 +219,97 @@ The admin panel has a "Forms" section per note: list of submissions with timesta
 
 #### Via API key
 
-To pull submissions programmatically, use an admin personal token (`Authorization: Bearer t2g_…`). The token must belong to an admin user — non-admin tokens get `unauthorized`.
+To pull submissions programmatically, use an admin personal token (`Authorization: Bearer t2g_…`). The token must belong to an admin user — non-admin tokens get `unauthorized`. Send all queries to `/_system/graphql` with `Content-Type: application/json` and `Authorization: Bearer $TRIP2G_TOKEN`.
 
-```bash
-curl -sS https://yoursite.example/_system/graphql \
-  -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $TRIP2G_TOKEN" \
-  -d '{
-    "query": "query($p: Int64!) { admin { formSubmits(notePathId: $p) { nodes { id createdAt status fields { ... on AdminFormStringValue { name value } ... on AdminFormIntValue { name value } ... on AdminFormBoolValue { name value } } } } } }",
-    "variables": { "p": 4321 }
-  }'
-```
-
-The `formNotes` query lists every note that has at least one submission — useful for building dashboards:
+**Find which notes have submissions**
 
 ```graphql
 query { admin { formNotes { notePathId path title submitCount } } }
 ```
 
-Mark a submission as processed (so the admin UI counter goes down):
+Use this first to get the `notePathId` values you'll filter by.
+
+**List submissions**
 
 ```graphql
-mutation Mark($input: MarkFormSubmitProcessedInput!) {
-  markFormSubmitProcessed(input: $input) {
-    ... on MarkFormSubmitProcessedPayload { submit { id processedAt } }
-    ... on ErrorPayload { message }
+query AdminFormSubmits($filter: AdminFormSubmitsFilterInput) {
+  admin {
+    formSubmits(filter: $filter) {
+      totalCount
+      nodes {
+        id
+        noteVersionId
+        formId
+        ip
+        status
+        createdAt
+        processedAt
+        comment
+        fields {
+          __typename
+          ... on AdminFormStringValue { name value }
+          ... on AdminFormIntValue    { name iv: value }
+          ... on AdminFormBoolValue   { name bv: value }
+        }
+      }
+    }
   }
 }
 ```
+
+Filter variables — all fields are optional:
+
+| Field | Type | Description |
+|---|---|---|
+| `notePathId` | Int64 | Submissions for a specific note |
+| `formId` | String | Filter by named form key (`""` for inline `form:`) |
+| `status` | String | `"pending"` or `"processed"` |
+| `processed` | Boolean | `false` = unprocessed only |
+| `createdAt.gte` / `.lte` | DateTime | Date range |
+| `limit` | Int | Page size |
+| `offset` | Int | Pagination offset |
+
+Example — unprocessed submissions for a specific note in May 2026:
+
+```json
+{
+  "filter": {
+    "notePathId": 123,
+    "formId": "contact",
+    "processed": false,
+    "createdAt": { "gte": "2026-05-01T00:00:00Z", "lte": "2026-05-31T23:59:59Z" },
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+**Mark a submission as processed**
+
+```graphql
+mutation MarkProcessed($input: MarkFormSubmitProcessedInput!) {
+  admin {
+    markFormSubmitProcessed(input: $input) {
+      __typename
+      ... on MarkFormSubmitProcessedPayload {
+        submit { id processedAt comment }
+      }
+      ... on ErrorPayload {
+        message
+        fields { name message }
+      }
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{ "input": { "id": 17, "comment": "answered via email" } }
+```
+
+The `comment` field is optional — useful for leaving a note on how you handled the submission.
 
 ### Bulk: enable a form on a whole folder
 
