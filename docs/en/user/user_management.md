@@ -169,6 +169,22 @@ mutation { admin { createUserSubgraphAccess(input: { userId: <id>, subgraphIds: 
 
 That's it. Alice sees only the `alice` subgraph. Add more notes to `shares/alice/` as needed.
 
+**Alternative: share without requiring a login**
+
+If you don't need access control — just a hard-to-guess link — use `free: true` instead:
+
+```
+shares/a3f7c2d1-invoice-may.md
+```
+
+```yaml
+---
+free: true
+---
+```
+
+Anyone with the URL can open it, no sign-in needed. The unguessable path acts as the access token. Suitable for one-off documents, invoices, drafts — anything where the link itself is the secret.
+
 ### Lookup queries
 
 If you don't know a user's `id` or a subgraph's `id`, look them up first.
