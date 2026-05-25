@@ -78,6 +78,7 @@ func NewHandler(env Env) *handler.Server {
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	srv.Use(extension.Introspection{})
+	srv.Use(extension.FixedComplexityLimit(30))
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
