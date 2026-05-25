@@ -365,9 +365,10 @@ func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	if _, ok := node.(*jet.IncludeNode); ok {
 		return
 	}
-	// Skip YieldNodes — Jet's visitor panics on {{ yield content }} which has nil Parameters.
-	if _, ok := node.(*jet.YieldNode); ok {
-		return
+	// Guard nil Parameters — Jet's visitor panics on {{ yield content }} with nil Parameters.
+	// Do NOT return early: yield_blocks may be nested inside a {{ yield name() content }} block.
+	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
+		y.Parameters = &jet.BlockParameterList{}
 	}
 	if action, ok := node.(*jet.ActionNode); ok && !w.found {
 		if action.Pipe != nil && len(action.Pipe.Cmds) > 0 {

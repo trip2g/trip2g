@@ -408,6 +408,39 @@ func TestYieldBlocks_NestedYieldCausesDuplication(t *testing.T) {
 	require.NotEqual(t, first, second, "pitfall: nested yield duplicates CSS block output")
 }
 
+// TestYieldBlocks_InsideYieldContentBlock is the regression for the iiminion.ru CSS breakage.
+// yield_blocks must be detected and wired even when it sits inside a
+// {{ yield layout() content }}...{{ end }} block.
+// Commit 1cdd6357 broke this by skipping YieldNodes entirely in yieldBlocksUsageFinder.
+func TestYieldBlocks_InsideYieldContentBlock(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{
+			ID:   "/page",
+			Path: "page.html",
+			// yield_blocks is nested inside the content block passed to yield shell()
+			Content: `{{ yield shell() content }}` +
+				`{{ yield comp() }}` +
+				`<style>{{ yield_blocks("_style_") }}</style>` +
+				`{{ end }}`,
+		},
+		{
+			ID:      "/shell",
+			Path:    "shell.html",
+			Content: `{{ block shell() }}<html>{{ yield content }}</html>{{ end }}`,
+		},
+		{
+			ID:   "/comp",
+			Path: "comp.html",
+			Content: `{{ block _style_comp() }}.comp{color:red}{{ end }}` +
+				`{{ block comp() }}<div class="comp"></div>{{ end }}`,
+		},
+	}
+	layouts := testLoadLayouts(t, sources)
+	out := renderLayout(t, layouts, "/page")
+	require.Contains(t, out, ".comp{color:red}",
+		"yield_blocks must work when nested inside {{ yield layout() content }}...{{ end }}")
+}
+
 func TestIncludeExprSyntax(t *testing.T) {
 	sources := []model.LayoutSourceFile{
 		{ID: "/page.html", Path: "testdata/include_expr/page.html", Content: readFixture(t, "testdata/include_expr/page.html")},
