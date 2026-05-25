@@ -26,8 +26,27 @@ type State struct {
 	Nonce    string `json:"n"`
 }
 
+// safeRedirect ensures the redirect target is a same-origin relative path.
+// It rejects absolute URLs (http://, https://) and protocol-relative URLs (//)
+// to prevent open-redirect phishing after OAuth login.
+func safeRedirect(redirect string) string {
+	if redirect == "" {
+		return "/"
+	}
+	// Must start with a single slash and not be protocol-relative (//host).
+	if len(redirect) < 1 || redirect[0] != '/' || (len(redirect) > 1 && redirect[1] == '/') {
+		return "/"
+	}
+	// Reject backslash variants that some browsers normalise to /.
+	if len(redirect) > 1 && redirect[1] == '\\' {
+		return "/"
+	}
+	return redirect
+}
+
 // Generate creates new state, sets cookie, returns encoded state for OAuth URL.
 func Generate(ctx *fasthttp.RequestCtx, redirect string, insecure bool) (string, error) {
+	redirect = safeRedirect(redirect)
 	// Generate random nonce (16 bytes, hex encoded = 32 chars)
 	nonceBytes := make([]byte, 16)
 	_, err := rand.Read(nonceBytes)
