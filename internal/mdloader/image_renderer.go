@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"fmt"
+	"html"
 	"regexp"
 	"strings"
 
@@ -11,6 +12,18 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
+
+// safeSrcURL rejects javascript: and non-image data: URLs to prevent XSS via src attributes.
+func safeSrcURL(u string) string {
+	lower := strings.ToLower(strings.TrimSpace(u))
+	if strings.HasPrefix(lower, "javascript:") {
+		return ""
+	}
+	if strings.HasPrefix(lower, "data:") && !strings.HasPrefix(lower, "data:image/") {
+		return ""
+	}
+	return u
+}
 
 // imageSizeRegex matches size specifications like "20x20" or "100".
 var imageSizeRegex = regexp.MustCompile(`^(\d+)(?:x(\d+))?$`)
@@ -199,9 +212,9 @@ func (r *imageRenderer) renderAudio(w util.BufWriter, enc *enclavecore.Enclave) 
 		}
 	}
 
-	html := fmt.Sprintf(`<audio controls src="%s"></audio>`, resolvedURL)
-	html = wrapEnclaveHTML("audio", html, true, false)
-	_, _ = w.Write([]byte(html))
+	out := fmt.Sprintf(`<audio controls src="%s"></audio>`, html.EscapeString(safeSrcURL(resolvedURL)))
+	out = wrapEnclaveHTML("audio", out, true, false)
+	_, _ = w.Write([]byte(out))
 }
 
 // renderImage renders regular images and quail images with asset replacement.
@@ -259,22 +272,24 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 	}
 
 	// Build HTML with optional size attributes and emoji class
-	var html string
 	classAttr := ""
 	if isEmoji {
 		classAttr = ` class="custom-emoji"`
 	}
 
+	safeSrc := html.EscapeString(safeSrcURL(resolvedURL))
+	safeAlt := html.EscapeString(cleanAlt)
+	var out string
 	if size != nil {
 		if size.Height != "" {
-			html = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" height="%s" />`, resolvedURL, cleanAlt, classAttr, size.Width, size.Height)
+			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" height="%s" />`, safeSrc, safeAlt, classAttr, size.Width, size.Height)
 		} else {
-			html = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, resolvedURL, cleanAlt, classAttr, size.Width)
+			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, safeSrc, safeAlt, classAttr, size.Width)
 		}
 	} else {
-		html = fmt.Sprintf(`<img src="%s" alt="%s"%s />`, resolvedURL, cleanAlt, classAttr)
+		out = fmt.Sprintf(`<img src="%s" alt="%s"%s />`, safeSrc, safeAlt, classAttr)
 	}
-	_, _ = w.Write([]byte(html))
+	_, _ = w.Write([]byte(out))
 }
 
 // wrapEnclaveErrorHTML wraps error message in enclave error HTML.
