@@ -97,6 +97,32 @@ mutation {
 
 Admin status gives full access to the admin panel and all GraphQL mutations. Use it for team members who need to manage the site, not for regular subscribers.
 
+### Warning: notes without a subgraph are visible to all signed-in users
+
+By default, any note that has no `subgraph` or `subgraphs` in its frontmatter is visible to every authenticated user — including users you grant access to only one specific subgraph.
+
+**Fix: hide unassigned notes behind a system subgraph.**
+
+Create a vault-based frontmatter patch (`_private.md` or similar):
+
+```yaml
+---
+type: frontmatter-patch
+include: ["**"]
+priority: 0
+---
+```
+
+````jsonnet
+if !std.objectHas(meta, 'subgraph') && !std.objectHas(meta, 'subgraphs')
+then meta + { subgraph: 'notes_without_subgraph' }
+else meta
+````
+
+This assigns every untagged note to the `notes_without_subgraph` subgraph. Since you never grant anyone access to it, those notes are invisible to regular users. Admins always see everything regardless of subgraph assignment.
+
+See [[en/user/frontmatter-patches]] for the full patch syntax.
+
 ### Use case: share a single page with one person by email
 
 You want to give someone access to one specific note — not the whole site, not a paid subgraph. The cleanest way:
