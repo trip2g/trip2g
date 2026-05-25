@@ -147,6 +147,7 @@ To reduce scope without full revocation, remove individual subgraphs from the `k
 
 ### Related
 
+- [[en/hub/_index|Hub]] — knowledge bases federated into this hub
 - [[en/user/mcp|MCP Server]] — how the local MCP server works
 - [[en/user/selfhosted|Self-hosted]] — `MCP_FEDERATION_MAX_DEPTH` and other environment variables
 - [[en/user/advanced|Advanced]] — subgraphs and access control
