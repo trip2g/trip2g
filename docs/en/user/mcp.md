@@ -32,7 +32,7 @@ The MCP server turns your knowledge base into an AI consultant. Connect it to an
 | `instructions()` | Author-defined AI instructions |
 | `editor_role()` | Answer style instructions |
 | `graphql_introspection(pattern)` | Inspect the GraphQL schema — returns types and operations matching the pattern, plus types they reference. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. |
-| `graphql_request(query, variables?)` | Execute any GraphQL query or mutation as admin. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. |
+| `graphql_request(query, variables?)` | Execute any GraphQL query or mutation as admin. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. Example use case: [[en/user/version_requests\|recovering overwritten notes]]. |
 
 #### `search` — TOC and match location
 

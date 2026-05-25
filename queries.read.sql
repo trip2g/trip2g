@@ -300,7 +300,7 @@ select * from note_assets
  limit 1;
 
 -- name: NoteVersionByID :one
-select p.value as path, path_id, v.id as version_id, content, v.created_at
+select p.value as path, path_id, v.id as version_id, v.version, content, v.created_at
   from note_versions v
   join note_paths p on v.path_id = p.id
  where v.id = ?
@@ -1461,3 +1461,16 @@ select value from tg_user_navigation_states
 select bot_id, business_connection_id, user_id, canvas_path, current_node, stack, last_media, message_id, updated_at
   from tg_user_canvas_states
  where bot_id = ? and business_connection_id = ? and user_id = ?;
+
+-- name: NoteVersionHistoryByPath :many
+select nv.id, nv.version, length(nv.content) as content_length, nv.created_at
+  from note_versions nv
+  join note_paths np on np.id = nv.path_id
+ where np.value = ?
+ order by nv.version desc
+ limit ? offset ?;
+
+-- name: CountNoteVersionsByPath :one
+select count(*) from note_versions nv
+  join note_paths np on np.id = nv.path_id
+ where np.value = ?;

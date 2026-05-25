@@ -92,6 +92,7 @@ type ResolverRoot interface {
 	AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnoredPatternsConnectionResolver
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminNoteAsset() AdminNoteAssetResolver
+	AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryConnectionResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
 	AdminPatreonCredentials() AdminPatreonCredentialsResolver
@@ -302,6 +303,7 @@ type AdminFormNoteResolver interface {
 }
 type AdminFormSubmitsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error)
+	TotalCount(ctx context.Context, obj *model.AdminFormSubmitsConnection) (int32, error)
 }
 type AdminFrontmatterPatchResolver interface {
 	IncludePatterns(ctx context.Context, obj *db.NoteFrontmatterPatch) ([]string, error)
@@ -453,6 +455,10 @@ type AdminNotFoundPathsConnectionResolver interface {
 type AdminNoteAssetResolver interface {
 	URL(ctx context.Context, obj *db.NoteAsset) (string, error)
 }
+type AdminNoteVersionHistoryConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error)
+	TotalCount(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) (int32, error)
+}
 type AdminOfferResolver interface {
 	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
 
@@ -534,6 +540,8 @@ type AdminQueryResolver interface {
 	ConfigValue(ctx context.Context, obj *model1.AdminQuery, id string) (model.AdminConfigValue, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
+	NoteVersionHistory(ctx context.Context, obj *model1.AdminQuery, filter model.AdminNoteVersionHistoryFilter) (*model.AdminNoteVersionHistoryConnection, error)
+	NoteVersion(ctx context.Context, obj *model1.AdminQuery, versionID int64) (*model.AdminNoteVersionDetail, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
 	User(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.User, error)
@@ -559,7 +567,7 @@ type AdminQueryResolver interface {
 	AllFrontmatterPatches(ctx context.Context, obj *model1.AdminQuery) (*model.AdminFrontmatterPatchesConnection, error)
 	FrontmatterPatch(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error)
 	StorageUsage(ctx context.Context, obj *model1.AdminQuery) (*model.AdminStorageUsage, error)
-	FormSubmits(ctx context.Context, obj *model1.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error)
+	FormSubmits(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminFormSubmitsFilterInput) (*model.AdminFormSubmitsConnection, error)
 	FormNotes(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminFormNote, error)
 	UnprocessedFormSubmitsCount(ctx context.Context, obj *model1.AdminQuery) (int32, error)
 }
@@ -861,8 +869,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminChangeWebhookDeliveriesFilterInput,
 		ec.unmarshalInputAdminCompleteTelegramAccountAuthInput,
 		ec.unmarshalInputAdminCronWebhookDeliveriesFilterInput,
+		ec.unmarshalInputAdminFormSubmitsDateFilter,
+		ec.unmarshalInputAdminFormSubmitsFilterInput,
 		ec.unmarshalInputAdminImportTelegramAccountChannelInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
+		ec.unmarshalInputAdminNoteVersionHistoryFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
 		ec.unmarshalInputAdminSetTelegramAccountChatPublishInstantTagsInput,
 		ec.unmarshalInputAdminSetTelegramAccountChatPublishTagsInput,
@@ -2297,11 +2308,11 @@ func (ec *executionContext) field_AdminQuery_cronWebhook_args(ctx context.Contex
 func (ec *executionContext) field_AdminQuery_formSubmits_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "notePathId", ec.unmarshalNInt642int64)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOAdminFormSubmitsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsFilterInput)
 	if err != nil {
 		return nil, err
 	}
-	args["notePathId"] = arg0
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -2357,6 +2368,28 @@ func (ec *executionContext) field_AdminQuery_noteAsset_args(ctx context.Context,
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_noteVersionHistory_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNAdminNoteVersionHistoryFilter2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionHistoryFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_noteVersion_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "versionId", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["versionId"] = arg0
 	return args, nil
 }
 
@@ -9040,6 +9073,35 @@ func (ec *executionContext) fieldContext_AdminFormSubmitsConnection_nodes(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminFormSubmitsConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminFormSubmitsConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFormSubmitsConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFormSubmitsConnection().TotalCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFormSubmitsConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFormSubmitsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminFrontmatterPatch_id(ctx context.Context, field graphql.CollectedField, obj *db.NoteFrontmatterPatch) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14923,6 +14985,335 @@ func (ec *executionContext) fieldContext_AdminNoteAsset_size(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminNoteVersionDetail_versionId(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionDetail) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionDetail_versionId,
+		func(ctx context.Context) (any, error) {
+			return obj.VersionID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionDetail_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionDetail_path(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionDetail) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionDetail_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionDetail_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionDetail_version(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionDetail) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionDetail_version,
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionDetail_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionDetail_content(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionDetail) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionDetail_content,
+		func(ctx context.Context) (any, error) {
+			return obj.Content, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionDetail_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionDetail_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionDetail) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionDetail_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionDetail_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionHistoryConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionHistoryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionHistoryConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminNoteVersionHistoryConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminNoteVersionMeta2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionMetaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionHistoryConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionHistoryConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "versionId":
+				return ec.fieldContext_AdminNoteVersionMeta_versionId(ctx, field)
+			case "version":
+				return ec.fieldContext_AdminNoteVersionMeta_version(ctx, field)
+			case "contentLength":
+				return ec.fieldContext_AdminNoteVersionMeta_contentLength(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNoteVersionMeta_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteVersionMeta", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionHistoryConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionHistoryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionHistoryConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminNoteVersionHistoryConnection().TotalCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionHistoryConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionHistoryConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionMeta_versionId(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionMeta_versionId,
+		func(ctx context.Context) (any, error) {
+			return obj.VersionID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionMeta_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionMeta_version(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionMeta_version,
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionMeta_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionMeta_contentLength(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionMeta_contentLength,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentLength, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionMeta_contentLength(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteVersionMeta_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteVersionMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteVersionMeta_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteVersionMeta_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteVersionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminOffer_id(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18546,6 +18937,106 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_noteVersionHistory(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_noteVersionHistory,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().NoteVersionHistory(ctx, obj, fc.Args["filter"].(model.AdminNoteVersionHistoryFilter))
+		},
+		nil,
+		ec.marshalNAdminNoteVersionHistoryConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionHistoryConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_noteVersionHistory(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminNoteVersionHistoryConnection_nodes(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_AdminNoteVersionHistoryConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteVersionHistoryConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_noteVersionHistory_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_noteVersion(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_noteVersion,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().NoteVersion(ctx, obj, fc.Args["versionId"].(int64))
+		},
+		nil,
+		ec.marshalOAdminNoteVersionDetail2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionDetail,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_noteVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "versionId":
+				return ec.fieldContext_AdminNoteVersionDetail_versionId(ctx, field)
+			case "path":
+				return ec.fieldContext_AdminNoteVersionDetail_path(ctx, field)
+			case "version":
+				return ec.fieldContext_AdminNoteVersionDetail_version(ctx, field)
+			case "content":
+				return ec.fieldContext_AdminNoteVersionDetail_content(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNoteVersionDetail_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteVersionDetail", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_noteVersion_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_userSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19825,7 +20316,7 @@ func (ec *executionContext) _AdminQuery_formSubmits(ctx context.Context, field g
 		ec.fieldContext_AdminQuery_formSubmits,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminQuery().FormSubmits(ctx, obj, fc.Args["notePathId"].(int64))
+			return ec.resolvers.AdminQuery().FormSubmits(ctx, obj, fc.Args["filter"].(*model.AdminFormSubmitsFilterInput))
 		},
 		nil,
 		ec.marshalNAdminFormSubmitsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsConnection,
@@ -19844,6 +20335,8 @@ func (ec *executionContext) fieldContext_AdminQuery_formSubmits(ctx context.Cont
 			switch field.Name {
 			case "nodes":
 				return ec.fieldContext_AdminFormSubmitsConnection_nodes(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_AdminFormSubmitsConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminFormSubmitsConnection", field.Name)
 		},
@@ -31240,6 +31733,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_subgraph(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminQuery_noteView(ctx, field)
+			case "noteVersionHistory":
+				return ec.fieldContext_AdminQuery_noteVersionHistory(ctx, field)
+			case "noteVersion":
+				return ec.fieldContext_AdminQuery_noteVersion(ctx, field)
 			case "userSubgraphAccess":
 				return ec.fieldContext_AdminQuery_userSubgraphAccess(ctx, field)
 			case "offer":
@@ -38152,6 +38649,109 @@ func (ec *executionContext) unmarshalInputAdminCronWebhookDeliveriesFilterInput(
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminFormSubmitsDateFilter(ctx context.Context, obj any) (model.AdminFormSubmitsDateFilter, error) {
+	var it model.AdminFormSubmitsDateFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"gte", "lte"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "gte":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gte"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Gte = data
+		case "lte":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lte"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lte = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminFormSubmitsFilterInput(ctx context.Context, obj any) (model.AdminFormSubmitsFilterInput, error) {
+	var it model.AdminFormSubmitsFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"notePathId", "formId", "status", "processed", "createdAt", "limit", "offset"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "notePathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notePathId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NotePathID = data
+		case "formId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("formId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FormID = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOFormSubmitStatus2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "processed":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("processed"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Processed = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOAdminFormSubmitsDateFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsDateFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminImportTelegramAccountChannelInput(ctx context.Context, obj any) (model.AdminImportTelegramAccountChannelInput, error) {
 	var it model.AdminImportTelegramAccountChannelInput
 	asMap := map[string]any{}
@@ -38228,6 +38828,47 @@ func (ec *executionContext) unmarshalInputAdminLatestNoteViewsFilter(ctx context
 				return it, err
 			}
 			it.WithWarnings = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminNoteVersionHistoryFilter(ctx context.Context, obj any) (model.AdminNoteVersionHistoryFilter, error) {
+	var it model.AdminNoteVersionHistoryFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "limit", "offset"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
 		}
 	}
 
@@ -49607,6 +50248,42 @@ func (ec *executionContext) _AdminFormSubmitsConnection(ctx context.Context, sel
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "totalCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFormSubmitsConnection_totalCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -54578,6 +55255,225 @@ func (ec *executionContext) _AdminNoteAsset(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var adminNoteVersionDetailImplementors = []string{"AdminNoteVersionDetail"}
+
+func (ec *executionContext) _AdminNoteVersionDetail(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteVersionDetail) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteVersionDetailImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteVersionDetail")
+		case "versionId":
+			out.Values[i] = ec._AdminNoteVersionDetail_versionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._AdminNoteVersionDetail_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "version":
+			out.Values[i] = ec._AdminNoteVersionDetail_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "content":
+			out.Values[i] = ec._AdminNoteVersionDetail_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminNoteVersionDetail_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteVersionHistoryConnectionImplementors = []string{"AdminNoteVersionHistoryConnection"}
+
+func (ec *executionContext) _AdminNoteVersionHistoryConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteVersionHistoryConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteVersionHistoryConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteVersionHistoryConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteVersionHistoryConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "totalCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteVersionHistoryConnection_totalCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteVersionMetaImplementors = []string{"AdminNoteVersionMeta"}
+
+func (ec *executionContext) _AdminNoteVersionMeta(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteVersionMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteVersionMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteVersionMeta")
+		case "versionId":
+			out.Values[i] = ec._AdminNoteVersionMeta_versionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "version":
+			out.Values[i] = ec._AdminNoteVersionMeta_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "contentLength":
+			out.Values[i] = ec._AdminNoteVersionMeta_contentLength(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminNoteVersionMeta_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminOfferImplementors = []string{"AdminOffer"}
 
 func (ec *executionContext) _AdminOffer(ctx context.Context, sel ast.SelectionSet, obj *db.Offer) graphql.Marshaler {
@@ -57235,6 +58131,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_noteView(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "noteVersionHistory":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_noteVersionHistory(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "noteVersion":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_noteVersion(ctx, field, obj)
 				return res
 			}
 
@@ -72545,6 +73510,73 @@ func (ec *executionContext) marshalNAdminNoteAsset2ᚕtrip2gᚋinternalᚋdbᚐN
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminNoteVersionHistoryConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionHistoryConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteVersionHistoryConnection) graphql.Marshaler {
+	return ec._AdminNoteVersionHistoryConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteVersionHistoryConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionHistoryConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminNoteVersionHistoryConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNoteVersionHistoryConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAdminNoteVersionHistoryFilter2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionHistoryFilter(ctx context.Context, v any) (model.AdminNoteVersionHistoryFilter, error) {
+	res, err := ec.unmarshalInputAdminNoteVersionHistoryFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminNoteVersionMeta2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionMeta(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteVersionMeta) graphql.Marshaler {
+	return ec._AdminNoteVersionMeta(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteVersionMeta2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionMetaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminNoteVersionMeta) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteVersionMeta2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionMeta(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
 	return ec._AdminOffer(ctx, sel, &v)
 }
@@ -77695,6 +78727,22 @@ func (ec *executionContext) marshalOAdminCronWebhook2ᚖtrip2gᚋinternalᚋdb�
 	return ec._AdminCronWebhook(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOAdminFormSubmitsDateFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsDateFilter(ctx context.Context, v any) (*model.AdminFormSubmitsDateFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminFormSubmitsDateFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOAdminFormSubmitsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminFormSubmitsFilterInput(ctx context.Context, v any) (*model.AdminFormSubmitsFilterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminFormSubmitsFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOAdminFrontmatterPatch2ᚖtrip2gᚋinternalᚋdbᚐNoteFrontmatterPatch(ctx context.Context, sel ast.SelectionSet, v *db.NoteFrontmatterPatch) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -77736,6 +78784,13 @@ func (ec *executionContext) marshalOAdminNoteAsset2ᚖtrip2gᚋinternalᚋdbᚐN
 		return graphql.Null
 	}
 	return ec._AdminNoteAsset(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminNoteVersionDetail2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteVersionDetail(ctx context.Context, sel ast.SelectionSet, v *model.AdminNoteVersionDetail) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminNoteVersionDetail(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v *db.Offer) graphql.Marshaler {
@@ -77899,6 +78954,22 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOFormSubmitStatus2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitStatus(ctx context.Context, v any) (*model.FormSubmitStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.FormSubmitStatus)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFormSubmitStatus2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐFormSubmitStatus(ctx context.Context, sel ast.SelectionSet, v *model.FormSubmitStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {

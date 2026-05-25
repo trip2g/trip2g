@@ -698,8 +698,24 @@ type AdminFormStringValue struct {
 func (AdminFormStringValue) IsAdminFormValue() {}
 
 type AdminFormSubmitsConnection struct {
-	Nodes      []db.FormSubmit `json:"nodes"`
-	NotePathID int64           `json:"-"`
+	Nodes      []db.FormSubmit              `json:"nodes"`
+	TotalCount int32                        `json:"totalCount"`
+	Filter     *AdminFormSubmitsFilterInput `json:"-"`
+}
+
+type AdminFormSubmitsDateFilter struct {
+	Gte *time.Time `json:"gte,omitempty"`
+	Lte *time.Time `json:"lte,omitempty"`
+}
+
+type AdminFormSubmitsFilterInput struct {
+	NotePathID *int64                      `json:"notePathId,omitempty"`
+	FormID     *string                     `json:"formId,omitempty"`
+	Status     *FormSubmitStatus           `json:"status,omitempty"`
+	Processed  *bool                       `json:"processed,omitempty"`
+	CreatedAt  *AdminFormSubmitsDateFilter `json:"createdAt,omitempty"`
+	Limit      *int32                      `json:"limit,omitempty"`
+	Offset     *int32                      `json:"offset,omitempty"`
 }
 
 type AdminFrontmatterPatchesConnection struct {
@@ -755,6 +771,33 @@ type AdminNotFoundIgnoredPatternsConnection struct {
 
 type AdminNotFoundPathsConnection struct {
 	Nodes []db.NotFoundPath `json:"nodes"`
+}
+
+type AdminNoteVersionDetail struct {
+	VersionID int64     `json:"versionId"`
+	Path      string    `json:"path"`
+	Version   int32     `json:"version"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type AdminNoteVersionHistoryConnection struct {
+	Nodes      []AdminNoteVersionMeta         `json:"nodes"`
+	TotalCount int32                          `json:"totalCount"`
+	Filter     *AdminNoteVersionHistoryFilter `json:"-"`
+}
+
+type AdminNoteVersionHistoryFilter struct {
+	Path   string `json:"path"`
+	Limit  *int32 `json:"limit,omitempty"`
+	Offset *int32 `json:"offset,omitempty"`
+}
+
+type AdminNoteVersionMeta struct {
+	VersionID     int64     `json:"versionId"`
+	Version       int32     `json:"version"`
+	ContentLength int32     `json:"contentLength"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type AdminOffersConnection struct {

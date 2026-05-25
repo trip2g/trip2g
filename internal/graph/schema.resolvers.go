@@ -623,7 +623,16 @@ func (r *adminFormNoteResolver) Note(ctx context.Context, obj *model.AdminFormNo
 
 // Nodes is the resolver for the nodes field.
 func (r *adminFormSubmitsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminFormSubmitsConnection) ([]db.FormSubmit, error) {
-	return r.env(ctx).GetFormSubmitsByNotePathID(ctx, obj.NotePathID)
+	return r.env(ctx).ListFormSubmits(ctx, buildListFormSubmitsParams(obj.Filter))
+}
+
+// TotalCount is the resolver for the totalCount field.
+func (r *adminFormSubmitsConnectionResolver) TotalCount(ctx context.Context, obj *model.AdminFormSubmitsConnection) (int32, error) {
+	count, err := r.env(ctx).CountFormSubmits(ctx, buildCountFormSubmitsParams(obj.Filter))
+	if err != nil {
+		return 0, err
+	}
+	return int32(count), nil
 }
 
 // IncludePatterns is the resolver for the includePatterns field.
@@ -1296,6 +1305,50 @@ func (r *adminNoteAssetResolver) URL(ctx context.Context, obj *db.NoteAsset) (st
 	return presignedURL.Value, nil
 }
 
+// Nodes is the resolver for the nodes field.
+func (r *adminNoteVersionHistoryConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error) {
+	f := obj.Filter
+	limit := int64(50)
+	offset := int64(0)
+	if f.Limit != nil {
+		limit = int64(*f.Limit)
+	}
+	if f.Offset != nil {
+		offset = int64(*f.Offset)
+	}
+	rows, err := r.env(ctx).NoteVersionHistoryByPath(ctx, db.NoteVersionHistoryByPathParams{
+		Value:  f.Path,
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]model.AdminNoteVersionMeta, len(rows))
+	for i, row := range rows {
+		contentLength := 0
+		if row.ContentLength != nil {
+			contentLength = int(*row.ContentLength)
+		}
+		out[i] = model.AdminNoteVersionMeta{
+			VersionID:     row.ID,
+			Version:       int32(row.Version),
+			ContentLength: int32(contentLength),
+			CreatedAt:     row.CreatedAt,
+		}
+	}
+	return out, nil
+}
+
+// TotalCount is the resolver for the totalCount field.
+func (r *adminNoteVersionHistoryConnectionResolver) TotalCount(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) (int32, error) {
+	count, err := r.env(ctx).CountNoteVersionsByPath(ctx, obj.Filter.Path)
+	if err != nil {
+		return 0, err
+	}
+	return int32(count), nil
+}
+
 // LifeTime is the resolver for the lifetime field.
 func (r *adminOfferResolver) Lifetime(ctx context.Context, obj *db.Offer) (*string, error) {
 	if obj.Lifetime != nil {
@@ -1725,6 +1778,26 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQu
 	return notes.GetByPath(id), nil
 }
 
+// NoteVersionHistory is the resolver for the noteVersionHistory field.
+func (r *adminQueryResolver) NoteVersionHistory(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminNoteVersionHistoryFilter) (*model.AdminNoteVersionHistoryConnection, error) {
+	return &model.AdminNoteVersionHistoryConnection{Filter: &filter}, nil
+}
+
+// NoteVersion is the resolver for the noteVersion field.
+func (r *adminQueryResolver) NoteVersion(ctx context.Context, obj *appmodel.AdminQuery, versionID int64) (*model.AdminNoteVersionDetail, error) {
+	row, err := r.env(ctx).NoteVersionByID(ctx, versionID)
+	if err != nil {
+		return nil, err
+	}
+	return &model.AdminNoteVersionDetail{
+		VersionID: row.VersionID,
+		Path:      row.Path,
+		Version:   int32(row.Version),
+		Content:   row.Content,
+		CreatedAt: row.CreatedAt,
+	}, nil
+}
+
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, id, r.env(ctx).UserSubgraphAccessByID)
@@ -1902,8 +1975,8 @@ func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.Adm
 }
 
 // FormSubmits is the resolver for the formSubmits field.
-func (r *adminQueryResolver) FormSubmits(ctx context.Context, obj *appmodel.AdminQuery, notePathID int64) (*model.AdminFormSubmitsConnection, error) {
-	return &model.AdminFormSubmitsConnection{NotePathID: notePathID}, nil
+func (r *adminQueryResolver) FormSubmits(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminFormSubmitsFilterInput) (*model.AdminFormSubmitsConnection, error) {
+	return &model.AdminFormSubmitsConnection{Filter: filter}, nil
 }
 
 // FormNotes is the resolver for the formNotes field.
@@ -3525,6 +3598,11 @@ func (r *Resolver) AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionRe
 // AdminNoteAsset returns AdminNoteAssetResolver implementation.
 func (r *Resolver) AdminNoteAsset() AdminNoteAssetResolver { return &adminNoteAssetResolver{r} }
 
+// AdminNoteVersionHistoryConnection returns AdminNoteVersionHistoryConnectionResolver implementation.
+func (r *Resolver) AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryConnectionResolver {
+	return &adminNoteVersionHistoryConnectionResolver{r}
+}
+
 // AdminOffer returns AdminOfferResolver implementation.
 func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
 
@@ -3853,6 +3931,7 @@ type adminNotFoundIgnoredPatternResolver struct{ *Resolver }
 type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminNoteAssetResolver struct{ *Resolver }
+type adminNoteVersionHistoryConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
 type adminPatreonCredentialsResolver struct{ *Resolver }
@@ -3920,19 +3999,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *turnstileRequiredPayloadResolver) _(ctx context.Context, obj *model.TurnstileRequiredPayload) (*bool, error) {
-	panic(fmt.Errorf("not implemented: _ - _"))
-}
-func (r *Resolver) TurnstileRequiredPayload() TurnstileRequiredPayloadResolver {
-	return &turnstileRequiredPayloadResolver{r}
-}
-type turnstileRequiredPayloadResolver struct{ *Resolver }
-*/

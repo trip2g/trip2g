@@ -160,7 +160,7 @@ subgraphs: premium
 | `instructions()` | Инструкции автора для AI |
 | `editor_role()` | Стиль редактуры ответов |
 | `graphql_introspection(pattern)` | Изучить схему GraphQL — возвращает типы и операции по паттерну плюс связанные типы. Требует включённый admin-режим у API-ключа. См. [[ru/user/agent_admin]]. |
-| `graphql_request(query, variables?)` | Выполнить любой GraphQL-запрос или мутацию с правами администратора. Требует включённый admin-режим у API-ключа. См. [[ru/user/agent_admin]]. |
+| `graphql_request(query, variables?)` | Выполнить любой GraphQL-запрос или мутацию с правами администратора. Требует включённый admin-режим у API-ключа. См. [[ru/user/agent_admin]]. Пример использования: [[ru/user/version_requests\|восстановление перезаписанных заметок]]. |
 
 #### `search` — оглавление и местоположение совпадений
 

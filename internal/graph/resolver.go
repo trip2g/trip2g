@@ -183,7 +183,8 @@ type Env interface {
 
 	submitform.Env
 	markformsubmitprocessed.Env
-	GetFormSubmitsByNotePathID(ctx context.Context, notePathID int64) ([]db.FormSubmit, error)
+	ListFormSubmits(ctx context.Context, arg db.ListFormSubmitsParams) ([]db.FormSubmit, error)
+	CountFormSubmits(ctx context.Context, arg db.CountFormSubmitsParams) (int64, error)
 	GetFormStringValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormStringValuesBySubmitIDRow, error)
 	GetFormIntValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormIntValuesBySubmitIDRow, error)
 	GetFormBoolValuesBySubmitID(ctx context.Context, submitID int64) ([]db.GetFormBoolValuesBySubmitIDRow, error)
@@ -200,6 +201,9 @@ type Env interface {
 	PurchaseByID(ctx context.Context, id string) (db.Purchase, error)
 	RedirectByID(ctx context.Context, id int64) (db.Redirect, error)
 	NotePathByID(ctx context.Context, id int64) (db.NotePath, error)
+	NoteVersionHistoryByPath(ctx context.Context, arg db.NoteVersionHistoryByPathParams) ([]db.NoteVersionHistoryByPathRow, error)
+	CountNoteVersionsByPath(ctx context.Context, value string) (int64, error)
+	NoteVersionByID(ctx context.Context, id int64) (db.NoteVersionByIDRow, error)
 
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)

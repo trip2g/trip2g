@@ -1187,6 +1187,8 @@ type AdminQuery {
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView
+  noteVersionHistory(filter: AdminNoteVersionHistoryFilter!): AdminNoteVersionHistoryConnection!
+  noteVersion(versionId: Int64!): AdminNoteVersionDetail
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
   offer(id: Int64!): AdminOffer
   user(id: Int64!): AdminUser
@@ -1224,7 +1226,7 @@ type AdminQuery {
 
   storageUsage: AdminStorageUsage!
 
-  formSubmits(notePathId: Int64!): AdminFormSubmitsConnection!
+  formSubmits(filter: AdminFormSubmitsFilterInput): AdminFormSubmitsConnection!
   formNotes: [AdminFormNote!]!
   unprocessedFormSubmitsCount: Int!
 }
@@ -1796,8 +1798,52 @@ type AdminFormNote {
   submitCount: Int!
 }
 
-type AdminFormSubmitsConnection @goExtraField(name: "NotePathID", type: "int64") {
+type AdminNoteVersionHistoryConnection
+  @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminNoteVersionHistoryFilter") {
+  nodes: [AdminNoteVersionMeta!]! @goField(forceResolver: true)
+  totalCount: Int! @goField(forceResolver: true)
+}
+
+input AdminNoteVersionHistoryFilter {
+  path: String!
+  limit: Int
+  offset: Int
+}
+
+type AdminNoteVersionMeta {
+  versionId: Int64!
+  version: Int!
+  contentLength: Int!
+  createdAt: Time!
+}
+
+type AdminNoteVersionDetail {
+  versionId: Int64!
+  path: String!
+  version: Int!
+  content: String!
+  createdAt: Time!
+}
+
+type AdminFormSubmitsConnection
+  @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminFormSubmitsFilterInput") {
   nodes: [FormSubmit!]! @goField(forceResolver: true)
+  totalCount: Int! @goField(forceResolver: true)
+}
+
+input AdminFormSubmitsFilterInput {
+  notePathId: Int64
+  formId: String
+  status: FormSubmitStatus
+  processed: Boolean
+  createdAt: AdminFormSubmitsDateFilter
+  limit: Int
+  offset: Int
+}
+
+input AdminFormSubmitsDateFilter {
+  gte: Time
+  lte: Time
 }
 
 input SubmitFormInput {

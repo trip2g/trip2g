@@ -1271,6 +1271,19 @@ func (q *Queries) CountNoteVersions(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countNoteVersionsByPath = `-- name: CountNoteVersionsByPath :one
+select count(*) from note_versions nv
+  join note_paths np on np.id = nv.path_id
+ where np.value = ?
+`
+
+func (q *Queries) CountNoteVersionsByPath(ctx context.Context, value string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countNoteVersionsByPath, value)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countUnprocessedFormSubmits = `-- name: CountUnprocessedFormSubmits :one
 select count(*) from form_submits where processed_at is null
 `
@@ -6588,7 +6601,7 @@ func (q *Queries) NotePathByID(ctx context.Context, id int64) (NotePath, error) 
 }
 
 const noteVersionByID = `-- name: NoteVersionByID :one
-select p.value as path, path_id, v.id as version_id, content, v.created_at
+select p.value as path, path_id, v.id as version_id, v.version, content, v.created_at
   from note_versions v
   join note_paths p on v.path_id = p.id
  where v.id = ?
@@ -6599,6 +6612,7 @@ type NoteVersionByIDRow struct {
 	Path      string    `json:"path"`
 	PathID    int64     `json:"path_id"`
 	VersionID int64     `json:"version_id"`
+	Version   int64     `json:"version"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -6610,10 +6624,61 @@ func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByI
 		&i.Path,
 		&i.PathID,
 		&i.VersionID,
+		&i.Version,
 		&i.Content,
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const noteVersionHistoryByPath = `-- name: NoteVersionHistoryByPath :many
+select nv.id, nv.version, length(nv.content) as content_length, nv.created_at
+  from note_versions nv
+  join note_paths np on np.id = nv.path_id
+ where np.value = ?
+ order by nv.version desc
+ limit ? offset ?
+`
+
+type NoteVersionHistoryByPathParams struct {
+	Value  string `json:"value"`
+	Limit  int64  `json:"limit"`
+	Offset int64  `json:"offset"`
+}
+
+type NoteVersionHistoryByPathRow struct {
+	ID            int64     `json:"id"`
+	Version       int64     `json:"version"`
+	ContentLength *int64    `json:"content_length"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+func (q *Queries) NoteVersionHistoryByPath(ctx context.Context, arg NoteVersionHistoryByPathParams) ([]NoteVersionHistoryByPathRow, error) {
+	rows, err := q.db.QueryContext(ctx, noteVersionHistoryByPath, arg.Value, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersionHistoryByPathRow
+	for rows.Next() {
+		var i NoteVersionHistoryByPathRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Version,
+			&i.ContentLength,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const notionIntegration = `-- name: NotionIntegration :one
