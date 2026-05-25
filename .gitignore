@@ -3,6 +3,7 @@ repomix-output.xml
 testdata/vault/.obsidian
 tmp
 /server
+/businessdemo
 data*.sqlite3
 data*.sqlite3-journal
 data*.sqlite3-shm
