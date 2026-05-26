@@ -34,7 +34,10 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/admin/deletesecret"
+	"trip2g/internal/case/admin/getsecret"
 	"trip2g/internal/case/admin/renderpreview"
+	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/case/backjob/extractnotionpages"
@@ -1592,6 +1595,34 @@ func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.Federat
 		return db.FederationSecret{}, false, err
 	}
 	return secret, true, nil
+}
+
+func (a *app) GetSecretValue(ctx context.Context, key string) (string, error) {
+	return getsecret.Resolve(ctx, a, key)
+}
+
+func (a *app) GetSecretValues(ctx context.Context, like string) (map[string]string, error) {
+	keys, err := a.Queries.ListSecretKeys(ctx, like)
+	if err != nil || len(keys) == 0 {
+		return nil, err
+	}
+	result := make(map[string]string, len(keys))
+	for _, k := range keys {
+		val, decErr := getsecret.Resolve(ctx, a, k)
+		if decErr != nil {
+			return nil, decErr
+		}
+		result[k] = val
+	}
+	return result, nil
+}
+
+func (a *app) SetSecretValue(ctx context.Context, key, value string) error {
+	return setsecret.Resolve(ctx, a, key, value)
+}
+
+func (a *app) DeleteSecretValue(ctx context.Context, key string) error {
+	return deletesecret.Resolve(ctx, a, key)
 }
 
 func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bool, error) {

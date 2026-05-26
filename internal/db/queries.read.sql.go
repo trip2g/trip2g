@@ -2399,6 +2399,23 @@ func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID in
 	return items, nil
 }
 
+const getSecret = `-- name: GetSecret :one
+select id, key, value_crypt, created_at, created_by from secrets where key = ?
+`
+
+func (q *Queries) GetSecret(ctx context.Context, key string) (Secret, error) {
+	row := q.db.QueryRowContext(ctx, getSecret, key)
+	var i Secret
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.ValueCrypt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const getSubgraphsByBoostyTierID = `-- name: GetSubgraphsByBoostyTierID :many
 select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin
 from subgraphs s
@@ -5225,6 +5242,33 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSecretKeys = `-- name: ListSecretKeys :many
+select key from secrets where key like ? order by key
+`
+
+func (q *Queries) ListSecretKeys(ctx context.Context, key string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listSecretKeys, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		items = append(items, key)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

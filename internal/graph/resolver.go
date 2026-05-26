@@ -42,12 +42,14 @@ import (
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
+	"trip2g/internal/case/admin/deletesecret"
 	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
+	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
@@ -63,6 +65,7 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
+	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
@@ -366,6 +369,11 @@ type Env interface {
 	addfederationsecretsubgraph.Env
 	removefederationsecretsubgraph.Env
 	listfederationsecrets.Env
+
+	// Secrets
+	setsecret.Env
+	deletesecret.Env
+	listsecretkeys.Env
 
 	// Frontmatter patches
 	createfrontmatterpatch.Env

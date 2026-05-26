@@ -1474,3 +1474,9 @@ select nv.id, nv.version, length(nv.content) as content_length, nv.created_at
 select count(*) from note_versions nv
   join note_paths np on np.id = nv.path_id
  where np.value = ?;
+
+-- name: GetSecret :one
+select id, key, value_crypt, created_at, created_by from secrets where key = ?;
+
+-- name: ListSecretKeys :many
+select key from secrets where key like ? order by key;

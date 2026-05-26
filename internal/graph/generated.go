@@ -441,6 +441,8 @@ type AdminMutationResolver interface {
 	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
 	RenderLayout(ctx context.Context, obj *model1.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error)
+	SetSecret(ctx context.Context, obj *model1.AdminMutation, input model.SetSecretInput) (*model.SetSecretPayload, error)
+	DeleteSecret(ctx context.Context, obj *model1.AdminMutation, key string) (*model.DeleteSecretPayload, error)
 	MarkFormSubmitProcessed(ctx context.Context, obj *model1.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
@@ -534,6 +536,7 @@ type AdminQueryResolver interface {
 	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	FederationSecrets(ctx context.Context, obj *model1.AdminQuery) ([]db.ListFederationSecretsRow, error)
+	SecretKeys(ctx context.Context, obj *model1.AdminQuery, like *string) ([]string, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
 	ConfigValues(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminConfigValue, error)
@@ -965,6 +968,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetConfigIntValueInput,
 		ec.unmarshalInputSetConfigStringValueInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
+		ec.unmarshalInputSetSecretInput,
 		ec.unmarshalInputSetTgChatPublishInstantTagsInput,
 		ec.unmarshalInputSetTgChatPublishTagsInput,
 		ec.unmarshalInputSetTgChatSubgraphInvitesInput,
@@ -1546,6 +1550,17 @@ func (ec *executionContext) field_AdminMutation_deleteRedirect_args(ctx context.
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_deleteSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "key", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["key"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_disableApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1836,6 +1851,17 @@ func (ec *executionContext) field_AdminMutation_setPatreonTierSubgraphs_args(ctx
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetPatreonTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetSecretInput)
 	if err != nil {
 		return nil, err
 	}
@@ -2445,6 +2471,17 @@ func (ec *executionContext) field_AdminQuery_redirect_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_secretKeys_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "like", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["like"] = arg0
 	return args, nil
 }
 
@@ -14448,6 +14485,96 @@ func (ec *executionContext) fieldContext_AdminMutation_renderLayout(ctx context.
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_setSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetSecret(ctx, obj, fc.Args["input"].(model.SetSecretInput))
+		},
+		nil,
+		ec.marshalNSetSecretPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSetSecretPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_SetSecretPayload_key(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SetSecretPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deleteSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().DeleteSecret(ctx, obj, fc.Args["key"].(string))
+		},
+		nil,
+		ec.marshalNDeleteSecretPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐDeleteSecretPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_DeleteSecretPayload_key(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteSecretPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_markFormSubmitProcessed(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -18635,6 +18762,47 @@ func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminFederationSecret", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_secretKeys(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_secretKeys,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().SecretKeys(ctx, obj, fc.Args["like"].(*string))
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_secretKeys(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_secretKeys_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -27383,6 +27551,35 @@ func (ec *executionContext) fieldContext_DeleteRedirectPayload_id(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _DeleteSecretPayload_key(ctx context.Context, field graphql.CollectedField, obj *model.DeleteSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteSecretPayload_key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteSecretPayload_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DisableApiKeyPayload_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.DisableAPIKeyPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -29394,6 +29591,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_removeFederationSecretSubgraph(ctx, field)
 			case "renderLayout":
 				return ec.fieldContext_AdminMutation_renderLayout(ctx, field)
+			case "setSecret":
+				return ec.fieldContext_AdminMutation_setSecret(ctx, field)
+			case "deleteSecret":
+				return ec.fieldContext_AdminMutation_deleteSecret(ctx, field)
 			case "markFormSubmitProcessed":
 				return ec.fieldContext_AdminMutation_markFormSubmitProcessed(ctx, field)
 			}
@@ -31721,6 +31922,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_gitHubOAuthCredentials(ctx, field)
 			case "federationSecrets":
 				return ec.fieldContext_AdminQuery_federationSecrets(ctx, field)
+			case "secretKeys":
+				return ec.fieldContext_AdminQuery_secretKeys(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "auditLogs":
@@ -33848,6 +34051,35 @@ func (ec *executionContext) fieldContext_SetPatreonTierSubgraphsPayload_success(
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetSecretPayload_key(ctx context.Context, field graphql.CollectedField, obj *model.SetSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetSecretPayload_key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetSecretPayload_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -42201,6 +42433,40 @@ func (ec *executionContext) unmarshalInputSetPatreonTierSubgraphsInput(ctx conte
 				return it, err
 			}
 			it.SubgraphIds = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetSecretInput(ctx context.Context, obj any) (model.SetSecretInput, error) {
+	var it model.SetSecretInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
 		}
 	}
 
@@ -54822,6 +55088,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "markFormSubmitProcessed":
 			field := field
 
@@ -57921,6 +58259,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_federationSecrets(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "secretKeys":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_secretKeys(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -64669,6 +65043,45 @@ func (ec *executionContext) _DeleteRedirectPayload(ctx context.Context, sel ast.
 	return out
 }
 
+var deleteSecretPayloadImplementors = []string{"DeleteSecretPayload"}
+
+func (ec *executionContext) _DeleteSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteSecretPayload")
+		case "key":
+			out.Values[i] = ec._DeleteSecretPayload_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var disableApiKeyPayloadImplementors = []string{"DisableApiKeyPayload", "DisableApiKeyOrErrorPayload"}
 
 func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DisableAPIKeyPayload) graphql.Marshaler {
@@ -68543,6 +68956,45 @@ func (ec *executionContext) _SetPatreonTierSubgraphsPayload(ctx context.Context,
 			}
 		case "success":
 			out.Values[i] = ec._SetPatreonTierSubgraphsPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setSecretPayloadImplementors = []string{"SetSecretPayload"}
+
+func (ec *executionContext) _SetSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetSecretPayload")
+		case "key":
+			out.Values[i] = ec._SetSecretPayload_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -75854,6 +76306,20 @@ func (ec *executionContext) marshalNDeleteRedirectOrErrorPayload2trip2gᚋintern
 	return ec._DeleteRedirectOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDeleteSecretPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteSecretPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteSecretPayload) graphql.Marshaler {
+	return ec._DeleteSecretPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteSecretPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐDeleteSecretPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteSecretPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteSecretPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNDisableApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableAPIKeyInput(ctx context.Context, v any) (model.DisableAPIKeyInput, error) {
 	res, err := ec.unmarshalInputDisableApiKeyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -77531,6 +77997,25 @@ func (ec *executionContext) marshalNSetPatreonTierSubgraphsOrErrorPayload2trip2g
 		return graphql.Null
 	}
 	return ec._SetPatreonTierSubgraphsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetSecretInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetSecretInput(ctx context.Context, v any) (model.SetSecretInput, error) {
+	res, err := ec.unmarshalInputSetSecretInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetSecretPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetSecretPayload(ctx context.Context, sel ast.SelectionSet, v model.SetSecretPayload) graphql.Marshaler {
+	return ec._SetSecretPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSetSecretPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSetSecretPayload(ctx context.Context, sel ast.SelectionSet, v *model.SetSecretPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetSecretPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetTgChatPublishInstantTagsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetTgChatPublishInstantTagsInput(ctx context.Context, v any) (model.SetTgChatPublishInstantTagsInput, error) {

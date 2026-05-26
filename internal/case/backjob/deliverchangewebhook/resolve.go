@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/db"
@@ -28,6 +29,7 @@ type Env interface {
 	ShortAPITokenSecret() string
 	WebhookHTTPClient() *fasthttp.Client
 	Logger() logger.Logger
+	GetSecretValues(ctx context.Context, like string) (map[string]string, error)
 }
 
 // changeWebhookPayload is the JSON body sent to the webhook endpoint.
@@ -37,6 +39,7 @@ type changeWebhookPayload struct {
 	Instruction   string                          `json:"instruction"`
 	Changes       []handlenotewebhooks.ChangeInfo `json:"changes"`
 	APIToken      string                          `json:"api_token,omitempty"`
+	Secrets       map[string]string               `json:"secrets,omitempty"`
 	PreviousError string                          `json:"previous_error,omitempty"`
 }
 
@@ -49,12 +52,16 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		return fmt.Errorf("failed to load webhook %d: %w", params.WebhookID, err)
 	}
 
+	// Load webhook secrets (keys stripped of prefix, e.g. "change_webhooks:1:auth" → "auth").
+	secrets := loadSecrets(ctx, env, log, fmt.Sprintf("change_webhooks:%d:", wh.ID))
+
 	// Build payload.
 	payload := changeWebhookPayload{
 		BasePayload:   webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
 		Depth:         params.Depth,
 		Instruction:   wh.Instruction,
 		Changes:       params.Changes,
+		Secrets:       secrets,
 		PreviousError: params.PreviousError,
 	}
 
@@ -193,6 +200,23 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	}
 
 	return nil
+}
+
+// loadSecrets fetches decrypted secrets for the given prefix, returning a map keyed by bare name.
+func loadSecrets(ctx context.Context, env Env, log logger.Logger, prefix string) map[string]string {
+	all, err := env.GetSecretValues(ctx, prefix+"%")
+	if err != nil {
+		log.Error("failed to load webhook secrets", "prefix", prefix, "error", err)
+		return nil
+	}
+	if len(all) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(all))
+	for k, v := range all {
+		result[strings.TrimPrefix(k, prefix)] = v
+	}
+	return result
 }
 
 // handleDeliveryError handles HTTP errors and retries.

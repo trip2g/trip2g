@@ -1178,6 +1178,8 @@ type AdminQuery {
 
   federationSecrets: [AdminFederationSecret!]!
 
+  secretKeys(like: String): [String!]!
+
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
 
@@ -3044,6 +3046,10 @@ type AdminMutation {
 
   renderLayout(input: RenderLayoutInput!): RenderLayoutPayload!
 
+  # Secrets mutations
+  setSecret(input: SetSecretInput!): SetSecretPayload!
+  deleteSecret(key: String!): DeleteSecretPayload!
+
   markFormSubmitProcessed(input: MarkFormSubmitProcessedInput!): MarkFormSubmitProcessedOrErrorPayload!
 }
 
@@ -3437,3 +3443,20 @@ type MarkFormSubmitProcessedPayload {
 }
 
 union MarkFormSubmitProcessedOrErrorPayload = MarkFormSubmitProcessedPayload | ErrorPayload
+
+#
+# Secrets
+#
+
+input SetSecretInput {
+  key:   String!
+  value: String!
+}
+
+type SetSecretPayload {
+  key: String!
+}
+
+type DeleteSecretPayload {
+  key: String!
+}

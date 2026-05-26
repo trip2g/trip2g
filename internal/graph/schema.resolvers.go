@@ -56,12 +56,14 @@ import (
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
+	"trip2g/internal/case/admin/deletesecret"
 	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
+	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
@@ -76,6 +78,7 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
+	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setapikeymcpadmintools"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
@@ -1276,6 +1279,22 @@ func (r *adminMutationResolver) RenderLayout(ctx context.Context, obj *appmodel.
 	return renderpreview.Resolve(ctx, r.env(ctx), input)
 }
 
+// SetSecret is the resolver for the setSecret field.
+func (r *adminMutationResolver) SetSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.SetSecretInput) (*model.SetSecretPayload, error) {
+	if err := setsecret.Resolve(ctx, r.env(ctx), input.Key, input.Value); err != nil {
+		return nil, err
+	}
+	return &model.SetSecretPayload{Key: input.Key}, nil
+}
+
+// DeleteSecret is the resolver for the deleteSecret field.
+func (r *adminMutationResolver) DeleteSecret(ctx context.Context, obj *appmodel.AdminMutation, key string) (*model.DeleteSecretPayload, error) {
+	if err := deletesecret.Resolve(ctx, r.env(ctx), key); err != nil {
+		return nil, err
+	}
+	return &model.DeleteSecretPayload{Key: key}, nil
+}
+
 // MarkFormSubmitProcessed is the resolver for the markFormSubmitProcessed field.
 func (r *adminMutationResolver) MarkFormSubmitProcessed(ctx context.Context, obj *appmodel.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error) {
 	return markformsubmitprocessed.Resolve(ctx, r.env(ctx), input)
@@ -1712,6 +1731,15 @@ func (r *adminQueryResolver) GitHubOAuthCredentials(ctx context.Context, obj *ap
 // FederationSecrets is the resolver for the federationSecrets field.
 func (r *adminQueryResolver) FederationSecrets(ctx context.Context, obj *appmodel.AdminQuery) ([]db.ListFederationSecretsRow, error) {
 	return listfederationsecrets.Resolve(ctx, r.env(ctx))
+}
+
+// SecretKeys is the resolver for the secretKeys field.
+func (r *adminQueryResolver) SecretKeys(ctx context.Context, obj *appmodel.AdminQuery, like *string) ([]string, error) {
+	pattern := "%"
+	if like != nil {
+		pattern = *like
+	}
+	return listsecretkeys.Resolve(ctx, r.env(ctx), pattern)
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.

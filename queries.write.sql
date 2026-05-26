@@ -1157,3 +1157,15 @@ do update set canvas_path = excluded.canvas_path,
 -- name: DeleteTgUserCanvasState :exec
 delete from tg_user_canvas_states
  where bot_id = ? and business_connection_id = ? and user_id = ?;
+
+-- name: UpsertSecret :one
+insert into secrets (key, value_crypt, created_by)
+values (?, ?, ?)
+on conflict (key) do update set
+  value_crypt = excluded.value_crypt,
+  created_by  = excluded.created_by,
+  created_at  = datetime('now')
+returning *;
+
+-- name: DeleteSecret :exec
+delete from secrets where key = ?;

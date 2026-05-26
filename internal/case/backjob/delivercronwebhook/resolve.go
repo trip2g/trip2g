@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -46,15 +47,17 @@ type Env interface {
 	ShortAPITokenSecret() string
 	WebhookHTTPClient() *fasthttp.Client
 	Logger() logger.Logger
+	GetSecretValues(ctx context.Context, like string) (map[string]string, error)
 }
 
 // cronWebhookPayload is the JSON body sent to the cron webhook endpoint.
 type cronWebhookPayload struct {
 	webhookutil.BasePayload
-	Instruction    string          `json:"instruction"`
-	ResponseSchema json.RawMessage `json:"response_schema"`
-	APIToken       string          `json:"api_token,omitempty"`
-	PreviousError  string          `json:"previous_error,omitempty"`
+	Instruction    string            `json:"instruction"`
+	ResponseSchema json.RawMessage   `json:"response_schema"`
+	APIToken       string            `json:"api_token,omitempty"`
+	Secrets        map[string]string `json:"secrets,omitempty"`
+	PreviousError  string            `json:"previous_error,omitempty"`
 }
 
 func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
@@ -66,11 +69,15 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		return fmt.Errorf("failed to load cron webhook %d: %w", params.CronWebhookID, err)
 	}
 
+	// Load webhook secrets (keys stripped of prefix).
+	secrets := loadCronSecrets(ctx, env, log, fmt.Sprintf("cron_webhooks:%d:", params.CronWebhookID))
+
 	// Build payload.
 	payload := cronWebhookPayload{
 		BasePayload:    webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
 		Instruction:    wh.Instruction,
 		ResponseSchema: ResponseSchema,
+		Secrets:        secrets,
 		PreviousError:  params.PreviousError,
 	}
 
@@ -207,6 +214,23 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	}
 
 	return nil
+}
+
+// loadCronSecrets fetches decrypted secrets for the given prefix, returning a map keyed by bare name.
+func loadCronSecrets(ctx context.Context, env Env, log logger.Logger, prefix string) map[string]string {
+	all, err := env.GetSecretValues(ctx, prefix+"%")
+	if err != nil {
+		log.Error("failed to load cron webhook secrets", "prefix", prefix, "error", err)
+		return nil
+	}
+	if len(all) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(all))
+	for k, v := range all {
+		result[strings.TrimPrefix(k, prefix)] = v
+	}
+	return result
 }
 
 // handleCronDeliveryError handles HTTP errors and retries.

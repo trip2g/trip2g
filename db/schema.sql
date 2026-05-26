@@ -826,6 +826,13 @@ CREATE TABLE tg_user_navigation_states (
   updated_at             datetime not null default current_timestamp,
   primary key (bot_id, business_connection_id, user_id)
 );
+CREATE TABLE secrets (
+  id          integer primary key autoincrement,
+  key         text    not null unique,
+  value_crypt blob    not null,
+  created_at  datetime not null default (datetime('now')),
+  created_by  integer not null references admins(user_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -945,4 +952,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260513120000'),
   ('20260518072631'),
   ('20260524105748'),
-  ('20260524105749');
+  ('20260524105749'),
+  ('20260526120000');

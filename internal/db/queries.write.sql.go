@@ -432,6 +432,15 @@ func (q *WriteQueries) DeleteRedirect(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteSecret = `-- name: DeleteSecret :exec
+delete from secrets where key = ?
+`
+
+func (q *WriteQueries) DeleteSecret(ctx context.Context, key string) error {
+	_, err := q.db.ExecContext(ctx, deleteSecret, key)
+	return err
+}
+
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?
@@ -4321,6 +4330,35 @@ func (q *WriteQueries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonT
 		arg.Attributes,
 	)
 	return err
+}
+
+const upsertSecret = `-- name: UpsertSecret :one
+insert into secrets (key, value_crypt, created_by)
+values (?, ?, ?)
+on conflict (key) do update set
+  value_crypt = excluded.value_crypt,
+  created_by  = excluded.created_by,
+  created_at  = datetime('now')
+returning id, "key", value_crypt, created_at, created_by
+`
+
+type UpsertSecretParams struct {
+	Key        string `json:"key"`
+	ValueCrypt []byte `json:"value_crypt"`
+	CreatedBy  int64  `json:"created_by"`
+}
+
+func (q *WriteQueries) UpsertSecret(ctx context.Context, arg UpsertSecretParams) (Secret, error) {
+	row := q.db.QueryRowContext(ctx, upsertSecret, arg.Key, arg.ValueCrypt, arg.CreatedBy)
+	var i Secret
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.ValueCrypt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const upsertTelegramChatUsername = `-- name: UpsertTelegramChatUsername :exec
