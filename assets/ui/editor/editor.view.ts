@@ -1,5 +1,30 @@
 namespace $.$$ {
+	const content_request = $trip2g_graphql_request(/* GraphQL */ `
+		query EditorNoteContent($filter: NotePathsFilter) {
+			notePaths(filter: $filter) {
+				value
+				content
+			}
+		}
+	`)
+
 	export class $trip2g_editor extends $.$trip2g_editor {
+		@$mol_mem_key
+		loaded_content(path: string): string {
+			if (!path) return ''
+			const res = content_request({ filter: { paths: [path] } })
+			return res.notePaths[0]?.content ?? ''
+		}
+
+		@$mol_mem_key
+		content_buffer(path: string, next?: string): string {
+			return next ?? this.loaded_content(path)
+		}
+
+		override content(next?: string): string {
+			return this.content_buffer(this.path(), next)
+		}
+
 		dialog_dom() {
 			return this.Dialog().dom_node() as HTMLDialogElement
 		}

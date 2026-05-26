@@ -19,24 +19,3 @@
 [trip2g_editor_dialog]:not([open]) {
 	display: none;
 }
-
-/* Tiptap inside mol: ensure proper sizing */
-[trip2g_editor_content] {
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-}
-
-[trip2g_editor_content] > div:not(.tiptap-toolbar) {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	min-height: 0;
-}
-
-[trip2g_editor_content] .tiptap-editor {
-	flex: 1;
-	outline: none;
-	background: var(--mol_theme_back);
-	overflow-y: auto;
-}

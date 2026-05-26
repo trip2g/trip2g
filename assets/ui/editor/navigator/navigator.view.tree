@@ -1,10 +1,20 @@
 $trip2g_editor_navigator $mol_list
+	path? \
+	query? \
+	ids_tags *
 	rows /
 		<= Head $mol_view
 			sub / <= head_title @ \Files
-		<= Tree $mol_view
-			style *
-				justifyContent \center
-				alignItems \center
-				minHeight \500px
-			sub / \WORK IN PROGRESS
+		<= Search $mol_string
+			hint @ \Search files...
+			value? <=> query?
+		<= Tree $trip2g_editor_navigator_tree
+			ids_tags <= ids_tags
+			levels_expanded 0
+			force_expanded <= searching false
+			Item* <= Item* $mol_button_minor
+				title <= item_title* \
+				click? <=> item_click*? null
+
+$trip2g_editor_navigator_tree $mol_tag_tree
+	force_expanded false
