@@ -42,6 +42,8 @@ func TestSafeWalk_NilYieldParams(t *testing.T) {
 	require.NotNil(t, view)
 
 	// utils.Walk + paramAccessVisitor panics on the nil-Parameters YieldNode.
+	// If this assertion starts failing, Jet fixed the bug upstream — safeWalk and
+	// its nil-Parameters guard can then be removed.
 	require.Panics(t, func() {
 		utils.Walk(view, &paramAccessVisitor{})
 	}, "visitor accessing YieldNode.Parameters.List should panic when Parameters is nil")
