@@ -14,31 +14,33 @@ var ErrBlockedAddress = errors.New("ssrfsafe: address is blocked (private/intern
 
 // blockedPrefixes covers RFC1918, loopback, link-local, cloud metadata, and
 // IPv6 ranges that can encode private IPv4 (mapped, NAT64, 6to4).
+//
+//nolint:gochecknoglobals // fixed lookup table of blocked CIDR ranges
 var blockedPrefixes = []netip.Prefix{
 	// IPv4
 	netip.MustParsePrefix("0.0.0.0/8"),
 	netip.MustParsePrefix("10.0.0.0/8"),
-	netip.MustParsePrefix("100.64.0.0/10"),    // carrier-grade NAT (RFC6598)
-	netip.MustParsePrefix("127.0.0.0/8"),      // loopback
-	netip.MustParsePrefix("169.254.0.0/16"),   // link-local / AWS+GCP metadata
-	netip.MustParsePrefix("172.16.0.0/12"),    // RFC1918
-	netip.MustParsePrefix("192.0.0.0/24"),     // IETF protocol assignments
-	netip.MustParsePrefix("192.0.2.0/24"),     // TEST-NET-1
-	netip.MustParsePrefix("192.168.0.0/16"),   // RFC1918
-	netip.MustParsePrefix("198.18.0.0/15"),    // benchmarking
-	netip.MustParsePrefix("198.51.100.0/24"),  // TEST-NET-2
-	netip.MustParsePrefix("203.0.113.0/24"),   // TEST-NET-3
-	netip.MustParsePrefix("224.0.0.0/4"),      // multicast
-	netip.MustParsePrefix("240.0.0.0/4"),      // reserved
+	netip.MustParsePrefix("100.64.0.0/10"),   // carrier-grade NAT (RFC6598)
+	netip.MustParsePrefix("127.0.0.0/8"),     // loopback
+	netip.MustParsePrefix("169.254.0.0/16"),  // link-local / AWS+GCP metadata
+	netip.MustParsePrefix("172.16.0.0/12"),   // RFC1918
+	netip.MustParsePrefix("192.0.0.0/24"),    // IETF protocol assignments
+	netip.MustParsePrefix("192.0.2.0/24"),    // TEST-NET-1
+	netip.MustParsePrefix("192.168.0.0/16"),  // RFC1918
+	netip.MustParsePrefix("198.18.0.0/15"),   // benchmarking
+	netip.MustParsePrefix("198.51.100.0/24"), // TEST-NET-2
+	netip.MustParsePrefix("203.0.113.0/24"),  // TEST-NET-3
+	netip.MustParsePrefix("224.0.0.0/4"),     // multicast
+	netip.MustParsePrefix("240.0.0.0/4"),     // reserved
 	netip.MustParsePrefix("255.255.255.255/32"),
 	// IPv6
-	netip.MustParsePrefix("::1/128"),          // loopback
-	netip.MustParsePrefix("fc00::/7"),         // unique local (RFC4193)
-	netip.MustParsePrefix("fe80::/10"),        // link-local
-	netip.MustParsePrefix("::ffff:0:0/96"),    // IPv4-mapped (can encode private IPv4)
-	netip.MustParsePrefix("64:ff9b::/96"),     // NAT64 (can map to private IPv4)
-	netip.MustParsePrefix("2001:db8::/32"),    // documentation
-	netip.MustParsePrefix("2002::/16"),        // 6to4 (can encode private IPv4)
+	netip.MustParsePrefix("::1/128"),       // loopback
+	netip.MustParsePrefix("fc00::/7"),      // unique local (RFC4193)
+	netip.MustParsePrefix("fe80::/10"),     // link-local
+	netip.MustParsePrefix("::ffff:0:0/96"), // IPv4-mapped (can encode private IPv4)
+	netip.MustParsePrefix("64:ff9b::/96"),  // NAT64 (can map to private IPv4)
+	netip.MustParsePrefix("2001:db8::/32"), // documentation
+	netip.MustParsePrefix("2002::/16"),     // 6to4 (can encode private IPv4)
 }
 
 func isSafe(ip netip.Addr) bool {

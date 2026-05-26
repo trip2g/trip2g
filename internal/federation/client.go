@@ -121,7 +121,7 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}
 	return model.FederationResult{
 		Content:           content,
-		StructuredContent: json.RawMessage(resp.Result.StructuredContent),
+		StructuredContent: resp.Result.StructuredContent,
 		IsError:           resp.Result.IsError,
 	}, nil
 }

@@ -24,9 +24,9 @@ type rpcResponse struct {
 // rpcResult is the raw MCP result envelope; StructuredContent is kept as
 // raw JSON to avoid a double-decode on the federation path.
 type rpcResult struct {
-	Content           []rpcContent `json:"content"`
+	Content           []rpcContent    `json:"content"`
 	StructuredContent json.RawMessage `json:"structuredContent,omitempty"`
-	IsError           bool         `json:"isError,omitempty"`
+	IsError           bool            `json:"isError,omitempty"`
 }
 
 type rpcContent struct {
