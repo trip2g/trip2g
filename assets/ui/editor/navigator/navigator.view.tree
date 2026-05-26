@@ -3,8 +3,6 @@ $trip2g_editor_navigator $mol_list
 	query? \
 	ids_tags *
 	rows /
-		<= Head $mol_view
-			sub / <= head_title @ \Files
 		<= Search $mol_string
 			hint @ \Search files...
 			value? <=> query?

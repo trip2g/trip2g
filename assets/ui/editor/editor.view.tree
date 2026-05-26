@@ -10,13 +10,9 @@ $trip2g_editor $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string
 			event *
-				click?event <=> close_click?event null
 				close?event <=> close_event?event null
 			sub /
-				<= Pane $trip2g_editor_pane
-					navigator_visible? <=> navigator_visible? true
-					preview_visible? <=> preview_visible? false
-					path? <=> path? \
-					content? <=> content? \
-					preview_html <= preview_html \
-					close <= close
+				<= Frame $mol_frame
+					html <= srcdoc \
+					clipboard_read false
+					clipboard_write false

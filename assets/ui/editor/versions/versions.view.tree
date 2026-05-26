@@ -1,0 +1,13 @@
+$trip2g_editor_versions $mol_page
+	path \
+	content? \
+	title @ \Versions
+	body /
+		<= List $mol_list
+			Empty <= Empty $mol_view
+				sub / <= empty_text @ \No versions
+			rows <= version_rows /$mol_view
+	Version* $mol_button_minor
+		click? <=> version_click*? null
+		sub /
+			<= version_title* \

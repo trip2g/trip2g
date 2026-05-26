@@ -1,18 +1,49 @@
 $trip2g_editor_pane $mol_view
-	content? \
-	preview_html \
 	path? \
-	navigator_visible? true
-	preview_visible? false
+	content? \
+	right_sidebar? \
 	close null
-	sub <= columns /$mol_view
-	Navigator $trip2g_editor_navigator
-		path? <=> path?
-	Content $trip2g_editor_content
-		content? <=> content?
+	sub /
+		<= Navigation $mol_page
+			title @ \Files
+			tools /
+				<= CloseButton $mol_button_minor
+					click <= close null
+					sub /
+						<= CloseIcon $mol_icon_close
+			body /
+				<= Navigator $trip2g_editor_navigator
+					style *
+						flex \1
+					path? <=> path?
+		<= Editor $mol_page
+			title <= file_title \
+			tools /
+				<= VersionsButton $mol_button_minor
+					click? <=> handle_versions_click? null
+					sub /
+						<= VersionsIcon $mol_icon_history
+				<= DownloadButton $mol_button_minor
+					enabled <= has_content false
+					click? <=> download? null
+					sub /
+						<= DownloadIcon $mol_icon_download
+				<= SaveButton $mol_button_minor
+					enabled <= dirty false
+					click? <=> handle_save_click? null
+					sub /
+						<= SaveIcon $mol_icon_content_save
+						<= save_text @ \Save {0} files
+			body <= editor_body /
+		<= right_sidebar_widget null $mol_view
+	ContentTextarea $mol_textarea
+		value? <=> content?
+	Placeholder $mol_view
+		sub /
+			<= placeholder_text @ \Choose file in the left panel
+	Versions $trip2g_editor_versions
 		path <= path
-		navigator_visible? <=> navigator_visible?
-		preview_visible? <=> preview_visible?
-		close <= close
-	Preview $trip2g_editor_preview
-		preview_html <= preview_html
+		content? <=> content?
+	SaveList $trip2g_editor_savelist
+		files <= changed_paths /string
+		submit? <=> save_confirm? null

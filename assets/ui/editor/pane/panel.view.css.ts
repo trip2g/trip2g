@@ -8,35 +8,23 @@ namespace $ {
 		height: '100%',
 		overflow: 'hidden',
 
-		Navigator: {
+		Navigation: {
 			flex: {
 				basis: '260px',
 				shrink: 0,
 				grow: 0,
 			},
 			minHeight: 0,
-			overflow: 'auto',
 			borderRight: `1px solid ${$mol_theme.line}`,
 		},
 
-		Content: {
+		Editor: {
 			flex: {
-				basis: '0',
+				basis: 0,
 				grow: 1,
 			},
 			minWidth: 0,
 			minHeight: 0,
-		},
-
-		Preview: {
-			flex: {
-				basis: '0',
-				grow: 1,
-			},
-			minWidth: 0,
-			minHeight: 0,
-			overflow: 'auto',
-			borderLeft: `1px solid ${$mol_theme.line}`,
 		},
 	})
 }

@@ -9,6 +9,8 @@
 	display: flex;
 	flex-direction: column;
 	background-color: var(--mol_theme_back);
+	font-size: 16px;
+	line-height: 1.5;
 }
 
 [trip2g_editor_dialog]::backdrop {
@@ -18,4 +20,20 @@
 
 [trip2g_editor_dialog]:not([open]) {
 	display: none;
+}
+
+/* Neutralize host-page element styles (e.g. Pico CSS) leaking into mol widgets.
+   mol uses semantic tags (article for $mol_page, h1 for titles); mol's own
+   [mol_view] rules still win for properties it sets. */
+[trip2g_editor_dialog] article {
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+}
+
+[trip2g_editor_dialog] :is(h1, h2, h3, h4, h5, h6) {
+	margin: 0;
+	font: inherit;
 }

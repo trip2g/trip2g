@@ -48,7 +48,11 @@ window.__trip2g_settings = {
   is_dev_mode: {%s= ctx.DevMode %},
   title: {%q= ctx.Title %},
   ui_lang: {%q= ctx.UILang %},
+  js_urls: [{% for _, u := range ctx.JSURLs %}{%q= u %},{% endfor %}],
 {% if ctx.Note != nil %}  note_lang: {%q= ctx.Note.Lang() %},
+  note_path: {%q= ctx.Note.Path() %},
+  note_path_id: {%dl ctx.Note.PathID() %},
+  note_version_id: {%q= ctx.Note.VersionID() %},
 {% endif %}}
 </script>
 

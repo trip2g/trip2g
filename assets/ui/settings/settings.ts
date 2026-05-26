@@ -9,6 +9,10 @@ namespace $.$$ {
 		is_dev_mode: isDevMode,
 		ui_lang: '',
 		note_lang: '',
+		js_urls: [] as string[],
+		note_path: '',
+		note_path_id: 0,
+		note_version_id: '',
 		// @ts-ignore
 		...(typeof window !== 'undefined' ? window.__trip2g_settings : {}),
 	}
@@ -29,6 +33,22 @@ namespace $.$$ {
 
 		static note_lang() {
 			return settings.note_lang
+		}
+
+		static js_urls(): string[] {
+			return settings.js_urls
+		}
+
+		static note_path() {
+			return settings.note_path
+		}
+
+		static note_path_id() {
+			return settings.note_path_id
+		}
+
+		static note_version_id() {
+			return settings.note_version_id
 		}
 
 		static set_lang(lang: string) {

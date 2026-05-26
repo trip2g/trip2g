@@ -1,28 +1,35 @@
 namespace $.$$ {
-	const content_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNoteContent($filter: NotePathsFilter) {
-			notePaths(filter: $filter) {
-				value
-				content
-			}
-		}
-	`)
-
 	export class $trip2g_editor extends $.$trip2g_editor {
-		@$mol_mem_key
-		loaded_content(path: string): string {
-			if (!path) return ''
-			const res = content_request({ filter: { paths: [path] } })
-			return res.notePaths[0]?.content ?? ''
+		@$mol_mem
+		listen() {
+			this.$.$mol_dom_context.addEventListener('message', (e: MessageEvent) => {
+				if (e.data === 'trip2g_editor_close') this.close()
+			})
+			return true
 		}
 
-		@$mol_mem_key
-		content_buffer(path: string, next?: string): string {
-			return next ?? this.loaded_content(path)
-		}
-
-		override content(next?: string): string {
-			return this.content_buffer(this.path(), next)
+		@$mol_mem
+		override srcdoc(): string {
+			this.listen()
+			const inner = {
+				ui_lang: $trip2g_settings.ui_lang(),
+				note_lang: $trip2g_settings.note_lang(),
+				note_path: $trip2g_settings.note_path(),
+				note_path_id: $trip2g_settings.note_path_id(),
+				note_version_id: $trip2g_settings.note_version_id(),
+			}
+			const scripts = $trip2g_settings
+				.js_urls()
+				.filter(u => !u.includes('defaulttemplate'))
+				.map(u => `<script src="${u}" defer></script>`)
+				.join('')
+			return (
+				'<!doctype html><html><head><meta charset="utf-8">' +
+				`<script>window.__trip2g_settings=${JSON.stringify(inner)}</script>` +
+				'</head><body style="margin:0;height:100vh"><div mol_view_root="$trip2g_editor_pane" style="height:100vh"></div>' +
+				scripts +
+				'</body></html>'
+			)
 		}
 
 		dialog_dom() {
@@ -49,7 +56,6 @@ namespace $.$$ {
 				this.$.$mol_state_arg.value(KEY, newVal)
 				return newVal
 			} else {
-				// need to mark that dependency.
 				const stateOpened = this.$.$mol_state_arg.value(KEY) === 'open'
 
 				if (this._mounted) {
@@ -64,15 +70,11 @@ namespace $.$$ {
 			return opened ? 'open' : null
 		}
 
-		modal_node() {
-			return this.Dialog().dom_node() as HTMLDialogElement
-		}
-
 		open() {
 			this.open_status(true)
 		}
 
-		override close() {
+		close() {
 			this.open_status(false)
 		}
 
@@ -86,14 +88,6 @@ namespace $.$$ {
 			}
 
 			return this.$.$mol_state_arg.value('editor') === 'open'
-		}
-
-		override close_click(e: MouseEvent) {
-			const r = this.modal_node().getBoundingClientRect()
-
-			if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
-				this.modal_node().close()
-			}
 		}
 	}
 }

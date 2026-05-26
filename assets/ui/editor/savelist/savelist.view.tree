@@ -1,0 +1,18 @@
+$trip2g_editor_savelist $mol_page
+	files /string
+	selected /string
+	submit? null
+	title @ \Save changes
+	body /
+		<= List $mol_list
+			Empty <= Empty $mol_view
+				sub / <= empty_text @ \No changes
+			rows <= file_rows /$mol_view
+	foot /
+		<= SubmitButton $mol_button_major
+			click? <=> submit? null
+			sub /
+				<= submit_label @ \Save selected
+	File_row* $mol_check_box
+		checked? <=> checked*? true
+		title <= file_label* \
