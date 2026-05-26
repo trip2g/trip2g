@@ -48,7 +48,7 @@ func TestClientCallsSixFederationTools(t *testing.T) {
 		Secret: []byte("12345678901234567890123456789012"),
 		Issuer: "https://hub.local",
 		Depth:  1,
-	}, &fasthttp.Client{})
+	}, &fasthttp.Client{}, false)
 
 	_, err := client.Search(context.Background(), model.FederationSearchParams{Query: "q"})
 	require.NoError(t, err)
