@@ -8,6 +8,20 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.5.0 — 2026-05-26
+
+### In-browser file editor (admin)
+
+- **What.** Admins can now edit any page right on the site. An editor icon appears in the top-right of the admin panel and next to the search on every page. Open it to browse every uploaded file as a folder tree, view and edit any one, and save. You can also roll a file back to an earlier version.
+- **Why.** Fix a typo or update a page in seconds — no Obsidian, no re-sync.
+- **How.** Click the editor icon (admins only). The current page's note opens by default; pick any other file from the tree on the left. Edits stay in your browser until you press **Save**, and the versions panel lets you load and restore an older version.
+
+### Public hub of curated bases
+
+- **What.** A `hub/` section with a bilingual index of the knowledge bases reachable through the hub (first entry: the Nick Senin Journal — filtered Code with Claude 2026 cases).
+- **Why.** A browsable, public entry point to federated bases.
+- **How.** See [`docs/en/hub/_index.md`](./en/hub/_index.md); add your own with [`docs/en/hub/_create.md`](./en/hub/_create.md).
+
 ## v0.4.1 — 2026-05-25
 
 ### MCP Federation — one hub across many knowledge bases
@@ -19,17 +33,11 @@ Older tags (`v0.2.0` and below) live in git history only.
   - Public base: create a note with `mcp_federation_kb_url` (+ optional `mcp_federation_kb_id`) and `free: true`.
   - Private peer: exchange a federation secret in Admin → Federation, then add the KB-note.
 
-### Public hub of curated bases
+### Canvas files (Base & Excalidraw coming later)
 
-- **What.** A `hub/` section with a bilingual index of the knowledge bases reachable through the hub (first entry: the Nick Senin Journal — filtered Code with Claude 2026 cases).
-- **Why.** A browsable, public entry point to federated bases.
-- **How.** See [`docs/en/hub/_index.md`](./en/hub/_index.md); add your own with [`docs/en/hub/_create.md`](./en/hub/_create.md).
-
-### Canvas, Base, and Excalidraw files
-
-- **What.** `.canvas`, `.base`, and `.excalidraw` files flow through ingestion and sync; URLs for types not renderable in the browser show a clear placeholder instead of breaking the page.
-- **Why.** Vaults using Obsidian Canvas / Bases / Excalidraw sync without errors.
-- **How.** Just sync them — the plugin and CLI now accept these extensions.
+- **What.** `.canvas` files sync and render. `.base` and `.excalidraw` files are accepted by sync too, but rendering them is planned for later — for now they show a clear placeholder instead of breaking the page.
+- **Why.** Canvas vaults work today; Base and Excalidraw vaults sync without errors while full support is on the way.
+- **How.** Just sync — the plugin and CLI accept all three extensions; Canvas renders now.
 
 ### Telegram navigation & canvas bots
 
