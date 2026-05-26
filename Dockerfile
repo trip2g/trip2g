@@ -15,6 +15,7 @@ RUN mkdir fragment && \
     mkdir note && \
     mkdir limit && \
     mkdir format && \
+    mkdir -p version/id && \
     mkdir input
 
 COPY ./assets/ui ./trip2g

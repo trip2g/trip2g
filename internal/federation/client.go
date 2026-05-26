@@ -30,11 +30,13 @@ type Client struct {
 	timeout time.Duration
 }
 
-func NewClient(peer model.FederationPeer, http *fasthttp.Client) *Client {
+func NewClient(peer model.FederationPeer, http *fasthttp.Client, devMode bool) *Client {
 	if http == nil {
 		http = &fasthttp.Client{
 			MaxResponseBodySize: defaultMaxResponseBody,
-			DialTimeout:         ssrfsafe.DialTimeout,
+		}
+		if !devMode {
+			http.DialTimeout = ssrfsafe.DialTimeout
 		}
 	}
 	return &Client{

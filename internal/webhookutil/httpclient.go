@@ -69,10 +69,14 @@ func Deliver(client *fasthttp.Client, url string, payload []byte, headers map[st
 }
 
 // NewClient creates a fasthttp.Client with appropriate defaults.
-func NewClient() *fasthttp.Client {
-	return &fasthttp.Client{
+// When devMode is true, SSRF protection is disabled to allow private/internal addresses (e.g. in E2E tests).
+func NewClient(devMode bool) *fasthttp.Client {
+	c := &fasthttp.Client{
 		MaxConnWaitTimeout:  connectTimeout,
 		MaxResponseBodySize: maxResponseBody,
-		DialTimeout:         ssrfsafe.DialTimeout,
 	}
+	if !devMode {
+		c.DialTimeout = ssrfsafe.DialTimeout
+	}
+	return c
 }

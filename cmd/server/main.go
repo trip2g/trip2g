@@ -518,7 +518,7 @@ func (a *app) initJobs(ctx context.Context) {
 	a.GenerateNoteVersionEmbeddingJob = generatenoteversionembedding.New(a)
 	a.DeliverChangeWebhookJob = deliverchangewebhook.New(a)
 	a.DeliverCronWebhookJob = delivercronwebhook.New(a)
-	a.webhookHTTPClient = webhookutil.NewClient()
+	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode)
 
 	var err error
 
@@ -1656,7 +1656,7 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 			}
 		}
 
-		return federation.NewClient(peer, a.webhookHTTPClient), nil
+		return federation.NewClient(peer, a.webhookHTTPClient, a.config.DevMode), nil
 	}
 
 	return nil, fmt.Errorf("federation kb %q not found", kbID)
