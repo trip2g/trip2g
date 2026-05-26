@@ -225,12 +225,12 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 		}
 
 		assetWalker := assetFinder{}
-		utils.Walk(view, &assetWalker)
+		safeWalk(view, &assetWalker)
 		// utils.Walk does not recurse into {{ import }} templates — walk them explicitly.
 		if views, ok := jl.sets[source.ID]; ok {
 			for _, importPath := range extractImportPaths(source.Content) {
 				if imported, err := views.GetTemplate(importPath); err == nil {
-					utils.Walk(imported, &assetWalker)
+					safeWalk(imported, &assetWalker)
 				}
 			}
 		}
@@ -239,11 +239,11 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 
 		// Find block definitions
 		blockWalker := blockFinder{sourceID: source.ID}
-		utils.Walk(view, &blockWalker)
+		safeWalk(view, &blockWalker)
 		if views, ok := jl.sets[source.ID]; ok {
 			for _, importPath := range extractImportPaths(source.Content) {
 				if imported, err := views.GetTemplate(importPath); err == nil {
-					utils.Walk(imported, &blockWalker)
+					safeWalk(imported, &blockWalker)
 				}
 			}
 		}
@@ -303,7 +303,7 @@ func (jl *jetLoader) wireYieldBlocksForPreview(sourceID string, view *jet.Templa
 	}
 
 	ybv := &yieldBlocksUsageFinder{}
-	utils.Walk(view, ybv)
+	safeWalk(view, ybv)
 	if !ybv.found {
 		return
 	}
@@ -327,7 +327,7 @@ func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 
 		// Check if this template uses yield_blocks at all; skip if not.
 		ybv := &yieldBlocksUsageFinder{}
-		utils.Walk(layout.View, ybv)
+		safeWalk(layout.View, ybv)
 		if !ybv.found {
 			continue
 		}
@@ -343,7 +343,7 @@ func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 
 		// Run validator for static pattern warnings (e.g. invalid regexp).
 		validator := &yieldBlocksValidator{}
-		utils.Walk(layout.View, validator)
+		safeWalk(layout.View, validator)
 
 		// Merge all warnings into pendingWarnings so they end up on the layout.
 		allWarnings := append(regWarnings, resolveWarnings...) //nolint:gocritic // correct: intentionally creates new combined slice
@@ -359,17 +359,6 @@ func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 type yieldBlocksUsageFinder struct{ found bool }
 
 func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
-	if _, ok := node.(*jet.IncludeNode); ok {
-		return
-	}
-	// Guard nil Parameters — Jet's visitor panics on {{ yield content }} with nil Parameters.
-	// Do NOT return early: yield_blocks may be nested inside a {{ yield name() content }} block.
-	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
-		y.Parameters = &jet.BlockParameterList{}
-	}
 	if action, ok := node.(*jet.ActionNode); ok && !w.found {
 		if action.Pipe != nil && len(action.Pipe.Cmds) > 0 {
 			if ident, identOk := action.Pipe.Cmds[0].BaseExpr.(*jet.IdentifierNode); identOk && ident.Ident == "yield_blocks" {
@@ -501,13 +490,6 @@ type assetFinder struct {
 }
 
 func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
-	if _, ok := node.(*jet.IncludeNode); ok {
-		return
-	}
-
 	switch node := node.(type) {
 	case *jet.IdentifierNode:
 		if node.Ident == "asset" {
@@ -515,21 +497,12 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 			vc.Visit(node)
 			return
 		}
-
 	case *jet.StringNode:
 		if w.WaitNext {
 			w.List = append(w.List, node.Text)
 		}
-
-	// fix the jet panic on missing Parameters (only if nil, don't clear existing params!)
-	case *jet.YieldNode:
-		if node.Parameters == nil {
-			node.Parameters = &jet.BlockParameterList{}
-		}
 	}
-
 	vc.Visit(node)
-
 	w.WaitNext = false
 }
 
@@ -540,13 +513,6 @@ type blockFinder struct {
 }
 
 func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
-	if _, ok := node.(*jet.IncludeNode); ok {
-		return
-	}
-
 	if block, ok := node.(*jet.BlockNode); ok {
 		info := model.LayoutBlock{
 			Name:     block.Name,

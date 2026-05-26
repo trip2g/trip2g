@@ -6,7 +6,6 @@ import (
 	"trip2g/internal/model"
 
 	"github.com/CloudyKit/jet/v6"
-	"github.com/CloudyKit/jet/v6/utils"
 )
 
 type blockRegistryEntry struct {
@@ -38,7 +37,7 @@ func buildBlockRegistry(
 			continue
 		}
 		finder := &blockNameFinder{}
-		utils.Walk(t, finder)
+		safeWalk(t, finder)
 		for _, name := range finder.names {
 			if existing, ok := registry[name]; ok {
 				warnings = append(warnings, model.NoteWarning{

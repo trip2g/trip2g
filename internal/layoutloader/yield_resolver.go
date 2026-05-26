@@ -12,18 +12,6 @@ import (
 type blockNameFinder struct{ names []string }
 
 func (w *blockNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
-	// jet's visitIncludeNode re-visits the IncludeNode itself instead of its children,
-	// causing infinite recursion. Skip it — include nodes contain no blocks or yields.
-	if _, ok := node.(*jet.IncludeNode); ok {
-		return
-	}
-	// Fix jet panic: YieldNode.Parameters can be nil for partially-parsed templates.
-	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
-		y.Parameters = &jet.BlockParameterList{}
-	}
 	if b, ok := node.(*jet.BlockNode); ok {
 		w.names = append(w.names, b.Name)
 	}
@@ -34,19 +22,8 @@ func (w *blockNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 type yieldNameFinder struct{ names []string }
 
 func (w *yieldNameFinder) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
-	if _, ok := node.(*jet.IncludeNode); ok {
-		return
-	}
-	if y, ok := node.(*jet.YieldNode); ok {
-		if y.Parameters == nil {
-			y.Parameters = &jet.BlockParameterList{}
-		}
-		if !y.IsContent {
-			w.names = append(w.names, y.Name)
-		}
+	if y, ok := node.(*jet.YieldNode); ok && !y.IsContent {
+		w.names = append(w.names, y.Name)
 	}
 	vc.Visit(node)
 }
@@ -62,7 +39,7 @@ func resolveNeededFiles( //nolint:nonamedreturns // named returns used throughou
 	addedFiles := make(map[string]bool)
 
 	yf := &yieldNameFinder{}
-	utils.Walk(pageView, yf)
+	safeWalk(pageView, yf)
 	queue := yf.names
 
 	for len(queue) > 0 {
@@ -89,11 +66,11 @@ func resolveNeededFiles( //nolint:nonamedreturns // named returns used throughou
 
 			if t, err := views.GetTemplate(entry.SourceID); err == nil && t != nil {
 				bf := &blockNameFinder{}
-				utils.Walk(t, bf)
+				safeWalk(t, bf)
 				inlinedBlockNames = append(inlinedBlockNames, bf.names...)
 
 				yf2 := &yieldNameFinder{}
-				utils.Walk(t, yf2)
+				safeWalk(t, yf2)
 				queue = append(queue, yf2.names...)
 			}
 		}

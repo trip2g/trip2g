@@ -14,9 +14,6 @@ type yieldBlocksValidator struct {
 }
 
 func (w *yieldBlocksValidator) Visit(vc utils.VisitorContext, node jet.Node) {
-	if node == nil {
-		return
-	}
 	w.validateYieldBlocksPattern(node)
 	vc.Visit(node)
 }
