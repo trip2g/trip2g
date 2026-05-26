@@ -28,7 +28,14 @@ namespace $.$$ {
 	export class $trip2g_editor_pane extends $.$trip2g_editor_pane {
 		@$mol_mem
 		override path(next?: string): string {
-			return next ?? $trip2g_settings.note_path()
+			if (next !== undefined) {
+				const w = this.$.$mol_dom_context as unknown as Window
+				if (w.parent && w.parent !== w) {
+					w.parent.postMessage({ type: 'trip2g_editor_path', path: next }, '*')
+				}
+				return next
+			}
+			return $trip2g_settings.note_path()
 		}
 
 		@$mol_mem_key
@@ -66,8 +73,7 @@ namespace $.$$ {
 		}
 
 		override file_title(): string {
-			const path = this.path()
-			return path ? path.split('/').at(-1) ?? path : 'Editor'
+			return this.path() || 'Editor'
 		}
 
 		override editor_body(): readonly $mol_view[] {
@@ -153,7 +159,7 @@ namespace $.$$ {
 		}
 
 		override close(): null {
-			const w = this.$.$mol_dom_context as Window
+			const w = this.$.$mol_dom_context as unknown as Window
 			if (w.parent && w.parent !== w) {
 				w.parent.postMessage('trip2g_editor_close', '*')
 			}
