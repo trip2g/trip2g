@@ -18,6 +18,32 @@ $trip2g_admin_changewebhook_show $mol_page
 		changewebhook_id <= changewebhook_id
 	TriggerPage $trip2g_admin_changewebhook_trigger
 		changewebhook_id <= changewebhook_id
+	DeliveryRow* $mol_row
+		sub /
+			<= DeliveryId* $mol_labeler
+				title \#
+				Content <= DeliveryIdCell* $trip2g_admin_cell
+					content <= delivery_id* \
+			<= DeliveryStatus* $mol_labeler
+				title \Status
+				Content <= DeliveryStatusCell* $trip2g_admin_cell
+					content <= delivery_status* \
+			<= DeliveryResponse* $mol_labeler
+				title \Response
+				Content <= DeliveryResponseCell* $trip2g_admin_cell
+					content <= delivery_response* \
+			<= DeliveryAttempt* $mol_labeler
+				title \Attempt
+				Content <= DeliveryAttemptCell* $trip2g_admin_cell
+					content <= delivery_attempt* \
+			<= DeliveryDuration* $mol_labeler
+				title \Duration
+				Content <= DeliveryDurationCell* $trip2g_admin_cell
+					content <= delivery_duration* \
+			<= DeliveryCreatedAt* $mol_labeler
+				title @ \Created At
+				Content <= DeliveryCreatedAtCell* $trip2g_admin_cell
+					content <= delivery_created_at* \
 	body /
 		<= WebhookDetails $mol_section
 			title \Webhook Details
@@ -93,33 +119,12 @@ $trip2g_admin_changewebhook_show $mol_page
 			message <= secret_result? \
 		<= DeleteResult $mol_status
 			message <= delete_result? \
+		<= Secrets $trip2g_admin_secrets
+			key_prefix <= secrets_prefix \
+		<= SecretsTest $mol_view
+			sub / \Hello!
+		\Secret!
 		<= Deliveries_labeler $mol_labeler
-			title @ \Recent Deliveries
+			title @ \Recent Deliveries Udate!
 			Content <= DeliveriesList $mol_list
 				rows <= delivery_rows /
-		<= DeliveryRow* $mol_row
-			sub /
-				<= DeliveryId* $mol_labeler
-					title \#
-					Content <= DeliveryIdCell* $trip2g_admin_cell
-						content <= delivery_id* \
-				<= DeliveryStatus* $mol_labeler
-					title \Status
-					Content <= DeliveryStatusCell* $trip2g_admin_cell
-						content <= delivery_status* \
-				<= DeliveryResponse* $mol_labeler
-					title \Response
-					Content <= DeliveryResponseCell* $trip2g_admin_cell
-						content <= delivery_response* \
-				<= DeliveryAttempt* $mol_labeler
-					title \Attempt
-					Content <= DeliveryAttemptCell* $trip2g_admin_cell
-						content <= delivery_attempt* \
-				<= DeliveryDuration* $mol_labeler
-					title \Duration
-					Content <= DeliveryDurationCell* $trip2g_admin_cell
-						content <= delivery_duration* \
-				<= DeliveryCreatedAt* $mol_labeler
-					title @ \Created At
-					Content <= DeliveryCreatedAtCell* $trip2g_admin_cell
-						content <= delivery_created_at* \

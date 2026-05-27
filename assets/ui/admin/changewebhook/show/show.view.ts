@@ -40,6 +40,7 @@ namespace $.$$ {
 					readPatterns
 					writePatterns
 					createdAt
+					secretPrefix
 				}
 			}
 		}
@@ -103,7 +104,7 @@ namespace $.$$ {
 			if( this.action() === 'trigger' ) {
 				return [ this.TriggerPage() ]
 			}
-			return [ this.WebhookDetails(), this.SecretResult(), this.DeleteResult(), this.Deliveries_labeler() ]
+			return super.body()
 		}
 
 		webhook_url(): string { return this.data().url }
@@ -159,6 +160,10 @@ namespace $.$$ {
 		delivery_created_at( index: number ): string {
 			const m = new $mol_time_moment( this.deliveries()[ index ].createdAt )
 			return m.toString( 'YYYY-MM-DD HH:mm:ss' )
+		}
+
+		secrets_prefix() {
+			return this.data().secretPrefix
 		}
 
 		delete() {

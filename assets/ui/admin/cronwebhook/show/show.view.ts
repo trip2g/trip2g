@@ -36,6 +36,7 @@ namespace $.$$ {
 					writePatterns
 					nextRunAt
 					createdAt
+					secretPrefix
 				}
 			}
 		}
@@ -112,7 +113,7 @@ namespace $.$$ {
 			if( this.action() === 'update' ) {
 				return [ this.UpdateForm() ]
 			}
-			return [ this.CronWebhookDetails(), this.SecretResult(), this.TriggerResult(), this.DeleteResult(), this.Deliveries_labeler() ]
+			return super.body()
 		}
 
 		cw_url(): string { return this.data().url }
@@ -164,6 +165,10 @@ namespace $.$$ {
 		delivery_created_at( index: number ): string {
 			const m = new $mol_time_moment( this.deliveries()[ index ].createdAt )
 			return m.toString( 'YYYY-MM-DD HH:mm:ss' )
+		}
+
+		secrets_prefix() {
+			return this.data().secretPrefix
 		}
 
 		delete() {

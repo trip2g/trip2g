@@ -78,7 +78,6 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
-	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setapikeymcpadmintools"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
@@ -86,6 +85,7 @@ import (
 	"trip2g/internal/case/admin/setconfigintvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishtags"
 	"trip2g/internal/case/admin/settgchatpublishinstanttags"
@@ -379,6 +379,12 @@ func (r *adminChangeWebhookResolver) HasSecret(ctx context.Context, obj *db.Chan
 	return obj.Secret != "", nil
 }
 
+// SecretPrefix is the resolver for the secretPrefix field.
+func (r *adminChangeWebhookResolver) SecretPrefix(ctx context.Context, obj *db.ChangeWebhook) (string, error) {
+	p, err := appmodel.ChangeWebhookSecretPrefix(obj.ID)
+	return p.String(), err
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminChangeWebhookResolver) CreatedBy(ctx context.Context, obj *db.ChangeWebhook) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -575,6 +581,12 @@ func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.
 // HasSecret is the resolver for the hasSecret field.
 func (r *adminCronWebhookResolver) HasSecret(ctx context.Context, obj *db.CronWebhook) (bool, error) {
 	return obj.Secret != "", nil
+}
+
+// SecretPrefix is the resolver for the secretPrefix field.
+func (r *adminCronWebhookResolver) SecretPrefix(ctx context.Context, obj *db.CronWebhook) (string, error) {
+	p, err := appmodel.CronWebhookSecretPrefix(obj.ID)
+	return p.String(), err
 }
 
 // ReadPatterns is the resolver for the readPatterns field.
@@ -1288,11 +1300,11 @@ func (r *adminMutationResolver) SetSecret(ctx context.Context, obj *appmodel.Adm
 }
 
 // DeleteSecret is the resolver for the deleteSecret field.
-func (r *adminMutationResolver) DeleteSecret(ctx context.Context, obj *appmodel.AdminMutation, key string) (*model.DeleteSecretPayload, error) {
-	if err := deletesecret.Resolve(ctx, r.env(ctx), key); err != nil {
+func (r *adminMutationResolver) DeleteSecret(ctx context.Context, obj *appmodel.AdminMutation, id string) (*model.DeleteSecretPayload, error) {
+	if err := deletesecret.Resolve(ctx, r.env(ctx), id); err != nil {
 		return nil, err
 	}
-	return &model.DeleteSecretPayload{Key: key}, nil
+	return &model.DeleteSecretPayload{ID: id}, nil
 }
 
 // MarkFormSubmitProcessed is the resolver for the markFormSubmitProcessed field.
@@ -1734,10 +1746,10 @@ func (r *adminQueryResolver) FederationSecrets(ctx context.Context, obj *appmode
 }
 
 // SecretKeys is the resolver for the secretKeys field.
-func (r *adminQueryResolver) SecretKeys(ctx context.Context, obj *appmodel.AdminQuery, like *string) ([]string, error) {
+func (r *adminQueryResolver) SecretKeys(ctx context.Context, obj *appmodel.AdminQuery, filter *model.SecretKeysFilter) ([]string, error) {
 	pattern := "%"
-	if like != nil {
-		pattern = *like
+	if filter != nil && filter.IDPrefix != nil {
+		pattern = *filter.IDPrefix + "%"
 	}
 	return listsecretkeys.Resolve(ctx, r.env(ctx), pattern)
 }

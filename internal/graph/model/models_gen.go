@@ -1489,6 +1489,10 @@ type DeleteRedirectPayload struct {
 
 func (DeleteRedirectPayload) IsDeleteRedirectOrErrorPayload() {}
 
+type DeleteSecretPayload struct {
+	ID string `json:"id"`
+}
+
 type DisableAPIKeyInput struct {
 	ID int64 `json:"id"`
 }
@@ -2134,6 +2138,10 @@ type SearchInput struct {
 	Query string `json:"query"`
 }
 
+type SecretKeysFilter struct {
+	IDPrefix *string `json:"idPrefix,omitempty"`
+}
+
 type SendTelegramPublishNoteNowInput struct {
 	ID int64 `json:"id"`
 }
@@ -2231,6 +2239,15 @@ type SetPatreonTierSubgraphsPayload struct {
 }
 
 func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
+
+type SetSecretInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type SetSecretPayload struct {
+	Key string `json:"key"`
+}
 
 type SetTgChatPublishInstantTagsInput struct {
 	ChatID int64   `json:"chatId"`

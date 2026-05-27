@@ -233,6 +233,7 @@ type AdminChangeWebhookResolver interface {
 	ExcludePatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error)
 
 	HasSecret(ctx context.Context, obj *db.ChangeWebhook) (bool, error)
+	SecretPrefix(ctx context.Context, obj *db.ChangeWebhook) (string, error)
 
 	CreatedBy(ctx context.Context, obj *db.ChangeWebhook) (*db.User, error)
 	LastDeliveryAt(ctx context.Context, obj *db.ChangeWebhook) (*time.Time, error)
@@ -284,6 +285,7 @@ type AdminCronJobsConnectionResolver interface {
 }
 type AdminCronWebhookResolver interface {
 	HasSecret(ctx context.Context, obj *db.CronWebhook) (bool, error)
+	SecretPrefix(ctx context.Context, obj *db.CronWebhook) (string, error)
 
 	ReadPatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error)
 	WritePatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error)
@@ -442,7 +444,7 @@ type AdminMutationResolver interface {
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
 	RenderLayout(ctx context.Context, obj *model1.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error)
 	SetSecret(ctx context.Context, obj *model1.AdminMutation, input model.SetSecretInput) (*model.SetSecretPayload, error)
-	DeleteSecret(ctx context.Context, obj *model1.AdminMutation, key string) (*model.DeleteSecretPayload, error)
+	DeleteSecret(ctx context.Context, obj *model1.AdminMutation, id string) (*model.DeleteSecretPayload, error)
 	MarkFormSubmitProcessed(ctx context.Context, obj *model1.AdminMutation, input model.MarkFormSubmitProcessedInput) (model.MarkFormSubmitProcessedOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
@@ -536,7 +538,7 @@ type AdminQueryResolver interface {
 	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	FederationSecrets(ctx context.Context, obj *model1.AdminQuery) ([]db.ListFederationSecretsRow, error)
-	SecretKeys(ctx context.Context, obj *model1.AdminQuery, like *string) ([]string, error)
+	SecretKeys(ctx context.Context, obj *model1.AdminQuery, filter *model.SecretKeysFilter) ([]string, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
 	ConfigValues(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminConfigValue, error)
@@ -959,6 +961,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRevokeUserTokenInput,
 		ec.unmarshalInputRunCronJobInput,
 		ec.unmarshalInputSearchInput,
+		ec.unmarshalInputSecretKeysFilter,
 		ec.unmarshalInputSendTelegramPublishNoteNowInput,
 		ec.unmarshalInputSetActiveGitHubOAuthCredentialsInput,
 		ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput,
@@ -1553,11 +1556,11 @@ func (ec *executionContext) field_AdminMutation_deleteRedirect_args(ctx context.
 func (ec *executionContext) field_AdminMutation_deleteSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "key", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["key"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2477,11 +2480,11 @@ func (ec *executionContext) field_AdminQuery_redirect_args(ctx context.Context, 
 func (ec *executionContext) field_AdminQuery_secretKeys_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "like", ec.unmarshalOString2ᚖstring)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOSecretKeysFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSecretKeysFilter)
 	if err != nil {
 		return nil, err
 	}
-	args["like"] = arg0
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -5225,6 +5228,35 @@ func (ec *executionContext) fieldContext_AdminChangeWebhook_hasSecret(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminChangeWebhook_secretPrefix(ctx context.Context, field graphql.CollectedField, obj *db.ChangeWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminChangeWebhook_secretPrefix,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminChangeWebhook().SecretPrefix(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminChangeWebhook_secretPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminChangeWebhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminChangeWebhook_maxDepth(ctx context.Context, field graphql.CollectedField, obj *db.ChangeWebhook) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6016,6 +6048,8 @@ func (ec *executionContext) fieldContext_AdminChangeWebhooksConnection_nodes(_ c
 				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminChangeWebhook_secretPrefix(ctx, field)
 			case "maxDepth":
 				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
 			case "passApiKey":
@@ -7700,6 +7734,35 @@ func (ec *executionContext) fieldContext_AdminCronWebhook_hasSecret(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminCronWebhook_secretPrefix(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCronWebhook_secretPrefix,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminCronWebhook().SecretPrefix(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCronWebhook_secretPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronWebhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminCronWebhook_passApiKey(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8402,6 +8465,8 @@ func (ec *executionContext) fieldContext_AdminCronWebhooksConnection_nodes(_ con
 				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminCronWebhook_secretPrefix(ctx, field)
 			case "passApiKey":
 				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
 			case "timeoutSeconds":
@@ -14538,7 +14603,7 @@ func (ec *executionContext) _AdminMutation_deleteSecret(ctx context.Context, fie
 		ec.fieldContext_AdminMutation_deleteSecret,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().DeleteSecret(ctx, obj, fc.Args["key"].(string))
+			return ec.resolvers.AdminMutation().DeleteSecret(ctx, obj, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalNDeleteSecretPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐDeleteSecretPayload,
@@ -14555,8 +14620,8 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteSecret(ctx context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "key":
-				return ec.fieldContext_DeleteSecretPayload_key(ctx, field)
+			case "id":
+				return ec.fieldContext_DeleteSecretPayload_id(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DeleteSecretPayload", field.Name)
 		},
@@ -18774,7 +18839,7 @@ func (ec *executionContext) _AdminQuery_secretKeys(ctx context.Context, field gr
 		ec.fieldContext_AdminQuery_secretKeys,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminQuery().SecretKeys(ctx, obj, fc.Args["like"].(*string))
+			return ec.resolvers.AdminQuery().SecretKeys(ctx, obj, fc.Args["filter"].(*model.SecretKeysFilter))
 		},
 		nil,
 		ec.marshalNString2ᚕstringᚄ,
@@ -19953,6 +20018,8 @@ func (ec *executionContext) fieldContext_AdminQuery_changeWebhook(ctx context.Co
 				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminChangeWebhook_secretPrefix(ctx, field)
 			case "maxDepth":
 				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
 			case "passApiKey":
@@ -20116,6 +20183,8 @@ func (ec *executionContext) fieldContext_AdminQuery_cronWebhook(ctx context.Cont
 				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminCronWebhook_secretPrefix(ctx, field)
 			case "passApiKey":
 				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
 			case "timeoutSeconds":
@@ -25499,6 +25568,8 @@ func (ec *executionContext) fieldContext_ChangeWebhookCreatePayload_webhook(_ co
 				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminChangeWebhook_secretPrefix(ctx, field)
 			case "maxDepth":
 				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
 			case "passApiKey":
@@ -25632,6 +25703,8 @@ func (ec *executionContext) fieldContext_ChangeWebhookRegenerateSecretPayload_we
 				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminChangeWebhook_secretPrefix(ctx, field)
 			case "maxDepth":
 				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
 			case "passApiKey":
@@ -25736,6 +25809,8 @@ func (ec *executionContext) fieldContext_ChangeWebhookUpdatePayload_webhook(_ co
 				return ec.fieldContext_AdminChangeWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminChangeWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminChangeWebhook_secretPrefix(ctx, field)
 			case "maxDepth":
 				return ec.fieldContext_AdminChangeWebhook_maxDepth(ctx, field)
 			case "passApiKey":
@@ -26113,6 +26188,8 @@ func (ec *executionContext) fieldContext_CreateCronWebhookPayload_cronWebhook(_ 
 				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminCronWebhook_secretPrefix(ctx, field)
 			case "passApiKey":
 				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
 			case "timeoutSeconds":
@@ -27551,14 +27628,14 @@ func (ec *executionContext) fieldContext_DeleteRedirectPayload_id(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _DeleteSecretPayload_key(ctx context.Context, field graphql.CollectedField, obj *model.DeleteSecretPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _DeleteSecretPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.DeleteSecretPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_DeleteSecretPayload_key,
+		ec.fieldContext_DeleteSecretPayload_id,
 		func(ctx context.Context) (any, error) {
-			return obj.Key, nil
+			return obj.ID, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -27567,7 +27644,7 @@ func (ec *executionContext) _DeleteSecretPayload_key(ctx context.Context, field 
 	)
 }
 
-func (ec *executionContext) fieldContext_DeleteSecretPayload_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_DeleteSecretPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteSecretPayload",
 		Field:      field,
@@ -32567,6 +32644,8 @@ func (ec *executionContext) fieldContext_RegenerateCronWebhookSecretPayload_cron
 				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminCronWebhook_secretPrefix(ctx, field)
 			case "passApiKey":
 				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
 			case "timeoutSeconds":
@@ -35469,6 +35548,8 @@ func (ec *executionContext) fieldContext_UpdateCronWebhookPayload_cronWebhook(_ 
 				return ec.fieldContext_AdminCronWebhook_instruction(ctx, field)
 			case "hasSecret":
 				return ec.fieldContext_AdminCronWebhook_hasSecret(ctx, field)
+			case "secretPrefix":
+				return ec.fieldContext_AdminCronWebhook_secretPrefix(ctx, field)
 			case "passApiKey":
 				return ec.fieldContext_AdminCronWebhook_passApiKey(ctx, field)
 			case "timeoutSeconds":
@@ -42154,6 +42235,33 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSecretKeysFilter(ctx context.Context, obj any) (model.SecretKeysFilter, error) {
+	var it model.SecretKeysFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"idPrefix"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "idPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDPrefix = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSendTelegramPublishNoteNowInput(ctx context.Context, obj any) (model.SendTelegramPublishNoteNowInput, error) {
 	var it model.SendTelegramPublishNoteNowInput
 	asMap := map[string]any{}
@@ -48281,6 +48389,42 @@ func (ec *executionContext) _AdminChangeWebhook(ctx context.Context, sel ast.Sel
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "secretPrefix":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminChangeWebhook_secretPrefix(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "maxDepth":
 			out.Values[i] = ec._AdminChangeWebhook_maxDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -49713,6 +49857,42 @@ func (ec *executionContext) _AdminCronWebhook(ctx context.Context, sel ast.Selec
 					}
 				}()
 				res = ec._AdminCronWebhook_hasSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "secretPrefix":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronWebhook_secretPrefix(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -65054,8 +65234,8 @@ func (ec *executionContext) _DeleteSecretPayload(ctx context.Context, sel ast.Se
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("DeleteSecretPayload")
-		case "key":
-			out.Values[i] = ec._DeleteSecretPayload_key(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._DeleteSecretPayload_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -79641,6 +79821,14 @@ func (ec *executionContext) marshalOSearchResultDocument2trip2gᚋinternalᚋgra
 		return graphql.Null
 	}
 	return ec._SearchResultDocument(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSecretKeysFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSecretKeysFilter(ctx context.Context, v any) (*model.SecretKeysFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSecretKeysFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOStorageSizeFormat2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐStorageSizeFormat(ctx context.Context, v any) (*model.StorageSizeFormat, error) {

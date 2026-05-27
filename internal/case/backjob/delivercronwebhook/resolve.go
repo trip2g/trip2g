@@ -69,8 +69,8 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		return fmt.Errorf("failed to load cron webhook %d: %w", params.CronWebhookID, err)
 	}
 
-	// Load webhook secrets (keys stripped of prefix).
-	secrets := loadCronSecrets(ctx, env, log, fmt.Sprintf("cron_webhooks:%d:", params.CronWebhookID))
+	p, _ := model.CronWebhookSecretPrefix(params.CronWebhookID)
+	secrets := loadCronSecrets(ctx, env, log, p.String())
 
 	// Build payload.
 	payload := cronWebhookPayload{

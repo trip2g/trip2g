@@ -436,4 +436,126 @@ test.describe.serial('Webhook E2E Tests', () => {
     expect(call.headers['X-Webhook-Signature']).toBeTruthy();
     expect(call.headers['X-Webhook-Signature']).toMatch(/^sha256=/);
   });
+
+  test('change webhook payload includes secrets', async ({ request }) => {
+    const createQuery = `
+      mutation ChangeWebhookCreate($input: ChangeWebhookCreateInput!) {
+        admin {
+          changeWebhookCreate(input: $input) {
+            ... on ChangeWebhookCreatePayload {
+              webhook { id }
+            }
+          }
+        }
+      }
+    `;
+    const createData = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook`,
+        includePatterns: ['e2e_wh_secrets/**'],
+        passApiKey: false,
+        maxDepth: 1,
+      },
+    });
+    const webhookId = createData.admin.changeWebhookCreate.webhook.id;
+    changeWebhookIds.push(webhookId);
+
+    // Set secrets for this webhook
+    const setSecretQuery = `
+      mutation SetSecret($input: SetSecretInput!) {
+        admin { setSecret(input: $input) { key } }
+      }
+    `;
+    await graphqlAdmin(request, adminCookie, setSecretQuery, {
+      input: { key: `change_webhooks:${webhookId}:auth_token`, value: 'tok-e2e' },
+    });
+    await graphqlAdmin(request, adminCookie, setSecretQuery, {
+      input: { key: `change_webhooks:${webhookId}:api_key`, value: 'key-e2e' },
+    });
+
+    // Push a note to trigger the webhook
+    await pushAndCommit(request, apiKey, [
+      { path: 'e2e_wh_secrets/trigger.md', content: '# Secrets test' },
+    ]);
+    await waitAllJobs(request);
+
+    const calls = await getWebhookCalls(request);
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const call = calls[calls.length - 1];
+
+    expect(call.body.secrets).toBeDefined();
+    expect(call.body.secrets.auth_token).toBe('tok-e2e');
+    expect(call.body.secrets.api_key).toBe('key-e2e');
+
+    // Clean up secrets
+    const deleteSecretQuery = `
+      mutation DeleteSecret($id: String!) {
+        admin { deleteSecret(id: $id) { id } }
+      }
+    `;
+    await graphqlAdmin(request, adminCookie, deleteSecretQuery, { id: `change_webhooks:${webhookId}:auth_token` });
+    await graphqlAdmin(request, adminCookie, deleteSecretQuery, { id: `change_webhooks:${webhookId}:api_key` });
+  });
+
+  test('cron webhook payload includes secrets', async ({ request }) => {
+    const createQuery = `
+      mutation CreateCronWebhook($input: CreateCronWebhookInput!) {
+        admin {
+          createCronWebhook(input: $input) {
+            ... on CreateCronWebhookPayload {
+              cronWebhook { id }
+            }
+          }
+        }
+      }
+    `;
+    const createData = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook`,
+        cronSchedule: '0 0 1 1 *',
+        instruction: 'secrets e2e test',
+        passApiKey: false,
+      },
+    });
+    const cronWebhookId = createData.admin.createCronWebhook.cronWebhook.id;
+    cronWebhookIds.push(cronWebhookId);
+
+    // Set secrets for this cron webhook
+    const setSecretQuery = `
+      mutation SetSecret($input: SetSecretInput!) {
+        admin { setSecret(input: $input) { key } }
+      }
+    `;
+    await graphqlAdmin(request, adminCookie, setSecretQuery, {
+      input: { key: `cron_webhooks:${cronWebhookId}:bearer`, value: 'bearer-e2e' },
+    });
+
+    // Trigger manually
+    const triggerQuery = `
+      mutation TriggerCronWebhook($input: TriggerCronWebhookInput!) {
+        admin {
+          triggerCronWebhook(input: $input) {
+            ... on TriggerCronWebhookPayload { deliveryId }
+          }
+        }
+      }
+    `;
+    await graphqlAdmin(request, adminCookie, triggerQuery, { input: { cronWebhookId } });
+    await waitAllJobs(request);
+
+    const calls = await getWebhookCalls(request);
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const call = calls[calls.length - 1];
+
+    expect(call.body.secrets).toBeDefined();
+    expect(call.body.secrets.bearer).toBe('bearer-e2e');
+
+    // Clean up secrets
+    const deleteSecretQuery = `
+      mutation DeleteSecret($id: String!) {
+        admin { deleteSecret(id: $id) { id } }
+      }
+    `;
+    await graphqlAdmin(request, adminCookie, deleteSecretQuery, { id: `cron_webhooks:${cronWebhookId}:bearer` });
+  });
 });

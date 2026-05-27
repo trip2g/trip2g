@@ -52,8 +52,8 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		return fmt.Errorf("failed to load webhook %d: %w", params.WebhookID, err)
 	}
 
-	// Load webhook secrets (keys stripped of prefix, e.g. "change_webhooks:1:auth" → "auth").
-	secrets := loadSecrets(ctx, env, log, fmt.Sprintf("change_webhooks:%d:", wh.ID))
+	p, _ := model.ChangeWebhookSecretPrefix(wh.ID)
+	secrets := loadSecrets(ctx, env, log, p.String())
 
 	// Build payload.
 	payload := changeWebhookPayload{

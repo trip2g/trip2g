@@ -710,6 +710,7 @@ type AdminChangeWebhook @goModel(model: "trip2g/internal/db.ChangeWebhook") {
   excludePatterns: [String!]! @goField(forceResolver: true)
   instruction: String!
   hasSecret: Boolean! @goField(forceResolver: true)
+  secretPrefix: String! @goField(forceResolver: true)
   maxDepth: Int64!
   passApiKey: Boolean!
   includeContent: Boolean!
@@ -760,6 +761,7 @@ type AdminCronWebhook @goModel(model: "trip2g/internal/db.CronWebhook") {
   cronSchedule: String!
   instruction: String!
   hasSecret: Boolean! @goField(forceResolver: true)
+  secretPrefix: String! @goField(forceResolver: true)
   passApiKey: Boolean!
   timeoutSeconds: Int64!
   maxDepth: Int64!
@@ -1178,7 +1180,7 @@ type AdminQuery {
 
   federationSecrets: [AdminFederationSecret!]!
 
-  secretKeys(like: String): [String!]!
+  secretKeys(filter: SecretKeysFilter): [String!]!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
@@ -3048,7 +3050,7 @@ type AdminMutation {
 
   # Secrets mutations
   setSecret(input: SetSecretInput!): SetSecretPayload!
-  deleteSecret(key: String!): DeleteSecretPayload!
+  deleteSecret(id: String!): DeleteSecretPayload!
 
   markFormSubmitProcessed(input: MarkFormSubmitProcessedInput!): MarkFormSubmitProcessedOrErrorPayload!
 }
@@ -3448,6 +3450,10 @@ union MarkFormSubmitProcessedOrErrorPayload = MarkFormSubmitProcessedPayload | E
 # Secrets
 #
 
+input SecretKeysFilter {
+  idPrefix: String
+}
+
 input SetSecretInput {
   key:   String!
   value: String!
@@ -3458,5 +3464,5 @@ type SetSecretPayload {
 }
 
 type DeleteSecretPayload {
-  key: String!
+  id: String!
 }

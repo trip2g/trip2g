@@ -1,0 +1,14 @@
+$trip2g_button_confirm $mol_view
+	title \
+	click? null
+	sub <= buttons /
+	ActionButton $mol_button_minor
+		sub /
+			<= ActionIcon $mol_view
+				sub /
+			<= ActionTitle $mol_dimmer
+				needle <= title \
+		click? <=> ask? null
+	ConfirmButton $mol_button_minor
+		title @ \Yes
+		click? <=> execute? null
