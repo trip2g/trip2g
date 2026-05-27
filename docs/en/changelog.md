@@ -13,7 +13,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 ### Per-webhook secrets injected into delivery payload (`0b72acf2`)
 
 - **What.** Each change webhook and cron webhook now has a **Secrets** panel in the admin. Add named key-value pairs (e.g. `auth_token`, `api_key`) — they are stored encrypted and sent in every delivery payload under `payload.secrets`. The webhook consumer can read them without any extra API calls.
-- **Why.** Webhooks often need to authenticate against external services. Hardcoding tokens in URLs or instructions is unsafe. Secrets are encrypted at rest and never exposed in logs or delivery history.
+- **Why.** Cron webhooks are the foundation of a plugin system. A plugin is a web server (or serverless function) that receives a payload with a short-lived API token and processes it — often in the background — then patches the vault when ready. Because plugins are stateless, they have no safe place to store their own credentials. Secrets solve this: trip2g holds them encrypted and delivers them on every call, so the plugin stays credential-free on its end. A plugin that needs more time can use the API token to push updates back asynchronously; secrets give it everything else it needs to talk to external services.
 - **How.** Open Admin → Change Webhooks (or Cron Webhooks) → select a webhook → scroll to the **Secrets** section. Enter a name and value, click **Add Secret**. To update a value, type in the row's value field and click **Save**. To remove, click the trash icon (confirm on second click). Secrets appear in the delivery payload as `{ "secrets": { "auth_token": "...", "api_key": "..." } }`.
 
 ## v0.5.0 — 2026-05-26
