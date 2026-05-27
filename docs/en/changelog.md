@@ -8,6 +8,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.5.1 — 2026-05-27
+
+### Per-webhook secrets injected into delivery payload (`0b72acf2`)
+
+- **What.** Each change webhook and cron webhook now has a **Secrets** panel in the admin. Add named key-value pairs (e.g. `auth_token`, `api_key`) — they are stored encrypted and sent in every delivery payload under `payload.secrets`. The webhook consumer can read them without any extra API calls.
+- **Why.** Webhooks often need to authenticate against external services. Hardcoding tokens in URLs or instructions is unsafe. Secrets are encrypted at rest and never exposed in logs or delivery history.
+- **How.** Open Admin → Change Webhooks (or Cron Webhooks) → select a webhook → scroll to the **Secrets** section. Enter a name and value, click **Add Secret**. To update a value, type in the row's value field and click **Save**. To remove, click the trash icon (confirm on second click). Secrets appear in the delivery payload as `{ "secrets": { "auth_token": "...", "api_key": "..." } }`.
+
 ## v0.5.0 — 2026-05-26
 
 ### In-browser file editor (admin)
