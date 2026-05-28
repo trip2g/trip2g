@@ -142,6 +142,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/notebus"
 	"trip2g/internal/nowpayments"
 )
 
@@ -3168,6 +3169,35 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 	return ch, nil
 }
 
+func (r *subscriptionResolver) buildNoteChangeItems(batch notebus.Batch) []model.NoteChangeItem {
+	nvs := r.DefaultEnv.LatestNoteViews()
+	var items []model.NoteChangeItem
+	for _, change := range batch.Changes {
+		switch change.Event {
+		case "create", "update":
+			ev := model.NoteUpsertEvent{
+				Path:      change.Path,
+				PathID:    change.PathID,
+				EventType: model.NoteUpsertEventType(change.Event),
+			}
+			if nv := nvs.GetByPathID(change.PathID); nv != nil {
+				ev.VersionID = nv.VersionID
+				ev.Title = nv.Title
+				ev.NoteView = nv
+			}
+			items = append(items, ev)
+		case "remove":
+			ev := model.NoteHideEvent{Path: change.Path}
+			if change.PathID != 0 {
+				id := change.PathID
+				ev.PathID = &id
+			}
+			items = append(items, ev)
+		}
+	}
+	return items
+}
+
 // NoteChanges is the resolver for the noteChanges field.
 func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error) {
 	// Auth: API key required.
@@ -3196,38 +3226,10 @@ func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.Not
 				if !ok {
 					return
 				}
-
-				nvs := r.DefaultEnv.LatestNoteViews()
-				var items []model.NoteChangeItem
-
-				for _, change := range batch.Changes {
-					switch change.Event {
-					case "create", "update":
-						ev := model.NoteUpsertEvent{
-							Path:      change.Path,
-							PathID:    change.PathID,
-							EventType: model.NoteUpsertEventType(change.Event),
-						}
-						if nv := nvs.GetByPathID(change.PathID); nv != nil {
-							ev.VersionID = nv.VersionID
-							ev.Title = nv.Title
-							ev.NoteView = nv
-						}
-						items = append(items, ev)
-					case "remove":
-						ev := model.NoteHideEvent{Path: change.Path}
-						if change.PathID != 0 {
-							id := change.PathID
-							ev.PathID = &id
-						}
-						items = append(items, ev)
-					}
-				}
-
+				items := r.buildNoteChangeItems(batch)
 				if len(items) == 0 {
 					continue
 				}
-
 				select {
 				case ch <- &model.NoteChangesSubscriptionPayload{Changes: items}:
 				case <-ctx.Done():

@@ -4,16 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/logger"
 	"trip2g/internal/notebus"
+
+	"github.com/stretchr/testify/require"
 )
 
 func newBus() *notebus.Bus {
 	return notebus.New(&logger.DummyLogger{})
 }
 
-// 1. Subscribe → Publish → receive batch
+// 1. Subscribe → Publish → receive batch.
 func TestSubscribePublishReceive(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"**"}, nil, 8)
@@ -33,7 +34,7 @@ func TestSubscribePublishReceive(t *testing.T) {
 	}
 }
 
-// 2. includePatterns filter — non-matching path not received
+// 2. includePatterns filter — non-matching path not received.
 func TestIncludePatternsFilter(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"blog/**"}, nil, 8)
@@ -51,7 +52,7 @@ func TestIncludePatternsFilter(t *testing.T) {
 	}
 }
 
-// 3. excludePatterns filter
+// 3. excludePatterns filter.
 func TestExcludePatternsFilter(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"**"}, []string{"drafts/**"}, 8)
@@ -69,7 +70,7 @@ func TestExcludePatternsFilter(t *testing.T) {
 	}
 }
 
-// 4. Unsubscribe → channel closed
+// 4. Unsubscribe → channel closed.
 func TestUnsubscribeChannelClosed(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"**"}, nil, 8)
@@ -83,7 +84,7 @@ func TestUnsubscribeChannelClosed(t *testing.T) {
 	}
 }
 
-// 5. Fan-out: 3 subscribers all receive
+// 5. Fan-out: 3 subscribers all receive.
 func TestFanOut(t *testing.T) {
 	b := newBus()
 	subs := make([]*notebus.Subscriber, 3)
@@ -108,7 +109,7 @@ func TestFanOut(t *testing.T) {
 	}
 }
 
-// 6. Buffer full → event dropped, stats updated
+// 6. Buffer full → event dropped, stats updated.
 func TestBufferFullDropped(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"**"}, nil, 1)
@@ -124,10 +125,10 @@ func TestBufferFullDropped(t *testing.T) {
 	}})
 
 	stats := b.Stats()
-	require.Greater(t, stats.Dropped, int64(0), "expected at least one dropped event")
+	require.Positive(t, stats.Dropped, "expected at least one dropped event")
 }
 
-// 7. Partial batch filter — only matching changes forwarded
+// 7. Partial batch filter — only matching changes forwarded.
 func TestPartialBatchFilter(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"blog/**"}, nil, 8)

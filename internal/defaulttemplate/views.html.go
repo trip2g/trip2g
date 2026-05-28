@@ -281,7 +281,7 @@ window.__trip2g_settings = {
 	qw422016.N().S(`
 
 </head>
-<body>
+<body tabindex="-1">
 
 `)
 //line views.html:75

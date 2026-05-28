@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
-	"trip2g/internal/notebus"
 	"trip2g/internal/case/admin/addfederationsecretsubgraph"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
@@ -125,6 +124,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/notebus"
 )
 
 // dialogsDefaultLimit is the default number of Telegram dialogs to fetch.
