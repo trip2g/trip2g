@@ -405,6 +405,65 @@ Final content.`,
 	}
 }
 
+func TestExtractTitle(t *testing.T) {
+	tests := []struct {
+		name      string
+		path      string
+		rawMeta   map[string]interface{}
+		content   string
+		wantTitle string
+		wantHasH1 bool
+	}{
+		{
+			name:      "frontmatter title, no body H1",
+			path:      "notes/note.md",
+			rawMeta:   map[string]interface{}{"title": "Frontmatter Title"},
+			content:   "Some body text without a heading.",
+			wantTitle: "Frontmatter Title",
+			wantHasH1: false,
+		},
+		{
+			name:      "body H1, no frontmatter title",
+			path:      "notes/note.md",
+			content:   "# Body Heading\n\nSome text.",
+			wantTitle: "Body Heading",
+			wantHasH1: true,
+		},
+		{
+			name:      "frontmatter title and body H1 still flags HasH1 to avoid double heading",
+			path:      "notes/foragent.md",
+			rawMeta:   map[string]interface{}{"title": "Foragent"},
+			content:   "# Foragent\n\nKnowledge base.",
+			wantTitle: "Foragent",
+			wantHasH1: true,
+		},
+		{
+			name:      "no frontmatter, no H1 falls back to filename",
+			path:      "notes/my-note.md",
+			content:   "Just text.",
+			wantTitle: "my-note",
+			wantHasH1: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := goldmark.New().Parser().Parse(text.NewReader([]byte(tt.content)))
+			n := &NoteView{
+				Path:    tt.path,
+				Content: []byte(tt.content),
+				RawMeta: tt.rawMeta,
+				ast:     doc,
+			}
+
+			gotTitle := n.ExtractTitle()
+
+			require.Equal(t, tt.wantTitle, gotTitle)
+			require.Equal(t, tt.wantHasH1, n.HasH1)
+		})
+	}
+}
+
 func TestNoteViewHeadings_Normalize(t *testing.T) {
 	tests := []struct {
 		name     string

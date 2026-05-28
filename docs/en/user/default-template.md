@@ -283,6 +283,8 @@ Body text starts here...
 
 This note gets the title "My Article Title" without any frontmatter. The `<h1>` is rendered inside the article body — no duplicate title element is added above it.
 
+If a note has **both** a `title` frontmatter field and a leading `# Heading`, the frontmatter `title` still wins as the title value — it's what goes into `<title>`, OpenGraph tags, and listings. The in-content H1 is detected anyway, so the template skips its own title element. The page shows exactly one heading at the top — the in-content `# Heading` — and never two stacked titles, even if its text differs from the frontmatter `title`.
+
 ### Magazine layout
 
 The magazine displays related notes as cards in a three-tier visual hierarchy:

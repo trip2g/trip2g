@@ -928,17 +928,38 @@ func (n *NoteView) extractString(key string) (*string, error) {
 }
 
 func (n *NoteView) ExtractTitle() string {
-	title, ok := n.RawMeta["title"]
-	if ok {
-		str, sOk := title.(string)
-		if sOk {
+	// Detect a leading H1 regardless of frontmatter so the template can suppress
+	// its own title heading and avoid rendering it twice.
+	docTitle := n.leadingH1Text()
+	n.HasH1 = docTitle != ""
+
+	// Frontmatter title wins for the title value (used in <title>, links, sidebar);
+	// the visible heading still comes from the body H1 when present.
+	if title, ok := n.RawMeta["title"]; ok {
+		if str, sOk := title.(string); sOk {
 			return str
 		}
 	}
 
+	if docTitle != "" {
+		return docTitle
+	}
+
+	if !strings.HasSuffix(n.Path, ".md") {
+		return ""
+	}
+	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
+}
+
+// leadingH1Text returns the text of the first H1 heading at the start of the
+// content, or "" if the note doesn't begin with one.
+func (n *NoteView) leadingH1Text() string {
+	if n.Ast() == nil {
+		return ""
+	}
+
 	nodeCount := 0
 	docTitle := ""
-
 	ast.Walk(n.Ast(), func(node ast.Node, entering bool) (ast.WalkStatus, error) { //nolint:errcheck,gosec // ast.Walk callback never errors
 		if !entering {
 			return ast.WalkContinue, nil
@@ -961,15 +982,7 @@ func (n *NoteView) ExtractTitle() string {
 		return ast.WalkContinue, nil
 	})
 
-	if docTitle != "" {
-		n.HasH1 = true
-		return docTitle
-	}
-
-	if !strings.HasSuffix(n.Path, ".md") {
-		return ""
-	}
-	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
+	return docTitle
 }
 
 func NewNoteViews() *NoteViews {
