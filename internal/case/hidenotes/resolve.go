@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	internalmodel "trip2g/internal/model"
+	"trip2g/internal/notebus"
 )
 
 type Env interface {
@@ -16,6 +17,7 @@ type Env interface {
 	LatestNoteViews() *internalmodel.NoteViews
 	PrepareLatestNotes(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
 	Logger() logger.Logger
+	PublishNoteChanges(batch notebus.Batch)
 }
 
 type Input = model.HideNotesInput
@@ -66,6 +68,19 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	// Trigger remove webhooks after successful hide.
 	triggerWebhooks(ctx, env, webhookChanges)
+
+	// Publish to note change bus for SSE subscribers.
+	var busBatch notebus.Batch
+	for _, wc := range webhookChanges {
+		busBatch.Changes = append(busBatch.Changes, notebus.Change{
+			PathID: wc.PathID,
+			Path:   wc.Path,
+			Event:  "remove",
+		})
+	}
+	if len(busBatch.Changes) > 0 {
+		env.PublishNoteChanges(busBatch)
+	}
 
 	return result, nil
 }

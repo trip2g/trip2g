@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	internalmodel "trip2g/internal/model"
+	"trip2g/internal/notebus"
 )
 
 // Ensure, that EnvMock does implement Env.
@@ -33,6 +34,9 @@ var _ Env = &EnvMock{}
 //			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*internalmodel.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
 //			},
+//			PublishNoteChangesFunc: func(batch notebus.Batch)  {
+//				panic("mock out the PublishNoteChanges method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires Env
@@ -51,6 +55,9 @@ type EnvMock struct {
 
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
 	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
+
+	// PublishNoteChangesFunc mocks the PublishNoteChanges method.
+	PublishNoteChangesFunc func(batch notebus.Batch)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -74,11 +81,17 @@ type EnvMock struct {
 			// Partial is the partial argument value.
 			Partial bool
 		}
+		// PublishNoteChanges holds details about calls to the PublishNoteChanges method.
+		PublishNoteChanges []struct {
+			// Batch is the batch argument value.
+			Batch notebus.Batch
+		}
 	}
 	lockHideNotePath       sync.RWMutex
 	lockLatestNoteViews    sync.RWMutex
 	lockLogger             sync.RWMutex
 	lockPrepareLatestNotes sync.RWMutex
+	lockPublishNoteChanges sync.RWMutex
 }
 
 // HideNotePath calls HideNotePathFunc.
@@ -204,5 +217,37 @@ func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
 	mock.lockPrepareLatestNotes.RLock()
 	calls = mock.calls.PrepareLatestNotes
 	mock.lockPrepareLatestNotes.RUnlock()
+	return calls
+}
+
+// PublishNoteChanges calls PublishNoteChangesFunc.
+func (mock *EnvMock) PublishNoteChanges(batch notebus.Batch) {
+	if mock.PublishNoteChangesFunc == nil {
+		panic("EnvMock.PublishNoteChangesFunc: method is nil but Env.PublishNoteChanges was just called")
+	}
+	callInfo := struct {
+		Batch notebus.Batch
+	}{
+		Batch: batch,
+	}
+	mock.lockPublishNoteChanges.Lock()
+	mock.calls.PublishNoteChanges = append(mock.calls.PublishNoteChanges, callInfo)
+	mock.lockPublishNoteChanges.Unlock()
+	mock.PublishNoteChangesFunc(batch)
+}
+
+// PublishNoteChangesCalls gets all the calls that were made to PublishNoteChanges.
+// Check the length with:
+//
+//	len(mockedEnv.PublishNoteChangesCalls())
+func (mock *EnvMock) PublishNoteChangesCalls() []struct {
+	Batch notebus.Batch
+} {
+	var calls []struct {
+		Batch notebus.Batch
+	}
+	mock.lockPublishNoteChanges.RLock()
+	calls = mock.calls.PublishNoteChanges
+	mock.lockPublishNoteChanges.RUnlock()
 	return calls
 }

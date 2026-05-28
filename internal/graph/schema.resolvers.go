@@ -3168,6 +3168,78 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 	return ch, nil
 }
 
+// NoteChanges is the resolver for the noteChanges field.
+func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error) {
+	// Auth: API key required.
+	if _, err := checkapikey.Resolve(ctx, r.env(ctx), "note_changes"); err != nil {
+		return nil, err
+	}
+
+	exclude := filter.ExcludePatterns
+	if exclude == nil {
+		exclude = []string{}
+	}
+
+	sub := r.DefaultEnv.SubscribeNoteChanges(filter.IncludePatterns, exclude)
+
+	ch := make(chan *model.NoteChangesSubscriptionPayload, 1)
+
+	go func() {
+		defer close(ch)
+		defer r.DefaultEnv.UnsubscribeNoteChanges(sub)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case batch, ok := <-sub.Ch:
+				if !ok {
+					return
+				}
+
+				nvs := r.DefaultEnv.LatestNoteViews()
+				var items []model.NoteChangeItem
+
+				for _, change := range batch.Changes {
+					switch change.Event {
+					case "create", "update":
+						ev := model.NoteUpsertEvent{
+							Path:      change.Path,
+							PathID:    change.PathID,
+							EventType: model.NoteUpsertEventType(change.Event),
+						}
+						if nv := nvs.GetByPathID(change.PathID); nv != nil {
+							ev.VersionID = nv.VersionID
+							ev.Title = nv.Title
+							ev.NoteView = nv
+						}
+						items = append(items, ev)
+					case "remove":
+						ev := model.NoteHideEvent{Path: change.Path}
+						if change.PathID != 0 {
+							id := change.PathID
+							ev.PathID = &id
+						}
+						items = append(items, ev)
+					}
+				}
+
+				if len(items) == 0 {
+					continue
+				}
+
+				select {
+				case ch <- &model.NoteChangesSubscriptionPayload{Changes: items}:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+
+	return ch, nil
+}
+
 // FavoriteNotes is the resolver for the favoriteNotes field.
 func (r *toggleFavoriteNotePayloadResolver) FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error) {
 	userResolver := userResolver{Resolver: r.Resolver}

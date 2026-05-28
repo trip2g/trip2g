@@ -92,6 +92,7 @@ import (
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
+	"trip2g/internal/notebus"
 	"trip2g/internal/notfoundtracker"
 	"trip2g/internal/notion"
 	"trip2g/internal/notiontypes"
@@ -193,6 +194,8 @@ type app struct {
 	queueConn *sql.DB // separate connection for goqite so queue polling never blocks app writes
 
 	currentTx *sql.Tx
+
+	noteBus *notebus.Bus
 
 	log logger.Logger
 
@@ -373,6 +376,7 @@ func main() {
 		purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
 		log:     log,
+		noteBus: notebus.New(log),
 		queries: queries,
 		conn:    conn,
 		// mail:    mailyak.New(mailAddr, mailAuth),
@@ -1137,6 +1141,24 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 		})
 	}
 
+	// Publish to note change bus for SSE subscribers.
+	var busBatch notebus.Batch
+	for _, wc := range webhookChanges {
+		path := ""
+		nv := a.LatestNoteViews().GetByPathID(wc.PathID)
+		if nv != nil {
+			path = nv.Path
+		}
+		busBatch.Changes = append(busBatch.Changes, notebus.Change{
+			PathID: wc.PathID,
+			Path:   path,
+			Event:  wc.Event,
+		})
+	}
+	if len(busBatch.Changes) > 0 {
+		a.PublishNoteChanges(busBatch)
+	}
+
 	if len(webhookChanges) > 0 {
 		webhookErr := handlenotewebhooks.Resolve(ctx, a, webhookChanges, webhookDepth)
 		if webhookErr != nil {
@@ -1145,6 +1167,18 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 	}
 
 	return nil
+}
+
+func (a *app) SubscribeNoteChanges(include, exclude []string) *notebus.Subscriber {
+	return a.noteBus.Subscribe(include, exclude, 64)
+}
+
+func (a *app) UnsubscribeNoteChanges(sub *notebus.Subscriber) {
+	a.noteBus.Unsubscribe(sub)
+}
+
+func (a *app) PublishNoteChanges(batch notebus.Batch) {
+	a.noteBus.Publish(batch)
 }
 
 func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {

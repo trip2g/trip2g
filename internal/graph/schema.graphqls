@@ -1886,8 +1886,73 @@ type TurnstileRequiredPayload {
 
 union SubmitFormOrErrorPayload = SubmitFormPayload | FormSubmitDeniedPayload | TurnstileRequiredPayload | ErrorPayload
 
+# noteChanges subscription
+
+input NoteChangesFilter {
+  """
+  Glob patterns for inclusion (doublestar, same as changeWebhook).
+  Required — explicitly state what to watch. Use ["**"] for everything.
+  """
+  includePatterns: [String!]!
+  """Glob patterns for exclusion. Applied after includePatterns."""
+  excludePatterns: [String!]
+}
+
+enum NoteUpsertEventType {
+  create
+  update
+}
+
+type NoteUpsertEvent {
+  path:      String!
+  pathId:    Int64!
+  """create or update."""
+  eventType: NoteUpsertEventType!
+  versionId: Int64!
+  title:     String!
+  """
+  Note from in-memory NoteViews at event time.
+  Contains permalink and url for live redirect on the frontend.
+  Nullable: the note may disappear from NoteViews between Publish and delivery.
+  """
+  noteView:  NoteView
+}
+
+type NoteHideEvent {
+  path:   String!
+  """Nullable: hidden note may no longer be in NoteViews."""
+  pathId: Int64
+}
+
+union NoteChangeItem = NoteUpsertEvent | NoteHideEvent
+
+type NoteChangesSubscriptionPayload {
+  """
+  Filtered batch of changes. Always non-empty — if no change passes the
+  include/exclude filter, the event is not emitted.
+  One commitNotes/hideNotes call = one payload (batch is preserved).
+  """
+  changes: [NoteChangeItem!]!
+}
+
 type Subscription {
   currentTime(format: String = "2006-01-02 15:04:05"): String!
+  """
+  X-Api-Key header required.
+  Subscribe to note changes with glob filtering (doublestar).
+
+  Filter logic (per-change within the batch):
+    - change passes if: MatchesAny(path, includePatterns) && !MatchesAny(path, excludePatterns)
+    - payload emitted if at least one change passes the filter
+    - if all changes are filtered out — event is not emitted
+
+  Event sources:
+    - commitNotes → create/update (via HandleLatestNotesAfterSave)
+    - updateNotes upsert/patch → create/update
+    - updateNotes hide → hide
+    - hideNotes → hide
+  """
+  noteChanges(filter: NoteChangesFilter!): NoteChangesSubscriptionPayload!
 }
 
 type Mutation {

@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	internalmodel "trip2g/internal/model"
+	"trip2g/internal/notebus"
 
 	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,7 @@ func newTestEnv(hideFunc func(ctx context.Context, params db.HideNotePathParams)
 		LoggerFunc: func() logger.Logger {
 			return slog.Default()
 		},
+		PublishNoteChangesFunc: func(_ notebus.Batch) {},
 	}
 }
 

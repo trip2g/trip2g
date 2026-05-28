@@ -807,6 +807,7 @@ type SubgraphResolver interface {
 }
 type SubscriptionResolver interface {
 	CurrentTime(ctx context.Context, format *string) (<-chan string, error)
+	NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error)
 }
 type ToggleFavoriteNotePayloadResolver interface {
 	FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error)
@@ -941,6 +942,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteChangeInput,
 		ec.unmarshalInputNoteChangePatchInput,
 		ec.unmarshalInputNoteChangeUpsertInput,
+		ec.unmarshalInputNoteChangesFilter,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
 		ec.unmarshalInputOAuthUrlInput,
@@ -2848,6 +2850,17 @@ func (ec *executionContext) field_Subscription_currentTime_args(ctx context.Cont
 		return nil, err
 	}
 	args["format"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_noteChanges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNNoteChangesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -29797,6 +29810,93 @@ func (ec *executionContext) fieldContext_NoteAssetReplaceT_absolutePath(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteChangesSubscriptionPayload_changes(ctx context.Context, field graphql.CollectedField, obj *model.NoteChangesSubscriptionPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteChangesSubscriptionPayload_changes,
+		func(ctx context.Context) (any, error) {
+			return obj.Changes, nil
+		},
+		nil,
+		ec.marshalNNoteChangeItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteChangesSubscriptionPayload_changes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteChangesSubscriptionPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type NoteChangeItem does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteHideEvent_path(ctx context.Context, field graphql.CollectedField, obj *model.NoteHideEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteHideEvent_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteHideEvent_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteHideEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteHideEvent_pathId(ctx context.Context, field graphql.CollectedField, obj *model.NoteHideEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteHideEvent_pathId,
+		func(ctx context.Context) (any, error) {
+			return obj.PathID, nil
+		},
+		nil,
+		ec.marshalOInt642ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteHideEvent_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteHideEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NotePath_id(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -30105,6 +30205,222 @@ func (ec *executionContext) fieldContext_NoteTocItem_level(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_path(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_pathId(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_pathId,
+		func(ctx context.Context) (any, error) {
+			return obj.PathID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_eventType(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_eventType,
+		func(ctx context.Context) (any, error) {
+			return obj.EventType, nil
+		},
+		nil,
+		ec.marshalNNoteUpsertEventType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteUpsertEventType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type NoteUpsertEventType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_versionId(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_versionId,
+		func(ctx context.Context) (any, error) {
+			return obj.VersionID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_title(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_noteView(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_noteView,
+		func(ctx context.Context) (any, error) {
+			return obj.NoteView, nil
+		},
+		nil,
+		ec.marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_noteView(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
 	}
 	return fc, nil
@@ -35011,6 +35327,51 @@ func (ec *executionContext) fieldContext_Subscription_currentTime(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Subscription_currentTime_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_noteChanges(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Subscription_noteChanges,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Subscription().NoteChanges(ctx, fc.Args["filter"].(model.NoteChangesFilter))
+		},
+		nil,
+		ec.marshalNNoteChangesSubscriptionPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesSubscriptionPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Subscription_noteChanges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "changes":
+				return ec.fieldContext_NoteChangesSubscriptionPayload_changes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteChangesSubscriptionPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_noteChanges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -41604,6 +41965,40 @@ func (ec *executionContext) unmarshalInputNoteChangeUpsertInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNoteChangesFilter(ctx context.Context, obj any) (model.NoteChangesFilter, error) {
+	var it model.NoteChangesFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"includePatterns", "excludePatterns"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "includePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includePatterns"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludePatterns = data
+		case "excludePatterns":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludePatterns"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludePatterns = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNoteInput(ctx context.Context, obj any) (model.NoteInput, error) {
 	var it model.NoteInput
 	asMap := map[string]any{}
@@ -45246,6 +45641,29 @@ func (ec *executionContext) _MarkFormSubmitProcessedOrErrorPayload(ctx context.C
 			return graphql.Null
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _NoteChangeItem(ctx context.Context, sel ast.SelectionSet, obj model.NoteChangeItem) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.NoteUpsertEvent:
+		return ec._NoteUpsertEvent(ctx, sel, &obj)
+	case *model.NoteUpsertEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NoteUpsertEvent(ctx, sel, obj)
+	case model.NoteHideEvent:
+		return ec._NoteHideEvent(ctx, sel, &obj)
+	case *model.NoteHideEvent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NoteHideEvent(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -66395,6 +66813,86 @@ func (ec *executionContext) _NoteAssetReplaceT(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var noteChangesSubscriptionPayloadImplementors = []string{"NoteChangesSubscriptionPayload"}
+
+func (ec *executionContext) _NoteChangesSubscriptionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.NoteChangesSubscriptionPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteChangesSubscriptionPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteChangesSubscriptionPayload")
+		case "changes":
+			out.Values[i] = ec._NoteChangesSubscriptionPayload_changes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var noteHideEventImplementors = []string{"NoteHideEvent", "NoteChangeItem"}
+
+func (ec *executionContext) _NoteHideEvent(ctx context.Context, sel ast.SelectionSet, obj *model.NoteHideEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteHideEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteHideEvent")
+		case "path":
+			out.Values[i] = ec._NoteHideEvent_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pathId":
+			out.Values[i] = ec._NoteHideEvent_pathId(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var notePathImplementors = []string{"NotePath"}
 
 func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet, obj *db.NotePath) graphql.Marshaler {
@@ -66575,6 +67073,67 @@ func (ec *executionContext) _NoteTocItem(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var noteUpsertEventImplementors = []string{"NoteUpsertEvent", "NoteChangeItem"}
+
+func (ec *executionContext) _NoteUpsertEvent(ctx context.Context, sel ast.SelectionSet, obj *model.NoteUpsertEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteUpsertEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteUpsertEvent")
+		case "path":
+			out.Values[i] = ec._NoteUpsertEvent_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pathId":
+			out.Values[i] = ec._NoteUpsertEvent_pathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventType":
+			out.Values[i] = ec._NoteUpsertEvent_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "versionId":
+			out.Values[i] = ec._NoteUpsertEvent_versionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._NoteUpsertEvent_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "noteView":
+			out.Values[i] = ec._NoteUpsertEvent_noteView(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -69948,6 +70507,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "currentTime":
 		return ec._Subscription_currentTime(ctx, fields[0])
+	case "noteChanges":
+		return ec._Subscription_noteChanges(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -77084,6 +77645,79 @@ func (ec *executionContext) unmarshalNNoteChangeInput2ᚕtrip2gᚋinternalᚋgra
 	return res, nil
 }
 
+func (ec *executionContext) marshalNNoteChangeItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeItem(ctx context.Context, sel ast.SelectionSet, v model.NoteChangeItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NoteChangeItem(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNoteChangeItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeItemᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteChangeItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteChangeItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNNoteChangesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesFilter(ctx context.Context, v any) (model.NoteChangesFilter, error) {
+	res, err := ec.unmarshalInputNoteChangesFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNoteChangesSubscriptionPayload2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesSubscriptionPayload(ctx context.Context, sel ast.SelectionSet, v model.NoteChangesSubscriptionPayload) graphql.Marshaler {
+	return ec._NoteChangesSubscriptionPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteChangesSubscriptionPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesSubscriptionPayload(ctx context.Context, sel ast.SelectionSet, v *model.NoteChangesSubscriptionPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NoteChangesSubscriptionPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput(ctx context.Context, v any) (model.NoteInput, error) {
 	res, err := ec.unmarshalInputNoteInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -77183,6 +77817,16 @@ func (ec *executionContext) marshalNNoteTocItem2ᚕtrip2gᚋinternalᚋgraphᚋm
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNNoteUpsertEventType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteUpsertEventType(ctx context.Context, v any) (model.NoteUpsertEventType, error) {
+	var res model.NoteUpsertEventType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNoteUpsertEventType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteUpsertEventType(ctx context.Context, sel ast.SelectionSet, v model.NoteUpsertEventType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNNoteView2trip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v model1.NoteView) graphql.Marshaler {

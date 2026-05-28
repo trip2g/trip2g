@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/notebus"
 	"trip2g/internal/case/admin/addfederationsecretsubgraph"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
@@ -472,4 +473,8 @@ type Env interface {
 	StorageDBLimit() int64
 	StorageAssetsLimit() int64
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
+
+	// notebus
+	SubscribeNoteChanges(include, exclude []string) *notebus.Subscriber
+	UnsubscribeNoteChanges(sub *notebus.Subscriber)
 }

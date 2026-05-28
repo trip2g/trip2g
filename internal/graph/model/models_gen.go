@@ -258,6 +258,10 @@ type MarkFormSubmitProcessedOrErrorPayload interface {
 	IsMarkFormSubmitProcessedOrErrorPayload()
 }
 
+type NoteChangeItem interface {
+	IsNoteChangeItem()
+}
+
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
@@ -1866,6 +1870,29 @@ type NoteChangeUpsertInput struct {
 	ExpectedHash *string `json:"expectedHash,omitempty"`
 }
 
+type NoteChangesFilter struct {
+	// Glob patterns for inclusion (doublestar, same as changeWebhook).
+	// Required — explicitly state what to watch. Use ["**"] for everything.
+	IncludePatterns []string `json:"includePatterns"`
+	// Glob patterns for exclusion. Applied after includePatterns.
+	ExcludePatterns []string `json:"excludePatterns,omitempty"`
+}
+
+type NoteChangesSubscriptionPayload struct {
+	// Filtered batch of changes. Always non-empty — if no change passes the
+	// include/exclude filter, the event is not emitted.
+	// One commitNotes/hideNotes call = one payload (batch is preserved).
+	Changes []NoteChangeItem `json:"changes"`
+}
+
+type NoteHideEvent struct {
+	Path string `json:"path"`
+	// Nullable: hidden note may no longer be in NoteViews.
+	PathID *int64 `json:"pathId,omitempty"`
+}
+
+func (NoteHideEvent) IsNoteChangeItem() {}
+
 type NoteInput struct {
 	Path    *string `json:"path,omitempty"`
 	PathID  *int64  `json:"pathId,omitempty"`
@@ -1887,6 +1914,21 @@ type NoteTocItem struct {
 	Title string `json:"title"`
 	Level int32  `json:"level"`
 }
+
+type NoteUpsertEvent struct {
+	Path   string `json:"path"`
+	PathID int64  `json:"pathId"`
+	// create or update.
+	EventType NoteUpsertEventType `json:"eventType"`
+	VersionID int64               `json:"versionId"`
+	Title     string              `json:"title"`
+	// Note from in-memory NoteViews at event time.
+	// Contains permalink and url for live redirect on the frontend.
+	// Nullable: the note may disappear from NoteViews between Publish and delivery.
+	NoteView *model.NoteView `json:"noteView,omitempty"`
+}
+
+func (NoteUpsertEvent) IsNoteChangeItem() {}
 
 type NoteViewMeta struct {
 	Key string `json:"key"`
@@ -3064,6 +3106,61 @@ func (e *HealthCheckStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e HealthCheckStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type NoteUpsertEventType string
+
+const (
+	NoteUpsertEventTypeCreate NoteUpsertEventType = "create"
+	NoteUpsertEventTypeUpdate NoteUpsertEventType = "update"
+)
+
+var AllNoteUpsertEventType = []NoteUpsertEventType{
+	NoteUpsertEventTypeCreate,
+	NoteUpsertEventTypeUpdate,
+}
+
+func (e NoteUpsertEventType) IsValid() bool {
+	switch e {
+	case NoteUpsertEventTypeCreate, NoteUpsertEventTypeUpdate:
+		return true
+	}
+	return false
+}
+
+func (e NoteUpsertEventType) String() string {
+	return string(e)
+}
+
+func (e *NoteUpsertEventType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NoteUpsertEventType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NoteUpsertEventType", str)
+	}
+	return nil
+}
+
+func (e NoteUpsertEventType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *NoteUpsertEventType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e NoteUpsertEventType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
