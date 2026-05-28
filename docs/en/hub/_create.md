@@ -56,6 +56,12 @@ The other language version is just the alternative.
 | `mcp_federation_kb_id` | no | Slug used to target the base (`federated_search(kb_id=…)`). Defaults to the URL hostname. Keep it unique across the hub. |
 | `free: true` | for public | Lets anonymous MCP callers route through this base. Omit to keep it subscriber/admin-only. |
 
+> **Tip: sprinkle keywords into the note body.** A plain hub `search` matches note
+> content, not the federated bases. List what the base covers in the body — topics,
+> technologies, task types, signature terms. Then a plain `search` surfaces this
+> entry, so an agent lands on the right base before even running a federated search
+> (and from there, `federated_search(kb_id=…)`).
+
 ## 2. Public vs private base
 
 - **Public base** (no auth) — nothing else to do. The hub proxies anonymously.
