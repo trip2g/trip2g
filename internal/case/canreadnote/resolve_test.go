@@ -486,12 +486,15 @@ func TestResolve_SystemAndHTMLFiles(t *testing.T) {
 		env        *EnvMock
 		wantAccess bool
 	}{
-		{"system file blocked for guest", "_footer.md", true, guestEnv, false},
-		{"system dir blocked for guest", "_layouts/base.html", true, guestEnv, false},
-		{"system in subdir blocked for guest", "docs/_internal/note.md", true, guestEnv, false},
+		// HTML templates are always blocked for non-admins.
 		{"html file blocked for guest", "page.html", true, guestEnv, false},
-		{"admin sees system file", "_footer.md", true, adminEnv, true},
+		{"html in system dir blocked for guest", "_layouts/base.html", true, guestEnv, false},
 		{"admin sees html file", "_layouts/base.html", true, adminEnv, true},
+		// System files follow normal access rules (free: true → accessible).
+		{"free system file accessible for guest", "_footer.md", true, guestEnv, true},
+		{"free system file accessible for admin", "_footer.md", true, adminEnv, true},
+		{"non-free system file blocked for guest", "docs/_internal/note.md", false, guestEnv, false},
+		// Regular md not affected.
 		{"regular md file not affected", "blog/post.md", true, guestEnv, true},
 	}
 

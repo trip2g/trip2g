@@ -713,10 +713,11 @@ test_meta_injection() {
     rm -rf "$CLI_TEST_DIR"
     mkdir -p "$CLI_TEST_DIR"
 
-    # Simple file without frontmatter - title should be injected via --meta
+    # Simple file without frontmatter and without a body H1.
+    # The title "FromCLI" must come entirely from --meta title=FromCLI.
+    # Having a body H1 here would set HasH1=true after the mdloader fix,
+    # causing the template to show the body heading instead of the injected title.
     cat > "$CLI_TEST_DIR/cli_test.md" << 'EOF'
-# CLI Test Page
-
 This page was synced with --meta title=FromCLI to test meta injection.
 
 The page title (h1 in header) should be "FromCLI" from injected frontmatter.

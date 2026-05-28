@@ -27,9 +27,10 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return true, nil
 	}
 
-	// System files (_footer.md, _layouts/) and HTML templates are internal —
-	// never expose to non-admin users.
-	if note.IsSystem() || strings.HasSuffix(note.Path, ".html") {
+	// HTML templates are never user-readable content.
+	// System files (_footer.md, _layouts/) follow normal access rules — they
+	// can carry free: true or subgraph gates (e.g. MCP instruction notes).
+	if strings.HasSuffix(note.Path, ".html") {
 		return false, nil
 	}
 
