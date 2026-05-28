@@ -3,6 +3,7 @@ package canreadnote
 import (
 	"context"
 	"fmt"
+	"strings"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
@@ -24,6 +25,12 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 
 	if userToken != nil && userToken.IsAdmin() {
 		return true, nil
+	}
+
+	// System files (_footer.md, _layouts/) and HTML templates are internal —
+	// never expose to non-admin users.
+	if note.IsSystem() || strings.HasSuffix(note.Path, ".html") {
+		return false, nil
 	}
 
 	if userToken != nil {

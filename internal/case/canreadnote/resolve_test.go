@@ -466,3 +466,41 @@ func TestResolve_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestResolve_SystemAndHTMLFiles(t *testing.T) {
+	guestEnv := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return nil, nil
+		},
+	}
+	adminEnv := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{ID: 1, Role: "admin"}, nil
+		},
+	}
+
+	cases := []struct {
+		name       string
+		path       string
+		free       bool
+		env        *EnvMock
+		wantAccess bool
+	}{
+		{"system file blocked for guest", "_footer.md", true, guestEnv, false},
+		{"system dir blocked for guest", "_layouts/base.html", true, guestEnv, false},
+		{"system in subdir blocked for guest", "docs/_internal/note.md", true, guestEnv, false},
+		{"html file blocked for guest", "page.html", true, guestEnv, false},
+		{"admin sees system file", "_footer.md", true, adminEnv, true},
+		{"admin sees html file", "_layouts/base.html", true, adminEnv, true},
+		{"regular md file not affected", "blog/post.md", true, guestEnv, true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			note := &model.NoteView{Path: c.path, Free: c.free}
+			got, err := canreadnote.Resolve(context.Background(), c.env, note)
+			require.NoError(t, err)
+			require.Equal(t, c.wantAccess, got)
+		})
+	}
+}

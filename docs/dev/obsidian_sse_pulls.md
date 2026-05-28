@@ -95,37 +95,78 @@
 ### Схема
 
 ```graphql
-input NoteChangesInput {
-  """Glob patterns для фильтрации (doublestar). Пустой = все."""
-  includePatterns: [String!]
-  """Glob patterns для исключения."""
+input NoteChangesFilter {
+  """
+  Glob patterns для включения (doublestar, как в changeWebhook).
+  Обязательный — явно указывай что слушать. Для всего: ["**"].
+  """
+  includePatterns: [String!]!
+  """Glob patterns для исключения. Применяются после includePatterns."""
   excludePatterns: [String!]
 }
 
-enum NoteChangeEventType {
-  CREATE
-  UPDATE
-  REMOVE
+enum NoteUpsertEventType {
+  create
+  update
 }
 
-type NoteChangeEvent {
-  """Пути изменённых файлов."""
-  paths: [String!]!
-  """Хэши для каждого path (в том же порядке). Пустой массив для remove."""
-  hashes: [String!]!
-  """Тип события."""
-  event: NoteChangeEventType!
-  """Глобальная версия сайта после этого изменения."""
-  version: Int64!
+type NoteUpsertEvent {
+  path:      String!
+  pathId:    Int64!
+  """create или update."""
+  eventType: NoteUpsertEventType!
+  versionId: Int64!
+  title:     String!
+  """
+  Заметка из in-memory NoteViews на момент события.
+  Содержит permalink и url для live redirect на фронте.
+  Nullable: теоретически заметка может исчезнуть из NoteViews
+  между Publish и отправкой подписчику.
+  """
+  noteView:  NoteView
+}
+
+type NoteHideEvent {
+  path:   String!
+  """Nullable: скрытой заметки может уже не быть в NoteViews."""
+  pathId: Int64
+}
+
+union NoteChangeItem = NoteUpsertEvent | NoteHideEvent
+
+type NoteChangesSubscriptionPayload {
+  """
+  Монотонно возрастающий ID события (глобальная sync_version сайта).
+  Зарезервирован для будущего механизма catch-up при реконнекте
+  через afterId в фильтре — см. Future Plans.
+  """
+  id: Int64!
+  """
+  Отфильтрованный batch изменений. Всегда непустой — если ни один
+  change не прошёл фильтр include/exclude, событие не отправляется.
+  Один вызов commitNotes/hideNotes = один payload (пачка сохраняется).
+  """
+  changes: [NoteChangeItem!]!
 }
 
 type Subscription {
   currentTime(format: String = "2006-01-02 15:04:05"): String!
   """
-  X-Api-Key header must be set.
-  Подписка на изменения заметок. Фильтрация по glob patterns (как в webhooks).
+  X-Api-Key header required.
+  Подписка на изменения заметок с glob фильтрацией (doublestar).
+
+  Логика фильтра (применяется per-change внутри batch):
+    - change проходит если: MatchesAny(path, includePatterns) && !MatchesAny(path, excludePatterns)
+    - payload отправляется если хотя бы один change прошёл фильтр
+    - если все changes отфильтрованы — событие не отправляется
+
+  Источники событий:
+    - commitNotes → upsert/update events (через HandleLatestNotesAfterSave)
+    - updateNotes (upsert/patch) → upsert/update events
+    - updateNotes (hide) → hide events
+    - hideNotes → hide events
   """
-  noteChanges(input: NoteChangesInput): NoteChangeEvent!
+  noteChanges(filter: NoteChangesFilter!): NoteChangesSubscriptionPayload!
 }
 ```
 
@@ -358,12 +399,23 @@ env.PublishNoteEvent(model.NoteBusEvent{
 
 ### Авторизация
 
-SSE подписка использует тот же `X-Api-Key` что и queries. Проверка через `checkapikey.Resolve()`. API key создаётся в админке и привязан к сайту.
+Три режима доступа:
 
-Нюанс: SSE — long-lived соединение. Если API key отозван:
-- Текущая подписка продолжит работать до дисконнекта
-- Это ОК — аналогично поведению webhook deliveries
+| Клиент | Auth | Фильтрация событий |
+|---|---|---|
+| Obsidian plugin, агенты | `X-Api-Key` header | только glob (полный доступ) |
+| Залогиненный пользователь | user session cookie | glob + `canreadnote` per change |
+| Гость | нет | glob + только `Free` заметки |
+
+**API key:** проверка через `checkapikey.Resolve()`. Ключ создаётся в админке.
+
+**User session:** `canreadnote.Resolve()` вызывается для каждого `NoteUpsertEvent` в batch.
+`ListActiveUserSubgraphs` — DB-запрос, кешируется один раз при открытии подписки в goroutine closure. `NoteHideEvent` для user-сессий не отправляется — скрытой заметки нет в NoteViews, `canreadnote` проверить нельзя.
+
+Нюанс: SSE — long-lived соединение. Если API key отозван или подписка пользователя истекла:
+- Текущая подписка продолжит работать до дисконнекта (кеш subgraphs не обновляется)
 - При реконнекте — получит ошибку авторизации
+- Это ОК — аналогично поведению webhook deliveries
 
 ### SSE Heartbeat / Keepalive
 
@@ -865,7 +917,7 @@ has_update() {
 12. **Publish из `HandleLatestNotesAfterSave`** — рядом с webhook dispatch, реальный event type (CREATE/UPDATE)
 13. **Publish из `hideNotes`** — добавить `PublishNoteEvent` в Env interface
 14. **SSE keepalive** — `transport.SSE{KeepAlivePingInterval: 30 * time.Second}` или аналог
-15. **Тест**: `curl` SSE подписка + pushNotes через CLI → события приходят
+15. **E2E тесты** — `e2e/notechanges.spec.js` (см. ниже)
 
 ### Фаза 2: Obsidian SSE live pull + delta sync
 
@@ -888,6 +940,80 @@ has_update() {
 1. Определить модель авторизации
 2. Подписка на конкретную страницу
 3. Плашка "Контент обновился"
+
+### E2E тесты: `e2e/notechanges.spec.js`
+
+SSE подписку открываем через `page.evaluate()` — браузер поддерживает `fetch` со стримингом нативно.
+Мутации делаем через `request` как в остальных тестах.
+
+```js
+// Открыть SSE подписку в браузере, вернуть первое событие
+async function waitForNoteChange(page, apiKey, filter) {
+  return page.evaluate(async ({ apiKey, filter }) => {
+    const res = await fetch('/_system/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify({
+        query: `subscription NoteChanges($filter: NoteChangesFilter!) {
+          noteChanges(filter: $filter) {
+            changes {
+              ... on NoteUpsertEvent { path eventType versionId }
+              ... on NoteHideEvent   { path pathId }
+            }
+          }
+        }`,
+        variables: { filter },
+      }),
+    });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      for (const part of buf.split('\n\n').slice(0, -1)) {
+        const line = part.replace(/^data: /, '').trim();
+        if (!line || line.startsWith(':')) continue;
+        return JSON.parse(line).data.noteChanges;
+      }
+      buf = buf.split('\n\n').at(-1);
+    }
+  }, { apiKey, filter });
+}
+```
+
+**Тест-кейсы:**
+
+```js
+test('upsert → NoteUpsertEvent create', async ({ page, request }) => {
+  const changePromise = waitForNoteChange(page, apiKey, { includePatterns: ['**'] });
+  await gqlApi(request, apiKey, UPDATE_NOTES, {
+    input: { changes: [{ upsert: { path: 'sse_create.md', content: '# SSE' } }] },
+  });
+  const payload = await changePromise;
+  expect(payload.changes[0]).toMatchObject({ path: 'sse_create.md', eventType: 'create' });
+});
+
+test('hideNotes → NoteHideEvent', async ({ page, request }) => { /* аналогично */ });
+
+test('glob: событие вне includePatterns не приходит', async ({ page, request }) => {
+  // subscribe на blog/**, меняем other/note.md
+  // waitForNoteChange с Promise.race(changePromise, timeout(1000)) → timeout побеждает
+});
+
+test('excludePatterns: событие в exclude не приходит', async ({ page, request }) => {
+  // include=["**"], exclude=["drafts/**"], меняем drafts/x.md → нет события
+});
+
+test('batch: updateNotes 3 upsert → один payload с 3 changes', async ({ page, request }) => {
+  // updateNotes с 3 путями → payload.changes.length === 3
+});
+```
 
 ## Edge Cases
 
@@ -949,3 +1075,23 @@ input PushNotesNoteContentInput {
 - Админка: можно передавать `null` (skip проверки) для админских правок
 
 **Приоритет:** Средний. Сценарий редкий (два человека редактируют один файл одновременно), но последствия серьёзные (потеря данных).
+
+### Catch-up при реконнекте через `afterId`
+
+`NoteChangesSubscriptionPayload.id` уже присутствует в схеме (= `sync_version`).
+
+Идея: `noteChanges(filter: ..., afterId: Int64)` — при реконнекте клиент передаёт последний
+полученный `id`, сервер отдаёт пропущенные события из кеша, затем переключается на live.
+
+**Проблема мультитенантности:** кеш последних N событий глобальный, но каждый подписчик
+имеет свой glob-фильтр и права доступа. Нельзя хранить готовые payload — нужно хранить
+сырые `NoteChange` батчи и фильтровать при выдаче.
+
+**Вариант реализации:**
+- `internal/notebus`: кольцевой буфер последних 10–20 батчей (не событий) с их `id`
+- При `afterId`: отдать батчи с `id > afterId` из буфера, затем live
+- Если `afterId` выходит за пределы буфера → ошибка, клиент делает полный re-sync
+
+**Приоритет:** Низкий. Obsidian plugin при реконнекте делает отдельный запрос за
+пропущенными изменениями — этого достаточно. `afterId` нужен когда появится клиент,
+которому неудобно делать два запроса (например, публичный сайт без API key).
