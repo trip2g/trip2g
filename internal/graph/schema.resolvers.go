@@ -3171,7 +3171,7 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 // NoteChanges is the resolver for the noteChanges field.
 func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error) {
 	// Auth: API key required.
-	if _, err := checkapikey.Resolve(ctx, r.env(ctx), "note_changes"); err != nil {
+	if _, err := checkapikey.Resolve(ctx, r.DefaultEnv, "note_changes"); err != nil {
 		return nil, err
 	}
 

@@ -1,0 +1,5 @@
+$trip2g_user_live_reload_toggler $mol_check_icon
+	labels *
+		on @ \Live reload: ON
+		off @ \Live reload: OFF
+	Icon $mol_icon_lightning_bolt_outline

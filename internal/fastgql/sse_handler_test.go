@@ -210,6 +210,42 @@ func TestSSEHandler_ImplementsFlusher(t *testing.T) {
 	}
 }
 
+func TestSSEHandler_UsesBaseContext(t *testing.T) {
+	type ctxKey struct{}
+
+	valueSeen := make(chan any, 1)
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		valueSeen <- r.Context().Value(ctxKey{})
+		_, _ = w.Write([]byte("ok"))
+	})
+
+	handler := fastgql.NewSSEHandler(h, fastgql.WithBaseContext(func(_ *fasthttp.RequestCtx) context.Context {
+		return context.WithValue(context.Background(), ctxKey{}, "from-base-context")
+	}))
+	ln := startTestServer(t, handler)
+
+	req, err := http.NewRequest(http.MethodPost, "http://"+ln.Addr().String(),
+		strings.NewReader(`{}`))
+	require.NoError(t, err)
+
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	_, _ = io.ReadAll(resp.Body)
+
+	select {
+	case got := <-valueSeen:
+		require.Equal(t, "from-base-context", got)
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for handler")
+	}
+}
+
 // TestSSEHandler_NoRaceWithConcurrentRequests verifies that concurrent SSE
 // connections and regular requests do not race on shared state.
 //

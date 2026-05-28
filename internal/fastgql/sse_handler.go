@@ -11,6 +11,25 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
+type sseOptions struct {
+	baseContext func(*fasthttp.RequestCtx) context.Context
+}
+
+// Option configures NewSSEHandler.
+type Option func(*sseOptions)
+
+// WithBaseContext sets a function that produces the base context for each SSE
+// request. It is called once per request, before SetBodyStreamWriter, while
+// the original fasthttp.RequestCtx is still valid. The returned context becomes
+// the parent of the cancellable stream context passed to the net/http handler.
+// Use this to carry request-scoped values (e.g. appreq snapshots) into the
+// long-lived stream without retaining the pooled fasthttp request.
+func WithBaseContext(fn func(*fasthttp.RequestCtx) context.Context) Option {
+	return func(o *sseOptions) {
+		o.baseContext = fn
+	}
+}
+
 // NewSSEHandler wraps a net/http handler for SSE streaming over fasthttp.
 //
 // Unlike fasthttpadaptor.NewFastHTTPHandler, this function does not use sync.Pool
@@ -24,7 +43,12 @@ import (
 // inside fasthttp's SetBodyStreamWriter callback, writing to the connection via
 // a bufio.Writer. When a write or flush fails (client disconnect), the request
 // context is cancelled, signaling the handler to stop.
-func NewSSEHandler(h http.Handler) fasthttp.RequestHandler {
+func NewSSEHandler(h http.Handler, opts ...Option) fasthttp.RequestHandler {
+	o := &sseOptions{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	return func(ctx *fasthttp.RequestCtx) {
 		var r http.Request
 
@@ -39,8 +63,18 @@ func NewSSEHandler(h http.Handler) fasthttp.RequestHandler {
 		ctx.Response.Header.Set("Cache-Control", "no-cache")
 		ctx.Response.Header.Set("Connection", "keep-alive")
 
+		// Resolve the base context while the fasthttp ctx is still valid —
+		// the outer request handler may return (and release its pooled appreq)
+		// before SetBodyStreamWriter's callback begins executing.
+		var baseCtx context.Context
+		if o.baseContext != nil {
+			baseCtx = o.baseContext(ctx)
+		} else {
+			baseCtx = r.Context()
+		}
+
 		ctx.SetBodyStreamWriter(func(bw *bufio.Writer) {
-			reqCtx, cancel := context.WithCancel(r.Context())
+			reqCtx, cancel := context.WithCancel(baseCtx)
 			defer cancel()
 
 			w := &sseResponseWriter{

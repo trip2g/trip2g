@@ -2428,7 +2428,13 @@ func (a *app) prepareGraphQLHandler() func(prefix string) func(ctx *fasthttp.Req
 	// SSE uses a custom handler that does not pool the response writer,
 	// avoiding a data race in fasthttpadaptor where the pooled writer
 	// is recycled while the SSE goroutine is still writing to it.
-	sseHandler := fastgql.NewSSEHandler(a.gqlServer)
+	sseHandler := fastgql.NewSSEHandler(a.gqlServer, fastgql.WithBaseContext(func(fctx *fasthttp.RequestCtx) context.Context {
+		req, err := appreq.FromCtx(fctx)
+		if err != nil {
+			return context.Background()
+		}
+		return appreq.NewContext(context.Background(), req.Snapshot())
+	}))
 
 	return func(prefix string) func(ctx *fasthttp.RequestCtx, path string) bool {
 		return func(ctx *fasthttp.RequestCtx, path string) bool {

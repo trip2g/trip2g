@@ -1,0 +1,5 @@
+$trip2g_user_live $mol_view
+	minimal_height 0
+	minimal_width 0
+	sub /
+		<= watcher_result null

@@ -179,6 +179,51 @@ func (c *Request) resolvePersonalToken(plaintext string) (*usertoken.Data, error
 	return c.PersonalTokenResolver.Resolve(c.Req, plaintext)
 }
 
+// NewContext returns a copy of parent with req stored as the appreq value.
+// Use this to pass an appreq through a standard context.Context when the
+// original fasthttp.RequestCtx is no longer available (e.g. SSE streams).
+func NewContext(parent context.Context, req *Request) context.Context {
+	return context.WithValue(parent, ctxKey, req)
+}
+
+// Snapshot returns an independent deep copy of c suitable for use beyond the
+// request lifetime. The snapshot's Req field is a fresh fasthttp.RequestCtx
+// with headers, cookies, query args, and remote address copied from the
+// original. Use before releasing the pooled Request (e.g. for SSE streams).
+func (c *Request) Snapshot() *Request {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	snapshotFCtx := &fasthttp.RequestCtx{}
+	snapshotFCtx.Init(&c.Req.Request, c.Req.RemoteAddr(), nil)
+
+	var readPatterns []string
+	if c.WebhookReadPatterns != nil {
+		readPatterns = make([]string, len(c.WebhookReadPatterns))
+		copy(readPatterns, c.WebhookReadPatterns)
+	}
+
+	var writePatterns []string
+	if c.WebhookWritePatterns != nil {
+		writePatterns = make([]string, len(c.WebhookWritePatterns))
+		copy(writePatterns, c.WebhookWritePatterns)
+	}
+
+	return &Request{
+		Env:                   c.Env,
+		Req:                   snapshotFCtx,
+		Path:                  c.Path,
+		TokenManager:          c.TokenManager,
+		PersonalTokenResolver: c.PersonalTokenResolver,
+		token:                 c.token,
+		tokenExtracted:        c.tokenExtracted,
+		WebhookDepth:          c.WebhookDepth,
+		WebhookReadPatterns:   readPatterns,
+		WebhookWritePatterns:  writePatterns,
+		SkipWebhooks:          c.SkipWebhooks,
+	}
+}
+
 //nolint:gochecknoglobals // it's a common pattern.
 var ctxPool = &sync.Pool{
 	New: func() any {
