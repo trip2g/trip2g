@@ -3,6 +3,7 @@ $trip2g_admin_dashboard $mol_page
 	tools /
 		<= CurrentTime $trip2g_time_current
 		<= Editor $trip2g_editor
+			edit_title \
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
 		<= StorageUsage $trip2g_admin_dashboard_storageusage

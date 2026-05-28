@@ -2826,6 +2826,8 @@ export type NoteChangeInput = {
   upsert?: InputMaybe<NoteChangeUpsertInput>;
 };
 
+export type NoteChangeItem = NoteHideEvent | NoteUpsertEvent;
+
 export type NoteChangePatchInput = {
   expectedHash?: InputMaybe<Scalars['String']['input']>;
   find: Scalars['String']['input'];
@@ -2837,6 +2839,33 @@ export type NoteChangeUpsertInput = {
   content: Scalars['String']['input'];
   expectedHash?: InputMaybe<Scalars['String']['input']>;
   path: Scalars['String']['input'];
+};
+
+export type NoteChangesFilter = {
+  /** Glob patterns for exclusion. Applied after includePatterns. */
+  excludePatterns?: InputMaybe<Array<Scalars['String']['input']>>;
+  /**
+   * Glob patterns for inclusion (doublestar, same as changeWebhook).
+   * Required — explicitly state what to watch. Use ["**"] for everything.
+   */
+  includePatterns: Array<Scalars['String']['input']>;
+};
+
+export type NoteChangesSubscriptionPayload = {
+  __typename?: 'NoteChangesSubscriptionPayload';
+  /**
+   * Filtered batch of changes. Always non-empty — if no change passes the
+   * include/exclude filter, the event is not emitted.
+   * One commitNotes/hideNotes call = one payload (batch is preserved).
+   */
+  changes: Array<NoteChangeItem>;
+};
+
+export type NoteHideEvent = {
+  __typename?: 'NoteHideEvent';
+  path: Scalars['String']['output'];
+  /** Nullable: hidden note may no longer be in NoteViews. */
+  pathId?: Maybe<Scalars['Int64']['output']>;
 };
 
 export type NoteInput = {
@@ -2873,6 +2902,27 @@ export type NoteTocItem = {
   level: Scalars['Int']['output'];
   title: Scalars['String']['output'];
 };
+
+export type NoteUpsertEvent = {
+  __typename?: 'NoteUpsertEvent';
+  /** create or update. */
+  eventType: NoteUpsertEventType;
+  /**
+   * Note from in-memory NoteViews at event time.
+   * Contains permalink and url for live redirect on the frontend.
+   * Nullable: the note may disappear from NoteViews between Publish and delivery.
+   */
+  noteView?: Maybe<NoteView>;
+  path: Scalars['String']['output'];
+  pathId: Scalars['Int64']['output'];
+  title: Scalars['String']['output'];
+  versionId: Scalars['Int64']['output'];
+};
+
+export enum NoteUpsertEventType {
+  Create = 'create',
+  Update = 'update'
+}
 
 export type NoteView = {
   __typename?: 'NoteView';
@@ -3543,11 +3593,32 @@ export type SubmitFormPayload = {
 export type Subscription = {
   __typename?: 'Subscription';
   currentTime: Scalars['String']['output'];
+  /**
+   * X-Api-Key header required.
+   * Subscribe to note changes with glob filtering (doublestar).
+   *
+   * Filter logic (per-change within the batch):
+   *   - change passes if: MatchesAny(path, includePatterns) && !MatchesAny(path, excludePatterns)
+   *   - payload emitted if at least one change passes the filter
+   *   - if all changes are filtered out — event is not emitted
+   *
+   * Event sources:
+   *   - commitNotes → create/update (via HandleLatestNotesAfterSave)
+   *   - updateNotes upsert/patch → create/update
+   *   - updateNotes hide → hide
+   *   - hideNotes → hide
+   */
+  noteChanges: NoteChangesSubscriptionPayload;
 };
 
 
 export type SubscriptionCurrentTimeArgs = {
   format?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type SubscriptionNoteChangesArgs = {
+  filter: NoteChangesFilter;
 };
 
 export type TelegramPost = {
@@ -5713,6 +5784,8 @@ export const $trip2g_graphql_cron_job_execution_status = CronJobExecutionStatus;
 export const $trip2g_graphql_form_submit_status = FormSubmitStatus;
 
 export const $trip2g_graphql_health_check_status = HealthCheckStatus;
+
+export const $trip2g_graphql_note_upsert_event_type = NoteUpsertEventType;
 
 export const $trip2g_graphql_note_warning_level_enum = NoteWarningLevelEnum;
 

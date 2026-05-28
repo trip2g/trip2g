@@ -5,6 +5,7 @@ $trip2g_editor $mol_view
 		<= Open $mol_check_icon
 			Icon <= Open_icon $mol_icon_application_edit
 			hint @ \Open Editor
+			title <= edit_title @ \Edit this page
 			checked? <=> opened? false
 		<= Dialog $mol_view
 			dom_name \dialog

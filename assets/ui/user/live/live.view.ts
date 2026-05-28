@@ -42,17 +42,16 @@ namespace $.$$ {
 		@ $mol_mem
 		watcher_result( next?: null ) {
 			const sub = this.subscription()
-			console.log('sub', sub)
 			if( !sub ) return null
 
 			const data = sub.data()
 			if( !data ) {
-				console.log(sub.error())
+				const err = sub.error()
+				if (err) console.log('subscription error', err)
 				return null
 			}
 
 			const changes: any[] = data.noteChanges?.changes ?? []
-			console.log('changes', changes)
 			if( changes.length === 0 ) return null
 
 			const currentPathId = $trip2g_settings.note_path_id()
