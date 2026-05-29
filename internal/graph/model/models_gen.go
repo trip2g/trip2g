@@ -1926,6 +1926,10 @@ type NoteUpsertEvent struct {
 	// Contains permalink and url for live redirect on the frontend.
 	// Nullable: the note may disappear from NoteViews between Publish and delivery.
 	NoteView *model.NoteView `json:"noteView,omitempty"`
+	// CSS selectors of the first changed top-level block, e.g. [".content__body > :nth-child(3)"].
+	// Computed lazily from the previous rendered HTML. Null for create events or when
+	// previous HTML is unavailable (patchesChanged reload cycle or race with a subsequent save).
+	ChangedHTMLSelectors []string `json:"changedHtmlSelectors,omitempty"`
 }
 
 func (NoteUpsertEvent) IsNoteChangeItem() {}

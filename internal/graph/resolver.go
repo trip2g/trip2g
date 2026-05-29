@@ -116,6 +116,7 @@ import (
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/calculatechangeselectors"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/submitform"
@@ -219,6 +220,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	LatestNoteViews() *model.NoteViews
+	calculatechangeselectors.Env
 	RecentlyModifiedNoteVersionIDs(ctx context.Context) ([]int64, error)
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	NoteGraphPositionByPathID(ctx context.Context, id int64) (db.NoteGraphPositionByPathIDRow, error)

@@ -1,0 +1,9 @@
+@keyframes note-block-changed {
+  0%   { background-color: #fffde7; }
+  100% { background-color: transparent; }
+}
+
+.--note-changed {
+  animation: note-block-changed 2.5s ease-out;
+  border-radius: 2px;
+}

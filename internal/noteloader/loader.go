@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	htmltemplate "html/template"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -81,6 +82,11 @@ type Loader struct {
 	contentHashes map[int64][32]byte // PathID -> content hash for incremental indexing
 
 	chunks []model.NoteChunk // per-chunk embeddings for vector search
+
+	// prevHTML holds the rendered HTML of notes from the previous Load cycle,
+	// captured just before re-rendering changed notes. Replaced entirely each Load.
+	// Used by the changedBlocks GraphQL resolver to diff old vs new HTML.
+	prevHTML map[int64]htmltemplate.HTML
 
 	version            string
 	config             mdloader.Config
@@ -214,6 +220,13 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 	}
 
+	// Capture HTML of notes that are about to be re-rendered.
+	// Used by changedBlocks resolver to diff old vs new HTML.
+	// NOTE: when patchesChanged==true, NoteCache returns nil for all notes immediately
+	// so prevLocalHTML won't be populated even for content-changed notes — acceptable edge case.
+	var prevMu sync.Mutex
+	prevLocalHTML := make(map[int64]htmltemplate.HTML)
+
 	mdOptions := mdloader.Options{
 		Sources:   mdSources,
 		Log:       logger.WithPrefix(l.log, "mdloader:"),
@@ -238,6 +251,11 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			if bytes.Equal(old.Content, source.Content) {
 				return old
 			}
+			// Content changed: save old HTML before re-render for diff.
+			// NoteCache may be called concurrently by mdloader workers.
+			prevMu.Lock()
+			prevLocalHTML[old.PathID] = old.HTML
+			prevMu.Unlock()
 			return nil
 		},
 		FrontmatterPatches: l.frontmatterPatches,
@@ -309,6 +327,13 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	l.Lock()
 	l.nvs = nvs
+	// Only replace prevHTML when this Load cycle actually re-rendered notes.
+	// Spurious reloads (e.g. triggered by subgraph/webhook handling after a save)
+	// have count=0 and must not clear the prevHTML that the changedHtmlSelectors
+	// resolver is about to read.
+	if len(prevLocalHTML) > 0 {
+		l.prevHTML = prevLocalHTML
+	}
 	if !options.SkipSearchIndex {
 		l.searchIndex = searchIndex
 	}
@@ -413,6 +438,16 @@ func (l *Loader) NoteViews() *model.NoteViews {
 	l.Lock()
 	defer l.Unlock()
 	return l.nvs.Copy() // TODO: optimize
+}
+
+// PreviousHTML returns the rendered HTML of a note from the previous Load cycle,
+// captured just before re-rendering. Returns false if the note was not re-rendered
+// in the last Load (new note, unchanged note, or patchesChanged cycle).
+func (l *Loader) PreviousHTML(pathID int64) (htmltemplate.HTML, bool) {
+	l.Lock()
+	defer l.Unlock()
+	h, ok := l.prevHTML[pathID]
+	return h, ok
 }
 
 func (l *Loader) Layouts() *model.Layouts {

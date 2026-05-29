@@ -7,6 +7,7 @@ namespace $.$$ {
 					... on NoteUpsertEvent {
 						pathId
 						eventType
+						changedHtmlSelectors
 						noteView { permalink }
 					}
 					... on NoteHideEvent {
@@ -17,8 +18,10 @@ namespace $.$$ {
 		}
 	`
 
-	function is_same_path( obj: { pageId?: string, hidePathId?: string | null }, currId: number)  {
-		return obj.pageId === String(currId) || obj.hidePathId === String(currId)
+	const HIGHLIGHT_KEY = '--note-highlight'
+
+	function is_same_path( obj: { pathId?: string, hidePathId?: string | null }, currId: number ) {
+		return String( obj.pathId ?? obj.hidePathId ) === String( currId )
 	}
 
 	export class $trip2g_user_live extends $.$trip2g_user_live {
@@ -40,6 +43,20 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
+		highlight_on_load( next?: null ) {
+			const selector = sessionStorage.getItem( HIGHLIGHT_KEY )
+			if( !selector ) return null
+			sessionStorage.removeItem( HIGHLIGHT_KEY )
+			requestAnimationFrame( () => {
+				const el = document.querySelector( selector )
+				if( !el ) return
+				el.classList.add( '--note-changed' )
+				el.scrollIntoView( { behavior: 'smooth', block: 'center' } )
+			} )
+			return null
+		}
+
+		@ $mol_mem
 		watcher_result( next?: null ) {
 			const sub = this.subscription()
 			if( !sub ) return null
@@ -47,7 +64,7 @@ namespace $.$$ {
 			const data = sub.data()
 			if( !data ) {
 				const err = sub.error()
-				if (err) console.log('subscription error', err)
+				if( err ) console.log( 'subscription error', err )
 				return null
 			}
 
@@ -55,10 +72,13 @@ namespace $.$$ {
 			if( changes.length === 0 ) return null
 
 			const currentPathId = $trip2g_settings.note_path_id()
+			console.log(JSON.stringify(changes, null, 2))
 
 			if( this.reload_enabled() && currentPathId ) {
-				const hasCurrent = changes.some( ch => is_same_path( ch, currentPathId ) )
-				if( hasCurrent ) {
+				const match = changes.find( ch => is_same_path( ch, currentPathId ) )
+				if( match ) {
+					const selector: string | undefined = match.changedHtmlSelectors?.[ 0 ]
+					if( selector ) sessionStorage.setItem( HIGHLIGHT_KEY, selector )
 					setTimeout( () => location.reload(), 0 )
 					return null
 				}

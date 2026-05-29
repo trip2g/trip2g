@@ -138,6 +138,7 @@ type ResolverRoot interface {
 	LayoutBlockParam() LayoutBlockParamResolver
 	Mutation() MutationResolver
 	NotePath() NotePathResolver
+	NoteUpsertEvent() NoteUpsertEventResolver
 	NoteView() NoteViewResolver
 	NoteWarning() NoteWarningResolver
 	Offer() OfferResolver
@@ -739,6 +740,9 @@ type NotePathResolver interface {
 	LatestNoteView(ctx context.Context, obj *db.NotePath) (*model1.NoteView, error)
 	Content(ctx context.Context, obj *db.NotePath) (string, error)
 	AssetReplaces(ctx context.Context, obj *db.NotePath) ([]model.NoteAssetReplaceT, error)
+}
+type NoteUpsertEventResolver interface {
+	ChangedHTMLSelectors(ctx context.Context, obj *model.NoteUpsertEvent) ([]string, error)
 }
 type NoteViewResolver interface {
 	Content(ctx context.Context, obj *model1.NoteView) (string, error)
@@ -30421,6 +30425,35 @@ func (ec *executionContext) fieldContext_NoteUpsertEvent_noteView(_ context.Cont
 				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteUpsertEvent_changedHtmlSelectors(ctx context.Context, field graphql.CollectedField, obj *model.NoteUpsertEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteUpsertEvent_changedHtmlSelectors,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteUpsertEvent().ChangedHTMLSelectors(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚕstringᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteUpsertEvent_changedHtmlSelectors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteUpsertEvent",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -67110,30 +67143,63 @@ func (ec *executionContext) _NoteUpsertEvent(ctx context.Context, sel ast.Select
 		case "path":
 			out.Values[i] = ec._NoteUpsertEvent_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "pathId":
 			out.Values[i] = ec._NoteUpsertEvent_pathId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "eventType":
 			out.Values[i] = ec._NoteUpsertEvent_eventType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "versionId":
 			out.Values[i] = ec._NoteUpsertEvent_versionId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._NoteUpsertEvent_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "noteView":
 			out.Values[i] = ec._NoteUpsertEvent_noteView(ctx, field, obj)
+		case "changedHtmlSelectors":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteUpsertEvent_changedHtmlSelectors(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

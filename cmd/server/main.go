@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	htmltemplate "html/template"
 	"io/fs"
 	"math/big"
 	"net"
@@ -1296,6 +1297,10 @@ func (a *app) Layouts() *model.Layouts {
 
 func (a *app) LatestNoteViews() *model.NoteViews {
 	return a.latestNoteLoader.NoteViews()
+}
+
+func (a *app) PreviousLatestNoteHTML(pathID int64) (htmltemplate.HTML, bool) {
+	return a.latestNoteLoader.PreviousHTML(pathID)
 }
 
 func (a *app) LatestNoteChunks() []model.NoteChunk {

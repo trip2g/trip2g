@@ -114,6 +114,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/admin/updatewebhook"
+	"trip2g/internal/case/calculatechangeselectors"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -142,7 +143,6 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
-	"trip2g/internal/notebus"
 	"trip2g/internal/nowpayments"
 )
 
@@ -2794,6 +2794,11 @@ func (r *notePathResolver) AssetReplaces(ctx context.Context, obj *db.NotePath) 
 	return res, nil
 }
 
+// ChangedHTMLSelectors is the resolver for the changedHtmlSelectors field.
+func (r *noteUpsertEventResolver) ChangedHTMLSelectors(ctx context.Context, obj *model.NoteUpsertEvent) ([]string, error) {
+	return calculatechangeselectors.Resolve(ctx, r.DefaultEnv, obj.PathID)
+}
+
 // Content is the resolver for the content field.
 func (r *noteViewResolver) Content(ctx context.Context, obj *appmodel.NoteView) (string, error) {
 	return string(obj.Content), nil
@@ -3167,35 +3172,6 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 	}()
 
 	return ch, nil
-}
-
-func (r *subscriptionResolver) buildNoteChangeItems(batch notebus.Batch) []model.NoteChangeItem {
-	nvs := r.DefaultEnv.LatestNoteViews()
-	var items []model.NoteChangeItem
-	for _, change := range batch.Changes {
-		switch change.Event {
-		case "create", "update":
-			ev := model.NoteUpsertEvent{
-				Path:      change.Path,
-				PathID:    change.PathID,
-				EventType: model.NoteUpsertEventType(change.Event),
-			}
-			if nv := nvs.GetByPathID(change.PathID); nv != nil {
-				ev.VersionID = nv.VersionID
-				ev.Title = nv.Title
-				ev.NoteView = nv
-			}
-			items = append(items, ev)
-		case "remove":
-			ev := model.NoteHideEvent{Path: change.Path}
-			if change.PathID != 0 {
-				id := change.PathID
-				ev.PathID = &id
-			}
-			items = append(items, ev)
-		}
-	}
-	return items
 }
 
 // NoteChanges is the resolver for the noteChanges field.
@@ -3912,6 +3888,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // NotePath returns NotePathResolver implementation.
 func (r *Resolver) NotePath() NotePathResolver { return &notePathResolver{r} }
 
+// NoteUpsertEvent returns NoteUpsertEventResolver implementation.
+func (r *Resolver) NoteUpsertEvent() NoteUpsertEventResolver { return &noteUpsertEventResolver{r} }
+
 // NoteView returns NoteViewResolver implementation.
 func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
 
@@ -4091,6 +4070,7 @@ type formSubmitResolver struct{ *Resolver }
 type layoutBlockParamResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notePathResolver struct{ *Resolver }
+type noteUpsertEventResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
@@ -4113,3 +4093,4 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
