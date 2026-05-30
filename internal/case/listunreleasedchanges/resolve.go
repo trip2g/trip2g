@@ -76,6 +76,7 @@ func Resolve(ctx context.Context, env Env, filter model.NoteChangesFilter) ([]*m
 		changes = append(changes, &model.UnreleasedChange{
 			Path:          lv.Path,
 			PathID:        pathID,
+			Title:         "",
 			ChangeType:    model.NoteChangeTypeRemoved,
 			LiveVersionID: &lvid,
 			OldContent:    &oldContent,

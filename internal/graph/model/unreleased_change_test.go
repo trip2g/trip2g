@@ -2,6 +2,7 @@ package model_test
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -54,7 +55,7 @@ func TestDiff_NilNewContent_Removed(t *testing.T) {
 }
 
 func TestDiff_CalledOnlyOnce(t *testing.T) {
-	calls := 0
+	var calls atomic.Int64
 	ch := &model.UnreleasedChange{
 		ChangeType: model.NoteChangeTypeModified,
 		OldContent: strPtr("a\n"),
@@ -67,7 +68,7 @@ func TestDiff_CalledOnlyOnce(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			ch.Diff()
-			calls++ // not thread-safe, but sync.Once guarantees Diff() body runs once
+			calls.Add(1)
 		}()
 	}
 	wg.Wait()
