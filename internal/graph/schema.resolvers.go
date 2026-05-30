@@ -3956,6 +3956,14 @@ func (r *Resolver) ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
+// UnreleasedChange returns UnreleasedChangeResolver implementation.
+func (r *Resolver) UnreleasedChange() UnreleasedChangeResolver { return &unreleasedChangeResolver{r} }
+
+// UnreleasedChangesConnection returns UnreleasedChangesConnectionResolver implementation.
+func (r *Resolver) UnreleasedChangesConnection() UnreleasedChangesConnectionResolver {
+	return &unreleasedChangesConnectionResolver{r}
+}
+
 // UpdateNoteGraphPositionsPayload returns UpdateNoteGraphPositionsPayloadResolver implementation.
 func (r *Resolver) UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver {
 	return &updateNoteGraphPositionsPayloadResolver{r}
@@ -4088,9 +4096,10 @@ type subgraphResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type toggleFavoriteNotePayloadResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
+type unreleasedChangeResolver struct{ *Resolver }
+type unreleasedChangesConnectionResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-

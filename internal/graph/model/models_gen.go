@@ -2480,6 +2480,12 @@ type UnbanUserPayload struct {
 
 func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
 
+type UnreleasedChangeStats struct {
+	AddedLines   int32 `json:"addedLines"`
+	RemovedLines int32 `json:"removedLines"`
+	ChangedWords int32 `json:"changedWords"`
+}
+
 type UpdateBoostyCredentialsInput struct {
 	ID       int64   `json:"id"`
 	AuthData *string `json:"authData,omitempty"`
@@ -3110,6 +3116,63 @@ func (e *HealthCheckStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e HealthCheckStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type NoteChangeType string
+
+const (
+	NoteChangeTypeAdded    NoteChangeType = "ADDED"
+	NoteChangeTypeModified NoteChangeType = "MODIFIED"
+	NoteChangeTypeRemoved  NoteChangeType = "REMOVED"
+)
+
+var AllNoteChangeType = []NoteChangeType{
+	NoteChangeTypeAdded,
+	NoteChangeTypeModified,
+	NoteChangeTypeRemoved,
+}
+
+func (e NoteChangeType) IsValid() bool {
+	switch e {
+	case NoteChangeTypeAdded, NoteChangeTypeModified, NoteChangeTypeRemoved:
+		return true
+	}
+	return false
+}
+
+func (e NoteChangeType) String() string {
+	return string(e)
+}
+
+func (e *NoteChangeType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NoteChangeType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NoteChangeType", str)
+	}
+	return nil
+}
+
+func (e NoteChangeType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *NoteChangeType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e NoteChangeType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

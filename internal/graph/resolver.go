@@ -65,11 +65,11 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
-	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishtags"
 	"trip2g/internal/case/admin/settgchatpublishinstanttags"
@@ -98,6 +98,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/admin/updatewebhook"
+	"trip2g/internal/case/calculatechangeselectors"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -116,7 +117,6 @@ import (
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
-	"trip2g/internal/case/calculatechangeselectors"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/submitform"
@@ -220,6 +220,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	LatestNoteViews() *model.NoteViews
+	AllLiveNotes(ctx context.Context) ([]db.AllLiveNotesRow, error)
 	calculatechangeselectors.Env
 	RecentlyModifiedNoteVersionIDs(ctx context.Context) ([]int64, error)
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)

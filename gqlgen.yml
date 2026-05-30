@@ -126,6 +126,10 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  UnreleasedChange:
+    model: trip2g/internal/graph/model.UnreleasedChange
+  UnreleasedChangesConnection:
+    model: trip2g/internal/graph/model.UnreleasedChangesConnection
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

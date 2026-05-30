@@ -156,6 +156,8 @@ type ResolverRoot interface {
 	Subscription() SubscriptionResolver
 	ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
+	UnreleasedChange() UnreleasedChangeResolver
+	UnreleasedChangesConnection() UnreleasedChangesConnectionResolver
 	UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver
 	User() UserResolver
 	UserBan() UserBanResolver
@@ -783,6 +785,7 @@ type QueryResolver interface {
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
 	SimilarNotes(ctx context.Context, input model.SimilarNotesInput) ([]model.SimilarNote, error)
 	NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error)
+	UnreleasedChanges(ctx context.Context, filter model.NoteChangesFilter) (*model.UnreleasedChangesConnection, error)
 }
 type RefreshBoostyDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error)
@@ -818,6 +821,15 @@ type ToggleFavoriteNotePayloadResolver interface {
 }
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
+}
+type UnreleasedChangeResolver interface {
+	Stats(ctx context.Context, obj *model.UnreleasedChange) (*model.UnreleasedChangeStats, error)
+	UnifiedDiff(ctx context.Context, obj *model.UnreleasedChange) (string, error)
+	WordDiff(ctx context.Context, obj *model.UnreleasedChange) (string, error)
+}
+type UnreleasedChangesConnectionResolver interface {
+	TotalCount(ctx context.Context, obj *model.UnreleasedChangesConnection) (int32, error)
+	TotalStats(ctx context.Context, obj *model.UnreleasedChangesConnection) (*model.UnreleasedChangeStats, error)
 }
 type UpdateNoteGraphPositionsPayloadResolver interface {
 	UpdatedNoteViews(ctx context.Context, obj *model.UpdateNoteGraphPositionsPayload) ([]model1.NoteView, error)
@@ -2843,6 +2855,17 @@ func (ec *executionContext) field_Query_similarNotes_args(ctx context.Context, r
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_unreleasedChanges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNNoteChangesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -32633,6 +32656,55 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_unreleasedChanges(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_unreleasedChanges,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().UnreleasedChanges(ctx, fc.Args["filter"].(model.NoteChangesFilter))
+		},
+		nil,
+		ec.marshalNUnreleasedChangesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangesConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_unreleasedChanges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_UnreleasedChangesConnection_totalCount(ctx, field)
+			case "totalStats":
+				return ec.fieldContext_UnreleasedChangesConnection_totalStats(ctx, field)
+			case "nodes":
+				return ec.fieldContext_UnreleasedChangesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnreleasedChangesConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_unreleasedChanges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -35809,6 +35881,539 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 				return ec.fieldContext_AdminUser_admin(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_path(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_pathId(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_pathId,
+		func(ctx context.Context) (any, error) {
+			return obj.PathID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_title(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_changeType(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_changeType,
+		func(ctx context.Context) (any, error) {
+			return obj.ChangeType, nil
+		},
+		nil,
+		ec.marshalNNoteChangeType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_changeType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type NoteChangeType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_liveVersionId(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_liveVersionId,
+		func(ctx context.Context) (any, error) {
+			return obj.LiveVersionID, nil
+		},
+		nil,
+		ec.marshalOInt642ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_liveVersionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_latestVersionId(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_latestVersionId,
+		func(ctx context.Context) (any, error) {
+			return obj.LatestVersionID, nil
+		},
+		nil,
+		ec.marshalOInt642ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_latestVersionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_stats(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_stats,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UnreleasedChange().Stats(ctx, obj)
+		},
+		nil,
+		ec.marshalNUnreleasedChangeStats2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_stats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "addedLines":
+				return ec.fieldContext_UnreleasedChangeStats_addedLines(ctx, field)
+			case "removedLines":
+				return ec.fieldContext_UnreleasedChangeStats_removedLines(ctx, field)
+			case "changedWords":
+				return ec.fieldContext_UnreleasedChangeStats_changedWords(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnreleasedChangeStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_unifiedDiff(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_unifiedDiff,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UnreleasedChange().UnifiedDiff(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_unifiedDiff(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_wordDiff(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_wordDiff,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UnreleasedChange().WordDiff(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_wordDiff(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_oldContent(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_oldContent,
+		func(ctx context.Context) (any, error) {
+			return obj.OldContent, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_oldContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChange_newContent(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChange_newContent,
+		func(ctx context.Context) (any, error) {
+			return obj.NewContent, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChange_newContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangeStats_addedLines(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangeStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangeStats_addedLines,
+		func(ctx context.Context) (any, error) {
+			return obj.AddedLines, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangeStats_addedLines(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangeStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangeStats_removedLines(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangeStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangeStats_removedLines,
+		func(ctx context.Context) (any, error) {
+			return obj.RemovedLines, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangeStats_removedLines(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangeStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangeStats_changedWords(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangeStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangeStats_changedWords,
+		func(ctx context.Context) (any, error) {
+			return obj.ChangedWords, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangeStats_changedWords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangeStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangesConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangesConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangesConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UnreleasedChangesConnection().TotalCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangesConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangesConnection_totalStats(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangesConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangesConnection_totalStats,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.UnreleasedChangesConnection().TotalStats(ctx, obj)
+		},
+		nil,
+		ec.marshalNUnreleasedChangeStats2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangesConnection_totalStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "addedLines":
+				return ec.fieldContext_UnreleasedChangeStats_addedLines(ctx, field)
+			case "removedLines":
+				return ec.fieldContext_UnreleasedChangeStats_removedLines(ctx, field)
+			case "changedWords":
+				return ec.fieldContext_UnreleasedChangeStats_changedWords(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnreleasedChangeStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UnreleasedChangesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.UnreleasedChangesConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UnreleasedChangesConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return obj.Nodes, nil
+		},
+		nil,
+		ec.marshalNUnreleasedChange2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UnreleasedChangesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UnreleasedChangesConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_UnreleasedChange_path(ctx, field)
+			case "pathId":
+				return ec.fieldContext_UnreleasedChange_pathId(ctx, field)
+			case "title":
+				return ec.fieldContext_UnreleasedChange_title(ctx, field)
+			case "changeType":
+				return ec.fieldContext_UnreleasedChange_changeType(ctx, field)
+			case "liveVersionId":
+				return ec.fieldContext_UnreleasedChange_liveVersionId(ctx, field)
+			case "latestVersionId":
+				return ec.fieldContext_UnreleasedChange_latestVersionId(ctx, field)
+			case "stats":
+				return ec.fieldContext_UnreleasedChange_stats(ctx, field)
+			case "unifiedDiff":
+				return ec.fieldContext_UnreleasedChange_unifiedDiff(ctx, field)
+			case "wordDiff":
+				return ec.fieldContext_UnreleasedChange_wordDiff(ctx, field)
+			case "oldContent":
+				return ec.fieldContext_UnreleasedChange_oldContent(ctx, field)
+			case "newContent":
+				return ec.fieldContext_UnreleasedChange_newContent(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UnreleasedChange", field.Name)
 		},
 	}
 	return fc, nil
@@ -68482,6 +69087,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "unreleasedChanges":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_unreleasedChanges(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -70919,6 +71546,336 @@ func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var unreleasedChangeImplementors = []string{"UnreleasedChange"}
+
+func (ec *executionContext) _UnreleasedChange(ctx context.Context, sel ast.SelectionSet, obj *model.UnreleasedChange) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unreleasedChangeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnreleasedChange")
+		case "path":
+			out.Values[i] = ec._UnreleasedChange_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "pathId":
+			out.Values[i] = ec._UnreleasedChange_pathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "title":
+			out.Values[i] = ec._UnreleasedChange_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "changeType":
+			out.Values[i] = ec._UnreleasedChange_changeType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "liveVersionId":
+			out.Values[i] = ec._UnreleasedChange_liveVersionId(ctx, field, obj)
+		case "latestVersionId":
+			out.Values[i] = ec._UnreleasedChange_latestVersionId(ctx, field, obj)
+		case "stats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UnreleasedChange_stats(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "unifiedDiff":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UnreleasedChange_unifiedDiff(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "wordDiff":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UnreleasedChange_wordDiff(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "oldContent":
+			out.Values[i] = ec._UnreleasedChange_oldContent(ctx, field, obj)
+		case "newContent":
+			out.Values[i] = ec._UnreleasedChange_newContent(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var unreleasedChangeStatsImplementors = []string{"UnreleasedChangeStats"}
+
+func (ec *executionContext) _UnreleasedChangeStats(ctx context.Context, sel ast.SelectionSet, obj *model.UnreleasedChangeStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unreleasedChangeStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnreleasedChangeStats")
+		case "addedLines":
+			out.Values[i] = ec._UnreleasedChangeStats_addedLines(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removedLines":
+			out.Values[i] = ec._UnreleasedChangeStats_removedLines(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "changedWords":
+			out.Values[i] = ec._UnreleasedChangeStats_changedWords(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var unreleasedChangesConnectionImplementors = []string{"UnreleasedChangesConnection"}
+
+func (ec *executionContext) _UnreleasedChangesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.UnreleasedChangesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, unreleasedChangesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UnreleasedChangesConnection")
+		case "totalCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UnreleasedChangesConnection_totalCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "totalStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UnreleasedChangesConnection_totalStats(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "nodes":
+			out.Values[i] = ec._UnreleasedChangesConnection_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -77765,6 +78722,16 @@ func (ec *executionContext) marshalNNoteChangeItem2ᚕtrip2gᚋinternalᚋgraph�
 	return ret
 }
 
+func (ec *executionContext) unmarshalNNoteChangeType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeType(ctx context.Context, v any) (model.NoteChangeType, error) {
+	var res model.NoteChangeType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNoteChangeType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeType(ctx context.Context, sel ast.SelectionSet, v model.NoteChangeType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNNoteChangesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteChangesFilter(ctx context.Context, v any) (model.NoteChangesFilter, error) {
 	res, err := ec.unmarshalInputNoteChangesFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -79331,6 +80298,88 @@ func (ec *executionContext) marshalNUnbanUserOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._UnbanUserOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUnreleasedChange2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UnreleasedChange) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUnreleasedChange2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChange(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNUnreleasedChange2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChange(ctx context.Context, sel ast.SelectionSet, v *model.UnreleasedChange) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UnreleasedChange(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUnreleasedChangeStats2trip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeStats(ctx context.Context, sel ast.SelectionSet, v model.UnreleasedChangeStats) graphql.Marshaler {
+	return ec._UnreleasedChangeStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUnreleasedChangeStats2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangeStats(ctx context.Context, sel ast.SelectionSet, v *model.UnreleasedChangeStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UnreleasedChangeStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUnreleasedChangesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangesConnection(ctx context.Context, sel ast.SelectionSet, v model.UnreleasedChangesConnection) graphql.Marshaler {
+	return ec._UnreleasedChangesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUnreleasedChangesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐUnreleasedChangesConnection(ctx context.Context, sel ast.SelectionSet, v *model.UnreleasedChangesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UnreleasedChangesConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateBoostyCredentialsInput(ctx context.Context, v any) (model.UpdateBoostyCredentialsInput, error) {

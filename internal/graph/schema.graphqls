@@ -1500,6 +1500,14 @@ type Query {
   X-Api-Key header must be set.
   """
   notePaths(filter: NotePathsFilter): [NotePath!]!
+
+  """
+  X-Api-Key header required.
+  Notes whose latest version diverges from the current live release.
+  If no live release exists, all notes are returned as added.
+  Glob filter uses doublestar (same as noteChanges).
+  """
+  unreleasedChanges(filter: NoteChangesFilter!): UnreleasedChangesConnection!
 }
 
 type FieldMessage {
@@ -1885,6 +1893,40 @@ type TurnstileRequiredPayload {
 }
 
 union SubmitFormOrErrorPayload = SubmitFormPayload | FormSubmitDeniedPayload | TurnstileRequiredPayload | ErrorPayload
+
+enum NoteChangeType {
+  ADDED     # exists in latest, not in live release (or no live release)
+  MODIFIED  # in both; version IDs differ
+  REMOVED   # was in live release, now absent from latest
+}
+
+type UnreleasedChangeStats {
+  addedLines:   Int!
+  removedLines: Int!
+  changedWords: Int!
+}
+
+type UnreleasedChange {
+  path:            String!
+  pathId:          Int64!
+  title:           String!
+  changeType:      NoteChangeType!
+  liveVersionId:   Int64
+  latestVersionId: Int64
+  stats:           UnreleasedChangeStats! @goField(forceResolver: true)
+  """Git-style unified diff on raw markdown (released → latest). Computed lazily."""
+  unifiedDiff:     String! @goField(forceResolver: true)
+  """Inline word-level diff: {+added+} / {-removed-} markers. Computed lazily."""
+  wordDiff:        String! @goField(forceResolver: true)
+  oldContent:      String
+  newContent:      String
+}
+
+type UnreleasedChangesConnection {
+  totalCount: Int!
+  totalStats: UnreleasedChangeStats! @goField(forceResolver: true)
+  nodes:      [UnreleasedChange!]!
+}
 
 # noteChanges subscription
 
