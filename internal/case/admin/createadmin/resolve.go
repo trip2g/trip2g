@@ -47,8 +47,21 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	params := db.InsertAdminParams{
-		UserID:    input.UserID,
-		GrantedBy: ptr.To(int64(token.ID)),
+		UserID: input.UserID,
+	}
+
+	// granted_by references admins(user_id). The authenticating admin may be
+	// an admin via owner-email config or API key without a row in the admins
+	// table; pointing granted_by at such an id triggers a FOREIGN KEY
+	// constraint failure. Only set it when the granter is itself in admins.
+	_, err = env.AdminByUserID(ctx, int64(token.ID))
+	switch {
+	case err == nil:
+		params.GrantedBy = ptr.To(int64(token.ID))
+	case db.IsNoFound(err):
+		// Granter not in admins table; leave granted_by NULL.
+	default:
+		return nil, fmt.Errorf("failed to check granter admin status: %w", err)
 	}
 
 	admin, err := env.InsertAdmin(ctx, params)

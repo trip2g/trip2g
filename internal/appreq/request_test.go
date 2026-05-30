@@ -288,5 +288,37 @@ func TestWithAdminToken_ShadowsExistingToken(t *testing.T) {
 	require.False(t, origTok.IsAdmin())
 }
 
+func TestWithAdminToken_CarriesAdminActorUserID(t *testing.T) {
+	fctx := newFasthttpCtx()
+	req := &Request{
+		Req:              fctx,
+		AdminActorUserID: 5,
+	}
+	req.StoreInContext()
+
+	adminCtx := WithAdminToken(fctx)
+
+	shadowed, err := FromCtx(adminCtx)
+	require.NoError(t, err)
+	tok, err := shadowed.UserToken()
+	require.NoError(t, err)
+	require.True(t, tok.IsAdmin())
+	require.Equal(t, 5, tok.ID, "admin token must be attributed to the acting admin user id")
+}
+
+func TestWithAdminToken_UnknownActorIsZero(t *testing.T) {
+	fctx := newFasthttpCtx()
+	req := &Request{Req: fctx}
+	req.StoreInContext()
+
+	adminCtx := WithAdminToken(fctx)
+
+	shadowed, err := FromCtx(adminCtx)
+	require.NoError(t, err)
+	tok, err := shadowed.UserToken()
+	require.NoError(t, err)
+	require.Equal(t, 0, tok.ID)
+}
+
 // Ensure the mock satisfies the interface at compile time.
 var _ PersonalTokenResolver = (*mockResolver)(nil)

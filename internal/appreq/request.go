@@ -47,6 +47,11 @@ type Request struct {
 
 	// SkipWebhooks indicates this API key should not trigger webhooks.
 	SkipWebhooks bool
+
+	// AdminActorUserID is the user id that internal admin GraphQL calls
+	// (see WithAdminToken) should be attributed to — e.g. the owner of the
+	// authenticating MCP API key. Zero when the actor is unknown.
+	AdminActorUserID int
 }
 
 func (c *Request) Reset() {
@@ -61,6 +66,7 @@ func (c *Request) Reset() {
 	c.WebhookReadPatterns = nil
 	c.WebhookWritePatterns = nil
 	c.SkipWebhooks = false
+	c.AdminActorUserID = 0
 }
 
 func (c *Request) StoreInContext() {
@@ -77,18 +83,27 @@ func FromCtx(ctx context.Context) (*Request, error) {
 }
 
 // WithAdminToken returns a context with a copy of the current appreq where
-// UserToken is pre-set to an admin token. Used for internal GraphQL calls.
+// UserToken is pre-set to an admin token. Used for internal GraphQL calls
+// (e.g. MCP graphql_request). The token's user id is taken from
+// AdminActorUserID so mutations that record the acting admin (e.g. createAdmin
+// writing granted_by) reference a real admins row instead of user id 0.
+//
+// TODO(refactor): this synthetic-request copying is hacky — it duplicates a
+// subset of Request fields by hand and silently no-ops when ctx has no appreq.
+// Internal GraphQL calls should carry a proper acting-user identity instead of
+// forging an "admin" token here.
 func WithAdminToken(ctx context.Context) context.Context {
 	req, err := FromCtx(ctx)
 	if err != nil {
 		return ctx
 	}
 	adminReq := &Request{
-		Req:          req.Req,
-		Env:          req.Env,
-		TokenManager: req.TokenManager,
+		Req:              req.Req,
+		Env:              req.Env,
+		TokenManager:     req.TokenManager,
+		AdminActorUserID: req.AdminActorUserID,
 	}
-	adminReq.SetUserToken(&usertoken.Data{Role: "admin"})
+	adminReq.SetUserToken(&usertoken.Data{ID: req.AdminActorUserID, Role: "admin"})
 	return context.WithValue(ctx, ctxKey, adminReq)
 }
 

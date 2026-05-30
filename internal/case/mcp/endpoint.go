@@ -77,6 +77,9 @@ func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env 
 			return ctx, &resp
 		}
 		adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
+		// Attribute internal admin GraphQL calls (WithAdminToken) to the API
+		// key owner so mutations like createAdmin record a real granted_by.
+		req.AdminActorUserID = int(apiKey.CreatedBy)
 		return contextWithMCPAPIKeyAuth(ctx, adminTools), nil
 	}
 

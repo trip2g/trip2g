@@ -34,7 +34,7 @@ func TestResolve(t *testing.T) {
 		afterCallback func(t *testing.T, mockEnv *envMock)
 	}{
 		{
-			name: "successful admin creation",
+			name: "successful admin creation - granter is in admins table",
 			env: &envMock{
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1, Role: "admin"}, nil
@@ -43,14 +43,17 @@ func TestResolve(t *testing.T) {
 					return db.User{ID: 2}, nil
 				},
 				AdminByUserIDFunc: func(ctx context.Context, userID int64) (db.Admin, error) {
+					// Granter (id 1) is in the admins table; target (id 2) is not yet.
+					if userID == 1 {
+						return db.Admin{UserID: 1}, nil
+					}
 					return db.Admin{}, sql.ErrNoRows
 				},
 				InsertAdminFunc: func(ctx context.Context, arg db.InsertAdminParams) (db.Admin, error) {
-					grantedBy := int64(1)
 					return db.Admin{
 						UserID:    arg.UserID,
 						GrantedAt: time.Now(),
-						GrantedBy: &grantedBy,
+						GrantedBy: arg.GrantedBy,
 					}, nil
 				},
 			},
@@ -69,7 +72,52 @@ func TestResolve(t *testing.T) {
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.InsertAdminCalls(), 1)
 				require.Equal(t, int64(2), mockEnv.InsertAdminCalls()[0].Arg.UserID)
+				require.NotNil(t, mockEnv.InsertAdminCalls()[0].Arg.GrantedBy)
 				require.Equal(t, int64(1), *mockEnv.InsertAdminCalls()[0].Arg.GrantedBy)
+			},
+		},
+		{
+			// Regression: the authenticating admin may be an admin via
+			// owner-email config or API key, with no row in the admins table.
+			// granted_by references admins(user_id), so setting it to such an
+			// id triggers a FOREIGN KEY constraint failure (787). When the
+			// granter is not in admins, granted_by must be left NULL.
+			name: "granter not in admins table - granted_by is nil",
+			env: &envMock{
+				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1, Role: "admin"}, nil
+				},
+				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
+					return db.User{ID: 2}, nil
+				},
+				AdminByUserIDFunc: func(ctx context.Context, userID int64) (db.Admin, error) {
+					// Neither the target nor the granter has an admins row.
+					return db.Admin{}, sql.ErrNoRows
+				},
+				InsertAdminFunc: func(ctx context.Context, arg db.InsertAdminParams) (db.Admin, error) {
+					return db.Admin{
+						UserID:    arg.UserID,
+						GrantedAt: time.Now(),
+						GrantedBy: arg.GrantedBy,
+					}, nil
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				input: model.CreateAdminInput{UserID: 2},
+			},
+			want: &model.CreateAdminPayload{
+				Admin: &db.Admin{
+					UserID:    2,
+					GrantedAt: time.Now(),
+					GrantedBy: nil,
+				},
+			},
+			wantErr: false,
+			afterCallback: func(t *testing.T, mockEnv *envMock) {
+				require.Len(t, mockEnv.InsertAdminCalls(), 1)
+				require.Equal(t, int64(2), mockEnv.InsertAdminCalls()[0].Arg.UserID)
+				require.Nil(t, mockEnv.InsertAdminCalls()[0].Arg.GrantedBy)
 			},
 		},
 		{
@@ -165,7 +213,7 @@ func TestResolve(t *testing.T) {
 			wantPayload, isWantPayload := tt.want.(*model.CreateAdminPayload)
 			if isPayload && isWantPayload {
 				require.Equal(t, wantPayload.Admin.UserID, payload.Admin.UserID)
-				require.Equal(t, *wantPayload.Admin.GrantedBy, *payload.Admin.GrantedBy)
+				require.Equal(t, wantPayload.Admin.GrantedBy, payload.Admin.GrantedBy)
 			} else if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Resolve() = %v, want %v", got, tt.want)
 				for _, desc := range pretty.Diff(got, tt.want) {
