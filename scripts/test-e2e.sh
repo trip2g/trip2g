@@ -473,6 +473,15 @@ npx playwright test e2e/federation-bidir.spec.js || {
 }
 echo -e "${GREEN}✓ Bidirectional federation E2E tests passed${NC}"
 
+# Run unreleased-changes + show_draft_versions E2E tests
+echo ""
+echo "📋 Running unreleased-changes and show_draft_versions E2E tests..."
+npx playwright test e2e/unreleased-changes.spec.js || {
+  echo -e "${RED}✗ Unreleased changes E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Unreleased changes E2E tests passed${NC}"
+
 # Run webhook E2E tests AFTER all other tests (when job queue is empty)
 echo ""
 echo "🔗 Running webhook E2E tests..."
