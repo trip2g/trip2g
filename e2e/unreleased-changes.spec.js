@@ -35,7 +35,7 @@ async function pushAndCommit(request, apiKey, notes) {
   await gqlApi(request, apiKey, `
     mutation PushNotes($input: PushNotesInput!) {
       pushNotes(input: $input) {
-        ... on PushNotesPayload { success }
+        ... on PushNotesPayload { notes { path } }
         ... on ErrorPayload { message }
       }
     }
@@ -97,7 +97,10 @@ async function setConfigBool(request, cookie, id, value) {
   await gqlAdmin(request, cookie, `
     mutation SetConfig($input: SetConfigBoolValueInput!) {
       admin {
-        setConfigBoolValue(input: $input) { configBool { id } }
+        setConfigBoolValue(input: $input) {
+          ... on SetConfigBoolValueSuccess { configValue { id } }
+          ... on ErrorPayload { message }
+        }
       }
     }
   `, { input: { id, value } });
