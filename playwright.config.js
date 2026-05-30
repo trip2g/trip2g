@@ -7,6 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
 
+  /* Specs that modify live releases and must run in isolation (via test-e2e.sh) */
+  testIgnore: ['**/unreleased-changes.spec.js'],
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

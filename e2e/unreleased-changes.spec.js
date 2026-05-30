@@ -256,14 +256,14 @@ test.describe('show_draft_versions', () => {
 
   test('setup: push note A, create live release', async ({ request }) => {
     await pushAndCommit(request, apiKey, [
-      { path: draftNotePath, content: 'Content version A' },
+      { path: draftNotePath, content: '---\nfree: true\n---\n\nContent version A' },
     ]);
     await createAndActivateRelease(request, adminCookie, 'e2e-draft-baseline');
   });
 
   test('setup: push note B (latest only, not released)', async ({ request }) => {
     await pushAndCommit(request, apiKey, [
-      { path: draftNotePath, content: 'Content version B' },
+      { path: draftNotePath, content: '---\nfree: true\n---\n\nContent version B' },
     ]);
   });
 
