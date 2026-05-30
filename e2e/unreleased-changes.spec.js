@@ -132,7 +132,7 @@ test.describe('unreleasedChanges', () => {
   test.beforeAll(async ({ request }) => {
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');
     apiKey = fs.readFileSync(apiKeyPath, 'utf8').trim();
-    const token = await graphqlSignIn(request, APP_URL);
+    const token = await graphqlSignIn(request);
     adminCookie = `${USER_TOKEN_COOKIE_NAME}=${token}`;
   });
 
@@ -237,7 +237,7 @@ test.describe('show_draft_versions', () => {
   test.beforeAll(async ({ request }) => {
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');
     apiKey = fs.readFileSync(apiKeyPath, 'utf8').trim();
-    const token = await graphqlSignIn(request, APP_URL);
+    const token = await graphqlSignIn(request);
     adminCookie = `${USER_TOKEN_COOKIE_NAME}=${token}`;
 
     // Ensure show_draft_versions is off at start
