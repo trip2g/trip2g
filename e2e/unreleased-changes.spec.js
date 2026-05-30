@@ -129,6 +129,7 @@ async function unreleasedChanges(request, apiKey, includePatterns = ['**']) {
 // ── Part 1: unreleasedChanges API ────────────────────────────────────────────
 
 test.describe('unreleasedChanges', () => {
+  test.describe.configure({ mode: 'serial' });
   let apiKey;
   let adminCookie;
 
@@ -232,6 +233,7 @@ test.describe('unreleasedChanges', () => {
 // ── Part 2: show_draft_versions ───────────────────────────────────────────────
 
 test.describe('show_draft_versions', () => {
+  test.describe.configure({ mode: 'serial' });
   let apiKey;
   let adminCookie;
   const draftNotePath = 'e2e-draft-note.md';
