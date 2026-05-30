@@ -28,7 +28,15 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	zipData, err := Resolve(ctx, env, token.ID)
+	// ?enable_admin_graphql issues the API key with MCP admin tools enabled,
+	// so the vault's agent can run admin GraphQL without a separate toggle.
+	// Bare presence (?enable_admin_graphql) enables it; an explicit false value
+	// (=false / =0) opts out.
+	qa := ctx.QueryArgs()
+	enableAdminGraphQL := qa.Has("enable_admin_graphql") &&
+		(len(qa.Peek("enable_admin_graphql")) == 0 || qa.GetBool("enable_admin_graphql"))
+
+	zipData, err := Resolve(ctx, env, token.ID, enableAdminGraphQL)
 	if err != nil {
 		return nil, err
 	}

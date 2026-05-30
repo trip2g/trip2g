@@ -16,11 +16,13 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 )
 
 type Env interface {
 	GenerateAPIKey() string
 	InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
+	SetApiKeyMcpAdminTools(ctx context.Context, arg db.SetApiKeyMcpAdminToolsParams) error
 	LatestNoteViews() *model.NoteViews
 	PublicURL() string
 }
@@ -102,7 +104,7 @@ func generateAntigravityJSON(apiKey, publicURL string) ([]byte, error) {
 	return json.MarshalIndent(cfg, "", "  ")
 }
 
-func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
+func Resolve(ctx context.Context, env Env, userID int, enableAdminGraphQL bool) ([]byte, error) {
 	// Generate new API key
 	apiKey := env.GenerateAPIKey()
 
@@ -116,9 +118,21 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 		Description: "Onboarding vault",
 	}
 
-	_, err := env.InsertAPIKey(ctx, params)
+	inserted, err := env.InsertAPIKey(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create api key: %w", err)
+	}
+
+	// Opt the key into MCP admin tools (admin GraphQL) when requested, so the
+	// vault's agent can run admin mutations without a separate manual toggle.
+	if enableAdminGraphQL {
+		err = env.SetApiKeyMcpAdminTools(ctx, db.SetApiKeyMcpAdminToolsParams{
+			ID:      inserted.ID,
+			Enabled: ptr.To(true),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to enable admin graphql on api key: %w", err)
+		}
 	}
 
 	// Create new plugin data with real credentials

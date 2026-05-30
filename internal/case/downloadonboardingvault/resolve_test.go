@@ -15,6 +15,8 @@ import (
 
 type mockEnv struct {
 	publicURL string
+
+	setAdminToolsCalls []db.SetApiKeyMcpAdminToolsParams
 }
 
 func (m *mockEnv) GenerateAPIKey() string {
@@ -22,7 +24,12 @@ func (m *mockEnv) GenerateAPIKey() string {
 }
 
 func (m *mockEnv) InsertAPIKey(_ context.Context, _ db.InsertAPIKeyParams) (db.ApiKey, error) {
-	return db.ApiKey{}, nil
+	return db.ApiKey{ID: 42}, nil
+}
+
+func (m *mockEnv) SetApiKeyMcpAdminTools(_ context.Context, arg db.SetApiKeyMcpAdminToolsParams) error {
+	m.setAdminToolsCalls = append(m.setAdminToolsCalls, arg)
+	return nil
 }
 
 func (m *mockEnv) LatestNoteViews() *model.NoteViews {
@@ -36,7 +43,7 @@ func (m *mockEnv) PublicURL() string {
 func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 
-	zipData, err := Resolve(context.Background(), env, 1)
+	zipData, err := Resolve(context.Background(), env, 1, false)
 	require.NoError(t, err)
 	require.NotEmpty(t, zipData)
 
@@ -64,10 +71,31 @@ func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 	require.NotContains(t, indexContent, "{{publicUrl}}", "_index.md should not contain placeholder")
 }
 
+func TestResolve_EnableAdminGraphQL(t *testing.T) {
+	env := &mockEnv{publicURL: "https://example.com"}
+
+	_, err := Resolve(context.Background(), env, 7, true)
+	require.NoError(t, err)
+
+	require.Len(t, env.setAdminToolsCalls, 1)
+	require.Equal(t, int64(42), env.setAdminToolsCalls[0].ID)
+	require.NotNil(t, env.setAdminToolsCalls[0].Enabled)
+	require.True(t, *env.setAdminToolsCalls[0].Enabled)
+}
+
+func TestResolve_AdminGraphQLDisabledByDefault(t *testing.T) {
+	env := &mockEnv{publicURL: "https://example.com"}
+
+	_, err := Resolve(context.Background(), env, 7, false)
+	require.NoError(t, err)
+
+	require.Empty(t, env.setAdminToolsCalls)
+}
+
 func TestResolve_FolderRenamedToDomain(t *testing.T) {
 	env := &mockEnv{publicURL: "https://trip2g.com"}
 
-	zipData, err := Resolve(context.Background(), env, 1)
+	zipData, err := Resolve(context.Background(), env, 1, false)
 	require.NoError(t, err)
 
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
