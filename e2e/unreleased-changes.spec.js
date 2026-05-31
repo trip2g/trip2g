@@ -106,6 +106,14 @@ async function setConfigBool(request, cookie, id, value) {
   `, { input: { id, value } });
 }
 
+async function getLiveReleaseId(request, cookie) {
+  const data = await gqlAdmin(request, cookie, `
+    query { admin { allReleases { nodes { id isLive } } } }
+  `);
+  const live = data.admin.allReleases.nodes.find(r => r.isLive);
+  return live ? live.id : null;
+}
+
 async function unreleasedChanges(request, apiKey, includePatterns = ['**']) {
   const data = await gqlApi(request, apiKey, `
     query UnreleasedChanges($filter: NoteChangesFilter!) {
@@ -132,12 +140,20 @@ test.describe('unreleasedChanges', () => {
   test.describe.configure({ mode: 'serial' });
   let apiKey;
   let adminCookie;
+  let originalLiveReleaseId;
 
   test.beforeAll(async ({ request }) => {
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');
     apiKey = fs.readFileSync(apiKeyPath, 'utf8').trim();
     const token = await graphqlSignIn(request);
     adminCookie = `${USER_TOKEN_COOKIE_NAME}=${token}`;
+    originalLiveReleaseId = await getLiveReleaseId(request, adminCookie);
+  });
+
+  test.afterAll(async ({ request }) => {
+    if (originalLiveReleaseId) {
+      await makeReleaseLive(request, adminCookie, originalLiveReleaseId);
+    }
   });
 
   test('returns 0 after creating a live release', async ({ request }) => {
@@ -236,6 +252,7 @@ test.describe('show_draft_versions', () => {
   test.describe.configure({ mode: 'serial' });
   let apiKey;
   let adminCookie;
+  let originalLiveReleaseId;
   const draftNotePath = 'e2e-draft-note.md';
   const draftNoteURL = `${APP_URL}/e2e-draft-note`;
 
@@ -244,14 +261,15 @@ test.describe('show_draft_versions', () => {
     apiKey = fs.readFileSync(apiKeyPath, 'utf8').trim();
     const token = await graphqlSignIn(request);
     adminCookie = `${USER_TOKEN_COOKIE_NAME}=${token}`;
-
-    // Ensure show_draft_versions is off at start
+    originalLiveReleaseId = await getLiveReleaseId(request, adminCookie);
     await setConfigBool(request, adminCookie, 'show_draft_versions', false);
   });
 
   test.afterAll(async ({ request }) => {
-    // Restore to default off
     await setConfigBool(request, adminCookie, 'show_draft_versions', false);
+    if (originalLiveReleaseId) {
+      await makeReleaseLive(request, adminCookie, originalLiveReleaseId);
+    }
   });
 
   test('setup: push note A, create live release', async ({ request }) => {
