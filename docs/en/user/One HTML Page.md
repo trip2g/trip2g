@@ -75,7 +75,7 @@ Markdown broken into sections via `note.PartialRenderer()`:
 {{ end }}
 ```
 
-Full API reference in [[en/user/templates-advanced|Template API]].
+Full API reference in [[en/user/templates|the Templates guide]].
 
 ### Pattern 3 — multi-file layout
 
@@ -130,7 +130,7 @@ _layouts/
 {{ end }}
 ```
 
-See [[en/user/templates-best-practices|Best practices]] for more.
+See [[en/user/templates#Organizing multiple templates|Organizing multiple templates]] for more.
 
 ### Debug: preview layout before sync
 
@@ -154,4 +154,4 @@ CSS and JS go in `_assets/`, referenced via `asset()`:
 
 ---
 
-See also: [[en/user/templates|Templates]] · [[en/user/templates-advanced|Template API]] · [[en/user/templates-best-practices|Best practices]] · [[en/user/jet|Jet syntax]] · [[en/user/default-template|Default template]] · [[en/user/renderlayout|renderlayout]]
+See also: [[en/user/templates|Templates]] · [[en/user/templates#Jet template syntax|Jet syntax]] · [[en/user/default-template|Default template]] · [[en/user/renderlayout|renderlayout]]
