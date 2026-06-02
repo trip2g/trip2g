@@ -797,63 +797,7 @@ func (ldr *loader) applyFrontmatterPatches(
 // Replicates the resolution logic from extractInLinks() without AST walking.
 // Returns nil if the target cannot be resolved.
 func (ldr *loader) resolveWikilinkTarget(source *model.NoteView, target string) *model.NoteView {
-	// Branch 1: Explicit relative paths (./file or ../file).
-	if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
-		dir := filepath.Dir(source.Path)
-		if dir == "." {
-			dir = ""
-		}
-		resolvedPath := filepath.Clean(filepath.Join(dir, target))
-		if pp, found := ldr.nvs.PathMap[resolvedPath+".md"]; found {
-			return pp
-		}
-		if pp, found := ldr.nvs.PathMap[resolvedPath]; found {
-			return pp
-		}
-		return nil
-	}
-
-	// Branch 2: Simple filename (no path separator) — global basename lookup.
-	if !strings.Contains(target, "/") {
-		targetBasename := strings.ToLower(target)
-		candidates := ldr.basenameIndex[targetBasename]
-		if len(candidates) == 1 {
-			return candidates[0]
-		}
-		if len(candidates) > 1 {
-			shortest := candidates[0]
-			shortestDepth := strings.Count(shortest.Path, "/")
-			for _, candidate := range candidates[1:] {
-				depth := strings.Count(candidate.Path, "/")
-				if depth < shortestDepth {
-					shortest = candidate
-					shortestDepth = depth
-				}
-			}
-			return shortest
-		}
-		return nil
-	}
-
-	// Branch 3: Path with "/" — relative path resolution (walk up directory tree).
-	dir := filepath.Dir(source.Path)
-	if dir == "." {
-		dir = ""
-	}
-	dirParts := strings.Split(dir, "/")
-	for i := len(dirParts); i >= 0; i-- {
-		targetParts := append([]string{}, dirParts[:i]...)
-		targetParts = append(targetParts, target)
-		targetPermalink := strings.Join(targetParts, "/")
-		if pp, found := ldr.nvs.PathMap[targetPermalink+".md"]; found {
-			return pp
-		}
-		if pp, found := ldr.nvs.PathMap[targetPermalink]; found {
-			return pp
-		}
-	}
-
-	return nil
+	return ldr.nvs.ResolveWikilinkTarget(source, target)
 }
 
 func (ldr *loader) resolveLangRedirects() {

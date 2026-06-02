@@ -212,6 +212,8 @@ type NoteView struct {
 
 	Headings NoteViewHeadings // extracted from AST
 
+	Charts []NoteViewChart // extracted from ```chart fenced blocks
+
 	HeadingCount map[string]int // for id generation
 
 	TOCDisplay int // TOCDisplayAuto, TOCDisplayShow, TOCDisplayHide - from meta
@@ -560,6 +562,8 @@ func (n *NoteView) ExtractMetaData() error {
 	}
 
 	n.extractHeadingsAndGenerateIDs()
+
+	n.extractCharts()
 
 	n.extractTOCDisplay()
 
@@ -1140,6 +1144,75 @@ func (nvs *NoteViews) Sidebars(note *NoteView) []*NoteView {
 	}
 
 	return res
+}
+
+// ResolveWikilinkTarget resolves a wikilink target string to a NoteView using
+// Obsidian-compatible resolution: relative paths, global basename lookup,
+// and directory-walk for paths containing "/".
+// Returns nil when the target cannot be resolved.
+func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *NoteView {
+	// Branch 1: Explicit relative paths (./file or ../file).
+	if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
+		if source == nil {
+			return nil
+		}
+		dir := filepath.Dir(source.Path)
+		if dir == "." {
+			dir = ""
+		}
+		resolvedPath := filepath.Clean(filepath.Join(dir, target))
+		if pp, found := nvs.PathMap[resolvedPath+".md"]; found {
+			return pp
+		}
+		if pp, found := nvs.PathMap[resolvedPath]; found {
+			return pp
+		}
+		return nil
+	}
+
+	// Branch 2: Simple filename (no path separator) — global basename lookup.
+	if !strings.Contains(target, "/") {
+		targetBasename := strings.ToLower(target)
+		candidates := nvs.BasenameMap[targetBasename]
+		if len(candidates) == 1 {
+			return candidates[0]
+		}
+		if len(candidates) > 1 {
+			shortest := candidates[0]
+			shortestDepth := strings.Count(shortest.Path, "/")
+			for _, candidate := range candidates[1:] {
+				depth := strings.Count(candidate.Path, "/")
+				if depth < shortestDepth {
+					shortest = candidate
+					shortestDepth = depth
+				}
+			}
+			return shortest
+		}
+		return nil
+	}
+
+	// Branch 3: Path with "/" — relative path resolution (walk up directory tree).
+	if source == nil {
+		return nil
+	}
+	dir := filepath.Dir(source.Path)
+	if dir == "." {
+		dir = ""
+	}
+	dirParts := strings.Split(dir, "/")
+	for i := len(dirParts); i >= 0; i-- {
+		targetParts := append([]string{}, dirParts[:i]...)
+		targetParts = append(targetParts, target)
+		targetPermalink := strings.Join(targetParts, "/")
+		if pp, found := nvs.PathMap[targetPermalink+".md"]; found {
+			return pp
+		}
+		if pp, found := nvs.PathMap[targetPermalink]; found {
+			return pp
+		}
+	}
+	return nil
 }
 
 // func (nv NoteViews) Subgraphs() ([]string, error) {

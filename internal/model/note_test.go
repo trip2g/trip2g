@@ -1,6 +1,8 @@
 package model
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -861,5 +863,72 @@ func TestResolveFullURL(t *testing.T) {
 		}
 		nv.RegisterNoteRoutes(note)
 		require.Equal(t, "https://first.io/a", nv.ResolveFullURL(note, publicURL))
+	})
+}
+
+func makeNVS(notes map[string]string) *NoteViews {
+	nvs := NewNoteViews()
+	nvs.BasenameMap = make(map[string][]*NoteView)
+	for path, permalink := range notes {
+		nv := &NoteView{Path: path, Permalink: permalink}
+		nvs.PathMap[path] = nv
+		base := strings.ToLower(strings.TrimSuffix(filepath.Base(path), ".md"))
+		nvs.BasenameMap[base] = append(nvs.BasenameMap[base], nv)
+	}
+	return nvs
+}
+
+func TestNoteViewsResolveWikilinkTarget(t *testing.T) {
+	nvs := makeNVS(map[string]string{
+		"notes/Target.md":         "/target",
+		"notes/sub/Nested.md":     "/nested",
+		"other/Target.md":         "/other-target",
+		"deep/a/b/SiblingPage.md": "/sibling",
+	})
+	source := &NoteView{Path: "notes/Source.md"}
+
+	t.Run("branch1 relative ./", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(source, "./Target")
+		require.NotNil(t, got)
+		require.Equal(t, "notes/Target.md", got.Path)
+	})
+
+	t.Run("branch1 relative ../", func(t *testing.T) {
+		nestedSource := &NoteView{Path: "notes/sub/Page.md"}
+		got := nvs.ResolveWikilinkTarget(nestedSource, "../Target")
+		require.NotNil(t, got)
+		require.Equal(t, "notes/Target.md", got.Path)
+	})
+
+	t.Run("branch2 simple basename unique", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(source, "Nested")
+		require.NotNil(t, got)
+		require.Equal(t, "notes/sub/Nested.md", got.Path)
+	})
+
+	t.Run("branch2 simple basename ambiguous picks shallowest", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(source, "Target")
+		require.NotNil(t, got) // both depth 1, picks one non-nil
+	})
+
+	t.Run("branch3 path with slash", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(source, "sub/Nested")
+		require.NotNil(t, got)
+		require.Equal(t, "notes/sub/Nested.md", got.Path)
+	})
+
+	t.Run("not found returns nil", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(source, "DoesNotExist")
+		require.Nil(t, got)
+	})
+
+	t.Run("nil source with basename still resolves", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(nil, "Nested")
+		require.NotNil(t, got)
+	})
+
+	t.Run("nil source with relative path returns nil", func(t *testing.T) {
+		got := nvs.ResolveWikilinkTarget(nil, "./Target")
+		require.Nil(t, got)
 	})
 }
