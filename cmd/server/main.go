@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	_ "time/tzdata" // embed IANA tz DB so time.LoadLocation works on any base image
 
 	"trip2g/assets"
 	"trip2g/internal/acmecache"
@@ -1208,12 +1209,29 @@ func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error
 		return nil, fmt.Errorf("failed to get user token: %w", err)
 	}
 
-	if !data.IsAdmin() {
-		a.log.Warn("unauthorized access attempt", "user_id", data.ID, "role", data.Role)
-		return nil, ErrNotAdmin
+	if data != nil {
+		if !data.IsAdmin() {
+			a.log.Warn("unauthorized access attempt", "user_id", data.ID, "role", data.Role)
+			return nil, ErrNotAdmin
+		}
+		return data, nil
 	}
 
-	return data, nil
+	// TODO: refactor — using AdminActorUserID as a fallback is a stopgap; proper
+	// actor identity should flow through the context without this field.
+	// API key path: no user session, verify the key owner is actually an admin in DB.
+	if req.AdminActorUserID != 0 {
+		_, err = a.AdminByUserID(ctx, int64(req.AdminActorUserID))
+		if db.IsNoFound(err) {
+			return nil, ErrNotAdmin
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify admin: %w", err)
+		}
+		return &usertoken.Data{ID: req.AdminActorUserID, Role: "admin"}, nil
+	}
+
+	return nil, ErrNotAdmin
 }
 
 func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (string, error) {
