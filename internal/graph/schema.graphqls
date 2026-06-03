@@ -1502,6 +1502,12 @@ type Query {
   notePaths(filter: NotePathsFilter): [NotePath!]!
 
   """
+  X-Api-Key header must be set.
+  Resolves [[wikilink]] targets to their canonical path and URL.
+  """
+  resolveWikilinks(filter: ResolveWikilinksFilter!): [WikilinkResolution!]!
+
+  """
   X-Api-Key header required.
   Notes whose latest version diverges from the current live release.
   If no live release exists, all notes are returned as added.
@@ -3574,6 +3580,17 @@ input SetSecretInput {
 
 type SetSecretPayload {
   key: String!
+}
+
+input ResolveWikilinksFilter {
+  notePathId: Int64!
+  links: [String!]!
+}
+
+type WikilinkResolution {
+  link: String!
+  path: String
+  url: String
 }
 
 type DeleteSecretPayload {

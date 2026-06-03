@@ -2128,6 +2128,11 @@ type ResetTelegramPublishNotePayload struct {
 
 func (ResetTelegramPublishNotePayload) IsResetTelegramPublishNoteOrErrorPayload() {}
 
+type ResolveWikilinksFilter struct {
+	NotePathID int64    `json:"notePathId"`
+	Links      []string `json:"links"`
+}
+
 type RestoreBoostyCredentialsInput struct {
 	ID int64 `json:"id"`
 }
@@ -2714,6 +2719,12 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type WikilinkResolution struct {
+	Link string  `json:"link"`
+	Path *string `json:"path,omitempty"`
+	URL  *string `json:"url,omitempty"`
 }
 
 type AdminTelegramAccountAuthStateEnum string

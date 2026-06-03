@@ -785,6 +785,7 @@ type QueryResolver interface {
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
 	SimilarNotes(ctx context.Context, input model.SimilarNotesInput) ([]model.SimilarNote, error)
 	NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error)
+	ResolveWikilinks(ctx context.Context, filter model.ResolveWikilinksFilter) ([]model.WikilinkResolution, error)
 	UnreleasedChanges(ctx context.Context, filter model.NoteChangesFilter) (*model.UnreleasedChangesConnection, error)
 }
 type RefreshBoostyDataPayloadResolver interface {
@@ -974,6 +975,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputResetTelegramPublishNoteInput,
+		ec.unmarshalInputResolveWikilinksFilter,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputRevokeUserTokenInput,
@@ -2833,6 +2835,17 @@ func (ec *executionContext) field_Query_note_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_resolveWikilinks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNResolveWikilinksFilter2trip2gᚋinternalᚋgraphᚋmodelᚐResolveWikilinksFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -32656,6 +32669,55 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_resolveWikilinks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_resolveWikilinks,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().ResolveWikilinks(ctx, fc.Args["filter"].(model.ResolveWikilinksFilter))
+		},
+		nil,
+		ec.marshalNWikilinkResolution2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐWikilinkResolutionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_resolveWikilinks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "link":
+				return ec.fieldContext_WikilinkResolution_link(ctx, field)
+			case "path":
+				return ec.fieldContext_WikilinkResolution_path(ctx, field)
+			case "url":
+				return ec.fieldContext_WikilinkResolution_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WikilinkResolution", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_resolveWikilinks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_unreleasedChanges(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38243,6 +38305,93 @@ func (ec *executionContext) fieldContext_Viewer_tgBots(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _WikilinkResolution_link(ctx context.Context, field graphql.CollectedField, obj *model.WikilinkResolution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WikilinkResolution_link,
+		func(ctx context.Context) (any, error) {
+			return obj.Link, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WikilinkResolution_link(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WikilinkResolution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WikilinkResolution_path(ctx context.Context, field graphql.CollectedField, obj *model.WikilinkResolution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WikilinkResolution_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WikilinkResolution_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WikilinkResolution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WikilinkResolution_url(ctx context.Context, field graphql.CollectedField, obj *model.WikilinkResolution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WikilinkResolution_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WikilinkResolution_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WikilinkResolution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -43127,6 +43276,40 @@ func (ec *executionContext) unmarshalInputResetTelegramPublishNoteInput(ctx cont
 				return it, err
 			}
 			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResolveWikilinksFilter(ctx context.Context, obj any) (model.ResolveWikilinksFilter, error) {
+	var it model.ResolveWikilinksFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"notePathId", "links"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "notePathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notePathId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NotePathID = data
+		case "links":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("links"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Links = data
 		}
 	}
 
@@ -69087,6 +69270,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "resolveWikilinks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_resolveWikilinks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "unreleasedChanges":
 			field := field
 
@@ -73315,6 +73520,49 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var wikilinkResolutionImplementors = []string{"WikilinkResolution"}
+
+func (ec *executionContext) _WikilinkResolution(ctx context.Context, sel ast.SelectionSet, obj *model.WikilinkResolution) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, wikilinkResolutionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WikilinkResolution")
+		case "link":
+			out.Values[i] = ec._WikilinkResolution_link(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._WikilinkResolution_path(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._WikilinkResolution_url(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -79557,6 +79805,11 @@ func (ec *executionContext) marshalNResetTelegramPublishNoteOrErrorPayload2trip2
 	return ec._ResetTelegramPublishNoteOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNResolveWikilinksFilter2trip2gᚋinternalᚋgraphᚋmodelᚐResolveWikilinksFilter(ctx context.Context, v any) (model.ResolveWikilinksFilter, error) {
+	res, err := ec.unmarshalInputResolveWikilinksFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNRestoreBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsInput(ctx context.Context, v any) (model.RestoreBoostyCredentialsInput, error) {
 	res, err := ec.unmarshalInputRestoreBoostyCredentialsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -80824,6 +81077,54 @@ func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer
 func (ec *executionContext) unmarshalNViewerOffersFilter2trip2gᚋinternalᚋgraphᚋmodelᚐViewerOffersFilter(ctx context.Context, v any) (model.ViewerOffersFilter, error) {
 	res, err := ec.unmarshalInputViewerOffersFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNWikilinkResolution2trip2gᚋinternalᚋgraphᚋmodelᚐWikilinkResolution(ctx context.Context, sel ast.SelectionSet, v model.WikilinkResolution) graphql.Marshaler {
+	return ec._WikilinkResolution(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWikilinkResolution2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐWikilinkResolutionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.WikilinkResolution) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWikilinkResolution2trip2gᚋinternalᚋgraphᚋmodelᚐWikilinkResolution(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

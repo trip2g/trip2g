@@ -125,6 +125,7 @@ import (
 	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/listunreleasedchanges"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
@@ -3091,6 +3092,54 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	return r.env(ctx).AllVisibleNotePaths(ctx)
 }
 
+// ResolveWikilinks is the resolver for the resolveWikilinks field.
+func (r *queryResolver) ResolveWikilinks(ctx context.Context, filter model.ResolveWikilinksFilter) ([]model.WikilinkResolution, error) {
+	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
+	if err != nil {
+		return nil, err
+	}
+
+	nvs := r.env(ctx).LatestNoteViews()
+	var source *appmodel.NoteView
+	if nvs != nil {
+		source = nvs.GetByPathID(filter.NotePathID)
+	}
+
+	results := make([]model.WikilinkResolution, len(filter.Links))
+	for i, link := range filter.Links {
+		res := model.WikilinkResolution{Link: link}
+		if nvs != nil {
+			if target := nvs.ResolveWikilinkTarget(source, link); target != nil {
+				res.Path = &target.Path
+				var url string
+				if target.Slug != "" {
+					url = target.PermalinkOriginal
+				} else {
+					url = target.Permalink
+				}
+				res.URL = &url
+			}
+		}
+		results[i] = res
+	}
+	return results, nil
+}
+
+// UnreleasedChanges is the resolver for the unreleasedChanges field.
+func (r *queryResolver) UnreleasedChanges(ctx context.Context, filter model.NoteChangesFilter) (*model.UnreleasedChangesConnection, error) {
+	if _, err := checkapikey.Resolve(ctx, r.env(ctx), "unreleased_changes"); err != nil {
+		return nil, err
+	}
+	changes, err := listunreleasedchanges.Resolve(ctx, r.env(ctx), filter)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UnreleasedChangesConnection{
+		TotalCount: len(changes),
+		Nodes:      changes,
+	}, nil
+}
+
 // Credentials is the resolver for the credentials field.
 func (r *refreshBoostyDataPayloadResolver) Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error) {
 	return resolveOne[db.BoostyCredential](ctx, obj.CredentialsID, r.env(ctx).BoostyCredentials)
@@ -3227,6 +3276,43 @@ func (r *toggleFavoriteNotePayloadResolver) FavoriteNotes(ctx context.Context, o
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
+}
+
+// Stats is the resolver for the stats field.
+func (r *unreleasedChangeResolver) Stats(ctx context.Context, obj *model.UnreleasedChange) (*model.UnreleasedChangeStats, error) {
+	d := obj.Diff()
+	return &model.UnreleasedChangeStats{
+		AddedLines:   int32(d.AddedLines),
+		RemovedLines: int32(d.RemovedLines),
+		ChangedWords: int32(d.ChangedWords),
+	}, nil
+}
+
+// UnifiedDiff is the resolver for the unifiedDiff field.
+func (r *unreleasedChangeResolver) UnifiedDiff(ctx context.Context, obj *model.UnreleasedChange) (string, error) {
+	return obj.Diff().Unified, nil
+}
+
+// WordDiff is the resolver for the wordDiff field.
+func (r *unreleasedChangeResolver) WordDiff(ctx context.Context, obj *model.UnreleasedChange) (string, error) {
+	return obj.Diff().Word, nil
+}
+
+// TotalCount is the resolver for the totalCount field.
+func (r *unreleasedChangesConnectionResolver) TotalCount(ctx context.Context, obj *model.UnreleasedChangesConnection) (int32, error) {
+	return int32(obj.TotalCount), nil
+}
+
+// TotalStats is the resolver for the totalStats field.
+func (r *unreleasedChangesConnectionResolver) TotalStats(ctx context.Context, obj *model.UnreleasedChangesConnection) (*model.UnreleasedChangeStats, error) {
+	var s model.UnreleasedChangeStats
+	for _, ch := range obj.Nodes {
+		d := ch.Diff()
+		s.AddedLines += int32(d.AddedLines)
+		s.RemovedLines += int32(d.RemovedLines)
+		s.ChangedWords += int32(d.ChangedWords)
+	}
+	return &s, nil
 }
 
 // UpdatedNoteViews is the resolver for the updatedNoteViews field.
