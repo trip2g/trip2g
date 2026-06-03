@@ -80,7 +80,7 @@ namespace $.$$ {
 		override handle_content_click(next?: MouseEvent | null): null {
 			if (next?.ctrlKey) {
 				const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
-				if (pos) {
+				if (pos?.offsetNode?.nodeType === Node.TEXT_NODE) {
 					const link = this.wikilink_at(this.content(), pos.offset)
 					if (link) {
 						const pathId = this.note_path_id()
@@ -100,7 +100,9 @@ namespace $.$$ {
 				const ta = next.target as HTMLTextAreaElement
 				if (next.ctrlKey) {
 					const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
-					const link = pos ? this.wikilink_at(this.content(), pos.offset) : null
+					const link = pos?.offsetNode?.nodeType === Node.TEXT_NODE
+						? this.wikilink_at(this.content(), pos.offset)
+						: null
 					ta.style.cursor = link ? 'pointer' : ''
 				} else {
 					ta.style.cursor = ''
