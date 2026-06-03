@@ -38,6 +38,10 @@ $trip2g_editor_pane $mol_view
 		<= right_sidebar_widget null $mol_view
 	ContentTextarea $mol_textarea
 		value? <=> content?
+		hover? <=> handle_content_hover? null
+		event *
+			^
+			click? <=> handle_content_click? null
 	Placeholder $mol_view
 		sub /
 			<= placeholder_text @ \Choose file in the left panel

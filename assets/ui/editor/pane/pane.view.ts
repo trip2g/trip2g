@@ -26,6 +26,16 @@ namespace $.$$ {
 		}
 	`)
 
+	const resolve_request = $trip2g_graphql_request(/* GraphQL */ `
+		query ResolveWikilinks($filter: ResolveWikilinksFilter!) {
+			resolveWikilinks(filter: $filter) {
+				link
+				path
+				url
+			}
+		}
+	`)
+
 	export class $trip2g_editor_pane extends $.$trip2g_editor_pane {
 		@$mol_mem
 		override path(next?: string): string {
@@ -54,6 +64,49 @@ namespace $.$$ {
 
 		note_path_id(): any {
 			return this.loaded_note_path(this.path())?.id ?? null
+		}
+
+		wikilink_at(text: string, offset: number): string | null {
+			const re = /\[\[([^\]]+)\]\]/g
+			let m: RegExpExecArray | null
+			while ((m = re.exec(text)) !== null) {
+				if (m.index <= offset && offset <= m.index + m[0].length) {
+					return m[1].split('|')[0].split('#')[0].trim()
+				}
+			}
+			return null
+		}
+
+		override handle_content_click(next?: MouseEvent | null): null {
+			if (next?.ctrlKey) {
+				const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
+				if (pos) {
+					const link = this.wikilink_at(this.content(), pos.offset)
+					if (link) {
+						const pathId = this.note_path_id()
+						if (pathId !== null) {
+							const res = resolve_request({ filter: { notePathId: pathId, links: [link] } })
+							const resolved = res.resolveWikilinks[0]
+							if (resolved?.path) this.path(resolved.path)
+						}
+					}
+				}
+			}
+			return null
+		}
+
+		override handle_content_hover(next?: PointerEvent | null): null {
+			if (next) {
+				const ta = next.target as HTMLTextAreaElement
+				if (next.ctrlKey) {
+					const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
+					const link = pos ? this.wikilink_at(this.content(), pos.offset) : null
+					ta.style.cursor = link ? 'pointer' : ''
+				} else {
+					ta.style.cursor = ''
+				}
+			}
+			return null
 		}
 
 		editor_key(suffix: string): string {
