@@ -2,6 +2,7 @@ namespace $.$$ {
 	const content_request = $trip2g_graphql_request(/* GraphQL */ `
 		query EditorNoteContent($filter: NotePathsFilter) {
 			notePaths(filter: $filter) {
+				id
 				value
 				content
 			}
@@ -39,10 +40,20 @@ namespace $.$$ {
 		}
 
 		@$mol_mem_key
-		loaded_content(path: string): string {
-			if (!path) return ''
+		loaded_note_path(path: string): { id: any; content: string } | null {
+			if (!path) return null
 			const res = content_request({ filter: { paths: [path] } })
-			return res.notePaths[0]?.content ?? ''
+			const np = res.notePaths[0]
+			return np ? { id: np.id, content: np.content } : null
+		}
+
+		@$mol_mem_key
+		override loaded_content(path: string): string {
+			return this.loaded_note_path(path)?.content ?? ''
+		}
+
+		note_path_id(): any {
+			return this.loaded_note_path(this.path())?.id ?? null
 		}
 
 		editor_key(suffix: string): string {
