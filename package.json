@@ -11,12 +11,14 @@
     "test:e2e:headed": "./scripts/test-e2e.sh --headed",
     "defaulttemplate-css": "node assets/defaulttemplate/esbuild.css.mjs",
     "defaulttemplate-css:watch": "node assets/defaulttemplate/esbuild.css.mjs --watch",
-    "toc": "node assets/toc/esbuild.browser.mjs"
+    "toc": "node assets/toc/esbuild.browser.mjs",
+    "chart": "node assets/chart/esbuild.browser.mjs"
   },
   "dependencies": {
     "@types/change-case": "^0.0.30",
     "@types/jsdom": "^27.0.0",
     "change-case": "^5.4.4",
+    "echarts": "^6.1.0",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",
     "graphology-layout": "^0.6.1",

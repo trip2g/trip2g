@@ -1001,6 +1001,8 @@ func (a *app) UserJSURLs() []string {
 	return []string{
 		a.assetURL("/assets/defaulttemplate.js"),
 		a.assetURL("/assets/ui/user/-/web.js"),
+		// Tiny glue (~2KB); lazy-loads echarts only on pages that have charts.
+		a.assetURL("/assets/chart.js"),
 	}
 }
 

@@ -110,6 +110,7 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.frontmatterPatches = options.FrontmatterPatches
 
 	renderOptions := []renderer.Option{
+		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
 		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
 			resolver: ldr.linkResolver,
 			nvs:      ldr.nvs,
@@ -380,9 +381,25 @@ func (ldr *loader) findAssets() error {
 		if err != nil {
 			return fmt.Errorf("failed to walk AST: %w %s", err, id)
 		}
+
+		ldr.markChartAssets(p)
 	}
 
 	return nil
+}
+
+// markChartAssets marks assets referenced by datachart `frontmatter` sources.
+// Their [[links]] live in frontmatter (not the body AST), so findAssets' walk
+// misses them; marking here gets them uploaded by the plugin and resolvable.
+func (ldr *loader) markChartAssets(p *model.NoteView) {
+	for _, chart := range p.Charts {
+		if chart.Data.Source != model.ChartSourceFrontmatter {
+			continue
+		}
+		if target := wikilinkTargetFromMeta(p.RawMeta[chart.Data.Ref]); target != "" {
+			ldr.markAsset(p, []byte(target))
+		}
+	}
 }
 
 func (ldr *loader) generatePageHTMLs() error {
