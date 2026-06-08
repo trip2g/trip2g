@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+//nolint:gochecknoglobals // read-only lookup table of HTML void elements
 var voidElements = map[string]bool{
 	"area": true, "base": true, "br": true, "col": true,
 	"embed": true, "hr": true, "img": true, "input": true,
@@ -24,7 +25,7 @@ type tokState struct {
 func (s *tokState) advance() (html.TokenType, string) {
 	for {
 		tt := s.tok.Next()
-		switch tt {
+		switch tt { //nolint:exhaustive // only comments/doctype/error are special-cased here
 		case html.CommentToken, html.DoctypeToken:
 			continue
 		case html.ErrorToken:
@@ -33,7 +34,7 @@ func (s *tokState) advance() (html.TokenType, string) {
 
 		t := s.tok.Token()
 
-		switch tt {
+		switch tt { //nolint:exhaustive // only tag tokens drive depth/nth tracking
 		case html.StartTagToken:
 			if s.depth == 0 {
 				s.nth++

@@ -27,6 +27,7 @@ func (m *mockEnv) InsertAPIKey(_ context.Context, _ db.InsertAPIKeyParams) (db.A
 	return db.ApiKey{ID: 42}, nil
 }
 
+//nolint:staticcheck // method name must match the sqlc-generated interface
 func (m *mockEnv) SetApiKeyMcpAdminTools(_ context.Context, arg db.SetApiKeyMcpAdminToolsParams) error {
 	m.setAdminToolsCalls = append(m.setAdminToolsCalls, arg)
 	return nil
