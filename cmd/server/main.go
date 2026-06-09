@@ -45,6 +45,7 @@ import (
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
+	"trip2g/internal/case/backjob/refreshchartdata"
 	"trip2g/internal/case/backjob/sendformsubmit"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/backjob/sendtelegramaccountmessage"
@@ -72,6 +73,7 @@ import (
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/updatesubgraphs"
 	"trip2g/internal/case/uploadnoteasset"
+	"trip2g/internal/chartdata"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
@@ -157,6 +159,7 @@ type app struct {
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
 	*sendformsubmit.SendFormSubmitEmailJob
+	refreshChartDataJob *refreshchartdata.Job
 	*sendtelegrampost.SendTelegramPostJob
 	*updatetelegrampost.UpdateTelegramPostJob
 	*sendtelegrammessage.SendTelegramMessageJob
@@ -240,6 +243,8 @@ type app struct {
 	liveNoteLoader         *noteloader.Loader
 	latestNoteLoader       *noteloader.Loader
 	frontmatterPatchLoader *frontmatterpatch.Loader
+
+	*chartdata.ChartData // server-side data for url/internal datachart sources (promotes ChartRows, SaveChartData)
 
 	patreonClientManager *patreon.ClientManager
 	boostyClientManager  *boosty.ClientManager
@@ -439,6 +444,9 @@ func main() {
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.ChartData = chartdata.New(a)
+	a.liveNoteLoader.SetChartDataProvider(a)
+	a.latestNoteLoader.SetChartDataProvider(a)
 	a.frontmatterPatchLoader = frontmatterpatch.NewLoader(a)
 
 	a.gitAPI, err = gitapi.New(ctx, a.config.GitAPI, a)
@@ -519,6 +527,7 @@ func (a *app) initJobs(ctx context.Context) {
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
 	a.SendFormSubmitEmailJob = sendformsubmit.New(a)
+	a.refreshChartDataJob = refreshchartdata.New(a)
 	a.SendTelegramPostJob = sendtelegrampost.New(a)
 	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)

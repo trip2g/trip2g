@@ -20,6 +20,16 @@ services:
     environment:
       - MODEL_NAME=BAAI/bge-m3
 
+  # Mock data adapter for the datachart `url` source (local demo). Serves the
+  # docs/demo chart queries; mimics trip2g_agent_queue's POST /v1/query.
+  data_mock:
+    image: python:3.12-slim
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./scripts:/scripts:ro
+    command: python /scripts/data_mock_server.py
+
 volumes:
   embedding-models:
 

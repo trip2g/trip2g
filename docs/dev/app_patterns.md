@@ -64,6 +64,13 @@ type app struct {
 
 Use cases call methods via Env: `env.VerifyCaptcha(ctx, token, ip)`.
 
+**Rules for these packages** (see `internal/chartdata` for a full example):
+- Declare a minimal **`Env interface`** the package needs; `app` implements it. Add a compile-time check: `var _ chartdata.Env = (*app)(nil)`.
+- Name the type after the **domain**, not `Service`: `chartdata.ChartData`, not `chartdata.Service`.
+- **Embed anonymously** in `app` (`*chartdata.ChartData`) so the type's methods promote onto `app`. The renderer/job then take `app` directly — **no proxy methods** like `func (a *app) SaveChartData(...) { return a.x.SaveChartData(...) }`.
+- A promoted method must not collide with the embedded field's name. With type `ChartData`, the provider method is `ChartRows` (not `ChartData`, which is the field).
+- In the `Env` impl, **reuse existing `app` methods — don't duplicate.** e.g. a reload helper calls `PrepareLatestNotes`/`PrepareLiveNotes` by mode, it does not re-implement the loader.
+
 ## IO Belongs on the App Layer
 
 Stateful resources (counters, caches, connections) live on the `app` struct, not as package globals. Use cases access them through Env methods.

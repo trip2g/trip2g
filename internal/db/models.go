@@ -164,6 +164,13 @@ type ChangeWebhookDelivery struct {
 	CompletedAt    *time.Time `json:"completed_at"`
 }
 
+type ChartDataCache struct {
+	VersionID int64  `json:"version_id"`
+	ChartHash string `json:"chart_hash"`
+	DataJson  string `json:"data_json"`
+	FetchedAt int64  `json:"fetched_at"`
+}
+
 type ConfigBoolValue struct {
 	ChangeID int64 `json:"change_id"`
 	Value    bool  `json:"value"`

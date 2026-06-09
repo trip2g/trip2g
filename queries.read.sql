@@ -1480,3 +1480,8 @@ select id, key, value_crypt, created_at, created_by from secrets where key = ?;
 
 -- name: ListSecretKeys :many
 select key from secrets where key like ? order by key;
+
+-- name: GetChartData :one
+select version_id, chart_hash, data_json, fetched_at
+  from chart_data_cache
+ where version_id = ? and chart_hash = ?;

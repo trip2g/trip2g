@@ -1,12 +1,18 @@
 package mdloader
 
 import (
+	"encoding/json"
 	"testing"
 
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
 )
+
+type stubChartData struct{ rows json.RawMessage }
+
+func (s stubChartData) ChartRows(_ int64, _ model.NoteViewChart) json.RawMessage { return s.rows }
 
 func renderNote(t *testing.T, content string) string {
 	t.Helper()
@@ -48,7 +54,22 @@ func TestChartRenderer_URLSourceNoDataYet(t *testing.T) {
 	html := renderNote(t, content)
 	require.Contains(t, html, `<div class="chart"`)
 	require.NotContains(t, html, `data-src`) // url source has no client src
-	require.NotContains(t, html, `"data":`)  // data omitted → widget shows loader
+	require.NotContains(t, html, `"data":`)  // no provider → data omitted → loader
+}
+
+func TestChartRenderer_URLSourceUsesProvider(t *testing.T) {
+	content := "```datachart\n" +
+		`{"data":{"source":"url","url":"http://x"},"config":{"series":[{"type":"line"}]}}` +
+		"\n```\n"
+	log := logger.TestLogger{}
+	pages, err := Load(Options{
+		Sources:   []SourceFile{{Path: "note.md", Content: []byte(content)}},
+		Log:       &log,
+		ChartData: stubChartData{rows: json.RawMessage(`[{"a":1}]`)},
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.Contains(t, html, `"data":[{"a":1}]`, "provider rows should be baked into the page")
 }
 
 func TestStripWikilink(t *testing.T) {

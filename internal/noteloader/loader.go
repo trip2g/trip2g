@@ -91,6 +91,7 @@ type Loader struct {
 	version            string
 	config             mdloader.Config
 	frontmatterPatches []frontmatterpatch.CompiledPatch
+	chartData          mdloader.ChartDataProvider
 }
 
 func New(version string, env Env, config mdloader.Config) *Loader {
@@ -108,6 +109,14 @@ func (l *Loader) SetFrontmatterPatches(patches []frontmatterpatch.CompiledPatch)
 	l.Lock()
 	defer l.Unlock()
 	l.frontmatterPatches = patches
+}
+
+// SetChartDataProvider wires the cached-data provider for url/internal datachart
+// sources. Safe to leave unset — those charts then render a loader.
+func (l *Loader) SetChartDataProvider(p mdloader.ChartDataProvider) {
+	l.Lock()
+	defer l.Unlock()
+	l.chartData = p
 }
 
 type LoadOptions struct {
@@ -259,6 +268,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			return nil
 		},
 		FrontmatterPatches: l.frontmatterPatches,
+		ChartData:          l.chartData,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)

@@ -1169,3 +1169,10 @@ returning *;
 
 -- name: DeleteSecret :exec
 delete from secrets where key = ?;
+
+-- name: UpsertChartData :exec
+insert into chart_data_cache (version_id, chart_hash, data_json, fetched_at)
+values (?, ?, ?, ?)
+on conflict (version_id, chart_hash) do update set
+  data_json  = excluded.data_json,
+  fetched_at = excluded.fetched_at;

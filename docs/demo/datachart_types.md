@@ -32,7 +32,7 @@ each from a different `data.source`.
 {
   "data": {
     "source": "url",
-    "url": "http://trip2g_agent_queue/v1/query",
+    "url": "http://localhost:8090/v1/query",
     "body": "{\"sql\":\"SELECT product, revenue FROM sales ORDER BY revenue DESC LIMIT 5\"}"
   },
   "config": {

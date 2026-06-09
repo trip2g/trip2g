@@ -20,6 +20,10 @@ type myLinkResolver struct {
 	// and paywall classes when the href is a domain path (not a permalink).
 	// nil during normal rendering.
 	domainRenderNotes map[string]*model.NoteView
+
+	// chartData supplies cached rows for url/internal datachart sources; nil if
+	// the host app didn't wire a provider.
+	chartData ChartDataProvider
 }
 
 const _html = ".html"

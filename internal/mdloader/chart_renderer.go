@@ -14,6 +14,13 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
+// ChartDataProvider supplies cached rows for backend-fetched chart sources
+// (url, internal). It returns nil when data is not yet available; the
+// implementation is expected to arrange a background refresh on a miss.
+type ChartDataProvider interface {
+	ChartRows(versionID int64, chart model.NoteViewChart) json.RawMessage
+}
+
 // chartRenderer renders ```datachart fenced blocks as chart containers and falls
 // back to goldmark's default rendering for every other fenced code block.
 type chartRenderer struct {
@@ -82,6 +89,7 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 		// extractCharts already warned about this block; render nothing.
 		return
 	}
+	chart.Hash = chart.Data.CacheHash() // Hash is json:"-"; recompute after parse.
 
 	var dataSrc, dataFormat string
 	var rows json.RawMessage
@@ -92,7 +100,7 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 	case model.ChartSourceFrontmatter:
 		dataSrc, dataFormat = r.resolveFrontmatterSrc(chart.Data.Ref)
 	case model.ChartSourceURL, model.ChartSourceInternal:
-		// backend job not wired yet → no data; widget shows a loader.
+		rows = r.cachedRows(chart)
 	}
 
 	payload, err := json.Marshal(struct {
@@ -116,6 +124,15 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 	_, _ = w.WriteString(`<script class="chart__data" type="application/json">`)
 	_, _ = w.Write(payload)
 	_, _ = w.WriteString(`</script>`)
+}
+
+// cachedRows returns the cached rows for a url/internal chart via the provider,
+// or nil when unavailable (widget shows a loader; the provider enqueues a refresh).
+func (r *chartRenderer) cachedRows(chart model.NoteViewChart) json.RawMessage {
+	if r.resolver == nil || r.resolver.chartData == nil || r.resolver.currentPage == nil {
+		return nil
+	}
+	return r.resolver.chartData.ChartRows(r.resolver.currentPage.VersionID, chart)
 }
 
 // resolveFrontmatterSrc reads the named frontmatter key (which holds a vault

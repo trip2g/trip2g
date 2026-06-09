@@ -4134,6 +4134,31 @@ func (q *WriteQueries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTie
 	return err
 }
 
+const upsertChartData = `-- name: UpsertChartData :exec
+insert into chart_data_cache (version_id, chart_hash, data_json, fetched_at)
+values (?, ?, ?, ?)
+on conflict (version_id, chart_hash) do update set
+  data_json  = excluded.data_json,
+  fetched_at = excluded.fetched_at
+`
+
+type UpsertChartDataParams struct {
+	VersionID int64  `json:"version_id"`
+	ChartHash string `json:"chart_hash"`
+	DataJson  string `json:"data_json"`
+	FetchedAt int64  `json:"fetched_at"`
+}
+
+func (q *WriteQueries) UpsertChartData(ctx context.Context, arg UpsertChartDataParams) error {
+	_, err := q.db.ExecContext(ctx, upsertChartData,
+		arg.VersionID,
+		arg.ChartHash,
+		arg.DataJson,
+		arg.FetchedAt,
+	)
+	return err
+}
+
 const upsertCronJob = `-- name: UpsertCronJob :exec
 insert into cron_jobs (name, expression)
 select ?, ?

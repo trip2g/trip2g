@@ -833,6 +833,13 @@ CREATE TABLE secrets (
   created_at  datetime not null default (datetime('now')),
   created_by  integer not null references admins(user_id)
 );
+CREATE TABLE chart_data_cache (
+  version_id integer not null,
+  chart_hash text    not null,
+  data_json  text    not null,
+  fetched_at integer not null,
+  primary key (version_id, chart_hash)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -953,4 +960,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260518072631'),
   ('20260524105748'),
   ('20260524105749'),
-  ('20260526120000');
+  ('20260526120000'),
+  ('20260602095046');

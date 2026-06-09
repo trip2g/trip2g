@@ -88,6 +88,10 @@ type Options struct {
 	NoteCache func(source SourceFile) *model.NoteView
 
 	FrontmatterPatches []frontmatterpatch.CompiledPatch
+
+	// ChartData supplies cached rows for url/internal datachart sources. Nil is
+	// fine — those charts then render a loader.
+	ChartData ChartDataProvider
 }
 
 // Load transforms markdown files into pages.
@@ -106,15 +110,13 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.nvs.Version = options.Version
 	ldr.linkResolver.nvs = ldr.nvs
 	ldr.linkResolver.log = options.Log
+	ldr.linkResolver.chartData = options.ChartData
 
 	ldr.frontmatterPatches = options.FrontmatterPatches
 
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
-		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
-			resolver: ldr.linkResolver,
-			nvs:      ldr.nvs,
-		}, 198)),
+		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{resolver: ldr.linkResolver, nvs: ldr.nvs}, 198)),
 		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver), 199)),
 		renderer.WithNodeRenderers(util.Prioritized(&headingRenderer{}, 200)),
 	}

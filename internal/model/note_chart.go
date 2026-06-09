@@ -33,10 +33,10 @@ type ChartDataSource struct {
 	Rows   json.RawMessage `json:"rows,omitempty"` // inline: bundled rows
 }
 
-// cacheHash returns a stable backend cache key for sources fetched and cached
+// CacheHash returns a stable backend cache key for sources fetched and cached
 // server-side (url, internal). Client-fetched / bundled sources (frontmatter,
 // inline) return "" — they are never cached server-side.
-func (d ChartDataSource) cacheHash() string {
+func (d ChartDataSource) CacheHash() string {
 	var key string
 	switch d.Source {
 	case ChartSourceURL:
@@ -103,7 +103,7 @@ func (n *NoteView) extractCharts() {
 		}
 
 		chart.Index = idx
-		chart.Hash = chart.Data.cacheHash()
+		chart.Hash = chart.Data.CacheHash()
 		n.Charts = append(n.Charts, chart)
 		idx++
 

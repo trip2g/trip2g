@@ -1770,6 +1770,29 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 	return items, nil
 }
 
+const getChartData = `-- name: GetChartData :one
+select version_id, chart_hash, data_json, fetched_at
+  from chart_data_cache
+ where version_id = ? and chart_hash = ?
+`
+
+type GetChartDataParams struct {
+	VersionID int64  `json:"version_id"`
+	ChartHash string `json:"chart_hash"`
+}
+
+func (q *Queries) GetChartData(ctx context.Context, arg GetChartDataParams) (ChartDataCache, error) {
+	row := q.db.QueryRowContext(ctx, getChartData, arg.VersionID, arg.ChartHash)
+	var i ChartDataCache
+	err := row.Scan(
+		&i.VersionID,
+		&i.ChartHash,
+		&i.DataJson,
+		&i.FetchedAt,
+	)
+	return i, err
+}
+
 const getFormBoolValuesBySubmitID = `-- name: GetFormBoolValuesBySubmitID :many
 select field_name, value from form_bool_values where submit_id = ?
 `
