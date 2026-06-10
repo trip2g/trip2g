@@ -172,7 +172,7 @@ The endpoint must return a flat JSON array of row objects:
 ]
 ```
 
-**Caching and refresh.** The first time a reader views the note after it is published, trip2g enqueues a background fetch. Until the fetch completes the chart shows a loading indicator; on the next page load it shows data. After that, trip2g serves the cached result until the note is edited or the TTL expires (see `chart_ttl` below).
+**When the data is fetched.** trip2g fetches the URL server-side when the note is **published or rebuilt** (during the note load) — not when a reader opens the page. Readers always get pre-rendered HTML. While the first fetch is in flight the chart shows a loading indicator; once it lands, the page re-renders with the data. The cached result is then reused until the note is re-published.
 
 **Auth headers** (coming soon). Endpoints that need an auth header — an API key or token — will be supported through encrypted server-side secrets, so the credentials never reach the browser.
 
@@ -186,15 +186,13 @@ The endpoint must return a flat JSON array of row objects:
 
 Two optional frontmatter properties control chart behavior at the note level.
 
-**`chart_ttl`**
+**`chart_ttl`** (refresh cadence — coming soon)
 
-How long cached data stays fresh before trip2g re-fetches it. Accepts Go duration strings: `30m`, `1h`, `24h`, and so on.
+The intended refresh interval for `url`/`internal` data, as a Go duration: `30m`, `1h`, `24h`. Scheduled re-fetch is not live yet — for now the data is fetched once when the note is published and refreshes only when the note is re-published.
 
 ```yaml
 chart_ttl: 1h
 ```
-
-Applies to `url` and `internal` sources. Without this property, data refreshes only when the note is edited (a new version is published).
 
 **`charts: custom`**
 

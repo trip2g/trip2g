@@ -1,12 +1,52 @@
 # Markdown Dashboards (`datachart` blocks)
 
-Status: **design / MVP plan** (not yet implemented)
+Status: **partially implemented** (2026-06-10) — inline/frontmatter/url work; see "Implementation status & remaining tasks" below.
 
 Render charts directly from a fenced ` ```datachart ` code block in a note. trip2g
 fetches the chart's data from an HTTP-JSON endpoint, caches the result in SQLite
 keyed by the note version, and the published page draws it with ECharts. No
 admin UI, no drag-and-drop in the MVP — charts render inline, in document order,
 exactly like any other fenced block renders today.
+
+## Implementation status & remaining tasks (2026-06-10)
+
+**Done & live:**
+- Parsing: `extractCharts` → typed `data:{source}` model (`internal/model/note_chart.go`).
+- Renderer: `chartRenderer` emits `<div class="chart">` + `<script class="chart__data">`; non-datachart code blocks unchanged (`internal/mdloader/chart_renderer.go`).
+- Sources end-to-end: **inline** (baked), **frontmatter** (vault `[[link]]` → presigned URL → browser fetch; assets marked in `findAssets`), **url** (server-side fetch + cache).
+- Cache: `chart_data_cache` table + sqlc `GetChartData`/`UpsertChartData`.
+- Orchestration: `internal/chartdata` service (embedded in `app`), `refresh_chart_data` backjob (`internal/case/backjob/refreshchartdata/`), live-update via debounced re-render.
+- Widget: `assets/chart/` (lazy-loads echarts), injected via `UserJSURLs`.
+- Local demo: mock adapter `scripts/data_mock_server.py` + `data_mock` compose service.
+- User docs: `docs/{en,ru}/user/chartdata.md`.
+
+### Task A — Scheduled refresh (`chart_ttl` cron) — NOT DONE
+
+**Problem.** `chart_ttl` is documented but **not enforced**. `fetched_at` is written to `chart_data_cache` but never compared to a TTL, and there is no cron. So `url`/`internal` data is fetched once (at note load, on a cache miss) and never refreshes on a schedule — only when the note's `version_id` changes (edit). Wrong for live metrics.
+
+**Already correct:** the initial fetch happens at **render time** (`noteloader.Load` → `chartRenderer.renderChart` → `chartdata.ChartRows` → cache miss → `EnqueueChartDataRefresh` → job → cache → debounced reload), **not** on reader request (the page serves cached HTML).
+
+**Build:**
+1. Cronjob `internal/case/cronjob/refreshstalecharts/{job.go,resolve.go}` (pattern: `internal/case/cronjob/cleanupapikeylogs/`), ~every minute; register in `internal/cronjobs/jobs.go`.
+2. Each run: iterate the loaded notes' url/internal charts (`NoteView.Charts` + the note's `RawMeta["chart_ttl"]`). For each: read the cache row's `fetched_at`, parse `chart_ttl` (Go duration; absent = no auto-refresh), and if `now - fetched_at > ttl` → `EnqueueChartDataRefresh`. Job caches → `reloadLoop` re-renders.
+3. Put the staleness logic in `chartdata` (e.g. `func (c *ChartData) RefreshStale(...)`), don't duplicate in the cron. Extend `chartdata.Env` so it can read `fetched_at` (today `CachedChartData` returns only the data string). Add a compile-time check.
+4. Per-chart TTL: read `RawMeta["chart_ttl"]` per note, or attach the parsed TTL to each `NoteViewChart` in `extractCharts`.
+
+**Accept:** url chart with `chart_ttl: 1m` re-fetches ~every minute (new `fetched_at`); without it, no scheduled refresh.
+
+### Task B — `internal` SQL source — NOT DONE
+
+**Problem.** `data.source = "internal"` renders a loader only. `chartdata.ChartRows` enqueues a refresh only for `ChartSourceURL`; the job only does HTTP. Full design is the **Internal SQL source** section below — implement it.
+
+**Build (per that section):**
+1. `note_version_frontmatters(version_id, data json)` — persist `RawMeta` as JSON at push/sync (queryable via SQLite JSON1; shared with Obsidian Bases).
+2. `internal_sql_tables(table_name, min_sync_interval_secs, synced_at)` — admin-managed allowlist + cadence.
+3. `internal/internalsql/` — non-durable filtered **read replica**: lazy per-table sync (`ATTACH main read-only` → `CREATE TABLE AS SELECT`), debounced by `synced_at`. Security by construction (only allowlisted tables exist).
+4. Internal fetch path: run `data.sql` against the replica (SELECT-only + `LIMIT` + timeout), cache rows.
+5. Extend `chartdata.ChartRows` miss-enqueue to cover `ChartSourceInternal`.
+6. Admin CRUD for `internal_sql_tables`.
+
+**Accept:** `internal` chart renders notes-by-status; queries can't reach non-allowlisted tables (e.g. `secrets`).
 
 ## Authoring format
 
