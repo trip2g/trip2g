@@ -51,6 +51,13 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 ## Layout Error Handling
 31. [[broken_layout_test]] - page with broken layout (parse error handling)
 
+## Datachart (Dashboards) Tests
+1. [[datachart_inline]] - `data.source: inline`, rows bundled in the block (simplest static chart)
+2. [[datachart_frontmatter_ref]] - `data.source: frontmatter`, CSV + JSON referenced via frontmatter `[[link]]`
+3. [[datachart_fenced]] - `data.source: url`, live HTTP query fetched and cached by `chart_ttl`
+4. [[datachart_internal]] - `data.source: internal`, SQL over trip2g's own content (read replica)
+5. [[datachart_types]] - line/bar/pie in one note with `charts: custom` placement
+
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages
