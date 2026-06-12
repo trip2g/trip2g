@@ -69,6 +69,52 @@ npm run sync -- ../docs -u http://localhost:8081/_system/graphql -k <api-key>
 
 The API key is in `docs/.obsidian/plugins/trip2g/data.json`.
 
+## Render latency benchmark
+
+Measures per-request response time for public note pages: default template vs custom Jet layout.
+
+### Running
+
+```sh
+# 1 and 4 cores, note counts 100/1000/10000:
+./scripts/bench-render.sh
+
+# Custom core counts:
+./scripts/bench-render.sh 1 2 4
+```
+
+Results: `tmp/bench/render-results.jsonl` + `render-results.csv` + table on stdout.
+
+### How it works
+
+For each `(cores, notes)` pair:
+1. Starts a fresh server with an empty DB.
+2. Pushes N synthetic notes without a layout (`bench/note_*`).
+3. Runs k6 (10 VUs, 20 s) against those pages — **default scenario**.
+4. Pushes `_layouts/bench.html` (a minimal Jet template) + N notes with `layout: /bench` (`bench_layout/note_*`).
+5. Runs k6 (10 VUs, 20 s) against the layout pages — **layout scenario**.
+6. Extracts p50/p95/p99/avg from `--summary-export` JSON.
+
+Key notes:
+- Layout file content must **not** include YAML frontmatter — `note.Content` is passed directly to the Jet parser.
+- Note paths must not contain hyphens — the URL normalization converts `-` to `_`. Use `bench_layout/`, not `bench-layout/`.
+- `--summary-export` in k6 v1.x stores percentiles directly on the metric object (not under `.values`).
+
+### Reference results (2026-06-12, ARM64 dev machine)
+
+| cores | notes | default p50 | default p99 | layout p50 | layout p99 |
+|------:|------:|------------:|------------:|-----------:|-----------:|
+| 1 | 100 | 6 ms | 11 ms | 6 ms | 14 ms |
+| 1 | 1 000 | 5 ms | 25 ms | 5 ms | 35 ms |
+| 1 | 10 000 | 5 ms | 46 ms | 5 ms | 55 ms |
+| 4 | 100 | 3 ms | 7 ms | 3 ms | 8 ms |
+| 4 | 1 000 | 3 ms | 9 ms | 3 ms | 13 ms |
+| 4 | 10 000 | 3 ms | 21 ms | 3 ms | 23 ms |
+
+p50 is identical for both render paths. Jet layouts add ~20% to p99 at large vault sizes (10 k notes).
+Both paths serve from the in-memory NoteViews cache; the Jet template is compiled once per layout reload,
+not per request. The p99 spread is driven by GC pauses and concurrent pushNotes reloads, not layout rendering itself.
+
 ## Notes
 
 - The mock embedding server returns random unit vectors of the correct dimension (1024 for bge-m3). This is sufficient for memory measurement — the in-memory index size depends on count × dimensions, not on vector values.
