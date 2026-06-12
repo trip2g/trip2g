@@ -277,3 +277,30 @@ func TestMatchPath(t *testing.T) {
 		})
 	}
 }
+
+func TestNestedYAMLv2Maps(t *testing.T) {
+	// goldmark-meta (yaml.v2) parses nested frontmatter blocks (e.g. form:)
+	// into map[interface{}]interface{}, which json.Marshal cannot encode.
+	vm := NewVM()
+	patch := Compile(1, []string{"*.md"}, nil, `meta + { free: true }`, 100, "Set free flag")
+	rawMeta := map[string]interface{}{
+		"title": "Test",
+		"form": map[interface{}]interface{}{
+			"fields": []interface{}{
+				map[interface{}]interface{}{"name": "email", "type": "email", "required": true},
+			},
+		},
+	}
+
+	result := ApplyPatches(vm, []CompiledPatch{patch}, "test.md", rawMeta)
+
+	require.Empty(t, result.Warnings)
+	require.Len(t, result.AppliedPatches, 1)
+	require.Equal(t, true, result.RawMeta["free"])
+	require.Equal(t, "Test", result.RawMeta["title"])
+	form, ok := result.RawMeta["form"].(map[string]interface{})
+	require.True(t, ok, "form should survive the patch as a string-keyed map, got %T", result.RawMeta["form"])
+	fields, ok := form["fields"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, fields, 1)
+}

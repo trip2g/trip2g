@@ -14,10 +14,38 @@ func NewVM() *jsonnet.VM {
 	return vm
 }
 
+// normalizeYAML converts yaml.v2-style map[interface{}]interface{} values
+// (produced by goldmark-meta for nested frontmatter blocks) into
+// map[string]interface{} so the meta can be JSON-marshalled.
+func normalizeYAML(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[interface{}]interface{}:
+		m := make(map[string]interface{}, len(val))
+		for k, item := range val {
+			m[fmt.Sprint(k)] = normalizeYAML(item)
+		}
+		return m
+	case map[string]interface{}:
+		m := make(map[string]interface{}, len(val))
+		for k, item := range val {
+			m[k] = normalizeYAML(item)
+		}
+		return m
+	case []interface{}:
+		s := make([]interface{}, len(val))
+		for i, item := range val {
+			s[i] = normalizeYAML(item)
+		}
+		return s
+	default:
+		return v
+	}
+}
+
 // Evaluate evaluates a compiled patch against raw frontmatter.
 func Evaluate(vm *jsonnet.VM, patch CompiledPatch, rawMeta map[string]interface{}, path string) (map[string]interface{}, error) {
 	// Marshal meta to JSON string for ExtVar
-	metaJSON, err := json.Marshal(rawMeta)
+	metaJSON, err := json.Marshal(normalizeYAML(rawMeta))
 	if err != nil {
 		return nil, fmt.Errorf("marshal meta: %w", err)
 	}
