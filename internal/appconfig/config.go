@@ -63,6 +63,7 @@ type Config struct {
 
 	ShutdownGracePeriod   time.Duration
 	ShutdownTimeout       time.Duration
+	GlobalQueuePollInterval time.Duration
 	InternalListenAddr    string
 	MCPFederationMaxDepth int
 
@@ -421,6 +422,7 @@ func (c *Config) defineServerFlags() {
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
 	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
+	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")

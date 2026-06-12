@@ -413,7 +413,7 @@ func main() {
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
 		Limit:        10,
-		PollInterval: time.Second * 3,
+		PollInterval: a.config.GlobalQueuePollInterval,
 	})
 
 	err = a.initTelegramDeps(ctx)

@@ -1,0 +1,138 @@
+---
+title: "Performance"
+free: true
+lang_redirect: "[[ru/user/perfomance]]"
+chart_bench: "[[pushnotes_bench.datachart.csv]]"
+---
+
+How fast is a vault sync, and how big can your vault get before you feel it? We measured the `pushNotes` mutation — the call the Obsidian plugin and the CLI make on every sync — on vaults of 10 to 10 000 notes.
+
+The charts below are live [[chartdata|datachart]] blocks reading the raw benchmark CSV from this vault — the same feature you can use for your own data.
+
+## Method
+
+- Each run starts a fresh server with an empty SQLite database, pinned to 1 or 4 CPU cores (`taskset` + `GOMAXPROCS`).
+- Synthetic notes of ~500 bytes: frontmatter, headings, a wikilink, a list, a code block.
+- **Initial push** — all N notes in one `pushNotes` call (one write transaction).
+- **1 note** — a typical small sync: one changed note pushed into a vault of N notes (median of 3).
+- **10% of vault** — a batch sync: N/10 changed notes in one push (median of 3).
+- Memory is the server's resident set size (RSS) after the run; peak from `/proc`.
+- Benchmark script: `scripts/bench-pushnotes.sh` in the repository.
+
+Important context: while a push is being processed, the server holds the database write lock — other writers (background jobs, other pushes) wait in line. So "push time" here is also "how long the database is locked".
+
+## Initial push: whole vault in one call
+
+```datachart
+{
+  "data": { "source": "frontmatter", "ref": "chart_bench" },
+  "config": {
+    "title": { "text": "Initial push, ms (less is better)" },
+    "tooltip": { "trigger": "axis" },
+    "legend": {},
+    "xAxis": { "type": "category", "name": "notes" },
+    "yAxis": { "type": "log", "name": "ms" },
+    "series": [
+      { "type": "bar", "name": "1 core", "encode": { "x": "notes", "y": "initial_1c" } },
+      { "type": "bar", "name": "4 cores", "encode": { "x": "notes", "y": "initial_4c" } }
+    ]
+  }
+}
+```
+
+Scaling is close to linear: ~1.2 s for 1 000 notes on one core, ~14 s for 10 000. Four cores cut that roughly in half — note rendering parallelizes, the database writes do not.
+
+## Incremental sync: the everyday case
+
+```datachart
+{
+  "data": { "source": "frontmatter", "ref": "chart_bench" },
+  "config": {
+    "title": { "text": "Incremental push, ms (less is better)" },
+    "tooltip": { "trigger": "axis" },
+    "legend": {},
+    "xAxis": { "type": "category", "name": "vault size, notes" },
+    "yAxis": { "type": "log", "name": "ms" },
+    "series": [
+      { "type": "line", "name": "1 note, 1 core", "encode": { "x": "notes", "y": "incr1_1c" } },
+      { "type": "line", "name": "1 note, 4 cores", "encode": { "x": "notes", "y": "incr1_4c" } },
+      { "type": "line", "name": "10% of vault, 1 core", "encode": { "x": "notes", "y": "incr10p_1c" } },
+      { "type": "line", "name": "10% of vault, 4 cores", "encode": { "x": "notes", "y": "incr10p_4c" } }
+    ]
+  }
+}
+```
+
+This is what you feel day to day: you edit a note, the plugin pushes it. Even at 10 000 notes a single-note push takes ~0.4 s on one core and ~0.2 s on four. The renderer caches unchanged notes, so the cost grows with vault size (re-indexing), not with how much you changed — pushing 1 000 changed notes (10% of a 10 000-note vault) takes ~2.3 s on one core, far from 1 000 × the single-note cost.
+
+## Memory
+
+```datachart
+{
+  "data": { "source": "frontmatter", "ref": "chart_bench" },
+  "config": {
+    "title": { "text": "Server RSS after sync, MB" },
+    "tooltip": { "trigger": "axis" },
+    "legend": {},
+    "xAxis": { "type": "category", "name": "notes" },
+    "yAxis": { "type": "value", "name": "MB" },
+    "series": [
+      { "type": "bar", "name": "RSS, 1 core", "encode": { "x": "notes", "y": "rss_1c" } },
+      { "type": "bar", "name": "RSS, 4 cores", "encode": { "x": "notes", "y": "rss_4c" } },
+      { "type": "line", "name": "peak, 1 core", "encode": { "x": "notes", "y": "peak_1c" } },
+      { "type": "line", "name": "peak, 4 cores", "encode": { "x": "notes", "y": "peak_4c" } }
+    ]
+  }
+}
+```
+
+The server keeps rendered notes in memory: ~80 MB for a hundred notes, ~180 MB for a thousand, ~1 GB for ten thousand. Plan your hosting accordingly — a 1 GB VPS comfortably serves vaults up to a few thousand notes.
+
+## Vector search memory
+
+Enabling vector search (semantic similarity, powered by an embedding model like bge-m3) builds an in-memory index alongside the note cache. The index stores one embedding vector per note — bge-m3 produces 1024-dimensional float32 vectors, so each note costs 4 KB.
+
+```datachart
+{
+  "data": { "source": "frontmatter", "ref": "chart_bench" },
+  "config": {
+    "title": { "text": "RSS with vs without vector index, MB" },
+    "tooltip": { "trigger": "axis" },
+    "legend": {},
+    "xAxis": { "type": "category", "name": "notes" },
+    "yAxis": { "type": "value", "name": "MB" },
+    "series": [
+      { "type": "bar", "name": "no vector, 1 core", "encode": { "x": "notes", "y": "rss_1c" } },
+      { "type": "bar", "name": "vector, 1 core", "encode": { "x": "notes", "y": "rss_vec_1c" } },
+      { "type": "bar", "name": "no vector, 4 cores", "encode": { "x": "notes", "y": "rss_4c" } },
+      { "type": "bar", "name": "vector, 4 cores", "encode": { "x": "notes", "y": "rss_vec_4c" } }
+    ]
+  }
+}
+```
+
+| Vault | RSS no vector (1c / 4c) | RSS with vector (1c / 4c) | Overhead |
+|------:|------------------------:|--------------------------:|---------:|
+| 10 | 67 / 68 MB | 70 / 69 MB | ~2 MB |
+| 100 | 82 / 79 MB | 84 / 84 MB | ~5 MB |
+| 1 000 | 176 / 136 MB | 205 / 179 MB | **+29–43 MB** |
+| 10 000 | 1050 / 837 MB | 964 / 875 MB | **+38 MB** |
+
+At small vault sizes the vector index is invisible (40 KB at 10 notes). It becomes significant at 1 000+ notes: ~30–45 MB extra. At 10 000 notes it adds ~40 MB on top of the base note cache — consistent with the theoretical 1 024 dims × 4 bytes × N notes.
+
+## Raw numbers
+
+| Vault | Initial push 1c / 4c | 1 note 1c / 4c | 10% batch 1c / 4c | Peak RSS 1c / 4c |
+|------:|---------------------:|---------------:|------------------:|-----------------:|
+| 10 | 40 / 8 ms | 4 / 2 ms | 4 / 2 ms | 68 / 69 MB |
+| 100 | 113 / 81 ms | 6 / 8 ms | 13 / 10 ms | 83 / 80 MB |
+| 1 000 | 1.2 / 0.5 s | 39 / 22 ms | 96 / 62 ms | 182 / 149 MB |
+| 10 000 | 13.8 / 6.8 s | 382 / 224 ms | 2.3 / 0.7 s | 1186 / 902 MB |
+
+Measured 2026-06-11 on a 12-core ARM64 dev machine restricted with `taskset`, SQLite in WAL mode, single server process. Your absolute numbers will differ; the shape of the curves will not.
+
+## What this means for you
+
+- **Vaults up to ~1 000 notes**: everything is instant — syncs are tens of milliseconds.
+- **~10 000 notes on a small server**: everyday syncs are still sub-second, but the *first* push of the whole vault takes ~14 s on one core. During that window the database is locked for other writers; on very large vaults prefer an initial import during quiet hours.
+- **More cores help rendering, not locking**: a 4-core server halves big-push times. The lock is held for the whole push either way, so many *concurrent* writers gain less than the raw numbers suggest.
