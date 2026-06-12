@@ -3135,9 +3135,13 @@ type AdminMutation {
   setConfigIntValue(input: SetConfigIntValueInput!): SetConfigIntValuePayload!
 
   # Background Queue mutations
-  stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!
-  startBackgroundQueue(input: StartBackgroundQueueInput!): StartBackgroundQueueOrErrorPayload!
-  clearBackgroundQueue(input: ClearBackgroundQueueInput!): ClearBackgroundQueueOrErrorPayload!
+  # @skipTx: these manage the job runner, not data. The request tx (BEGIN
+  # IMMEDIATE) holds the SQLite write lock for the whole request; start/stop
+  # wait for in-flight jobs whose goqite delete needs that same lock — the
+  # runner stalls on busy_timeout and completed jobs get redelivered.
+  stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload! @skipTx
+  startBackgroundQueue(input: StartBackgroundQueueInput!): StartBackgroundQueueOrErrorPayload! @skipTx
+  clearBackgroundQueue(input: ClearBackgroundQueueInput!): ClearBackgroundQueueOrErrorPayload! @skipTx
 
   # Change Webhook mutations
   changeWebhookCreate(input: ChangeWebhookCreateInput!): ChangeWebhookCreateOrErrorPayload!

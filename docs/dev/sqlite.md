@@ -10,16 +10,37 @@ Our SQLite database is configured for optimal performance and safety with the fo
 
 #### Connection Parameters
 
-```go
-// URL parameters (applied at connection initialization)
-_journal=WAL           // Hint for initial journal mode
-_timeout=20000         // 20 second timeout
-_busy_timeout=20000    // 20 second busy timeout
+All settings are passed as modernc.org/sqlite DSN parameters. The driver runs
+each `_pragma` on **every new connection** in the pool — this is the only way
+to configure a pool reliably. A one-off `db.Exec("PRAGMA ...")` configures
+only the single pooled connection it happens to run on; the rest keep
+defaults (`busy_timeout=0`, `foreign_keys=OFF`).
 
-// Note: These URL parameters provide hints during connection initialization.
-// PRAGMA statements in enablePragmas() ensure settings are applied regardless
-// of database state.
+```go
+_pragma=busy_timeout(20000)      // applied first by the driver
+_pragma=journal_mode(WAL)
+_pragma=foreign_keys(1)
+_pragma=synchronous(NORMAL)
+_pragma=temp_store(2)            // 2 = MEMORY
+_pragma=mmap_size(268435456)
+_pragma=cache_size(-64000)
+_pragma=wal_autocheckpoint(1000)
+
+// Write/queue connections only:
+_txlock=immediate                // BEGIN IMMEDIATE for all transactions
 ```
+
+The driver supports only `_pragma`, `_txlock` and `_time_format`.
+mattn/go-sqlite3-style parameters (`_journal`, `_busy_timeout`, `_timeout`)
+are **silently ignored** — do not use them.
+
+**Why `_txlock=immediate` for writers?**
+The default deferred mode starts every transaction as a reader. If the
+transaction reads first and another connection commits a write in between,
+the first write inside the transaction fails instantly with
+`SQLITE_BUSY_SNAPSHOT` (517) — and `busy_timeout` cannot help, because the
+read snapshot is already stale. With `immediate`, the write lock is taken at
+`BEGIN`, so concurrent writers queue on `busy_timeout` instead of failing.
 
 #### Connection Pool Settings
 
@@ -40,17 +61,38 @@ SQLite with WAL mode allows multiple concurrent readers but only **one writer at
 
 #### PRAGMA Settings
 
-Applied at startup via `enablePragmas()`:
+Applied per connection via `_pragma` DSN parameters (see above):
 
 ```sql
+PRAGMA busy_timeout = 20000;        -- Wait up to 20s for locks
 PRAGMA foreign_keys = ON;           -- Enable foreign key constraints
 PRAGMA synchronous = NORMAL;        -- Balance between speed and safety
-PRAGMA strict = ON;                 -- Strict aggregate functions
 PRAGMA temp_store = MEMORY;         -- Store temporary tables in RAM
 PRAGMA mmap_size = 268435456;       -- 256MB memory-mapped I/O
 PRAGMA cache_size = -64000;         -- 64MB page cache
 PRAGMA wal_autocheckpoint = 1000;   -- Checkpoint every 1000 pages
 ```
+
+#### Troubleshooting "database is locked"
+
+The number in parentheses is the extended result code — read it, the codes
+mean different things:
+
+| Error | Code | Meaning | What helps |
+|-------|------|---------|------------|
+| `database is locked (5)` | SQLITE_BUSY | Another connection holds the write lock | `busy_timeout`, `db.WithRetry` |
+| `database is locked (261)` | SQLITE_BUSY_RECOVERY | WAL recovery in progress | `busy_timeout` |
+| `database is locked (517)` | SQLITE_BUSY_SNAPSHOT | Deferred transaction tried to upgrade read→write after another commit | **Only** `_txlock=immediate`; busy_timeout and per-statement retries do NOT help |
+
+To diagnose locking issues:
+1. Find all `sql.DB` pools opened on the file (`grep "db.Setup\|sql.Open"`) —
+   each pool is an independent connection set.
+2. Check what each connection actually has: `SELECT * FROM pragma_busy_timeout` on
+   several pinned `pool.Conn(ctx)` connections (see
+   `TestPragmasAppliedToAllConnections` in `internal/db/setup_test.go`).
+3. For 517, find the deferred transaction: any `BeginTx(ctx, nil)` on a
+   connection without `_txlock=immediate` that reads before writing
+   (see `TestWriteTxUpgradeNoBusySnapshot` for a deterministic repro).
 
 ## PRAGMA Settings Explained
 

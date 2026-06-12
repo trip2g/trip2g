@@ -97,7 +97,7 @@ var (
 
 	BoolRegistry = map[string]BoolConfigMeta{
 		ConfigShowDraftVersions: {
-			ConfigMeta: ConfigMeta{ID: ConfigShowDraftVersions, Description: "Show draft versions to admins."},
+			ConfigMeta: ConfigMeta{ID: ConfigShowDraftVersions, Description: "Show the latest unreleased versions to everyone (bypass releases)."},
 			Default:    true,
 			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.ShowDraftVersions = v },
 		},

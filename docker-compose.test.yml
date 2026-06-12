@@ -18,14 +18,14 @@ services:
       retries: 5
 
   # Local embedding server — bge-m3 via sentence-transformers.
-  # First start downloads the model (~2.3 GB) — subsequent starts reuse the volume cache.
+  # First start downloads the model (~2.3 GB) — subsequent starts reuse shared ~/models/embedding.
   embedding:
     build: ./embedding-server
     container_name: trip2g-test-embedding
     ports:
       - "11434:8000"
     volumes:
-      - embedding-models:/data
+      - ${HOME}/models/embedding:/data
     environment:
       - MODEL_NAME=BAAI/bge-m3
     healthcheck:
@@ -282,4 +282,3 @@ services:
 
 volumes:
   test-data:
-  embedding-models:

@@ -385,6 +385,10 @@ if [ "$MANUAL" = "1" ] || [ "$MANUAL" = "true" ]; then
   exit 0
 fi
 
+# Drain background jobs (embeddings from the vault syncs above) so browser
+# tests see a stable search index and an empty queue.
+wait_all_jobs
+
 # Run main Playwright tests
 echo "🎭 Running main Playwright tests..."
 echo ""
@@ -476,7 +480,7 @@ echo -e "${GREEN}✓ Bidirectional federation E2E tests passed${NC}"
 # Run unreleased-changes + show_draft_versions E2E tests
 echo ""
 echo "📋 Running unreleased-changes and show_draft_versions E2E tests..."
-npx playwright test e2e/unreleased-changes.spec.js || {
+RUN_ISOLATED_SPECS=1 npx playwright test e2e/unreleased-changes.spec.js || {
   echo -e "${RED}✗ Unreleased changes E2E tests failed${NC}"
   exit 1
 }

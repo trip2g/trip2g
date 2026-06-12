@@ -10,13 +10,13 @@ services:
     command: server /data --console-address ":9001"
 
   # Local embedding server — bge-m3 via sentence-transformers.
-  # First start downloads the model (~2.3 GB), cached in embedding-models volume.
+  # First start downloads the model (~2.3 GB), cached in shared ~/models/embedding.
   embedding:
     build: ./embedding-server
     ports:
       - "11435:8000"
     volumes:
-      - embedding-models:/data
+      - ${HOME}/models/embedding:/data
     environment:
       - MODEL_NAME=BAAI/bge-m3
 
@@ -30,8 +30,7 @@ services:
       - ./scripts:/scripts:ro
     command: python /scripts/data_mock_server.py
 
-volumes:
-  embedding-models:
+volumes: {}
 
   # lottie-converter:
   #   build: ./lottie-converter

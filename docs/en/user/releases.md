@@ -39,4 +39,4 @@ Creating a release for every note while getting started is inconvenient. Enable 
 
 Your notes become visible immediately after sync — no release needed.
 
-This only applies to administrators. Regular readers never see drafts.
+One caveat: draft mode applies to the whole site. With it on, everyone sees your latest synced notes right away — releases are effectively turned off. That's the point: publish edits without creating a release each time. Want to batch changes and keep unreleased edits hidden? Leave draft mode off and use releases.

@@ -7,8 +7,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
 
-  /* Specs that modify live releases and must run in isolation (via test-e2e.sh) */
-  testIgnore: ['**/unreleased-changes.spec.js'],
+  /* Specs that modify live releases and must run in isolation (via test-e2e.sh).
+     testIgnore applies even when the file is named on the CLI, so the isolated
+     run must set RUN_ISOLATED_SPECS=1 to be able to select it. */
+  testIgnore: process.env.RUN_ISOLATED_SPECS ? [] : ['**/unreleased-changes.spec.js'],
 
   /* Run tests in files in parallel */
   fullyParallel: true,

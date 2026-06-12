@@ -100,6 +100,26 @@
     "url": "http://localhost:20081/cyrillic_nazvaniya"
   },
   {
+    "path": "datachart_fenced.md",
+    "url": "http://localhost:20081/datachart_fenced"
+  },
+  {
+    "path": "datachart_frontmatter_ref.md",
+    "url": "http://localhost:20081/datachart_frontmatter_ref"
+  },
+  {
+    "path": "datachart_inline.md",
+    "url": "http://localhost:20081/datachart_inline"
+  },
+  {
+    "path": "datachart_internal.md",
+    "url": "http://localhost:20081/datachart_internal"
+  },
+  {
+    "path": "datachart_types.md",
+    "url": "http://localhost:20081/datachart_types"
+  },
+  {
     "path": "dup.md",
     "url": "http://localhost:20081/dup"
   },

@@ -13703,7 +13703,20 @@ func (ec *executionContext) _AdminMutation_stopBackgroundQueue(ctx context.Conte
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().StopBackgroundQueue(ctx, obj, fc.Args["input"].(model.StopBackgroundQueueInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.StopBackgroundQueueOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNStopBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStopBackgroundQueueOrErrorPayload,
 		true,
 		true,
@@ -13744,7 +13757,20 @@ func (ec *executionContext) _AdminMutation_startBackgroundQueue(ctx context.Cont
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().StartBackgroundQueue(ctx, obj, fc.Args["input"].(model.StartBackgroundQueueInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.StartBackgroundQueueOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNStartBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStartBackgroundQueueOrErrorPayload,
 		true,
 		true,
@@ -13785,7 +13811,20 @@ func (ec *executionContext) _AdminMutation_clearBackgroundQueue(ctx context.Cont
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().ClearBackgroundQueue(ctx, obj, fc.Args["input"].(model.ClearBackgroundQueueInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.ClearBackgroundQueueOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNClearBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueOrErrorPayload,
 		true,
 		true,

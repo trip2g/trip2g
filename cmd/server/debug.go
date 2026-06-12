@@ -11,6 +11,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"trip2g/internal/case/backjob/importtelegramchannel"
+	"trip2g/internal/db"
 	"trip2g/internal/model"
 )
 
@@ -285,11 +286,19 @@ func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 			return true
 		}
 
-		// Check for retries (received > 1 means job was retried)
+		// Fail only on dead jobs: messages that exhausted MaxReceive and whose
+		// timeout expired — goqite will never deliver them again, so the queue
+		// can never drain. A retried job (received > 1) that still has
+		// attempts left is the system recovering from a transient error; keep
+		// waiting for it instead.
 		for _, stat := range stats {
-			if stat.RetryCount > 0 {
+			if stat.RetryCount == 0 {
+				continue
+			}
+
+			if msg, dead := a.describeDeadJobs(stat.Queue); dead {
 				ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-				ctx.SetBodyString("queue " + stat.Queue + " has failed jobs with retries")
+				ctx.SetBodyString(msg)
 				return true
 			}
 		}
@@ -308,6 +317,62 @@ func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 
 		a.log.Debug("waiting for jobs to complete", "total_jobs", totalJobs)
 	}
+}
+
+// isDeadJob reports whether a goqite message can never be delivered again:
+// it used up all maxReceive attempts and its visibility timeout expired. An
+// unparseable timeout counts as expired.
+func isDeadJob(received int64, maxReceive int, timeout string, now time.Time) bool {
+	if received < int64(maxReceive) {
+		return false
+	}
+
+	t, err := time.Parse(time.RFC3339, timeout)
+	if err != nil {
+		return true
+	}
+
+	return !t.After(now)
+}
+
+// describeDeadJobs reports whether the queue holds dead jobs (exhausted
+// MaxReceive, timed out) and builds a diagnostic message listing them with
+// their payloads, so test failures name the exact stuck job instead of just
+// the queue.
+func (a *app) describeDeadJobs(queue string) (string, bool) {
+	maxReceive := 3
+	if aq, ok := a.appQueues[queue]; ok {
+		maxReceive = aq.maxReceive
+	}
+
+	jobs, err := a.Queries.ListGoqiteJobsByQueue(a.ctx, db.ListGoqiteJobsByQueueParams{
+		Queue: queue,
+		Limit: 50,
+	})
+	if err != nil {
+		return "queue " + queue + ": failed to list jobs: " + err.Error(), true
+	}
+
+	now := time.Now().UTC()
+	msg := "queue " + queue + " has dead jobs (exhausted retries)"
+	dead := false
+
+	for _, job := range jobs {
+		if !isDeadJob(job.Received, maxReceive, job.Timeout, now) {
+			continue
+		}
+
+		dead = true
+
+		body := string(job.Body)
+		if len(body) > 300 {
+			body = body[:300] + "..."
+		}
+
+		msg += fmt.Sprintf("\n  id=%s received=%d created=%s body=%s", job.ID, job.Received, job.Created, body)
+	}
+
+	return msg, dead
 }
 
 func (a *app) handleDebugRunCronJob(ctx *fasthttp.RequestCtx) bool {

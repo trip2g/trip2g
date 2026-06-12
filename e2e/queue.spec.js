@@ -132,6 +132,7 @@ test.describe.serial('background queue', () => {
   });
 
   test('spawned jobs complete and appear in the log', async ({ request }) => {
+    test.setTimeout(150_000); // waitAllJobs may legitimately wait out unrelated retrying jobs (120s request timeout)
     const tag = `run-${Date.now()}`;
     await spawnJobs(request, { count: 5, durationMs: 200, tag });
     await waitAllJobs(request);

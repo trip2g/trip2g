@@ -48,6 +48,35 @@ exactly like any other fenced block renders today.
 
 **Accept:** `internal` chart renders notes-by-status; queries can't reach non-allowlisted tables (e.g. `secrets`).
 
+### Task C — Obsidian in-editor preview — NOT DONE
+
+**Why.** The fenced ` ```datachart ` block was chosen over a `<DataChart />`-style
+component precisely because a fenced block is Obsidian's native extension point
+(`registerMarkdownCodeBlockProcessor`). That payoff is only realized once the
+plugin actually renders it: authors should **see the chart in Obsidian** —
+WYSIWYG, identical to the published page — instead of staring at raw JSON. This
+closes the loop (write in Obsidian → preview in Obsidian → publish unchanged) and
+turns the editor into the test harness for charts.
+
+**Build (component #9 below):**
+1. In `obsidian-sync/src/main.ts`, register
+   `registerMarkdownCodeBlockProcessor("datachart", …)`.
+2. Parse the block's JSON, then **reuse the shared widget** from `assets/chart/`
+   so in-editor rendering is byte-for-byte the site's — don't re-implement ECharts
+   drawing in the plugin.
+3. Resolve `data.source` in-editor:
+   - `inline` → draw immediately from `rows`.
+   - `frontmatter` → resolve the `[[link]]` against the vault and read the local
+     file (`.csv`/`.json`) directly — no presigned URL needed inside Obsidian.
+   - `url`/`internal` → fetch via `requestUrl` if reachable, else draw a
+     placeholder ("server-fetched on publish"); these depend on trip2g's cache/
+     replica, which the plugin can't fully reproduce.
+4. (Optional) a `.datachart.json` file view for standalone preview of data assets.
+
+**Accept:** opening a note with a ` ```datachart ` block in Obsidian shows the
+rendered chart (at least for `inline`/`frontmatter`), matching the published page;
+no separate "view on site" round-trip needed to check a chart.
+
 ## Authoring format
 
 ````markdown

@@ -57,7 +57,7 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 
 	// Open database connection
 	panicOnWrite := config.DevMode && config.ReadOnly
-	conn, err := openConnection(config.DatabaseFile, queryLogger, panicOnWrite)
+	conn, err := openConnection(config.DatabaseFile, queryLogger, panicOnWrite, config.ReadOnly)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -76,12 +76,6 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	conn.SetConnMaxLifetime(0)
-
-	// Enable SQLite pragmas
-	err = enablePragmas(conn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to enable pragmas: %w", err)
-	}
 
 	if config.CheckStatus {
 		// Check foreign key constraints
@@ -140,13 +134,36 @@ func (p *queryInterceptor) Log(ctx context.Context, level sqldblogger.Level, msg
 }
 
 // openConnection opens a SQLite database connection with optimized settings.
-func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bool) (*sql.DB, error) {
+//
+// All settings go through modernc.org/sqlite DSN parameters (`_pragma`,
+// `_txlock`) because the driver applies them to every new connection in the
+// pool. A one-off `db.Exec("PRAGMA ...")` only configures the single pooled
+// connection it happens to run on, leaving the rest with defaults
+// (busy_timeout=0, foreign_keys=OFF).
+func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bool, readOnly bool) (*sql.DB, error) {
 	// build url with params
 	url := &url.URL{Path: databaseFile}
 	q := url.Query()
-	q.Set("_journal", "WAL")
-	q.Set("_timeout", "20000")
-	q.Set("_busy_timeout", "20000")
+	// The driver always applies busy_timeout before the other pragmas.
+	q.Add("_pragma", "busy_timeout(20000)")
+	q.Add("_pragma", "journal_mode(WAL)")
+	q.Add("_pragma", "foreign_keys(1)")
+	q.Add("_pragma", "synchronous(NORMAL)")
+	q.Add("_pragma", "temp_store(2)") // 2 = MEMORY
+	q.Add("_pragma", "mmap_size(268435456)")
+	q.Add("_pragma", "cache_size(-64000)")
+	q.Add("_pragma", "wal_autocheckpoint(1000)")
+
+	if !readOnly {
+		// Writers must take the write lock at BEGIN. The default deferred
+		// mode starts every transaction as a reader; upgrading to a write
+		// after another connection has committed fails instantly with
+		// SQLITE_BUSY_SNAPSHOT (517), and busy_timeout cannot help because
+		// the snapshot is already stale. With immediate, concurrent writers
+		// queue on busy_timeout instead.
+		q.Set("_txlock", "immediate")
+	}
+
 	url.RawQuery = q.Encode()
 
 	conn, err := sql.Open("sqlite", url.String())
@@ -169,28 +186,6 @@ func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bo
 	}
 
 	return conn, nil
-}
-
-// enablePragmas configures SQLite for optimal performance and safety.
-func enablePragmas(db *sql.DB) error {
-	pragmas := `
-		PRAGMA foreign_keys = ON;
-		PRAGMA synchronous = NORMAL;
-		PRAGMA strict = ON;
-		PRAGMA temp_store = MEMORY;
-		PRAGMA mmap_size = 268435456;
-		PRAGMA cache_size = -64000;
-		PRAGMA wal_autocheckpoint = 1000;
-		PRAGMA journal_mode = WAL;
-		PRAGMA busy_timeout = 20000;
-	`
-
-	_, err := db.Exec(pragmas)
-	if err != nil {
-		return fmt.Errorf("failed to enable pragmas: %w", err)
-	}
-
-	return nil
 }
 
 // checkForeignKeys validates all foreign key constraints in the database.

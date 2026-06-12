@@ -33,13 +33,22 @@ type Env interface {
 }
 
 // Resolve fetches the chart's data from its HTTP-JSON endpoint and caches it.
+//
+// Fetch problems (unreachable host, non-200, non-JSON body) are expected
+// conditions for external sources: they are logged and the stale cache is
+// kept. The job completes with nil so goqite does not retry it — a retried
+// message that keeps failing hits MaxReceive and then sits in the queue
+// forever, blocking /debug/wait_all_jobs. The TTL refresh fetches again
+// later. Only failures of our own storage are returned as errors.
 func Resolve(ctx context.Context, env Env, p Params) error {
 	data, err := fetch(ctx, p.URL, p.Body)
 	if err != nil {
-		return fmt.Errorf("refreshchartdata: %w", err)
+		env.Logger().Warn("refreshchartdata: fetch failed, keeping stale cache", "url", p.URL, "error", err)
+		return nil
 	}
 	if !json.Valid(data) {
-		return fmt.Errorf("refreshchartdata: %q returned non-JSON", p.URL)
+		env.Logger().Warn("refreshchartdata: non-JSON response, keeping stale cache", "url", p.URL)
+		return nil
 	}
 	return env.SaveChartData(ctx, p.VersionID, p.Hash, string(data))
 }

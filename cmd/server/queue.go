@@ -21,6 +21,11 @@ type appQueue struct {
 
 	q *goqite.Queue
 
+	// maxReceive mirrors goqite's MaxReceive for this queue: a message
+	// received that many times whose timeout expired is dead — goqite will
+	// never deliver it again.
+	maxReceive int
+
 	rootCtx context.Context
 
 	cancel   context.CancelFunc
@@ -45,8 +50,10 @@ func (a *app) createQueue(ctx context.Context, name string, opts QueueOpts) *app
 		DB:   a.queueConn,
 		Name: name,
 	}
+	maxReceive := 3 // goqite's default when NewOpts.MaxReceive is 0
 	if opts.MaxReceive > 0 {
 		queueOpts.MaxReceive = opts.MaxReceive
+		maxReceive = opts.MaxReceive
 	}
 	q := goqite.New(queueOpts)
 
@@ -67,11 +74,12 @@ func (a *app) createQueue(ctx context.Context, name string, opts QueueOpts) *app
 	runner := jobs.NewRunner(runnerOpts)
 
 	appQ := appQueue{
-		q:       q,
-		rootCtx: ctx, // for app graceful shutdown
-		name:    name,
-		runner:  runner,
-		logger:  logger,
+		q:          q,
+		maxReceive: maxReceive,
+		rootCtx:    ctx, // for app graceful shutdown
+		name:       name,
+		runner:     runner,
+		logger:     logger,
 	}
 
 	if a.appQueues == nil {

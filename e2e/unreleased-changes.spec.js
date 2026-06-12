@@ -4,6 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { graphqlSignIn, USER_TOKEN_COOKIE_NAME } from './helpers/auth.js';
 
+// Both describe blocks below mutate the global "live release" pointer on the shared
+// server. Under fullyParallel they would otherwise be split across workers and race
+// (a concurrent makeReleaseLive flips the live release out from under another block,
+// yielding spurious 404s). File-level serial mode pins the whole file to one worker.
+test.describe.configure({ mode: 'serial' });
+
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
 const SYSTEM_GRAPHQL = `${APP_URL}/_system/graphql`;
 
@@ -253,8 +259,11 @@ test.describe('show_draft_versions', () => {
   let apiKey;
   let adminCookie;
   let originalLiveReleaseId;
-  const draftNotePath = 'e2e-draft-note.md';
-  const draftNoteURL = `${APP_URL}/e2e-draft-note`;
+  // Note: the server canonicalizes URL separators to underscores
+  // (normalizeURLPart maps every non-alphanumeric char to "_"), so a file named
+  // with hyphens is served at the underscore URL. Keep path and URL aligned.
+  const draftNotePath = 'e2e_draft_note.md';
+  const draftNoteURL = `${APP_URL}/e2e_draft_note`;
 
   test.beforeAll(async ({ request }) => {
     const apiKeyPath = path.join(process.cwd(), '.test-api-key');
@@ -312,10 +321,13 @@ test.describe('show_draft_versions', () => {
     expect(html).not.toContain('Content version A');
   });
 
-  test('guest still sees live version A when show_draft_versions is on', async ({ request }) => {
+  test('guest also sees draft version B when show_draft_versions is on', async ({ request }) => {
+    // show_draft_versions promotes the latest (unreleased) version to the default
+    // view for everyone, guests included — not just admins. With it on, a guest
+    // sees version B (latest), same as the admin above.
     const res = await request.get(draftNoteURL);
     const html = await res.text();
-    expect(html).toContain('Content version A');
-    expect(html).not.toContain('Content version B');
+    expect(html).toContain('Content version B');
+    expect(html).not.toContain('Content version A');
   });
 });
