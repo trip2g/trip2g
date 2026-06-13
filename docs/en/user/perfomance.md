@@ -131,6 +131,18 @@ At small vault sizes the vector index is invisible (40 KB at 10 notes). It becom
 
 Measured 2026-06-11 on a 12-core ARM64 dev machine restricted with `taskset`, SQLite in WAL mode, single server process. Your absolute numbers will differ; the shape of the curves will not.
 
+## Why page rendering is this fast
+
+The numbers above are for write operations. Page reads are a different story: p50 response time is **3–6 ms** at any vault size, even under 10 concurrent users.
+
+This is not an accident — it is an architectural choice. trip2g sits somewhere between a static site generator and a traditional CMS:
+
+- **Static generator** (Gatsby, Hugo, Eleventy): builds HTML files to disk on deploy. Reads are instant because they're just file serving. But every content change requires a full rebuild — minutes for large sites, no live editing.
+- **Traditional CMS** (WordPress, Ghost): renders every page on request — queries the database, fetches relations, runs templates. Flexible and live, but every reader hits the database.
+- **trip2g**: renders HTML *on write* (during `pushNotes`) and stores the result in memory. Reads serve that pre-rendered HTML directly from a hash map — no database, no template engine on the hot path. The cost of rendering is paid once per content change, shared across all readers.
+
+The write lock on SQLite is the price: while a push is rendering and writing, other writers wait. For reads, nothing waits — they never touch the database at all.
+
 ## What this means for you
 
 - **Vaults up to ~1 000 notes**: everything is instant — syncs are tens of milliseconds.
