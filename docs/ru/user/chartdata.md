@@ -2,6 +2,7 @@
 title: "Графики в заметках"
 free: true
 lang_redirect: "[[en/user/chartdata]]"
+chart_sales: "[[sales-demo-ru.datachart.csv]]"
 ---
 
 Блок `datachart` в заметке превращается в интерактивный график на опубликованной странице. Никакого отдельного редактора — вы пишете график так же, как любой другой блок кода в Obsidian.
@@ -124,15 +125,18 @@ trip2g читает объект `data`, загружает или считыв�
 
 ```yaml
 ---
-chart_sales: "[[sales.datachart.csv]]"
-chart_visitors: "[[visitors.json]]"
+chart_sales: "[[sales-demo-ru.datachart.csv]]"
 ---
 ```
+
+График ниже — живой: эта страница объявляет `chart_sales` в своём frontmatter и
+хранит рядом небольшой `sales-demo-ru.datachart.csv`:
 
 ```datachart
 {
   "data": { "source": "frontmatter", "ref": "chart_sales" },
   "config": {
+    "title": { "text": "Продажи по месяцам (из CSV хранилища)" },
     "xAxis": { "type": "category" },
     "yAxis": { "type": "value" },
     "series": [{ "type": "bar", "encode": { "x": "month", "y": "sales" } }]
@@ -148,11 +152,43 @@ chart_visitors: "[[visitors.json]]"
 
 Живые данные с любого HTTP-JSON эндпойнта, которым вы управляете. trip2g обращается к URL **на стороне сервера**, кеширует результат и встраивает его в отрисованный HTML. URL эндпойнта и тело запроса никогда не попадают в исходный код страницы.
 
+График ниже живой и **готов к копипасту**: он указывает на крошечный демо-эндпойнт
+на этом же сайте. Скопируйте блок в своё хранилище — и он нарисует тот же график,
+ваш trip2g обратится к тому же публичному URL.
+
 ```datachart
 {
   "data": {
     "source": "url",
-    "url": "http://localhost:8090/v1/query",
+    "url": "https://trip2g.com/en/user/sales_demo_api"
+  },
+  "config": {
+    "title": { "text": "Выручка по дням (из URL)" },
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
+  }
+}
+```
+
+Эндпойнт должен возвращать плоский JSON-массив объектов-строк — ровно это и
+возвращает `https://trip2g.com/en/user/sales_demo_api`:
+
+```json
+[
+  { "day": "2026-06-01", "revenue": 1234 },
+  { "day": "2026-06-02", "revenue": 1891 }
+]
+```
+
+Нужно передать запрос? Добавьте `body` — и trip2g отправит его POST-ом как JSON
+вместо обычного GET. Это пример синтаксиса, укажите свой эндпойнт:
+
+```jsonc
+{
+  "data": {
+    "source": "url",
+    "url": "https://api.example.com/query",
     "body": "{\"sql\":\"SELECT day, revenue FROM stats ORDER BY day\"}"
   },
   "config": {
@@ -161,15 +197,6 @@ chart_visitors: "[[visitors.json]]"
     "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
   }
 }
-```
-
-Эндпойнт должен возвращать плоский JSON-массив объектов-строк:
-
-```json
-[
-  { "day": "2026-06-01", "revenue": 1234 },
-  { "day": "2026-06-02", "revenue": 1891 }
-]
 ```
 
 **Когда грузятся данные.** trip2g запрашивает URL на сервере, когда заметку **публикуют или пересобирают** (во время загрузки заметки) — не когда читатель открывает страницу. Читатель всегда получает готовый HTML. Пока идёт первая загрузка, график показывает индикатор; как только данные приходят, страница перерисовывается с ними. Дальше кешированный результат переиспользуется до следующей публикации заметки.
@@ -235,11 +262,17 @@ chart_ttl: 1h
 ```datachart
 {
   "data": {
-    "source": "url",
-    "url": "http://localhost:8090/v1/query",
-    "body": "{\"sql\":\"SELECT product, revenue FROM sales ORDER BY revenue DESC LIMIT 5\"}"
+    "source": "inline",
+    "rows": [
+      { "product": "Кофе", "revenue": 4200 },
+      { "product": "Чай", "revenue": 3100 },
+      { "product": "Какао", "revenue": 1800 },
+      { "product": "Сок", "revenue": 1500 },
+      { "product": "Вода", "revenue": 900 }
+    ]
   },
   "config": {
+    "title": { "text": "Выручка по товарам (столбцы)" },
     "xAxis": { "type": "category" },
     "yAxis": { "type": "value" },
     "series": [{ "type": "bar", "encode": { "x": "product", "y": "revenue" } }]
@@ -250,14 +283,30 @@ chart_ttl: 1h
 ```datachart
 {
   "data": {
+    "source": "url",
+    "url": "https://trip2g.com/en/user/sales_demo_api"
+  },
+  "config": {
+    "title": { "text": "Выручка по дням (линия, из URL)" },
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
+  }
+}
+```
+
+```datachart
+{
+  "data": {
     "source": "inline",
     "rows": [
-      { "source": "direct", "hits": 30 },
-      { "source": "search", "hits": 50 },
-      { "source": "social", "hits": 20 }
+      { "source": "прямые", "hits": 30 },
+      { "source": "поиск", "hits": 50 },
+      { "source": "соцсети", "hits": 20 }
     ]
   },
   "config": {
+    "title": { "text": "Источники трафика (круговая)" },
     "series": [{ "type": "pie", "encode": { "itemName": "source", "value": "hits" } }]
   }
 }

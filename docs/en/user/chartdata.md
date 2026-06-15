@@ -2,6 +2,7 @@
 title: "Charts in notes"
 free: true
 lang_redirect: "[[ru/user/chartdata]]"
+chart_sales: "[[sales-demo.datachart.csv]]"
 ---
 
 A `datachart` fenced code block in any note becomes an interactive chart on the published page. No admin panel, no drag-and-drop — you write the chart the same way you write any other code block in Obsidian.
@@ -124,15 +125,18 @@ Add the link as a frontmatter property, then point the block at that property by
 
 ```yaml
 ---
-chart_sales: "[[sales.datachart.csv]]"
-chart_visitors: "[[visitors.json]]"
+chart_sales: "[[sales-demo.datachart.csv]]"
 ---
 ```
+
+The chart below is live — this very page declares `chart_sales` in its own
+frontmatter and ships a small `sales-demo.datachart.csv` next to it:
 
 ```datachart
 {
   "data": { "source": "frontmatter", "ref": "chart_sales" },
   "config": {
+    "title": { "text": "Monthly sales (from a vault CSV)" },
     "xAxis": { "type": "category" },
     "yAxis": { "type": "value" },
     "series": [{ "type": "bar", "encode": { "x": "month", "y": "sales" } }]
@@ -148,11 +152,43 @@ Both `.csv` and `.json` are supported. A JSON file must contain an array of row 
 
 Live data from any HTTP-JSON endpoint you control. trip2g fetches the URL on the **server side**, caches the result, and embeds it in the rendered HTML. The endpoint URL and request body never appear in the page source.
 
+The chart below is live and **copy-pasteable**: it points at a tiny demo endpoint
+on this site. Copy the block into your own vault and it renders the same chart —
+your trip2g fetches the same public URL.
+
 ```datachart
 {
   "data": {
     "source": "url",
-    "url": "http://localhost:8090/v1/query",
+    "url": "https://trip2g.com/en/user/sales_demo_api"
+  },
+  "config": {
+    "title": { "text": "Daily revenue (from a URL)" },
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
+  }
+}
+```
+
+The endpoint must return a flat JSON array of row objects — exactly what
+`https://trip2g.com/en/user/sales_demo_api` returns:
+
+```json
+[
+  { "day": "2026-06-01", "revenue": 1234 },
+  { "day": "2026-06-02", "revenue": 1891 }
+]
+```
+
+Need to send a query? Add a `body` and trip2g POSTs it as JSON instead of a plain
+GET. This is a syntax example — point it at your own endpoint:
+
+```jsonc
+{
+  "data": {
+    "source": "url",
+    "url": "https://api.example.com/query",
     "body": "{\"sql\":\"SELECT day, revenue FROM stats ORDER BY day\"}"
   },
   "config": {
@@ -161,15 +197,6 @@ Live data from any HTTP-JSON endpoint you control. trip2g fetches the URL on the
     "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
   }
 }
-```
-
-The endpoint must return a flat JSON array of row objects:
-
-```json
-[
-  { "day": "2026-06-01", "revenue": 1234 },
-  { "day": "2026-06-02", "revenue": 1891 }
-]
 ```
 
 **When the data is fetched.** trip2g fetches the URL server-side when the note is **published or rebuilt** (during the note load) — not when a reader opens the page. Readers always get pre-rendered HTML. While the first fetch is in flight the chart shows a loading indicator; once it lands, the page re-renders with the data. The cached result is then reused until the note is re-published.
@@ -235,14 +262,35 @@ chart_ttl: 1h
 ```datachart
 {
   "data": {
-    "source": "url",
-    "url": "http://localhost:8090/v1/query",
-    "body": "{\"sql\":\"SELECT product, revenue FROM sales ORDER BY revenue DESC LIMIT 5\"}"
+    "source": "inline",
+    "rows": [
+      { "product": "Coffee", "revenue": 4200 },
+      { "product": "Tea", "revenue": 3100 },
+      { "product": "Cocoa", "revenue": 1800 },
+      { "product": "Juice", "revenue": 1500 },
+      { "product": "Water", "revenue": 900 }
+    ]
   },
   "config": {
+    "title": { "text": "Revenue by product (bar)" },
     "xAxis": { "type": "category" },
     "yAxis": { "type": "value" },
     "series": [{ "type": "bar", "encode": { "x": "product", "y": "revenue" } }]
+  }
+}
+```
+
+```datachart
+{
+  "data": {
+    "source": "url",
+    "url": "https://trip2g.com/en/user/sales_demo_api"
+  },
+  "config": {
+    "title": { "text": "Daily revenue (line, from a URL)" },
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "line", "encode": { "x": "day", "y": "revenue" } }]
   }
 }
 ```
@@ -258,6 +306,7 @@ chart_ttl: 1h
     ]
   },
   "config": {
+    "title": { "text": "Traffic sources (pie)" },
     "series": [{ "type": "pie", "encode": { "itemName": "source", "value": "hits" } }]
   }
 }
