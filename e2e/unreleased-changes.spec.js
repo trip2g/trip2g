@@ -4,10 +4,10 @@ import fs from 'fs';
 import path from 'path';
 import { graphqlSignIn, USER_TOKEN_COOKIE_NAME } from './helpers/auth.js';
 
-// Both describe blocks below mutate the global "live release" pointer on the shared
-// server. Under fullyParallel they would otherwise be split across workers and race
-// (a concurrent makeReleaseLive flips the live release out from under another block,
-// yielding spurious 404s). File-level serial mode pins the whole file to one worker.
+// This spec mutates the global "live release" pointer on the shared server. Under
+// fullyParallel it would otherwise be split across workers and race (a concurrent
+// makeReleaseLive flips the live release out from under another test, yielding
+// spurious 404s). File-level serial mode pins the whole file to one worker.
 test.describe.configure({ mode: 'serial' });
 
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
@@ -97,19 +97,6 @@ async function makeReleaseLive(request, cookie, id) {
 async function createAndActivateRelease(request, cookie, title) {
   const id = await createRelease(request, cookie, title);
   await makeReleaseLive(request, cookie, id);
-}
-
-async function setConfigBool(request, cookie, id, value) {
-  await gqlAdmin(request, cookie, `
-    mutation SetConfig($input: SetConfigBoolValueInput!) {
-      admin {
-        setConfigBoolValue(input: $input) {
-          ... on SetConfigBoolValueSuccess { configValue { id } }
-          ... on ErrorPayload { message }
-        }
-      }
-    }
-  `, { input: { id, value } });
 }
 
 async function getLiveReleaseId(request, cookie) {
@@ -252,82 +239,6 @@ test.describe('unreleasedChanges', () => {
   });
 });
 
-// ── Part 2: show_draft_versions ───────────────────────────────────────────────
-
-test.describe('show_draft_versions', () => {
-  test.describe.configure({ mode: 'serial' });
-  let apiKey;
-  let adminCookie;
-  let originalLiveReleaseId;
-  // Note: the server canonicalizes URL separators to underscores
-  // (normalizeURLPart maps every non-alphanumeric char to "_"), so a file named
-  // with hyphens is served at the underscore URL. Keep path and URL aligned.
-  const draftNotePath = 'e2e_draft_note.md';
-  const draftNoteURL = `${APP_URL}/e2e_draft_note`;
-
-  test.beforeAll(async ({ request }) => {
-    const apiKeyPath = path.join(process.cwd(), '.test-api-key');
-    apiKey = fs.readFileSync(apiKeyPath, 'utf8').trim();
-    const token = await graphqlSignIn(request);
-    adminCookie = `${USER_TOKEN_COOKIE_NAME}=${token}`;
-    originalLiveReleaseId = await getLiveReleaseId(request, adminCookie);
-    await setConfigBool(request, adminCookie, 'show_draft_versions', false);
-  });
-
-  test.afterAll(async ({ request }) => {
-    await setConfigBool(request, adminCookie, 'show_draft_versions', false);
-    if (originalLiveReleaseId) {
-      await makeReleaseLive(request, adminCookie, originalLiveReleaseId);
-    }
-  });
-
-  test('setup: push note A, create live release', async ({ request }) => {
-    await pushAndCommit(request, apiKey, [
-      { path: draftNotePath, content: '---\nfree: true\n---\n\nContent version A' },
-    ]);
-    await createAndActivateRelease(request, adminCookie, 'e2e-draft-baseline');
-  });
-
-  test('setup: push note B (latest only, not released)', async ({ request }) => {
-    await pushAndCommit(request, apiKey, [
-      { path: draftNotePath, content: '---\nfree: true\n---\n\nContent version B' },
-    ]);
-  });
-
-  test('guest sees live version A when show_draft_versions is off', async ({ request }) => {
-    const res = await request.get(draftNoteURL);
-    const html = await res.text();
-    expect(html).toContain('Content version A');
-    expect(html).not.toContain('Content version B');
-  });
-
-  test('admin also sees live version A when show_draft_versions is off', async ({ request }) => {
-    const res = await request.get(draftNoteURL, {
-      headers: { Cookie: adminCookie },
-    });
-    const html = await res.text();
-    expect(html).toContain('Content version A');
-    expect(html).not.toContain('Content version B');
-  });
-
-  test('admin sees latest version B when show_draft_versions is on', async ({ request }) => {
-    await setConfigBool(request, adminCookie, 'show_draft_versions', true);
-
-    const res = await request.get(draftNoteURL, {
-      headers: { Cookie: adminCookie },
-    });
-    const html = await res.text();
-    expect(html).toContain('Content version B');
-    expect(html).not.toContain('Content version A');
-  });
-
-  test('guest also sees draft version B when show_draft_versions is on', async ({ request }) => {
-    // show_draft_versions promotes the latest (unreleased) version to the default
-    // view for everyone, guests included — not just admins. With it on, a guest
-    // sees version B (latest), same as the admin above.
-    const res = await request.get(draftNoteURL);
-    const html = await res.text();
-    expect(html).toContain('Content version B');
-    expect(html).not.toContain('Content version A');
-  });
-});
+// The show_draft_versions tests live in their own spec (e2e/show-draft-versions.spec.js)
+// and run dead last: they flip the global show_draft_versions config, which switches
+// public serving away from "latest committed" and would 404 any later-pushed note.

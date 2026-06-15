@@ -30,17 +30,28 @@
 #    - Update telegram posts and verify changes
 #    - Wait for ALL background jobs to complete (wait_all_jobs)
 #
-# 7. Webhook E2E Tests (e2e/webhooks.spec.js) - RUNS LAST
+# 7. Webhook E2E Tests (e2e/webhooks.spec.js)
 #    - Test webhook delivery, agent responses, depth protection
-#    - CRITICAL: Must run LAST after all telegram jobs complete
+#    - CRITICAL: Must run after all telegram jobs complete (empty job queue)
 #    - Uses /debug/wait_all_jobs which waits for ALL background jobs
-#    - Running earlier would cause timeouts due to pending telegram jobs
+#    - Running before telegram drains would cause timeouts due to pending jobs
+#    - Must run BEFORE the release/draft specs: it pushes notes and serves them,
+#      which needs the "serve latest committed" fallback those specs disable
+#
+# 8. Unreleased-changes E2E Tests (e2e/unreleased-changes.spec.js)
+#    - Pins a static release as live and leaves it pinned (no unset-live mutation),
+#      so it must come after any spec that pushes-and-serves notes.
+#
+# 9. show_draft_versions E2E Tests (e2e/show-draft-versions.spec.js) - RUNS LAST
+#    - Flips the global show_draft_versions config, switching public serving from
+#      "latest committed" to the live-release snapshot. Nothing must run after it.
 #
 # Why This Order?
 # ===============
 # - Setup FIRST: Creates admin session and API key needed by all other tests
 # - Sync BEFORE Browser: Ensures test data is loaded before UI tests
-# - Webhooks LAST: Ensures job queue is empty (wait_all_jobs won't block on unrelated jobs)
+# - Webhooks after telegram: Ensures job queue is empty (wait_all_jobs won't block)
+# - Release/draft specs LAST: they poison global serving state (live release + config)
 #
 # Environment:
 # ============
@@ -477,16 +488,12 @@ npx playwright test e2e/federation-bidir.spec.js || {
 }
 echo -e "${GREEN}✓ Bidirectional federation E2E tests passed${NC}"
 
-# Run unreleased-changes + show_draft_versions E2E tests
-echo ""
-echo "📋 Running unreleased-changes and show_draft_versions E2E tests..."
-RUN_ISOLATED_SPECS=1 npx playwright test e2e/unreleased-changes.spec.js || {
-  echo -e "${RED}✗ Unreleased changes E2E tests failed${NC}"
-  exit 1
-}
-echo -e "${GREEN}✓ Unreleased changes E2E tests passed${NC}"
-
-# Run webhook E2E tests AFTER all other tests (when job queue is empty)
+# Run webhook E2E tests (when job queue is empty). Must run BEFORE
+# unreleased-changes: webhooks push notes and serve them at their public URL,
+# which only works while serving falls back to "latest committed". The
+# unreleased-changes spec pins a static release as live and cannot revert that
+# (no unset-live mutation exists), so anything that pushes-and-serves after it
+# 404s. Keep it last instead.
 echo ""
 echo "🔗 Running webhook E2E tests..."
 npx playwright test e2e/webhooks.spec.js || {
@@ -494,6 +501,28 @@ npx playwright test e2e/webhooks.spec.js || {
   exit 1
 }
 echo -e "${GREEN}✓ Webhook E2E tests passed${NC}"
+
+# Run unreleased-changes E2E tests: this spec pins a live release globally and
+# leaves it pinned, so it must come after any spec that pushes-and-serves notes.
+echo ""
+echo "📋 Running unreleased-changes E2E tests..."
+RUN_ISOLATED_SPECS=1 npx playwright test e2e/unreleased-changes.spec.js || {
+  echo -e "${RED}✗ Unreleased changes E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Unreleased changes E2E tests passed${NC}"
+
+# Run show_draft_versions E2E tests DEAD LAST: this spec flips the global
+# show_draft_versions config (switching public serving from "latest committed" to
+# the live-release snapshot). Any later spec that pushes notes and expects them
+# served would 404, so nothing must run after it.
+echo ""
+echo "📋 Running show_draft_versions E2E tests..."
+RUN_ISOLATED_SPECS=1 npx playwright test e2e/show-draft-versions.spec.js || {
+  echo -e "${RED}✗ show_draft_versions E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ show_draft_versions E2E tests passed${NC}"
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"
