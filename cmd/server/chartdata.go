@@ -14,15 +14,24 @@ import (
 // ChartData (renderer provider) and SaveChartData (job sink) onto the app.
 var _ chartdata.Env = (*app)(nil)
 
-func (a *app) CachedChartData(ctx context.Context, versionID int64, hash string) (string, bool, error) {
+func (a *app) CachedChartData(ctx context.Context, versionID int64, hash string) (string, string, bool, error) {
 	row, err := a.Queries.GetChartData(ctx, db.GetChartDataParams{VersionID: versionID, ChartHash: hash})
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", false, nil
+		return "", "", false, nil
 	}
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
-	return row.DataJson, true, nil
+	return row.DataJson, row.LastError, true, nil
+}
+
+func (a *app) StoreChartDataError(ctx context.Context, versionID int64, hash, errMsg string, erroredAt int64) error {
+	return a.WriteQueries.SetChartDataError(ctx, db.SetChartDataErrorParams{
+		VersionID:   versionID,
+		ChartHash:   hash,
+		LastError:   errMsg,
+		LastErrorAt: erroredAt,
+	})
 }
 
 func (a *app) StoreChartData(ctx context.Context, versionID int64, hash, dataJSON string, fetchedAt int64) error {

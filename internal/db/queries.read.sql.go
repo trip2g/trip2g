@@ -1771,7 +1771,7 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 }
 
 const getChartData = `-- name: GetChartData :one
-select version_id, chart_hash, data_json, fetched_at
+select version_id, chart_hash, data_json, fetched_at, last_error, last_error_at
   from chart_data_cache
  where version_id = ? and chart_hash = ?
 `
@@ -1789,6 +1789,8 @@ func (q *Queries) GetChartData(ctx context.Context, arg GetChartDataParams) (Cha
 		&i.ChartHash,
 		&i.DataJson,
 		&i.FetchedAt,
+		&i.LastError,
+		&i.LastErrorAt,
 	)
 	return i, err
 }

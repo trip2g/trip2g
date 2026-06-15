@@ -15,10 +15,10 @@ import (
 )
 
 // ChartDataProvider supplies cached rows for backend-fetched chart sources
-// (url, internal). It returns nil when data is not yet available; the
-// implementation is expected to arrange a background refresh on a miss.
+// (url, internal). It returns an empty result when data is not yet available;
+// the implementation is expected to arrange a background refresh on a miss.
 type ChartDataProvider interface {
-	ChartRows(versionID int64, chart model.NoteViewChart) json.RawMessage
+	ChartRows(versionID int64, chart model.NoteViewChart) model.ChartRowsResult
 }
 
 // chartRenderer renders ```datachart fenced blocks as chart containers and falls
@@ -93,6 +93,7 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 
 	var dataSrc, dataFormat string
 	var rows json.RawMessage
+	var chartErrored bool
 
 	switch chart.Data.Source {
 	case model.ChartSourceInline:
@@ -100,7 +101,15 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 	case model.ChartSourceFrontmatter:
 		dataSrc, dataFormat = r.resolveFrontmatterSrc(chart.Data.Ref)
 	case model.ChartSourceURL, model.ChartSourceInternal:
-		rows = r.cachedRows(chart)
+		res := r.cachedRows(chart)
+		rows = res.Rows
+		if res.Error != "" && rows == nil {
+			chartErrored = true
+			if r.resolver != nil && r.resolver.currentPage != nil {
+				r.resolver.currentPage.AddWarning(model.NoteWarningWarning,
+					"chart data fetch failed: %s", res.Error)
+			}
+		}
 	}
 
 	payload, err := json.Marshal(struct {
@@ -112,6 +121,9 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 	}
 
 	_, _ = w.WriteString(`<div class="chart"`)
+	if chartErrored {
+		_, _ = w.WriteString(` data-error="1"`)
+	}
 	if dataSrc != "" {
 		_, _ = w.WriteString(` data-src="`)
 		_, _ = w.Write(util.EscapeHTML([]byte(dataSrc)))
@@ -126,11 +138,12 @@ func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedC
 	_, _ = w.WriteString(`</script>`)
 }
 
-// cachedRows returns the cached rows for a url/internal chart via the provider,
-// or nil when unavailable (widget shows a loader; the provider enqueues a refresh).
-func (r *chartRenderer) cachedRows(chart model.NoteViewChart) json.RawMessage {
+// cachedRows returns the cached result for a url/internal chart via the provider,
+// or an empty result when unavailable (widget shows a loader; the provider
+// enqueues a refresh).
+func (r *chartRenderer) cachedRows(chart model.NoteViewChart) model.ChartRowsResult {
 	if r.resolver == nil || r.resolver.chartData == nil || r.resolver.currentPage == nil {
-		return nil
+		return model.ChartRowsResult{}
 	}
 	return r.resolver.chartData.ChartRows(r.resolver.currentPage.VersionID, chart)
 }

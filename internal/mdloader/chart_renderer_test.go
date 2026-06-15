@@ -10,9 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubChartData struct{ rows json.RawMessage }
+type stubChartData struct {
+	rows   json.RawMessage
+	errMsg string
+}
 
-func (s stubChartData) ChartRows(_ int64, _ model.NoteViewChart) json.RawMessage { return s.rows }
+func (s stubChartData) ChartRows(_ int64, _ model.NoteViewChart) model.ChartRowsResult {
+	return model.ChartRowsResult{Rows: s.rows, Error: s.errMsg}
+}
 
 func renderNote(t *testing.T, content string) string {
 	t.Helper()
@@ -70,6 +75,25 @@ func TestChartRenderer_URLSourceUsesProvider(t *testing.T) {
 	require.NoError(t, err)
 	html := string(pages.Map["/note"].HTML)
 	require.Contains(t, html, `"data":[{"a":1}]`, "provider rows should be baked into the page")
+}
+
+func TestChartRenderer_URLSourceError(t *testing.T) {
+	content := "```datachart\n" +
+		`{"data":{"source":"url","url":"http://x"},"config":{"series":[]}}` +
+		"\n```\n"
+	log := logger.TestLogger{}
+	pages, err := Load(Options{
+		Sources:   []SourceFile{{Path: "note.md", Content: []byte(content)}},
+		Log:       &log,
+		ChartData: stubChartData{errMsg: "connection refused"},
+	})
+	require.NoError(t, err)
+	p := pages.Map["/note"]
+	html := string(p.HTML)
+	require.Contains(t, html, `data-error="1"`, "generic error marker must be present")
+	require.NotContains(t, html, "connection refused", "detailed error must not leak into HTML")
+	require.Len(t, p.Warnings, 1, "must add a NoteWarning with the detail")
+	require.Contains(t, p.Warnings[0].Message, "connection refused")
 }
 
 func TestStripWikilink(t *testing.T) {

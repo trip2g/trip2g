@@ -18,11 +18,18 @@ type mockEnv struct {
 	hash      string
 	data      string
 	called    bool
+
+	errMsg    string
+	errCalled bool
 }
 
 func (m *mockEnv) Logger() logger.Logger { return &logger.TestLogger{} }
 func (m *mockEnv) SaveChartData(_ context.Context, versionID int64, hash, dataJSON string) error {
 	m.versionID, m.hash, m.data, m.called = versionID, hash, dataJSON, true
+	return nil
+}
+func (m *mockEnv) SaveChartDataError(_ context.Context, _ int64, _ string, errMsg string) error {
+	m.errMsg, m.errCalled = errMsg, true
 	return nil
 }
 
@@ -40,6 +47,7 @@ func TestResolve_GET(t *testing.T) {
 	require.Equal(t, int64(42), env.versionID)
 	require.Equal(t, "h", env.hash)
 	require.JSONEq(t, `[{"day":"Mon","n":5}]`, env.data)
+	require.False(t, env.errCalled, "success must not record an error")
 }
 
 func TestResolve_POST_WithBody(t *testing.T) {
@@ -55,6 +63,7 @@ func TestResolve_POST_WithBody(t *testing.T) {
 	err := Resolve(context.Background(), env, Params{URL: srv.URL, Body: `{"sql":"SELECT 1"}`})
 	require.NoError(t, err)
 	require.True(t, env.called)
+	require.False(t, env.errCalled, "success must not record an error")
 }
 
 // Fetch problems are expected for external sources: the job must complete
@@ -68,9 +77,11 @@ func TestResolve_NonJSONResponse(t *testing.T) {
 	defer srv.Close()
 
 	env := &mockEnv{}
-	err := Resolve(context.Background(), env, Params{URL: srv.URL})
+	err := Resolve(context.Background(), env, Params{VersionID: 1, Hash: "h", URL: srv.URL})
 	require.NoError(t, err, "non-JSON response is not a job failure")
 	require.False(t, env.called, "must not cache a non-JSON response")
+	require.True(t, env.errCalled, "must record the error")
+	require.Equal(t, "non-JSON response", env.errMsg)
 }
 
 func TestResolve_HTTPError(t *testing.T) {
@@ -81,14 +92,18 @@ func TestResolve_HTTPError(t *testing.T) {
 	defer srv.Close()
 
 	env := &mockEnv{}
-	err := Resolve(context.Background(), env, Params{URL: srv.URL})
+	err := Resolve(context.Background(), env, Params{VersionID: 2, Hash: "h2", URL: srv.URL})
 	require.NoError(t, err, "upstream HTTP error is not a job failure")
 	require.False(t, env.called)
+	require.True(t, env.errCalled, "must record the error")
+	require.NotEmpty(t, env.errMsg)
 }
 
 func TestResolve_UnreachableHost(t *testing.T) {
 	env := &mockEnv{}
-	err := Resolve(context.Background(), env, Params{URL: "http://127.0.0.1:1/v1/query", Body: `{"sql":"SELECT 1"}`})
+	err := Resolve(context.Background(), env, Params{VersionID: 3, Hash: "h3", URL: "http://127.0.0.1:1/v1/query", Body: `{"sql":"SELECT 1"}`})
 	require.NoError(t, err, "unreachable source is not a job failure")
 	require.False(t, env.called)
+	require.True(t, env.errCalled, "must record the error")
+	require.NotEmpty(t, env.errMsg)
 }

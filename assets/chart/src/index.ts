@@ -59,7 +59,21 @@ async function resolveRows(el: HTMLElement, spec: ChartSpec): Promise<unknown> {
   return res.json();
 }
 
+function showChartError(el: HTMLElement) {
+  el.style.height = '';
+  el.innerHTML = '<div style="' +
+    'padding:24px 16px;text-align:center;color:#888;' +
+    'font-size:14px;border:1px dashed #ccc;border-radius:8px;' +
+    'background:#fafafa">' +
+    'Chart data could not be loaded</div>';
+}
+
 function renderChart(el: HTMLElement) {
+  if (el.getAttribute('data-error')) {
+    showChartError(el);
+    return;
+  }
+
   const dataEl = el.parentElement?.querySelector<HTMLScriptElement>('.chart__data');
   if (!dataEl) return;
 
@@ -78,7 +92,10 @@ function renderChart(el: HTMLElement) {
       if (rows == null && spec.data == null) return; // no data yet — keep loader
       instance.setOption(injectData(spec.config || {}, rows));
     })
-    .catch(() => el.classList.remove('chart--loading'));
+    .catch(() => {
+      el.classList.remove('chart--loading');
+      showChartError(el);
+    });
 
   window.addEventListener('resize', () => instance.resize());
 }

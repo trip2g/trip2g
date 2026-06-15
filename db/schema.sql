@@ -838,6 +838,8 @@ CREATE TABLE chart_data_cache (
   chart_hash text    not null,
   data_json  text    not null,
   fetched_at integer not null,
+  last_error text not null default '',
+  last_error_at integer not null default 0,
   primary key (version_id, chart_hash)
 );
 -- Dbmate schema migrations
@@ -961,4 +963,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260524105748'),
   ('20260524105749'),
   ('20260526120000'),
-  ('20260602095046');
+  ('20260602095046'),
+  ('20260615120000');

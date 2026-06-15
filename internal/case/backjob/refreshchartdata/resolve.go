@@ -30,6 +30,9 @@ type Env interface {
 	// SaveChartData persists the fetched rows JSON for (versionID, hash). The
 	// implementation stamps fetched_at.
 	SaveChartData(ctx context.Context, versionID int64, hash, dataJSON string) error
+	// SaveChartDataError records a fetch failure for (versionID, hash) so the
+	// renderer can surface it to authors via NoteWarning.
+	SaveChartDataError(ctx context.Context, versionID int64, hash, errMsg string) error
 }
 
 // Resolve fetches the chart's data from its HTTP-JSON endpoint and caches it.
@@ -44,11 +47,11 @@ func Resolve(ctx context.Context, env Env, p Params) error {
 	data, err := fetch(ctx, p.URL, p.Body)
 	if err != nil {
 		env.Logger().Warn("refreshchartdata: fetch failed, keeping stale cache", "url", p.URL, "error", err)
-		return nil
+		return env.SaveChartDataError(ctx, p.VersionID, p.Hash, err.Error())
 	}
 	if !json.Valid(data) {
 		env.Logger().Warn("refreshchartdata: non-JSON response, keeping stale cache", "url", p.URL)
-		return nil
+		return env.SaveChartDataError(ctx, p.VersionID, p.Hash, "non-JSON response")
 	}
 	return env.SaveChartData(ctx, p.VersionID, p.Hash, string(data))
 }

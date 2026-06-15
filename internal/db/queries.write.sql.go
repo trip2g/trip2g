@@ -2891,6 +2891,31 @@ func (q *WriteQueries) SetApiKeyMcpAdminTools(ctx context.Context, arg SetApiKey
 	return err
 }
 
+const setChartDataError = `-- name: SetChartDataError :exec
+insert into chart_data_cache (version_id, chart_hash, data_json, fetched_at, last_error, last_error_at)
+values (?, ?, '', 0, ?, ?)
+on conflict (version_id, chart_hash) do update set
+  last_error    = excluded.last_error,
+  last_error_at = excluded.last_error_at
+`
+
+type SetChartDataErrorParams struct {
+	VersionID   int64  `json:"version_id"`
+	ChartHash   string `json:"chart_hash"`
+	LastError   string `json:"last_error"`
+	LastErrorAt int64  `json:"last_error_at"`
+}
+
+func (q *WriteQueries) SetChartDataError(ctx context.Context, arg SetChartDataErrorParams) error {
+	_, err := q.db.ExecContext(ctx, setChartDataError,
+		arg.VersionID,
+		arg.ChartHash,
+		arg.LastError,
+		arg.LastErrorAt,
+	)
+	return err
+}
+
 const setPatreonMemberCurrentTier = `-- name: SetPatreonMemberCurrentTier :exec
 update patreon_members
 set current_tier_id = ?
@@ -4135,11 +4160,13 @@ func (q *WriteQueries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTie
 }
 
 const upsertChartData = `-- name: UpsertChartData :exec
-insert into chart_data_cache (version_id, chart_hash, data_json, fetched_at)
-values (?, ?, ?, ?)
+insert into chart_data_cache (version_id, chart_hash, data_json, fetched_at, last_error, last_error_at)
+values (?, ?, ?, ?, '', 0)
 on conflict (version_id, chart_hash) do update set
-  data_json  = excluded.data_json,
-  fetched_at = excluded.fetched_at
+  data_json     = excluded.data_json,
+  fetched_at    = excluded.fetched_at,
+  last_error    = '',
+  last_error_at = 0
 `
 
 type UpsertChartDataParams struct {

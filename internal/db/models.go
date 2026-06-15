@@ -165,10 +165,12 @@ type ChangeWebhookDelivery struct {
 }
 
 type ChartDataCache struct {
-	VersionID int64  `json:"version_id"`
-	ChartHash string `json:"chart_hash"`
-	DataJson  string `json:"data_json"`
-	FetchedAt int64  `json:"fetched_at"`
+	VersionID   int64  `json:"version_id"`
+	ChartHash   string `json:"chart_hash"`
+	DataJson    string `json:"data_json"`
+	FetchedAt   int64  `json:"fetched_at"`
+	LastError   string `json:"last_error"`
+	LastErrorAt int64  `json:"last_error_at"`
 }
 
 type ConfigBoolValue struct {

@@ -50,6 +50,12 @@ func (d ChartDataSource) CacheHash() string {
 	return hex.EncodeToString(sum[:])
 }
 
+// ChartRowsResult carries cached chart data plus any stored fetch error.
+type ChartRowsResult struct {
+	Rows  json.RawMessage // nil when no data available
+	Error string          // non-empty when the last fetch failed
+}
+
 // NoteViewChart is a dashboard chart parsed from a ```datachart fenced code block.
 type NoteViewChart struct {
 	Index  int             `json:"-"`               // position among chart blocks in the note (0-based)
