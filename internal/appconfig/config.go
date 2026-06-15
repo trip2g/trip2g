@@ -61,11 +61,11 @@ type Config struct {
 	AdminJSURL string
 	LogLevel   string
 
-	ShutdownGracePeriod   time.Duration
-	ShutdownTimeout       time.Duration
+	ShutdownGracePeriod     time.Duration
+	ShutdownTimeout         time.Duration
 	GlobalQueuePollInterval time.Duration
-	InternalListenAddr    string
-	MCPFederationMaxDepth int
+	InternalListenAddr      string
+	MCPFederationMaxDepth   int
 
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags

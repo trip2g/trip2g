@@ -82,7 +82,7 @@ func TestPragmasAppliedToAllConnections(t *testing.T) {
 		}
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range conns {
 		c, connErr := pool.Conn(ctx)
 		require.NoError(t, connErr)
 		conns = append(conns, c)
@@ -125,7 +125,7 @@ func TestWriteTxUpgradeNoBusySnapshot(t *testing.T) {
 
 	tx, err := connA.BeginTx(ctx, nil)
 	require.NoError(t, err)
-	defer tx.Rollback() //nolint:errcheck // cleanup
+	defer tx.Rollback()
 
 	// Read inside the transaction (with deferred BEGIN this takes a snapshot).
 	var n int
