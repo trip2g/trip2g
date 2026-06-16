@@ -14,6 +14,7 @@ func main() {
 	cases := []views.CaseItem{}
 	cases = append(cases, scanDir("")...)
 	cases = append(cases, scanDir("admin")...)
+	cases = append(cases, scanDir("system")...)
 
 	f, err := os.Create("./endpoints_gen.go")
 	if err != nil {
