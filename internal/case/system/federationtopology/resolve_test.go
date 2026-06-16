@@ -3,6 +3,7 @@ package federationtopology_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/system/federationtopology"
 	"trip2g/internal/db"
@@ -52,6 +53,27 @@ func TestBuildTopology(t *testing.T) {
 
 	require.Len(t, out.KBNotes, 1)
 	require.Equal(t, kbURL, out.KBNotes[0].KBURL)
+}
+
+func TestRevokedAndEmptyScope(t *testing.T) {
+	now := time.Now()
+	kbURL := "https://x/_system/mcp"
+	env := &EnvMock{
+		PublicURLFunc:        func() string { return "https://me.io" },
+		ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) { return nil, nil },
+		ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+			return []db.ListFederationSecretsRow{{ID: 1, Kid: "k", KbUrl: &kbURL, RevokedAt: &now}}, nil
+		},
+		ListAllFederationSecretScopesFunc: func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+			return nil, nil
+		},
+		LatestNoteViewsFunc: func() *model.NoteViews { return &model.NoteViews{} },
+	}
+	out, err := federationtopology.Resolve(context.Background(), env)
+	require.NoError(t, err)
+	require.NotNil(t, out.Outbound[0].RevokedAt)
+	require.NotNil(t, out.Outbound[0].Subgraphs)
+	require.Len(t, out.Outbound[0].Subgraphs, 0)
 }
 
 func namesOf(ss []federationtopology.Subgraph) []string {
