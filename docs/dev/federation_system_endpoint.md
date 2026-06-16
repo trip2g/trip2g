@@ -23,9 +23,11 @@
 
 ```
 GET /_system/federation/admin
-Authorization: Bearer <admin-JWT>     // тот же JWT, что и для /_system/hat (claims role=admin)
+Cookie: <session-cookie>              // admin-сессия, см. ниже
 Accept: application/json
 ```
+
+**Как клиент получает admin-сессию.** Эндпоинт не вводит новой авторизации — обычный `checkAdmin` по `UserToken()`, который читает session-cookie (или `t2g_` personal token). Внешний клиент (панель) получает cookie тем же путём, что и браузер: POST `/_system/hat` с HAT-JWT (`{e, ae:true}`, подпись `JWT_SECRET` инстанса) → инстанс ставит `Set-Cookie` → клиент переиспользует её для этого GET и для admin-GraphQL-мутаций. Никакого Bearer-admin-JWT trip2g не принимает (`UserToken()` пропускает не-`t2g_` Bearer в anonymous).
 
 ### URL namespace
 
