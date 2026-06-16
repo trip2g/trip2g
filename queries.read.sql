@@ -203,6 +203,12 @@ select s.name
  where fss.kid = ?
  order by s.name;
 
+-- name: ListAllFederationSecretScopes :many
+select fss.kid, s.id as subgraph_id, s.name as subgraph_name
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ order by fss.kid, s.name;
+
 -- name: ListAllUserBans :many
 select * from user_bans;
 

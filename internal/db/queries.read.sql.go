@@ -3610,6 +3610,42 @@ func (q *Queries) ListAllCronJobs(ctx context.Context) ([]CronJob, error) {
 	return items, nil
 }
 
+const listAllFederationSecretScopes = `-- name: ListAllFederationSecretScopes :many
+select fss.kid, s.id as subgraph_id, s.name as subgraph_name
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ order by fss.kid, s.name
+`
+
+type ListAllFederationSecretScopesRow struct {
+	Kid          string `json:"kid"`
+	SubgraphID   int64  `json:"subgraph_id"`
+	SubgraphName string `json:"subgraph_name"`
+}
+
+func (q *Queries) ListAllFederationSecretScopes(ctx context.Context) ([]ListAllFederationSecretScopesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllFederationSecretScopes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllFederationSecretScopesRow
+	for rows.Next() {
+		var i ListAllFederationSecretScopesRow
+		if err := rows.Scan(&i.Kid, &i.SubgraphID, &i.SubgraphName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllGitTokens = `-- name: ListAllGitTokens :many
 select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by from git_tokens order by admin_id, created_at desc
 `
