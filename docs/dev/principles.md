@@ -486,7 +486,7 @@ git commit -m "feat(oauth): add Google OAuth admin management"
 
 При каждом коммите спроси себя:
 
-- [ ] **Changelog?** — Это изменение видно пользователям? → Добавь в `docs/changelog.md`
+- [ ] **Changelog?** — Это изменение видно пользователям? → Добавь в `docs/en/changelog.md` + `docs/ru/changelog.md`
 
 Changelog нужен для: новых фич, исправленных багов, изменений UI/UX.
 Changelog НЕ нужен для: рефакторинга, тестов, внутренних оптимизаций.

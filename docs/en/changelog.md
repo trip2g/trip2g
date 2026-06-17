@@ -8,6 +8,40 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.6.0 — 2026-06-17
+
+### Mermaid diagrams
+
+- **What.** A ` ```mermaid ` fenced code block in any note renders as a diagram on the published page — flowcharts, sequence diagrams, pie charts, Gantt charts, class diagrams, state diagrams, ER diagrams, and every other type Mermaid supports.
+- **Why.** Write diagrams the same way Obsidian renders them — the block just works.
+- **How.** Add a code block with the `mermaid` language tag and paste your diagram syntax. The Mermaid library loads lazily and only on pages that contain a `mermaid` block; pages without diagrams pay no loading cost. User docs: [`docs/en/user/mermaid.md`](./en/user/mermaid.md), [`docs/ru/user/mermaid.md`](./ru/user/mermaid.md).
+
+### Charts from `datachart` blocks (`7cadad3e`, `cb1403f5`)
+
+- **What.** A ` ```datachart ` fenced code block becomes an interactive chart on the published page, powered by Apache ECharts. Data can come from four sources: `inline` rows bundled in the block, a vault file referenced via a frontmatter `[[wikilink]]` (`frontmatter`), an external HTTP-JSON endpoint fetched on the server and cached (`url`), or your site's own content via SQL (`internal`, coming soon). URL fetch errors are recorded and surfaced to authors so a broken endpoint is visible at sync time, not only in the browser (`97997bb4`).
+- **Why.** Publish live charts as naturally as you write any other Obsidian note. The ECharts widget loads lazily — only on pages that contain a `datachart` block.
+- **How.** Add a fenced block with the language tag `datachart` containing a JSON object with `data` and `config` keys. The `config` object is passed directly to ECharts, so any chart type and option it supports works here. User docs: [`docs/en/user/chartdata.md`](./en/user/chartdata.md), [`docs/ru/user/chartdata.md`](./ru/user/chartdata.md).
+
+### MCP Federation — admin topology endpoint and configurable `kb_id` (`4485b6cd`, `5c7492ae`)
+
+- **What.** Two additions to the federation layer introduced in v0.4.1. A new admin-gated `GET /_system/federation/admin` endpoint returns the full federation topology — all registered KB peers, their scopes, and their reachability status. The `kb_id` for your instance is now configurable; if not set explicitly it falls back to the public URL host.
+- **Why.** Operators running multiple federated instances can inspect the topology without digging through the database. A configurable `kb_id` lets you assign a stable, human-readable identifier that stays correct regardless of which domain the instance answers on.
+- **How.** The topology endpoint is admin-only (requires an admin API key or session). Set `kb_id` in your instance config to override the default host-derived value. No changes needed to existing federation setups.
+
+### Live note-change SSE subscriptions (`854c56b0`)
+
+- **What.** A new `noteChanges` GraphQL subscription streams note upsert and removal events to connected clients over SSE, with optional glob filtering. Each event carries the changed HTML selectors diff so clients can patch the DOM without a full page reload.
+- **Why.** Enables live-updating UIs — an admin editor, a preview pane, or a custom dashboard — that reflect vault changes the moment they land on the server.
+- **How.** Subscribe to `noteChanges(glob: "posts/**")` via the GraphQL SSE endpoint. The `changedHtmlSelectors` field on each event lists the CSS selectors whose rendered HTML changed, making surgical DOM updates possible.
+
+### In-browser editor: Ctrl+Click wikilink navigation (`a065fea2`)
+
+- **What.** In the in-browser file editor (introduced in v0.5.0), Ctrl+Click (or Cmd+Click on macOS) on a wikilink opens the linked note directly.
+- **Why.** Matches the Obsidian editing experience and removes the need to search for a linked file manually.
+- **How.** Open the editor, hover over any `[[wikilink]]` — the cursor changes to a pointer. Ctrl+Click to navigate.
+
+---
+
 ## v0.5.1 — 2026-05-27
 
 ### Per-webhook secrets injected into delivery payload (`0b72acf2`)
