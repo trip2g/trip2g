@@ -58,7 +58,7 @@ namespace $.$$ {
 		}
 
 		@$mol_mem_key
-		override loaded_content(path: string): string {
+		loaded_content(path: string): string {
 			return this.loaded_note_path(path)?.content ?? ''
 		}
 
