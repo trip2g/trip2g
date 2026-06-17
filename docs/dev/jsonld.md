@@ -7,6 +7,27 @@ mirroring the mermaid "backend-decided per-note widget" pattern
 (`docs/dev/mermaid.md`). No JavaScript, no new endpoint — static JSON injected
 into the page `<head>`.
 
+## Status: implemented — what shipped vs. this plan
+
+The feature is implemented. Two deliberate divergences from the plan below:
+
+- **Serialization: quicktemplate, not `json.Marshal`.** The JSON is assembled in
+  `internal/defaulttemplate/jsonld.html` using `{%q= %}` (JSON-quoted, XSS-safe
+  against `</script>`) — far cheaper than `json.Marshal` on the per-page hot
+  path. Go (`internal/defaulttemplate/jsonld.go`) makes the data decisions
+  (`JSONLDType`, `ShouldEmitJSONLD`, `JSONLDBreadcrumb`, image/date selection,
+  `DeriveSiteName`, `JSONLDLogo`); the template assembles the JSON with a
+  leading-comma technique so optional fields stay valid.
+- **Site name & logo sources.** `SiteConfig` has no site-name/logo field, so the
+  site name is derived from `site_title_template` (e.g. `My Blog` from
+  `%s | My Blog`, host fallback) and the `Organization` logo is the first image
+  of the header note (`_header.md` / glob-matched header section). `FAQPage`
+  (Story 7) was not implemented.
+
+The `@type` decision shipped simplified: `schema_type` override → `ProfilePage`
+for `type: profile/person` → `WebPage` for home pages → `BlogPosting` default.
+The rest of this document is the original plan, kept for context.
+
 ## Why backend-decided
 
 The renderer already parses every note at load time (title, dates, lang,
