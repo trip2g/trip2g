@@ -30,7 +30,7 @@ Panel MCP tools (authorized by the panel API key):
 
 | Tool | Args | What it does |
 |---|---|---|
-| `list_instances` | — | pool instances: `{instance_id, name, domain}` |
+| `list_slots` | — | pool instances (slots): `{instance_id, name, domain, ...}`. `instance_id` = slot id |
 | `instance_federation` | `instance_id` | instance topology (see §7): self, subgraphs, secrets, KB-notes |
 | `instance_graphql_request` | `instance_id`, `query`, `variables?` | run admin GraphQL on the instance; the panel proxies it as cookie admin |
 
@@ -252,7 +252,7 @@ After a revoke the routing KB-note dangles — delete/rewrite it via `updateNote
 
 ## 6. Default "team" setup (low ceremony)
 
-The sequence the agent runs across the pool (via `list_instances`):
+The sequence the agent runs across the pool (via `list_slots`):
 
 1. On EVERY instance: §5.1 default-private (otherwise the model is leaky).
 2. On EVERY instance: §5.2 the `shared` subgraph with a policy.
