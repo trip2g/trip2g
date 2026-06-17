@@ -47,6 +47,34 @@ var validPersonalUser = &usertoken.Data{ID: 42, Role: "user"} //nolint:gocheckno
 const fakePersonalToken = "t2g_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ab"
 const fakeFederationJWT = "header.payload.signature"
 
+// A valid session-token JWT (not t2g_) sent via Authorization: Bearer must be
+// accepted as that session user — this is how the panel reaches an instance by
+// its private Nomad address (the Secure session cookie can't be replayed over
+// plain http, so the panel harvests the token and re-sends it as a Bearer).
+func TestUserToken_BearerSessionToken(t *testing.T) {
+	mgr := usertoken.NewManager(usertoken.Config{
+		CookieName: "trip2g_token",
+		Secret:     "test-secret",
+		ExpiresIn:  3600e9,
+		Insecure:   true,
+	})
+	stored, err := mgr.Store(newFasthttpCtx(), usertoken.Data{ID: 9, Role: "admin"})
+	require.NoError(t, err)
+
+	reqCtx := newFasthttpCtxWithBearer(stored.JWT) // cookie absent
+	req := Acquire()
+	req.Req = reqCtx
+	req.TokenManager = mgr
+
+	tok, err := req.UserToken()
+	require.NoError(t, err)
+	require.NotNil(t, tok, "session-token Bearer must authenticate")
+	require.Equal(t, 9, tok.ID)
+	require.True(t, tok.IsAdmin())
+
+	Release(req)
+}
+
 func TestUserToken_CookieWinsOverBearer(t *testing.T) {
 	// Case 1: Cookie valid + Bearer t2g_* valid -> cookie user wins; Resolve NOT called.
 	// We use a TokenManager with insecure mode. Store a token then check Extract returns it.

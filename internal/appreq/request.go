@@ -157,17 +157,35 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 		return token, nil
 	}
 
-	// 2. Try Authorization: Bearer <value> where value starts with t2g_.
+	// 2. Try Authorization: Bearer <value>.
 	bearer := string(c.Req.Request.Header.Peek("Authorization"))
-	if value, ok := strings.CutPrefix(bearer, "Bearer "); ok && personaltoken.IsPersonal(value) {
-		data, resolveErr := c.resolvePersonalToken(value)
-		if resolveErr != nil {
-			return nil, resolveErr
+	if value, ok := strings.CutPrefix(bearer, "Bearer "); ok {
+		// 2a. Personal token (t2g_*).
+		if personaltoken.IsPersonal(value) {
+			data, resolveErr := c.resolvePersonalToken(value)
+			if resolveErr != nil {
+				return nil, resolveErr
+			}
+			c.token = data
+			c.tokenExtracted = true
+			return data, nil
 		}
-		c.token = data
-		c.tokenExtracted = true
-		return data, nil
-		// Non-t2g_ Bearer (e.g. federation JWT) falls through to anonymous.
+		// 2b. Otherwise try a session-token JWT. This is how the control plane
+		// (simplepanel) reaches an instance by its private address: it harvests
+		// the HAT-issued session token and re-sends it as a Bearer (the Secure
+		// session cookie can't be replayed over plain http). Invalid token →
+		// fall through to anonymous.
+		if c.TokenManager != nil {
+			data, parseErr := c.TokenManager.ParseToken(c.Req, value)
+			if parseErr != nil {
+				return nil, parseErr
+			}
+			if data != nil {
+				c.token = data
+				c.tokenExtracted = true
+				return data, nil
+			}
+		}
 	}
 
 	// 3. Try ?token=<value> where value starts with t2g_.

@@ -91,51 +91,72 @@ func (e *Manager) AddValidator(v Validator) {
 	e.validators = append(e.validators, v)
 }
 
-// Extract reads cookie, verifies JWT, parses Token.
+// parseClaims verifies a raw session-token JWT and returns its Data, or an
+// error if the token is malformed/expired/invalid-signature.
+func (e *Manager) parseClaims(raw string) (*Data, error) {
+	parsed, err := jwt.ParseWithClaims(raw, &fullData{}, func(_ *jwt.Token) (interface{}, error) {
+		return e.secret, nil
+	}, jwt.WithLeeway(10*time.Second))
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := parsed.Claims.(*fullData)
+	if !ok || !parsed.Valid {
+		return nil, errors.New("invalid token claims")
+	}
+
+	return &Data{ID: claims.ID, Role: claims.Role}, nil
+}
+
+func (e *Manager) runValidators(ctx context.Context, token *Data) error {
+	for _, v := range e.validators {
+		if validationErr := v(ctx, token); validationErr != nil {
+			return &ValidateError{Value: validationErr}
+		}
+	}
+	return nil
+}
+
+// Extract reads the session cookie, verifies the JWT, and parses Token.
+// An invalid/expired cookie is cleared and treated as anonymous (nil, nil).
 func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 	raw := ctx.Request.Header.Cookie(e.config.CookieName)
 	if len(raw) == 0 {
 		return nil, ErrTokenMissing
 	}
 
-	parsed, err := jwt.ParseWithClaims(string(raw), &fullData{}, func(_ *jwt.Token) (interface{}, error) {
-		return e.secret, nil
-	}, jwt.WithLeeway(10*time.Second))
+	token, err := e.parseClaims(string(raw))
 	if err != nil {
 		// Any JWT parsing error (expired, invalid signature, malformed, etc.)
-		// should clear the cookie and treat as anonymous user
-		deleteErr := e.Delete(ctx)
-		if deleteErr != nil {
+		// should clear the cookie and treat as anonymous user.
+		if deleteErr := e.Delete(ctx); deleteErr != nil {
 			return nil, fmt.Errorf("failed to delete invalid token: %w", deleteErr)
 		}
-
 		return nil, nil
 	}
 
-	claims, ok := parsed.Claims.(*fullData)
-	if !ok || !parsed.Valid {
-		// Invalid claims - clear cookie and treat as anonymous
-		deleteErr := e.Delete(ctx)
-		if deleteErr != nil {
-			return nil, fmt.Errorf("failed to delete invalid token: %w", deleteErr)
-		}
+	if validationErr := e.runValidators(ctx, token); validationErr != nil {
+		return nil, validationErr
+	}
 
+	return token, nil
+}
+
+// ParseToken verifies a raw session-token string (e.g. from an
+// Authorization: Bearer header) and runs validators. Unlike Extract it has no
+// cookie to clear; an invalid/expired token yields (nil, nil) → anonymous.
+func (e *Manager) ParseToken(ctx context.Context, raw string) (*Data, error) {
+	token, err := e.parseClaims(raw)
+	if err != nil {
 		return nil, nil
 	}
 
-	token := Data{
-		ID:   claims.ID,
-		Role: claims.Role,
+	if validationErr := e.runValidators(ctx, token); validationErr != nil {
+		return nil, validationErr
 	}
 
-	for _, v := range e.validators {
-		validationErr := v(ctx, &token)
-		if validationErr != nil {
-			return nil, &ValidateError{Value: validationErr}
-		}
-	}
-
-	return &token, nil
+	return token, nil
 }
 
 type StoreData struct {
