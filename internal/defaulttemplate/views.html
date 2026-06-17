@@ -32,6 +32,12 @@
 <meta name="robots" content="{%s= ctx.MetaRobots %}">
 {% endif %}
 
+{% code canonical := "" %}
+{% if ctx.OGTags != nil %}{% code canonical = ctx.OGTags["og:url"] %}{% endif %}
+{% if canonical != "" %}
+<link rel="canonical" href="{%s= canonical %}">
+{% endif %}
+
 <meta property="og:title" content="{%s ctx.Title %}">
 {% if ctx.MetaDescription != nil %}
 <meta property="og:description" content="{%s= *ctx.MetaDescription %}">
