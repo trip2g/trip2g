@@ -49,6 +49,7 @@ title: "Навигация"
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]
 - [[ru/user/rss-feeds|RSS-ленты]]
 - [[ru/user/oauth|OAuth]]
+- [[ru/user/mermaid|Диаграммы Mermaid]]
 - [[ru/user/youtube_embed|YouTube]]
 
 ### Дополнительно

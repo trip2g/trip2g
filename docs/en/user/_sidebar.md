@@ -40,9 +40,11 @@ title: "Navigation"
 ### Advanced
 
 - [[en/user/advanced|Custom domains, CLI, SEO]]
+- [[en/user/seo|SEO]]
 - [[en/typography|Typography & Markdown]]
 - [[en/user/frontmatter-patches|Frontmatter patches]]
 - [[en/user/search|How search works]]
+- [[en/user/mermaid|Mermaid diagrams]]
 - [[en/user/youtube|YouTube embeds]]
 - [[en/user/community-plugins|Community plugins]]
 - [[en/user/multidomains|Multi-domains]]
