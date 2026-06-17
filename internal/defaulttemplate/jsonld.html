@@ -1,0 +1,15 @@
+{% func JSONLD(ctx *Ctx) %}
+{%- if ctx.ShouldEmitJSONLD() -%}
+{%- code
+	note := ctx.Note
+	pageURL := ctx.JSONLDPageURL()
+	img := ctx.JSONLDImage()
+	published := ctx.JSONLDPublished()
+	modified := ctx.JSONLDModified()
+	crumbs := ctx.JSONLDBreadcrumb()
+	logo := ctx.JSONLDLogo()
+	tags := note.Tags()
+-%}
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":{%q= ctx.JSONLDType() %}{% if ctx.Title != "" %},"headline":{%q= ctx.Title %}{% endif %}{% if pageURL != "" %},"url":{%q= pageURL %},"mainEntityOfPage":{%q= pageURL %}{% endif %}{% if note.Description() != "" %},"description":{%q= note.Description() %}{% endif %}{% if note.Lang() != "" %},"inLanguage":{%q= note.Lang() %}{% endif %}{% if published != "" %},"datePublished":{%q= published %}{% endif %}{% if modified != "" %},"dateModified":{%q= modified %}{% endif %}{% if img != "" %},"image":{%q= img %}{% endif %}{% if note.Author() != "" %},"author":{"@type":"Person","name":{%q= note.Author() %}}{% endif %}{% if len(tags) > 0 %},"keywords":[{% for i, t := range tags %}{% if i > 0 %},{% endif %}{%q= t %}{% endfor %}]{% endif %}{% if ctx.SiteName != "" %},"publisher":{"@type":"Organization","name":{%q= ctx.SiteName %}{% if logo != "" %},"logo":{%q= logo %}{% endif %}}{% endif %}}{% if len(crumbs) > 0 %},{"@type":"BreadcrumbList","itemListElement":[{% for i, c := range crumbs %}{% if i > 0 %},{% endif %}{"@type":"ListItem","position":{%d i+1 %},"name":{%q= c.Name %},"item":{%q= c.Item %}}{% endfor %}]}{% endif %}{% if ctx.JSONLDSiteURL() != "" %},{"@type":"WebSite"{% if ctx.SiteName != "" %},"name":{%q= ctx.SiteName %}{% endif %},"url":{%q= ctx.JSONLDSiteURL() %}}{% endif %}]}</script>
+{%- endif -%}
+{% endfunc %}

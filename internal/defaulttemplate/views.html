@@ -38,6 +38,8 @@
 <link rel="canonical" href="{%s= canonical %}">
 {% endif %}
 
+{%= JSONLD(ctx) %}
+
 <meta property="og:title" content="{%s ctx.Title %}">
 {% if ctx.MetaDescription != nil %}
 <meta property="og:description" content="{%s= *ctx.MetaDescription %}">

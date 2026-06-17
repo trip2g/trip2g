@@ -246,6 +246,11 @@ type NoteView struct {
 	RSSTitle       string
 	RSSDescription string
 
+	// JSON-LD / structured-data fields from frontmatter.
+	Author    string    // frontmatter "author"
+	UpdatedAt time.Time // frontmatter "updated"/"modified"/"updated_at"; zero if unset
+	Tags      []string  // frontmatter "tags" (else "keywords")
+
 	// Routes holds the parsed routes for this note.
 	// Populated from frontmatter "route" (string) or "routes" ([]string).
 	// Does NOT affect Permalink or nv.Map. Only populates RouteMap.
@@ -582,6 +587,8 @@ func (n *NoteView) ExtractMetaData() error {
 	n.extractMCPFederationFields()
 
 	n.extractRSSFields()
+
+	n.extractJSONLDFields()
 
 	n.Routes = n.ExtractRoutes()
 

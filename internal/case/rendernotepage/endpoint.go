@@ -541,6 +541,8 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 		HTMLInjections:  injections,
 		HrefLangs:       hrefLangs,
 		HTMLLang:        layoutParams.HTMLLang,
+		PublicURL:       env.PublicURL(),
+		SiteName:        defaulttemplate.DeriveSiteName(env.SiteConfig(context.Background()).SiteTitleTemplate, env.PublicURL()),
 		UILang: langdetect.DetectPreferred(
 			string(req.Req.Request.Header.Cookie(langCookieName)),
 			string(req.Req.Request.Header.Peek("Accept-Language")),

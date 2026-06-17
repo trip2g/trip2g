@@ -124,6 +124,26 @@ func (n *Note) Description() string {
 	return *n.nv.Description
 }
 
+// Author returns the frontmatter author (empty if unset).
+func (n *Note) Author() string {
+	return n.nv.Author
+}
+
+// UpdatedAt returns the frontmatter updated/modified time (zero if unset).
+func (n *Note) UpdatedAt() time.Time {
+	return n.nv.UpdatedAt
+}
+
+// Tags returns the frontmatter tags (nil if unset).
+func (n *Note) Tags() []string {
+	return n.nv.Tags
+}
+
+// OGImageURL returns the resolved social-preview image URL (empty if unset).
+func (n *Note) OGImageURL() string {
+	return n.nv.OGImageURL()
+}
+
 // PartialRenderer returns the partial renderer for content splitting.
 func (n *Note) PartialRenderer() model.NoteViewPartialRenderer {
 	return n.nv.PartialRenderer

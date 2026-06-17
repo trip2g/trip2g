@@ -61,6 +61,10 @@ type Ctx struct {
 	HTMLLang  string // for <html lang="xx">, set from note.Lang
 	UILang    string // user's preferred interface language, set from trip2g_lang cookie
 
+	// SiteName and PublicURL drive JSON-LD structured data (see jsonld.go).
+	SiteName  string
+	PublicURL string
+
 	OnboardingMode     bool
 	NotFoundMode       bool
 	UnsupportedFileExt string // non-empty for .canvas / .base files not yet rendered
