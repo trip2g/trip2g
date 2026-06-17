@@ -144,6 +144,19 @@ func (n *Note) Unwrap() *model.NoteView {
 	return n.nv
 }
 
+// HasCharts reports whether the note contains any datachart blocks. Drives
+// conditional loading of the chart widget script.
+func (n *Note) HasCharts() bool {
+	return len(n.nv.Charts) > 0
+}
+
+// HasCodeLanguage reports whether the note contains a fenced code block with the
+// given language (case-insensitive). Drives conditional loading of per-language
+// widget scripts (e.g. mermaid).
+func (n *Note) HasCodeLanguage(lang string) bool {
+	return n.nv.HasCodeLanguage(lang)
+}
+
 var langAliases = map[string]string{ //nolint:gochecknoglobals // package-level lookup table
 	"english":    "en",
 	"russian":    "ru",

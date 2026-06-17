@@ -54,6 +54,9 @@ type Env interface {
 		arg db.GetTelegramPostLinksByNoteVersionIDParams,
 	) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
 	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
+	// AssetURL returns the cache-busting URL for an embedded asset path, used to
+	// build conditional per-note widget script tags (chart.js, mermaid.js).
+	AssetURL(path string) string
 }
 
 type Request struct {

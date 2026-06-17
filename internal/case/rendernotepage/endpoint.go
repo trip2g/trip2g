@@ -404,7 +404,11 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 		tags["og:description"] = *resp.Note.Description
 	}
 
-	if resp.Note.FirstImage != nil {
+	// Explicit frontmatter og_image/cover wins; otherwise fall back to the first
+	// image in the note body.
+	if ogImage := resp.Note.OGImageURL(); ogImage != "" {
+		tags["og:image"] = ogImage
+	} else if resp.Note.FirstImage != nil {
 		assetReplace, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
 		if ok && assetReplace != nil {
 			tags["og:image"] = assetReplace.URL
@@ -486,6 +490,18 @@ func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Para
 		}
 		if rlEnv.IsDevMode() {
 			devMode = "true"
+		}
+	}
+
+	// Append per-note widget glue conditionally, so a page only downloads the
+	// script for widgets it actually uses. Emitted server-side (not via a client
+	// loader) so the browser's preload scanner fetches them immediately.
+	if note := resp.NoteView; note != nil {
+		if note.HasCharts() {
+			jsURLs = append(jsURLs, env.AssetURL("/assets/chart.js"))
+		}
+		if note.HasCodeLanguage("mermaid") {
+			jsURLs = append(jsURLs, env.AssetURL("/assets/mermaid.js"))
 		}
 	}
 

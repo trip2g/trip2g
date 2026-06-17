@@ -58,6 +58,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 4. [[datachart_internal]] - `data.source: internal`, SQL over trip2g's own content (read replica)
 5. [[datachart_types]] - line/bar/pie in one note with `charts: custom` placement
 
+## Mermaid Diagrams Tests
+1. [[mermaid]] - ```mermaid blocks (flowchart, sequence, pie) rendered client-side; widget loaded only when present
+
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages

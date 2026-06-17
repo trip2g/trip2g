@@ -26,6 +26,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			ActiveHTMLInjectionsFunc: func(ctx context.Context) ([]db.HtmlInjection, error) {
 //				panic("mock out the ActiveHTMLInjections method")
 //			},
+//			AssetURLFunc: func(path string) string {
+//				panic("mock out the AssetURL method")
+//			},
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
@@ -90,6 +93,9 @@ type EnvMock struct {
 	// ActiveHTMLInjectionsFunc mocks the ActiveHTMLInjections method.
 	ActiveHTMLInjectionsFunc func(ctx context.Context) ([]db.HtmlInjection, error)
 
+	// AssetURLFunc mocks the AssetURL method.
+	AssetURLFunc func(path string) string
+
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
@@ -150,6 +156,11 @@ type EnvMock struct {
 		ActiveHTMLInjections []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// AssetURL holds details about calls to the AssetURL method.
+		AssetURL []struct {
+			// Path is the path argument value.
+			Path string
 		}
 		// CanReadNote holds details about calls to the CanReadNote method.
 		CanReadNote []struct {
@@ -249,6 +260,7 @@ type EnvMock struct {
 		}
 	}
 	lockActiveHTMLInjections                sync.RWMutex
+	lockAssetURL                            sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
 	lockFeatures                            sync.RWMutex
 	lockGetTelegramChatName                 sync.RWMutex
@@ -298,6 +310,38 @@ func (mock *EnvMock) ActiveHTMLInjectionsCalls() []struct {
 	mock.lockActiveHTMLInjections.RLock()
 	calls = mock.calls.ActiveHTMLInjections
 	mock.lockActiveHTMLInjections.RUnlock()
+	return calls
+}
+
+// AssetURL calls AssetURLFunc.
+func (mock *EnvMock) AssetURL(path string) string {
+	if mock.AssetURLFunc == nil {
+		panic("EnvMock.AssetURLFunc: method is nil but Env.AssetURL was just called")
+	}
+	callInfo := struct {
+		Path string
+	}{
+		Path: path,
+	}
+	mock.lockAssetURL.Lock()
+	mock.calls.AssetURL = append(mock.calls.AssetURL, callInfo)
+	mock.lockAssetURL.Unlock()
+	return mock.AssetURLFunc(path)
+}
+
+// AssetURLCalls gets all the calls that were made to AssetURL.
+// Check the length with:
+//
+//	len(mockedEnv.AssetURLCalls())
+func (mock *EnvMock) AssetURLCalls() []struct {
+	Path string
+} {
+	var calls []struct {
+		Path string
+	}
+	mock.lockAssetURL.RLock()
+	calls = mock.calls.AssetURL
+	mock.lockAssetURL.RUnlock()
 	return calls
 }
 

@@ -1007,12 +1007,20 @@ func (a *app) AdminJSURL() string {
 }
 
 func (a *app) UserJSURLs() []string {
+	// Core bootstrap, loaded on every page. Per-language widget glue
+	// (chart.js, mermaid.js) is appended conditionally per note — see
+	// rendernotepage.buildDefaultTemplateCtx.
 	return []string{
 		a.assetURL("/assets/defaulttemplate.js"),
 		a.assetURL("/assets/ui/user/-/web.js"),
-		// Tiny glue (~2KB); lazy-loads echarts only on pages that have charts.
-		a.assetURL("/assets/chart.js"),
 	}
+}
+
+// AssetURL returns the cache-busting URL for an embedded asset path. Exposed so
+// render cases can build conditional script tags (widget glue) with the same
+// hashing as the core scripts.
+func (a *app) AssetURL(path string) string {
+	return a.assetURL(path)
 }
 
 func (a *app) UserCSSURLs() []string {

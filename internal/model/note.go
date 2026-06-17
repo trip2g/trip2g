@@ -214,6 +214,11 @@ type NoteView struct {
 
 	Charts []NoteViewChart // extracted from ```chart fenced blocks
 
+	// CodeLanguages is the set of fenced-code-block languages present in the
+	// note (lowercased). Drives conditional loading of per-language client
+	// widgets (e.g. mermaid). Charts have their own typed extraction (Charts).
+	CodeLanguages map[string]bool
+
 	HeadingCount map[string]int // for id generation
 
 	TOCDisplay int // TOCDisplayAuto, TOCDisplayShow, TOCDisplayHide - from meta
@@ -564,6 +569,8 @@ func (n *NoteView) ExtractMetaData() error {
 	n.extractHeadingsAndGenerateIDs()
 
 	n.extractCharts()
+
+	n.extractCodeLanguages()
 
 	n.extractTOCDisplay()
 

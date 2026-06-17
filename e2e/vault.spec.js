@@ -906,3 +906,30 @@ test.describe('Frontmatter Patches', () => {
     expect(headerText).not.toContain('BHN42');
   });
 });
+
+test.describe('Mermaid Diagrams', () => {
+  test('mermaid code blocks render as SVG', async ({ page }) => {
+    await page.goto('/mermaid');
+
+    await expect(page.locator('h1').first()).toContainText('Mermaid');
+
+    // The glue turns <pre><code class="language-mermaid"> into <div class="mermaid">,
+    // then mermaid draws an inline <svg>. The note has 3 diagrams.
+    const svgs = page.locator('.content__body .mermaid svg');
+    await expect(svgs.first()).toBeVisible({ timeout: 15000 });
+    await expect(svgs).toHaveCount(3);
+
+    // Raw fenced code must be gone (replaced by the rendered diagram).
+    await expect(page.locator('.content__body pre > code.language-mermaid')).toHaveCount(0);
+  });
+
+  test('mermaid widget loads only on pages that have a mermaid block', async ({ page }) => {
+    await page.goto('/mermaid');
+    await expect(page.locator('script[src*="/assets/mermaid.js"]')).toHaveCount(1);
+
+    // A page without any mermaid block must not pull the widget glue.
+    await page.goto('/public');
+    await expect(page.locator('h1').first()).toContainText('Public Content');
+    await expect(page.locator('script[src*="/assets/mermaid.js"]')).toHaveCount(0);
+  });
+});
