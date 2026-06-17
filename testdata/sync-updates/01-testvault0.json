@@ -260,6 +260,10 @@
     "url": "http://customdomain.test/mcp-url-test"
   },
   {
+    "path": "mermaid.md",
+    "url": "http://localhost:20081/mermaid"
+  },
+  {
     "path": "mp3.md",
     "url": "http://localhost:20081/mp3"
   },
