@@ -70,8 +70,8 @@ trip2g generates HTML server-side and serves pages from cache — the same behav
 - **Sitemap** — `/sitemap.xml` includes all public pages and updates on changes
 - **Robots.txt** — private pages are excluded from indexing
 - **Clean URLs** — `/docs/seo` instead of `/page.php?id=123`
-- **Meta tags** — `<title>` comes from the note title; `<meta name="description">` comes from the `description` frontmatter field (falls back to the start of content if not set)
-- **Open Graph** — social preview tags work out of the box; set a custom image with `og_image` in frontmatter
+- **Meta tags** — `<title>` comes from the note title; `<meta name="description">` comes from the `description` frontmatter field. If you don't set it, no description is emitted — so write one
+- **Open Graph** — social preview tags work out of the box; set the preview image with `og_image` (a `[[link]]` or path) in frontmatter, otherwise the first image in the note body is used
 - **Fast page loads** — no client-side JavaScript frameworks
 
 #### Adding analytics
