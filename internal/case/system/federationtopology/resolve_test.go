@@ -15,7 +15,8 @@ import (
 func TestBuildTopology(t *testing.T) {
 	kbURL := "https://bob.team.io/_system/mcp"
 	env := &EnvMock{
-		PublicURLFunc: func() string { return "https://alice.team.io" },
+		PublicURLFunc:      func() string { return "https://alice.team.io" },
+		LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) { return model.SiteConfig{}, nil },
 		ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) {
 			return []db.Subgraph{{ID: 1, Name: "internal"}}, nil
 		},
@@ -60,6 +61,7 @@ func TestRevokedAndEmptyScope(t *testing.T) {
 	kbURL := "https://x/_system/mcp"
 	env := &EnvMock{
 		PublicURLFunc:        func() string { return "https://me.io" },
+		LoadSiteConfigFunc:   func(ctx context.Context) (model.SiteConfig, error) { return model.SiteConfig{}, nil },
 		ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) { return nil, nil },
 		ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
 			return []db.ListFederationSecretsRow{{ID: 1, Kid: "k", KbUrl: &kbURL, RevokedAt: &now}}, nil
@@ -74,6 +76,37 @@ func TestRevokedAndEmptyScope(t *testing.T) {
 	require.NotNil(t, out.Outbound[0].RevokedAt)
 	require.NotNil(t, out.Outbound[0].Subgraphs)
 	require.Len(t, out.Outbound[0].Subgraphs, 0)
+}
+
+func TestSelfKBIDFromConfigAndFallback(t *testing.T) {
+	newEnv := func(kbID string) *EnvMock {
+		return &EnvMock{
+			PublicURLFunc:      func() string { return "https://alice.team.io" },
+			LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) { return model.SiteConfig{KBID: kbID}, nil },
+			ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) {
+				return nil, nil
+			},
+			ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+				return nil, nil
+			},
+			ListAllFederationSecretScopesFunc: func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+				return nil, nil
+			},
+			LatestNoteViewsFunc: func() *model.NoteViews { return &model.NoteViews{} },
+		}
+	}
+
+	// Explicit config value wins.
+	out, err := federationtopology.Resolve(context.Background(), newEnv("alice"))
+	require.NoError(t, err)
+	require.Equal(t, "alice", out.Self.KBID)
+	require.Equal(t, "alice", out.Self.Name)
+
+	// Empty config falls back to the public URL host.
+	out, err = federationtopology.Resolve(context.Background(), newEnv("  "))
+	require.NoError(t, err)
+	require.Equal(t, "alice.team.io", out.Self.KBID)
+	require.Equal(t, "alice.team.io", out.Self.Name)
 }
 
 func namesOf(ss []federationtopology.Subgraph) []string {

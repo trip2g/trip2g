@@ -13,5 +13,6 @@ type SiteConfig struct {
 	EnableRSS              bool
 	VectorMinSimilarity    int // 1–1000, divide by 1000 to get float threshold
 	URLNormalizationMethod URLNormalizationMethod
+	KBID                   string         // federation KB identifier; falls back to the public URL host when empty
 	TimeLocation           *time.Location // computed from Timezone, not stored in DB
 }

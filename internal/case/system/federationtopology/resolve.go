@@ -15,6 +15,7 @@ import (
 
 type Env interface {
 	PublicURL() string
+	LoadSiteConfig(ctx context.Context) (model.SiteConfig, error)
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
 	ListFederationSecrets(ctx context.Context) ([]db.ListFederationSecretsRow, error)
 	ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
@@ -64,6 +65,15 @@ func Resolve(ctx context.Context, env Env) (*Response, error) {
 		host = u.Host
 	}
 
+	cfg, err := env.LoadSiteConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load site config: %w", err)
+	}
+	kbID := strings.TrimSpace(cfg.KBID)
+	if kbID == "" {
+		kbID = host
+	}
+
 	subs, err := env.ListAllSubgraphs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list subgraphs: %w", err)
@@ -87,7 +97,7 @@ func Resolve(ctx context.Context, env Env) (*Response, error) {
 		return nil, fmt.Errorf("list secrets: %w", err)
 	}
 	resp := &Response{
-		Self:     Self{Name: host, KBID: host, MCPURL: mcpURL, Subgraphs: selfSubs},
+		Self:     Self{Name: kbID, KBID: kbID, MCPURL: mcpURL, Subgraphs: selfSubs},
 		Outbound: []Secret{},
 		Inbound:  []Secret{},
 		KBNotes:  []KBNote{},

@@ -33,6 +33,9 @@ var _ federationtopology.Env = &EnvMock{}
 //			ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
 //				panic("mock out the ListFederationSecrets method")
 //			},
+//			LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) {
+//				panic("mock out the LoadSiteConfig method")
+//			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
@@ -54,6 +57,9 @@ type EnvMock struct {
 
 	// ListFederationSecretsFunc mocks the ListFederationSecrets method.
 	ListFederationSecretsFunc func(ctx context.Context) ([]db.ListFederationSecretsRow, error)
+
+	// LoadSiteConfigFunc mocks the LoadSiteConfig method.
+	LoadSiteConfigFunc func(ctx context.Context) (model.SiteConfig, error)
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -78,6 +84,11 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// LoadSiteConfig holds details about calls to the LoadSiteConfig method.
+		LoadSiteConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -86,6 +97,7 @@ type EnvMock struct {
 	lockListAllFederationSecretScopes sync.RWMutex
 	lockListAllSubgraphs              sync.RWMutex
 	lockListFederationSecrets         sync.RWMutex
+	lockLoadSiteConfig                sync.RWMutex
 	lockPublicURL                     sync.RWMutex
 }
 
@@ -209,6 +221,38 @@ func (mock *EnvMock) ListFederationSecretsCalls() []struct {
 	mock.lockListFederationSecrets.RLock()
 	calls = mock.calls.ListFederationSecrets
 	mock.lockListFederationSecrets.RUnlock()
+	return calls
+}
+
+// LoadSiteConfig calls LoadSiteConfigFunc.
+func (mock *EnvMock) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
+	if mock.LoadSiteConfigFunc == nil {
+		panic("EnvMock.LoadSiteConfigFunc: method is nil but Env.LoadSiteConfig was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockLoadSiteConfig.Lock()
+	mock.calls.LoadSiteConfig = append(mock.calls.LoadSiteConfig, callInfo)
+	mock.lockLoadSiteConfig.Unlock()
+	return mock.LoadSiteConfigFunc(ctx)
+}
+
+// LoadSiteConfigCalls gets all the calls that were made to LoadSiteConfig.
+// Check the length with:
+//
+//	len(mockedEnv.LoadSiteConfigCalls())
+func (mock *EnvMock) LoadSiteConfigCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockLoadSiteConfig.RLock()
+	calls = mock.calls.LoadSiteConfig
+	mock.lockLoadSiteConfig.RUnlock()
 	return calls
 }
 

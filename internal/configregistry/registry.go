@@ -44,6 +44,7 @@ const (
 	ConfigDefaultLayout          = "default_layout"
 	ConfigRobotsTxt              = "robots_txt"
 	ConfigURLNormalizationMethod = "url_normalization_method"
+	ConfigKBID                   = "kb_id"
 )
 
 // Bool config IDs.
@@ -92,6 +93,11 @@ var (
 			SetupFunc: func(cfg *model.SiteConfig, v string) {
 				cfg.URLNormalizationMethod = model.URLNormalizationMethod(v)
 			},
+		},
+		ConfigKBID: {
+			ConfigMeta: ConfigMeta{ID: ConfigKBID, Description: "Federation KB identifier. Falls back to the public URL host when empty."},
+			Default:    "",
+			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.KBID = v },
 		},
 	}
 
