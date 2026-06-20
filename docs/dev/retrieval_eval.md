@@ -63,6 +63,10 @@ The CLI reports each overall and per `direction`. A run with `-fail-under-ndcg X
 
 ## Run history
 
+Corpus: 48 notes (24 topics × 2 languages = 6 themes, each a core note + 3 intra-theme distractors). Golden set: 60 hand-verified queries, balanced across the four directions; relevance = both language versions of the topic.
+
 | Run | Recall@10 | nDCG@10 | MRR | Notes |
 |-----|-----------|---------|-----|-------|
-| _(baseline pending — Phase 1)_ | | | | bge-m3, full golden set |
+| 00-baseline-bgem3 | 0.9833 | 0.9157 | 0.9417 | bge-m3, current pipeline. Weakest direction: en→ru (nDCG 0.845, MRR 0.833). |
+
+Per-direction at baseline: ru→ru nDCG 0.935 / MRR 0.972 · en→en 0.932 / 0.972 · ru→en 0.934 / 0.958 · en→ru 0.845 / 0.833.
