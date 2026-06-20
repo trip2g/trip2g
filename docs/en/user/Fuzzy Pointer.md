@@ -112,6 +112,7 @@ This workflow is described in full in [[mcp|MCP server]].
 
 ### Limitations
 
+- `pid` is the note's stable PathID returned in search results (distinct from `note_id`). It is the identifier you pass to `note_html`.
 - The breadcrumb path must match the note's current headings. If a heading was renamed after indexing, the path may not resolve until the next re-index.
 - If a section has no heading (body text between two headings), `toc_path` points to the nearest parent heading, not the paragraph itself.
-- Very short notes with a single chunk have one breadcrumb entry — just the note title. The `toc_path` for such a result is `[]` (empty).
+- Notes with no rendered heading sections at all produce a `toc_path` of `[]` (empty). This is distinct from single-chunk notes: a short note that has at least one heading still gets a non-empty path. The empty path means the note has no `data-header` sections, so the caller should read the whole note.
