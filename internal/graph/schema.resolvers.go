@@ -2624,7 +2624,11 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesI
 
 	input.ApiKey = *apiKey
 
-	return pushnotes.Resolve(ctx, r.env(ctx), input)
+	env := r.env(ctx)
+	env.LockNoteWrites()
+	defer env.UnlockNoteWrites()
+
+	return pushnotes.Resolve(ctx, env, input)
 }
 
 // UpdateNotes is the resolver for the updateNotes field.

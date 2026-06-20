@@ -480,4 +480,7 @@ type Env interface {
 	// notebus
 	SubscribeNoteChanges(include, exclude []string) *notebus.Subscriber
 	UnsubscribeNoteChanges(sub *notebus.Subscriber)
+
+	LockNoteWrites()
+	UnlockNoteWrites()
 }

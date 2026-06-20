@@ -27,6 +27,16 @@ import (
 
 var ErrNoAuth = errors.New("no auth provided")
 
+type NoteSource struct {
+	Path    string
+	Content []byte
+}
+
+type AssetSource struct {
+	AbsolutePath string       // repo-relative path; leading slash trimmed by the materializer
+	Asset        db.NoteAsset // identifies the bytes in object storage
+}
+
 type handler func(ctx *fasthttp.RequestCtx) error
 
 type Env interface {
