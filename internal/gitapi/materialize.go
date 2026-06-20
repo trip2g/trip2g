@@ -98,6 +98,16 @@ func (api *API) addBlob(gitEnv []string, path string, content []byte) error {
 	return nil
 }
 
+// Materialize is the exported entrypoint for scheduled mirror refreshes.
+func (api *API) Materialize(ctx context.Context) error {
+	api.env.LockNoteWrites()
+	defer api.env.UnlockNoteWrites()
+	if err := api.initRepo(); err != nil {
+		return err
+	}
+	return api.materialize(ctx)
+}
+
 // gitCmd runs a git command in the bare repo with the given env and optional stdin.
 func (api *API) gitCmd(gitEnv []string, stdin io.Reader, args ...string) (string, error) {
 	full := append([]string{"--git-dir", api.config.RepoPath, "-c", "core.quotePath=false"}, args...)

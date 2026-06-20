@@ -601,7 +601,10 @@ func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
 	if a.gitAPI == nil {
 		return nil, nil
 	}
-	return a.gitAPI.ApplyChanges(ctx)
+	if err := a.gitAPI.Materialize(ctx); err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (a *app) GitCommit() string {
