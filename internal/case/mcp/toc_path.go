@@ -51,16 +51,19 @@ func buildNoteTOC(headings model.NoteViewHeadings) []TOCItem {
 	return result
 }
 
-// tocPathForSnippet returns the heading breadcrumb (outermost → innermost) of the
-// data-header section that contains the given snippet. Snippet may contain <mark>
-// tags; they are stripped before matching. Returns nil if not found.
+// tocPathForSnippet returns a best-effort heading breadcrumb (outermost → innermost)
+// for the data-header section that contains the given snippet. Snippet may contain
+// <mark> tags; they are stripped before matching.
 //
 // To avoid false negatives when the snippet spans multiple sections, only the
 // context immediately around the first <mark> block is used as the search target.
 //
 // chunkContent is the optional chunk body (format: "{breadcrumb}\n\n{body}") used
 // as a fallback when fuzzy HTML matching fails. Pass "" to skip the chunk fallback.
-// The function never returns nil: it falls back to the first section or root.
+//
+// The function returns nil only when the note has no data-header sections at all
+// (or the snippet is empty). In that case the caller should read the whole note.
+// Otherwise it falls back first to the chunk breadcrumb, then to the first section.
 func tocPathForSnippet(noteHTML, snippet, chunkContent string) []string {
 	if noteHTML == "" || snippet == "" {
 		return nil

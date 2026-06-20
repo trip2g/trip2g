@@ -225,6 +225,91 @@ func TestValidateReadOnlyQuery_ParseError(t *testing.T) {
 	require.Contains(t, err.Error(), "parse error")
 }
 
+// --- validateReadOnlyQuery guard-bypass regression tests ---
+// These vectors are security-relevant: they confirm that inline fragments,
+// fragment spreads, and field aliases cannot be used to bypass the allowlist.
+
+func TestValidateReadOnlyQuery_RejectsRootInlineFragment(t *testing.T) {
+	// Inline fragment at root level must be rejected — the selector is not a *ast.Field.
+	err := validateReadOnlyQuery(`query { ... on Query { admin { id } } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "only field selections are allowed at query root")
+}
+
+func TestValidateReadOnlyQuery_RejectsRootFragmentSpread(t *testing.T) {
+	// Fragment spread at root level must be rejected — same reason.
+	err := validateReadOnlyQuery(`query Q { ...F } fragment F on Query { admin { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "only field selections are allowed at query root")
+}
+
+func TestValidateReadOnlyQuery_RejectsAliasedBannedField(t *testing.T) {
+	// Field.Name (not Field.Alias) is checked; an alias must not bypass the allowlist.
+	err := validateReadOnlyQuery(`query { n: admin { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "admin")
+}
+
+func TestValidateReadOnlyQuery_AllowsAliasedAllowedField(t *testing.T) {
+	// An alias on an allowed field must be accepted.
+	err := validateReadOnlyQuery(`query { n: note(path:"x") { title } }`)
+	require.NoError(t, err)
+}
+
+// --- handleGraphQLRequest Option A edge-case tests ---
+
+// TestHandleGraphQLRequest_ErrorsPreserved: a GraphQL errors-bearing response
+// (data: null, errors: [...]) must be forwarded as StructuredContent so the
+// agent can inspect both the errors key and the data key.
+func TestHandleGraphQLRequest_ErrorsPreserved(t *testing.T) {
+	canned := []byte(`{"data":null,"errors":[{"message":"boom"}]}`)
+	env := &gqlRequestEnv{
+		graphqlFunc: func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
+			return canned, nil
+		},
+	}
+	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `{ note(path: "x") { title } }`})
+	require.NoError(t, err)
+
+	resp := handleGraphQLRequest(context.Background(), env, 1, json.RawMessage(argsRaw))
+	require.Nil(t, resp.Error)
+
+	result, ok := resp.Result.(CallToolResult)
+	require.True(t, ok, "result must be CallToolResult")
+	require.Len(t, result.Content, 1)
+	require.Equal(t, "structured result", result.Content[0].Text, "text must be stub")
+	require.NotNil(t, result.StructuredContent, "StructuredContent must be set for errors-bearing response")
+
+	// The errors key must survive the round-trip.
+	gotJSON, err := json.Marshal(result.StructuredContent)
+	require.NoError(t, err)
+	require.Contains(t, string(gotJSON), `"errors"`)
+	require.Contains(t, string(gotJSON), `"boom"`)
+}
+
+// TestHandleGraphQLRequest_MalformedJSONFallback: when GraphQLRequest returns
+// bytes that are not valid JSON, the handler must fall back to textToolResult
+// (Content[0].Text contains the raw bytes; StructuredContent is nil).
+func TestHandleGraphQLRequest_MalformedJSONFallback(t *testing.T) {
+	raw := []byte("not json")
+	env := &gqlRequestEnv{
+		graphqlFunc: func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
+			return raw, nil
+		},
+	}
+	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `{ note(path: "x") { title } }`})
+	require.NoError(t, err)
+
+	resp := handleGraphQLRequest(context.Background(), env, 1, json.RawMessage(argsRaw))
+	require.Nil(t, resp.Error)
+
+	result, ok := resp.Result.(CallToolResult)
+	require.True(t, ok, "result must be CallToolResult")
+	require.Len(t, result.Content, 1)
+	require.Contains(t, result.Content[0].Text, "not json", "text must contain raw bytes")
+	require.Nil(t, result.StructuredContent, "StructuredContent must be nil for malformed JSON")
+}
+
 // TestHandleGraphQLRequest_MutationRejectedByHandler: handler-level check that a
 // mutation query yields an InvalidParams error without reaching the env.
 func TestHandleGraphQLRequest_MutationRejectedByHandler(t *testing.T) {
