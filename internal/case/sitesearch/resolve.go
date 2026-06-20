@@ -3,9 +3,9 @@ package sitesearch
 import (
 	"context"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"trip2g/internal/features"
 	"trip2g/internal/graph/model"
@@ -146,11 +146,16 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 
 	// Score all chunks, no absolute threshold — E5 models compress scores
 	// into 0.7–1.0 range, making absolute thresholds unreliable.
+	// dotSimilarity is used here instead of cosine because the embedding server
+	// returns L2-normalised unit vectors (embedding-server/server.py normalize_embeddings=True),
+	// making cosine ≡ dot product at lower compute cost.
+	scanStart := time.Now()
 	var candidates []scored
 	for _, c := range chunks {
-		sim := cosineSimilarity(embedding.Vector, c.Embedding)
+		sim := dotSimilarity(embedding.Vector, c.Embedding)
 		candidates = append(candidates, scored{c.NotePath, c, sim})
 	}
+	env.Logger().Warn("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].sim > candidates[j].sim })
 
@@ -397,24 +402,19 @@ func lastIndexByte(s string, c byte) int {
 	return -1
 }
 
-func cosineSimilarity(a, b []float32) float64 {
+// dotSimilarity returns the dot product of two vectors.
+// This is equivalent to cosine similarity when both vectors are L2-normalised,
+// which is guaranteed by the embedding server (embedding-server/server.py
+// normalize_embeddings=True). Using dot product avoids the redundant sqrt
+// divisions that cosine similarity would otherwise perform on unit vectors.
+func dotSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {
 		return 0
 	}
 
-	var dotProduct float64
-	var normA float64
-	var normB float64
-
+	var dot float64
 	for i := range a {
-		dotProduct += float64(a[i]) * float64(b[i])
-		normA += float64(a[i]) * float64(a[i])
-		normB += float64(b[i]) * float64(b[i])
+		dot += float64(a[i]) * float64(b[i])
 	}
-
-	if normA == 0 || normB == 0 {
-		return 0
-	}
-
-	return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
+	return dot
 }
