@@ -1,226 +1,206 @@
 # Vector Search
 
-Semantic search using OpenAI embeddings for finding similar notes by meaning.
+trip2g ships a hybrid retrieval pipeline: BM25 text search (bleve) fused with dense vector search via Reciprocal Rank Fusion (RRF). The two lanes complement each other — BM25 handles exact-term and lexical matches; the vector lane handles synonyms, paraphrase, and cross-lingual queries.
 
-## Overview
+For benchmark methodology and per-change measurement results, see [search_refactoring.md](./search_refactoring.md) and [retrieval_eval.md](./retrieval_eval.md).
 
-Vector search enables semantic similarity matching - finding notes by meaning rather than exact keywords. The `similarNotes` GraphQL query returns notes that are semantically similar to a given note.
+## How retrieval works
 
-## Architecture
+A search request goes through three stages:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Similar Notes Flow                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Note: "/my-article"                                            │
-│       │                                                          │
-│       ▼                                                          │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │ In-Memory Cache (NoteViews)                                  ││
-│  │  - Note with Embedding []float32 (1536 dimensions)          ││
-│  │  - Loaded on startup via SQL JOIN                           ││
-│  └─────────────────────────────────────────────────────────────┘│
-│       │                                                          │
-│       ▼                                                          │
-│  Cosine Similarity Calculation (in-memory)                       │
-│       │                                                          │
-│       ▼                                                          │
-│  Top N Similar Notes (filtered by CanReadNote)                   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **BM25** — bleve full-text index returns up to 20 ranked results.
+2. **Vector** — the query is embedded by the embedding server; brute-force dot-product over all in-memory chunk embeddings returns up to 50 unique-note candidates (the `vectorTopK = 50` constant in `internal/case/sitesearch/resolve.go`).
+3. **RRF fusion** — the two ranked lists are merged by Reciprocal Rank Fusion with `k = 60`, producing a single list capped at 20.
 
-## Database Schema
+An optional cross-encoder reranker exists as a fourth stage but ships **disabled by default** (see [Cross-encoder reranker](#cross-encoder-reranker-off-by-default) below).
 
-Embeddings are cached in SQLite:
+## Hybrid pipeline in detail
 
-```sql
-create table note_version_embeddings (
-    version_id integer primary key references note_versions(id) on delete cascade,
-    embedding blob not null,
-    model_id integer not null,
-    content_hash blob not null,
-    tokens integer not null,
-    created_at datetime not null default (datetime('now'))
-);
+### BM25 lane
 
-create index idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
-```
+`internal/noteloader/search.go` indexes every note in a bleve in-memory index. Each document has four analyzed fields so both Russian and English queries stem correctly:
 
-### Fields
+| Field | Analyzer |
+|-------|----------|
+| `Title` | Russian |
+| `Title_en` | English |
+| `Body` | Russian |
+| `Body_en` | English |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `version_id` | integer | FK to note_versions.id |
-| `embedding` | blob | float32 array as bytes (1536 dims = 6KB) |
-| `model_id` | integer | Model constant (1=small, 2=large, 3=ada) |
-| `content_hash` | blob | SHA256 of title+content to detect changes |
-| `tokens` | integer | Tokens consumed to generate this embedding |
-| `created_at` | datetime | When embedding was generated |
+The query is a disjunction of per-field match queries, each using `MatchQueryOperatorAnd` (all terms must appear within that field's language). A document matches via whichever field suits its language. The index uses the Russian-analyzed fields as the **default mapping** (so bleve applies them even for untyped structs); the English fields are additional named mappings over the same source field.
 
-## Embedding Generation
+The AND operator is intentional and load-bearing: in a hybrid system the BM25 lane's job is **precision**, not recall. The vector lane covers recall. Switching to OR floods the BM25 lane with low-precision matches that RRF then promotes above genuinely relevant results — a regression measured at nDCG@10 0.9263 → 0.6744 (see [search_refactoring.md F5](./search_refactoring.md)).
 
-### Background Job
+### Vector lane
 
-Embeddings are generated asynchronously via goqite queue:
+**Embedding model.** The default model is `bge-m3` (1024-dim, multilingual, self-hosted). The embedding server (`embedding-server/server.py`) returns L2-normalized unit vectors (`normalize_embeddings=True`). The `MODEL_NAME` env var controls which model loads; the server binary defaults to `multilingual-e5-base` but the production and benchmark configs set it to `bge-m3`.
 
-```
-Note Created/Updated (HandleLatestNotesAfterSave)
-    │
-    ▼
-Enqueue GenerateNoteVersionEmbedding job
-    │
-    ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Background Worker                                            │
-│  1. Get note from LatestNoteViews cache                     │
-│  2. Calculate content hash (SHA256 of title+content)        │
-│  3. Check if embedding exists with same hash → skip         │
-│  4. Call OpenAI embeddings API                              │
-│  5. Store in note_version_embeddings                        │
-└─────────────────────────────────────────────────────────────┘
-```
+**Per-chunk embeddings.** Notes are split into paragraph-level chunks by `internal/mdchunk`. Each chunk gets its own embedding. This lets a dense query match the most relevant *section* of a long note rather than the averaged whole-note signal.
 
-### Cronjob for Bulk Regeneration
+**Similarity.** Because the embedding server returns unit-norm vectors, cosine similarity equals the dot product. `internal/case/sitesearch/resolve.go` uses `dotSimilarity` — a plain dot product loop — instead of computing the redundant square roots that cosine would require.
 
-The `regenerate_note_embeddings` cronjob runs:
-- Daily at 3:00 AM
-- On server startup (ExecuteAfterStart: true)
-
-It compares content hashes and enqueues jobs for notes with stale/missing embeddings.
-
-## In-Memory Cache
-
-Embeddings are loaded into `NoteView.Embedding` field via SQL JOIN when notes are loaded:
-
-```sql
--- AllLatestNotes query includes embedding
-select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
-  from note_paths p
-  join note_versions v on p.id = v.path_id and p.version_count = v.version
-  left join note_version_embeddings e on v.id = e.version_id
- where p.hidden_by is null;
-```
-
-This means:
-- No database queries during `similarNotes` requests
-- Memory usage: ~6MB for 1000 notes (1536 floats × 4 bytes × 1000)
-- Embeddings are refreshed when notes are reloaded
-
-## GraphQL API
-
-### similarNotes Query
-
-```graphql
-input SimilarNotesInput {
-  noteId: String!    # Note permalink
-  limit: Int         # Max results (default: 5, max: 20)
-}
-
-type SimilarNote {
-  score: Float!      # 0-1, higher is more similar
-  note: PublicNote!
-}
-
-type Query {
-  similarNotes(input: SimilarNotesInput!): [SimilarNote!]!
-}
-```
-
-### Example
-
-```graphql
-query {
-  similarNotes(input: { noteId: "/my-article", limit: 5 }) {
-    score
-    note {
-      id
-      title
-      path
+```go
+// dotSimilarity — equivalent to cosine when vectors are unit-norm.
+func dotSimilarity(a, b []float32) float64 {
+    var dot float64
+    for i := range a {
+        dot += float64(a[i]) * float64(b[i])
     }
-  }
+    return dot
 }
 ```
+
+**Candidate pool.** All chunks are scored in a brute-force scan. The top-50 results (deduped by note path) are passed to RRF fusion. Truncating before fusion at a lower number discards recall at zero compute saving — the cosine scan already ran. The final result list is capped to 20 after fusion.
+
+### RRF fusion
+
+Reciprocal Rank Fusion merges the two ranked lists without requiring score normalization. Each document's contribution from a list is `1 / (k + rank)` where `k = 60`. A document that appears in both lists accumulates contributions from both; a document that appears in only one still enters the fused list. The merged list is sorted by accumulated RRF score, then capped at 20.
+
+## Per-chunk embeddings and the F4 breadcrumb format
+
+### Chunk format
+
+`internal/mdchunk/chunk.go` (`Split` function) produces chunks in this format:
+
+```
+{title} > {h1} > {h2}\n\n{body}
+```
+
+The heading breadcrumb (`{title} > {h1} > {h2}`) is prepended to every chunk. Benefits:
+
+- A deep chunk carries its document context into the embedding (cheap contextual retrieval). A chunk about "starter hydration" under "Sourdough > Feeding schedule" embeds with that context rather than as isolated paragraphs.
+- The breadcrumb text is the same format used by `toc_path` arrays in the search result. This enables the fuzzy→precise drill-down described below.
+
+The `NoteChunk.Content` field (`internal/model/chunk.go`) stores the full `{breadcrumb}\n\n{body}` string. The `snippetFromChunk` function in `resolve.go` strips everything before the first `\n\n` to extract a clean display snippet.
+
+### Token-aware sizing
+
+Chunk boundaries are based on estimated token counts, not character counts:
+
+```
+chunkTargetTokens = 450  // keep under bge-m3's 512-token encoder window
+chunkMinTokens    = 60
+chunkOverlap      = 200  // chars — tail of the previous chunk prepended to the next
+```
+
+Cyrillic tokenizes to ~1 token per 2 characters; Latin to ~1 per 4. The old 2000-character target overflowed bge-m3's 512-token window for Russian text, silently truncating the tail of each chunk before it was embedded.
+
+## Per-language BM25 analyzer
+
+The bleve mapping (`internal/noteloader/search.go`, `createSearchIndex`) registers `Title` / `Body` under two analyzed fields each. A query is run as a disjunction across all four fields so an English query stems against the English analyzer, and a Russian query against the Russian analyzer, regardless of whether the note's `lang` frontmatter is set.
+
+This is a correctness fix with no measurable nDCG delta on the bilingual benchmark (the vector lane already dominates cross-lingual queries), but it matters for exact-term English queries — rare words, code identifiers, names — that the vector lane misses.
+
+## Cross-encoder reranker (off by default)
+
+A cross-encoder reranker (`bge-reranker-v2-m3`, self-hosted sidecar) was implemented as an optional second stage after RRF fusion. It measured strictly worse on the benchmark — nDCG@10 dropped 0.9221 → 0.8881, MRR 0.9417 → 0.8708 — because the first stage was already strong and the corpus is dense with topically-adjacent documents. The cross-encoder over-weighted term overlap and promoted near-neighbour distractors that RRF had correctly ranked lower.
+
+The reranker ships **off by default** (`vector_search.reranker.enabled = false`). The client, config, and sidecar are present so it can be A/B-tested per deployment.
+
+Measured results and per-query analysis in [search_refactoring.md F3](./search_refactoring.md).
+
+## Fuzzy→precise drill-down: breadcrumb → TOC → toc_path
+
+The chunk breadcrumb enables a two-step drill-down in the MCP tool (`internal/case/mcp`):
+
+1. A vector hit returns a chunk snippet plus its breadcrumb (`{title} > {h1} > {h2}`).
+2. `tocPathForSnippet` (`internal/case/mcp/toc_path.go`) maps the snippet to a `toc_path` array — first by fuzzy HTML section matching, then by parsing the chunk breadcrumb as a fallback, then by falling back to the first section.
+3. The caller passes `toc_path` to `note_html(toc_path=[...])` to retrieve only that section of the rendered note.
+
+This means an agent can go from a fuzzy semantic match to the exact paragraph that answered the question, without loading the whole note.
+
+## Embedding generation pipeline
+
+Embeddings are generated asynchronously:
+
+1. A note is created or updated → `HandleLatestNotesAfterSave` enqueues a `GenerateNoteVersionEmbedding` job via goqite.
+2. The background worker calls the embedding server with `queryPrefix + title + content` for each chunk, stores the result in `note_chunk_embeddings` (SQLite), and updates the in-memory chunk slice on the next loader reload.
+3. A `regenerate_note_embeddings` cronjob runs at startup and daily at 03:00, comparing content hashes and re-queuing stale chunks.
+
+**Known limitation:** the in-memory chunk cache loads at boot. A note synced after the last boot does not have chunk embeddings in memory until the app restarts. The vecbench stack handles this by waiting for the job queue to drain before restarting (`/debug/wait_all_jobs`).
 
 ## Configuration
 
-### Feature Flag
-
 ```bash
-FEATURES='{"vector_search": {"enabled": true, "model": "text-embedding-3-small"}}'
+FEATURES='{"vector_search": {"enabled": true, "model": "bge-m3"}}'
 ```
 
-### Environment Variables
+The embedding server URL is configured separately (environment variable `OPENAI_BASE_URL` or equivalent in the app config). The `MODEL_NAME` env var on the embedding server selects the model (default `multilingual-e5-base`; production uses `bge-m3`).
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `FEATURES` | No | JSON with feature configuration |
-| `OPENAI_API_KEY` | When enabled | OpenAI API key for embeddings |
+### Reranker config
 
-### Models
+```bash
+FEATURES='{
+  "vector_search": {
+    "enabled": true,
+    "model": "bge-m3",
+    "reranker": {
+      "enabled": false,
+      "base_url": "http://localhost:8082",
+      "model": "bge-reranker-v2-m3",
+      "top_n": 20,
+      "output_k": 10
+    }
+  }
+}'
+```
 
-| Model | ID | Dimensions | Cost |
-|-------|-----|------------|------|
-| `text-embedding-3-small` | 1 | 1536 | $0.02/1M tokens |
-| `text-embedding-3-large` | 2 | 3072 | $0.13/1M tokens |
-| `text-embedding-ada-002` | 3 | 1536 | $0.10/1M tokens |
-
-## Implementation Details
-
-### Package Structure
+## Package map
 
 ```
 internal/
-├── features/
-│   ├── features.go        # Features struct, Parse()
-│   └── vector_search.go   # VectorSearchConfig, EmbeddingModel
-├── openai/
-│   └── client.go          # OpenAI client wrapper
+├── mdchunk/
+│   ├── chunk.go           Split() — breadcrumb + token-aware chunking
+│   └── frontmatter.go     StripFrontmatter()
+├── model/
+│   └── chunk.go           NoteChunk struct, Float32SliceToBytes / BytesToFloat32Slice
+├── noteloader/
+│   ├── search.go          bleve index creation, per-language mapping, Search()
+│   └── loader.go          loads NoteChunks into memory on reload
 ├── case/
-│   ├── similarnotes/
-│   │   └── resolve.go     # similarNotes query resolver
+│   ├── sitesearch/
+│   │   └── resolve.go     vectorSearch, mergeResults (RRF), dotSimilarity, rerankResults
+│   ├── mcp/
+│   │   ├── resolve.go     hybrid search in MCP tool (DefaultVectorSearchLimit=50, rrfK=60)
+│   │   └── toc_path.go    tocPathForSnippet, tocPathFromChunkContent — breadcrumb→toc_path
 │   └── backjob/
 │       └── generatenoteversionembedding/
-│           ├── job.go     # Job registration
-│           └── resolve.go # Embedding generation logic
-└── noteloader/
-    └── loader.go          # Loads embeddings via SQL JOIN
+│           └── resolve.go  per-chunk embedding job
+├── reranker/
+│   └── client.go          cross-encoder reranker client
+└── openai/
+    └── client.go          embedding API client (OpenAI-compatible)
+
+embedding-server/
+└── server.py              FastAPI server, normalize_embeddings=True
+
+reranker-server/
+└── server.py              FastAPI cross-encoder sidecar
 ```
 
-### Cosine Similarity
+## similarNotes (legacy whole-note similarity)
 
-```go
-func cosineSimilarity(a, b []float32) float64 {
-    var dotProduct, normA, normB float64
-    for i := range a {
-        dotProduct += float64(a[i]) * float64(b[i])
-        normA += float64(a[i]) * float64(a[i])
-        normB += float64(b[i]) * float64(b[i])
-    }
-    return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
+The `similarNotes` GraphQL query predates per-chunk hybrid search. It compares whole-note embeddings stored in `note_version_embeddings` (SQLite) via cosine similarity in-memory. It is not part of the hybrid search pipeline and is unaffected by the F1–F5 changes.
+
+```graphql
+similarNotes(input: { noteId: "/my-article", limit: 5 }) {
+  score
+  note { id title path }
 }
 ```
 
-## Cost Estimation
+## Measured results summary
 
-OpenAI embedding costs for `text-embedding-3-small`:
+All numbers from the bilingual benchmark (48-note corpus, 60 queries, bge-m3). Full table and analysis: [search_refactoring.md](./search_refactoring.md).
 
-| Notes | Avg Tokens/Note | Total Tokens | Cost |
-|-------|-----------------|--------------|------|
-| 100 | 500 | 50,000 | $0.001 |
-| 1,000 | 500 | 500,000 | $0.01 |
-| 10,000 | 500 | 5,000,000 | $0.10 |
+| State | Recall@10 | nDCG@10 | MRR |
+|-------|-----------|---------|-----|
+| Baseline | 0.9833 | 0.9157 | 0.9417 |
+| F1: widen pool (vectorTopK 5→50) | 1.0000 | 0.9221 | 0.9417 |
+| F2: per-language analyzer | 1.0000 | 0.9221 | 0.9417 |
+| F3: reranker (reverted/off) | — | 0.8881 | 0.8708 |
+| F4: breadcrumb + token sizing | 0.9917 | 0.9263 | 0.9500 |
+| F5: dot product (shipped) | 0.9917 | 0.9263 | 0.9500 |
+| F5✗: AND→OR BM25 (reverted) | 0.6750 | 0.6744 | 0.9556 |
 
-## Graceful Degradation
-
-- **Vector search disabled**: `similarNotes` returns empty array
-- **Note has no embedding**: Note is excluded from results
-- **OpenAI API error**: Job is retried by goqite
-
-## Future Improvements
-
-1. **Hybrid search** - Combine vector similarity with bleve text search
-2. **Batch embedding generation** - Process multiple notes in one API call
-3. **Local embeddings** - Use local model to avoid API costs
-4. **Semantic query search** - Generate query embedding for search
+Long-doc track (16 queries, multi-chunk notes): F4 raised nDCG@10 from 0.9308 → 0.9539, en→en from 0.8155 → 0.9077.
