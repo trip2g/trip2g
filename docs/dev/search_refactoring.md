@@ -20,6 +20,9 @@ This is the running report for a data-driven refactor of trip2g's hybrid search.
 | F3b | Cross-encoder reranker, full-text passages | 0.4083 | 0.3880 | 0.4500 | 0.2863 | **−0.5341** |
 | → | **Shipped: reranker OFF by default** | 1.0000 | 0.9221 | 0.9417 | 0.8599 | (= F2) |
 | F4 | Heading breadcrumb + token-aware chunking | 0.9917 | 0.9263 | 0.9500 | 0.8669 | +0.0042 |
+| F5 | Dot-product similarity (vectors are unit-norm) | 0.9917 | 0.9263 | 0.9500 | 0.8669 | +0.0000 |
+| F5✗ | AND→OR BM25 fallback — **reverted** | 0.6750 | 0.6744 | 0.9556 | 0.6055 | **−0.2519** |
+| → | **Shipped: dot-product only (AND→OR off)** | 0.9917 | 0.9263 | 0.9500 | 0.8669 | (= F4) |
 
 (F4's effect on the short corpus is small — its notes are single-chunk. Its real impact shows on the long-doc track below.)
 
@@ -31,6 +34,8 @@ A separate golden set (`testdata/eval/golden_set_longdocs.json`, 16 queries) ove
 |---|--------|-----------|---------|-----|------------|--------|
 | 04 | Baseline (post F1–F3, reranker off) | 1.0000 | 0.9308 | 0.9062 | 0.8155 | — |
 | F4 | Heading breadcrumb + token-aware chunking | 1.0000 | **0.9539** | 0.9375 | **0.9077** | **+0.0231** |
+| F5 | Dot-product similarity (vectors are unit-norm) | 1.0000 | 0.9539 | 0.9375 | 0.9077 | +0.0000 |
+| F5✗ | AND→OR BM25 fallback — **reverted** | 0.8750 | 0.7664 | 0.7377 | 0.9077 | **−0.1875** |
 
 _(rows added as each fix lands)_
 
@@ -76,4 +81,18 @@ Two chunking fixes in `internal/mdchunk`:
 
 **Result:** on the long-doc track nDCG@10 0.9308 → **0.9539** (+0.023), with English multi-chunk retrieval jumping en→en 0.8155 → 0.9077 (+0.09). On the short corpus the effect is small (those notes are single-chunk) and roughly neutral (one query slipped from recall 1.0 → 0.99 due to changed chunk boundaries). Requires a full re-embed (chunk content changed).
 
-_(F5 documented below as it lands)_
+### F5 — Dot-product similarity (shipped) + AND→OR fallback (negative result, reverted)
+
+Two ideas, one shipped, one rejected by measurement.
+
+**1. Dot-product similarity — shipped, quality-neutral, a small perf win.** The embedding server returns L2-normalized vectors (`embedding-server/server.py`, `normalize_embeddings=True`; confirmed empirically — every stored embedding has `‖v‖ = 1.000000`). For unit vectors cosine similarity *is* the dot product, so `cosineSimilarity` (which recomputed both magnitudes and a division per chunk) was replaced with a plain dot product in `internal/case/sitesearch/resolve.go`. Brute-force scan over every chunk now does one multiply-add loop instead of three. **Result:** nDCG/Recall/MRR identical to F4 to the last digit on both corpora (short 0.9263, long 0.9539) — exactly as expected for an algebraically-equivalent change. Pure latency win, zero quality cost.
+
+**2. AND→OR BM25 fallback — tried, measured strictly worse, reverted.** The idea: the BM25 lane (`internal/noteloader/search.go`) requires every query term to appear (`MatchQueryOperatorAnd`); when AND returns few hits, re-run with OR and merge to "recover recall." It looked free — recall was already 1.0, so what's the harm?
+
+It collapsed the short corpus from **nDCG@10 0.9263 → 0.6744 and Recall@10 0.992 → 0.675** (long-doc 0.9539 → 0.7664). Tellingly, **MRR barely moved** (0.95 → 0.9556): the #1 hit stayed right, but everything below it rotted.
+
+**Why it hurt** (the instructive part): this is a *hybrid* search — BM25 and the vector lane are fused by Reciprocal Rank Fusion, which scores by **rank**, not score. The golden set is natural-language/semantic, so the AND query almost never matches all terms → the fallback fired on nearly every query → it flooded the BM25 lane with up to 20 loose OR matches (documents sharing a single common term). RRF then handed those low-precision matches strong ranks (1/(k+1), 1/(k+2), …), and they outranked the genuinely relevant documents that the vector lane had correctly surfaced. Relevant notes got pushed below the top-10 → recall collapse. The #1 spot survived because the vector lane still dominates the very top, which is why MRR masked the damage.
+
+**The lesson** (a sibling of the F3 reranker result): in a hybrid where the vector lane already carries recall, the BM25 lane's job is **precision**, and keeping it *quiet* on semantic queries (AND-only, returning nothing rather than noise) is load-bearing. A "free recall win" that injects low-precision candidates into a rank-fusion is not free — it's actively corrosive. We only know because we measured before shipping; the change had been committed and would have silently halved retrieval quality otherwise.
+
+**Decision:** ship the dot-product, revert the AND→OR fallback (`search.go` restored byte-for-byte to the pre-F5 baseline). Artifacts: regression `06-f5-*.json`, restored `07-f5-fixed-*.json`.
