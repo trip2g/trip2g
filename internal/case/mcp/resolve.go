@@ -23,7 +23,10 @@ import (
 
 const (
 	// Search and display limits.
-	DefaultVectorSearchLimit = 10
+	// DefaultVectorSearchLimit is the vector-candidate pool fed into RRF fusion;
+	// keep it wide so fusion sees enough candidates (cosine already scores all
+	// chunks). DefaultDisplayLimit/MaxMergedResults still bound what's returned.
+	DefaultVectorSearchLimit = 50
 	DefaultDisplayLimit      = 10
 	DefaultSimilarLimit      = 10
 	MaxSimilarLimit          = 100

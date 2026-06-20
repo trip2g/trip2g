@@ -114,8 +114,11 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	return &conn, nil
 }
 
-// vectorTopK is the maximum number of vector-only results to return.
-const vectorTopK = 5
+// vectorTopK is the number of unique-note vector candidates fed into RRF fusion.
+// Keep this wide: the cosine scan already scores every chunk, so truncating
+// before fusion only discards recall at zero compute saving. The final result
+// list is capped after merge (see mergeResults).
+const vectorTopK = 50
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
 	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()

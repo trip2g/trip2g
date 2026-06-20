@@ -171,3 +171,10 @@ func TestMergeResults_RankOrderMatters(t *testing.T) {
 	}
 	require.Less(t, posA, posB, "/a (rank 0 in text) should rank above /b (rank 1 in text)")
 }
+
+// TestVectorTopKWideEnoughForFusion guards against regressing to the pre-fusion
+// truncation bug: the vector candidate pool must be wide enough that RRF sees
+// notes ranked beyond the first few by the vector lane (F1).
+func TestVectorTopKWideEnoughForFusion(t *testing.T) {
+	require.GreaterOrEqual(t, vectorTopK, 50)
+}

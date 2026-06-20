@@ -118,6 +118,17 @@ cmd_sync() {
   reload_app
 }
 
+# rebuild rebuilds the app image and recreates the container — for code-only
+# changes. Embeddings persist in the DB volume, so no re-sync/re-embed is needed
+# (chunks reload from SQLite on boot). Use `sync` instead if vault content changed.
+cmd_rebuild() {
+  echo "🔨 Rebuilding app image (code change)..."
+  $COMPOSE up -d --build app
+  ./scripts/waitfor localhost:21081 || { echo -e "${RED}✗ app failed to start${NC}"; exit 1; }
+  wait_graphql_ready
+  echo -e "${GREEN}✓ app rebuilt.${NC}"
+}
+
 cmd_eval() {
   local LABEL="${1:-run}"
   local OUT="${2:-docs/superpowers/eval-runs/${LABEL}.json}"
@@ -137,10 +148,11 @@ cmd_eval() {
 }
 
 case "${1:-up}" in
-  up)   cmd_up ;;
-  sync) cmd_sync ;;
-  eval) shift; cmd_eval "$@" ;;
-  down) $COMPOSE down ;;
-  logs) $COMPOSE logs -f app ;;
-  *) echo "usage: $0 {up|sync|eval|down|logs}"; exit 1 ;;
+  up)      cmd_up ;;
+  sync)    cmd_sync ;;
+  rebuild) cmd_rebuild ;;
+  eval)    shift; cmd_eval "$@" ;;
+  down)    $COMPOSE down ;;
+  logs)    $COMPOSE logs -f app ;;
+  *) echo "usage: $0 {up|sync|rebuild|eval|down|logs}"; exit 1 ;;
 esac
