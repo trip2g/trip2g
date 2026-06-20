@@ -33,7 +33,7 @@ The AND operator is intentional and load-bearing: in a hybrid system the BM25 la
 
 ### Vector lane
 
-**Embedding model.** The default model is `bge-m3` (1024-dim, multilingual, self-hosted). The embedding server (`embedding-server/server.py`) returns L2-normalized unit vectors (`normalize_embeddings=True`). The `MODEL_NAME` env var controls which model loads; the server binary defaults to `multilingual-e5-base` but the production and benchmark configs set it to `bge-m3`.
+**Embedding model.** The embedding server (`embedding-server/server.py`) defaults to `intfloat/multilingual-e5-base` (the `MODEL_NAME` env var in both `server.py` and `Dockerfile`). The trip2g deployment and benchmark override this to `BAAI/bge-m3` (1024-dim, multilingual) via the `MODEL_NAME` env var — so both names are correct in their context. The server returns L2-normalized unit vectors (`normalize_embeddings=True`).
 
 **Per-chunk embeddings.** Notes are split into paragraph-level chunks by `internal/mdchunk`. Each chunk gets its own embedding. This lets a dense query match the most relevant *section* of a long note rather than the averaged whole-note signal.
 
@@ -114,8 +114,8 @@ This means an agent can go from a fuzzy semantic match to the exact paragraph th
 Embeddings are generated asynchronously:
 
 1. A note is created or updated → `HandleLatestNotesAfterSave` enqueues a `GenerateNoteVersionEmbedding` job via goqite.
-2. The background worker calls the embedding server with `queryPrefix + title + content` for each chunk, stores the result in `note_chunk_embeddings` (SQLite), and updates the in-memory chunk slice on the next loader reload.
-3. A `regenerate_note_embeddings` cronjob runs at startup and daily at 03:00, comparing content hashes and re-queuing stale chunks.
+2. The background worker embeds documents using the **passage** prefix (not the query prefix). Whole-note text is `passagePrefix + title + "\n\n" + strippedContent` (`resolve.go` line 79); each chunk is embedded as `passagePrefix + chunk.Content` (`resolve.go` lines 150–153), where `chunk.Content` already contains the full `{breadcrumb}\n\n{body}` string — the title is not re-concatenated. The query side (search path, `sitesearch/resolve.go` line 128) uses the **query** prefix: `queryPrefix + query`. This query/passage split is the standard asymmetric embedding convention used by e5 and bge model families.
+3. A `regenerate_note_embeddings` cronjob runs at startup and weekly on Sunday at 03:00 (`"0 0 3 * * 0"`), comparing content hashes and re-queuing stale chunks.
 
 **Known limitation:** the in-memory chunk cache loads at boot. A note synced after the last boot does not have chunk embeddings in memory until the app restarts. The vecbench stack handles this by waiting for the job queue to drain before restarting (`/debug/wait_all_jobs`).
 
@@ -125,7 +125,7 @@ Embeddings are generated asynchronously:
 FEATURES='{"vector_search": {"enabled": true, "model": "bge-m3"}}'
 ```
 
-The embedding server URL is configured separately (environment variable `OPENAI_BASE_URL` or equivalent in the app config). The `MODEL_NAME` env var on the embedding server selects the model (default `multilingual-e5-base`; production uses `bge-m3`).
+The embedding server URL is configured separately (environment variable `OPENAI_BASE_URL` or equivalent in the app config). The `MODEL_NAME` env var on the embedding server selects the model (default `intfloat/multilingual-e5-base` as shipped in `server.py` and `Dockerfile`; trip2g deployments and benchmarks override it to `BAAI/bge-m3`).
 
 ### Reranker config
 
