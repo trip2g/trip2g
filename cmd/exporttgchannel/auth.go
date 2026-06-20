@@ -6,14 +6,14 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 	"github.com/go-faster/errors"
 	tdsession "github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
+	"os"
+	"strconv"
+	"strings"
 )
 
 // stdin is a single shared reader so bufio doesn't lose buffered bytes between calls.

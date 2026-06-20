@@ -322,11 +322,11 @@ func frontmatter(channelID int64, msg *tg.Message) string {
 // ---- title / filename helpers (adapted from importtelegramchannel) ----
 
 var (
-	rCustomEmoji   = regexp.MustCompile(`!\[[^\]]*\]\((tg://emoji\?id=\d+|https://ce\.trip2g\.com/\d+\.webp)\)`)
+	rCustomEmoji    = regexp.MustCompile(`!\[[^\]]*\]\((tg://emoji\?id=\d+|https://ce\.trip2g\.com/\d+\.webp)\)`)
 	rMalformedEmoji = regexp.MustCompile(`!\[[^\]]*\]\(tg://emoji\?id=\d+\)>[^<]*</u>`)
-	rMDLink        = regexp.MustCompile(`\[([^\]]*)\]\([^)]+\)`)
-	rHTMLTag       = regexp.MustCompile(`</?[a-zA-Z][^>]*>`)
-	rLeadingJunk   = regexp.MustCompile(
+	rMDLink         = regexp.MustCompile(`\[([^\]]*)\]\([^)]+\)`)
+	rHTMLTag        = regexp.MustCompile(`</?[a-zA-Z][^>]*>`)
+	rLeadingJunk    = regexp.MustCompile(
 		`^[\x{1F300}-\x{1F9FF}\x{1F3FB}-\x{1F3FF}\x{2600}-\x{26FF}` +
 			`\x{2700}-\x{27BF}\x{25A0}-\x{25FF}\x{2B00}-\x{2BFF}` +
 			`\x{FE00}-\x{FE0F}\x{200D}\s\-–—•·°№#@!?\.,;:\*"'«»„"'']+`,

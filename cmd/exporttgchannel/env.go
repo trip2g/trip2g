@@ -18,8 +18,8 @@ import (
 // offsetClock shifts time.Now() by a fixed duration to correct system clock skew.
 type offsetClock struct{ offset time.Duration }
 
-func (c offsetClock) Now() time.Time                    { return time.Now().Add(c.offset) }
-func (c offsetClock) Timer(d time.Duration) tdclock.Timer  { return sysTimer{time.NewTimer(d)} }
+func (c offsetClock) Now() time.Time                        { return time.Now().Add(c.offset) }
+func (c offsetClock) Timer(d time.Duration) tdclock.Timer   { return sysTimer{time.NewTimer(d)} }
 func (c offsetClock) Ticker(d time.Duration) tdclock.Ticker { return sysTicker{time.NewTicker(d)} }
 
 type sysTimer struct{ t *time.Timer }
@@ -50,8 +50,8 @@ func buildLogger(debug bool) *zap.Logger {
 // to do a live Telegram API lookup, which is fine for a read-only CLI.
 type cliEnv struct{}
 
-func (e *cliEnv) Logger() logger.Logger   { return &cliLogger{} }
-func (e *cliEnv) LogLevel() string        { return "" }
+func (e *cliEnv) Logger() logger.Logger                { return &cliLogger{} }
+func (e *cliEnv) LogLevel() string                     { return "" }
 func (e *cliEnv) DecryptData(b []byte) ([]byte, error) { return b, nil }
 
 func (e *cliEnv) GetTelegramPublishAccountChatAccessHash(_ context.Context, _ db.GetTelegramPublishAccountChatAccessHashParams) (*string, error) {
