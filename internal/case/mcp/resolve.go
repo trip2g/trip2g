@@ -510,17 +510,33 @@ func buildSearchPayload(query string, results []model.SearchResult, noteURL func
 			if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
 				matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
 			}
+			chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
 			item.Matches = append(item.Matches, SearchMatch{
 				MatchID:      matchID,
 				ChunkIndex:   chunkIndex,
 				Snippet:      snippet,
 				ContextWords: 10,
-				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet),
+				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent),
 			})
 		}
 		payload.Results = append(payload.Results, item)
 	}
 	return payload
+}
+
+// chunkContentByIndex returns the Content of the chunk for the given note at
+// chunkIndex, or "" when chunkIndex is 0 (meaning no chunk was resolved) or
+// the chunk is not found.
+func chunkContentByIndex(note *model.NoteView, chunkIndex int, chunks []model.NoteChunk) string {
+	if note == nil || chunkIndex == 0 || len(chunks) == 0 {
+		return ""
+	}
+	for _, chunk := range chunks {
+		if chunk.NotePath == note.Path && chunk.ChunkIndex == chunkIndex {
+			return chunk.Content
+		}
+	}
+	return ""
 }
 
 func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []model.NoteChunk) (int, bool) {
