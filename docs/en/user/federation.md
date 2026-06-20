@@ -121,6 +121,24 @@ Federation reuses your existing subgraph access control.
 
 A KB-note with no `free:` and no `subgraphs:` is not admin-only — it is visible to any authenticated subscriber. To make a KB-note visible only to admins, put it in a dedicated subgraph that no non-admin users have access to (e.g. `subgraphs: admin-only`). The `federated_search` response for an inaccessible `kb_id` is always "not configured" — identical to a `kb_id` that does not exist, so the peer's existence is not disclosed.
 
+### Federation graph (self-hosted panel)
+
+When running trip2g behind simplepanel, the admin panel has an **Admin → Federation** page that visualises the current state of all pool instances as a directed graph. Each node is an instance; each edge is a discovered federation link.
+
+Edge colours reflect the connection status:
+
+| Status | Meaning |
+|--------|---------|
+| `ok` | KB-note + outbound secret + matching non-revoked inbound secret with at least one subgraph granted. The link works. |
+| `no_auth` | KB-note exists but no outbound secret. The agent will try to call the peer; the peer will reject with 401. Add an outbound secret. |
+| `orphan_secret` | Outbound secret recorded but no KB-note points to the peer. The agent never discovers this route. Add a KB-note. |
+| `one_way` | Outbound secret exists and KB-note exists, but the peer has no matching inbound secret for this `kid`. The peer will reject with 401. Ask the peer to add an inbound secret for your `kid`. |
+| `no_access` | Link is established but the inbound secret grants zero subgraphs — the peer can call but receives no results. Expand the scope. |
+| `revoked` | The outbound secret has been revoked. The route is broken and should be cleaned up. |
+| `external` | Target URL is not a pool instance (points to a public or external base). Informational only. |
+
+The graph also lists **Issues** — misconfigurations detected at crawl time, with severity (`error` / `warning` / `info`) and per-edge descriptions. Use the Issues list to diagnose broken links without reading logs.
+
 ### Revoking access
 
 Admin → Federation → find the row → Revoke. The row goes grey. Any future request from that `kid` gets a 401 response. No coordination with the peer is needed — their calls simply start failing immediately.
