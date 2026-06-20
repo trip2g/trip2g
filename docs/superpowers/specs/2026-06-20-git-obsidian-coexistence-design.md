@@ -159,6 +159,11 @@ branch-restriction `pre-receive` hook). This is what makes a stale push fail nat
 
 ## Testing
 
+Two layers. Go unit tests cover the internals (mocked `Env`, local temp repo); a Playwright
+e2e spec covers the real cross-path coexistence over the smart-HTTP protocol — which the unit
+tests can't, since they never exercise the HTTP endpoints or a genuine plugin-vs-git race.
+
+### Go unit tests (`internal/gitapi`)
 Table-driven, with a real temporary git repo plus a moq'd `Env`:
 
 - materialize idempotency (second call with unchanged DB makes no commit);
@@ -170,6 +175,20 @@ Table-driven, with a real temporary git repo plus a moq'd `Env`:
 - asset blob is written into git and is idempotent by hash;
 - ref rollback on apply failure (repo equals `oldHEAD` afterward);
 - concurrency: a plugin `pushNotes` and a git apply do not interleave (shared lock).
+
+### E2e (`e2e/gitsync.spec.js`, Playwright)
+Setup: create a git token via the `createGitToken` GraphQL mutation (API-key auth), then drive
+the real `git` CLI (`child_process`) against `http://localhost:8081/_system/git` using
+`http://user:<token>@…` basic auth. The plugin side is simulated with the existing GraphQL
+`pushNotes` / `notePaths` calls (the same pattern as `updatenotes.spec.js`). Scenarios:
+
+- **plugin → git:** push a note via GraphQL, then `git clone` and assert the file is present
+  with current content (mirror is materialized on access);
+- **git → plugin:** `git push` a new/edited note, then query `notePaths` and assert the DB has it;
+- **non-fast-forward:** clone, let a GraphQL `pushNotes` change the same file, then `git push`
+  from the stale clone and assert it is rejected; after `git pull` + push it succeeds;
+- **git deletion:** `git rm` + push, then assert the note is hidden in the DB;
+- **assets:** GraphQL-upload a note with an image, `git clone`, assert the image blob is present.
 
 ## Out of scope
 
