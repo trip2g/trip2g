@@ -1,0 +1,97 @@
+# Isolated stack for the vector-search benchmark.
+#
+# A dedicated, single trip2g instance with its own DB, MinIO bucket, ports, and a
+# purpose-built bilingual (RU/EN) test vault — independent of the e2e stack and dev.
+# Brought up + ingested + measured via scripts/vecbench.sh.
+#
+# The embedding service reuses the shared ${HOME}/models/embedding cache, so if the
+# e2e stack already downloaded bge-m3 (~2.3 GB) it starts fast here too.
+name: trip2g_vecbench
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: trip2g-vecbench-minio
+    ports:
+      - "22000:22000"
+      - "22001:22001"
+    environment:
+      MINIO_ROOT_USER: vecbench
+      MINIO_ROOT_PASSWORD: vecbenchpass
+    command: server /data --console-address ":22001" --address ":22000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:22000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Local embedding server — bge-m3 (1024 dims) via sentence-transformers, OpenAI-compatible.
+  embedding:
+    build: ./embedding-server
+    container_name: trip2g-vecbench-embedding
+    ports:
+      - "11436:8000"
+    volumes:
+      - ${HOME}/models/embedding:/data
+    environment:
+      - MODEL_NAME=BAAI/bge-m3
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-vecbench-app
+    depends_on:
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+    ports:
+      - "21081:21081"
+      - "21082:21082"
+    environment:
+      # Server
+      - LISTEN_ADDR=0.0.0.0:21081
+      - INTERNAL_LISTEN_ADDR=:21082
+      - DB_FILE=/data/vecbench.sqlite3
+      - DEV=true # dev sign-in code is 111111 (see cmd/server/main.go)
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com # owner auto-provisioned on boot
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      # bge-m3 (1024d) baseline for the benchmark
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
+
+      # MinIO (isolated bucket; app auto-creates it on first boot)
+      - MINIO_ENDPOINT=minio:22000
+      - MINIO_ACCESS_KEY_ID=vecbench
+      - MINIO_SECRET_KEY=vecbenchpass
+      - MINIO_BUCKET=vecbench-bucket
+      - MINIO_USE_SSL=false
+
+      # Public URL
+      - PUBLIC_URL=http://localhost:21081
+
+      # JWT (benchmark-only secret — do NOT use in production)
+      - JWT_SECRET=vecbench-secret-key-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_vecbench
+
+      # Mail: no SMTP configured → SendMail just logs (dev code is fixed anyway)
+      - MAIL_FROM=vecbench@example.com
+
+      # Optional: pass through if you switch the model to an OpenAI API embedding
+      - OPENAI_API_KEY
+    volumes:
+      - ./tmp/vecbench-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:21082/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

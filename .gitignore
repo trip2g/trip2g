@@ -34,6 +34,7 @@ CLAUDE.md
 /playwright-report/
 /playwright/.cache/
 .test-api-key
+.vecbench-api-key
 
 # Telegram session
 session.json
