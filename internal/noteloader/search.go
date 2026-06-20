@@ -155,33 +155,24 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	return index, nil
 }
 
-// andOrFallbackThreshold is the minimum number of AND hits below which we fall
-// back to OR and merge results. AND gives higher precision for multi-term queries,
-// but when the corpus is small or the query contains rare/inflected terms, AND can
-// return zero or near-zero results. A threshold of 3 means: if AND finds fewer than
-// 3 documents, re-run with OR and append OR-only hits after the AND hits.
-const andOrFallbackThreshold = 3
-
 func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 	if l.searchIndex == nil {
 		return nil, ErrSearchNotAvailable
 	}
 
-	// buildQuery constructs a per-field disjunction with the given term operator.
-	// The query is analyzed with each field's own analyzer (ru / en) and a doc
-	// matches via whichever language fits.
-	buildQuery := func(op bleveQuery.MatchQueryOperator) *bleveQuery.DisjunctionQuery {
-		matchField := func(field string) *bleveQuery.MatchQuery {
-			mq := bleve.NewMatchQuery(queryString)
-			mq.SetField(field)
-			mq.SetOperator(op)
-			return mq
-		}
-		return bleve.NewDisjunctionQuery(
-			matchField("Title"), matchField("Title_en"),
-			matchField("Body"), matchField("Body_en"),
-		)
+	// Per-field disjunction: the query is analyzed with each field's own analyzer
+	// (ru for Title/Body, en for Title_en/Body_en) and a doc matches via whichever
+	// language fits. Within a field, terms are AND-ed (same precision as before).
+	matchField := func(field string) *bleveQuery.MatchQuery {
+		mq := bleve.NewMatchQuery(queryString)
+		mq.SetField(field)
+		mq.SetOperator(bleveQuery.MatchQueryOperatorAnd)
+		return mq
 	}
+	query := bleve.NewDisjunctionQuery(
+		matchField("Title"), matchField("Title_en"),
+		matchField("Body"), matchField("Body_en"),
+	)
 
 	highlight := bleve.NewHighlightWithStyle(htmlFilter.Name)
 	highlight.AddField("Title")
@@ -189,43 +180,20 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 	highlight.AddField("Body")
 	highlight.AddField("Body_en")
 
-	runSearch := func(query bleveQuery.Query) (*bleve.SearchResult, error) {
-		req := bleve.NewSearchRequest(query)
-		req.IncludeLocations = true
-		req.Highlight = highlight
-		req.Fields = []string{"*"}
-		req.Size = 20
-		return l.searchIndex.Search(req)
-	}
+	searchRequest := bleve.NewSearchRequest(query)
+	searchRequest.IncludeLocations = true
+	searchRequest.Highlight = highlight
+	searchRequest.Fields = []string{"*"}
+	searchRequest.Size = 20
 
-	// First pass: AND — highest precision, all query terms must appear in the field.
-	andResult, err := runSearch(buildQuery(bleveQuery.MatchQueryOperatorAnd))
+	searchResult, err := l.searchIndex.Search(searchRequest)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
-	// AND→OR fallback: if AND returns fewer than andOrFallbackThreshold hits, re-run
-	// with OR to recover recall. OR hits are appended after AND hits (AND first /
-	// higher precision), deduplicated by document ID.
-	hits := andResult.Hits
-	if len(hits) < andOrFallbackThreshold {
-		orResult, orErr := runSearch(buildQuery(bleveQuery.MatchQueryOperatorOr))
-		if orErr == nil {
-			andIDs := make(map[string]struct{}, len(hits))
-			for _, h := range hits {
-				andIDs[h.ID] = struct{}{}
-			}
-			for _, h := range orResult.Hits {
-				if _, seen := andIDs[h.ID]; !seen {
-					hits = append(hits, h)
-				}
-			}
-		}
-	}
-
 	results := []model.SearchResult{}
 
-	for _, hit := range hits {
+	for _, hit := range searchResult.Hits {
 		note, ok := l.nvs.Map[hit.ID]
 		if !ok {
 			continue
