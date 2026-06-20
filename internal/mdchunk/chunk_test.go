@@ -232,3 +232,37 @@ func chunksContent(chunks []Chunk) []string {
 	}
 	return out
 }
+
+// TestSplitCarriesHeadingPath verifies F4: each chunk's content is prefixed with
+// the breadcrumb "{title} > {heading path}", so a deep chunk carries its section
+// context. A note with several headings must split into multiple chunks.
+func TestSplitCarriesHeadingPath(t *testing.T) {
+	title := "My Note"
+	// Build a body long enough to span multiple chunks, with distinct headings.
+	body := "Intro paragraph.\n\n" +
+		"## Alpha\n\n" + strings.Repeat("alpha content word. ", 60) + "\n\n" +
+		"## Beta\n\n" + strings.Repeat("beta content word. ", 60)
+	chunks := Split(title, []byte(body))
+
+	if len(chunks) < 2 {
+		t.Fatalf("expected multiple chunks, got %d", len(chunks))
+	}
+	// Each chunk's first line is its breadcrumb "{title} > {heading path}".
+	crumbs := map[string]bool{}
+	for _, c := range chunks {
+		crumbs[firstLine(c.Content)] = true
+	}
+	if !crumbs["My Note > Alpha"] {
+		t.Errorf("no chunk carries breadcrumb 'My Note > Alpha'; got %v", crumbs)
+	}
+	if !crumbs["My Note > Beta"] {
+		t.Errorf("no chunk carries breadcrumb 'My Note > Beta'; got %v", crumbs)
+	}
+}
+
+func firstLine(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i]
+	}
+	return s
+}

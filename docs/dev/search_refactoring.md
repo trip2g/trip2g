@@ -19,6 +19,18 @@ This is the running report for a data-driven refactor of trip2g's hybrid search.
 | F3 | Cross-encoder reranker, 512-char passages | 1.0000 | 0.8881 | 0.8708 | 0.8794 | **−0.0340** |
 | F3b | Cross-encoder reranker, full-text passages | 0.4083 | 0.3880 | 0.4500 | 0.2863 | **−0.5341** |
 | → | **Shipped: reranker OFF by default** | 1.0000 | 0.9221 | 0.9417 | 0.8599 | (= F2) |
+| F4 | Heading breadcrumb + token-aware chunking | 0.9917 | 0.9263 | 0.9500 | 0.8669 | +0.0042 |
+
+(F4's effect on the short corpus is small — its notes are single-chunk. Its real impact shows on the long-doc track below.)
+
+### Long-doc track (multi-chunk notes)
+
+A separate golden set (`testdata/eval/golden_set_longdocs.json`, 16 queries) over 6 long Marcus-Aurelius chapters (RU/EN/mixed) that split into 6–10 chunks each — so chunking-dependent fixes are measurable.
+
+| # | Change | Recall@10 | nDCG@10 | MRR | en→en nDCG | Δ nDCG |
+|---|--------|-----------|---------|-----|------------|--------|
+| 04 | Baseline (post F1–F3, reranker off) | 1.0000 | 0.9308 | 0.9062 | 0.8155 | — |
+| F4 | Heading breadcrumb + token-aware chunking | 1.0000 | **0.9539** | 0.9375 | **0.9077** | **+0.0231** |
 
 _(rows added as each fix lands)_
 
@@ -56,4 +68,12 @@ The textbook "biggest quality lever": a second stage that re-scores the fused ca
 
 **Decision:** ship it **off by default** (`vector_search.reranker.enabled=false`); keep the client, config, and sidecar so it can be A/B-tested per deployment. A promising future variant — *blend* the rerank score with the RRF rank instead of overriding it (keep RRF as a strong prior) — is left as follow-up.
 
-_(F4…F5 documented below as they land)_
+### F4 — Heading breadcrumb in chunks + token-aware sizing
+
+Two chunking fixes in `internal/mdchunk`:
+1. **Heading breadcrumb.** Each chunk's content is now prefixed with its section path — `{title} > {h1} > {h2}\n\n{body}` — instead of just `{title}`. A deep chunk carries its document context into the embedding (a cheap form of contextual retrieval), and the breadcrumb doubles as a *navigable* pointer: it aligns with the search-result TOC, so an agent can drill from a fuzzy vector hit to the exact section via `note_html(toc_path=…)`.
+2. **Token-aware sizing.** Sizing switched from characters to estimated tokens (~450 target). The old 2000-char target was ~1000 tokens for Cyrillic — over bge-m3's 512-token window — so the tail of Russian chunks was silently truncated server-side and never embedded.
+
+**Result:** on the long-doc track nDCG@10 0.9308 → **0.9539** (+0.023), with English multi-chunk retrieval jumping en→en 0.8155 → 0.9077 (+0.09). On the short corpus the effect is small (those notes are single-chunk) and roughly neutral (one query slipped from recall 1.0 → 0.99 due to changed chunk boundaries). Requires a full re-embed (chunk content changed).
+
+_(F5 documented below as it lands)_

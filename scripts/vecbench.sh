@@ -106,6 +106,10 @@ cmd_up() {
   ./scripts/waitfor localhost:21081 || { echo -e "${RED}✗ app failed to start${NC}"; exit 1; }
   wait_graphql_ready
   create_api_key
+  # `up` may run against a fresh/wiped DB; a stale obsidian-sync state would make
+  # the client think the server already has everything and push nothing. Force a
+  # full reconcile by clearing it.
+  rm -f "$VAULT/.sync-state.json"
   push_vault
   wait_all_jobs
   reload_app
