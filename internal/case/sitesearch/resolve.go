@@ -196,7 +196,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 }
 
 // snippetFromChunk extracts a display snippet from chunk content.
-// Chunks have the format "{title}\n\n{body}", so we skip the title prefix.
+// Chunks have the format "{title} > {h1} > {h2}\n\n{body}", so we skip past the breadcrumb prefix.
 func snippetFromChunk(content string, maxLen int) string {
 	if idx := strings.Index(content, "\n\n"); idx >= 0 {
 		content = content[idx+2:]
