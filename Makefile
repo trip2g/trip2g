@@ -4,6 +4,16 @@ LDFLAGS := -s -w -X main.GitCommit=$(GIT_COMMIT)
 test:
 	go test ./...
 
+# Vector-search benchmark (isolated stack + bilingual vault). See docs/dev/retrieval_eval.md.
+vecbench-up:
+	./scripts/vecbench.sh up
+
+vecbench-eval:
+	./scripts/vecbench.sh eval $(LABEL)
+
+vecbench-down:
+	./scripts/vecbench.sh down
+
 build-amd64: graphqlgen test
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="$(LDFLAGS)" ./cmd/server
 
