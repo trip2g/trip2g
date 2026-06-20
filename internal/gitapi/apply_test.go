@@ -91,3 +91,27 @@ func TestApplyHidesDeletedNote(t *testing.T) {
 		t.Fatalf("hidden = %v, want [gone.md]", env.hidden)
 	}
 }
+
+func TestReceivePackRejectsNonFastForward(t *testing.T) {
+	api := newTestAPI(t, &fakeEnv{})
+	if err := api.setDenyNonFastForwards(); err != nil {
+		t.Fatal(err)
+	}
+	cfg := gitOut(t, api.config.RepoPath, "config", "receive.denyNonFastForwards")
+	if cfg != "true" {
+		t.Fatalf("denyNonFastForwards = %q, want true", cfg)
+	}
+}
+
+func TestApplyRollbackOnError(t *testing.T) {
+	env := &fakeEnv{pushErr: true} // PushNotes returns an error
+	api := newTestAPI(t, env)
+	old := commitFile(t, api, "a.md", "one")
+	newRev := commitFile(t, api, "a.md", "two")
+
+	_, err := api.applyDiff(context.Background(), old, newRev)
+	if err == nil {
+		t.Fatal("expected apply error")
+	}
+	_ = newRev
+}

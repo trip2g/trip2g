@@ -144,6 +144,19 @@ func (api *API) initRepo() error {
 		return err
 	}
 
+	if err := api.setDenyNonFastForwards(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (api *API) setDenyNonFastForwards() error {
+	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "config", "receive.denyNonFastForwards", "true")
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to set denyNonFastForwards: %w", err)
+	}
 	return nil
 }
 
@@ -256,13 +269,22 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 	}
 
 	api.mu.Lock()
-	defer api.mu.Unlock()
-
 	err = api.initRepo()
+	api.mu.Unlock()
 	if err != nil {
 		api.logger.Error("failed to init repo", "error", err)
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		ctx.SetBodyString(err.Error())
+		return true
+	}
+
+	api.env.LockNoteWrites()
+	merr := api.materialize(api.ctx)
+	api.env.UnlockNoteWrites()
+	if merr != nil {
+		api.logger.Error("failed to materialize", "error", merr)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString(merr.Error())
 		return true
 	}
 
@@ -383,28 +405,58 @@ func (api *API) handleGitUploadPack(ctx *fasthttp.RequestCtx) error {
 }
 
 func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
+	api.env.LockNoteWrites()
+	defer api.env.UnlockNoteWrites()
+
+	// Re-materialize inside the critical section so a concurrent plugin write
+	// advances HEAD and the client's stale push is rejected (non-fast-forward).
+	if err := api.materialize(api.ctx); err != nil {
+		return fmt.Errorf("failed to materialize before receive: %w", err)
+	}
+
+	oldRev := ""
+	if api.isRefExists("refs/heads/" + api.config.MasterBranch) {
+		oldRev = strings.TrimSpace(mustGit(api, "rev-parse", api.config.MasterBranch))
+	}
+
 	cmd := exec.Command("git-receive-pack", "--stateless-rpc", api.config.RepoPath)
 	cmd.Stdin = bytes.NewReader(ctx.PostBody())
 	cmd.Stdout = ctx
 	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to run git-receive-pack: %w", err)
 	}
 
-	_, err = api.ApplyChanges(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to apply changes: %w", err)
+	newRev := strings.TrimSpace(mustGit(api, "rev-parse", api.config.MasterBranch))
+	if newRev == oldRev {
+		return nil // nothing advanced (rejected by denyNonFastForwards or no-op)
 	}
 
-	// todo: run in background
-	err = api.uploadRepo()
-	if err != nil {
-		return fmt.Errorf("failed to upload repo: %w", err)
+	if _, err := api.applyDiff(api.ctx, oldRev, newRev); err != nil {
+		// Roll the ref back so the repo never diverges from the DB.
+		if oldRev != "" {
+			_, _ = api.gitCmd(os.Environ(), nil, "update-ref", "refs/heads/"+api.config.MasterBranch, oldRev)
+		}
+		return fmt.Errorf("failed to apply changes (rolled back): %w", err)
 	}
+
+	go func() {
+		if err := api.uploadRepo(); err != nil {
+			api.logger.Error("failed to upload repo snapshot", "error", err)
+		}
+	}()
 
 	return nil
+}
+
+// mustGit is a tiny helper for read-only rev-parse calls.
+func mustGit(api *API, args ...string) string {
+	out, err := api.gitCmd(os.Environ(), nil, args...)
+	if err != nil {
+		api.logger.Error("git read failed", "args", args, "error", err)
+		return ""
+	}
+	return out
 }
 
 func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesInput, error) {

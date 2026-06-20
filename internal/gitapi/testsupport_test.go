@@ -3,6 +3,7 @@ package gitapi
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -51,6 +52,7 @@ type fakeEnv struct {
 	hidden   []string
 	pushed   []string // paths passed to PushNotes
 	dbHashes map[string]string
+	pushErr  bool
 }
 
 func (f *fakeEnv) Logger() logger.Logger { return &logger.DummyLogger{} }
@@ -74,6 +76,9 @@ func (f *fakeEnv) AllVisibleNotePaths(context.Context) ([]db.NotePath, error) {
 	return out, nil
 }
 func (f *fakeEnv) PushNotes(_ context.Context, in model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
+	if f.pushErr {
+		return nil, fmt.Errorf("boom")
+	}
 	for _, u := range in.Updates {
 		f.pushed = append(f.pushed, u.Path)
 	}
