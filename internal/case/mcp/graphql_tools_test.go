@@ -36,10 +36,10 @@ func (e *gqlRequestEnv) FederationClient(_ context.Context, _ string) (model.Fed
 func (e *gqlRequestEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error) {
 	panic("unexpected")
 }
-func (e *gqlRequestEnv) OpenAI() *openai.Client                      { panic("unexpected") }
-func (e *gqlRequestEnv) PublicURL() string                           { panic("unexpected") }
-func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string            { panic("unexpected") }
-func (e *gqlRequestEnv) Logger() logger.Logger                       { panic("unexpected") }
+func (e *gqlRequestEnv) OpenAI() *openai.Client           { panic("unexpected") }
+func (e *gqlRequestEnv) PublicURL() string                { panic("unexpected") }
+func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string { panic("unexpected") }
+func (e *gqlRequestEnv) Logger() logger.Logger            { return &logger.DummyLogger{} }
 func (e *gqlRequestEnv) FederationSecretByKBURL(_ context.Context, _ string) (db.FederationSecret, bool, error) {
 	panic("unexpected")
 }
@@ -175,4 +175,69 @@ func TestHandleGraphQLRequest_StructuredContent(t *testing.T) {
 	gotJSON, err := json.Marshal(result.StructuredContent)
 	require.NoError(t, err)
 	require.Equal(t, string(wantJSON), string(gotJSON))
+}
+
+// --- validateReadOnlyQuery tests ---
+
+func TestValidateReadOnlyQuery_RejectsMutation(t *testing.T) {
+	err := validateReadOnlyQuery(`mutation { createNote { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mutation")
+}
+
+func TestValidateReadOnlyQuery_RejectsDisallowedRootField(t *testing.T) {
+	err := validateReadOnlyQuery(`{ admin { users { id } } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "admin")
+}
+
+func TestValidateReadOnlyQuery_RejectsMultiOpWithMutation(t *testing.T) {
+	err := validateReadOnlyQuery(`query A { note(path: "x") { title } } mutation B { createNote { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mutation")
+}
+
+func TestValidateReadOnlyQuery_AllowsNote(t *testing.T) {
+	err := validateReadOnlyQuery(`{ note(path: "x") { title } }`)
+	require.NoError(t, err)
+}
+
+func TestValidateReadOnlyQuery_AllowsSearch(t *testing.T) {
+	err := validateReadOnlyQuery(`{ search(query: "y") { title notePath } }`)
+	require.NoError(t, err)
+}
+
+func TestValidateReadOnlyQuery_RejectsSubscription(t *testing.T) {
+	err := validateReadOnlyQuery(`subscription { noteUpdated { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "subscription")
+}
+
+func TestValidateReadOnlyQuery_RejectsPublicUrl(t *testing.T) {
+	err := validateReadOnlyQuery(`{ publicUrl }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "publicUrl")
+}
+
+func TestValidateReadOnlyQuery_ParseError(t *testing.T) {
+	err := validateReadOnlyQuery(`{{{not valid graphql`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse error")
+}
+
+// TestHandleGraphQLRequest_MutationRejectedByHandler: handler-level check that a
+// mutation query yields an InvalidParams error without reaching the env.
+func TestHandleGraphQLRequest_MutationRejectedByHandler(t *testing.T) {
+	env := &gqlRequestEnv{
+		graphqlFunc: func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
+			panic("must not be called")
+		},
+	}
+	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `mutation { createNote { id } }`})
+	require.NoError(t, err)
+
+	resp := handleGraphQLRequest(context.Background(), env, 1, json.RawMessage(argsRaw))
+	require.NotNil(t, resp.Error)
+	require.Equal(t, ErrCodeInvalidParams, resp.Error.Code)
+	require.Contains(t, resp.Error.Message, "mutation")
 }

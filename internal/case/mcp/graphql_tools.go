@@ -3,8 +3,13 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/vektah/gqlparser/v2/parser"
+	"trip2g/internal/logger"
 )
 
 const fullIntrospectionQuery = `{
@@ -50,6 +55,46 @@ func handleGraphQLIntrospection(ctx context.Context, env Env, id any, argsRaw js
 	return successResponse(id, textToolResult(string(filtered)))
 }
 
+// graphqlReadOnlyRootFields is the allowlist of Query root fields accessible via graphql_request.
+var graphqlReadOnlyRootFields = map[string]bool{ //nolint:gochecknoglobals // immutable allowlist
+	"note":             true,
+	"search":           true,
+	"similarNotes":     true,
+	"viewer":           true,
+	"notePaths":        true,
+	"resolveWikilinks": true,
+}
+
+// validateReadOnlyQuery parses the query and enforces:
+//  1. Parse must succeed.
+//  2. Every operation must be a query (not mutation or subscription).
+//  3. Every top-level root field must be in the read-only allowlist.
+//     Inline fragments and fragment spreads at root are rejected.
+//
+// The function is intentionally standalone and reusable by other tools
+// (e.g. federated_graphql_request).
+func validateReadOnlyQuery(query string) error {
+	doc, err := parser.ParseQuery(&ast.Source{Input: query})
+	if err != nil {
+		return fmt.Errorf("query parse error: %w", err)
+	}
+	for _, op := range doc.Operations {
+		if op.Operation != ast.Query {
+			return fmt.Errorf("only queries are allowed, got %s", op.Operation)
+		}
+		for _, sel := range op.SelectionSet {
+			field, ok := sel.(*ast.Field)
+			if !ok {
+				return fmt.Errorf("only field selections are allowed at query root")
+			}
+			if !graphqlReadOnlyRootFields[field.Name] {
+				return fmt.Errorf("root field %q is not allowed", field.Name)
+			}
+		}
+	}
+	return nil
+}
+
 func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	args, errResp := unmarshalArgs[GraphQLRequestArguments](argsRaw, id, "graphql_request")
 	if errResp != nil {
@@ -58,6 +103,12 @@ func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.Raw
 	if args.Query == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "query is required")
 	}
+
+	if err := validateReadOnlyQuery(args.Query); err != nil {
+		return errorResponse(id, ErrCodeInvalidParams, "query rejected: "+err.Error())
+	}
+	log := logger.WithPrefix(env.Logger(), "mcp:handleGraphQLRequest")
+	log.Debug("graphql_request accepted", "query", args.Query)
 
 	result, err := env.GraphQLRequest(ctx, args.Query, args.Variables)
 	if err != nil {
