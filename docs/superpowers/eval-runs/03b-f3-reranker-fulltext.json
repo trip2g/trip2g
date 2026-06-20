@@ -1,0 +1,1197 @@
+{
+  "label": "03b-f3-reranker-fulltext",
+  "k": 10,
+  "overall": {
+    "count": 60,
+    "recall_at_k": 0.4083333333333333,
+    "ndcg_at_k": 0.3879568581693728,
+    "mrr": 0.44999999999999996
+  },
+  "by_direction": {
+    "en-\u003een": {
+      "count": 18,
+      "recall_at_k": 0.4444444444444444,
+      "ndcg_at_k": 0.4651283089005568,
+      "mrr": 0.5555555555555556
+    },
+    "en-\u003eru": {
+      "count": 12,
+      "recall_at_k": 0.375,
+      "ndcg_at_k": 0.286255360871049,
+      "mrr": 0.2916666666666667
+    },
+    "ru-\u003een": {
+      "count": 12,
+      "recall_at_k": 0.3333333333333333,
+      "ndcg_at_k": 0.3114375316251777,
+      "mrr": 0.3333333333333333
+    },
+    "ru-\u003eru": {
+      "count": 18,
+      "recall_at_k": 0.4444444444444444,
+      "ndcg_at_k": 0.4295992899998675,
+      "mrr": 0.5277777777777778
+    }
+  },
+  "queries": [
+    {
+      "query": "как астрономы находят планеты у других звёзд",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets"
+      ],
+      "retrieved_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets",
+        "/en/neutron_stars",
+        "/ru/komety",
+        "/ru/neytronnye_zvezdy",
+        "/ru/ann_indeksy",
+        "/ru/chernye_dyry",
+        "/en/comets",
+        "/ru/rerankery",
+        "/readme",
+        "/ru/fotosintez",
+        "/ru/vektornyy_poisk",
+        "/en/black_holes",
+        "/en/ann_indexes",
+        "/en/photosynthesis",
+        "/ru/myuteksy",
+        "/en/vector_search",
+        "/en/rerankers",
+        "/ru/bm25",
+        "/en/cellular_respiration"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "метод транзита для поиска планет",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/readme",
+        "/ru/rerankery",
+        "/ru/ann_indeksy",
+        "/ru/komety",
+        "/en/rerankers",
+        "/ru/vektornyy_poisk",
+        "/ru/neytronnye_zvezdy",
+        "/ru/myuteksy",
+        "/ru/goroutines",
+        "/ru/chernye_dyry",
+        "/ru/bm25",
+        "/ru/context_otmena",
+        "/en/ann_indexes",
+        "/en/goroutines",
+        "/en/bm25",
+        "/en/neutron_stars",
+        "/en/comets",
+        "/en/vector_search"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "что показывают лучевые скорости звезды",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets"
+      ],
+      "retrieved_urls": [
+        "/ru/ekzoplanety",
+        "/ru/chernye_dyry",
+        "/ru/neytronnye_zvezdy",
+        "/ru/komety",
+        "/en/neutron_stars",
+        "/en/exoplanets",
+        "/en/black_holes",
+        "/ru/fotosintez",
+        "/en/comets",
+        "/en/ann_indexes",
+        "/ru/myuteksy",
+        "/ru/kletochnoe_dyhanie",
+        "/en/bm25",
+        "/ru/transpiratsiya",
+        "/en/photosynthesis",
+        "/en/cellular_respiration",
+        "/en/mutexes",
+        "/ru/pitanie_rasteniy",
+        "/en/transpiration",
+        "/en/plant_nutrients"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.8315546295836226,
+      "rr": 1
+    },
+    {
+      "query": "how do scientists detect planets around other stars",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/en/neutron_stars",
+        "/ru/komety",
+        "/en/comets",
+        "/en/black_holes",
+        "/ru/neytronnye_zvezdy",
+        "/ru/ann_indeksy",
+        "/readme",
+        "/ru/rerankery",
+        "/en/ann_indexes",
+        "/en/rerankers",
+        "/ru/chernye_dyry",
+        "/en/photosynthesis",
+        "/ru/vektornyy_poisk",
+        "/en/vector_search",
+        "/en/errgroup",
+        "/en/mutexes",
+        "/en/bm25",
+        "/ru/myuteksy"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "periodic dip in starlight when a planet passes",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/en/comets",
+        "/en/neutron_stars",
+        "/en/black_holes",
+        "/ru/komety",
+        "/ru/neytronnye_zvezdy",
+        "/ru/chernye_dyry",
+        "/en/transpiration",
+        "/en/cellular_respiration",
+        "/en/photosynthesis",
+        "/ru/fotosintez",
+        "/en/ann_indexes",
+        "/ru/kletochnoe_dyhanie",
+        "/en/bm25",
+        "/ru/transpiratsiya",
+        "/en/yeast_bread",
+        "/en/context_cancellation",
+        "/en/plant_nutrients",
+        "/ru/pitanie_rasteniy"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "measuring a star wobble to find planets",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/en/neutron_stars",
+        "/readme",
+        "/ru/neytronnye_zvezdy",
+        "/en/comets",
+        "/ru/komety",
+        "/en/ann_indexes",
+        "/en/goroutines",
+        "/en/black_holes",
+        "/ru/ann_indeksy",
+        "/en/errgroup",
+        "/en/rerankers",
+        "/ru/chernye_dyry",
+        "/en/bm25",
+        "/ru/bm25",
+        "/en/vector_search",
+        "/ru/vektornyy_poisk",
+        "/en/photosynthesis",
+        "/en/coffee_brewing"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "доплеровский сдвиг при обнаружении экзопланет",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/readme",
+        "/ru/komety",
+        "/ru/chernye_dyry",
+        "/ru/ann_indeksy",
+        "/ru/rerankery",
+        "/ru/neytronnye_zvezdy",
+        "/en/comets",
+        "/en/black_holes",
+        "/ru/bm25",
+        "/en/neutron_stars",
+        "/ru/vektornyy_poisk",
+        "/en/rerankers",
+        "/en/ann_indexes",
+        "/en/errgroup",
+        "/en/bm25",
+        "/en/coffee_brewing",
+        "/en/vector_search",
+        "/en/transpiration"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "как оценить массу планеты у далёкой звезды",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/ekzoplanety",
+        "/en/exoplanets"
+      ],
+      "retrieved_urls": [
+        "/ru/ekzoplanety",
+        "/ru/neytronnye_zvezdy",
+        "/en/exoplanets",
+        "/en/neutron_stars",
+        "/ru/komety",
+        "/ru/chernye_dyry",
+        "/en/comets",
+        "/readme",
+        "/en/black_holes",
+        "/ru/ann_indeksy",
+        "/en/ann_indexes",
+        "/ru/bm25",
+        "/ru/vektornyy_poisk",
+        "/en/bm25",
+        "/ru/kvashenaya_kapusta",
+        "/en/vector_search",
+        "/en/yogurt",
+        "/en/photosynthesis",
+        "/en/coffee_brewing",
+        "/en/sourdough"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.9197207891481877,
+      "rr": 1
+    },
+    {
+      "query": "finding worlds beyond the solar system",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety"
+      ],
+      "retrieved_urls": [
+        "/en/exoplanets",
+        "/readme",
+        "/ru/ekzoplanety",
+        "/en/comets",
+        "/en/black_holes",
+        "/ru/komety",
+        "/en/ann_indexes",
+        "/ru/chernye_dyry",
+        "/ru/neytronnye_zvezdy",
+        "/en/neutron_stars",
+        "/ru/ann_indeksy",
+        "/en/photosynthesis",
+        "/ru/fotosintez",
+        "/ru/goroutines",
+        "/ru/vektornyy_poisk",
+        "/en/cellular_respiration",
+        "/en/vector_search",
+        "/en/goroutines",
+        "/en/plant_nutrients",
+        "/en/context_cancellation"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.9197207891481877,
+      "rr": 1
+    },
+    {
+      "query": "is a distant planet rocky or gaseous by its density",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/exoplanets",
+        "/ru/ekzoplanety"
+      ],
+      "retrieved_urls": [
+        "/en/comets",
+        "/ru/komety",
+        "/readme",
+        "/en/neutron_stars",
+        "/en/black_holes",
+        "/en/exoplanets",
+        "/ru/neytronnye_zvezdy",
+        "/ru/ekzoplanety",
+        "/ru/chernye_dyry",
+        "/en/cellular_respiration",
+        "/ru/ann_indeksy",
+        "/en/ann_indexes",
+        "/ru/goroutines",
+        "/ru/kletochnoe_dyhanie",
+        "/ru/vektornyy_poisk",
+        "/ru/kvashenaya_kapusta",
+        "/ru/yogurt",
+        "/en/plant_nutrients",
+        "/en/yogurt",
+        "/en/herbal_tea"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.41183384043543503,
+      "rr": 0.16666666666666666
+    },
+    {
+      "query": "как вывести закваску для хлеба с нуля",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough"
+      ],
+      "retrieved_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough",
+        "/ru/kvashenaya_kapusta",
+        "/ru/drozhzhevoy_hleb",
+        "/en/yeast_bread",
+        "/ru/yogurt",
+        "/ru/chernyy_chay",
+        "/ru/kletochnoe_dyhanie",
+        "/en/sauerkraut",
+        "/en/black_tea",
+        "/en/coffee_brewing",
+        "/ru/travyanoy_chay",
+        "/en/yogurt",
+        "/en/green_tea",
+        "/ru/transpiratsiya",
+        "/ru/zavarivanie_kofe",
+        "/ru/fotosintez",
+        "/ru/pitanie_rasteniy",
+        "/en/cellular_respiration",
+        "/en/herbal_tea"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "чем подкармливать закваску мукой и водой",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough"
+      ],
+      "retrieved_urls": [
+        "/ru/zakvaska",
+        "/ru/pitanie_rasteniy",
+        "/ru/kvashenaya_kapusta",
+        "/ru/yogurt",
+        "/en/plant_nutrients",
+        "/ru/travyanoy_chay",
+        "/en/yeast_bread",
+        "/ru/chernyy_chay",
+        "/en/sourdough",
+        "/ru/drozhzhevoy_hleb",
+        "/ru/zelenyy_chay",
+        "/ru/zavarivanie_kofe",
+        "/en/sauerkraut",
+        "/ru/transpiratsiya",
+        "/en/coffee_brewing",
+        "/ru/fotosintez",
+        "/en/herbal_tea",
+        "/en/transpiration",
+        "/en/yogurt",
+        "/en/photosynthesis"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.7977228895450267,
+      "rr": 1
+    },
+    {
+      "query": "медленное брожение теста без дрожжей",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough"
+      ],
+      "retrieved_urls": [
+        "/ru/kvashenaya_kapusta",
+        "/ru/zakvaska",
+        "/ru/yogurt",
+        "/en/sourdough",
+        "/ru/drozhzhevoy_hleb",
+        "/en/yeast_bread",
+        "/en/black_tea",
+        "/ru/zavarivanie_kofe",
+        "/ru/chernyy_chay",
+        "/en/sauerkraut",
+        "/en/coffee_brewing",
+        "/en/green_tea",
+        "/ru/travyanoy_chay",
+        "/readme",
+        "/ru/chernye_dyry",
+        "/en/herbal_tea",
+        "/ru/bm25",
+        "/ru/zelenyy_chay",
+        "/ru/neytronnye_zvezdy",
+        "/en/yogurt"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.6509209298071325,
+      "rr": 0.5
+    },
+    {
+      "query": "baking bread without commercial yeast",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska"
+      ],
+      "retrieved_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska",
+        "/en/yeast_bread",
+        "/ru/drozhzhevoy_hleb",
+        "/ru/kvashenaya_kapusta",
+        "/en/yogurt",
+        "/en/sauerkraut",
+        "/ru/yogurt",
+        "/en/coffee_brewing",
+        "/en/black_tea",
+        "/en/green_tea",
+        "/en/photosynthesis",
+        "/ru/chernyy_chay",
+        "/en/cellular_respiration",
+        "/en/herbal_tea",
+        "/ru/travyanoy_chay",
+        "/ru/zavarivanie_kofe",
+        "/ru/goroutines",
+        "/ru/fotosintez",
+        "/en/goroutines"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "how to feed a sourdough starter",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska"
+      ],
+      "retrieved_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska",
+        "/en/yeast_bread",
+        "/ru/yogurt",
+        "/en/sauerkraut",
+        "/ru/goroutines",
+        "/ru/drozhzhevoy_hleb",
+        "/en/goroutines",
+        "/en/yogurt",
+        "/en/coffee_brewing",
+        "/en/plant_nutrients",
+        "/en/errgroup",
+        "/ru/kvashenaya_kapusta",
+        "/en/black_tea",
+        "/ru/chernyy_chay",
+        "/en/green_tea",
+        "/ru/pitanie_rasteniy",
+        "/ru/zavarivanie_kofe",
+        "/ru/travyanoy_chay",
+        "/ru/fotosintez"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "stretch and fold technique to build dough strength",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska"
+      ],
+      "retrieved_urls": [
+        "/en/sourdough",
+        "/en/yeast_bread",
+        "/ru/zakvaska",
+        "/en/sauerkraut",
+        "/ru/drozhzhevoy_hleb",
+        "/en/coffee_brewing",
+        "/ru/chernyy_chay",
+        "/ru/kvashenaya_kapusta",
+        "/ru/yogurt",
+        "/en/black_tea",
+        "/en/yogurt",
+        "/ru/zavarivanie_kofe",
+        "/en/plant_nutrients",
+        "/en/cellular_respiration",
+        "/ru/goroutines",
+        "/ru/pitanie_rasteniy",
+        "/ru/transpiratsiya",
+        "/en/photosynthesis",
+        "/en/goroutines",
+        "/en/transpiration"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.9197207891481877,
+      "rr": 1
+    },
+    {
+      "query": "выпечка буханки в раскалённой чугунной кастрюле с паром",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough"
+      ],
+      "retrieved_urls": [
+        "/ru/zakvaska",
+        "/ru/kvashenaya_kapusta",
+        "/ru/drozhzhevoy_hleb",
+        "/ru/yogurt",
+        "/ru/chernyy_chay",
+        "/en/sauerkraut",
+        "/en/sourdough",
+        "/ru/travyanoy_chay",
+        "/ru/zavarivanie_kofe",
+        "/en/yeast_bread",
+        "/en/black_tea",
+        "/en/coffee_brewing",
+        "/ru/zelenyy_chay",
+        "/en/yogurt",
+        "/ru/transpiratsiya",
+        "/ru/fotosintez",
+        "/en/green_tea",
+        "/en/herbal_tea",
+        "/en/transpiration",
+        "/en/photosynthesis"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.8175295903539446,
+      "rr": 1
+    },
+    {
+      "query": "откуда кислый вкус хлеба от молочнокислых бактерий",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/zakvaska",
+        "/en/sourdough"
+      ],
+      "retrieved_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska",
+        "/ru/kvashenaya_kapusta",
+        "/ru/yogurt",
+        "/en/yogurt",
+        "/en/sauerkraut",
+        "/ru/drozhzhevoy_hleb",
+        "/en/yeast_bread",
+        "/ru/kletochnoe_dyhanie",
+        "/ru/transpiratsiya",
+        "/ru/pitanie_rasteniy",
+        "/ru/fotosintez",
+        "/en/cellular_respiration",
+        "/en/coffee_brewing",
+        "/en/herbal_tea",
+        "/en/photosynthesis",
+        "/en/transpiration",
+        "/en/plant_nutrients",
+        "/en/green_tea",
+        "/en/black_tea"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "wild yeast culture kept alive for bread",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska"
+      ],
+      "retrieved_urls": [
+        "/en/sourdough",
+        "/en/yeast_bread",
+        "/ru/zakvaska",
+        "/ru/drozhzhevoy_hleb",
+        "/en/yogurt",
+        "/en/sauerkraut",
+        "/ru/kvashenaya_kapusta",
+        "/en/photosynthesis",
+        "/ru/yogurt",
+        "/ru/fotosintez",
+        "/en/transpiration",
+        "/en/cellular_respiration",
+        "/ru/transpiratsiya",
+        "/en/black_tea",
+        "/en/coffee_brewing",
+        "/ru/travyanoy_chay",
+        "/ru/pitanie_rasteniy",
+        "/en/herbal_tea",
+        "/en/plant_nutrients",
+        "/en/comets"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.9197207891481877,
+      "rr": 1
+    },
+    {
+      "query": "open crumb and crackling crust loaf",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/sourdough",
+        "/ru/zakvaska"
+      ],
+      "retrieved_urls": [
+        "/en/yeast_bread",
+        "/ru/drozhzhevoy_hleb",
+        "/en/sourdough",
+        "/ru/zakvaska",
+        "/ru/kvashenaya_kapusta",
+        "/en/sauerkraut",
+        "/readme",
+        "/en/coffee_brewing",
+        "/en/yogurt",
+        "/ru/yogurt",
+        "/en/black_tea",
+        "/en/comets",
+        "/en/rerankers",
+        "/en/errgroup",
+        "/ru/chernyy_chay",
+        "/ru/zavarivanie_kofe",
+        "/ru/travyanoy_chay",
+        "/en/photosynthesis",
+        "/ru/pitanie_rasteniy",
+        "/ru/fotosintez"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.5706417189553201,
+      "rr": 0.3333333333333333
+    },
+    {
+      "query": "что такое горутины в go",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/goroutines",
+        "/en/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "обмен данными через каналы вместо общей памяти",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/goroutines",
+        "/en/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "пул воркеров и ожидание группы через waitgroup",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/goroutines",
+        "/en/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "lightweight concurrency in golang",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/goroutines",
+        "/ru/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "communicating over channels instead of sharing memory",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/goroutines",
+        "/ru/goroutines"
+      ],
+      "retrieved_urls": [
+        "/en/goroutines"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "select waiting on several channel operations at once",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/goroutines",
+        "/ru/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "лёгкие потоки управляемые рантаймом языка",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/goroutines",
+        "/en/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "как запустить тысячи параллельных задач",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/goroutines",
+        "/en/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "scheduler multiplexing tasks onto os threads",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/goroutines",
+        "/ru/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "fan out and fan in worker pool pattern",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/goroutines",
+        "/ru/goroutines"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "как работает поиск по смыслу а не по словам",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/vektornyy_poisk",
+        "/en/vector_search"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "что такое эмбеддинги текста",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/vektornyy_poisk",
+        "/en/vector_search"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "косинусная близость между векторами",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/vektornyy_poisk",
+        "/en/vector_search"
+      ],
+      "retrieved_urls": [
+        "/ru/vektornyy_poisk"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "searching documents by meaning not keywords",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/vector_search",
+        "/ru/vektornyy_poisk"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "what are text embeddings",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/vector_search",
+        "/ru/vektornyy_poisk"
+      ],
+      "retrieved_urls": [
+        "/en/vector_search"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "search that blends exact-term matching with meaning-based ranking",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/vector_search",
+        "/ru/vektornyy_poisk"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "гибридный поиск и слияние рангов",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/vektornyy_poisk",
+        "/en/vector_search"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "почему запрос находит документ без общих слов",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/vektornyy_poisk",
+        "/en/vector_search"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "ranking results by similarity of vectors",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/vector_search",
+        "/ru/vektornyy_poisk"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "why pure semantic search misses exact names or codes",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/vector_search",
+        "/ru/vektornyy_poisk"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "как растения превращают свет в энергию",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/fotosintez",
+        "/en/photosynthesis"
+      ],
+      "retrieved_urls": [
+        "/ru/fotosintez"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "зачем листу хлорофилл",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/fotosintez",
+        "/en/photosynthesis"
+      ],
+      "retrieved_urls": [
+        "/ru/fotosintez",
+        "/ru/pitanie_rasteniy"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "как образуется сахар из углекислого газа",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/fotosintez",
+        "/en/photosynthesis"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "how plants turn sunlight into chemical energy",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/photosynthesis",
+        "/ru/fotosintez"
+      ],
+      "retrieved_urls": [
+        "/en/photosynthesis"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "why are leaves green chlorophyll absorbs light",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/photosynthesis",
+        "/ru/fotosintez"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "fixing carbon dioxide from the air into sugars",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/photosynthesis",
+        "/ru/fotosintez"
+      ],
+      "retrieved_urls": [
+        "/en/photosynthesis"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "выделение кислорода при расщеплении воды в листе",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/fotosintez",
+        "/en/photosynthesis"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "запасание энергии солнца в глюкозе и крахмале",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/fotosintez",
+        "/en/photosynthesis"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "chloroplasts capturing light inside leaf cells",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/photosynthesis",
+        "/ru/fotosintez"
+      ],
+      "retrieved_urls": [
+        "/en/photosynthesis"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "a leaf as a tiny solar factory",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/photosynthesis",
+        "/ru/fotosintez"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "при какой температуре заваривать зелёный чай",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zelenyy_chay",
+        "/en/green_tea"
+      ],
+      "retrieved_urls": [
+        "/ru/zelenyy_chay"
+      ],
+      "recall_at_k": 0.5,
+      "ndcg_at_k": 0.6131471927654585,
+      "rr": 1
+    },
+    {
+      "query": "почему зелёный чай горчит",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zelenyy_chay",
+        "/en/green_tea"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "сколько минут настаивать зелёный чай",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/ru/zelenyy_chay",
+        "/en/green_tea"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "best water temperature for brewing green tea",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/green_tea",
+        "/ru/zelenyy_chay"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "why does green tea turn bitter",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/green_tea",
+        "/ru/zelenyy_chay"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "how long to steep green tea leaves",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/en/green_tea",
+        "/ru/zelenyy_chay"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "зелёный чай лучше пить без молока и сахара",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/zelenyy_chay",
+        "/en/green_tea"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "можно ли повторно заваривать чайные листья",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/ru/zelenyy_chay",
+        "/en/green_tea"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "let boiled water cool a bit before brewing tea",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/green_tea",
+        "/ru/zelenyy_chay"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    },
+    {
+      "query": "drawing out sweet grassy notes from tea leaves",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/en/green_tea",
+        "/ru/zelenyy_chay"
+      ],
+      "retrieved_urls": [],
+      "recall_at_k": 0,
+      "ndcg_at_k": 0,
+      "rr": 0
+    }
+  ]
+}

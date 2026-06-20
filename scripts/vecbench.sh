@@ -123,7 +123,9 @@ cmd_sync() {
 # (chunks reload from SQLite on boot). Use `sync` instead if vault content changed.
 cmd_rebuild() {
   echo "🔨 Rebuilding app image (code change)..."
-  $COMPOSE up -d --build app
+  # Build/start reranker too (no-op if unchanged); app depends_on it when the
+  # reranker feature is enabled. First reranker run downloads the model (~568 MB).
+  $COMPOSE up -d --build reranker app
   ./scripts/waitfor localhost:21081 || { echo -e "${RED}✗ app failed to start${NC}"; exit 1; }
   wait_graphql_ready
   echo -e "${GREEN}✓ app rebuilt.${NC}"

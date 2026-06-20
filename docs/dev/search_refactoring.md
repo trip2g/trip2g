@@ -16,6 +16,9 @@ This is the running report for a data-driven refactor of trip2g's hybrid search.
 | 0 | Baseline (bge-m3, current pipeline) | 0.9833 | 0.9157 | 0.9417 | 0.8451 | — |
 | F1 | Widen fusion pool (`vectorTopK` 5→50) | **1.0000** | 0.9221 | 0.9417 | 0.8599 | +0.0064 |
 | F2 | Per-language bleve analyzer (en + ru) | 1.0000 | 0.9221 | 0.9417 | 0.8599 | +0.0000 |
+| F3 | Cross-encoder reranker, 512-char passages | 1.0000 | 0.8881 | 0.8708 | 0.8794 | **−0.0340** |
+| F3b | Cross-encoder reranker, full-text passages | 0.4083 | 0.3880 | 0.4500 | 0.2863 | **−0.5341** |
+| → | **Shipped: reranker OFF by default** | 1.0000 | 0.9221 | 0.9417 | 0.8599 | (= F2) |
 
 _(rows added as each fix lands)_
 
@@ -41,4 +44,16 @@ The pipeline as found: bleve BM25 + brute-force cosine over per-chunk embeddings
 
 **Result: no measurable change on this benchmark** (Δ 0.0000). Two honest reasons: cross-lingual directions ride the *vector* lane (BM25 can't match across languages), and bge-m3's vector lane already ranks the monolingual cases well and dominates RRF, so the improved English BM25 doesn't change the top-10. F2 is kept anyway — it's a genuine correctness fix with zero regression, and it helps exact-term/lexical English queries (rare words, code identifiers, names) that the vector lane misses. Capturing that gain would require a lexical-query golden set; the current set is deliberately natural-language/semantic.
 
-_(F3…F5 documented below as they land)_
+### F3 — Cross-encoder reranker (negative result; shipped off)
+
+The textbook "biggest quality lever": a second stage that re-scores the fused candidates with a cross-encoder (`bge-reranker-v2-m3`, self-hosted sidecar). We added it behind a feature flag, reranking the fused top-N and keeping `OutputK`.
+
+**It measured strictly worse — twice.** With 512-char passages nDCG dropped 0.9221 → 0.8881 and MRR 0.9417 → 0.8708; with full-note passages it collapsed to 0.39 (passages far exceed the cross-encoder's ~512-token window, so after truncation the notes look alike and ordering goes to noise, pushing relevant notes out of the top-10).
+
+**Why it hurt** (from per-query diff): the cross-encoder over-weights surface query↔passage term overlap and promotes **near-neighbour distractors** that the strong bi-encoder + RRF first stage had correctly ranked below the answer. Examples: "медленное брожение теста" (dough fermentation) promoted *sauerkraut* over sourdough; "каналы вместо общей памяти" (channels vs shared memory) promoted *mutexes* over goroutines; "пул воркеров" promoted *errgroup* over goroutines.
+
+**Lesson:** a reranker is not free. When the first stage is already strong (~0.92) and the corpus is full of topically-adjacent documents, a naive "replace the order with the cross-encoder's" hurts. This is exactly why we measure instead of assuming.
+
+**Decision:** ship it **off by default** (`vector_search.reranker.enabled=false`); keep the client, config, and sidecar so it can be A/B-tested per deployment. A promising future variant — *blend* the rerank score with the RRF rank instead of overriding it (keep RRF as a strong prior) — is left as follow-up.
+
+_(F4…F5 documented below as they land)_
