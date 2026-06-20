@@ -37,6 +37,30 @@ func TestMaterializeIdempotent(t *testing.T) {
 	}
 }
 
+func TestMaterializeWritesAssets(t *testing.T) {
+	env := &fakeEnv{
+		notes:    []NoteSource{{Path: "note.md", Content: []byte("hi")}},
+		assets:   []AssetSource{{AbsolutePath: "/assets/img.png", Asset: dbAsset("/assets/img.png")}},
+		assetBuf: map[string][]byte{"/assets/img.png": []byte("PNGDATA")},
+	}
+	api := newTestAPI(t, env)
+	if err := api.materialize(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	got := gitOut(t, api.config.RepoPath, "show", "master:assets/img.png")
+	if got != "PNGDATA" {
+		t.Fatalf("asset = %q, want PNGDATA", got)
+	}
+
+	first := gitOut(t, api.config.RepoPath, "rev-parse", "master")
+	if err := api.materialize(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if second := gitOut(t, api.config.RepoPath, "rev-parse", "master"); first != second {
+		t.Fatalf("asset materialize not idempotent: %s -> %s", first, second)
+	}
+}
+
 func TestMaterializeDeletesRemovedNote(t *testing.T) {
 	env := &fakeEnv{notes: []NoteSource{{Path: "a.md", Content: []byte("a")}, {Path: "b.md", Content: []byte("b")}}}
 	api := newTestAPI(t, env)

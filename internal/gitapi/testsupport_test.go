@@ -90,3 +90,7 @@ func (f *fakeEnv) PrivateObjectExists(context.Context, string) (bool, error) { r
 func (f *fakeEnv) GitTokenByValueSha256(context.Context, string) (db.GitToken, error) {
 	return db.GitToken{}, nil
 }
+
+func dbAsset(absPath string) db.NoteAsset {
+	return db.NoteAsset{AbsolutePath: absPath, FileName: filepath.Base(absPath)}
+}
