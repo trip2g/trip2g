@@ -1,0 +1,550 @@
+{
+  "label": "04-baseline-longdocs",
+  "k": 10,
+  "overall": {
+    "count": 16,
+    "recall_at_k": 1,
+    "ndcg_at_k": 0.9307993287946483,
+    "mrr": 0.90625
+  },
+  "by_direction": {
+    "en-\u003een": {
+      "count": 4,
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.8154648767857287,
+      "mrr": 0.75
+    },
+    "en-\u003eru": {
+      "count": 2,
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "mrr": 1
+    },
+    "ru-\u003een": {
+      "count": 1,
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "mrr": 1
+    },
+    "ru-\u003eru": {
+      "count": 9,
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.9589921948412731,
+      "mrr": 0.9444444444444444
+    }
+  },
+  "queries": [
+    {
+      "query": "как настроиться с утра на встречу с трудными людьми",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book02"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/ru/drozhzhevoy_hleb",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book04_en",
+        "/ru/chernyy_chay",
+        "/en/black_tea",
+        "/ru/goroutines",
+        "/en/goroutines",
+        "/en/sourdough",
+        "/ru/zavarivanie_kofe",
+        "/en/coffee_brewing",
+        "/en/yeast_bread",
+        "/en/errgroup",
+        "/en/green_tea",
+        "/en/herbal_tea",
+        "/ru/travyanoy_chay",
+        "/ru/errgroup"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "провидение или случайность управляют миром",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book02"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book04_en",
+        "/en/comets",
+        "/ru/komety",
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/en/neutron_stars",
+        "/en/goroutines",
+        "/ru/goroutines",
+        "/en/black_holes",
+        "/en/photosynthesis",
+        "/en/transpiration",
+        "/en/context_cancellation",
+        "/en/coffee_brewing",
+        "/ru/neytronnye_zvezdy",
+        "/ru/fotosintez"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.6309297535714574,
+      "rr": 0.5
+    },
+    {
+      "query": "делать каждое дело как последнее в жизни",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book02"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/on_stoic_virtue_en",
+        "/en/context_cancellation",
+        "/en/photosynthesis",
+        "/en/errgroup",
+        "/ru/goroutines",
+        "/ru/errgroup",
+        "/en/goroutines",
+        "/en/cellular_respiration",
+        "/ru/context_otmena",
+        "/ru/vektornyy_poisk",
+        "/en/vector_search",
+        "/en/ann_indexes",
+        "/ru/fotosintez",
+        "/en/rerankers",
+        "/en/bm25"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "трудно заставить себя встать рано утром и работать",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book05"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_book02",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/en/coffee_brewing",
+        "/longdocs/meditations_book04_en",
+        "/en/sourdough",
+        "/en/yeast_bread",
+        "/en/goroutines",
+        "/ru/drozhzhevoy_hleb",
+        "/en/black_tea",
+        "/en/green_tea",
+        "/ru/zakvaska",
+        "/ru/chernyy_chay",
+        "/ru/zavarivanie_kofe",
+        "/en/ann_indexes",
+        "/en/herbal_tea",
+        "/en/yogurt",
+        "/ru/bm25"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "проверять и испытывать своё ведущее начало",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book05"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book02",
+        "/ru/ekzoplanety",
+        "/ru/vektornyy_poisk",
+        "/en/goroutines",
+        "/en/neutron_stars",
+        "/ru/goroutines",
+        "/en/bm25",
+        "/ru/errgroup",
+        "/en/mutexes",
+        "/readme",
+        "/en/errgroup",
+        "/en/coffee_brewing",
+        "/en/vector_search",
+        "/en/exoplanets",
+        "/ru/neytronnye_zvezdy"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "возвращаться к философии как к матери за утешением",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book06"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book05",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_on_death",
+        "/en/ann_indexes",
+        "/en/rerankers",
+        "/en/cellular_respiration",
+        "/ru/transpiratsiya",
+        "/en/transpiration",
+        "/en/bm25",
+        "/ru/pitanie_rasteniy",
+        "/ru/ann_indeksy",
+        "/en/herbal_tea",
+        "/en/photosynthesis",
+        "/readme",
+        "/en/black_tea",
+        "/ru/bm25",
+        "/en/sourdough"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "брать за образец характер императора Антонина",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book06"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book06",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book04_en",
+        "/en/goroutines",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/ru/goroutines",
+        "/ru/ekzoplanety",
+        "/ru/ann_indeksy",
+        "/ru/travyanoy_chay",
+        "/en/ann_indexes",
+        "/en/herbal_tea",
+        "/en/exoplanets",
+        "/en/context_cancellation",
+        "/ru/pitanie_rasteniy",
+        "/ru/chernyy_chay",
+        "/en/errgroup",
+        "/ru/neytronnye_zvezdy",
+        "/en/neutron_stars"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "как быстротечна и коротка человеческая жизнь",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_on_death"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book05",
+        "/en/comets",
+        "/ru/komety",
+        "/ru/neytronnye_zvezdy",
+        "/en/cellular_respiration",
+        "/en/neutron_stars",
+        "/en/exoplanets",
+        "/ru/ekzoplanety",
+        "/en/ann_indexes",
+        "/ru/fotosintez",
+        "/en/photosynthesis",
+        "/ru/kletochnoe_dyhanie",
+        "/en/black_holes",
+        "/longdocs/on_stoic_virtue_en",
+        "/en/context_cancellation",
+        "/ru/chernye_dyry"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "смерть отнимает лишь краткое настоящее мгновение",
+      "direction": "ru-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_on_death"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book05",
+        "/longdocs/on_stoic_virtue_en",
+        "/en/black_holes",
+        "/ru/komety",
+        "/en/herbal_tea",
+        "/en/cellular_respiration",
+        "/ru/goroutines",
+        "/ru/kletochnoe_dyhanie",
+        "/en/comets",
+        "/ru/neytronnye_zvezdy",
+        "/en/transpiration",
+        "/en/exoplanets",
+        "/ru/chernye_dyry",
+        "/en/ann_indexes",
+        "/en/photosynthesis",
+        "/ru/travyanoy_chay"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "retreat into the citadel of your own mind for peace",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/longdocs/meditations_book04_en"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book02",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book05",
+        "/en/herbal_tea",
+        "/en/goroutines",
+        "/en/mutexes",
+        "/en/context_cancellation",
+        "/readme",
+        "/en/green_tea",
+        "/ru/goroutines",
+        "/en/black_tea",
+        "/ru/myuteksy",
+        "/en/comets",
+        "/ru/travyanoy_chay",
+        "/ru/chernyy_chay",
+        "/en/cellular_respiration",
+        "/ru/transpiratsiya"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "the inner governing faculty and ruling reason",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/longdocs/meditations_book04_en"
+      ],
+      "retrieved_urls": [
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_book06",
+        "/en/transpiration",
+        "/longdocs/meditations_on_death",
+        "/en/goroutines",
+        "/longdocs/meditations_book02",
+        "/ru/goroutines",
+        "/readme",
+        "/ru/transpiratsiya",
+        "/en/plant_nutrients",
+        "/en/mutexes",
+        "/en/context_cancellation",
+        "/en/vector_search",
+        "/en/cellular_respiration",
+        "/en/neutron_stars",
+        "/en/photosynthesis",
+        "/en/yeast_bread",
+        "/en/errgroup"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.6309297535714574,
+      "rr": 0.5
+    },
+    {
+      "query": "virtue is within your own power to practice",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/longdocs/on_stoic_virtue_en"
+      ],
+      "retrieved_urls": [
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_on_death",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book02",
+        "/en/yeast_bread",
+        "/en/coffee_brewing",
+        "/en/sourdough",
+        "/ru/goroutines",
+        "/en/goroutines",
+        "/en/transpiration",
+        "/en/black_tea",
+        "/en/herbal_tea",
+        "/ru/vektornyy_poisk",
+        "/ru/zakvaska",
+        "/en/green_tea",
+        "/en/neutron_stars",
+        "/en/vector_search",
+        "/readme"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "being patient with the faults of other people",
+      "direction": "en-\u003een",
+      "expected_urls": [
+        "/longdocs/on_stoic_virtue_en"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book02",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_on_death",
+        "/en/errgroup",
+        "/en/goroutines",
+        "/ru/errgroup",
+        "/en/herbal_tea",
+        "/en/black_tea",
+        "/ru/goroutines",
+        "/en/yeast_bread",
+        "/en/mutexes",
+        "/en/coffee_brewing",
+        "/en/context_cancellation",
+        "/en/sourdough",
+        "/ru/drozhzhevoy_hleb",
+        "/en/green_tea",
+        "/en/exoplanets"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 0.6309297535714574,
+      "rr": 0.5
+    },
+    {
+      "query": "уйти в крепость собственного ума ради покоя",
+      "direction": "ru-\u003een",
+      "expected_urls": [
+        "/longdocs/meditations_book04_en"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book05",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_on_death",
+        "/longdocs/on_stoic_virtue_en",
+        "/en/mutexes",
+        "/en/goroutines",
+        "/ru/goroutines",
+        "/en/herbal_tea",
+        "/en/black_tea",
+        "/ru/chernyy_chay",
+        "/ru/myuteksy",
+        "/ru/travyanoy_chay",
+        "/ru/zavarivanie_kofe",
+        "/ru/transpiratsiya",
+        "/en/cellular_respiration",
+        "/en/sourdough",
+        "/en/context_cancellation",
+        "/en/green_tea"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "getting up at dawn instead of staying under the blankets",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book05"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book05",
+        "/en/sourdough",
+        "/en/yeast_bread",
+        "/ru/kletochnoe_dyhanie",
+        "/longdocs/meditations_on_death",
+        "/en/cellular_respiration",
+        "/en/goroutines",
+        "/longdocs/meditations_book04_en",
+        "/longdocs/meditations_book02",
+        "/en/comets",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book06",
+        "/en/herbal_tea",
+        "/ru/drozhzhevoy_hleb",
+        "/en/transpiration",
+        "/ru/zakvaska",
+        "/en/black_tea",
+        "/en/errgroup",
+        "/ru/komety",
+        "/en/yogurt"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    },
+    {
+      "query": "follow the example of emperor Antoninus Pius",
+      "direction": "en-\u003eru",
+      "expected_urls": [
+        "/longdocs/meditations_book06"
+      ],
+      "retrieved_urls": [
+        "/longdocs/meditations_book06",
+        "/longdocs/meditations_book05",
+        "/longdocs/on_stoic_virtue_en",
+        "/longdocs/meditations_book02",
+        "/longdocs/meditations_book04_en",
+        "/en/goroutines",
+        "/longdocs/meditations_on_death",
+        "/ru/ann_indeksy",
+        "/en/exoplanets",
+        "/en/context_cancellation",
+        "/en/errgroup",
+        "/en/transpiration",
+        "/en/ann_indexes",
+        "/ru/ekzoplanety",
+        "/ru/goroutines",
+        "/en/yeast_bread",
+        "/en/herbal_tea",
+        "/ru/transpiratsiya",
+        "/en/mutexes",
+        "/en/cellular_respiration"
+      ],
+      "recall_at_k": 1,
+      "ndcg_at_k": 1,
+      "rr": 1
+    }
+  ]
+}
