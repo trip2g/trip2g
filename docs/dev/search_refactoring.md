@@ -15,6 +15,7 @@ This is the running report for a data-driven refactor of trip2g's hybrid search.
 |---|--------|-----------|---------|-----|------------|--------|
 | 0 | Baseline (bge-m3, current pipeline) | 0.9833 | 0.9157 | 0.9417 | 0.8451 | — |
 | F1 | Widen fusion pool (`vectorTopK` 5→50) | **1.0000** | 0.9221 | 0.9417 | 0.8599 | +0.0064 |
+| F2 | Per-language bleve analyzer (en + ru) | 1.0000 | 0.9221 | 0.9417 | 0.8599 | +0.0000 |
 
 _(rows added as each fix lands)_
 
@@ -32,4 +33,12 @@ The pipeline as found: bleve BM25 + brute-force cosine over per-chunk embeddings
 
 **Result:** Recall@10 0.9833 → **1.0000** — the cross-lingual counterparts previously buried below top-10 (e.g. `/ru/zakvaska` for an English sourdough query) now surface. nDCG +0.006, en→ru +0.015. MRR unchanged, as expected: F1 adds candidates lower in the list, so it lifts recall/nDCG without moving the #1 hit.
 
-_(F2…F5 documented below as they land)_
+### F2 — Per-language bleve analyzer
+
+`internal/noteloader/search.go` analyzed **all** content with the Russian analyzer, so English notes and queries were stemmed with Russian rules. A subtle second bug compounded it: the document mapping was registered under a named type (`AddDocumentMapping("note", …)`), but notes are indexed as plain structs with no type field — so bleve silently fell back to the dynamic default mapping and the named mapping never applied.
+
+**Change:** index `Title`/`Body` under both a Russian-analyzed field and an English-analyzed field (`Title_en`/`Body_en`), make it the **default** mapping, and query with a per-field disjunction so the query is analyzed with each field's own analyzer. Proven by unit test: "run race" now matches "running races" (en stemming), and Russian still matches. Confirmed live: the singular query "embedding" now lexically matches the English notes that say "embeddings".
+
+**Result: no measurable change on this benchmark** (Δ 0.0000). Two honest reasons: cross-lingual directions ride the *vector* lane (BM25 can't match across languages), and bge-m3's vector lane already ranks the monolingual cases well and dominates RRF, so the improved English BM25 doesn't change the top-10. F2 is kept anyway — it's a genuine correctness fix with zero regression, and it helps exact-term/lexical English queries (rare words, code identifiers, names) that the vector lane misses. Capturing that gain would require a lexical-query golden set; the current set is deliberately natural-language/semantic.
+
+_(F3…F5 documented below as they land)_

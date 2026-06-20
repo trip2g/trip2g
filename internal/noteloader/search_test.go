@@ -108,3 +108,42 @@ func TestContentHash(t *testing.T) {
 	require.Equal(t, hash1, hash2, "same content should produce same hash")
 	require.NotEqual(t, hash1, hash3, "different content should produce different hash")
 }
+
+// TestEnglishStemming verifies F2: English content is stemmed with the English
+// analyzer (not Russian), so "running races" is found by the query "run race".
+// Before F2 the index used the Russian analyzer for all fields and this missed.
+func TestEnglishStemming(t *testing.T) {
+	log := &logger.TestLogger{}
+	loader := &Loader{log: log}
+
+	notes := model.NewNoteViews()
+	en := createNoteWithAST(1, "/en-note", "Running guide", []byte("Tips for running races and training runs."))
+	ru := createNoteWithAST(2, "/ru-note", "Бег", []byte("Советы по бегу и тренировкам."))
+	notes.List = []*model.NoteView{en, ru}
+	notes.Map["/en-note"] = en
+	notes.Map["/ru-note"] = ru
+
+	index, err := loader.buildSearchIndex(notes)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = notes
+
+	// English stemming: "run race" should match "running races".
+	res, err := loader.Search("run race")
+	require.NoError(t, err)
+	require.True(t, hasURL(res, "/en-note"), "english query should match english note via en analyzer")
+
+	// Russian still works.
+	resRu, err := loader.Search("бег тренировка")
+	require.NoError(t, err)
+	require.True(t, hasURL(resRu, "/ru-note"), "russian query should still match russian note")
+}
+
+func hasURL(res []model.SearchResult, url string) bool {
+	for _, r := range res {
+		if r.URL == url {
+			return true
+		}
+	}
+	return false
+}
