@@ -18,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"net/smtp"
 	"net/url"
 	"os"
 	"os/signal"
@@ -128,7 +129,6 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/oklog/ulid/v2"
-	"github.com/resend/resend-go/v2"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
@@ -353,14 +353,6 @@ func main() {
 	}
 
 	log.Info("using storage prefix", "prefix", config.Storage.Prefix)
-
-	// mailAddr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
-	// mailAuth := smtp.PlainAuth(
-	// 	"",
-	// 	config.SMTPUser,
-	// 	config.SMTPPass,
-	// 	config.SMTPHost,
-	// )
 
 	a := &app{
 		Queries:      queries,
@@ -769,24 +761,68 @@ func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]stri
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)
 }
 
-func (a *app) SendMail(ctx context.Context, data model.Mail) error {
-	if a.config.DevMode {
-		a.log.Info("send email", "to", data.To, "subject", data.Subject, "plain", string(data.Plain))
+func (a *app) SendMail(_ context.Context, data model.Mail) error {
+	if a.config.SMTPHost == "" {
+		a.log.Info("send email (no smtp configured)", "to", data.To, "subject", data.Subject)
 		return nil
 	}
 
-	client := resend.NewClient(a.config.ResendAPIKey)
+	addr := fmt.Sprintf("%s:%d", a.config.SMTPHost, a.config.SMTPPort)
 
-	params := &resend.SendEmailRequest{
-		From:    a.config.MailFrom,
-		To:      []string{data.To},
-		Subject: data.Subject,
-		Text:    string(data.Plain),
+	var auth smtp.Auth
+	if a.config.SMTPUser != "" {
+		auth = smtp.PlainAuth("", a.config.SMTPUser, a.config.SMTPPass, a.config.SMTPHost)
 	}
 
-	_, err := client.Emails.SendWithContext(ctx, params)
+	body := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
+		data.To, a.config.MailFrom, data.Subject, string(data.Plain))
+
+	if a.config.SMTPStartTLS {
+		c, err := smtp.Dial(addr)
+		if err != nil {
+			return fmt.Errorf("smtp dial: %w", err)
+		}
+		defer c.Close()
+
+		err = c.StartTLS(&tls.Config{ServerName: a.config.SMTPHost})
+		if err != nil {
+			return fmt.Errorf("smtp starttls: %w", err)
+		}
+
+		if auth != nil {
+			err = c.Auth(auth)
+			if err != nil {
+				return fmt.Errorf("smtp auth: %w", err)
+			}
+		}
+
+		err = c.Mail(a.config.MailFrom)
+		if err != nil {
+			return fmt.Errorf("smtp mail from: %w", err)
+		}
+
+		err = c.Rcpt(data.To)
+		if err != nil {
+			return fmt.Errorf("smtp rcpt: %w", err)
+		}
+
+		wc, err := c.Data()
+		if err != nil {
+			return fmt.Errorf("smtp data: %w", err)
+		}
+
+		_, err = fmt.Fprint(wc, body)
+		if err != nil {
+			return fmt.Errorf("smtp write: %w", err)
+		}
+
+		return wc.Close()
+	}
+
+	// No TLS (e.g. MailHog on port 1025).
+	err := smtp.SendMail(addr, auth, a.config.MailFrom, []string{data.To}, []byte(body))
 	if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
+		return fmt.Errorf("smtp send: %w", err)
 	}
 
 	return nil

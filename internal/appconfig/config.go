@@ -81,13 +81,11 @@ type Config struct {
 	NowpaymentsIPNKey string
 
 	// SMTP
-	SMTPHost string
-	SMTPPort int
-	SMTPUser string
-	SMTPPass string
-
-	// Resend
-	ResendAPIKey string
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPass     string
+	SMTPStartTLS bool
 
 	// Mail
 	MailFrom string
@@ -265,16 +263,14 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.NowpaymentsIPNKey, "nowpayments-ipn-key", c.NowpaymentsIPNKey, "Nowpayments IPN key")
 
 	// SMTP
-	flag.StringVar(&c.SMTPHost, "smtp-host", "", "SMTP host")
+	flag.StringVar(&c.SMTPHost, "smtp-host", "", "SMTP server host (empty = log only)")
 	flag.IntVar(&c.SMTPPort, "smtp-port", 587, "SMTP port")
 	flag.StringVar(&c.SMTPUser, "smtp-user", "", "SMTP username")
 	flag.StringVar(&c.SMTPPass, "smtp-pass", "", "SMTP password")
-
-	// Resend
-	flag.StringVar(&c.ResendAPIKey, "resend-api-key", "", "Resend API key")
+	flag.BoolVar(&c.SMTPStartTLS, "smtp-starttls", true, "Use STARTTLS")
 
 	// Mail
-	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
+	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@example.com", "Email address to use as sender")
 
 	// Patreon jobs configuration
 	patreonJobsDefaults := patreonjobs.DefaultConfig()
