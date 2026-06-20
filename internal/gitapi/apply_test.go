@@ -118,8 +118,8 @@ func TestApplyRollbackOnError(t *testing.T) {
 func TestApplyReceivedRollsBackRef(t *testing.T) {
 	env := &fakeEnv{pushErr: true}
 	api := newTestAPI(t, env)
-	old := commitFile(t, api, "a.md", "one")     // ref at commit1
-	newRev := commitFile(t, api, "a.md", "two")  // ref now at commit2
+	old := commitFile(t, api, "a.md", "one")    // ref at commit1
+	newRev := commitFile(t, api, "a.md", "two") // ref now at commit2
 	if newRev == old {
 		t.Fatal("precondition: revs should differ")
 	}

@@ -546,31 +546,6 @@ func (api *API) downloadRepo() error {
 	return nil
 }
 
-func (api *API) filterDotFiles(files []string) []string {
-	var filtered []string
-	for _, file := range files {
-		// Skip empty filenames
-		if file == "" {
-			continue
-		}
-
-		// Check if any part of the path starts with a dot
-		parts := strings.Split(file, "/")
-		shouldSkip := false
-		for _, part := range parts {
-			if strings.HasPrefix(part, ".") {
-				shouldSkip = true
-				break
-			}
-		}
-
-		if !shouldSkip {
-			filtered = append(filtered, file)
-		}
-	}
-	return filtered
-}
-
 func pktLine(s string) []byte {
 	totalLen := len(s) + 4
 	return []byte(fmt.Sprintf("%04x%s", totalLen, s))
