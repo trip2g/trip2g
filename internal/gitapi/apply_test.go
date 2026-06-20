@@ -113,5 +113,21 @@ func TestApplyRollbackOnError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected apply error")
 	}
-	_ = newRev
+}
+
+func TestApplyReceivedRollsBackRef(t *testing.T) {
+	env := &fakeEnv{pushErr: true}
+	api := newTestAPI(t, env)
+	old := commitFile(t, api, "a.md", "one")     // ref at commit1
+	newRev := commitFile(t, api, "a.md", "two")  // ref now at commit2
+	if newRev == old {
+		t.Fatal("precondition: revs should differ")
+	}
+	if err := api.applyReceived(old, newRev); err == nil {
+		t.Fatal("expected apply error")
+	}
+	got := gitOut(t, api.config.RepoPath, "rev-parse", api.config.MasterBranch)
+	if got != old {
+		t.Fatalf("ref = %s, want rolled back to %s", got, old)
+	}
 }

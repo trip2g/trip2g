@@ -428,16 +428,15 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 	}
 
 	newRev := strings.TrimSpace(mustGit(api, "rev-parse", api.config.MasterBranch))
+	if newRev == "" {
+		return fmt.Errorf("rev-parse after receive-pack failed")
+	}
 	if newRev == oldRev {
 		return nil // nothing advanced (rejected by denyNonFastForwards or no-op)
 	}
 
-	if _, err := api.applyDiff(api.ctx, oldRev, newRev); err != nil {
-		// Roll the ref back so the repo never diverges from the DB.
-		if oldRev != "" {
-			_, _ = api.gitCmd(os.Environ(), nil, "update-ref", "refs/heads/"+api.config.MasterBranch, oldRev)
-		}
-		return fmt.Errorf("failed to apply changes (rolled back): %w", err)
+	if err := api.applyReceived(oldRev, newRev); err != nil {
+		return err
 	}
 
 	go func() {
@@ -446,6 +445,18 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 		}
 	}()
 
+	return nil
+}
+
+// applyReceived applies the pushed range to the DB; on failure it rolls the
+// ref back to oldRev so the repo never diverges from the DB.
+func (api *API) applyReceived(oldRev, newRev string) error {
+	if _, err := api.applyDiff(api.ctx, oldRev, newRev); err != nil {
+		if oldRev != "" {
+			_, _ = api.gitCmd(os.Environ(), nil, "update-ref", "refs/heads/"+api.config.MasterBranch, oldRev)
+		}
+		return fmt.Errorf("failed to apply changes (rolled back): %w", err)
+	}
 	return nil
 }
 
