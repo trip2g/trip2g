@@ -134,7 +134,11 @@ func TestAPIKeyAdminTools_GraphQLRequestDispatched(t *testing.T) {
 	var callResult mcp.CallToolResult
 	require.NoError(t, json.Unmarshal(rawResult, &callResult))
 	require.Len(t, callResult.Content, 1)
-	require.Contains(t, callResult.Content[0].Text, `"setApiKeyMcpAdminTools"`)
+	require.Equal(t, "structured result", callResult.Content[0].Text)
+	require.NotNil(t, callResult.StructuredContent, "structured content must be set")
+	structuredJSON, err := json.Marshal(callResult.StructuredContent)
+	require.NoError(t, err)
+	require.Contains(t, string(structuredJSON), `"setApiKeyMcpAdminTools"`)
 }
 
 // TestAPIKeyAdminTools_GraphQLRequestBlockedWithoutFlag: tools/call graphql_request

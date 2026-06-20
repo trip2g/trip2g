@@ -64,7 +64,11 @@ func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.Raw
 		return errorResponse(id, ErrCodeInternal, "GraphQL request failed: "+err.Error())
 	}
 
-	return successResponse(id, textToolResult(string(result)))
+	var parsed any
+	if jsonErr := json.Unmarshal(result, &parsed); jsonErr != nil {
+		return successResponse(id, textToolResult(string(result)))
+	}
+	return successResponse(id, structuredToolResult("structured result", parsed))
 }
 
 type introspectionTypeRef struct {
