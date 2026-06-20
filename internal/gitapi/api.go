@@ -53,6 +53,15 @@ type Env interface {
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
+
+	// materialize / mirror
+	LatestNoteSources(ctx context.Context) ([]NoteSource, error)
+	LatestAssetSources(ctx context.Context) ([]AssetSource, error)
+	ReadAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadCloser, error)
+	HideNotePaths(ctx context.Context, paths []string) error
+
+	LockNoteWrites()
+	UnlockNoteWrites()
 }
 
 type Config struct {
