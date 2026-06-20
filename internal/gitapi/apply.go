@@ -21,7 +21,7 @@ func (api *API) diffChangedFiles(oldRev, newRev string) (changed, deleted []stri
 	if base == "" {
 		base = emptyTree
 	}
-	out, err := api.gitCmd(os.Environ(), nil, "diff", "--name-status", "-z", base, newRev)
+	out, err := api.gitCmd(os.Environ(), nil, "diff", "--name-status", "--no-renames", "-z", base, newRev)
 	if err != nil {
 		return nil, nil, fmt.Errorf("diff: %w", err)
 	}
