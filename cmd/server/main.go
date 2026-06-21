@@ -200,7 +200,13 @@ type app struct {
 	// Pointer so the per-request shallow copy (newEnv := *a) shares the one flag
 	// rather than copying a noCopy atomic value.
 	stopped *atomic.Bool
-	ctx     context.Context
+	// ready reports whether the instance can fully serve, including writes. It
+	// flips true only after the writer slot is acquired and writer subsystems
+	// (queues, cron, patreon/boosty refresh) have started. /ready returns 503
+	// until then so Nomad/Traefik route traffic only to fully-ready instances.
+	// Pointer for the same reason as stopped (shared across per-request copies).
+	ready *atomic.Bool
+	ctx   context.Context
 
 	graphTxs *graphTransactions
 
@@ -323,7 +329,7 @@ func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager
 	return manager
 }
 
-//nolint:funlen // 151 lines, trivially over limit
+//nolint:funlen // boot sequence split into read-only (Block A) and writer (Block B) phases
 func main() {
 	if err := defaulttemplate.Init(); err != nil {
 		panic(fmt.Errorf("failed to init default template i18n: %w", err))
@@ -388,6 +394,7 @@ func main() {
 		webhookTestMu: &sync.Mutex{},
 		debugJobMu:    &sync.Mutex{},
 		stopped:       &atomic.Bool{},
+		ready:         &atomic.Bool{},
 
 		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
@@ -420,8 +427,18 @@ func main() {
 
 	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
-	a.initPatreon(ctx)
-	a.initBoosty(ctx)
+	// ========================================================================
+	// BLOCK A — read-only warmup. Everything here is safe to run WITHOUT the
+	// SQLite writer slot: it only reads the DB (or touches no DB at all), so a
+	// new instance can fully warm up (load notes, build in-memory indexes,
+	// construct handlers) while the OLD instance keeps serving, including
+	// writes. No writer subsystem (queues, cron, patreon/boosty refresh) is
+	// started here. /ready stays 503 until Block B finishes.
+	// ========================================================================
+
+	// No-DB construction halves (client managers, job handlers).
+	a.constructPatreon()
+	a.constructBoosty()
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
 		Limit:        10,
@@ -442,7 +459,7 @@ func main() {
 		)
 	}
 
-	a.initJobs(ctx)
+	a.constructJobs()
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -476,11 +493,8 @@ func main() {
 		log.Info("simple backup manager initialized")
 	}
 
-	err = a.createOwnerIfNotExists(ctx)
-	if err != nil {
-		panic(err)
-	}
-
+	// loadAllNotes is read-only (noteloader.Load does zero DB writes): it builds
+	// the in-memory NoteViews / bleve index / layouts / sitemap. Safe in Block A.
 	err = a.loadAllNotes(ctx, noteloader.LoadOptions{})
 	if err != nil {
 		panic(err)
@@ -491,11 +505,46 @@ func main() {
 	a.personalTokenResolver = personaltoken.NewResolver(a)
 	a.setFileStorageExpiringCallback()
 
+	// ========================================================================
+	// WRITER SLOT — acquire before starting any writer subsystem. This is an
+	// honest-but-minimal probe (BEGIN IMMEDIATE; COMMIT) that the SQLite write
+	// lock is currently grabbable; the OLD instance releases it on SIGTERM
+	// after stopping its own writers. It does NOT hold the lock open and does
+	// NOT guarantee hard cross-process single-writer (deferred to Phase 2).
+	// ========================================================================
+	if acquireErr := db.AcquireWriterSlot(ctx, config.DatabaseFile, config.WriterAcquireTimeout); acquireErr != nil {
+		panic(fmt.Errorf("failed to acquire writer slot: %w", acquireErr))
+	}
+
+	log.Info("writer slot acquired, starting writer subsystems")
+
+	// ========================================================================
+	// BLOCK B — writer-only. Runs only after the writer slot is acquired.
+	// Everything here writes to the DB or starts a background loop that does.
+	// ========================================================================
+
+	// createOwnerIfNotExists inserts the owner user+admin (WRITE).
+	err = a.createOwnerIfNotExists(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	// cron jobs (writes UpsertCronJob/DeleteCronJobByName + starts cron).
+	a.startJobWriters(ctx)
+
+	// patreon/boosty: credential scan, webhook registration, refresh jobs (writes).
+	a.startPatreonWriters(ctx)
+	a.startBoostyWriters(ctx)
+
+	// queue runners (poll + execute jobs that write).
 	a.globalQueue.start()
 	a.telegramTaskQueue.start()
 	a.telegramBotAPIQueue.start()
 	a.telegramAccountAPIQueue.start()
 	a.telegramLongRunningQueue.start()
+
+	// Fully ready: can serve reads AND writes. /ready flips to 200.
+	a.ready.Store(true)
 
 	a.startServer()
 }
@@ -528,7 +577,11 @@ func restoreBackup(log logger.Logger, config *appconfig.Config) {
 	}
 }
 
-func (a *app) initJobs(ctx context.Context) {
+// constructJobs wires up all job handlers (no DB writes). The handler *.New(a)
+// constructors only build in-memory structs; they do not touch the database.
+// initDebugJobs only registers a queue handler (no DB write). The DB-writing,
+// cron-starting part lives in startJobWriters (Block B).
+func (a *app) constructJobs() {
 	a.SendTelegramMessageJob = sendtelegrammessage.New(a)
 	a.UpdateTelegramMessageJob = updatetelegrammessage.New(a)
 	a.SendTelegramAccountMessageJob = sendtelegramaccountmessage.New(a)
@@ -551,19 +604,29 @@ func (a *app) initJobs(ctx context.Context) {
 	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode)
 	a.fedHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.MCPFederationAllowPrivate)
 
+	a.initDebugJobs()
+}
+
+// startJobWriters creates the cron jobs (writes UpsertCronJob/DeleteCronJobByName
+// and starts the cron scheduler). Writer-only — runs in Block B after the
+// writer slot is acquired.
+func (a *app) startJobWriters(ctx context.Context) {
 	var err error
 
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
-
-	a.initDebugJobs()
 }
 
-func (a *app) initPatreon(ctx context.Context) {
+// constructPatreon builds the Patreon client manager (no DB). The credential
+// scan, webhook registration, and refresh background jobs (all of which write)
+// live in startPatreonWriters (Block B).
+func (a *app) constructPatreon() {
 	a.patreonClientManager = patreon.NewClientManager(a)
+}
 
+func (a *app) startPatreonWriters(ctx context.Context) {
 	var err error
 
 	a.PatreonJobs, err = patreonjobs.New(ctx, a, a.config.PatreonJobsConfig)
@@ -572,9 +635,14 @@ func (a *app) initPatreon(ctx context.Context) {
 	}
 }
 
-func (a *app) initBoosty(ctx context.Context) {
+// constructBoosty builds the Boosty client manager (no DB). The credential
+// scan and refresh background jobs (which write) live in startBoostyWriters
+// (Block B).
+func (a *app) constructBoosty() {
 	a.boostyClientManager = boosty.NewClientManager(a)
+}
 
+func (a *app) startBoostyWriters(ctx context.Context) {
 	var err error
 
 	a.BoostyJobs, err = boostyjobs.New(ctx, a, a.config.BoostyJobsConfig)
@@ -2654,6 +2722,12 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 		}
 	}
 
+	// Stop writer subsystems BEFORE draining HTTP and BEFORE releasing the
+	// writer slot. a.stopped is already true (set at the top of shutdown), so
+	// /ready is already 503 and traffic is being routed away. Stopping writers
+	// here lets the NEXT instance acquire the writer slot for handoff.
+	a.stopWriters()
+
 	a.log.Info("shutting down server", "timeout", a.config.ShutdownTimeout)
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
@@ -2668,6 +2742,47 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 	a.log.Info("server stopped")
 }
 
+// stopWriters stops every writer subsystem started in Block B: the background
+// job queues, the cron scheduler, and the patreon/boosty refresh loops. It then
+// releases the writer slot. With the current probe approach there is no held
+// lock to release explicitly — stopping the writers is what frees the SQLite
+// write lock for the next instance. Each field is nil-checked because SIGTERM
+// can arrive before Block B finished (e.g. during read-only warmup).
+func (a *app) stopWriters() {
+	a.log.Info("stopping writer subsystems")
+
+	// Stop and wait for the queue runners so in-flight writing jobs finish.
+	for _, q := range a.appQueues {
+		q.stopAndWait()
+	}
+
+	if a.CronJobs != nil {
+		a.CronJobs.StopCronJobs()
+	}
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if a.PatreonJobs != nil {
+		a.PatreonJobs.Stop(stopCtx)
+	}
+
+	if a.BoostyJobs != nil {
+		a.BoostyJobs.Stop(stopCtx)
+	}
+
+	// Writer slot release is a no-op for the probe approach: the SQLite write
+	// lock is freed simply by the writers above having stopped. Phase 2/Consul
+	// will add an explicit release here.
+}
+
+// isReady reports whether the instance can fully serve, including writes. It is
+// false while warming up (writer slot not yet acquired / writer subsystems not
+// started) and while shutting down. Backs the /ready readiness endpoint.
+func (a *app) isReady() bool {
+	return !a.stopped.Load() && a.ready.Load()
+}
+
 func (a *app) startInternalServer() {
 	mux := http.NewServeMux()
 
@@ -2680,6 +2795,22 @@ func (a *app) startInternalServer() {
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
+	})
+
+	// /ready is readiness (not liveness): 200 only when the instance can fully
+	// serve, including writes. It returns 503 while warming up (writer slot not
+	// yet acquired, writer subsystems not started) and while shutting down.
+	// Nomad health-checks this and Traefik (via Consul) routes only to ready
+	// instances, so the old instance keeps serving until the new one is ready.
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if !a.isReady() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("not ready"))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ready"))
 	})
 
 	// Prometheus metrics endpoint

@@ -63,6 +63,7 @@ type Config struct {
 
 	ShutdownGracePeriod        time.Duration
 	ShutdownTimeout            time.Duration
+	WriterAcquireTimeout       time.Duration
 	GlobalQueuePollInterval    time.Duration
 	InternalListenAddr         string
 	MCPFederationMaxDepth      int
@@ -418,8 +419,10 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
-	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
+	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 200*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
+	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
+		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
