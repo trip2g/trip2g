@@ -176,6 +176,7 @@ type app struct {
 	*deliverchangewebhook.DeliverChangeWebhookJob
 	*delivercronwebhook.DeliverCronWebhookJob
 	webhookHTTPClient *fasthttp.Client
+	fedHTTPClient     *fasthttp.Client
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex
@@ -529,6 +530,7 @@ func (a *app) initJobs(ctx context.Context) {
 	a.DeliverChangeWebhookJob = deliverchangewebhook.New(a)
 	a.DeliverCronWebhookJob = delivercronwebhook.New(a)
 	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode)
+	a.fedHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.MCPFederationAllowPrivate)
 
 	var err error
 
@@ -1799,7 +1801,7 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 			}
 		}
 
-		return federation.NewClient(peer, a.webhookHTTPClient, a.config.DevMode), nil
+		return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode), nil
 	}
 
 	return nil, fmt.Errorf("federation kb %q not found", kbID)

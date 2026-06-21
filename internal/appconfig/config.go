@@ -61,11 +61,12 @@ type Config struct {
 	AdminJSURL string
 	LogLevel   string
 
-	ShutdownGracePeriod     time.Duration
-	ShutdownTimeout         time.Duration
-	GlobalQueuePollInterval time.Duration
-	InternalListenAddr      string
-	MCPFederationMaxDepth   int
+	ShutdownGracePeriod       time.Duration
+	ShutdownTimeout           time.Duration
+	GlobalQueuePollInterval   time.Duration
+	InternalListenAddr        string
+	MCPFederationMaxDepth     int
+	MCPFederationAllowPrivate bool
 
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
@@ -421,6 +422,7 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
+	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false, "Disable SSRF protection for federation calls (allow private/internal addresses).")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 
