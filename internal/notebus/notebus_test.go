@@ -94,11 +94,11 @@ func TestUnsubscribeDuringPublishNoPanic(t *testing.T) {
 	batch := notebus.Batch{Changes: []notebus.Change{
 		{PathID: 5, Path: "race.md", Event: "update"},
 	}}
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		sub := b.Subscribe([]string{"**"}, nil, 1)
 		done := make(chan struct{})
 		go func() {
-			for j := 0; j < 50; j++ {
+			for range 50 {
 				b.Publish(batch)
 			}
 			close(done)
