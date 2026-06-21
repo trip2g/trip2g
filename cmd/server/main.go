@@ -1997,9 +1997,13 @@ func (a *app) ValidateGoogleOAuthCredentials(ctx context.Context, clientID, clie
 	return googleauth.ValidateCredentials(clientID, clientSecret, redirectURI)
 }
 
-// ValidateOIDCCredentials validates OIDC credentials by probing the issuer's discovery endpoint.
+// ValidateOIDCCredentials probes that the issuer's discovery document is
+// reachable. It intentionally does NOT verify clientID/clientSecret — there is
+// no cheap check without a full auth flow; bad client creds surface at first login.
 func (a *app) ValidateOIDCCredentials(ctx context.Context, issuer, clientID, clientSecret string) error {
-	_, err := oidcauth.Discover(issuer) // discovery reachability probe
+	_ = clientID
+	_ = clientSecret
+	_, err := oidcauth.Discover(issuer)
 	return err
 }
 

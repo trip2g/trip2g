@@ -115,38 +115,47 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// Find user by email
 	user, err := env.UserByEmail(ctx, userInfo.Email)
-	if err != nil {
-		if db.IsNoFound(err) {
-			// No existing user: apply account policy
-			outcome := decideAccount(creds, userInfo)
-			if outcome.Reject {
-				env.Logger().Info("oauth login failed: "+outcome.BError,
-					"provider", "oidc",
-					"email", userInfo.Email,
-					"ip", clientIP)
-				ctx.Redirect("/?berror="+outcome.BError, http.StatusFound)
-				return nil, nil
-			}
+	if err != nil && !db.IsNoFound(err) {
+		env.Logger().Info("oauth login failed: oauth error",
+			"provider", "oidc",
+			"error", err.Error(),
+			"ip", clientIP)
+		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		return nil, nil //nolint:nilerr // redirect response with error logged
+	}
+	exists := err == nil
 
-			// Provision a new user
-			user, err = env.InsertUserWithEmail(ctx, db.InsertUserWithEmailParams{
-				Email:      userInfo.Email,
-				CreatedVia: "oidc",
-			})
-			if err != nil {
-				env.Logger().Info("oauth login failed: oauth error",
-					"provider", "oidc",
-					"error", err.Error(),
-					"ip", clientIP)
-				ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
-				return nil, nil
-			}
+	// Apply the configured access gate to EVERY login (existing and new users)
+	if berr := accessBError(creds, userInfo); berr != "" {
+		env.Logger().Info("oauth login failed: access denied",
+			"provider", "oidc",
+			"email", userInfo.Email,
+			"ip", clientIP)
+		ctx.Redirect("/?berror="+berr, http.StatusFound)
+		return nil, nil
+	}
 
-			env.Logger().Info("oauth user provisioned",
+	if !exists {
+		// No existing user: decide whether to auto-provision
+		if berr := provisionBError(creds, userInfo); berr != "" {
+			reason := "access denied"
+			if berr == "user_not_found" {
+				reason = "user_not_found"
+			}
+			env.Logger().Info("oauth login failed: "+reason,
 				"provider", "oidc",
 				"email", userInfo.Email,
-				"user_id", user.ID)
-		} else {
+				"ip", clientIP)
+			ctx.Redirect("/?berror="+berr, http.StatusFound)
+			return nil, nil
+		}
+
+		// Provision a new user
+		user, err = env.InsertUserWithEmail(ctx, db.InsertUserWithEmailParams{
+			Email:      userInfo.Email,
+			CreatedVia: "oidc",
+		})
+		if err != nil {
 			env.Logger().Info("oauth login failed: oauth error",
 				"provider", "oidc",
 				"error", err.Error(),
@@ -154,6 +163,11 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
 			return nil, nil
 		}
+
+		env.Logger().Info("oauth user provisioned",
+			"provider", "oidc",
+			"email", userInfo.Email,
+			"user_id", user.ID)
 	}
 
 	// Setup user token (JWT cookie)

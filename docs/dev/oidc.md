@@ -1,6 +1,10 @@
 # OIDC login for trip2g — implementation plan
 
-**Status:** plan only, no code yet.
+**Status:** implemented on branch `feat/oidc-login` (backend + admin GraphQL CRUD + SSO login button + e2e). Key decisions taken during implementation:
+- **Account policy is a per-provider setting** (Step 8 option B, made configurable): `oidc_credentials.auto_provision` + `allowed_email_domain` + `required_group`. Off → unknown email rejected (`user_not_found`, mirrors Google). On → user auto-created on first login. The `allowed_email_domain` / `required_group` gates apply to **every** login (existing + new); `email_verified` is enforced only when provisioning a new account.
+- **Userinfo-only** (Step 8 / §7 Q1): the callback reads identity from `/userinfo`; the `id_token` signature is **not** verified yet (TODO in `internal/oidcauth/{client,discovery}.go`). Fold in JWKS verification + discovery-issuer match when hardening.
+- **Discovery is uncached** for now (login is infrequent); TODO to add a TTL cache on the app layer.
+- `ValidateOIDCCredentials` is a discovery-reachability probe only (does not verify client_id/secret).
 **Goal:** add a generic **OIDC** login provider to trip2g, alongside the existing Google/GitHub OAuth, so the app can be a Relying Party against a corporate IdP. Immediate target: a client who already runs **Authentik**.
 
 This is the trip2g half of the cross-product SSO design. The full picture (panel + trip2g + agent dashboards behind Traefik, IdP choice, authN-vs-authZ split) lives in the simplepanel repo: `docs/sso_box_design.md`. Read it for the "why"; this doc is the trip2g "how".
@@ -208,13 +212,13 @@ Authentication (who the user is) is what this plan delivers. **Authorization** (
 
 **Size: M** (no provider abstraction to reuse; a new package + two endpoints + migration + sqlc + GraphQL + gencmd).
 
-- [ ] `db/migrations/<ts>_create_oidc_credentials.sql` (confirm SQL first)
-- [ ] `queries.read.sql` / `queries.write.sql` + `make sqlc`
-- [ ] `internal/oidcauth/{config.go, client.go, discovery.go, models.go}`
-- [ ] `internal/case/handleoidcstart/endpoint.go`
-- [ ] `internal/case/handleoidccallback/endpoint.go`
-- [ ] Env: `GetActiveOIDCCredentials` on the router Env
-- [ ] `go run ./internal/router/gencmd` → commit `endpoints_gen.go`
-- [ ] GraphQL admin mutation/query for OIDC creds + UI login button
-- [ ] account policy decision (Step 8)
-- [ ] `go test ./...`, manual login flow against a test Authentik, acceptance smoke (`{issuer}/.well-known/openid-configuration` → 200, full code→callback→session)
+- [x] `db/migrations/20260621150755_create_oidc_credentials.sql` (+ `auto_provision`, `allowed_email_domain`, `required_group`)
+- [x] `queries.read.sql` / `queries.write.sql` + `make sqlc`
+- [x] `internal/oidcauth/{config.go, client.go, discovery.go, models.go}`
+- [x] `internal/case/handleoidcstart/endpoint.go`
+- [x] `internal/case/handleoidccallback/endpoint.go` (+ `policy.go` account gates)
+- [x] Env: `GetActiveOIDCCredentials` (promotes via `*db.Queries`; no manual Env method needed)
+- [x] `go generate ./internal/router/...` → `endpoints_gen.go` committed
+- [x] GraphQL admin mutation/query for OIDC creds + UI login button (`oidcAuthUrl`)
+- [x] account policy decision (Step 8) — per-provider `auto_provision` + domain/group gates
+- [x] `go test ./...` green; e2e `e2e/oidc.spec.js` (7 cases) green against a mock IdP. Manual smoke against a real Authentik still TODO.

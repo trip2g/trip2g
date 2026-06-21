@@ -7,32 +7,21 @@ import (
 	"trip2g/internal/oidcauth"
 )
 
-type accountOutcome struct {
-	Provision bool
-	Reject    bool
-	BError    string
-}
-
-// decideAccount decides what to do when the OIDC email has NO existing trip2g user.
-func decideAccount(creds db.OidcCredential, info *oidcauth.UserInfo) accountOutcome {
-	if !creds.AutoProvision {
-		return accountOutcome{Reject: true, BError: "user_not_found"}
-	}
-
-	if !info.EmailVerified {
-		return accountOutcome{Reject: true, BError: "email_not_allowed"}
-	}
-
+// accessBError returns a non-empty berror code if a configured access gate
+// rejects this identity. Applies to EVERY login (existing users and new).
+// Empty allowed_email_domain / required_group are no-ops.
+func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 	if creds.AllowedEmailDomain != "" {
+		// domain = case-insensitive part after the last '@'
+		at := strings.LastIndex(info.Email, "@")
 		domain := ""
-		if idx := strings.LastIndex(info.Email, "@"); idx >= 0 {
-			domain = info.Email[idx+1:]
+		if at >= 0 {
+			domain = strings.ToLower(info.Email[at+1:])
 		}
-		if strings.ToLower(domain) != strings.ToLower(creds.AllowedEmailDomain) {
-			return accountOutcome{Reject: true, BError: "email_not_allowed"}
+		if domain != strings.ToLower(creds.AllowedEmailDomain) {
+			return "email_not_allowed"
 		}
 	}
-
 	if creds.RequiredGroup != "" {
 		found := false
 		for _, g := range info.Groups {
@@ -42,9 +31,20 @@ func decideAccount(creds db.OidcCredential, info *oidcauth.UserInfo) accountOutc
 			}
 		}
 		if !found {
-			return accountOutcome{Reject: true, BError: "email_not_allowed"}
+			return "email_not_allowed"
 		}
 	}
+	return ""
+}
 
-	return accountOutcome{Provision: true}
+// provisionBError returns a non-empty berror code if a NEW (not-yet-existing)
+// OIDC identity may not be auto-provisioned into an account.
+func provisionBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
+	if !creds.AutoProvision {
+		return "user_not_found"
+	}
+	if !info.EmailVerified {
+		return "email_not_allowed" // verify email before creating an account
+	}
+	return ""
 }

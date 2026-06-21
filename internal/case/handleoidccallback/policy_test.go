@@ -9,96 +9,125 @@ import (
 	"trip2g/internal/oidcauth"
 )
 
-func TestDecideAccount(t *testing.T) {
+func TestAccessBError(t *testing.T) {
 	tests := []struct {
 		name  string
 		creds db.OidcCredential
 		info  *oidcauth.UserInfo
-		want  accountOutcome
+		want  string
 	}{
 		{
-			name:  "auto_provision off rejects with user_not_found",
-			creds: db.OidcCredential{AutoProvision: false},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  accountOutcome{Reject: true, BError: "user_not_found"},
+			name:  "no gates configured allows",
+			creds: db.OidcCredential{},
+			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			want:  "",
 		},
 		{
-			name:  "email not verified rejects with email_not_allowed",
-			creds: db.OidcCredential{AutoProvision: true},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: false},
-			want:  accountOutcome{Reject: true, BError: "email_not_allowed"},
+			name:  "allowed domain match (exact) allows",
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			want:  "",
 		},
 		{
 			name:  "allowed domain mismatch rejects",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@other.com", EmailVerified: true},
-			want:  accountOutcome{Reject: true, BError: "email_not_allowed"},
-		},
-		{
-			name:  "allowed domain match (exact) provisions",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  accountOutcome{Provision: true},
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
+			info:  &oidcauth.UserInfo{Email: "a@other.com"},
+			want:  "email_not_allowed",
 		},
 		{
 			name:  "allowed domain match is case-insensitive (creds upper)",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "Example.COM"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  accountOutcome{Provision: true},
+			creds: db.OidcCredential{AllowedEmailDomain: "Example.COM"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			want:  "",
 		},
 		{
 			name:  "allowed domain match is case-insensitive (email upper)",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@EXAMPLE.com", EmailVerified: true},
-			want:  accountOutcome{Provision: true},
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
+			info:  &oidcauth.UserInfo{Email: "a@EXAMPLE.com"},
+			want:  "",
 		},
 		{
 			name:  "uses domain after last @ (multiple @ in local part)",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "weird@local@example.com", EmailVerified: true},
-			want:  accountOutcome{Provision: true},
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
+			info:  &oidcauth.UserInfo{Email: "weird@local@example.com"},
+			want:  "",
 		},
 		{
-			name:  "required group present provisions",
-			creds: db.OidcCredential{AutoProvision: true, RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true, Groups: []string{"editors", "admins"}},
-			want:  accountOutcome{Provision: true},
+			name:  "no @ in email rejects when domain required",
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
+			info:  &oidcauth.UserInfo{Email: "noatsign"},
+			want:  "email_not_allowed",
+		},
+		{
+			name:  "required group present allows",
+			creds: db.OidcCredential{RequiredGroup: "admins"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors", "admins"}},
+			want:  "",
 		},
 		{
 			name:  "required group absent rejects",
-			creds: db.OidcCredential{AutoProvision: true, RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true, Groups: []string{"editors"}},
-			want:  accountOutcome{Reject: true, BError: "email_not_allowed"},
+			creds: db.OidcCredential{RequiredGroup: "admins"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors"}},
+			want:  "email_not_allowed",
 		},
 		{
 			name:  "required group with empty groups rejects",
-			creds: db.OidcCredential{AutoProvision: true, RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true, Groups: nil},
-			want:  accountOutcome{Reject: true, BError: "email_not_allowed"},
+			creds: db.OidcCredential{RequiredGroup: "admins"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: nil},
+			want:  "email_not_allowed",
 		},
 		{
-			name:  "domain and group both satisfied provisions",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true, Groups: []string{"admins"}},
-			want:  accountOutcome{Provision: true},
+			name:  "domain and group both satisfied allows",
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"admins"}},
+			want:  "",
 		},
 		{
 			name:  "domain ok but group missing rejects",
-			creds: db.OidcCredential{AutoProvision: true, AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true, Groups: []string{"editors"}},
-			want:  accountOutcome{Reject: true, BError: "email_not_allowed"},
-		},
-		{
-			name:  "no gating, verified, auto-provision provisions",
-			creds: db.OidcCredential{AutoProvision: true},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  accountOutcome{Provision: true},
+			creds: db.OidcCredential{AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors"}},
+			want:  "email_not_allowed",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := decideAccount(tt.creds, tt.info)
+			got := accessBError(tt.creds, tt.info)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestProvisionBError(t *testing.T) {
+	tests := []struct {
+		name  string
+		creds db.OidcCredential
+		info  *oidcauth.UserInfo
+		want  string
+	}{
+		{
+			name:  "auto_provision off rejects with user_not_found",
+			creds: db.OidcCredential{AutoProvision: false},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
+			want:  "user_not_found",
+		},
+		{
+			name:  "auto_provision on but email not verified rejects",
+			creds: db.OidcCredential{AutoProvision: true},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: false},
+			want:  "email_not_allowed",
+		},
+		{
+			name:  "auto_provision on and email verified allows",
+			creds: db.OidcCredential{AutoProvision: true},
+			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := provisionBError(tt.creds, tt.info)
 			require.Equal(t, tt.want, got)
 		})
 	}
