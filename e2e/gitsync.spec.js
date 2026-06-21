@@ -52,6 +52,12 @@ const GIT_ENV = {
 };
 
 test.describe('git <-> plugin coexistence', () => {
+  // These tests share one server-side git mirror (the DB-canonical repo) and
+  // mutate global note state, so they must run in order on a single worker.
+  // In parallel, one test's GraphQL push advances master (via materialize) and
+  // turns another test's push into an unexpected non-fast-forward.
+  test.describe.configure({ mode: 'serial' });
+
   let apiKey, token, workdir;
 
   test.beforeAll(async ({ request }) => {
@@ -86,35 +92,49 @@ test.describe('git <-> plugin coexistence', () => {
   }`;
   const NOTE_PATHS = `query { notePaths { value } }`;
 
+  // Unique per run: these tests mutate the shared, persistent note DB + git
+  // mirror, so fixed paths would collide with state left by earlier runs
+  // (e.g. "nothing to commit" when the file already exists). A run-scoped
+  // prefix keeps each execution independent.
+  const RUN = `gitsync-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const pluginNote = `${RUN}-from-plugin.md`;
+  const gitNote = `${RUN}-from-git.md`;
+  const staleGitNote = `${RUN}-git-side.md`;
+  const stalePluginNote = `${RUN}-plugin-side.md`;
+  const deleteNote = `${RUN}-to-delete.md`;
+
   test('plugin push -> git clone sees it', async ({ request }) => {
     await gql(request, apiKey, PUSH_NOTES, {
-      input: { updates: [{ path: 'from-plugin.md', content: '# plugin' }] },
+      input: { updates: [{ path: pluginNote, content: '# plugin' }] },
     });
     const dir = path.join(workdir, 'clone1');
     git(workdir, {}, 'clone', authedRemote(token), 'clone1');
-    expect(fs.readFileSync(path.join(dir, 'from-plugin.md'), 'utf8')).toContain('# plugin');
+    expect(fs.readFileSync(path.join(dir, pluginNote), 'utf8')).toContain('# plugin');
   });
 
   test('git push -> plugin/db sees it', async ({ request }) => {
     const dir = path.join(workdir, 'clone2');
     git(workdir, {}, 'clone', authedRemote(token), 'clone2');
-    fs.writeFileSync(path.join(dir, 'from-git.md'), '# git');
-    git(dir, GIT_ENV, 'add', 'from-git.md');
+    fs.writeFileSync(path.join(dir, gitNote), '# git');
+    git(dir, GIT_ENV, 'add', gitNote);
     git(dir, GIT_ENV, 'commit', '-m', 'add');
     git(dir, GIT_ENV, 'push', 'origin', 'HEAD:master');
     const data = await gql(request, apiKey, NOTE_PATHS);
-    expect(data.notePaths.map((n) => n.value)).toContain('from-git.md');
+    expect(data.notePaths.map((n) => n.value)).toContain(gitNote);
   });
 
   test('stale git push is rejected, succeeds after pull', async ({ request }) => {
     const dir = path.join(workdir, 'clone3');
     git(workdir, {}, 'clone', authedRemote(token), 'clone3');
+    // Plugin advances the mirror (a different note) AFTER the clone, so the
+    // clone is now stale.
     await gql(request, apiKey, PUSH_NOTES, {
-      input: { updates: [{ path: 'shared.md', content: '# v-plugin' }] },
+      input: { updates: [{ path: stalePluginNote, content: '# plugin side' }] },
     });
-    fs.writeFileSync(path.join(dir, 'shared.md'), '# v-git');
-    git(dir, GIT_ENV, 'add', 'shared.md');
+    fs.writeFileSync(path.join(dir, staleGitNote), '# git side');
+    git(dir, GIT_ENV, 'add', staleGitNote);
     git(dir, GIT_ENV, 'commit', '-m', 'git edit');
+    // Stale push is rejected (non-fast-forward).
     let rejected = false;
     try {
       git(dir, GIT_ENV, 'push', 'origin', 'HEAD:master');
@@ -122,20 +142,27 @@ test.describe('git <-> plugin coexistence', () => {
       rejected = true;
     }
     expect(rejected).toBeTruthy();
-    git(dir, GIT_ENV, 'pull', '--no-edit', 'origin', 'master');
+    // Pull reconciles (the two sides touched different notes → clean merge),
+    // then the push succeeds. git 2.x needs an explicit reconcile strategy.
+    git(dir, GIT_ENV, '-c', 'pull.rebase=false', 'pull', '--no-edit', 'origin', 'master');
     git(dir, GIT_ENV, 'push', 'origin', 'HEAD:master');
+    // Both notes now coexist in the DB.
+    const data = await gql(request, apiKey, NOTE_PATHS);
+    const paths = data.notePaths.map((n) => n.value);
+    expect(paths).toContain(staleGitNote);
+    expect(paths).toContain(stalePluginNote);
   });
 
   test('git deletion hides the note', async ({ request }) => {
     await gql(request, apiKey, PUSH_NOTES, {
-      input: { updates: [{ path: 'to-delete.md', content: '# x' }] },
+      input: { updates: [{ path: deleteNote, content: '# x' }] },
     });
     const dir = path.join(workdir, 'clone4');
     git(workdir, {}, 'clone', authedRemote(token), 'clone4');
-    git(dir, GIT_ENV, 'rm', 'to-delete.md');
+    git(dir, GIT_ENV, 'rm', deleteNote);
     git(dir, GIT_ENV, 'commit', '-m', 'rm');
     git(dir, GIT_ENV, 'push', 'origin', 'HEAD:master');
     const data = await gql(request, apiKey, NOTE_PATHS);
-    expect(data.notePaths.map((n) => n.value)).not.toContain('to-delete.md');
+    expect(data.notePaths.map((n) => n.value)).not.toContain(deleteNote);
   });
 });
