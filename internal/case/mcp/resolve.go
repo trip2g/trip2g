@@ -177,7 +177,7 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	MCPMethodInitialize:         true,
 }
 
-func handleToolsList(ctx context.Context, env Env, id any) Response {
+func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:funlen // flat declarative list of built-in tool schemas
 	tools := []Tool{
 		{
 			Name:        "search",
