@@ -57,9 +57,10 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{List: []*appmodel.NoteView{}, PathMap: map[string]*appmodel.NoteView{}}
 		},
-		LoggerFunc:      func() logger.Logger { return &logger.DummyLogger{} },
-		FeaturesFunc:    func() features.Features { return features.Features{} },
-		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		LoggerFunc:                  func() logger.Logger { return &logger.DummyLogger{} },
+		FeaturesFunc:                func() features.Features { return features.Features{} },
+		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		FederatedGraphQLEnabledFunc: func() bool { return false },
 	}
 	if verifyInboundWillFail {
 		env.FederationSecretByKIDFunc = func(_ context.Context, _ string) (db.FederationSecret, bool, error) {

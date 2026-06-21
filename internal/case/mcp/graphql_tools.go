@@ -55,7 +55,8 @@ func handleGraphQLIntrospection(ctx context.Context, env Env, id any, argsRaw js
 	return successResponse(id, textToolResult(string(filtered)))
 }
 
-// graphqlReadOnlyRootFields is the allowlist of Query root fields accessible via graphql_request.
+// graphqlReadOnlyRootFields is the allowlist of Query root fields accessible via graphql_request
+// on the admin (non-federated) path.
 var graphqlReadOnlyRootFields = map[string]bool{ //nolint:gochecknoglobals // immutable allowlist
 	"note":             true,
 	"search":           true,
@@ -65,15 +66,28 @@ var graphqlReadOnlyRootFields = map[string]bool{ //nolint:gochecknoglobals // im
 	"resolveWikilinks": true,
 }
 
+// graphqlFederatedRootFields is the subset of read-only root fields safe to
+// expose to a federation peer: every field here enforces per-note access via
+// canreadnote. notePaths/resolveWikilinks are deliberately excluded — they
+// return unfiltered paths and would leak private structure outside the
+// caller's granted subgraphs.
+var graphqlFederatedRootFields = map[string]bool{ //nolint:gochecknoglobals // immutable allowlist
+	"note":         true,
+	"search":       true,
+	"similarNotes": true,
+	"viewer":       true,
+}
+
 // validateReadOnlyQuery parses the query and enforces:
 //  1. Parse must succeed.
 //  2. Every operation must be a query (not mutation or subscription).
-//  3. Every top-level root field must be in the read-only allowlist.
+//  3. Every top-level root field must be in the provided allowlist.
 //     Inline fragments and fragment spreads at root are rejected.
 //
 // The function is intentionally standalone and reusable by other tools
-// (e.g. federated_graphql_request).
-func validateReadOnlyQuery(query string) error {
+// (e.g. federated_graphql_request). Pass graphqlReadOnlyRootFields for the
+// admin path and graphqlFederatedRootFields for the federated/scoped path.
+func validateReadOnlyQuery(query string, allowed map[string]bool) error {
 	doc, err := parser.ParseQuery(&ast.Source{Input: query})
 	if err != nil {
 		return fmt.Errorf("query parse error: %w", err)
@@ -87,12 +101,39 @@ func validateReadOnlyQuery(query string) error {
 			if !ok {
 				return fmt.Errorf("only field selections are allowed at query root")
 			}
-			if !graphqlReadOnlyRootFields[field.Name] {
+			if !allowed[field.Name] {
 				return fmt.Errorf("root field %q is not allowed", field.Name)
 			}
 		}
 	}
 	return nil
+}
+
+func handleGraphQLRequestScoped(ctx context.Context, env Env, id any, argsRaw json.RawMessage, allowed []string) Response {
+	args, errResp := unmarshalArgs[GraphQLRequestArguments](argsRaw, id, "graphql_request")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.Query == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "query is required")
+	}
+
+	if err := validateReadOnlyQuery(args.Query, graphqlFederatedRootFields); err != nil {
+		return errorResponse(id, ErrCodeInvalidParams, "query rejected: "+err.Error())
+	}
+	log := logger.WithPrefix(env.Logger(), "mcp:handleGraphQLRequestScoped")
+	log.Debug("graphql_request scoped accepted", "query", args.Query)
+
+	result, err := env.GraphQLRequestScoped(ctx, args.Query, args.Variables, allowed)
+	if err != nil {
+		return errorResponse(id, ErrCodeInternal, "GraphQL request failed: "+err.Error())
+	}
+
+	var parsed any
+	if jsonErr := json.Unmarshal(result, &parsed); jsonErr != nil {
+		return successResponse(id, textToolResult(string(result)))
+	}
+	return successResponse(id, structuredToolResult("structured result", parsed))
 }
 
 func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
@@ -104,7 +145,7 @@ func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.Raw
 		return errorResponse(id, ErrCodeInvalidParams, "query is required")
 	}
 
-	if err := validateReadOnlyQuery(args.Query); err != nil {
+	if err := validateReadOnlyQuery(args.Query, graphqlReadOnlyRootFields); err != nil {
 		return errorResponse(id, ErrCodeInvalidParams, "query rejected: "+err.Error())
 	}
 	log := logger.WithPrefix(env.Logger(), "mcp:handleGraphQLRequest")

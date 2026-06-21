@@ -57,6 +57,9 @@ type Env interface {
 	ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)
 	// Admin GraphQL tools
 	GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error)
+	// Federated GraphQL tools
+	GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error)
+	FederatedGraphQLEnabled() bool
 }
 
 // unmarshalArgs unmarshals JSON arguments into the target type.
@@ -160,15 +163,16 @@ func handleInitialize(ctx context.Context, env Env, id any, methodOverride strin
 }
 
 var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable set of built-in tool names
-	"search":                true,
-	"similar":               true,
-	"note_html":             true,
-	"federated_search":      true,
-	"federated_similar":     true,
-	"federated_note_html":   true,
-	"graphql_introspection": true,
-	"graphql_request":       true,
-	MCPMethodInitialize:     true,
+	"search":                    true,
+	"similar":                   true,
+	"note_html":                 true,
+	"federated_search":          true,
+	"federated_similar":         true,
+	"federated_note_html":       true,
+	"graphql_introspection":     true,
+	"graphql_request":           true,
+	"federated_graphql_request": true,
+	MCPMethodInitialize:         true,
 }
 
 func handleToolsList(ctx context.Context, env Env, id any) Response {
@@ -285,6 +289,22 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		})
 	}
 
+	if env.FederatedGraphQLEnabled() {
+		tools = append(tools, Tool{
+			Name:        "federated_graphql_request",
+			Description: "Forwards a read-only GraphQL query to a federation peer KB. Scoped to the caller's allowed subgraphs.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":     {Type: "string", Description: "Target knowledge base id"},
+					"query":     {Type: "string", Description: "Read-only GraphQL query string"},
+					"variables": {Type: "object", Description: "Optional variables map"},
+				},
+				Required: []string{"kb_id", "query"},
+			},
+		})
+	}
+
 	if mcpAdminToolsEnabled(ctx) {
 		tools = append(tools, Tool{
 			Name:        "graphql_introspection",
@@ -338,7 +358,15 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
 		}
 		return handleGraphQLIntrospection(ctx, env, req.ID, params.Arguments)
+	case "federated_graphql_request":
+		return handleFederatedGraphQLRequest(ctx, env, req.ID, params.Arguments)
 	case "graphql_request":
+		if fedAuth, ok := federationAuthFromContext(ctx); ok {
+			if !env.FederatedGraphQLEnabled() {
+				return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
+			}
+			return handleGraphQLRequestScoped(ctx, env, req.ID, params.Arguments, fedAuth.AllowedSubgraphs)
+		}
 		if !mcpAdminToolsEnabled(ctx) {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
 		}

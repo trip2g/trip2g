@@ -138,6 +138,31 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 	})
 }
 
+func handleFederatedGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	if !env.FederatedGraphQLEnabled() {
+		return errorResponse(id, ErrCodeMethodNotFound, "Method not found: federated_graphql_request")
+	}
+
+	args, errResp := unmarshalArgs[FederatedGraphQLRequestArguments](argsRaw, id, "federated_graphql_request")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.KBID == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
+	}
+	if args.Query == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "query is required")
+	}
+
+	if err := validateReadOnlyQuery(args.Query, graphqlFederatedRootFields); err != nil {
+		return errorResponse(id, ErrCodeInvalidParams, "query rejected: "+err.Error())
+	}
+
+	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
+		return client.GraphQLRequest(ctx, model.FederationGraphQLParams{KBID: rest, Query: args.Query, Variables: args.Variables})
+	})
+}
+
 func federationNotConfiguredResponse(id any, kbID string) Response {
 	message := "Federation is not configured for this hub. No KB-notes were found. To enable federation, create a note with mcp_federation_kb_url frontmatter pointing to another MCP endpoint."
 	status := "federation_not_configured"

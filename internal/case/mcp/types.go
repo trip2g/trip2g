@@ -196,6 +196,12 @@ type GraphQLRequestArguments struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
+type FederatedGraphQLRequestArguments struct {
+	KBID      string         `json:"kb_id"`
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables,omitempty"`
+}
+
 // JSON-RPC error codes.
 const (
 	ErrCodeParseError     = -32700

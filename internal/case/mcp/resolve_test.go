@@ -141,6 +141,7 @@ soul_profile:
 					PathMap: map[string]*appmodel.NoteView{},
 				}
 			},
+			FederatedGraphQLEnabledFunc: func() bool { return false },
 		}
 
 		req := mcp.Request{
@@ -187,6 +188,7 @@ soul_profile:
 			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 				return true, nil
 			},
+			FederatedGraphQLEnabledFunc: func() bool { return false },
 		}
 
 		req := mcp.Request{

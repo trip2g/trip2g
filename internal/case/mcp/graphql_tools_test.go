@@ -24,9 +24,9 @@ type gqlRequestEnv struct {
 func (e *gqlRequestEnv) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
 	return e.graphqlFunc(ctx, query, variables)
 }
-func (e *gqlRequestEnv) Features() features.Features                      { panic("unexpected") }
-func (e *gqlRequestEnv) LatestNoteViews() *model.NoteViews                { panic("unexpected") }
-func (e *gqlRequestEnv) LatestNoteChunks() []model.NoteChunk              { panic("unexpected") }
+func (e *gqlRequestEnv) Features() features.Features         { panic("unexpected") }
+func (e *gqlRequestEnv) LatestNoteViews() *model.NoteViews   { panic("unexpected") }
+func (e *gqlRequestEnv) LatestNoteChunks() []model.NoteChunk { panic("unexpected") }
 func (e *gqlRequestEnv) CanReadNote(_ context.Context, _ *model.NoteView) (bool, error) {
 	panic("unexpected")
 }
@@ -54,6 +54,10 @@ func (e *gqlRequestEnv) FederationMaxDepth() int              { panic("unexpecte
 func (e *gqlRequestEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, error) {
 	panic("unexpected")
 }
+func (e *gqlRequestEnv) GraphQLRequestScoped(_ context.Context, _ string, _ map[string]any, _ []string) ([]byte, error) {
+	panic("unexpected")
+}
+func (e *gqlRequestEnv) FederatedGraphQLEnabled() bool { panic("unexpected") }
 
 func TestFilterIntrospection_MatchAndExpand(t *testing.T) {
 	raw := []byte(`{
@@ -180,47 +184,47 @@ func TestHandleGraphQLRequest_StructuredContent(t *testing.T) {
 // --- validateReadOnlyQuery tests ---
 
 func TestValidateReadOnlyQuery_RejectsMutation(t *testing.T) {
-	err := validateReadOnlyQuery(`mutation { createNote { id } }`)
+	err := validateReadOnlyQuery(`mutation { createNote { id } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "mutation")
 }
 
 func TestValidateReadOnlyQuery_RejectsDisallowedRootField(t *testing.T) {
-	err := validateReadOnlyQuery(`{ admin { users { id } } }`)
+	err := validateReadOnlyQuery(`{ admin { users { id } } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "admin")
 }
 
 func TestValidateReadOnlyQuery_RejectsMultiOpWithMutation(t *testing.T) {
-	err := validateReadOnlyQuery(`query A { note(path: "x") { title } } mutation B { createNote { id } }`)
+	err := validateReadOnlyQuery(`query A { note(path: "x") { title } } mutation B { createNote { id } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "mutation")
 }
 
 func TestValidateReadOnlyQuery_AllowsNote(t *testing.T) {
-	err := validateReadOnlyQuery(`{ note(path: "x") { title } }`)
+	err := validateReadOnlyQuery(`{ note(path: "x") { title } }`, graphqlReadOnlyRootFields)
 	require.NoError(t, err)
 }
 
 func TestValidateReadOnlyQuery_AllowsSearch(t *testing.T) {
-	err := validateReadOnlyQuery(`{ search(query: "y") { title notePath } }`)
+	err := validateReadOnlyQuery(`{ search(query: "y") { title notePath } }`, graphqlReadOnlyRootFields)
 	require.NoError(t, err)
 }
 
 func TestValidateReadOnlyQuery_RejectsSubscription(t *testing.T) {
-	err := validateReadOnlyQuery(`subscription { noteUpdated { id } }`)
+	err := validateReadOnlyQuery(`subscription { noteUpdated { id } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "subscription")
 }
 
 func TestValidateReadOnlyQuery_RejectsPublicUrl(t *testing.T) {
-	err := validateReadOnlyQuery(`{ publicUrl }`)
+	err := validateReadOnlyQuery(`{ publicUrl }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "publicUrl")
 }
 
 func TestValidateReadOnlyQuery_ParseError(t *testing.T) {
-	err := validateReadOnlyQuery(`{{{not valid graphql`)
+	err := validateReadOnlyQuery(`{{{not valid graphql`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse error")
 }
@@ -231,28 +235,58 @@ func TestValidateReadOnlyQuery_ParseError(t *testing.T) {
 
 func TestValidateReadOnlyQuery_RejectsRootInlineFragment(t *testing.T) {
 	// Inline fragment at root level must be rejected — the selector is not a *ast.Field.
-	err := validateReadOnlyQuery(`query { ... on Query { admin { id } } }`)
+	err := validateReadOnlyQuery(`query { ... on Query { admin { id } } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only field selections are allowed at query root")
 }
 
 func TestValidateReadOnlyQuery_RejectsRootFragmentSpread(t *testing.T) {
 	// Fragment spread at root level must be rejected — same reason.
-	err := validateReadOnlyQuery(`query Q { ...F } fragment F on Query { admin { id } }`)
+	err := validateReadOnlyQuery(`query Q { ...F } fragment F on Query { admin { id } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only field selections are allowed at query root")
 }
 
 func TestValidateReadOnlyQuery_RejectsAliasedBannedField(t *testing.T) {
 	// Field.Name (not Field.Alias) is checked; an alias must not bypass the allowlist.
-	err := validateReadOnlyQuery(`query { n: admin { id } }`)
+	err := validateReadOnlyQuery(`query { n: admin { id } }`, graphqlReadOnlyRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "admin")
 }
 
 func TestValidateReadOnlyQuery_AllowsAliasedAllowedField(t *testing.T) {
 	// An alias on an allowed field must be accepted.
-	err := validateReadOnlyQuery(`query { n: note(path:"x") { title } }`)
+	err := validateReadOnlyQuery(`query { n: note(path:"x") { title } }`, graphqlReadOnlyRootFields)
+	require.NoError(t, err)
+}
+
+// --- Federated allowlist tests ---
+// notePaths and resolveWikilinks must be blocked on the federated path but
+// allowed on the admin path, to prevent path-structure leakage to peers.
+
+func TestValidateReadOnlyQuery_Federated_RejectsNotePaths(t *testing.T) {
+	// notePaths is NOT in the federated allowlist.
+	err := validateReadOnlyQuery(`{ notePaths }`, graphqlFederatedRootFields)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "notePaths")
+}
+
+func TestValidateReadOnlyQuery_Federated_RejectsResolveWikilinks(t *testing.T) {
+	// resolveWikilinks is NOT in the federated allowlist.
+	err := validateReadOnlyQuery(`{ resolveWikilinks(paths: ["x"]) { path href } }`, graphqlFederatedRootFields)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "resolveWikilinks")
+}
+
+func TestValidateReadOnlyQuery_Admin_AllowsNotePaths(t *testing.T) {
+	// notePaths IS in the admin allowlist.
+	err := validateReadOnlyQuery(`{ notePaths }`, graphqlReadOnlyRootFields)
+	require.NoError(t, err)
+}
+
+func TestValidateReadOnlyQuery_Admin_AllowsResolveWikilinks(t *testing.T) {
+	// resolveWikilinks IS in the admin allowlist.
+	err := validateReadOnlyQuery(`{ resolveWikilinks(paths: ["x"]) { path href } }`, graphqlReadOnlyRootFields)
 	require.NoError(t, err)
 }
 

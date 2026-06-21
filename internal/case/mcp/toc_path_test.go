@@ -13,10 +13,10 @@ import (
 // fuzzy section match reliable.
 func TestNormalizeForMatchBothPipelines(t *testing.T) {
 	tests := []struct {
-		name       string
-		bleveInput string // bleve highlight fragment (may contain <mark>, HTML entities)
+		name          string
+		bleveInput    string // bleve highlight fragment (may contain <mark>, HTML entities)
 		goldmarkInput string // goldmark-rendered HTML (may contain <strong>, <em>, entities)
-		wantEqual  bool
+		wantEqual     bool
 	}{
 		{
 			name:          "mark tags vs strong tags produce same plain text",
@@ -43,7 +43,7 @@ func TestNormalizeForMatchBothPipelines(t *testing.T) {
 			wantEqual:     true,
 		},
 		{
-			name:          "NFC normalization: composed vs decomposed e+combining-acute",
+			name: "NFC normalization: composed vs decomposed e+combining-acute",
 			// U+00E9 (precomposed) vs U+0065 U+0301 (decomposed)
 			bleveInput:    "café <mark>review</mark>",
 			goldmarkInput: "café review",
