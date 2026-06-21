@@ -14,6 +14,8 @@ type Federation interface {
 	FederatedSearch(ctx context.Context, params FederationSearchParams) (FederationResult, error)
 	FederatedSimilar(ctx context.Context, params FederationSimilarParams) (FederationResult, error)
 	FederatedNoteHTML(ctx context.Context, params FederationNoteHTMLParams) (FederationResult, error)
+	Expand(ctx context.Context, params FederationExpandParams) (FederationResult, error)
+	FederatedExpand(ctx context.Context, params FederationExpandParams) (FederationResult, error)
 	GraphQLRequest(ctx context.Context, params FederationGraphQLParams) (FederationResult, error)
 }
 
@@ -59,6 +61,15 @@ type FederationNoteHTMLParams struct {
 	Href         string `json:"href,omitempty"`
 	MatchID      string `json:"match_id,omitempty"`
 	ContextWords int    `json:"context_words,omitempty"`
+}
+
+type FederationExpandParams struct {
+	KBID    string   `json:"kb_id,omitempty"`
+	PID     int64    `json:"pid,omitempty"`
+	NoteID  string   `json:"note_id,omitempty"`
+	Path    string   `json:"path,omitempty"`
+	Href    string   `json:"href,omitempty"`
+	TocPath []string `json:"toc_path,omitempty"`
 }
 
 type FederationResult struct {

@@ -99,6 +99,15 @@ type FederatedNoteHTMLArguments struct {
 	MatchID string `json:"match_id,omitempty"`
 }
 
+type FederatedExpandArguments struct {
+	KBID    string   `json:"kb_id"`
+	PID     int64    `json:"pid,omitempty"`
+	NoteID  string   `json:"note_id,omitempty"`
+	Path    string   `json:"path,omitempty"`
+	Href    string   `json:"href,omitempty"`
+	TocPath []string `json:"toc_path,omitempty"`
+}
+
 type FederationRef struct {
 	KBID             string `json:"kb_id"`
 	KBURL            string `json:"kb_url"`

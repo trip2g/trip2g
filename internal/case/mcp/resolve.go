@@ -170,6 +170,7 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	"federated_search":          true,
 	"federated_similar":         true,
 	"federated_note_html":       true,
+	"federated_expand":          true,
 	"graphql_introspection":     true,
 	"graphql_request":           true,
 	"federated_graphql_request": true,
@@ -286,6 +287,26 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 				Required: []string{"kb_id"},
 			},
 		},
+		{
+			Name:        "federated_expand",
+			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":   {Type: "string", Description: "Target knowledge base id"},
+					"path":    {Type: "string", Description: "Remote note path"},
+					"href":    {Type: "string", Description: "Remote note href"},
+					"pid":     {Type: "number", Description: "Remote stable note id"},
+					"note_id": {Type: "string", Description: "Remote stable note id (uint64 string)"},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to the node to expand. Omit or [] for the top level.",
+						Items:       &Property{Type: "string"},
+					},
+				},
+				Required: []string{"kb_id"},
+			},
+		},
 	}
 
 	// Append dynamic tools from notes with mcp_method (excluding reserved names)
@@ -374,6 +395,8 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleFederatedSimilar(ctx, env, req.ID, params.Arguments)
 	case "federated_note_html":
 		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
+	case "federated_expand":
+		return handleFederatedExpand(ctx, env, req.ID, params.Arguments)
 	case "graphql_introspection":
 		if !mcpAdminToolsEnabled(ctx) {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")

@@ -155,7 +155,7 @@ soul_profile:
 		require.Nil(t, resp.Error)
 
 		result := resp.Result.(mcp.ListToolsResult)
-		require.Len(t, result.Tools, 7)
+		require.Len(t, result.Tools, 8)
 
 		var toolNames []string
 		for _, tool := range result.Tools {
@@ -169,6 +169,7 @@ soul_profile:
 			"federated_search",
 			"federated_similar",
 			"federated_note_html",
+			"federated_expand",
 		}, toolNames)
 	})
 
@@ -206,11 +207,11 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Len(t, toolNames, 8)
+		require.Len(t, toolNames, 9)
 		require.Contains(t, toolNames, "code-review")
 
 		// Dynamic tool carries description and empty schema
-		dynTool := result.Tools[7]
+		dynTool := result.Tools[8]
 		require.Equal(t, "code-review", dynTool.Name)
 		require.Equal(t, "Detailed code review", dynTool.Description)
 	})
