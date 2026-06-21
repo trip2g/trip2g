@@ -1,6 +1,59 @@
-# Token-economy benchmark — toc/section retrieval cost (TASK)
+# Token-economy benchmark — toc/section retrieval cost
 
-**Status:** TODO / spec. Not yet implemented.
+**Status:** Shipped to `main` (PR #21, merge `3ad4c21`). See the manifest below; the
+original TASK spec and the later findings follow.
+
+---
+
+## Status & manifest — everything in one place (2026-06-21)
+
+**Shipped to `main`** via PR #21. Prod (trip2g.com) needs a redeploy from
+`~/projects/trip2g` (pull `main`) to serve it. e2e is **local-only**
+(`./scripts/test-e2e.sh`; CI has it `if: false`). The user-facing docs below publish via
+`obsidian-sync`.
+
+### What shipped
+- **`expand` / `federated_expand`** — progressive-disclosure TOC navigation. Returns the
+  direct children of a TOC node (`title / level / path / has_children`); empty `toc_path`
+  = top level. Walk the tree level by level without loading content or searching all chunks.
+- **Slim `search`** — dropped the per-result flat `toc[]`; kept the precise per-match
+  `toc_path`. Structure now comes from `expand`.
+- **stdio MCP adapter** — one zero-dependency composite tool over `search → expand →
+  note_html`, so an agent gets just the relevant section in one call.
+
+### Measured results (live trip2g.com, pre-deploy)
+- Reading the relevant section costs **~11–14× fewer tokens** than the whole note (median,
+  real queries). Scales with note size; short notes save little (~3×).
+- Token saving is the **easy** half. **Selecting the right section is the hard half** —
+  deterministic selection missed 8/9; a fixed grep window lost the answer 3/4. That is why
+  `expand` (navigation) plus an agent/LLM picker matter.
+
+### Where everything lives
+| Piece | Path |
+|---|---|
+| `expand` / `federated_expand` (server) | `internal/case/mcp/{resolve,toc_path,types,federation_handlers}.go`, `internal/federation/client.go`, `internal/model/federation.go` |
+| Live token-economy verifier (zero-dep) | `scripts/token_economy_check.py` |
+| Live `expand`/navigation test (zero-dep) | `scripts/expand_check.py` |
+| stdio MCP adapter (zero-dep) | `docs/en/user/trip2g_mcp_stdio_adapter.py` |
+| Adapter setup note (EN/RU) | `docs/{en,ru}/user/ai-agent-mcp-adapter.md` |
+| Token-economy chart note (EN/RU) | `docs/en/user/token-economy-bench.md`, `docs/ru/user/token-economy-bench.md` + `*.datachart.csv` |
+| This design + findings | `docs/dev/token_economy_bench.md` (you are here) |
+
+### Reproduce / use
+- Verify token economy on any instance: `python3 scripts/token_economy_check.py`
+- Test `expand` navigation (after deploy): `python3 scripts/expand_check.py`
+- Give an agent the one-call tool: register `trip2g_mcp_stdio_adapter.py` as an MCP stdio
+  server (config in the adapter note).
+
+### Remaining
+1. Redeploy prod from `~/projects/trip2g` (pull `main`) → serves `expand` + slim search.
+2. Run `./scripts/test-e2e.sh` locally (CI e2e is disabled).
+3. `obsidian-sync` the docs to publish the chart + adapter note.
+
+---
+
+> The sections below are the original TASK spec (kept for history) and the
+> implementation findings recorded along the way.
 
 ## Why
 
