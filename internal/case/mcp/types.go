@@ -144,7 +144,6 @@ type SearchResultItem struct {
 	URL        string         `json:"url"`
 	Kind       string         `json:"kind"`
 	Score      float64        `json:"score"`
-	TOC        []TOCItem      `json:"toc,omitempty"`
 	Matches    []SearchMatch  `json:"matches,omitempty"`
 	Federation *FederationRef `json:"federation,omitempty"`
 }

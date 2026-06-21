@@ -180,7 +180,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus TOC path arrays for each result that describe the note's precise structure. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) inspect the result's toc items for the note's structure; 3) call note_html(toc_path=[...]) to read the exact section, or note_html(pid=..., match_id=...) for a focused chunk window.",
+			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(toc_path=[...]) to read the matched section, or expand(pid=..., toc_path=[...]) to navigate the note's structure level by level; 3) note_html(pid=..., match_id=...) for a focused chunk window.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -205,7 +205,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (path array from a search result toc item) to read an exact section identified in the drill-down: search -> breadcrumb (approximate) -> toc paths (structure) -> note_html(toc_path=[...]) (precise).",
+			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -243,7 +243,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		},
 		{
 			Name:        "federated_search",
-			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and TOC path arrays per result, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
+			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -676,11 +676,9 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 		URL:      noteURL(note),
 		Kind:     noteKind(note),
 		Score:    score,
-		TOC:      buildNoteTOC(note.Headings),
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
 		item.Kind = "federation_kb"
-		item.TOC = nil // federation pointers have no local TOC
 		item.Federation = &FederationRef{
 			KBID:             kb.ID,
 			KBURL:            kb.URL,
