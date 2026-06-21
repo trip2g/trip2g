@@ -61,12 +61,13 @@ type Config struct {
 	AdminJSURL string
 	LogLevel   string
 
-	ShutdownGracePeriod       time.Duration
-	ShutdownTimeout           time.Duration
-	GlobalQueuePollInterval   time.Duration
-	InternalListenAddr        string
-	MCPFederationMaxDepth     int
-	MCPFederationAllowPrivate bool
+	ShutdownGracePeriod        time.Duration
+	ShutdownTimeout            time.Duration
+	GlobalQueuePollInterval    time.Duration
+	InternalListenAddr         string
+	MCPFederationMaxDepth      int
+	MCPFederationAllowPrivate  bool
+	MCPFederatedGraphQLEnabled bool
 
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
@@ -423,6 +424,8 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false, "Disable SSRF protection for federation calls (allow private/internal addresses).")
+	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
+		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 

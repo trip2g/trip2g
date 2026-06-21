@@ -3054,3 +3054,61 @@ func (a *app) GraphQLRequest(ctx context.Context, query string, variables map[st
 	resp := responseHandler(respCtx)
 	return json.Marshal(resp)
 }
+
+// CurrentFederatedScope returns the inbound federation AllowedSubgraphs and
+// ok=true when the request carries a federated-scoped identity.
+func (a *app) CurrentFederatedScope(ctx context.Context) ([]string, bool) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, false
+	}
+	return req.FederatedScope()
+}
+
+// FederatedGraphQLEnabled reports whether the federated_graphql_request MCP tool is enabled.
+func (a *app) FederatedGraphQLEnabled() bool { return a.config.MCPFederatedGraphQLEnabled }
+
+// GraphQLRequestScoped executes a GraphQL query with a federated-scoped token (never admin).
+func (a *app) GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error) {
+	ctx = appreq.WithFederatedToken(ctx, allowedSubgraphs)
+	// gqlgen requires StartOperationTrace before CreateOperationContext;
+	// normally handler.Server.ServeHTTP does this — we bypass HTTP transport,
+	// so set it up manually.
+	ctx = graphql.StartOperationTrace(ctx)
+	now := graphql.Now()
+
+	// gqlgen's Int64 / int scalar UnmarshalGQL rejects float64 with
+	// "float64 is not an int64". gqlgen's transport.POST uses json.Decoder
+	// with UseNumber so values arrive as json.Number; reproduce that here.
+	convertedVars := variables
+	if len(variables) > 0 {
+		rawVars, marshalErr := json.Marshal(variables)
+		if marshalErr != nil {
+			return nil, fmt.Errorf("marshal variables: %w", marshalErr)
+		}
+		dec := json.NewDecoder(bytes.NewReader(rawVars))
+		dec.UseNumber()
+		convertedVars = map[string]any{}
+		if decodeErr := dec.Decode(&convertedVars); decodeErr != nil {
+			return nil, fmt.Errorf("decode variables: %w", decodeErr)
+		}
+	}
+
+	params := &graphql.RawParams{
+		Query:     query,
+		Variables: convertedVars,
+		ReadTime: graphql.TraceTiming{
+			Start: now,
+			End:   now,
+		},
+	}
+
+	opCtx, errList := a.gqlExecutor.CreateOperationContext(ctx, params)
+	if errList != nil {
+		return nil, fmt.Errorf("graphql operation context: %w", errList)
+	}
+
+	responseHandler, respCtx := a.gqlExecutor.DispatchOperation(ctx, opCtx)
+	resp := responseHandler(respCtx)
+	return json.Marshal(resp)
+}
