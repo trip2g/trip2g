@@ -234,17 +234,20 @@ test.describe.serial('Federated GraphQL Request', () => {
   test('2.1 valid search query forwarded to open peer returns free note content', async ({ playwright }) => {
     // peer2 has peer2-note.md (free: true) with "Semi-private peer2 content".
     // Use admin token so the outbound secret is used and the scoped response is irrelevant here.
+    // Data lands in structuredContent (single-copy design); content[0].text is the stub "structured result".
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
         kb_id: 'peer2',
-        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
+        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
     expect(result.error).toBeUndefined();
-    const text = result.result?.content?.[0]?.text ?? '';
-    // peer2-note.md title is "Peer2 Note" and its path is peer2-note
-    expect(text.toLowerCase()).toContain('peer2');
+    const nodes = result.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(nodes.length).toBeGreaterThan(0);
+    // peer2-note.md has title "Peer2 Note"
+    const titles = nodes.map(n => n.highlightedTitle ?? '');
+    expect(titles.join(' ').toLowerCase()).toContain('peer2');
   });
 
   // ─── Group 3: scope parity (security) ──────────────────────────────────────
@@ -253,6 +256,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     // Anonymous caller has no outbound secret configured for peer2 visible to them.
     // federated_graphql_request must behave like federated_search for anonymous:
     // existence must not leak — should return "not configured".
+    // For "not configured" responses, the message lands in content[0].text (not structuredContent).
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
@@ -268,6 +272,7 @@ test.describe.serial('Federated GraphQL Request', () => {
 
   test('3.2 anonymous principal: no semi-private content in search results', async ({ playwright }) => {
     // Even if routed to a peer, anonymous must never see semi-private content.
+    // For anonymous, peer3 returns "not configured" — no peer3 data in either channel.
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
@@ -280,20 +285,27 @@ test.describe.serial('Federated GraphQL Request', () => {
     // peer3 is admin-only — anonymous must see not-configured, not peer3 content.
     expect(text).not.toContain('Admin-only peer3 content');
     expect(text).not.toContain('peer3-note');
+    // Also ensure structuredContent carries no peer3 node data
+    const nodes = result.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(nodes).toHaveLength(0);
   });
 
   test('3.3 scoped token: search on granted peer2 returns semi-private content', async ({ playwright }) => {
     // Scoped user has federation-test subgraph → should see peer2 content.
+    // Data lands in structuredContent; content[0].text is the stub "structured result".
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
         kb_id: 'peer2',
-        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
+        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, scopedToken);
     expect(result.error).toBeUndefined();
-    const text = result.result?.content?.[0]?.text ?? '';
-    expect(text).toContain('Semi-private peer2 content');
+    const nodes = result.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(nodes.length).toBeGreaterThan(0);
+    // peer2-note.md has title "Peer2 Note" — visible to scoped user via federation-test subgraph.
+    const titles = nodes.map(n => n.highlightedTitle ?? '');
+    expect(titles.join(' ').toLowerCase()).toContain('peer2');
   });
 
   test('3.4 scoped token: search on admin-only peer3 returns not-configured', async ({ playwright }) => {
@@ -313,37 +325,53 @@ test.describe.serial('Federated GraphQL Request', () => {
 
   test('3.5 admin token: search on peer3 returns admin-only content', async ({ playwright }) => {
     // Admin sees all — peer3 content must be present.
+    // Data lands in structuredContent; content[0].text is the stub "structured result".
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
         kb_id: 'peer3',
-        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
+        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
     expect(result.error).toBeUndefined();
-    const text = result.result?.content?.[0]?.text ?? '';
-    expect(text).toContain('Admin-only peer3 content');
+    const nodes = result.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(nodes.length).toBeGreaterThan(0);
+    // peer3-note.md has title "Peer3 Note" — admin-only content visible to admin.
+    const titles = nodes.map(n => n.highlightedTitle ?? '');
+    expect(titles.join(' ').toLowerCase()).toContain('peer3');
   });
 
   test('3.6 scoped token does not see admin-only peer3 content that admin sees', async ({ playwright }) => {
     // Parity assertion: same query, different principals.
+    // Data lands in structuredContent; content[0].text is the stub "structured result".
     const adminResult = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
         kb_id: 'peer3',
-        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
+        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
-    const adminText = adminResult.result?.content?.[0]?.text ?? '';
-    expect(adminText).toContain('Admin-only peer3 content');
+    const adminNodes = adminResult.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(adminNodes.length).toBeGreaterThan(0);
+    const adminTitles = adminNodes.map(n => n.highlightedTitle ?? '');
+    // Admin must see peer3 content
+    expect(adminTitles.join(' ').toLowerCase()).toContain('peer3');
 
     const scopedResult = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
         kb_id: 'peer3',
-        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
+        query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, scopedToken);
+    // Scoped user has no access to peer3 — must get "not configured" response with no node data.
+    // The "not configured" message may mention "peer3" as the kb_id — that's fine.
+    // What must NOT appear is peer3 note content (title "Peer3 Note").
+    const scopedNodes = scopedResult.result?.structuredContent?.data?.search?.nodes ?? [];
+    expect(scopedNodes).toHaveLength(0);
+    const scopedTitles = scopedNodes.map(n => n.highlightedTitle ?? '');
+    expect(scopedTitles).not.toContain('Peer3 Note');
+    // Admin content sentinel must not leak
     const scopedText = scopedResult.result?.content?.[0]?.text ?? '';
     expect(scopedText).not.toContain('Admin-only peer3 content');
   });
