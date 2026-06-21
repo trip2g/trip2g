@@ -17,7 +17,11 @@ import (
 type Env interface {
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	CurrentFederatedScope(ctx context.Context) (allowed []string, ok bool)
 }
+
+// noFedScope is a non-federated CurrentFederatedScopeFunc for existing tests.
+func noFedScope(_ context.Context) ([]string, bool) { return nil, false }
 
 func TestResolve_AdminAccess(t *testing.T) {
 	tests := []struct {
@@ -53,6 +57,7 @@ func TestResolve_AdminAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{
 						ID:   1,
@@ -107,6 +112,7 @@ func TestResolve_GuestAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return nil, nil // guest user
 				},
@@ -146,6 +152,7 @@ func TestResolve_AuthenticatedUserWithoutSubscriptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{
 						ID:   123,
@@ -233,6 +240,7 @@ func TestResolve_AuthenticatedUserWithSubscriptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{
 						ID:   123,
@@ -326,6 +334,7 @@ func TestResolve_RequireSigninSubgraph(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return tt.userToken, nil
 				},
@@ -352,6 +361,7 @@ func TestResolve_ErrorHandling(t *testing.T) {
 			name: "error getting current user token",
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					CurrentFederatedScopeFunc: noFedScope,
 					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return nil, errors.New("database error")
 					},
@@ -363,6 +373,7 @@ func TestResolve_ErrorHandling(t *testing.T) {
 			name: "error listing user subgraphs",
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					CurrentFederatedScopeFunc: noFedScope,
 					CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return &usertoken.Data{
 							ID:   123,
@@ -451,6 +462,7 @@ func TestResolve_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return tt.userToken, nil
 				},
@@ -469,11 +481,13 @@ func TestResolve_EdgeCases(t *testing.T) {
 
 func TestResolve_SystemAndHTMLFiles(t *testing.T) {
 	guestEnv := &EnvMock{
+		CurrentFederatedScopeFunc: noFedScope,
 		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 			return nil, nil
 		},
 	}
 	adminEnv := &EnvMock{
+		CurrentFederatedScopeFunc: noFedScope,
 		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{ID: 1, Role: "admin"}, nil
 		},
@@ -504,6 +518,107 @@ func TestResolve_SystemAndHTMLFiles(t *testing.T) {
 			got, err := canreadnote.Resolve(context.Background(), c.env, note)
 			require.NoError(t, err)
 			require.Equal(t, c.wantAccess, got)
+		})
+	}
+}
+
+func TestResolve_FederatedIdentity(t *testing.T) {
+	tests := []struct {
+		name        string
+		note        *model.NoteView
+		allowed     []string
+		wantAccess  bool
+		description string
+	}{
+		{
+			name: "federated allowed=alpha, note in alpha subgraph",
+			note: &model.NoteView{
+				Free:          false,
+				SubgraphNames: []string{"alpha"},
+			},
+			allowed:     []string{"alpha"},
+			wantAccess:  true,
+			description: "federated identity with matching subgraph can read note",
+		},
+		{
+			name: "federated allowed=alpha, note in beta subgraph",
+			note: &model.NoteView{
+				Free:          false,
+				SubgraphNames: []string{"beta"},
+			},
+			allowed:     []string{"alpha"},
+			wantAccess:  false,
+			description: "federated identity must not read note from a different subgraph",
+		},
+		{
+			name: "federated allowed=[], non-Free note",
+			note: &model.NoteView{
+				Free:          false,
+				SubgraphNames: []string{"alpha"},
+			},
+			allowed:     []string{},
+			wantAccess:  false,
+			description: "empty allowed list cannot read non-Free notes",
+		},
+		{
+			name: "federated allowed=[], Free note",
+			note: &model.NoteView{
+				Free:          true,
+				SubgraphNames: []string{},
+			},
+			allowed:     []string{},
+			wantAccess:  true,
+			description: "empty allowed list can still read Free notes",
+		},
+		{
+			name: "federated allowed=alpha, .html template",
+			note: &model.NoteView{
+				Path:          "page.html",
+				Free:          true,
+				SubgraphNames: []string{"alpha"},
+			},
+			allowed:     []string{"alpha"},
+			wantAccess:  false,
+			description: "federated identity must not read .html templates",
+		},
+		{
+			name: "federated allowed=alpha, requireSignin subgraph",
+			note: &model.NoteView{
+				Free:          false,
+				SubgraphNames: []string{"members"},
+				Subgraphs: map[string]*model.NoteSubgraph{
+					"members": {Name: "members", RequireSignin: true},
+				},
+			},
+			allowed:     []string{"alpha"},
+			wantAccess:  true,
+			description: "federated identity with non-empty allowed can read requireSignin subgraph",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			allowed := tt.allowed
+			env := &EnvMock{
+				CurrentFederatedScopeFunc: func(_ context.Context) ([]string, bool) {
+					return allowed, true
+				},
+				// CurrentUserToken and ListActiveUserSubgraphs must NOT be called
+				// for a federated identity — set them to panic to catch regressions.
+				CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) {
+					t.Fatal("CurrentUserToken must not be called for federated identity")
+					return nil, nil
+				},
+				ListActiveUserSubgraphsFunc: func(_ context.Context, _ int64) ([]string, error) {
+					t.Fatal("ListActiveUserSubgraphs must not be called for federated identity")
+					return nil, nil
+				},
+			}
+
+			got, err := canreadnote.Resolve(context.Background(), env, tt.note)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got, tt.description)
 		})
 	}
 }

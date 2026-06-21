@@ -11,11 +11,22 @@ import (
 type Env interface {
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	// CurrentFederatedScope returns the inbound federation AllowedSubgraphs and
+	// ok=true when the request is a federated-scoped identity. No DB lookup.
+	CurrentFederatedScope(ctx context.Context) (allowed []string, ok bool)
 }
 
 // Resolve determines if the current user has access to read the given note.
 // Yes, it's not optimized for performance, but it's simple and works well enough for now.
 func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
+	// Federated identity: scope strictly by AllowedSubgraphs, no admin, no DB.
+	if allowed, ok := env.CurrentFederatedScope(ctx); ok {
+		if strings.HasSuffix(note.Path, ".html") {
+			return false, nil
+		}
+		return ResolveWithSubgraphs(ctx, env, note, allowed)
+	}
+
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get current user token: %w", err)
