@@ -326,16 +326,34 @@ func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) 
 
 func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error) {
 	safeCtx, cancel := a.ctx(ctx)
-	defer cancel()
 
 	objectID = a.config.Prefix + objectID
 
 	object, err := a.minioClient.GetObject(safeCtx, a.config.Bucket, objectID, minio.GetObjectOptions{})
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("failed to get private object: %w", err)
 	}
 
-	return object, nil
+	// minio's GetObject is a lazy reader: it streams on Read, so safeCtx must
+	// stay alive until the caller finishes reading. These objects (e.g. the git
+	// repo tar.gz) can be large, so we stream rather than buffer — tie cancel()
+	// to Close() instead of canceling on return (which would break the read with
+	// "context canceled", as it did for callers like gitapi.downloadRepo).
+	return &cancelOnCloseReadCloser{ReadCloser: object, cancel: cancel}, nil
+}
+
+// cancelOnCloseReadCloser wraps a reader so its context is canceled when the
+// caller closes it, not when the producing function returns.
+type cancelOnCloseReadCloser struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (c *cancelOnCloseReadCloser) Close() error {
+	err := c.ReadCloser.Close()
+	c.cancel()
+	return err
 }
 
 // ListOptions specifies filtering options for listing private objects.
