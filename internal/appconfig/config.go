@@ -70,9 +70,6 @@ type Config struct {
 	MCPFederationAllowPrivate  bool
 	MCPFederatedGraphQLEnabled bool
 
-	CronExecuteWebhooksSchedule string
-	CronTelegramPublishSchedule string
-
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
@@ -437,8 +434,6 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
 		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
-	flag.StringVar(&c.CronExecuteWebhooksSchedule, "cron-execute-webhooks-schedule", "0 * * * * *", "Cron schedule (6-field, with seconds) for the execute_cron_webhooks job. Default every minute; the public cloud sets it hourly.")
-	flag.StringVar(&c.CronTelegramPublishSchedule, "cron-telegram-publish-schedule", "0 * * * * *", "Cron schedule (6-field, with seconds) for the send_scheduled_telegram_publishposts job. Default every minute; the public cloud sets it hourly.")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false, "Disable SSRF protection for federation calls (allow private/internal addresses).")
@@ -507,6 +502,17 @@ func (c *Config) Prepare() {
 }
 
 // validate checks if the configuration is valid using ozzo validation.
+// CronScheduleOverride returns a cron schedule override for the named job from
+// the environment — <JOB_NAME>_SCHEDULE (or TRIP2G_<JOB_NAME>_SCHEDULE) — or ""
+// if unset. Centralizes env access so callers don't read os.Getenv directly.
+func (c *Config) CronScheduleOverride(jobName string) string {
+	key := strings.ToUpper(jobName) + "_SCHEDULE"
+	if v := os.Getenv("TRIP2G_" + key); v != "" {
+		return v
+	}
+	return os.Getenv(key)
+}
+
 func (c *Config) validate() error {
 	if !c.DevMode {
 		if c.UserToken.Secret == usertoken.DefaultConfig().Secret {

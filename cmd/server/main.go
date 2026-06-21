@@ -1589,6 +1589,10 @@ func (a *app) Logger() logger.Logger {
 	return a.log
 }
 
+func (a *app) CronScheduleOverride(jobName string) string {
+	return a.config.CronScheduleOverride(jobName)
+}
+
 func (a *app) LogLevel() string {
 	return a.config.LogLevel
 }

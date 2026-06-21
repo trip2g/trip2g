@@ -38,6 +38,7 @@ func (m *mockEnv) CronJobByName(_ context.Context, _ string) (db.CronJob, error)
 func (m *mockEnv) ListAllCronJobs(_ context.Context) ([]db.CronJob, error)    { return nil, nil }
 func (m *mockEnv) DeleteCronJobByName(_ context.Context, _ string) error      { return nil }
 func (m *mockEnv) Logger() logger.Logger                                      { return &logger.DummyLogger{} }
+func (m *mockEnv) CronScheduleOverride(_ string) string                       { return "" }
 func (m *mockEnv) EnqueueJob(_ context.Context, _ model.BackgroundTask) error { return nil }
 func (m *mockEnv) RegisterJob(_ model.BackgroundQueueID, _ string, _ func(context.Context, []byte) error) {
 }

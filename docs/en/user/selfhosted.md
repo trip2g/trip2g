@@ -232,22 +232,17 @@ Use that only for temporary testing. For a public instance, keep secure cookies 
 
 ## Background job schedules
 
-Two background jobs run **every minute** by default:
-
-- `send_scheduled_telegram_publishposts` — sends scheduled Telegram posts that are due.
-- `execute_cron_webhooks` — fires your cron webhooks that are due.
-
-Each does a small database write on every tick. On a busy instance you can lower the frequency with a cron expression (6-field, **with a leading seconds field**):
+Background jobs run on a schedule stored in the `cron_jobs` table; most run **every minute** by default. To change any job, set an env var named after the job — `<JOB_NAME>_SCHEDULE` — to a cron expression (6-field, **with a leading seconds field**):
 
 ```dotenv
-# Run both hourly instead of every minute
-CRON_TELEGRAM_PUBLISH_SCHEDULE=0 0 * * * *
-CRON_EXECUTE_WEBHOOKS_SCHEDULE=0 0 * * * *
+# Run these hourly instead of every minute
+EXECUTE_CRON_WEBHOOKS_SCHEDULE=0 0 * * * *
+SEND_SCHEDULED_TELEGRAM_PUBLISHPOSTS_SCHEDULE=0 0 * * * *
 ```
 
-A longer interval means scheduled Telegram posts and cron webhooks fire less precisely (up to an hour late) in exchange for less database load.
+The variable name is the job's name upper-cased plus `_SCHEDULE`. A longer interval means those jobs fire less precisely (up to an hour late) in exchange for less database load.
 
-> The managed (public cloud) instances run these **hourly** by default to keep the shared database light. Self-hosted instances keep the every-minute default unless you change it.
+> The managed (public cloud) instances run these **hourly** by default to keep the shared database light. Self-hosted instances keep the every-minute default unless you set the override.
 
 ## `Caddyfile`
 

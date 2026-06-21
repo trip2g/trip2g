@@ -5,20 +5,14 @@ import (
 )
 
 // Job implements the cronjobs.Job interface.
-type Job struct {
-	// Cron is the schedule expression, injected from appconfig (env/flag).
-	Cron string
-}
+type Job struct{}
 
 func (j *Job) Name() string {
 	return "execute_cron_webhooks"
 }
 
-// Schedule returns the configured cron expression; defaults to every minute.
+// Schedule runs every minute.
 func (j *Job) Schedule() string {
-	if j.Cron != "" {
-		return j.Cron
-	}
 	return "0 * * * * *"
 }
 

@@ -37,6 +37,8 @@ type Env interface {
 	ListAllCronJobs(ctx context.Context) ([]db.CronJob, error)
 	DeleteCronJobByName(ctx context.Context, name string) error
 	Logger() logger.Logger
+	// CronScheduleOverride returns an env-based schedule override for a job, or "".
+	CronScheduleOverride(jobName string) string
 
 	EnqueueJob(ctx context.Context, job model.BackgroundTask) error
 	RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error)
@@ -120,11 +122,14 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 			return nil, fmt.Errorf("failed to get cron job %s from database: %w", name, getErr)
 		}
 
-		// Code/config is authoritative for the schedule. UpsertCronJob only inserts
-		// on first run (insert-if-not-exists), so override the stored expression here
-		// to ensure appconfig changes take effect on restart. The admin Cron Jobs UI
-		// only displays the expression (read-only), so nothing user-editable is lost.
-		dbJob.Expression = job.Schedule()
+		// Optional generic override: env var <JOB_NAME>_SCHEDULE replaces any job's
+		// schedule (e.g. EXECUTE_CRON_WEBHOOKS_SCHEDULE="0 0 * * * *"). When unset,
+		// the stored cron_jobs.expression is used — editable in the table, and seeded
+		// from the job's code Schedule() on first insert.
+		if envSchedule := env.CronScheduleOverride(name); envSchedule != "" {
+			cj.log.Info("cron schedule overridden from env", "job", name, "schedule", envSchedule)
+			dbJob.Expression = envSchedule
+		}
 
 		// Register job with cronjobs prefix
 		jobName := jobQueueID(name)
