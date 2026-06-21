@@ -1,6 +1,8 @@
 #!/bin/bash
 # End-to-end test runner
-# Usage: ./scripts/test-e2e.sh [--headed|--debug|--ui]
+# Usage: ./scripts/test-e2e.sh [--headed|--debug|--ui] [--update-snapshots]
+# By default the CLI sync golden snapshots are verified; pass --update-snapshots
+# (or set UPDATE_SNAPSHOTS=1) to overwrite them.
 # Set ENABLE_TG=1 to enable Telegram tests (disabled by default)
 #
 # Test Flow Overview:
@@ -73,6 +75,19 @@ export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 
 # Success flag - set to 1 at the very end if all tests pass
 SUCCESS=0
+
+# Snapshot mode for the CLI sync test (scripts/test-sync-cli.sh):
+# VERIFY by default; only overwrite golden snapshots in testdata/sync-updates/
+# when --update-snapshots is passed (or UPDATE_SNAPSHOTS=1 is set).
+UPDATE_SNAPSHOTS="${UPDATE_SNAPSHOTS:-0}"
+_filtered_args=()
+for _arg in "$@"; do
+  case "$_arg" in
+    --update-snapshots) UPDATE_SNAPSHOTS=1 ;;
+    *) _filtered_args+=("$_arg") ;;
+  esac
+done
+set -- "${_filtered_args[@]}"
 
 # Helper function to run cron job
 run_telegram_cron() {
@@ -344,7 +359,12 @@ echo ""
 echo "🔄 Running CLI sync E2E tests..."
 echo ""
 
-./scripts/test-sync-cli.sh --api-key "$API_KEY" --endpoint "$ENDPOINT" --update-snapshots || {
+SYNC_SNAPSHOT_ARGS=()
+if [ "$UPDATE_SNAPSHOTS" = "1" ]; then
+  echo -e "${YELLOW}↻ Updating CLI sync golden snapshots${NC}"
+  SYNC_SNAPSHOT_ARGS+=(--update-snapshots)
+fi
+./scripts/test-sync-cli.sh --api-key "$API_KEY" --endpoint "$ENDPOINT" "${SYNC_SNAPSHOT_ARGS[@]}" || {
   echo -e "${RED}✗ CLI sync tests failed${NC}"
   exit 1
 }

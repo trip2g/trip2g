@@ -34,6 +34,11 @@ CLAUDE.md
 /playwright-report/
 /playwright/.cache/
 .test-api-key
+.vecbench-api-key
+# obsidian-sync writes local sync state into the vault; not source
+testdata/vecbench/vault/.sync-state.json
+# stray binary from `go build ./cmd/evalretrieval`
+/evalretrieval
 
 # Telegram session
 session.json

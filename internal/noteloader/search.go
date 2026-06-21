@@ -11,9 +11,11 @@ import (
 
 	htmlFilter "github.com/blevesearch/bleve/v2/analysis/char/html"
 
+	_ "github.com/blevesearch/bleve/v2/analysis/lang/en"
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
 	bleveQuery "github.com/blevesearch/bleve/v2/search/query"
 	"github.com/yuin/goldmark/ast"
 )
@@ -25,23 +27,39 @@ type noteContent struct {
 	Body  string
 }
 
+// langTextField builds a stored, indexed text field mapping named `name`,
+// analyzed with `analyzer`. We index Title/Body under both a Russian-analyzed
+// and an English-analyzed field so each language's BM25 lane stems correctly;
+// the query in Search() is a per-field disjunction that matches via whichever
+// language fits. This is independent of note.Lang, so it works even when the
+// frontmatter language is missing or wrong.
+func langTextField(name, analyzer string) *mapping.FieldMapping {
+	fm := bleve.NewTextFieldMapping()
+	fm.Name = name
+	fm.Analyzer = analyzer
+	fm.Store = true
+	fm.Index = true
+	return fm
+}
+
 func (l *Loader) createSearchIndex() (bleve.Index, error) {
 	documentMapping := bleve.NewDocumentMapping()
 
-	titleFieldMapping := bleve.NewTextFieldMapping()
-	titleFieldMapping.Analyzer = "ru"
-	titleFieldMapping.Store = true
-	titleFieldMapping.Index = true
-	documentMapping.AddFieldMappingsAt("Title", titleFieldMapping)
+	documentMapping.Dynamic = false
+	documentMapping.AddFieldMappingsAt("Title",
+		langTextField("Title", "ru"),
+		langTextField("Title_en", "en"),
+	)
+	documentMapping.AddFieldMappingsAt("Body",
+		langTextField("Body", "ru"),
+		langTextField("Body_en", "en"),
+	)
 
-	bodyFieldMapping := bleve.NewTextFieldMapping()
-	bodyFieldMapping.Analyzer = "ru"
-	bodyFieldMapping.Store = true
-	bodyFieldMapping.Index = true
-	documentMapping.AddFieldMappingsAt("Body", bodyFieldMapping)
-
+	// Use this as the DEFAULT mapping: notes are indexed as plain structs with no
+	// type field, so a mapping registered under a named type would never apply
+	// (bleve would fall back to the dynamic default analyzer for everything).
 	mapping := bleve.NewIndexMapping()
-	mapping.AddDocumentMapping("note", documentMapping)
+	mapping.DefaultMapping = documentMapping
 	mapping.DefaultAnalyzer = "ru"
 
 	return bleve.NewMemOnly(mapping)
@@ -142,12 +160,25 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 		return nil, ErrSearchNotAvailable
 	}
 
-	query := bleve.NewMatchQuery(queryString)
-	query.SetOperator(bleveQuery.MatchQueryOperatorAnd)
+	// Per-field disjunction: the query is analyzed with each field's own analyzer
+	// (ru for Title/Body, en for Title_en/Body_en) and a doc matches via whichever
+	// language fits. Within a field, terms are AND-ed (same precision as before).
+	matchField := func(field string) *bleveQuery.MatchQuery {
+		mq := bleve.NewMatchQuery(queryString)
+		mq.SetField(field)
+		mq.SetOperator(bleveQuery.MatchQueryOperatorAnd)
+		return mq
+	}
+	query := bleve.NewDisjunctionQuery(
+		matchField("Title"), matchField("Title_en"),
+		matchField("Body"), matchField("Body_en"),
+	)
 
 	highlight := bleve.NewHighlightWithStyle(htmlFilter.Name)
 	highlight.AddField("Title")
+	highlight.AddField("Title_en")
 	highlight.AddField("Body")
+	highlight.AddField("Body_en")
 
 	searchRequest := bleve.NewSearchRequest(query)
 	searchRequest.IncludeLocations = true
@@ -174,21 +205,22 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 			Score:    hit.Score,
 		}
 
-		for field, fragments := range hit.Fragments {
-			if field == "Title" && len(fragments) > 0 {
-				// v := replaceMarkToEmphasis(fragments[0])
-				result.HighlightedTitle = &fragments[0]
-				continue
+		// hit.Fragments is a map → Go randomizes iteration order, and the two
+		// analyzer views of a field (e.g. Body vs Body_en) can yield different
+		// highlighted fragments. Select fields in a FIXED priority order so
+		// identical queries produce identical highlighting (deterministic snippets).
+		// Title and Title_en are two analyzer views of the same source field;
+		// likewise Body and Body_en.
+		for _, field := range []string{"Title", "Title_en"} {
+			if frags := hit.Fragments[field]; len(frags) > 0 {
+				result.HighlightedTitle = &frags[0]
+				break
 			}
-
-			if field == "Body" {
-				result.HighlightedContent = fragments
-				// for _, fragment := range fragments {
-				// 	v := replaceMarkToEmphasis(fragment)
-				// 	result.HighlightedContent = append(result.HighlightedContent, v)
-				// }
-
-				continue
+		}
+		for _, field := range []string{"Body", "Body_en"} {
+			if frags := hit.Fragments[field]; len(frags) > 0 {
+				result.HighlightedContent = frags
+				break
 			}
 		}
 

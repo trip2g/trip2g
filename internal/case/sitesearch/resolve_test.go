@@ -171,3 +171,42 @@ func TestMergeResults_RankOrderMatters(t *testing.T) {
 	}
 	require.Less(t, posA, posB, "/a (rank 0 in text) should rank above /b (rank 1 in text)")
 }
+
+// TestVectorTopKWideEnoughForFusion guards against regressing to the pre-fusion
+// truncation bug: the vector candidate pool must be wide enough that RRF sees
+// notes ranked beyond the first few by the vector lane (F1).
+func TestVectorTopKWideEnoughForFusion(t *testing.T) {
+	require.GreaterOrEqual(t, vectorTopK, 50)
+}
+
+// TestDotSimilarity_UnitVectors verifies F5: for L2-normalised unit vectors dot
+// product equals cosine similarity. The embedding server sets normalize_embeddings=True
+// (embedding-server/server.py) so this equivalence always holds in production.
+func TestDotSimilarity_UnitVectors(t *testing.T) {
+	// Identical unit vectors → similarity = 1.
+	a := []float32{1, 0, 0}
+	require.InDelta(t, 1.0, dotSimilarity(a, a), 1e-9)
+
+	// Orthogonal unit vectors → similarity = 0.
+	b := []float32{0, 1, 0}
+	require.InDelta(t, 0.0, dotSimilarity(a, b), 1e-9)
+
+	// Opposite unit vectors → similarity = -1.
+	c := []float32{-1, 0, 0}
+	require.InDelta(t, -1.0, dotSimilarity(a, c), 1e-9)
+
+	// Known unit vectors at 45°: (1/√2, 1/√2) · (1, 0) = 1/√2 ≈ 0.7071.
+	inv := float32(1.0 / 1.4142135623730951)
+	d := []float32{inv, inv}
+	e := []float32{1, 0}
+	require.InDelta(t, 0.7071067811865475, dotSimilarity(d, e), 1e-6)
+}
+
+func TestDotSimilarity_EdgeCases(t *testing.T) {
+	// Empty slice → 0.
+	require.Equal(t, 0.0, dotSimilarity(nil, nil))
+	require.Equal(t, 0.0, dotSimilarity([]float32{}, []float32{}))
+
+	// Length mismatch → 0.
+	require.Equal(t, 0.0, dotSimilarity([]float32{1, 0}, []float32{1, 0, 0}))
+}

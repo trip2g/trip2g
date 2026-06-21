@@ -1,0 +1,20 @@
+{
+  "queries": [
+    {"query": "как настроиться с утра на встречу с трудными людьми", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book02"], "verified": true},
+    {"query": "провидение или случайность управляют миром", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book02"], "verified": true},
+    {"query": "делать каждое дело как последнее в жизни", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book02"], "verified": true},
+    {"query": "трудно заставить себя встать рано утром и работать", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book05"], "verified": true},
+    {"query": "проверять и испытывать своё ведущее начало", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book05"], "verified": true},
+    {"query": "возвращаться к философии как к матери за утешением", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book06"], "verified": true},
+    {"query": "брать за образец характер императора Антонина", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_book06"], "verified": true},
+    {"query": "как быстротечна и коротка человеческая жизнь", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_on_death"], "verified": true},
+    {"query": "смерть отнимает лишь краткое настоящее мгновение", "lang": "ru", "direction": "ru->ru", "expected_urls": ["/longdocs/meditations_on_death"], "verified": true},
+    {"query": "retreat into the citadel of your own mind for peace", "lang": "en", "direction": "en->en", "expected_urls": ["/longdocs/meditations_book04_en"], "verified": true},
+    {"query": "the inner governing faculty and ruling reason", "lang": "en", "direction": "en->en", "expected_urls": ["/longdocs/meditations_book04_en"], "verified": true},
+    {"query": "virtue is within your own power to practice", "lang": "en", "direction": "en->en", "expected_urls": ["/longdocs/on_stoic_virtue_en"], "verified": true},
+    {"query": "being patient with the faults of other people", "lang": "en", "direction": "en->en", "expected_urls": ["/longdocs/on_stoic_virtue_en"], "verified": true},
+    {"query": "уйти в крепость собственного ума ради покоя", "lang": "ru", "direction": "ru->en", "expected_urls": ["/longdocs/meditations_book04_en"], "verified": true},
+    {"query": "getting up at dawn instead of staying under the blankets", "lang": "en", "direction": "en->ru", "expected_urls": ["/longdocs/meditations_book05"], "verified": true},
+    {"query": "follow the example of emperor Antoninus Pius", "lang": "en", "direction": "en->ru", "expected_urls": ["/longdocs/meditations_book06"], "verified": true}
+  ]
+}

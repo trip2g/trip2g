@@ -23,7 +23,10 @@ import (
 
 const (
 	// Search and display limits.
-	DefaultVectorSearchLimit = 10
+	// DefaultVectorSearchLimit is the vector-candidate pool fed into RRF fusion;
+	// keep it wide so fusion sees enough candidates (cosine already scores all
+	// chunks). DefaultDisplayLimit/MaxMergedResults still bound what's returned.
+	DefaultVectorSearchLimit = 50
 	DefaultDisplayLimit      = 10
 	DefaultSimilarLimit      = 10
 	MaxSimilarLimit          = 100
@@ -54,6 +57,9 @@ type Env interface {
 	ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)
 	// Admin GraphQL tools
 	GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error)
+	// Federated GraphQL tools
+	GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error)
+	FederatedGraphQLEnabled() bool
 }
 
 // unmarshalArgs unmarshals JSON arguments into the target type.
@@ -157,22 +163,23 @@ func handleInitialize(ctx context.Context, env Env, id any, methodOverride strin
 }
 
 var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable set of built-in tool names
-	"search":                true,
-	"similar":               true,
-	"note_html":             true,
-	"federated_search":      true,
-	"federated_similar":     true,
-	"federated_note_html":   true,
-	"graphql_introspection": true,
-	"graphql_request":       true,
-	MCPMethodInitialize:     true,
+	"search":                    true,
+	"similar":                   true,
+	"note_html":                 true,
+	"federated_search":          true,
+	"federated_similar":         true,
+	"federated_note_html":       true,
+	"graphql_introspection":     true,
+	"graphql_request":           true,
+	"federated_graphql_request": true,
+	MCPMethodInitialize:         true,
 }
 
 func handleToolsList(ctx context.Context, env Env, id any) Response {
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query and return note ids, snippets, and match ids. After search, open the best result with note_html(pid=..., match_id=...) when a match id is available.",
+			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus TOC path arrays for each result that describe the note's precise structure. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) inspect the result's toc items for the note's structure; 3) call note_html(toc_path=[...]) to read the exact section, or note_html(pid=..., match_id=...) for a focused chunk window.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -197,7 +204,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, or path. Pass match_id for a focused chunk window. Pass toc_path to read a specific section (use the path array from search result TOC).",
+			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (path array from a search result toc item) to read an exact section identified in the drill-down: search -> breadcrumb (approximate) -> toc paths (structure) -> note_html(toc_path=[...]) (precise).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -217,7 +224,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		},
 		{
 			Name:        "federated_search",
-			Description: "Search connected knowledge bases. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out.",
+			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and TOC path arrays per result, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -282,6 +289,22 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		})
 	}
 
+	if env.FederatedGraphQLEnabled() {
+		tools = append(tools, Tool{
+			Name:        "federated_graphql_request",
+			Description: "Forwards a read-only GraphQL query to a federation peer KB. Scoped to the caller's allowed subgraphs.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":     {Type: "string", Description: "Target knowledge base id"},
+					"query":     {Type: "string", Description: "Read-only GraphQL query string"},
+					"variables": {Type: "object", Description: "Optional variables map"},
+				},
+				Required: []string{"kb_id", "query"},
+			},
+		})
+	}
+
 	if mcpAdminToolsEnabled(ctx) {
 		tools = append(tools, Tool{
 			Name:        "graphql_introspection",
@@ -335,7 +358,15 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
 		}
 		return handleGraphQLIntrospection(ctx, env, req.ID, params.Arguments)
+	case "federated_graphql_request":
+		return handleFederatedGraphQLRequest(ctx, env, req.ID, params.Arguments)
 	case "graphql_request":
+		if fedAuth, ok := federationAuthFromContext(ctx); ok {
+			if !env.FederatedGraphQLEnabled() {
+				return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
+			}
+			return handleGraphQLRequestScoped(ctx, env, req.ID, params.Arguments, fedAuth.AllowedSubgraphs)
+		}
 		if !mcpAdminToolsEnabled(ctx) {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
 		}
@@ -507,17 +538,33 @@ func buildSearchPayload(query string, results []model.SearchResult, noteURL func
 			if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
 				matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
 			}
+			chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
 			item.Matches = append(item.Matches, SearchMatch{
 				MatchID:      matchID,
 				ChunkIndex:   chunkIndex,
 				Snippet:      snippet,
 				ContextWords: 10,
-				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet),
+				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent),
 			})
 		}
 		payload.Results = append(payload.Results, item)
 	}
 	return payload
+}
+
+// chunkContentByIndex returns the Content of the chunk for the given note at
+// chunkIndex, or "" when chunkIndex is 0 (meaning no chunk was resolved) or
+// the chunk is not found.
+func chunkContentByIndex(note *model.NoteView, chunkIndex int, chunks []model.NoteChunk) string {
+	if note == nil || chunkIndex == 0 || len(chunks) == 0 {
+		return ""
+	}
+	for _, chunk := range chunks {
+		if chunk.NotePath == note.Path && chunk.ChunkIndex == chunkIndex {
+			return chunk.Content
+		}
+	}
+	return ""
 }
 
 func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []model.NoteChunk) (int, bool) {

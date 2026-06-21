@@ -70,6 +70,10 @@ func (c *Client) FederatedNoteHTML(ctx context.Context, params model.FederationN
 	return c.callTool(ctx, "federated_note_html", params)
 }
 
+func (c *Client) GraphQLRequest(ctx context.Context, params model.FederationGraphQLParams) (model.FederationResult, error) {
+	return c.callTool(ctx, "graphql_request", params)
+}
+
 func (c *Client) callTool(ctx context.Context, name string, args any) (model.FederationResult, error) {
 	if c == nil {
 		return model.FederationResult{}, errors.New("federation client is nil")

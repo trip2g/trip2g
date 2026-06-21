@@ -11,7 +11,7 @@ import (
 type NoteChunk struct {
 	VersionID  int64
 	ChunkIndex int
-	Content    string    // "{title}\n\n{body}" — same text that was embedded
+	Content    string    // "{title} > {h1} > {h2}\n\n{body}" — breadcrumb prefix + blank line + body; same text that was embedded
 	Embedding  []float32 // float32 LE, nil until generated
 	NotePath   string    // parent note path for dedup and result lookup
 }

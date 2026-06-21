@@ -415,6 +415,12 @@ func handleUserToken(
 	notes *model.NoteViews,
 	referrer string,
 ) error {
+	// Federated (and other ID==0 synthetic) identities have no real user row:
+	// skip per-user bookkeeping to avoid bogus "user 0" view records.
+	if userToken == nil || userToken.ID == 0 || userToken.Role == usertoken.RoleFederated {
+		return nil
+	}
+
 	userID := int64(userToken.ID)
 
 	var err error

@@ -103,6 +103,17 @@ type VectorSearchConfig struct {
 	ModelName string         `json:"model"`
 	Model     EmbeddingModel `json:"-"`        // Parsed from ModelName
 	BaseURL   string         `json:"base_url"` // optional; empty = OpenAI default; set to Ollama base URL for local embeddings
+	Reranker  RerankerConfig `json:"reranker"` // optional second-stage cross-encoder reranker
+}
+
+// RerankerConfig configures an optional cross-encoder rerank stage applied to
+// the fused (RRF) result set. When disabled, search returns the RRF order.
+type RerankerConfig struct {
+	Enabled bool   `json:"enabled"`
+	BaseURL string `json:"base_url"` // rerank endpoint, e.g. "http://reranker:8000/rerank"
+	Model   string `json:"model"`    // e.g. "BAAI/bge-reranker-v2-m3"
+	TopN    int    `json:"top_n"`    // candidates to rerank (default 50)
+	OutputK int    `json:"output_k"` // results to keep after rerank (default 20)
 }
 
 // Validate validates vector search configuration.

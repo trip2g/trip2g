@@ -33,6 +33,9 @@ var _ mcp.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
+//			FederatedGraphQLEnabledFunc: func() bool {
+//				panic("mock out the FederatedGraphQLEnabled method")
+//			},
 //			FederationClientFunc: func(ctx context.Context, kbID string) (model.Federation, error) {
 //				panic("mock out the FederationClient method")
 //			},
@@ -47,6 +50,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			GraphQLRequestFunc: func(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
 //				panic("mock out the GraphQLRequest method")
+//			},
+//			GraphQLRequestScopedFunc: func(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error) {
+//				panic("mock out the GraphQLRequestScoped method")
 //			},
 //			LatestNoteChunksFunc: func() []model.NoteChunk {
 //				panic("mock out the LatestNoteChunks method")
@@ -91,6 +97,9 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// FederatedGraphQLEnabledFunc mocks the FederatedGraphQLEnabled method.
+	FederatedGraphQLEnabledFunc func() bool
+
 	// FederationClientFunc mocks the FederationClient method.
 	FederationClientFunc func(ctx context.Context, kbID string) (model.Federation, error)
 
@@ -105,6 +114,9 @@ type EnvMock struct {
 
 	// GraphQLRequestFunc mocks the GraphQLRequest method.
 	GraphQLRequestFunc func(ctx context.Context, query string, variables map[string]any) ([]byte, error)
+
+	// GraphQLRequestScopedFunc mocks the GraphQLRequestScoped method.
+	GraphQLRequestScopedFunc func(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error)
 
 	// LatestNoteChunksFunc mocks the LatestNoteChunks method.
 	LatestNoteChunksFunc func() []model.NoteChunk
@@ -150,6 +162,9 @@ type EnvMock struct {
 		// Features holds details about calls to the Features method.
 		Features []struct {
 		}
+		// FederatedGraphQLEnabled holds details about calls to the FederatedGraphQLEnabled method.
+		FederatedGraphQLEnabled []struct {
+		}
 		// FederationClient holds details about calls to the FederationClient method.
 		FederationClient []struct {
 			// Ctx is the ctx argument value.
@@ -182,6 +197,17 @@ type EnvMock struct {
 			Query string
 			// Variables is the variables argument value.
 			Variables map[string]any
+		}
+		// GraphQLRequestScoped holds details about calls to the GraphQLRequestScoped method.
+		GraphQLRequestScoped []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Query is the query argument value.
+			Query string
+			// Variables is the variables argument value.
+			Variables map[string]any
+			// AllowedSubgraphs is the allowedSubgraphs argument value.
+			AllowedSubgraphs []string
 		}
 		// LatestNoteChunks holds details about calls to the LatestNoteChunks method.
 		LatestNoteChunks []struct {
@@ -228,11 +254,13 @@ type EnvMock struct {
 	lockCanReadNote                        sync.RWMutex
 	lockDecryptData                        sync.RWMutex
 	lockFeatures                           sync.RWMutex
+	lockFederatedGraphQLEnabled            sync.RWMutex
 	lockFederationClient                   sync.RWMutex
 	lockFederationMaxDepth                 sync.RWMutex
 	lockFederationSecretByKBURL            sync.RWMutex
 	lockFederationSecretByKID              sync.RWMutex
 	lockGraphQLRequest                     sync.RWMutex
+	lockGraphQLRequestScoped               sync.RWMutex
 	lockLatestNoteChunks                   sync.RWMutex
 	lockLatestNoteViews                    sync.RWMutex
 	lockListFederationSecretSubgraphsByKID sync.RWMutex
@@ -336,6 +364,33 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// FederatedGraphQLEnabled calls FederatedGraphQLEnabledFunc.
+func (mock *EnvMock) FederatedGraphQLEnabled() bool {
+	if mock.FederatedGraphQLEnabledFunc == nil {
+		panic("EnvMock.FederatedGraphQLEnabledFunc: method is nil but Env.FederatedGraphQLEnabled was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederatedGraphQLEnabled.Lock()
+	mock.calls.FederatedGraphQLEnabled = append(mock.calls.FederatedGraphQLEnabled, callInfo)
+	mock.lockFederatedGraphQLEnabled.Unlock()
+	return mock.FederatedGraphQLEnabledFunc()
+}
+
+// FederatedGraphQLEnabledCalls gets all the calls that were made to FederatedGraphQLEnabled.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedGraphQLEnabledCalls())
+func (mock *EnvMock) FederatedGraphQLEnabledCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederatedGraphQLEnabled.RLock()
+	calls = mock.calls.FederatedGraphQLEnabled
+	mock.lockFederatedGraphQLEnabled.RUnlock()
 	return calls
 }
 
@@ -511,6 +566,50 @@ func (mock *EnvMock) GraphQLRequestCalls() []struct {
 	mock.lockGraphQLRequest.RLock()
 	calls = mock.calls.GraphQLRequest
 	mock.lockGraphQLRequest.RUnlock()
+	return calls
+}
+
+// GraphQLRequestScoped calls GraphQLRequestScopedFunc.
+func (mock *EnvMock) GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error) {
+	if mock.GraphQLRequestScopedFunc == nil {
+		panic("EnvMock.GraphQLRequestScopedFunc: method is nil but Env.GraphQLRequestScoped was just called")
+	}
+	callInfo := struct {
+		Ctx              context.Context
+		Query            string
+		Variables        map[string]any
+		AllowedSubgraphs []string
+	}{
+		Ctx:              ctx,
+		Query:            query,
+		Variables:        variables,
+		AllowedSubgraphs: allowedSubgraphs,
+	}
+	mock.lockGraphQLRequestScoped.Lock()
+	mock.calls.GraphQLRequestScoped = append(mock.calls.GraphQLRequestScoped, callInfo)
+	mock.lockGraphQLRequestScoped.Unlock()
+	return mock.GraphQLRequestScopedFunc(ctx, query, variables, allowedSubgraphs)
+}
+
+// GraphQLRequestScopedCalls gets all the calls that were made to GraphQLRequestScoped.
+// Check the length with:
+//
+//	len(mockedEnv.GraphQLRequestScopedCalls())
+func (mock *EnvMock) GraphQLRequestScopedCalls() []struct {
+	Ctx              context.Context
+	Query            string
+	Variables        map[string]any
+	AllowedSubgraphs []string
+} {
+	var calls []struct {
+		Ctx              context.Context
+		Query            string
+		Variables        map[string]any
+		AllowedSubgraphs []string
+	}
+	mock.lockGraphQLRequestScoped.RLock()
+	calls = mock.calls.GraphQLRequestScoped
+	mock.lockGraphQLRequestScoped.RUnlock()
 	return calls
 }
 

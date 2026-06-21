@@ -3,14 +3,15 @@ package sitesearch
 import (
 	"context"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"trip2g/internal/features"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/openai"
+	"trip2g/internal/reranker"
 	"trip2g/internal/usertoken"
 
 	appmodel "trip2g/internal/model"
@@ -78,6 +79,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		}
 	}
 
+	// Second-stage cross-encoder rerank of the fused candidates (F3, optional).
+	results = rerankResults(ctx, env, input.Query, results)
+
 	// Filter results based on permissions
 	conn := model.SearchConnection{}
 	hiddenResults := []appmodel.SearchResult{}
@@ -114,8 +118,11 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	return &conn, nil
 }
 
-// vectorTopK is the maximum number of vector-only results to return.
-const vectorTopK = 5
+// vectorTopK is the number of unique-note vector candidates fed into RRF fusion.
+// Keep this wide: the cosine scan already scores every chunk, so truncating
+// before fusion only discards recall at zero compute saving. The final result
+// list is capped after merge (see mergeResults).
+const vectorTopK = 50
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
 	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
@@ -139,11 +146,16 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 
 	// Score all chunks, no absolute threshold — E5 models compress scores
 	// into 0.7–1.0 range, making absolute thresholds unreliable.
+	// dotSimilarity is used here instead of cosine because the embedding server
+	// returns L2-normalised unit vectors (embedding-server/server.py normalize_embeddings=True),
+	// making cosine ≡ dot product at lower compute cost.
+	scanStart := time.Now()
 	var candidates []scored
 	for _, c := range chunks {
-		sim := cosineSimilarity(embedding.Vector, c.Embedding)
+		sim := dotSimilarity(embedding.Vector, c.Embedding)
 		candidates = append(candidates, scored{c.NotePath, c, sim})
 	}
+	env.Logger().Warn("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].sim > candidates[j].sim })
 
@@ -184,7 +196,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 }
 
 // snippetFromChunk extracts a display snippet from chunk content.
-// Chunks have the format "{title}\n\n{body}", so we skip the title prefix.
+// Chunks have the format "{title} > {h1} > {h2}\n\n{body}", so we skip past the breadcrumb prefix.
 func snippetFromChunk(content string, maxLen int) string {
 	if idx := strings.Index(content, "\n\n"); idx >= 0 {
 		content = content[idx+2:]
@@ -199,6 +211,64 @@ func snippetFromChunk(content string, maxLen int) string {
 		content += "..."
 	}
 	return content
+}
+
+// rerankResults applies an optional cross-encoder rerank to the fused candidate
+// set (F3). It reorders the top-N results by query-document relevance and keeps
+// OutputK. On any error it returns the input unchanged (graceful degradation),
+// matching how a failing vector lane degrades to text-only.
+func rerankResults(ctx context.Context, env Env, query string, results []appmodel.SearchResult) []appmodel.SearchResult {
+	cfg := env.Features().VectorSearch.Reranker
+	if !cfg.Enabled || len(results) < 2 {
+		return results
+	}
+
+	n := cfg.TopN
+	if n > len(results) {
+		n = len(results)
+	}
+	head := results[:n]
+
+	docs := make([]string, len(head))
+	for i, r := range head {
+		title := ""
+		snippet := ""
+		if r.NoteView != nil {
+			title = r.NoteView.Title
+			// Keep the passage near the cross-encoder's input window (~512 tokens).
+			// Longer passages measured strictly worse (see docs/dev/search_refactoring.md).
+			snippet = generateSnippet(r.NoteView, 512)
+		}
+		docs[i] = title + "\n" + snippet
+	}
+
+	order, err := reranker.New(cfg.BaseURL, cfg.Model).Rerank(ctx, query, docs)
+	if err != nil || len(order) == 0 {
+		env.Logger().Warn("rerank failed", "error", err)
+		return results
+	}
+
+	reordered := make([]appmodel.SearchResult, 0, len(results))
+	seen := make([]bool, len(head))
+	for _, idx := range order {
+		if idx >= 0 && idx < len(head) && !seen[idx] {
+			seen[idx] = true
+			reordered = append(reordered, head[idx])
+		}
+	}
+	// Keep any head items the reranker dropped, in their original order.
+	for i, r := range head {
+		if !seen[i] {
+			reordered = append(reordered, r)
+		}
+	}
+	// Preserve the tail beyond TopN unchanged.
+	reordered = append(reordered, results[n:]...)
+
+	if cfg.OutputK > 0 && len(reordered) > cfg.OutputK {
+		reordered = reordered[:cfg.OutputK]
+	}
+	return reordered
 }
 
 // mergeResults combines text and vector search results using Reciprocal Rank Fusion (RRF).
@@ -332,24 +402,19 @@ func lastIndexByte(s string, c byte) int {
 	return -1
 }
 
-func cosineSimilarity(a, b []float32) float64 {
+// dotSimilarity returns the dot product of two vectors.
+// This is equivalent to cosine similarity when both vectors are L2-normalised,
+// which is guaranteed by the embedding server (embedding-server/server.py
+// normalize_embeddings=True). Using dot product avoids the redundant sqrt
+// divisions that cosine similarity would otherwise perform on unit vectors.
+func dotSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {
 		return 0
 	}
 
-	var dotProduct float64
-	var normA float64
-	var normB float64
-
+	var dot float64
 	for i := range a {
-		dotProduct += float64(a[i]) * float64(b[i])
-		normA += float64(a[i]) * float64(a[i])
-		normB += float64(b[i]) * float64(b[i])
+		dot += float64(a[i]) * float64(b[i])
 	}
-
-	if normA == 0 || normB == 0 {
-		return 0
-	}
-
-	return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
+	return dot
 }

@@ -46,6 +46,10 @@ func (m *federationMock) FederatedNoteHTML(ctx context.Context, params appmodel.
 	panic("unexpected FederatedNoteHTML call")
 }
 
+func (m *federationMock) GraphQLRequest(ctx context.Context, params appmodel.FederationGraphQLParams) (appmodel.FederationResult, error) {
+	panic("unexpected GraphQLRequest call")
+}
+
 func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 	kbNote := &appmodel.NoteView{
 		PathID:             17,

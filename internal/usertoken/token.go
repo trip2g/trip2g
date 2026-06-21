@@ -19,6 +19,10 @@ func (d *Data) IsAdmin() bool {
 	return d != nil && d.Role == "admin"
 }
 
+// RoleFederated marks a non-admin, subgraph-scoped federation identity.
+// It must NEVER satisfy IsAdmin().
+const RoleFederated = "federated"
+
 type fullData struct {
 	ID   int    `json:"i"`
 	Role string `json:"r"`

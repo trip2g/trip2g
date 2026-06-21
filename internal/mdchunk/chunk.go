@@ -3,21 +3,42 @@ package mdchunk
 import "strings"
 
 const (
-	chunkTargetSize = 2000 // chars (~500 tokens)
-	chunkMinSize    = 300  // chars
-	chunkOverlap    = 200  // chars — last block of prev chunk prepended to next
+	// Sizing is in ESTIMATED TOKENS (see estimateTokens), not characters: at
+	// ~2 chars/token for Cyrillic, the old 2000-char target overflowed the
+	// 512-token window of bge-m3/E5, so the tail of Russian chunks was silently
+	// truncated server-side and never embedded.
+	chunkTargetTokens = 450 // keep comfortably under a 512-token encoder window
+	chunkMinTokens    = 60
+	chunkOverlap      = 200 // chars — tail of prev chunk prepended to next
 )
 
 // Chunk is a fragment of a note prepared for vector embedding.
 type Chunk struct {
 	Index   int
-	Content string // "{title}\n\n{body}"
+	Content string // "{title} > {h1} > {h2}...\n\n{body}"
+}
+
+// estimateTokens approximates the subword-token count of s without a tokenizer.
+// Cyrillic tokenizes to roughly one token per ~2 characters; Latin/other to
+// roughly one per ~4. Good enough to keep chunks under an encoder window.
+func estimateTokens(s string) int {
+	cyr, other := 0, 0
+	for _, r := range s {
+		if r >= 0x0400 && r <= 0x04FF {
+			cyr++
+		} else {
+			other++
+		}
+	}
+	return cyr/2 + other/4 + 1
 }
 
 // Split splits a note into chunks suitable for vector embedding.
 // It strips frontmatter, splits content into Markdown blocks at paragraph
 // boundaries, respects heading boundaries as hard split points, avoids tiny
-// chunks by accumulating below chunkMinSize, and adds overlap between chunks.
+// chunks by accumulating below chunkMinTokens, sizes by estimated tokens, and
+// prepends a heading breadcrumb ("{title} > {h1} > {h2}...") to every chunk so
+// deep chunks carry their document context (a cheap form of contextual retrieval).
 func Split(title string, rawContent []byte) []Chunk {
 	body := StripFrontmatter(string(rawContent))
 	blocks := splitIntoBlocks(body)
@@ -28,6 +49,17 @@ func Split(title string, rawContent []byte) []Chunk {
 	var chunks []Chunk
 	var current []string
 	currentSize := 0
+	var headingStack []string // headingStack[level-1] = heading text at that level
+
+	prefix := func() string {
+		parts := []string{title}
+		for _, h := range headingStack {
+			if h != "" {
+				parts = append(parts, h)
+			}
+		}
+		return strings.Join(parts, " > ")
+	}
 
 	flush := func() {
 		if len(current) == 0 {
@@ -35,7 +67,7 @@ func Split(title string, rawContent []byte) []Chunk {
 		}
 		chunks = append(chunks, Chunk{
 			Index:   len(chunks),
-			Content: title + "\n\n" + strings.Join(current, "\n\n"),
+			Content: prefix() + "\n\n" + strings.Join(current, "\n\n"),
 		})
 	}
 
@@ -57,22 +89,37 @@ func Split(title string, rawContent []byte) []Chunk {
 		currentSize = 0
 		if overlap != "" {
 			current = append(current, overlap)
-			currentSize = len(overlap)
+			currentSize = estimateTokens(overlap)
 		}
 	}
 
+	setHeading := func(level int, text string) {
+		if level > len(headingStack) {
+			for len(headingStack) < level {
+				headingStack = append(headingStack, "")
+			}
+		} else {
+			headingStack = headingStack[:level] // drop deeper levels
+		}
+		headingStack[level-1] = text
+	}
+
 	for i, block := range blocks {
-		// Heading always causes a split if there is accumulated content before it.
-		if isHeadingBlock(block) && len(current) > 0 {
-			startNewChunk()
+		// Heading always causes a split if there is accumulated content before it,
+		// then updates the breadcrumb stack for the chunk it begins.
+		if level, text, ok := parseHeading(block); ok {
+			if len(current) > 0 {
+				startNewChunk()
+			}
+			setHeading(level, text)
 		}
 
 		current = append(current, block)
-		currentSize += len(block)
+		currentSize += estimateTokens(block)
 
 		// Flush when we reach the target size (if above min size),
 		// but not on the last block — the remaining flush handles that.
-		if currentSize >= chunkTargetSize && currentSize >= chunkMinSize && i < len(blocks)-1 {
+		if currentSize >= chunkTargetTokens && currentSize >= chunkMinTokens && i < len(blocks)-1 {
 			startNewChunk()
 		}
 	}
@@ -128,9 +175,24 @@ func splitIntoBlocks(content string) []string {
 
 // isHeadingBlock reports whether a block starts with a Markdown heading (# to ######).
 func isHeadingBlock(block string) bool {
+	_, _, ok := parseHeading(block)
+	return ok
+}
+
+// parseHeading returns the level (1–6) and trimmed text of a Markdown heading
+// block, or ok=false if the block is not a heading. Only the first line is
+// considered, so a heading followed by body text in the same block still parses.
+func parseHeading(block string) (level int, text string, ok bool) {
+	line := block
+	if nl := strings.IndexByte(block, '\n'); nl >= 0 {
+		line = block[:nl]
+	}
 	i := 0
-	for i < len(block) && block[i] == '#' {
+	for i < len(line) && line[i] == '#' {
 		i++
 	}
-	return i > 0 && i <= 6 && i < len(block) && block[i] == ' '
+	if i == 0 || i > 6 || i >= len(line) || line[i] != ' ' {
+		return 0, "", false
+	}
+	return i, strings.TrimSpace(line[i+1:]), true
 }

@@ -20,6 +20,9 @@ var _ canreadnote.Env = &EnvMock{}
 //
 //		// make and configure a mocked canreadnote.Env
 //		mockedEnv := &EnvMock{
+//			CurrentFederatedScopeFunc: func(ctx context.Context) ([]string, bool) {
+//				panic("mock out the CurrentFederatedScope method")
+//			},
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
@@ -33,6 +36,9 @@ var _ canreadnote.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CurrentFederatedScopeFunc mocks the CurrentFederatedScope method.
+	CurrentFederatedScopeFunc func(ctx context.Context) ([]string, bool)
+
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
@@ -41,6 +47,11 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CurrentFederatedScope holds details about calls to the CurrentFederatedScope method.
+		CurrentFederatedScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// CurrentUserToken holds details about calls to the CurrentUserToken method.
 		CurrentUserToken []struct {
 			// Ctx is the ctx argument value.
@@ -54,8 +65,41 @@ type EnvMock struct {
 			UserID int64
 		}
 	}
+	lockCurrentFederatedScope   sync.RWMutex
 	lockCurrentUserToken        sync.RWMutex
 	lockListActiveUserSubgraphs sync.RWMutex
+}
+
+// CurrentFederatedScope calls CurrentFederatedScopeFunc.
+func (mock *EnvMock) CurrentFederatedScope(ctx context.Context) ([]string, bool) {
+	if mock.CurrentFederatedScopeFunc == nil {
+		panic("EnvMock.CurrentFederatedScopeFunc: method is nil but Env.CurrentFederatedScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCurrentFederatedScope.Lock()
+	mock.calls.CurrentFederatedScope = append(mock.calls.CurrentFederatedScope, callInfo)
+	mock.lockCurrentFederatedScope.Unlock()
+	return mock.CurrentFederatedScopeFunc(ctx)
+}
+
+// CurrentFederatedScopeCalls gets all the calls that were made to CurrentFederatedScope.
+// Check the length with:
+//
+//	len(mockedEnv.CurrentFederatedScopeCalls())
+func (mock *EnvMock) CurrentFederatedScopeCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCurrentFederatedScope.RLock()
+	calls = mock.calls.CurrentFederatedScope
+	mock.lockCurrentFederatedScope.RUnlock()
+	return calls
 }
 
 // CurrentUserToken calls CurrentUserTokenFunc.
