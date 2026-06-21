@@ -20,7 +20,12 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { graphqlSignIn, USER_TOKEN_COOKIE_NAME } from './helpers/auth.js';
+import { graphqlSignIn } from './helpers/auth.js';
+
+// Use the cookie name the e2e hub is configured with (USER_TOKEN_COOKIE_NAME env var set in
+// test-e2e.sh; fall back to 'trip2g_e2e' so the spec works when run directly against the
+// docker stack without the wrapper script).
+const USER_TOKEN_COOKIE_NAME = process.env.USER_TOKEN_COOKIE_NAME || 'trip2g_e2e';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
 const MCP_URL = `${APP_URL}/_system/mcp`;
@@ -49,18 +54,53 @@ async function mcpCallWithAPIKey(request, apiKey, method, params = {}) {
 }
 
 async function findApiKeyId(request, baseURL, cookie, plaintextValue) {
-  // The list returns api keys with the description we created in setup.
-  // We don't have a direct lookup-by-value, so we fetch all and pick
-  // the one with the e2e setup description.
+  // The GraphQL API does not expose the plaintext key value, so we cannot match
+  // directly. Instead we probe each candidate: temporarily enable enableMcpAdminTools
+  // on it and verify that an MCP tools/list call with plaintextValue shows admin tools.
+  // The first key that passes the probe is the correct one; we restore its original state.
   const data = await gql(request, baseURL, cookie, `
     query { admin { allApiKeys { nodes { id description enableMcpAdminTools } } } }
   `);
   const nodes = data.admin.allApiKeys.nodes || [];
   if (nodes.length === 0) throw new Error('no api keys found in admin');
-  // Setup creates a single key for E2E; if there are multiple, prefer one
-  // whose description includes "e2e" or "test", fall back to first.
-  const preferred = nodes.find((k) => /e2e|test/i.test(k.description));
-  return preferred ? preferred.id : nodes[0].id;
+
+  for (const node of nodes) {
+    const originalFlag = node.enableMcpAdminTools;
+    // Enable admin tools on this candidate key.
+    await gql(request, baseURL, cookie, `
+      mutation Set($input: SetApiKeyMcpAdminToolsInput!) {
+        admin { setApiKeyMcpAdminTools(input: $input) {
+          ... on SetApiKeyMcpAdminToolsPayload { apiKey { id } }
+          ... on ErrorPayload { message }
+        } }
+      }
+    `, { input: { id: node.id, enabled: true } });
+
+    // Check if the MCP endpoint using plaintextValue now sees admin tools.
+    const mcpRes = await request.post(`${baseURL}/_system/mcp`, {
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': plaintextValue },
+      data: { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} },
+    });
+    const mcpBody = await mcpRes.json();
+    const names = (mcpBody.result?.tools || []).map((t) => t.name);
+    const isMatch = names.includes('graphql_introspection');
+
+    // Restore the original flag state before deciding.
+    if (!originalFlag) {
+      await gql(request, baseURL, cookie, `
+        mutation Set($input: SetApiKeyMcpAdminToolsInput!) {
+          admin { setApiKeyMcpAdminTools(input: $input) {
+            ... on SetApiKeyMcpAdminToolsPayload { apiKey { id } }
+            ... on ErrorPayload { message }
+          } }
+        }
+      `, { input: { id: node.id, enabled: false } });
+    }
+
+    if (isMatch) return node.id;
+  }
+
+  throw new Error('could not find api key matching .test-api-key value via MCP probe');
 }
 
 async function setAdminToolsFlag(request, baseURL, cookie, id, enabled) {
@@ -185,23 +225,40 @@ test.describe.serial('MCP API Key admin tools', () => {
     }
   });
 
-  test('flag ON: graphql_request executes admin mutation (toggle flag via MCP)', async ({ playwright }) => {
+  test('flag ON: graphql_request allows allowlisted queries, rejects mutations and admin field', async ({ playwright }) => {
     await setAdminToolsFlag(adminRequest, APP_URL, adminCookie, apiKeyId, true);
 
     const ctx = await playwright.request.newContext({});
     try {
-      // Read current flag via graphql_request (sanity that admin queries work).
+      // graphql_request is query-only and limited to an allowlist of read-only root fields
+      // (note, search, similarNotes, viewer, notePaths, resolveWikilinks).
+      // admin field and mutations are intentionally rejected for security.
+
+      // An allowlisted query (viewer) must succeed.
+      // The response carries data in structuredContent, not content[0].text.
       const queryResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
         name: 'graphql_request',
         arguments: {
-          query: 'query { admin { allApiKeys { nodes { id enableMcpAdminTools } } } }',
+          query: 'query { viewer { id role } }',
         },
       });
       expect(queryResult.error).toBeUndefined();
-      const queryText = queryResult.result?.content?.[0]?.text;
-      expect(queryText).toContain('"enableMcpAdminTools":true');
+      const viewerData = queryResult.result?.structuredContent?.data?.viewer;
+      expect(viewerData).toBeDefined();
+      expect(viewerData.role).toBeTruthy();
 
-      // Toggle flag OFF via MCP graphql_request — proves write access.
+      // admin field is not in the read-only allowlist — must be rejected.
+      const adminQueryResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
+        name: 'graphql_request',
+        arguments: {
+          query: 'query { admin { allApiKeys { nodes { id } } } }',
+        },
+      });
+      expect(adminQueryResult.error).toBeDefined();
+      expect(adminQueryResult.error.code).toBe(-32602); // InvalidParams
+      expect(adminQueryResult.error.message).toContain('"admin" is not allowed');
+
+      // Mutations are rejected — graphql_request is query-only.
       const mutationResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
         name: 'graphql_request',
         arguments: {
@@ -216,12 +273,12 @@ test.describe.serial('MCP API Key admin tools', () => {
           variables: { input: { id: apiKeyId, enabled: false } },
         },
       });
-      expect(mutationResult.error).toBeUndefined();
-      const mutationText = mutationResult.result?.content?.[0]?.text;
-      expect(mutationText).toContain('"enableMcpAdminTools":false');
+      expect(mutationResult.error).toBeDefined();
+      expect(mutationResult.error.code).toBe(-32602); // InvalidParams — only queries allowed
 
-      // After toggle, MCP should now hide graphql tools again — but the
-      // current request is already dispatched. Send a fresh tools/list.
+      // Toggle the flag OFF via the admin GraphQL endpoint (not MCP) and verify
+      // that graphql_request then disappears from tools/list.
+      await setAdminToolsFlag(adminRequest, APP_URL, adminCookie, apiKeyId, false);
       const afterList = await mcpCallWithAPIKey(ctx, apiKey, 'tools/list');
       const afterNames = (afterList.result.tools || []).map((t) => t.name);
       expect(afterNames).not.toContain('graphql_request');
