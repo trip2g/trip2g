@@ -1,6 +1,7 @@
 package miniostorage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -244,8 +245,18 @@ func (a *FileStorage) GetAssetObject(ctx context.Context, asset db.NoteAsset) (i
 	if err != nil {
 		return nil, fmt.Errorf("failed to get asset object: %w", err)
 	}
+	defer object.Close()
 
-	return object, nil
+	// minio's GetObject returns a lazy reader that fetches on first Read; we must
+	// drain it here, while safeCtx is still alive. Returning the lazy reader would
+	// let the deferred cancel() fire first, so any later Read fails with
+	// "context canceled" (e.g. the git mirror materializer reads after this returns).
+	data, err := io.ReadAll(object)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read asset object: %w", err)
+	}
+
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {

@@ -185,7 +185,12 @@ type app struct {
 	debugJobLog []debugJobRecord
 	debugJobMu  sync.Mutex
 
-	noteWriteMu sync.Mutex
+	// noteWriteMu is a POINTER, not a value: app is shallow-copied per request
+	// (`newEnv := *a` in AcquireTxEnvInRequest/WithTransaction). A value mutex
+	// would be copied — defeating cross-request serialization and, worse,
+	// deadlocking if copied while locked. A pointer makes every copy share the
+	// one real mutex so plugin pushNotes and git apply/materialize truly serialize.
+	noteWriteMu *sync.Mutex
 
 	openaiClient *openai.Client
 
@@ -372,6 +377,8 @@ func main() {
 		graphTxs: &graphTransactions{
 			EnvMap: make(map[*app]*sql.Tx),
 		},
+
+		noteWriteMu: &sync.Mutex{},
 
 		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
@@ -717,15 +724,31 @@ func (a *app) ReadAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadC
 // HideNotePaths hides the given note paths (used when git deletes files) and
 // reloads the in-memory note views so they stop resolving.
 func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+
+	// note_paths.hidden_by is a FK to admins(user_id) and the public visibility
+	// filter is `hidden_by IS NULL`. A hide with hidden_by=NULL is therefore a
+	// no-op. Git deletions are system-initiated (authenticated by a git token
+	// tied to an admin), so attribute the hide to an admin user.
+	admins, err := a.Queries.ListAllAdmins(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list admins for hide: %w", err)
+	}
+	if len(admins) == 0 {
+		return fmt.Errorf("cannot hide note paths: no admin user to attribute the hide to")
+	}
+	hiddenBy := admins[0].UserID
+
 	for _, p := range paths {
-		if err := a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{Value: p}); err != nil {
+		if err := a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{HiddenBy: &hiddenBy, Value: p}); err != nil {
 			return fmt.Errorf("failed to hide note path %s: %w", p, err)
 		}
 	}
-	if len(paths) > 0 {
-		if _, err := a.PrepareLatestNotes(ctx, false); err != nil {
-			return fmt.Errorf("failed to prepare latest notes after hide: %w", err)
-		}
+
+	if _, err := a.PrepareLatestNotes(ctx, false); err != nil {
+		return fmt.Errorf("failed to prepare latest notes after hide: %w", err)
 	}
 	return nil
 }
