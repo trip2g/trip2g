@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	htmltemplate "html/template"
+	"io"
 	"io/fs"
 	"math/big"
 	"net"
@@ -182,6 +183,8 @@ type app struct {
 
 	debugJobLog []debugJobRecord
 	debugJobMu  sync.Mutex
+
+	noteWriteMu sync.Mutex
 
 	openaiClient *openai.Client
 
@@ -598,7 +601,10 @@ func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
 	if a.gitAPI == nil {
 		return nil, nil
 	}
-	return a.gitAPI.ApplyChanges(ctx)
+	if err := a.gitAPI.Materialize(ctx); err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (a *app) GitCommit() string {
@@ -666,6 +672,60 @@ func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Clien
 
 func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {
 	return pushnotes.Resolve(ctx, a, input)
+}
+
+func (a *app) LockNoteWrites()   { a.noteWriteMu.Lock() }
+func (a *app) UnlockNoteWrites() { a.noteWriteMu.Unlock() }
+
+// LatestNoteSources returns the raw markdown source of every visible note,
+// for materializing the git mirror.
+func (a *app) LatestNoteSources(ctx context.Context) ([]gitapi.NoteSource, error) {
+	nvs := a.LatestNoteViews()
+	if nvs == nil {
+		return nil, nil
+	}
+	out := make([]gitapi.NoteSource, 0, len(nvs.List))
+	for _, nv := range nvs.List {
+		out = append(out, gitapi.NoteSource{Path: nv.Path, Content: nv.Content})
+	}
+	return out, nil
+}
+
+// LatestAssetSources returns every latest note asset for the git mirror.
+func (a *app) LatestAssetSources(ctx context.Context) ([]gitapi.AssetSource, error) {
+	rows, err := a.Queries.AllLatestNoteAssets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list latest note assets: %w", err)
+	}
+	out := make([]gitapi.AssetSource, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, gitapi.AssetSource{
+			AbsolutePath: r.NoteAsset.AbsolutePath,
+			Asset:        r.NoteAsset,
+		})
+	}
+	return out, nil
+}
+
+// ReadAssetObject streams an asset's bytes from object storage.
+func (a *app) ReadAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadCloser, error) {
+	return a.GetAssetObject(ctx, asset)
+}
+
+// HideNotePaths hides the given note paths (used when git deletes files) and
+// reloads the in-memory note views so they stop resolving.
+func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
+	for _, p := range paths {
+		if err := a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{Value: p}); err != nil {
+			return fmt.Errorf("failed to hide note path %s: %w", p, err)
+		}
+	}
+	if len(paths) > 0 {
+		if _, err := a.PrepareLatestNotes(ctx, false); err != nil {
+			return fmt.Errorf("failed to prepare latest notes after hide: %w", err)
+		}
+	}
+	return nil
 }
 
 func (a *app) UploadNoteAsset(ctx context.Context, input graphmodel.UploadNoteAssetInput) (graphmodel.UploadNoteAssetOrErrorPayload, error) {
