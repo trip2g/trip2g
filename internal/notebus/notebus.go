@@ -31,6 +31,7 @@ type Stats struct {
 type Subscriber struct {
 	Ch      <-chan Batch
 	ch      chan Batch
+	done    chan struct{} // closed by Unsubscribe; signals Publish to stop sending
 	include []string
 	exclude []string
 }
@@ -58,6 +59,7 @@ func (b *Bus) Subscribe(includePatterns, excludePatterns []string, bufSize int) 
 	sub := &Subscriber{
 		Ch:      ch,
 		ch:      ch,
+		done:    make(chan struct{}),
 		include: includePatterns,
 		exclude: excludePatterns,
 	}
@@ -69,13 +71,22 @@ func (b *Bus) Subscribe(includePatterns, excludePatterns []string, bufSize int) 
 	return sub
 }
 
-// Unsubscribe removes the subscriber and closes its channel.
+// Unsubscribe removes the subscriber and signals Publish to stop sending to it.
+//
+// We close the subscriber's `done` channel rather than its data channel: Publish
+// can be mid-send after snapshotting subscribers, and closing the data channel
+// would race that send and panic ("send on closed channel"). Closing `done` is
+// safe — only Unsubscribe closes it, exactly once (guarded by map membership) —
+// and Publish selects on it to skip a subscriber that left after the snapshot.
 func (b *Bus) Unsubscribe(sub *Subscriber) {
 	b.mu.Lock()
+	_, ok := b.subs[sub]
 	delete(b.subs, sub)
 	b.mu.Unlock()
 
-	close(sub.ch)
+	if ok {
+		close(sub.done)
+	}
 }
 
 // Publish sends a filtered batch to all matching subscribers.
@@ -96,6 +107,7 @@ func (b *Bus) Publish(batch Batch) {
 		}
 		select {
 		case sub.ch <- filtered:
+		case <-sub.done: // unsubscribed after the snapshot — skip
 		default:
 			b.dropped.Add(1)
 			b.log.Warn("notebus: subscriber buffer full, dropping batch", "path", filtered.Changes[0].Path)
