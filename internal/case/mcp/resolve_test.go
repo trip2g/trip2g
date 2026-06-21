@@ -155,7 +155,7 @@ soul_profile:
 		require.Nil(t, resp.Error)
 
 		result := resp.Result.(mcp.ListToolsResult)
-		require.Len(t, result.Tools, 6)
+		require.Len(t, result.Tools, 7)
 
 		var toolNames []string
 		for _, tool := range result.Tools {
@@ -165,6 +165,7 @@ soul_profile:
 			"search",
 			"similar",
 			"note_html",
+			"expand",
 			"federated_search",
 			"federated_similar",
 			"federated_note_html",
@@ -205,11 +206,11 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Len(t, toolNames, 7)
+		require.Len(t, toolNames, 8)
 		require.Contains(t, toolNames, "code-review")
 
 		// Dynamic tool carries description and empty schema
-		dynTool := result.Tools[6]
+		dynTool := result.Tools[7]
 		require.Equal(t, "code-review", dynTool.Name)
 		require.Equal(t, "Detailed code review", dynTool.Description)
 	})
@@ -341,6 +342,62 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	require.Len(t, payload.Results[0].Matches, 1)
 	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
 	require.Contains(t, payload.Results[0].Matches[0].Snippet, "обидчику")
+}
+
+func TestExpandReturnsDirectChildren(t *testing.T) {
+	note := &appmodel.NoteView{
+		Path:   "en/user/example",
+		PathID: 42,
+		Title:  "Example",
+		Headings: appmodel.NoteViewHeadings{
+			{Text: "Setup", Level: 1, ID: "setup"},
+			{Text: "Install", Level: 2, ID: "install"},
+			{Text: "Events", Level: 1, ID: "events"},
+		},
+	}
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			return &appmodel.NoteViews{
+				List:    []*appmodel.NoteView{note},
+				PathMap: map[string]*appmodel.NoteView{note.Path: note},
+			}
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+	}
+
+	call := func(args string) mcp.ExpandPayload {
+		params := mcp.CallToolParams{Name: "expand", Arguments: json.RawMessage(args)}
+		paramsJSON, _ := json.Marshal(params)
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
+		})
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.NotEmpty(t, result.Content)
+		return result.StructuredContent.(mcp.ExpandPayload)
+	}
+
+	// Top level: two level-1 sections, both with children.
+	top := call(`{"path":"en/user/example"}`)
+	require.Equal(t, int64(42), top.NoteID)
+	require.Len(t, top.Children, 2)
+	require.Equal(t, "Setup", top.Children[0].Title)
+	require.True(t, top.Children[0].HasChildren)
+	require.Equal(t, "Events", top.Children[1].Title)
+	require.False(t, top.Children[1].HasChildren)
+
+	// Drill into Setup → one leaf subsection.
+	setup := call(`{"path":"en/user/example","toc_path":["Setup"]}`)
+	require.Len(t, setup.Children, 1)
+	require.Equal(t, "Install", setup.Children[0].Title)
+	require.Equal(t, []string{"Setup", "Install"}, setup.Children[0].Path)
+	require.False(t, setup.Children[0].HasChildren)
 }
 
 func TestSearchMarksFederationKBNotes(t *testing.T) {

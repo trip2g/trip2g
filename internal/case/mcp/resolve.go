@@ -166,6 +166,7 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	"search":                    true,
 	"similar":                   true,
 	"note_html":                 true,
+	"expand":                    true,
 	"federated_search":          true,
 	"federated_similar":         true,
 	"federated_note_html":       true,
@@ -217,6 +218,24 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items.",
+						Items:       &Property{Type: "string"},
+					},
+				},
+			},
+		},
+		{
+			Name:        "expand",
+			Description: "Walk a note's table of contents level by level (progressive disclosure). Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"path":    {Type: "string", Description: "Note path from search results"},
+					"href":    {Type: "string", Description: "Note href from search results"},
+					"pid":     {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
+					"note_id": {Type: "number", Description: "Stable note id from search results"},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level.",
 						Items:       &Property{Type: "string"},
 					},
 				},
@@ -347,6 +366,8 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
 	case "note_html":
 		return handleNoteHTML(ctx, env, req.ID, params.Arguments)
+	case "expand":
+		return handleExpand(ctx, env, req.ID, params.Arguments)
 	case "federated_search":
 		return handleFederatedSearch(ctx, env, req.ID, params.Arguments)
 	case "federated_similar":
@@ -837,6 +858,73 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 	}
 
 	return successResponse(id, textToolResult(string(note.HTML)))
+}
+
+func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	log := logger.WithPrefix(env.Logger(), "mcp:handleExpand")
+
+	args, errResp := unmarshalArgs[ExpandArguments](argsRaw, id, "expand")
+	if errResp != nil {
+		return *errResp
+	}
+
+	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
+	}
+
+	noteViews := env.LatestNoteViews()
+	note := resolveNoteReference(noteViews, NoteHTMLArguments{
+		Path:   args.Path,
+		Href:   args.Href,
+		PID:    args.PID,
+		NoteID: args.NoteID,
+	})
+	if note == nil {
+		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
+	}
+	canRead, err := canReadMCPNote(ctx, env, note)
+	if err != nil {
+		log.Error("note access check failed", "error", err, "path", note.Path)
+		return errorResponse(id, ErrCodeInternal, "Expand failed: "+err.Error())
+	}
+	if !canRead {
+		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
+	}
+
+	children := tocChildren(note.Headings, args.TocPath)
+	payload := ExpandPayload{
+		NoteID:   note.PathID,
+		NotePath: note.Path,
+		TocPath:  args.TocPath,
+		Children: children,
+	}
+	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children))
+	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children), payload))
+}
+
+// expandSummary renders a short human-readable view of an expand result for the
+// text content block; the structured payload carries the machine-readable tree.
+func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode) string {
+	where := "top level"
+	if len(parentPath) > 0 {
+		where = strings.Join(parentPath, " > ")
+	}
+	var sb strings.Builder
+	if len(children) == 0 {
+		fmt.Fprintf(&sb, "%s — %q has no subsections (leaf). Read it with note_html(toc_path).", note.Title, where)
+		return sb.String()
+	}
+	fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	for _, c := range children {
+		marker := ""
+		if c.HasChildren {
+			marker = " (has subsections)"
+		}
+		fmt.Fprintf(&sb, "- %s%s\n", c.Title, marker)
+	}
+	return sb.String()
 }
 
 func focusedChunkWindow(note *model.NoteView, matchID string, chunks []model.NoteChunk) (string, bool) {
