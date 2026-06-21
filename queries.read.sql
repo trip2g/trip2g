@@ -1289,6 +1289,15 @@ select * from google_oauth_credentials where id = ?;
 -- name: GetGitHubOAuthCredentials :one
 select * from github_oauth_credentials where id = ?;
 
+-- name: GetActiveOIDCCredentials :one
+select * from oidc_credentials where active = true limit 1;
+
+-- name: ListOIDCCredentials :many
+select * from oidc_credentials order by created_at desc;
+
+-- name: GetOIDCCredentials :one
+select * from oidc_credentials where id = ?;
+
 -- ============================================
 -- Change Webhooks
 -- ============================================

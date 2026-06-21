@@ -240,6 +240,15 @@ func (q *WriteQueries) DeactivateAllGoogleOAuthCredentials(ctx context.Context) 
 	return err
 }
 
+const deactivateAllOIDCCredentials = `-- name: DeactivateAllOIDCCredentials :exec
+update oidc_credentials set active = false
+`
+
+func (q *WriteQueries) DeactivateAllOIDCCredentials(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deactivateAllOIDCCredentials)
+	return err
+}
+
 const deleteAcmeCert = `-- name: DeleteAcmeCert :exec
 delete from acme_certs where key = ?
 `
@@ -366,6 +375,15 @@ type DeleteNoteVersionChunksBeyondParams struct {
 
 func (q *WriteQueries) DeleteNoteVersionChunksBeyond(ctx context.Context, arg DeleteNoteVersionChunksBeyondParams) error {
 	_, err := q.db.ExecContext(ctx, deleteNoteVersionChunksBeyond, arg.VersionID, arg.ChunkIndex)
+	return err
+}
+
+const deleteOIDCCredentials = `-- name: DeleteOIDCCredentials :exec
+delete from oidc_credentials where id = ?
+`
+
+func (q *WriteQueries) DeleteOIDCCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteOIDCCredentials, id)
 	return err
 }
 
@@ -1584,6 +1602,55 @@ type InsertNoteVersionParams struct {
 func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
 	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
 	return err
+}
+
+const insertOIDCCredentials = `-- name: InsertOIDCCredentials :one
+insert into oidc_credentials (name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by
+`
+
+type InsertOIDCCredentialsParams struct {
+	Name                  string `json:"name"`
+	Issuer                string `json:"issuer"`
+	ClientID              string `json:"client_id"`
+	ClientSecretEncrypted []byte `json:"client_secret_encrypted"`
+	Scopes                string `json:"scopes"`
+	AutoProvision         bool   `json:"auto_provision"`
+	AllowedEmailDomain    string `json:"allowed_email_domain"`
+	RequiredGroup         string `json:"required_group"`
+	Active                bool   `json:"active"`
+	CreatedBy             int64  `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertOIDCCredentials(ctx context.Context, arg InsertOIDCCredentialsParams) (OidcCredential, error) {
+	row := q.db.QueryRowContext(ctx, insertOIDCCredentials,
+		arg.Name,
+		arg.Issuer,
+		arg.ClientID,
+		arg.ClientSecretEncrypted,
+		arg.Scopes,
+		arg.AutoProvision,
+		arg.AllowedEmailDomain,
+		arg.RequiredGroup,
+		arg.Active,
+		arg.CreatedBy,
+	)
+	var i OidcCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Issuer,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Scopes,
+		&i.AutoProvision,
+		&i.AllowedEmailDomain,
+		&i.RequiredGroup,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const insertOffer = `-- name: InsertOffer :one
@@ -2874,6 +2941,15 @@ update google_oauth_credentials set active = (id = ?)
 
 func (q *WriteQueries) SetActiveGoogleOAuthCredentials(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, setActiveGoogleOAuthCredentials, id)
+	return err
+}
+
+const setActiveOIDCCredentials = `-- name: SetActiveOIDCCredentials :exec
+update oidc_credentials set active = (id = ?)
+`
+
+func (q *WriteQueries) SetActiveOIDCCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, setActiveOIDCCredentials, id)
 	return err
 }
 
@@ -4647,11 +4723,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }
