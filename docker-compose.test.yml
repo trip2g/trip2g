@@ -76,8 +76,9 @@ services:
       - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e # avoid conflicts with dev cookies
 
-      # Git API (using test vault)
-      - GIT_API_REPO_PATH=/app/testdata/vault
+      # Git API (DB-canonical mirror: gitapi owns a writable bare repo it
+      # materializes from the DB; the testdata vault is mounted read-only).
+      - GIT_API_REPO_PATH=/data/git
       - GIT_API_BASE_PATH=/git
 
       # Email (mock for tests)
@@ -142,8 +143,8 @@ services:
       - JWT_SECRET=test-peer-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer
 
-      # Git API (seedvault)
-      - GIT_API_REPO_PATH=/app/testdata/seedvault
+      # Git API (DB-canonical mirror; writable bare repo, distinct per service)
+      - GIT_API_REPO_PATH=/data/git-peer
       - GIT_API_BASE_PATH=/git
 
       # Email (mock)
@@ -204,8 +205,8 @@ services:
       - JWT_SECRET=test-peer2-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer2
 
-      # Git API (seedvault2)
-      - GIT_API_REPO_PATH=/app/testdata/seedvault2
+      # Git API (DB-canonical mirror; writable bare repo, distinct per service)
+      - GIT_API_REPO_PATH=/data/git-peer2
       - GIT_API_BASE_PATH=/git
 
       # Email (mock)
@@ -266,8 +267,8 @@ services:
       - JWT_SECRET=test-peer3-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer3
 
-      # Git API (seedvault3)
-      - GIT_API_REPO_PATH=/app/testdata/seedvault3
+      # Git API (DB-canonical mirror; writable bare repo, distinct per service)
+      - GIT_API_REPO_PATH=/data/git-peer3
       - GIT_API_BASE_PATH=/git
 
       # Email (mock)
