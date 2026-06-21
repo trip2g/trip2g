@@ -230,6 +230,25 @@ USER_TOKEN_INSECURE=true
 
 Use that only for temporary testing. For a public instance, keep secure cookies and use TLS.
 
+## Background job schedules
+
+Two background jobs run **every minute** by default:
+
+- `send_scheduled_telegram_publishposts` — sends scheduled Telegram posts that are due.
+- `execute_cron_webhooks` — fires your cron webhooks that are due.
+
+Each does a small database write on every tick. On a busy instance you can lower the frequency with a cron expression (6-field, **with a leading seconds field**):
+
+```dotenv
+# Run both hourly instead of every minute
+CRON_TELEGRAM_PUBLISH_SCHEDULE=0 0 * * * *
+CRON_EXECUTE_WEBHOOKS_SCHEDULE=0 0 * * * *
+```
+
+A longer interval means scheduled Telegram posts and cron webhooks fire less precisely (up to an hour late) in exchange for less database load.
+
+> The managed (public cloud) instances run these **hourly** by default to keep the shared database light. Self-hosted instances keep the every-minute default unless you change it.
+
 ## `Caddyfile`
 
 For a clean public setup, give the site and file storage separate hostnames:
