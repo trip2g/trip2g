@@ -743,7 +743,164 @@ func (v *FederationGraphQLParams) UnmarshalJSON(data []byte) error {
 func (v *FederationGraphQLParams) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson7b3c8c57DecodeTrip2gInternalModel5(l, v)
 }
-func easyjson7b3c8c57DecodeTrip2gInternalModel6(in *jlexer.Lexer, out *FederationContent) {
+func easyjson7b3c8c57DecodeTrip2gInternalModel6(in *jlexer.Lexer, out *FederationExpandParams) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "kb_id":
+			out.KBID = string(in.String())
+		case "pid":
+			out.PID = int64(in.Int64())
+		case "note_id":
+			out.NoteID = string(in.String())
+		case "path":
+			out.Path = string(in.String())
+		case "href":
+			out.Href = string(in.String())
+		case "toc_path":
+			if in.IsNull() {
+				in.Skip()
+				out.TocPath = nil
+			} else {
+				in.Delim('[')
+				if out.TocPath == nil {
+					if !in.IsDelim(']') {
+						out.TocPath = make([]string, 0, 4)
+					} else {
+						out.TocPath = []string{}
+					}
+				} else {
+					out.TocPath = (out.TocPath)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v12 string
+					v12 = string(in.String())
+					out.TocPath = append(out.TocPath, v12)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson7b3c8c57EncodeTrip2gInternalModel6(out *jwriter.Writer, in FederationExpandParams) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if in.KBID != "" {
+		const prefix string = ",\"kb_id\":"
+		first = false
+		out.RawString(prefix[1:])
+		out.String(string(in.KBID))
+	}
+	if in.PID != 0 {
+		const prefix string = ",\"pid\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(in.PID))
+	}
+	if in.NoteID != "" {
+		const prefix string = ",\"note_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.NoteID))
+	}
+	if in.Path != "" {
+		const prefix string = ",\"path\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Path))
+	}
+	if in.Href != "" {
+		const prefix string = ",\"href\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Href))
+	}
+	if len(in.TocPath) != 0 {
+		const prefix string = ",\"toc_path\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v13, v14 := range in.TocPath {
+				if v13 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v14))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v FederationExpandParams) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson7b3c8c57EncodeTrip2gInternalModel6(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v FederationExpandParams) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson7b3c8c57EncodeTrip2gInternalModel6(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *FederationExpandParams) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson7b3c8c57DecodeTrip2gInternalModel6(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *FederationExpandParams) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson7b3c8c57DecodeTrip2gInternalModel6(l, v)
+}
+func easyjson7b3c8c57DecodeTrip2gInternalModel7(in *jlexer.Lexer, out *FederationContent) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -776,7 +933,7 @@ func easyjson7b3c8c57DecodeTrip2gInternalModel6(in *jlexer.Lexer, out *Federatio
 		in.Consumed()
 	}
 }
-func easyjson7b3c8c57EncodeTrip2gInternalModel6(out *jwriter.Writer, in FederationContent) {
+func easyjson7b3c8c57EncodeTrip2gInternalModel7(out *jwriter.Writer, in FederationContent) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -796,23 +953,23 @@ func easyjson7b3c8c57EncodeTrip2gInternalModel6(out *jwriter.Writer, in Federati
 // MarshalJSON supports json.Marshaler interface
 func (v FederationContent) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson7b3c8c57EncodeTrip2gInternalModel6(&w, v)
+	easyjson7b3c8c57EncodeTrip2gInternalModel7(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v FederationContent) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson7b3c8c57EncodeTrip2gInternalModel6(w, v)
+	easyjson7b3c8c57EncodeTrip2gInternalModel7(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *FederationContent) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson7b3c8c57DecodeTrip2gInternalModel6(&r, v)
+	easyjson7b3c8c57DecodeTrip2gInternalModel7(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *FederationContent) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson7b3c8c57DecodeTrip2gInternalModel6(l, v)
+	easyjson7b3c8c57DecodeTrip2gInternalModel7(l, v)
 }

@@ -5,7 +5,34 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"trip2g/internal/model"
 )
+
+func TestTocChildren(t *testing.T) {
+	headings := model.NoteViewHeadings{
+		{Text: "Setup", Level: 1, ID: "setup"},
+		{Text: "Install", Level: 2, ID: "install"},
+		{Text: "Configure", Level: 2, ID: "configure"},
+		{Text: "Events", Level: 1, ID: "events"},
+		{Text: "Note changed", Level: 2, ID: "note_changed"},
+	}
+
+	top := tocChildren(headings, nil)
+	require.Equal(t, []TOCNode{
+		{Title: "Setup", Level: 1, Path: []string{"Setup"}, HasChildren: true},
+		{Title: "Events", Level: 1, Path: []string{"Events"}, HasChildren: true},
+	}, top)
+
+	setup := tocChildren(headings, []string{"Setup"})
+	require.Equal(t, []TOCNode{
+		{Title: "Install", Level: 2, Path: []string{"Setup", "Install"}, HasChildren: false},
+		{Title: "Configure", Level: 2, Path: []string{"Setup", "Configure"}, HasChildren: false},
+	}, setup)
+
+	require.Empty(t, tocChildren(headings, []string{"Setup", "Install"})) // leaf
+	require.Empty(t, tocChildren(headings, []string{"Nope"}))             // unknown path
+}
 
 // TestNormalizeForMatchBothPipelines verifies that the same logical text, when
 // rendered through two different HTML pipelines (bleve fragment vs goldmark HTML),

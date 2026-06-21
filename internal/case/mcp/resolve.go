@@ -166,20 +166,22 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	"search":                    true,
 	"similar":                   true,
 	"note_html":                 true,
+	"expand":                    true,
 	"federated_search":          true,
 	"federated_similar":         true,
 	"federated_note_html":       true,
+	"federated_expand":          true,
 	"graphql_introspection":     true,
 	"graphql_request":           true,
 	"federated_graphql_request": true,
 	MCPMethodInitialize:         true,
 }
 
-func handleToolsList(ctx context.Context, env Env, id any) Response {
+func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:funlen // flat declarative list of built-in tool schemas
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus TOC path arrays for each result that describe the note's precise structure. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) inspect the result's toc items for the note's structure; 3) call note_html(toc_path=[...]) to read the exact section, or note_html(pid=..., match_id=...) for a focused chunk window.",
+			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(toc_path=[...]) to read the matched section, or expand(pid=..., toc_path=[...]) to navigate the note's structure level by level; 3) note_html(pid=..., match_id=...) for a focused chunk window.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -204,7 +206,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (path array from a search result toc item) to read an exact section identified in the drill-down: search -> breadcrumb (approximate) -> toc paths (structure) -> note_html(toc_path=[...]) (precise).",
+			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -223,8 +225,26 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 			},
 		},
 		{
+			Name:        "expand",
+			Description: "Walk a note's table of contents level by level (progressive disclosure). Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"path":    {Type: "string", Description: "Note path from search results"},
+					"href":    {Type: "string", Description: "Note href from search results"},
+					"pid":     {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
+					"note_id": {Type: "number", Description: "Stable note id from search results"},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level.",
+						Items:       &Property{Type: "string"},
+					},
+				},
+			},
+		},
+		{
 			Name:        "federated_search",
-			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and TOC path arrays per result, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
+			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -263,6 +283,26 @@ func handleToolsList(ctx context.Context, env Env, id any) Response {
 					"pid":      {Type: "number", Description: "Remote stable note id"},
 					"note_id":  {Type: "string", Description: "Remote stable note id (uint64 string)"},
 					"match_id": {Type: "string", Description: "Focused match id from remote search results"},
+				},
+				Required: []string{"kb_id"},
+			},
+		},
+		{
+			Name:        "federated_expand",
+			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id":   {Type: "string", Description: "Target knowledge base id"},
+					"path":    {Type: "string", Description: "Remote note path"},
+					"href":    {Type: "string", Description: "Remote note href"},
+					"pid":     {Type: "number", Description: "Remote stable note id"},
+					"note_id": {Type: "string", Description: "Remote stable note id (uint64 string)"},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to the node to expand. Omit or [] for the top level.",
+						Items:       &Property{Type: "string"},
+					},
 				},
 				Required: []string{"kb_id"},
 			},
@@ -347,12 +387,16 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
 	case "note_html":
 		return handleNoteHTML(ctx, env, req.ID, params.Arguments)
+	case "expand":
+		return handleExpand(ctx, env, req.ID, params.Arguments)
 	case "federated_search":
 		return handleFederatedSearch(ctx, env, req.ID, params.Arguments)
 	case "federated_similar":
 		return handleFederatedSimilar(ctx, env, req.ID, params.Arguments)
 	case "federated_note_html":
 		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
+	case "federated_expand":
+		return handleFederatedExpand(ctx, env, req.ID, params.Arguments)
 	case "graphql_introspection":
 		if !mcpAdminToolsEnabled(ctx) {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
@@ -655,11 +699,9 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 		URL:      noteURL(note),
 		Kind:     noteKind(note),
 		Score:    score,
-		TOC:      buildNoteTOC(note.Headings),
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
 		item.Kind = "federation_kb"
-		item.TOC = nil // federation pointers have no local TOC
 		item.Federation = &FederationRef{
 			KBID:             kb.ID,
 			KBURL:            kb.URL,
@@ -837,6 +879,73 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 	}
 
 	return successResponse(id, textToolResult(string(note.HTML)))
+}
+
+func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	log := logger.WithPrefix(env.Logger(), "mcp:handleExpand")
+
+	args, errResp := unmarshalArgs[ExpandArguments](argsRaw, id, "expand")
+	if errResp != nil {
+		return *errResp
+	}
+
+	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
+	}
+
+	noteViews := env.LatestNoteViews()
+	note := resolveNoteReference(noteViews, NoteHTMLArguments{
+		Path:   args.Path,
+		Href:   args.Href,
+		PID:    args.PID,
+		NoteID: args.NoteID,
+	})
+	if note == nil {
+		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
+	}
+	canRead, err := canReadMCPNote(ctx, env, note)
+	if err != nil {
+		log.Error("note access check failed", "error", err, "path", note.Path)
+		return errorResponse(id, ErrCodeInternal, "Expand failed: "+err.Error())
+	}
+	if !canRead {
+		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
+	}
+
+	children := tocChildren(note.Headings, args.TocPath)
+	payload := ExpandPayload{
+		NoteID:   note.PathID,
+		NotePath: note.Path,
+		TocPath:  args.TocPath,
+		Children: children,
+	}
+	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children))
+	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children), payload))
+}
+
+// expandSummary renders a short human-readable view of an expand result for the
+// text content block; the structured payload carries the machine-readable tree.
+func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode) string {
+	where := "top level"
+	if len(parentPath) > 0 {
+		where = strings.Join(parentPath, " > ")
+	}
+	var sb strings.Builder
+	if len(children) == 0 {
+		fmt.Fprintf(&sb, "%s — %q has no subsections (leaf). Read it with note_html(toc_path).", note.Title, where)
+		return sb.String()
+	}
+	fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	for _, c := range children {
+		marker := ""
+		if c.HasChildren {
+			marker = " (has subsections)"
+		}
+		fmt.Fprintf(&sb, "- %s%s\n", c.Title, marker)
+	}
+	return sb.String()
 }
 
 func focusedChunkWindow(note *model.NoteView, matchID string, chunks []model.NoteChunk) (string, bool) {

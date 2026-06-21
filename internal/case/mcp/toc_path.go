@@ -486,3 +486,47 @@ func firstSectionPath(noteHTML string) []string {
 	}
 	return []string{firstHeader}
 }
+
+// tocChildren returns the direct children of the TOC node addressed by parentPath.
+// An empty parentPath returns the top-level sections. Each child reports whether it
+// has children of its own, so an agent can walk the tree level by level (expand)
+// without loading the note's content or its full flat TOC.
+func tocChildren(headings model.NoteViewHeadings, parentPath []string) []TOCNode {
+	all := buildNoteTOC(headings)
+	out := make([]TOCNode, 0)
+	for _, item := range all {
+		if len(item.Path) != len(parentPath)+1 || !tocPathHasPrefix(item.Path, parentPath) {
+			continue
+		}
+		out = append(out, TOCNode{
+			Title:       item.Title,
+			Level:       item.Level,
+			Path:        item.Path,
+			HasChildren: tocHasDirectChild(all, item.Path),
+		})
+	}
+	return out
+}
+
+// tocPathHasPrefix reports whether path starts with prefix.
+func tocPathHasPrefix(path, prefix []string) bool {
+	if len(path) < len(prefix) {
+		return false
+	}
+	for i := range prefix {
+		if path[i] != prefix[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// tocHasDirectChild reports whether any node in all is a direct child of path.
+func tocHasDirectChild(all []TOCItem, path []string) bool {
+	for _, item := range all {
+		if len(item.Path) == len(path)+1 && tocPathHasPrefix(item.Path, path) {
+			return true
+		}
+	}
+	return false
+}

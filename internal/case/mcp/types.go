@@ -99,6 +99,15 @@ type FederatedNoteHTMLArguments struct {
 	MatchID string `json:"match_id,omitempty"`
 }
 
+type FederatedExpandArguments struct {
+	KBID    string   `json:"kb_id"`
+	PID     int64    `json:"pid,omitempty"`
+	NoteID  string   `json:"note_id,omitempty"`
+	Path    string   `json:"path,omitempty"`
+	Href    string   `json:"href,omitempty"`
+	TocPath []string `json:"toc_path,omitempty"`
+}
+
 type FederationRef struct {
 	KBID             string `json:"kb_id"`
 	KBURL            string `json:"kb_url"`
@@ -144,7 +153,6 @@ type SearchResultItem struct {
 	URL        string         `json:"url"`
 	Kind       string         `json:"kind"`
 	Score      float64        `json:"score"`
-	TOC        []TOCItem      `json:"toc,omitempty"`
 	Matches    []SearchMatch  `json:"matches,omitempty"`
 	Federation *FederationRef `json:"federation,omitempty"`
 }
@@ -185,6 +193,31 @@ type NoteHTMLArguments struct {
 	MatchID      string   `json:"match_id,omitempty"`
 	ContextWords int      `json:"context_words,omitempty"`
 	TocPath      []string `json:"toc_path,omitempty"`
+}
+
+type ExpandArguments struct {
+	Path    string   `json:"path,omitempty"`
+	Href    string   `json:"href,omitempty"`
+	PID     int64    `json:"pid,omitempty"`
+	NoteID  int64    `json:"note_id,omitempty"`
+	TocPath []string `json:"toc_path,omitempty"`
+}
+
+// TOCNode is one node in a progressive-disclosure TOC walk: a direct child of the
+// node addressed by the request's toc_path. HasChildren tells an agent whether it
+// can drill further (expand) or should read the leaf (note_html).
+type TOCNode struct {
+	Title       string   `json:"title"`
+	Level       int      `json:"level"`
+	Path        []string `json:"path"`
+	HasChildren bool     `json:"has_children"`
+}
+
+type ExpandPayload struct {
+	NoteID   int64     `json:"note_id"`
+	NotePath string    `json:"note_path"`
+	TocPath  []string  `json:"toc_path,omitempty"`
+	Children []TOCNode `json:"children"`
 }
 
 type GraphQLIntrospectionArguments struct {

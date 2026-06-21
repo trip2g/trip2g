@@ -93,3 +93,60 @@ Mirror `scripts/bench-pushnotes.{sh,mjs}`:
 
 - `Token Economy.md:21` / `Fuzzy Pointer.md:68` — section ~300 vs full ~3000 (~10×).
 - `Token Economy.md:38-73` — GraphQL field-selection savings.
+
+---
+
+## Update 2026-06-21 — what we actually built, and what it revealed
+
+We did **not** build the synthetic mjs harness above. A simpler artifact answered the
+question better: a **zero-dependency Python script** (`scripts/token_economy_check.py`)
+that hits the LIVE public MCP endpoint (`trip2g.com/_system/mcp`) anonymously and
+measures token economy on the real docs vault. Anyone can run it:
+`python3 scripts/token_economy_check.py`.
+
+Findings (live, real docs):
+
+- A focused read costs **~11× fewer tokens** than the whole note (median across 9
+  real queries). The "~300/3000 ≈ 10×" claim is directionally honest; the win scales
+  with note size — long notes save most, short notes (already cheap) save little.
+- The token saving is the **easy, nearly self-evident half**. The hard, interesting
+  half is **selecting the right section**: deterministic selection (regex, then
+  snippet-vs-HTML substring) failed on **8 of 9** real queries. Picking the
+  answer-bearing `toc_path` is a *navigation* problem, not a token-count problem.
+- Shareable chart: `docs/en/user/token-economy-bench.md` (+ ru) renders a live
+  `datachart` from `docs/en/user/token_economy_bench.datachart.csv`.
+
+## Next: `expand` — progressive-disclosure tree navigation (new MCP tool)
+
+The benchmark surfaced the real feature. Today an agent gets the whole **flat** `toc`
+from `search` and jumps straight to a leaf. Progressive disclosure means walking the
+tree node by node **without loading content or searching every chunk**:
+
+```
+toc(pid)                       -> top-level sections          (~20 tokens)
+expand(pid, toc_path)          -> direct children of a node   (~15 tokens)
+note_html(pid, toc_path)       -> read the chosen leaf        (~300 tokens)
+```
+
+`expand(pid, toc_path)` returns the **direct children** of a TOC node — `title`,
+`level`, `path`, `has_children` — cheap labels to decide which branch to enter. An
+empty/omitted `toc_path` returns the top level. Vector search becomes the *entry
+point*; structural navigation moves around from there. The heading-breadcrumb-in-chunk
+(Contextual Retrieval, already shipped as F4) is the bridge: a fuzzy query lands on a
+chunk whose embedded breadcrumb **is** a precise `toc_path`.
+
+Two corollaries from review:
+
+- **Drop the flat `toc` from `search` results.** Once `expand` exists, structure is
+  fetched on demand, so the per-result `toc[]` that `search` ships today is dead
+  weight in every response — removing it slims search too. Nothing depends on it
+  after `expand` lands.
+- **Federated parity.** Every navigation tool needs a `federated_*` twin
+  (`federated_expand`) so a peer KB's tree navigates exactly like a local one,
+  matching `federated_search` / `federated_note_html`.
+
+External fit: a "detailed TOC of a 10-hour podcast" (knowlume distills long podcasts
+and exposes exactly such a tree) is navigated with `expand` instead of dumping the
+transcript — the same pattern, different corpus.
+
+We start implementing `expand` (+ `federated_expand`, + search slimming) next.

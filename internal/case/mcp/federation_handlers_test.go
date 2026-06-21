@@ -14,6 +14,8 @@ import (
 type federationMock struct {
 	searchFunc          func(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error)
 	federatedSearchFunc func(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error)
+	expandFunc          func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
+	federatedExpandFunc func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
 }
 
 func (m *federationMock) Search(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
@@ -48,6 +50,20 @@ func (m *federationMock) FederatedNoteHTML(ctx context.Context, params appmodel.
 
 func (m *federationMock) GraphQLRequest(ctx context.Context, params appmodel.FederationGraphQLParams) (appmodel.FederationResult, error) {
 	panic("unexpected GraphQLRequest call")
+}
+
+func (m *federationMock) Expand(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error) {
+	if m.expandFunc == nil {
+		panic("unexpected Expand call")
+	}
+	return m.expandFunc(ctx, params)
+}
+
+func (m *federationMock) FederatedExpand(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error) {
+	if m.federatedExpandFunc == nil {
+		panic("unexpected FederatedExpand call")
+	}
+	return m.federatedExpandFunc(ctx, params)
 }
 
 func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
@@ -148,4 +164,53 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 	require.Equal(t, "deep", gotKBID)
 	result := resp.Result.(mcp.CallToolResult)
 	require.Equal(t, "remote nested", result.Content[0].Text)
+}
+
+func TestFederatedExpandUsesMockedFederationClient(t *testing.T) {
+	kbNote := &appmodel.NoteView{
+		PathID:             17,
+		MCPFederationKBURL: "https://bob.example/_system/mcp",
+		MCPFederationKBID:  "bob",
+	}
+	nvs := appmodel.NewNoteViews()
+	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
+
+	var gotPath []string
+	federation := &federationMock{
+		expandFunc: func(_ context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error) {
+			gotPath = params.TocPath
+			return appmodel.FederationResult{
+				Content:           []appmodel.FederationContent{{Type: "text", Text: "remote children"}},
+				StructuredContent: json.RawMessage(`{"children":[{"title":"Sub"}]}`),
+			}, nil
+		},
+	}
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
+			require.Equal(t, "bob", kbID)
+			return federation, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "federated_expand",
+		Arguments: json.RawMessage(`{"kb_id":"bob","pid":42,"toc_path":["Setup"]}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	})
+
+	require.Nil(t, resp.Error)
+	require.Equal(t, []string{"Setup"}, gotPath)
+	result := resp.Result.(mcp.CallToolResult)
+	require.Equal(t, "remote children", result.Content[0].Text)
+	require.JSONEq(t, `{"children":[{"title":"Sub"}]}`, string(result.StructuredContent.(json.RawMessage)))
 }

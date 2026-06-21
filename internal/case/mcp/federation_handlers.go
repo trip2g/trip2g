@@ -138,6 +138,30 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 	})
 }
 
+func handleFederatedExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	args, errResp := unmarshalArgs[FederatedExpandArguments](argsRaw, id, "federated_expand")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.KBID == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
+	}
+	params := model.FederationExpandParams{
+		PID:     args.PID,
+		NoteID:  args.NoteID,
+		Path:    args.Path,
+		Href:    args.Href,
+		TocPath: args.TocPath,
+	}
+	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
+		if rest == "" {
+			return client.Expand(ctx, params)
+		}
+		params.KBID = rest
+		return client.FederatedExpand(ctx, params)
+	})
+}
+
 func handleFederatedGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	if !env.FederatedGraphQLEnabled() {
 		return errorResponse(id, ErrCodeMethodNotFound, "Method not found: federated_graphql_request")
