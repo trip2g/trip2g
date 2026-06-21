@@ -86,6 +86,10 @@ services:
 
       # OpenAI key (optional — pass through if you need to switch back to text-embedding-3-small)
       - OPENAI_API_KEY
+
+      # MCP federation
+      - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/vault:/app/testdata/vault:ro
@@ -148,6 +152,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault:/app/testdata/seedvault:ro
@@ -209,6 +214,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault2:/app/testdata/seedvault2:ro
@@ -270,6 +276,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault3:/app/testdata/seedvault3:ro
