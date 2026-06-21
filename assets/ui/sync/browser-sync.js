@@ -206,6 +206,14 @@ var $trip2g_sync_bundle = (() => {
   };
   var k = { __proto__: null, default: P };
 
+  // src/sync/utils.ts
+  function isAlwaysPublishable(path) {
+    if (path.startsWith("_layouts/") && (path.endsWith(".html") || path.endsWith(".html.json"))) {
+      return true;
+    }
+    return false;
+  }
+
   // src/sync/classify.ts
   function classifyFile(localHash, remoteHash, lastSyncedHash) {
     if (localHash === null && remoteHash === null) {
@@ -329,10 +337,14 @@ var $trip2g_sync_bundle = (() => {
 
   // src/sync/filter.ts
   function filterPlan(plan, options) {
-    const { twoWaySync, hasPublishFields } = options;
+    const { twoWaySync, hasPublishFields, isExcluded } = options;
     const isPublishable = (path) => {
       if (!hasPublishFields) return true;
       return hasPublishFields(path);
+    };
+    const excluded = (path) => {
+      if (!isExcluded) return false;
+      return isExcluded(path);
     };
     const filteredClassifications = [];
     const pulls = [];
@@ -344,6 +356,14 @@ var $trip2g_sync_bundle = (() => {
     const serverDeleted = [];
     let unchanged = 0;
     for (const c2 of plan.classifications) {
+      if (excluded(c2.path)) {
+        if (c2.remoteHash !== null) {
+          const asHide = c2.action === "local_deleted" ? c2 : { ...c2, action: "local_deleted" };
+          filteredClassifications.push(asHide);
+          localDeleted.push(asHide);
+        }
+        continue;
+      }
       const publishable = isPublishable(c2.path);
       switch (c2.action) {
         case "unchanged":
@@ -421,7 +441,9 @@ var $trip2g_sync_bundle = (() => {
       conflictsResolved: 0,
       assetsUploaded: 0,
       assetsDownloaded: 0,
-      errors: []
+      errors: [],
+      updatedUrls: [],
+      warnings: []
     };
     const syncState = env.getSyncState();
     const pulledPaths = [];
@@ -480,7 +502,13 @@ var $trip2g_sync_bundle = (() => {
       result.errors.push(...assetResult.errors);
     }
     if (result.pushed > 0 || result.assetsUploaded > 0) {
-      await env.commitNotes();
+      const commitResult = await env.commitNotes();
+      result.updatedUrls = commitResult.updated.map(({ path, url }) => ({ path, url }));
+      for (const note of commitResult.updated) {
+        for (const w2 of note.warnings) {
+          result.warnings.push({ path: note.path, level: w2.level, message: w2.message });
+        }
+      }
     }
     await env.saveSyncState(syncState);
     return result;
@@ -523,7 +551,7 @@ var $trip2g_sync_bundle = (() => {
   }
   async function executePushes(env, pushes, syncState) {
     if (pushes.length === 0) {
-      return { count: 0, errors: [], pushedNotes: [] };
+      return { count: 0, errors: [], pushedNotes: [], urls: [] };
     }
     const errors = [];
     const updates = [];
@@ -540,7 +568,7 @@ var $trip2g_sync_bundle = (() => {
       }
     }
     if (updates.length === 0) {
-      return { count: 0, errors, pushedNotes: [] };
+      return { count: 0, errors, pushedNotes: [], urls: [] };
     }
     const updatePaths = new Set(updates.map((u2) => u2.path));
     const batchSize = env.pushBatchSize || 100;
@@ -560,7 +588,8 @@ var $trip2g_sync_bundle = (() => {
       }
     }
     const filteredNotes = pushedNotes.filter((n) => updatePaths.has(n.path));
-    return { count: pushedCount, errors, pushedNotes: filteredNotes };
+    const urls = filteredNotes.filter((n) => typeof n.url === "string").map((n) => ({ path: n.path, url: n.url }));
+    return { count: pushedCount, errors, pushedNotes: filteredNotes, urls };
   }
   async function handleConflicts(env, conflicts, syncState) {
     if (conflicts.length === 0) {
@@ -1307,7 +1336,7 @@ var $trip2g_sync_bundle = (() => {
       if (updates.length === 0) return [];
       if (this.options.publishField) {
         for (const update of updates) {
-          if (!this.hasPublishFieldInContent(update.content)) {
+          if (!this.hasPublishFieldInContent(update.content, update.path)) {
             throw new Error(
               `[Security] Attempted to push note "${update.path}" without publish field "${this.options.publishField}". This is a bug in the sync logic - please report it.`
             );
@@ -1447,6 +1476,8 @@ var $trip2g_sync_bundle = (() => {
         query,
         variables: {
           input: {
+            skipCommit: true,
+            // batch: skip per-upload PrepareLatestNotes; executePlan commits once at the end
             file: null,
             noteId: parseInt(params.noteId),
             sha256Hash: params.sha256Hash,
@@ -1512,6 +1543,14 @@ ${body}`);
 				... on CommitNotesPayload {
 					__typename
 					success
+					updated {
+						path
+						url
+						warnings {
+							level
+							message
+						}
+					}
 				}
 			}
 		}`;
@@ -1520,6 +1559,13 @@ ${body}`);
         throw new Error(`Commit failed: ${result.commitNotes.message}`);
       }
       this.log("Notes committed");
+      return {
+        updated: (result.commitNotes.updated ?? []).map((n) => ({
+          path: n.path,
+          url: n.url ?? "",
+          warnings: (n.warnings ?? []).map((w2) => ({ level: w2.level, message: w2.message }))
+        }))
+      };
     }
     // ============ Asset Operations ============
     async computeBinaryHash(data) {
@@ -1700,8 +1746,9 @@ ${body}`);
     hasPublishFieldSync(path) {
       return true;
     }
-    hasPublishFieldInContent(content) {
+    hasPublishFieldInContent(content, path) {
       if (!this.options.publishField) return true;
+      if (isAlwaysPublishable(path)) return true;
       if (!content.startsWith("---")) return false;
       const endIndex = content.indexOf("\n---", 3);
       if (endIndex === -1) return false;
