@@ -248,6 +248,26 @@ An agent working on a layout alongside a human can share intermediate results in
 5. If any `warnings` array is non-empty, agent reads the Jet error, fixes the template, and POSTs again.
 6. The human opens the link, sees the rendered page, and gives feedback — all before any file is uploaded.
 
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant API as /_system/renderlayout
+    participant Buffer as Ring buffer (10, in-memory)
+    participant Human
+
+    Agent->>API: POST { layout.src, note.src }
+    API->>Buffer: store rendered HTML (nothing written to vault)
+    API-->>Agent: { previewURL, warnings }
+    alt warnings non-empty
+        Agent->>Agent: read Jet error, fix template
+        Agent->>API: POST again
+    else all warnings empty
+        Agent-->>Human: share previewURL
+        Human->>API: GET ?preview_id=xxx
+        API-->>Human: rendered HTML
+    end
+```
+
 The buffer holds the last 10 renders. Links expire when the server restarts or the buffer wraps around.
 
 ---

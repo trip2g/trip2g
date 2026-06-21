@@ -8,19 +8,18 @@ The MCP server turns your knowledge base into an AI consultant. Connect it to an
 
 ### How it works
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  AI client      │────▶│   MCP server    │────▶│  Knowledge base │
-│                 │◀────│   trip2g.com    │◀────│  (your notes)   │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-     Question            Vector search           Notes + instructions
-     Answer              Relevant notes
-```
+```mermaid
+sequenceDiagram
+    participant Client as AI client
+    participant MCP as MCP server (trip2g.com)
+    participant KB as Knowledge base (your notes)
 
-1. Ask a question in the chat
-2. The MCP server finds relevant notes in the knowledge base
-3. Returns note text and author instructions
-4. The AI client composes an answer grounded in your knowledge
+    Client->>MCP: Ask a question
+    MCP->>KB: Vector search
+    KB-->>MCP: Relevant notes
+    MCP-->>Client: Note text + author instructions
+    Note over Client: Composes answer grounded in your knowledge
+```
 
 ### Methods
 
@@ -181,6 +180,18 @@ Clients connect as:
 - `/_system/mcp` — default persona (mcp_method: initialize)
 - `/_system/mcp?method=wiki` — public wiki assistant
 - `/_system/mcp?method=premium_advisor` — premium advisor (requires subscription)
+
+```mermaid
+flowchart LR
+    A[/_system/mcp] --> D[mcp_method: initialize<br/>default persona]
+    B[/_system/mcp?method=wiki] --> W[mcp_method: wiki<br/>free: true -> public]
+    C[/_system/mcp?method=premium_advisor] --> P{Subscriber?}
+    P -->|Yes| PA[mcp_method: premium_advisor<br/>in-depth advisor]
+    P -->|No| E[Method not found 401]
+    D --> T[Same tool set]
+    W --> T
+    PA --> T
+```
 
 ### Personal access tokens
 

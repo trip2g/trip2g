@@ -10,7 +10,9 @@ title: "Навигация"
 - [[ru/user/selfhosted|Self-hosted]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
+- [[ru/user/editor|Редактор в браузере]]
 - [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
+- [[ru/user/live-editing|Живое редактирование]]
 
 ### Telegram
 
@@ -29,6 +31,7 @@ title: "Навигация"
 
 - [[ru/user/default-template|Дефолтный шаблон]]
 - [[ru/user/templates|Основы]]
+- [[ru/user/jet-debugging|Отладка шаблонов]]
 - [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]]
 - [[ru/user/bem|BEM-именование в шаблонах]]
 - [[ru/user/templates-advanced|API и запросы]]
@@ -40,6 +43,7 @@ title: "Навигация"
 - [[ru/user/mcp|MCP-сервер]]
 - [[ru/user/federation|MCP Federation]]
 - [[ru/user/context-separation|Разделение контекста]]
+- [[ru/user/hub|Публичный хаб баз]]
 - [[ru/user/llm-wiki|LLM Wiki для агентов]]
 - [[ru/user/renderlayout|Превью лейаута]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
@@ -51,11 +55,13 @@ title: "Навигация"
 - [[ru/user/rss-feeds|RSS-ленты]]
 - [[ru/user/oauth|OAuth]]
 - [[ru/user/mermaid|Диаграммы Mermaid]]
+- [[ru/user/canvas|Canvas, Base и Excalidraw]]
 - [[ru/user/youtube_embed|YouTube]]
 
 ### Дополнительно
 
 - [[ru/typography|Типографика и Markdown]]
+- [[ru/user/roadmap|Дорожная карта]]
 - [[ru/user/multidomains|Мультидомены]]
 - [[ru/user/multilingual|Мультиязычность]]
 - [[ru/user/search|Как работает поиск]]

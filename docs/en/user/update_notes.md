@@ -102,6 +102,24 @@ How it works:
    - `replace`: the toggled line, e.g. `- [x] buy milk` (or reverse to uncheck)
 3. On success, the UI updates optimistically.
 
+```mermaid
+sequenceDiagram
+    participant Reader
+    participant Frontend
+    participant Server
+
+    Note over Frontend: Note rendered with data-line attrs<br/>(allow_task_toggle: true)
+    Reader->>Frontend: Click checkbox
+    Frontend->>Server: updateNotes patch<br/>find=unchecked, replace=checked
+    alt find appears exactly once
+        Server-->>Frontend: UpdateNotesSuccessPayload
+        Frontend->>Reader: Optimistic UI update
+    else duplicate task text
+        Server-->>Frontend: UpdateNotesPatchNotFoundPayload
+        Frontend->>Reader: cannot toggle - duplicate task
+    end
+```
+
 **Uniqueness requirement.** If the same task text appears more than once in the note, patch returns `UpdateNotesPatchNotFoundPayload`. The frontend should handle this by showing a "cannot toggle — duplicate task text" message rather than silently failing.
 
 Enable checkbox toggling with frontmatter:
@@ -126,6 +144,16 @@ When provided:
 - The server checks the hash before applying the change.
 - If the content has changed since you read it, the mutation returns `UpdateNotesHashMismatchPayload` with `path` and the current `actualHash`.
 - Retry by re-fetching the note and repeating the operation with the new hash.
+
+```mermaid
+flowchart TD
+    A[Read note + content hash] --> B[Transform content]
+    B --> C[updateNotes with expectedHash]
+    C --> D{Hash still<br/>matches?}
+    D -->|Yes| E[UpdateNotesSuccessPayload<br/>change applied]
+    D -->|No| F[UpdateNotesHashMismatchPayload<br/>actualHash]
+    F --> A
+```
 
 For checkbox toggles triggered directly from the UI, `expectedHash` is typically not needed — the `find` string itself acts as a guard. If the note changed and the line no longer exists exactly, the patch returns `PatchNotFound` instead of clobbering the new content.
 

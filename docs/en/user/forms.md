@@ -92,6 +92,22 @@ How it works:
 - The default layout reads `siteKey`, renders the Turnstile widget, and resubmits with the token in `turnstileToken`.
 - Locally (no `turnstile-secret-key` configured) verification is a no-op — any submit succeeds. In production the secret key is set and the captcha gates every submit.
 
+```mermaid
+sequenceDiagram
+    participant Visitor
+    participant Page
+    participant Server
+
+    Visitor->>Page: Fill form, click Submit
+    Page->>Server: submitForm (no token)
+    Server-->>Page: TurnstileRequiredPayload { siteKey }
+    Page->>Visitor: Render Turnstile widget
+    Visitor->>Page: Solve captcha
+    Page->>Server: submitForm (turnstileToken)
+    Server-->>Page: SubmitFormPayload { submitId }
+    Page->>Visitor: Redirect to success_url
+```
+
 Combine with `can_submit: admin` for sensitive forms; on public forms the captcha is the only defence against anonymous spam.
 
 ### Multiple forms on one note — `forms:`
@@ -208,6 +224,18 @@ Variables for a single inline form:
 | `SubmitFormPayload` | Accepted; `submitId` is the row id |
 | `FormSubmitDeniedPayload` | `reason` = `admin_required` / `paid_required` / `not_implemented` |
 | `ErrorPayload` | Validation failed; `message` describes it, `byFields[]` lists per-field issues |
+
+```mermaid
+flowchart TD
+    A[submitForm received] --> B{can_submit allows<br/>this viewer?}
+    B -->|admin only, not admin| R1[FormSubmitDeniedPayload<br/>reason admin_required]
+    B -->|paid_user| R2[FormSubmitDeniedPayload<br/>reason not_implemented]
+    B -->|allowed| C{Valid Turnstile<br/>token?}
+    C -->|No| R3[TurnstileRequiredPayload<br/>siteKey]
+    C -->|Yes or disabled| D{Fields pass<br/>validation?}
+    D -->|No| R4[ErrorPayload<br/>byFields]
+    D -->|Yes| R5[SubmitFormPayload<br/>submitId]
+```
 
 Submissions enqueue an email to vault admins automatically.
 

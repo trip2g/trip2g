@@ -2,10 +2,14 @@
 title: "Documentation"
 free: true
 content: [self, magazine]
+magazine_include_files: "en/user/*.md"
 magazine_include_property: home_position
+magazine_sort_property: home_position
 left_sidebar: "user/_sidebar"
+right_sidebar: false
 lang_redirect: "[[ru/user/_index]]"
 lang: en
+routes: [/docs]
 ---
 
 trip2g turns your Obsidian vault into a website in under a minute. Install the sync plugin, connect your instance, press Sync — your notes are live.

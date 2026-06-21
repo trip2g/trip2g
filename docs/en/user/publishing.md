@@ -1,5 +1,5 @@
 ---
-home_position: 1
+home_position: 90
 title: Publishing notes
 free: true
 lang_redirect: "[[ru/user/Свойства заметок]]"

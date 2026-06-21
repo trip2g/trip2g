@@ -1,6 +1,7 @@
 ---
 free: true
 title: OAuth авторизация
+lang_redirect: "[[en/user/oauth]]"
 ---
 
 # Авторизация через Google и GitHub
@@ -24,6 +25,23 @@ title: OAuth авторизация
 2. **Пользователь входит через OAuth** — его email в Google/GitHub должен совпадать с email в Trip2G
 
 OAuth не даёт доступ автоматически. Сначала вы решаете, кого пустить. Потом человек входит удобным способом.
+
+```mermaid
+sequenceDiagram
+    participant Admin as Администратор
+    participant trip2g as Trip2G
+    participant Reader as Читатель
+    participant Provider as Google / GitHub
+
+    Admin->>trip2g: Добавить пользователя (email + роль)
+    Reader->>Provider: Войти (один клик)
+    Provider-->>trip2g: Подтверждённый email
+    alt Email совпадает с зарегистрированным пользователем
+        trip2g->>Reader: Доступ разрешён
+    else Email не найден
+        trip2g->>Reader: Доступ запрещён
+    end
+```
 
 ## Как подключить
 

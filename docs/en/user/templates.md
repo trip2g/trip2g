@@ -1,5 +1,5 @@
 ---
-home_position: 3
+home_position: 70
 title: Templates
 free: true
 lang_redirect: "[[ru/user/templates]]"
@@ -38,6 +38,13 @@ Page content in markdown.
 ```
 
 The page now uses your template.
+
+```mermaid
+flowchart LR
+    Note[Markdown note<br/>layout: my-page] --> Engine{Jet template engine}
+    Layout[_layouts/my-page.html<br/>note.Title, note.HTMLString] --> Engine
+    Engine --> Page[Complete HTML page]
+```
 
 ### Default template layout properties
 

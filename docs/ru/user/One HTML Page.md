@@ -1,7 +1,7 @@
 ---
 title: "Страница на чистом HTML"
 free: true
-home_position: 995
+home_position: 20
 lang_redirect: "[[en/user/One HTML Page]]"
 ---
 
