@@ -48,11 +48,12 @@ func (api *API) materialize(ctx context.Context) error {
 		content, readErr := io.ReadAll(rc)
 		_ = rc.Close()
 		if readErr != nil {
-			// A single unreadable asset must not fail the whole git operation
-			// (clone/push) — notes are the core of the mirror. Skip it; the next
-			// materialize re-attempts once the asset is readable.
-			api.logger.Warn("materialize: skip asset with read error", "path", a.AbsolutePath, "error", readErr)
-			continue
+			// ReadAssetObject already drained the object under a live context, so
+			// this reads from an in-memory buffer and a failure here is a genuine
+			// fault, not a missing/transient object (missing objects fail at the
+			// open above and are skipped). Surface it rather than silently
+			// dropping the asset from the tree.
+			return fmt.Errorf("materialize asset %s: %w", a.AbsolutePath, readErr)
 		}
 		repoPath := strings.TrimPrefix(a.AbsolutePath, "/")
 		if err := api.addBlob(gitEnv, repoPath, content); err != nil {

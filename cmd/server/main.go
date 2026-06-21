@@ -180,10 +180,10 @@ type app struct {
 	fedHTTPClient     *fasthttp.Client
 
 	webhookTestCalls []webhookTestCall
-	webhookTestMu    sync.Mutex
+	webhookTestMu    *sync.Mutex
 
 	debugJobLog []debugJobRecord
-	debugJobMu  sync.Mutex
+	debugJobMu  *sync.Mutex
 
 	// noteWriteMu is a POINTER, not a value: app is shallow-copied per request
 	// (`newEnv := *a` in AcquireTxEnvInRequest/WithTransaction). A value mutex
@@ -197,8 +197,10 @@ type app struct {
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
 	shutdown    context.CancelFunc
-	stopped     atomic.Bool
-	ctx         context.Context
+	// Pointer so the per-request shallow copy (newEnv := *a) shares the one flag
+	// rather than copying a noCopy atomic value.
+	stopped *atomic.Bool
+	ctx     context.Context
 
 	graphTxs *graphTransactions
 
@@ -245,7 +247,10 @@ type app struct {
 
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
-	assetsMu    sync.Mutex
+	// Pointer, not value: app is shallow-copied per request (newEnv := *a), and
+	// assetHashes is shared by reference. A copied value mutex would not guard
+	// the shared map, risking a fatal concurrent map write. See noteWriteMu.
+	assetsMu *sync.Mutex
 
 	*configregistry.SiteConfigBuilder
 
@@ -378,7 +383,11 @@ func main() {
 			EnvMap: make(map[*app]*sql.Tx),
 		},
 
-		noteWriteMu: &sync.Mutex{},
+		noteWriteMu:   &sync.Mutex{},
+		assetsMu:      &sync.Mutex{},
+		webhookTestMu: &sync.Mutex{},
+		debugJobMu:    &sync.Mutex{},
+		stopped:       &atomic.Bool{},
 
 		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
@@ -731,7 +740,11 @@ func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
 	// note_paths.hidden_by is a FK to admins(user_id) and the public visibility
 	// filter is `hidden_by IS NULL`. A hide with hidden_by=NULL is therefore a
 	// no-op. Git deletions are system-initiated (authenticated by a git token
-	// tied to an admin), so attribute the hide to an admin user.
+	// tied to an admin), so attribute the hide to an admin user. We pick the
+	// oldest admin (smallest user_id, i.e. the bootstrap owner) so attribution
+	// is deterministic regardless of how many admins exist.
+	// TODO: thread the authenticating git token's admin_id through the apply
+	// path for precise per-actor attribution (see internal/gitapi checkAuth).
 	admins, err := a.Queries.ListAllAdmins(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list admins for hide: %w", err)
@@ -739,7 +752,8 @@ func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
 	if len(admins) == 0 {
 		return fmt.Errorf("cannot hide note paths: no admin user to attribute the hide to")
 	}
-	hiddenBy := admins[0].UserID
+	// ListAllAdmins orders by user_id DESC, so the last element is the oldest.
+	hiddenBy := admins[len(admins)-1].UserID
 
 	for _, p := range paths {
 		if err := a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{HiddenBy: &hiddenBy, Value: p}); err != nil {
@@ -973,7 +987,7 @@ func (a *app) WithTransaction(ctx context.Context, fn func(context.Context, *app
 
 	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, "tx")))
 
-	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
+	newEnv := *a
 	newEnv.queries = queries.Queries
 	newEnv.Queries = queries.Queries
 	newEnv.WriteQueries = queries
@@ -1012,7 +1026,7 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	logLabel := fmt.Sprintf("tx %s", label+":")
 	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
 
-	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
+	newEnv := *a
 	newEnv.queries = queries.Queries
 	newEnv.Queries = queries.Queries
 	newEnv.WriteQueries = queries
