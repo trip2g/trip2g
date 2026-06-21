@@ -3,6 +3,8 @@
 **Status:** plan only, no code yet.
 **Goal:** add a generic **OIDC** login provider to trip2g, alongside the existing Google/GitHub OAuth, so the app can be a Relying Party against a corporate IdP. Immediate target: a client who already runs **Authentik**.
 
+> ⚠️ **Scope — when this is needed.** This OIDC RP is for **STANDALONE trip2g** (a customer runs one trip2g directly, logging in against their IdP). For the **box fleet** (hundreds of per-agent trip2g instances managed by simplepanel), instances do **NOT** do OIDC — the human logs into the panel via OIDC, and the panel brokers entry into the specific instance via the existing **HAT** mechanism (`/_system/hat` ← `signinbyhat`, signed with the per-slot secret). See `simplepanel/docs/sso_box_design.md` → "Флот из сотен инстансов". So for the box, this plan is optional; build it only for the standalone-trip2g sale.
+
 This is the trip2g half of the cross-product SSO design. The full picture (panel + trip2g + agent dashboards behind Traefik, IdP choice, authN-vs-authZ split) lives in the simplepanel repo: `docs/sso_box_design.md`. Read it for the "why"; this doc is the trip2g "how".
 
 > trip2g conventions (from `CLAUDE.md`): English everywhere; **SQL migrations require confirmation before creating**; `make sqlc` after editing queries; commits are short one-liners, no `Co-Authored-By`.
