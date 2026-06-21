@@ -80,7 +80,10 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	}()
 
 	vars := make(jet.VarMap)
-	vars["note"] = reflect.ValueOf(note)
+	// Wrap in templateviews.Note so smoke render matches request-time rendering,
+	// which exposes methods like M() that layouts call. Passing the raw
+	// *model.NoteView here caused false "can't use M as field name" warnings.
+	vars["note"] = reflect.ValueOf(templateviews.NewNote(note))
 	vars["nvs"] = reflect.ValueOf(nvsWrap)
 	vars["title"] = reflect.ValueOf(note.Title)
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{}})
