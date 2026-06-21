@@ -205,25 +205,22 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 			Score:    hit.Score,
 		}
 
-		for field, fragments := range hit.Fragments {
-			if len(fragments) == 0 {
-				continue
+		// hit.Fragments is a map → Go randomizes iteration order, and the two
+		// analyzer views of a field (e.g. Body vs Body_en) can yield different
+		// highlighted fragments. Select fields in a FIXED priority order so
+		// identical queries produce identical highlighting (deterministic snippets).
+		// Title and Title_en are two analyzer views of the same source field;
+		// likewise Body and Body_en.
+		for _, field := range []string{"Title", "Title_en"} {
+			if frags := hit.Fragments[field]; len(frags) > 0 {
+				result.HighlightedTitle = &frags[0]
+				break
 			}
-
-			// Title and Title_en are two analyzer views of the same source field;
-			// likewise Body and Body_en. Map both to the same result field.
-			if field == "Title" || field == "Title_en" {
-				if result.HighlightedTitle == nil {
-					result.HighlightedTitle = &fragments[0]
-				}
-				continue
-			}
-
-			if field == "Body" || field == "Body_en" {
-				if len(result.HighlightedContent) == 0 {
-					result.HighlightedContent = fragments
-				}
-				continue
+		}
+		for _, field := range []string{"Body", "Body_en"} {
+			if frags := hit.Fragments[field]; len(frags) > 0 {
+				result.HighlightedContent = frags
+				break
 			}
 		}
 
