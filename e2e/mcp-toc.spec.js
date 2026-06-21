@@ -6,8 +6,9 @@
  * 1. Rendered HTML contains <div data-header data-level> wrappers for headings
  * 2. note_html accepts toc_path and returns only that section's HTML
  * 3. note_html falls back to full HTML when toc_path doesn't match
- * 4. search results include toc[] with {title, level, path} for notes with headings
+ * 4. expand walks the TOC tree (top-level, then children of a node) for navigation
  * 5. search matches include toc_path pointing to the section containing the snippet
+ * 6. search results no longer carry the flat toc[] (structure comes from expand)
  *
  * Uses article-with-toc.md (free: true) which has:
  *   ## Introduction
@@ -134,61 +135,59 @@ test.describe('MCP TOC', () => {
     expect(fallback).toBe(full);
   });
 
-  // ── search: TOC field ────────────────────────────────────────────────────────
+  // ── search: slimmed (structure now comes from expand) ────────────────────────
 
-  test('search result includes toc array with correct items', async () => {
+  test('search result no longer carries the flat toc array', async () => {
     const payload = await toolCall(apiContext, 'search', {
       query: 'table of contents widget sidebar',
     });
-
     const item = (payload.results ?? []).find(
       (r) => r.note_path === NOTE_PATH || r.href === NOTE_HREF,
     );
     expect(item, 'article-with-toc not found in search results').toBeDefined();
+    // Structure is fetched on demand via `expand`, not shipped in every search hit.
+    expect(item.toc).toBeUndefined();
+  });
 
-    expect(Array.isArray(item.toc)).toBeTruthy();
-    expect(item.toc.length).toBe(4); // Introduction, Main Section, Subsection, Conclusion
+  // ── expand: progressive-disclosure navigation ────────────────────────────────
 
-    for (const tocItem of item.toc) {
-      expect(typeof tocItem.title).toBe('string');
-      expect(typeof tocItem.level).toBe('number');
-      expect(Array.isArray(tocItem.path)).toBeTruthy();
-      expect(tocItem.path.at(-1)).toBe(tocItem.title);
+  test('expand returns the top-level sections with has_children flags', async () => {
+    const payload = await toolCall(apiContext, 'expand', { path: NOTE_PATH });
+    const children = payload.children ?? [];
+    const byTitle = Object.fromEntries(children.map((c) => [c.title, c]));
+
+    // Top level: Introduction, Main Section, Conclusion (Subsection is nested).
+    expect(Object.keys(byTitle).sort()).toEqual(['Conclusion', 'Introduction', 'Main Section']);
+    for (const c of children) {
+      expect(typeof c.title).toBe('string');
+      expect(typeof c.level).toBe('number');
+      expect(Array.isArray(c.path)).toBeTruthy();
+      expect(c.path.at(-1)).toBe(c.title);
     }
-
-    const titles = item.toc.map((t) => t.title);
-    expect(titles).toContain('Introduction');
-    expect(titles).toContain('Main Section');
-    expect(titles).toContain('Subsection');
-    expect(titles).toContain('Conclusion');
+    expect(byTitle['Main Section'].has_children).toBeTruthy();
+    expect(byTitle['Introduction'].has_children).toBeFalsy();
   });
 
-  test('Subsection has nested path [Main Section, Subsection]', async () => {
-    const payload = await toolCall(apiContext, 'search', {
-      query: 'table of contents widget sidebar',
+  test('expand into Main Section returns the nested Subsection', async () => {
+    const payload = await toolCall(apiContext, 'expand', {
+      path: NOTE_PATH,
+      toc_path: ['Main Section'],
     });
-
-    const item = (payload.results ?? []).find(
-      (r) => r.note_path === NOTE_PATH || r.href === NOTE_HREF,
-    );
-    expect(item?.toc).toBeDefined();
-
-    const subsection = item.toc.find((t) => t.title === 'Subsection');
-    expect(subsection).toBeDefined();
-    expect(subsection.path).toEqual(['Main Section', 'Subsection']);
+    const children = payload.children ?? [];
+    expect(children.length).toBe(1);
+    expect(children[0].title).toBe('Subsection');
+    expect(children[0].path).toEqual(['Main Section', 'Subsection']);
     // Levels are normalized: ## → 1, ### → 2 (Normalize() remaps to start from 1)
-    expect(subsection.level).toBe(2);
+    expect(children[0].level).toBe(2);
+    expect(children[0].has_children).toBeFalsy();
   });
 
-  test('all toc paths are unique', async () => {
-    const payload = await toolCall(apiContext, 'search', {
-      query: 'table of contents widget',
+  test('expand of a leaf section returns no children', async () => {
+    const payload = await toolCall(apiContext, 'expand', {
+      path: NOTE_PATH,
+      toc_path: ['Introduction'],
     });
-    const item = (payload.results ?? []).find(
-      (r) => r.note_path === NOTE_PATH || r.href === NOTE_HREF,
-    );
-    const paths = item.toc.map((t) => JSON.stringify(t.path));
-    expect(new Set(paths).size).toBe(paths.length);
+    expect(payload.children ?? []).toHaveLength(0);
   });
 
   // ── search: toc_path on matches ──────────────────────────────────────────────
@@ -216,16 +215,17 @@ test.describe('MCP TOC', () => {
 
   // ── Round-trip: search TOC → section HTML ────────────────────────────────────
 
-  test('round-trip: use toc path from search to fetch section via note_html', async () => {
-    const payload = await toolCall(apiContext, 'search', { query: 'table of contents widget' });
-    const item = (payload.results ?? []).find(
-      (r) => r.note_path === NOTE_PATH || r.href === NOTE_HREF,
-    );
-    const subsection = item.toc.find((t) => t.title === 'Subsection');
+  test('round-trip: navigate with expand, then read the section via note_html', async () => {
+    const top = await toolCall(apiContext, 'expand', { path: NOTE_PATH });
+    const mainSection = (top.children ?? []).find((c) => c.title === 'Main Section');
+    expect(mainSection?.has_children).toBeTruthy();
+
+    const sub = await toolCall(apiContext, 'expand', { path: NOTE_PATH, toc_path: mainSection.path });
+    const subsection = (sub.children ?? []).find((c) => c.title === 'Subsection');
     expect(subsection).toBeDefined();
 
     const html = await toolCallText(apiContext, 'note_html', {
-      path: item.note_path,
+      path: NOTE_PATH,
       toc_path: subsection.path,
     });
 
@@ -241,5 +241,16 @@ test.describe('MCP TOC', () => {
     expect(tool).toBeDefined();
     expect(tool.inputSchema.properties.toc_path).toBeDefined();
     expect(tool.inputSchema.properties.toc_path.type).toBe('array');
+  });
+
+  test('expand and federated_expand tools are exposed with toc_path', async () => {
+    const result = await mcpCall(apiContext, 'tools/list');
+    const names = result.tools.map((t) => t.name);
+    expect(names).toContain('expand');
+    expect(names).toContain('federated_expand');
+
+    const expand = result.tools.find((t) => t.name === 'expand');
+    expect(expand.inputSchema.properties.toc_path).toBeDefined();
+    expect(expand.inputSchema.properties.toc_path.type).toBe('array');
   });
 });
