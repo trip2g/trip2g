@@ -278,6 +278,20 @@ rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
 # and make revoke ineffective (FederationSecretByKBURL still finds an active row).
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
 
+# Cold idempotency for the federation specs: reset the peer DBs and the
+# obsidian-sync CLI state files together. Peers are seeded by the sync CLI,
+# which records what it pushed in a per-vault .sync-state.json. If the peer DBs
+# are wiped (or otherwise out of sync) while those state files persist, the CLI
+# assumes the peers are already seeded and pushes nothing — leaving peers empty
+# and federation/search specs failing with "No results found". Resetting both
+# keeps a from-cold run reproducible. Set KEEP_PEER_DATA=1 to skip (faster local
+# iteration when the peers are already warm and consistent).
+if [ "${KEEP_PEER_DATA}" != "1" ]; then
+  rm -f tmp/data/peer.sqlite3* tmp/data/peer2.sqlite3* tmp/data/peer3.sqlite3*
+  find testdata/seedvault testdata/seedvault2 testdata/seedvault3 \
+    -name ".sync-state.json" -delete 2>/dev/null || true
+fi
+
 # Cleanup telegram channels (only if ENABLE_TG=1)
 if [ "${ENABLE_TG}" = "1" ]; then
   go run ./cmd/tge2e -db "$DB_PATH" patch-db
