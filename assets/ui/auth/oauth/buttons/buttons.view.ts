@@ -7,6 +7,9 @@ namespace $.$$ {
 			githubAuthUrl(input: $input) {
 				authUrl
 			}
+			oidcAuthUrl(input: $input) {
+				authUrl
+			}
 		}
 	`)
 
@@ -29,6 +32,10 @@ namespace $.$$ {
 			return this.oauth_urls()?.githubAuthUrl.authUrl || ''
 		}
 
+		override oidc_uri() {
+			return this.oauth_urls()?.oidcAuthUrl.authUrl || ''
+		}
+
 		override buttons() {
 			const list: $mol_view[] = []
 			if( this.google_uri() ) {
@@ -36,6 +43,9 @@ namespace $.$$ {
 			}
 			if( this.github_uri() ) {
 				list.push( this.Github() )
+			}
+			if( this.oidc_uri() ) {
+				list.push( this.Oidc() )
 			}
 			return list
 		}
