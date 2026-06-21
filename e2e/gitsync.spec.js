@@ -4,13 +4,29 @@ import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { graphqlSignIn } from './helpers/auth.js';
 
 const GRAPHQL_URL = '/_system/graphql';
 const APP_URL = process.env.APP_URL || 'http://localhost:8081';
+// The git smart-HTTP base path is configurable; the e2e stack serves it at /git
+// (docker-compose.test.yml sets GIT_API_BASE_PATH=/git), prod default is /_system/git.
+const GIT_BASE_PATH = process.env.GIT_API_BASE_PATH || '/_system/git';
 
 async function gql(request, apiKey, query, variables = {}) {
   const res = await request.post(GRAPHQL_URL, {
     headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+    data: { query, variables },
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  if (body.errors) throw new Error(`GraphQL errors: ${JSON.stringify(body.errors)}`);
+  return body.data;
+}
+
+// gqlAdmin runs a mutation in the admin namespace using an admin JWT (Bearer).
+async function gqlAdmin(request, jwt, query, variables = {}) {
+  const res = await request.post(GRAPHQL_URL, {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
     data: { query, variables },
   });
   expect(res.ok()).toBeTruthy();
@@ -25,7 +41,7 @@ function git(cwd, env, ...args) {
 
 function authedRemote(token) {
   const u = new URL(APP_URL);
-  return `${u.protocol}//user:${encodeURIComponent(token)}@${u.host}/_system/git`;
+  return `${u.protocol}//user:${encodeURIComponent(token)}@${u.host}${GIT_BASE_PATH}`;
 }
 
 const GIT_ENV = {
@@ -41,18 +57,22 @@ test.describe('git <-> plugin coexistence', () => {
   test.beforeAll(async ({ request }) => {
     apiKey = fs.readFileSync(path.join(process.cwd(), '.test-api-key'), 'utf8').trim();
 
-    const data = await gql(
+    // createGitToken lives under the admin namespace and needs an admin JWT.
+    const jwt = await graphqlSignIn(request);
+    const data = await gqlAdmin(
       request,
-      apiKey,
+      jwt,
       `mutation($input: CreateGitTokenInput!) {
-         createGitToken(input: $input) {
-           ... on CreateGitTokenPayload { value }
-           ... on ErrorPayload { message }
+         admin {
+           createGitToken(input: $input) {
+             ... on CreateGitTokenPayload { value }
+             ... on ErrorPayload { message }
+           }
          }
        }`,
       { input: { description: 'e2e', canPull: true, canPush: true } },
     );
-    token = data.createGitToken.value;
+    token = data.admin.createGitToken.value;
     expect(token).toBeTruthy();
 
     workdir = fs.mkdtempSync(path.join(os.tmpdir(), 'gitsync-'));

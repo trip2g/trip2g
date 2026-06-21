@@ -70,6 +70,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 export APP_URL="${APP_URL:-http://localhost:20081}"
+export GIT_API_BASE_PATH="${GIT_API_BASE_PATH:-/git}"
 export USER_TOKEN_COOKIE_NAME=trip2g_e2e
 export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 
