@@ -1,0 +1,86 @@
+# Isolated stack for the obsidian-sync performance benchmark.
+#
+# Goal: measure note-sync time on ~2000 notes WITHOUT vector search / embedding
+# noise. One app + minio, fresh seeded DB, distinct ports so it never collides
+# with the dev (8081), test (200xx) or whoami (410xx) stacks.
+#
+# Bring-up is orchestrated by scripts/syncperf/setup.mjs (seed DB, up, mint key).
+# Manual:
+#   sqlite3 tmp/data/syncperf.sqlite3 < testdata/e2e_seed.sql
+#   docker compose -f docker-compose.syncperf.yml up -d --build
+name: trip2g_syncperf_env
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: trip2g-syncperf-minio
+    ports:
+      - "29100:29100"
+      - "29101:29101"
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+    command: server /data --console-address ":29101" --address ":29100"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:29100/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-syncperf-app
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "20071:20071"
+      - "20072:20072"
+    environment:
+      # Server
+      - LISTEN_ADDR=0.0.0.0:20071
+      - INTERNAL_LISTEN_ADDR=:20072
+      - DB_FILE=/data/syncperf.sqlite3
+      - DEV=true # sign in code 111111
+      - LOG_LEVEL=info # keep logs quiet so they don't skew timings
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      # Vector search OFF — this is the whole point of the syncperf stack.
+      - 'FEATURES={"vector_search": {"enabled": false}}'
+
+      # MinIO (assets). Distinct prefix; reused even though v1 notes carry no assets.
+      - MINIO_ENDPOINT=minio:29100
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_PREFIX=syncperf/
+      - MINIO_USE_SSL=false
+      # No periodic backup work skewing the numbers.
+      - SIMPLE_BACKUP=false
+
+      # Public URL
+      - PUBLIC_URL=http://localhost:20071
+
+      # JWT (benchmark-only secret)
+      - JWT_SECRET=syncperf-secret-key-benchmark-only-do-not-use
+      - USER_TOKEN_COOKIE_NAME=trip2g_syncperf
+
+      # Git API (DB-canonical mirror; writable bare repo, distinct dir)
+      - GIT_API_REPO_PATH=/data/git-syncperf
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock)
+      - RESEND_API_KEY=test-key
+      - MAIL_FROM=test@example.com
+    volumes:
+      - ./tmp/data:/data
+      - ./testdata/vault:/app/testdata/vault:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20072/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
