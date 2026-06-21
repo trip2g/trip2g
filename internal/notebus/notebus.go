@@ -69,13 +69,17 @@ func (b *Bus) Subscribe(includePatterns, excludePatterns []string, bufSize int) 
 	return sub
 }
 
-// Unsubscribe removes the subscriber and closes its channel.
+// Unsubscribe removes the subscriber so it stops receiving events.
+//
+// The channel is deliberately NOT closed: Publish snapshots subscribers under
+// RLock and then sends after releasing it, so closing here would race that
+// in-flight send and panic ("send on closed channel"), taking down the whole
+// process. Consumers exit via ctx.Done() (see the subscription resolver), and
+// the abandoned channel is reclaimed by GC once the subscriber is unreferenced.
 func (b *Bus) Unsubscribe(sub *Subscriber) {
 	b.mu.Lock()
 	delete(b.subs, sub)
 	b.mu.Unlock()
-
-	close(sub.ch)
 }
 
 // Publish sends a filtered batch to all matching subscribers.

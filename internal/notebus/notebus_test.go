@@ -70,18 +70,43 @@ func TestExcludePatternsFilter(t *testing.T) {
 	}
 }
 
-// 4. Unsubscribe → channel closed.
-func TestUnsubscribeChannelClosed(t *testing.T) {
+// 4. Unsubscribe → no further delivery (channel is NOT closed by design).
+func TestUnsubscribeStopsDelivery(t *testing.T) {
 	b := newBus()
 	sub := b.Subscribe([]string{"**"}, nil, 8)
 	b.Unsubscribe(sub)
 
+	b.Publish(notebus.Batch{Changes: []notebus.Change{
+		{PathID: 4, Path: "x.md", Event: "create"},
+	}})
+
 	select {
 	case _, ok := <-sub.Ch:
-		require.False(t, ok, "channel should be closed after Unsubscribe")
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("timeout: channel not closed after Unsubscribe")
+		require.False(t, ok, "unsubscribed channel must not receive events")
+	case <-time.After(50 * time.Millisecond):
+		// expected: nothing delivered after Unsubscribe
 	}
+}
+
+// 4b. Unsubscribe racing Publish must never panic (send on closed channel).
+func TestUnsubscribeDuringPublishNoPanic(t *testing.T) {
+	b := newBus()
+	batch := notebus.Batch{Changes: []notebus.Change{
+		{PathID: 5, Path: "race.md", Event: "update"},
+	}}
+	for i := 0; i < 100; i++ {
+		sub := b.Subscribe([]string{"**"}, nil, 1)
+		done := make(chan struct{})
+		go func() {
+			for j := 0; j < 50; j++ {
+				b.Publish(batch)
+			}
+			close(done)
+		}()
+		b.Unsubscribe(sub) // races the concurrent Publish loop
+		<-done
+	}
+	// Reaching here without a panic is the assertion.
 }
 
 // 5. Fan-out: 3 subscribers all receive.
