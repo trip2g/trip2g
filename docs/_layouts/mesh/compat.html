@@ -42,10 +42,10 @@
   {{ yield compat_item(title="Obsidian", desc="Two-way sync via plugin. Vault stays local, queryable globally.", state="● ready") content }}
     <img class="compat-icon" src="{{ asset("compat-obsidian.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
-  {{ yield compat_item(title="Notion", desc="Adapter reads workspaces / databases as bases. Read-only first.", state="● ready") content }}
+  {{ yield compat_item(title="Notion", desc="No native connector. Point an agent at it and it brings pages in as markdown.", state="○ via agent", state_class="soon") content }}
     <img class="compat-icon" src="{{ asset("compat-notion.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
-  {{ yield compat_item(title="Drive", desc="Folders → vector index. Docs, sheets, PDFs.", state="● ready") content }}
+  {{ yield compat_item(title="Drive", desc="Same deal. An agent pulls docs in as markdown. Nothing to babysit.", state="○ via agent", state_class="soon") content }}
     <img class="compat-icon" src="{{ asset("compat-drive.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
   {{ yield compat_item(title="Telegram", desc="Channel publish + history mirror. Two-way echo.", state="● ready") content }}
@@ -63,10 +63,10 @@
   {{ yield compat_item(title="Obsidian", desc="Двусторонняя синхронизация через плагин. Vault остаётся локально, доступен глобально.", state="● ready") content }}
     <img class="compat-icon" src="{{ asset("compat-obsidian.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
-  {{ yield compat_item(title="Notion", desc="Адаптер читает workspace / базы данных как bases. Сначала только чтение.", state="● ready") content }}
+  {{ yield compat_item(title="Notion", desc="Нативного коннектора нет. Направь агента — он затащит страницы как markdown.", state="○ via agent", state_class="soon") content }}
     <img class="compat-icon" src="{{ asset("compat-notion.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
-  {{ yield compat_item(title="Drive", desc="Папки → векторный индекс. Docs, Sheets, PDF.", state="● ready") content }}
+  {{ yield compat_item(title="Drive", desc="То же самое. Агент тянет документы как markdown. Ничего нянчить не нужно.", state="○ via agent", state_class="soon") content }}
     <img class="compat-icon" src="{{ asset("compat-drive.svg") }}" alt="" width="28" height="28" loading="lazy">
   {{ end }}
   {{ yield compat_item(title="Telegram", desc="Публикация в канал + зеркало истории. Двусторонняя связь.", state="● ready") content }}

@@ -1,12 +1,20 @@
 # trip2g: marketing brief and content plan
 
 Source of truth for positioning, voice, and the content we're producing here.
-Grounding research (read it before writing): [`../dev/market_research_notebooklm.md`](../dev/market_research_notebooklm.md).
+Grounding research (read it before writing): [[dev/market_research_notebooklm]]
 
 ## What trip2g is (one line)
 An open-source, self-hosted way to turn your Markdown/Obsidian notes into a **federated knowledge mesh** that AI agents can query across trust tiers (personal, friends, company, public) without uploading your files to anyone's cloud.
 
 The name is *trip to graph*: every base is a graph, the bases connect into one larger graph, and agents walk it.
+
+## Two products, two go-to-markets (read this first)
+This pack is the **trip2g.com / OSS-core** GTM. There is a second product on top: the **sovereign B2B box** (the simplepanel control-plane + agent fleet + federation core, sold as a self-hosted appliance). It has a different buyer, a different beachhead, and its own materials. Do not mix them.
+
+- **trip2g.com (this pack):** OSS federated knowledge mesh for individuals and small circles. Beachhead = peer circles. Free / self-host. Lives here.
+- **The B2B box (separate):** a self-hosted appliance for an operator who runs an agent fleet over context they own and needs cross-org sharing no SaaS will do. Beachhead = the self-hosted-agent shop outgrowing n8n/Dify (entered via fleet-ops), expanded into cross-org federation. Materials + research live in `trip2g_simplepanel/docs/` (`market_entry_analysis.md`, `product_truth_b2b.md`, `cis_market_research.md`, and `marketing/` there).
+
+Three facts from the B2B research that strengthen *this* pack too: (1) no funded product peers two *separately-owned* knowledge bases under access control. That whitespace is real. (2) MIT NANDA (2025): 95% of enterprise GenAI pilots delivered no P&L impact, and 2026 analysts blame "missing or ungoverned context," not model quality. (3) MCP went from niche to ~97M monthly SDK downloads by Mar 2026. The "MCP-native, self-hosted" angle is timely.
 
 ## Beachhead (who we sell to first)
 **Small trusted peer circles**: 3-5 collaborators (co-readers, study partners, project builders) who already keep notes in Obsidian and are sick of the **Git-sync bottleneck**. They want a shared "community brain" their agents can search across, without any member giving up ownership of their files, and without a SaaS in the middle.
