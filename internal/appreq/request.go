@@ -52,6 +52,11 @@ type Request struct {
 	// (see WithAdminToken) should be attributed to — e.g. the owner of the
 	// authenticating MCP API key. Zero when the actor is unknown.
 	AdminActorUserID int
+
+	// FederatedSubgraphs carries the inbound federation identity's AllowedSubgraphs
+	// when the token Role is usertoken.RoleFederated. nil for non-federated requests.
+	FederatedSubgraphs []string
+	federatedScoped    bool
 }
 
 func (c *Request) Reset() {
@@ -67,6 +72,8 @@ func (c *Request) Reset() {
 	c.WebhookWritePatterns = nil
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
+	c.FederatedSubgraphs = nil
+	c.federatedScoped = false
 }
 
 func (c *Request) StoreInContext() {
@@ -105,6 +112,36 @@ func WithAdminToken(ctx context.Context) context.Context {
 	}
 	adminReq.SetUserToken(&usertoken.Data{ID: req.AdminActorUserID, Role: "admin"})
 	return context.WithValue(ctx, ctxKey, adminReq)
+}
+
+// WithFederatedToken returns a context whose appreq carries a non-admin,
+// subgraph-scoped federation identity. canreadnote.Resolve detects this and
+// gates reads via ResolveWithSubgraphs(allowedSubgraphs) with NO userID DB lookup.
+// allowedSubgraphs nil/empty => Free-only (fail-safe), never admin.
+func WithFederatedToken(ctx context.Context, allowedSubgraphs []string) context.Context {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		// No appreq in ctx: cannot scope safely. Return ctx unchanged so the
+		// downstream resolver sees an anonymous (nil) token => Free-only.
+		return ctx
+	}
+	scopedReq := &Request{
+		Req:                req.Req,
+		Env:                req.Env,
+		TokenManager:       req.TokenManager,
+		FederatedSubgraphs: append([]string{}, allowedSubgraphs...), // non-nil even if empty
+		federatedScoped:    true,
+	}
+	scopedReq.SetUserToken(&usertoken.Data{Role: usertoken.RoleFederated}) // ID=0, non-admin
+	return context.WithValue(ctx, ctxKey, scopedReq)
+}
+
+// FederatedScope reports whether this request is a federated-scoped identity
+// and returns its AllowedSubgraphs.
+func (c *Request) FederatedScope() (allowed []string, ok bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.FederatedSubgraphs, c.federatedScoped
 }
 
 func CtxEnv[T any](ctx context.Context, defaultValue T) T {
@@ -242,6 +279,12 @@ func (c *Request) Snapshot() *Request {
 		copy(writePatterns, c.WebhookWritePatterns)
 	}
 
+	var federatedSubgraphs []string
+	if c.FederatedSubgraphs != nil {
+		federatedSubgraphs = make([]string, len(c.FederatedSubgraphs))
+		copy(federatedSubgraphs, c.FederatedSubgraphs)
+	}
+
 	return &Request{
 		Env:                   c.Env,
 		Req:                   snapshotFCtx,
@@ -254,6 +297,8 @@ func (c *Request) Snapshot() *Request {
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
 		SkipWebhooks:          c.SkipWebhooks,
+		FederatedSubgraphs:    federatedSubgraphs,
+		federatedScoped:       c.federatedScoped,
 	}
 }
 
