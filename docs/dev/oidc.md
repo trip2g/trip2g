@@ -36,7 +36,7 @@ trip2g already has a clean, repeatable OAuth shape. OIDC is a third instance of 
 - `go run ./internal/router/gencmd` scans `internal/case/{"", admin, system}` for any `<name>/endpoint.go` and regenerates `internal/router/endpoints_gen.go` (the file is `DO NOT EDIT`; `//go:generate go run ./gencmd` lives in `internal/router/router.go:12`). So a new endpoint is picked up automatically once the package exists and you re-run gencmd.
 - The router's aggregate `Env` must satisfy every endpoint's `Env interface` (where `GetActiveGoogleOAuthCredentials`, `PublicURL`, `Insecure`, `DecryptData`, `UserByEmail`, `SetupUserToken` are implemented).
 
-**Admin config** of Google/GitHub creds is exposed through GraphQL (`internal/graph/` resolvers touch the oauth-credential tables). OIDC config follows the same path.
+**Admin config** of Google/GitHub creds is a **GraphQL admin mutation** — `createGoogleOAuthCredentials` / `setActiveGoogleOAuthCredentials` / `deleteGoogleOAuthCredentials` (`internal/graph/schema.graphqls:3110-3112`), backed by case handlers under `internal/case/admin/creategoogleoauthcredentials/` etc. The mutation validates + encrypts the secret and writes the row. OIDC follows the same path (detailed in Step 7).
 
 ---
 
@@ -118,9 +118,38 @@ go run ./internal/router/gencmd   # auto-discovers handleoidcstart / handleoidcc
 ```
 Commit the regenerated `internal/router/endpoints_gen.go` together with the new packages (project rule: generated files committed with their source).
 
-### Step 7 — admin config + login button
+### Step 7 — admin config (the "OAuth provider request") + login button
 
-- GraphQL: add an OIDC-credentials mutation/query mirroring the Google resolver in `internal/graph/` (set issuer/client_id/secret, activate). Encrypt the secret on write with the encryption manager.
+In trip2g an OAuth provider is **not** configured via env — an admin **requests** it through a **GraphQL admin mutation**, which encrypts the secret and writes the DB row. Mirror the existing Google flow exactly.
+
+**Reference (existing Google provider request):**
+- GraphQL mutations (`internal/graph/schema.graphqls:3110-3112`): `createGoogleOAuthCredentials`, `setActiveGoogleOAuthCredentials`, `deleteGoogleOAuthCredentials`; queries `allGoogleOAuthCredentials` / `googleOAuthCredentials(id)` (`:1176-1177`). Input is `CreateGoogleOAuthCredentialsInput { name, clientId, clientSecret }` (`:2666`); type `AdminGoogleOAuthCredentials @goModel(db.GoogleOauthCredential)` (`:597`).
+- Resolver-backing case handler: `internal/case/admin/creategoogleoauthcredentials/resolve.go` (+ `setactivegoogleoauthcredentials/`, `deletegoogleoauthcredentials/`). Its `Env` needs: `CurrentAdminUserToken` (admin gate), `ValidateGoogleOAuthCredentials` (probe the creds), `EncryptData` (encrypt secret), `DeactivateAllGoogleOAuthCredentials` (single-active invariant), `InsertGoogleOAuthCredentials`.
+
+**OIDC additions (mirror the above):**
+1. Schema (`internal/graph/schema.graphqls`): add
+   ```graphql
+   input CreateOIDCCredentialsInput { name: String!, issuer: String!, clientId: String!, clientSecret: String!, scopes: String }
+   type AdminOIDCCredentials @goModel(model: "trip2g/internal/db.OidcCredential") { id: Int!, name: String!, issuer: String!, clientId: String!, active: Boolean!, createdAt: Time!, createdBy: User! }
+   # + CreateOIDCCredentialsPayload / ...OrErrorPayload, and Delete/SetActive inputs+payloads
+   ```
+   plus mutations `createOIDCCredentials` / `setActiveOIDCCredentials` / `deleteOIDCCredentials` and queries `allOIDCCredentials` / `oidcCredentials(id)`.
+2. Case handlers: `internal/case/admin/createoidccredentials/resolve.go` (+ setactive/delete), copied from the Google ones; `Env` mirrors Google's with `ValidateOIDCCredentials` doing a discovery probe (`{issuer}/.well-known/openid-configuration` → 200) instead of a Google token check.
+3. Regenerate: `make gqlgen` (gqlgen) and `moq` for the `*_test.go` mocks; commit generated files with their source.
+
+**The actual request an admin sends** (the "запрос на oauth provider"):
+```graphql
+mutation {
+  createOIDCCredentials(input: {
+    name: "Authentik",
+    issuer: "https://authentik.company/application/o/trip2g/",
+    clientId: "...", clientSecret: "...",
+    scopes: "openid email profile"
+  }) { ... on CreateOIDCCredentialsPayload { credentials { id name active } } ... on ErrorPayload { message } }
+}
+```
+Then `setActiveOIDCCredentials(input: {id})` to make it the active provider. This is the same admin surface that manages Google/GitHub creds today (whatever admin page calls those mutations gets an OIDC section).
+
 - UI: add a "Sign in with SSO" button pointing at `/_system/auth/oidc` (next to the existing Google/GitHub buttons).
 
 ### Step 8 — account policy (decision required)
