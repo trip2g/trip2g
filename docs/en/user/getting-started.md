@@ -1,11 +1,26 @@
 ---
 title: Getting started
 free: true
-home_position: 10
+home_position: 100
 lang_redirect: "[[ru/user/Начало работы]]"
 ---
 
 Your Obsidian vault becomes a website in under a minute. Write in Obsidian, sync, and notes are live — with Telegram publishing, monetization, and an AI assistant built in. Try the [demo](https://simplecloud.2pub.me) or see [[en/user/use-cases|how people use it]].
+
+### Setup at a glance
+
+```mermaid
+flowchart LR
+    A[Get an instance] --> B[Sign in by email]
+    B --> C[Configure admin panel]
+    C --> D[Install plugin via BRAT]
+    D --> E[Create API key]
+    E --> F[Connect plugin to site]
+    F --> G[Create _index note]
+    G --> H[Sync]
+    H --> I[Add free: true]
+    I --> J[Page is public]
+```
 
 ### How the service works
 

@@ -17,6 +17,18 @@ This setup is for a single server, a single `docker-compose.yml`, and a straight
 - `caddy` handles incoming HTTP/HTTPS traffic and proxies it into the compose network.
 - Vector search can stay disabled, or you can enable it later with OpenAI or another OpenAI-compatible embeddings API.
 
+```mermaid
+flowchart TD
+    Net[Internet] -->|443| Caddy[Caddy<br/>ports 80/443]
+    Caddy -->|docs.example.com| T[trip2g :8081]
+    Caddy -->|files.example.com| M[MinIO :9000]
+    T -->|S3 API| M
+    subgraph compose_network_internal
+        T
+        M
+    end
+```
+
 ## Easy-to-miss requirements
 
 - A public server should use `HTTPS`. Otherwise secure auth cookies will not work correctly.

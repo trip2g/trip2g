@@ -1,6 +1,7 @@
 ---
 title: "CLI для синхронизации"
 free: true
+lang_redirect: "[[en/user/cli]]"
 ---
 
 Командная утилита для синхронизации markdown-файлов с сервером trip2g. Работает без Obsidian — из терминала или CI/CD.

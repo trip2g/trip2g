@@ -1,5 +1,5 @@
 ---
-home_position: 2
+home_position: 55
 title: Webhooks
 free: true
 lang_redirect: "[[ru/user/change_webhooks]]"
@@ -66,6 +66,22 @@ Compute the HMAC from the raw request body (bytes), not from parsed JSON — any
 #### Applying changes from your service
 
 Your endpoint can return note changes in the response body; trip2g will apply them automatically:
+
+```mermaid
+sequenceDiagram
+    participant Author
+    participant trip2g
+    participant Service as Your service
+
+    Author->>trip2g: Save / delete a note
+    Note over trip2g: Note matches a path pattern
+    trip2g->>Service: POST payload (changes[], instruction)
+    Note right of trip2g: Signed: X-Webhook-Signature sha256
+    Service->>Service: Run AI / index / notify
+    Service-->>trip2g: { status: ok, changes[] }
+    Note over trip2g: Verify expected_hash
+    trip2g->>Author: Apply corrected note
+```
 
 ```json
 {
@@ -135,6 +151,16 @@ Validate your expression at [crontab.guru](https://crontab.guru) before saving.
 `response_schema` hints at the expected response format.
 
 #### Synchronous vs asynchronous responses
+
+```mermaid
+flowchart TD
+    A[Cron fires: POST to your endpoint] --> B{Task finishes<br/>under 60s?}
+    B -->|Yes| C[Return status: ok + changes]
+    C --> D[trip2g applies changes]
+    B -->|No| E[Return 202 Accepted]
+    E --> F[Agent keeps working]
+    F --> G[Write back later via API token]
+```
 
 **Synchronous** — return the result directly in the response (within the timeout):
 

@@ -1,5 +1,5 @@
 ---
-home_position: 4
+home_position: 60
 title: "Hosting"
 lang_redirect: "[[ru/user/hosting]]"
 free: true

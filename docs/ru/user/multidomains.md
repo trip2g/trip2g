@@ -1,7 +1,7 @@
 ---
 free: true
 title: Мульти домены
-home_position: 995
+home_position: 30
 lang_redirect: "[[en/user/multidomains]]"
 ---
 

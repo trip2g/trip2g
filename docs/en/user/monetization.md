@@ -1,7 +1,7 @@
 ---
 title: Monetization
 free: true
-home_position: 6
+home_position: 80
 lang_redirect: "[[ru/user/monetization]]"
 ---
 
@@ -12,6 +12,17 @@ Restrict notes to paying subscribers by leaving `free: true` off.
 Notes without `free: true` are private by default. Only admins and authenticated subscribers can read them. Visitors who are not logged in see a paywall or are redirected to sign in.
 
 This means you can publish two tiers of content in the same vault: public notes with `free: true` and subscriber-only notes without it.
+
+```mermaid
+flowchart TD
+    Open[Reader opens a note] --> Free{free: true?}
+    Free -->|Yes| Public[Served to everyone]
+    Free -->|No| Login{Signed in?}
+    Login -->|No| Paywall[Show preview + paywall / redirect to sign in]
+    Login -->|Yes| Sub{Active subscription?}
+    Sub -->|Patreon / Boosty / crypto / Telegram group| Grant[Show full note]
+    Sub -->|No active access| Paywall
+```
 
 ### Patreon integration
 

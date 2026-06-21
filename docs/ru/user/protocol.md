@@ -1,7 +1,7 @@
 ---
 title: "Как работает trip2g"
 free: true
-home_position: 15
+home_position: 95
 lang_redirect: "[[en/user/protocol]]"
 ---
 

@@ -1,11 +1,28 @@
 ---
 title: Telegram publishing
 free: true
-home_position: 8
+home_position: 85
 lang_redirect: "[[ru/user/telegram]]"
 ---
 
 Write posts in Obsidian, publish to your Telegram channel on a schedule or instantly.
+
+### How publishing works
+
+```mermaid
+flowchart TD
+    A[Create bot in BotFather] --> B[Add bot token in admin panel TG bots]
+    B --> C[Create Telegram channel]
+    C --> D[Add bot as channel admin<br/>Post messages + Add members]
+    D --> E[Write note in Obsidian]
+    E --> F[Add telegram_publish_at + telegram_publish_tags]
+    F --> G[Sync the note]
+    G --> H{Tag matches?}
+    H -->|Instant Tag| I[Publish immediately]
+    H -->|Scheduled tag| J[Queued until publish_at]
+    I --> K[Post live in channel]
+    J --> K
+```
 
 ### Set up a bot
 
@@ -88,6 +105,16 @@ Click a queued post to send it immediately. Click a sent post → open the Sent 
 ### Editing published posts
 
 After a post is published, sync an updated note and the post updates in the channel automatically.
+
+```mermaid
+flowchart TD
+    E[Want to change a published post] --> Q{What changes?}
+    Q -->|Text, formatting,<br/>links, lists| A[Edit note in Obsidian -> Sync<br/>Post updates automatically]
+    Q -->|Photos, videos, post type,<br/>number of album photos| B[Open post in admin -> Reset]
+    Q -->|Rename the note| B
+    B --> C[Edit note in Obsidian]
+    C --> D[Sync again<br/>Re-queued and published]
+```
 
 **What can be edited:**
 

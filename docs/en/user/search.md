@@ -12,6 +12,15 @@ When you type a query, the system runs two independent algorithms simultaneously
 
 The final ranking is built with RRF (Reciprocal Rank Fusion): results from both searches are merged by their positions in each list. This is a standard academic method for hybrid search, robust to differences in scoring scales.
 
+```mermaid
+flowchart LR
+    Q[Your query] --> T[Text search<br/>BM25 + morphology]
+    Q --> S[Semantic search<br/>OpenAI vector, nearest in meaning]
+    T --> R[RRF<br/>Reciprocal Rank Fusion<br/>merge by position]
+    S --> R
+    R --> F[Final ranking]
+```
+
 ### What this means in practice
 
 - Searching "deploy docs automatically" can surface notes about CI/CD pipelines even if those exact words aren't there
@@ -39,6 +48,15 @@ To exclude a whole section at once, use [[en/user/frontmatter-patches|frontmatte
 - glob: "dev/**/*.md"
   patch:
     search: false
+```
+
+```mermaid
+flowchart TD
+    N[Note] --> U{Filename or any<br/>path folder starts with _ ?}
+    U -->|Yes| EX[Excluded - system note]
+    U -->|No| SF{search: false in frontmatter?<br/>direct or via frontmatter patch glob}
+    SF -->|Yes| EX
+    SF -->|No| IDX[Indexed - appears in search]
 ```
 
 ### MCP server search

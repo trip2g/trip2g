@@ -1,6 +1,6 @@
 ---
 free: true
-home_position: 6
+home_position: 60
 title: Дополнительно
 ---
 
