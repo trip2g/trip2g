@@ -103,6 +103,7 @@ import (
 	"trip2g/internal/notion"
 	"trip2g/internal/notiontypes"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/oidcauth"
 	"trip2g/internal/openai"
 	"trip2g/internal/patreon"
 	"trip2g/internal/patreonjobs"
@@ -1938,6 +1939,32 @@ func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bo
 	return callbackURL, authURL, nil
 }
 
+// BuildOIDCAuthURL returns (callbackURL, authURL, error).
+// callbackURL is always returned for admin UI display.
+// authURL is only returned if OIDC is configured (or dry=true for just getting callbackURL).
+//
+//nolint:nonamedreturns // named returns document the multiple string return values
+func (a *app) BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
+	publicURL := a.GetPublicURLForRequest(ctx)
+	callbackURL = fmt.Sprintf("%s/_system/auth/oidc/callback", publicURL)
+
+	if dry {
+		return callbackURL, "", nil
+	}
+
+	creds, err := a.GetActiveOIDCCredentials(ctx)
+	if err != nil {
+		// No active credentials - OIDC not configured
+		return callbackURL, "", nil //nolint:nilerr // expected: missing credentials returns empty authURL
+	}
+	if creds.ClientID == "" {
+		return callbackURL, "", nil
+	}
+
+	authURL = fmt.Sprintf("%s/_system/auth/oidc?redirect=%s", publicURL, url.QueryEscape(redirectURL))
+	return callbackURL, authURL, nil
+}
+
 // BuildGitHubAuthURL returns (callbackURL, authURL, error).
 // callbackURL is always returned for admin UI display.
 // authURL is only returned if OAuth is configured (or dry=true for just getting callbackURL).
@@ -1968,6 +1995,12 @@ func (a *app) BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bo
 func (a *app) ValidateGoogleOAuthCredentials(ctx context.Context, clientID, clientSecret string) error {
 	redirectURI := fmt.Sprintf("%s/_system/auth/google/callback", a.GetPublicURLForRequest(ctx))
 	return googleauth.ValidateCredentials(clientID, clientSecret, redirectURI)
+}
+
+// ValidateOIDCCredentials validates OIDC credentials by probing the issuer's discovery endpoint.
+func (a *app) ValidateOIDCCredentials(ctx context.Context, issuer, clientID, clientSecret string) error {
+	_, err := oidcauth.Discover(issuer) // discovery reachability probe
+	return err
 }
 
 // ValidateGitHubOAuthCredentials validates GitHub OAuth credentials by making a test API call.

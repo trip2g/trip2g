@@ -138,6 +138,10 @@ type CreateNotFoundIgnoredPatternOrErrorPayload interface {
 	IsCreateNotFoundIgnoredPatternOrErrorPayload()
 }
 
+type CreateOIDCCredentialsOrErrorPayload interface {
+	IsCreateOIDCCredentialsOrErrorPayload()
+}
+
 type CreateOfferOrErrorPayload interface {
 	IsCreateOfferOrErrorPayload()
 }
@@ -216,6 +220,10 @@ type DeleteHTMLInjectionOrErrorPayload interface {
 
 type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
 	IsDeleteNotFoundIgnoredPatternOrErrorPayload()
+}
+
+type DeleteOIDCCredentialsOrErrorPayload interface {
+	IsDeleteOIDCCredentialsOrErrorPayload()
 }
 
 type DeletePatreonCredentialsOrErrorPayload interface {
@@ -332,6 +340,10 @@ type SetActiveGitHubOAuthCredentialsOrErrorPayload interface {
 
 type SetActiveGoogleOAuthCredentialsOrErrorPayload interface {
 	IsSetActiveGoogleOAuthCredentialsOrErrorPayload()
+}
+
+type SetActiveOIDCCredentialsOrErrorPayload interface {
+	IsSetActiveOIDCCredentialsOrErrorPayload()
 }
 
 type SetAPIKeyMcpAdminToolsOrErrorPayload interface {
@@ -804,6 +816,10 @@ type AdminNoteVersionMeta struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
+type AdminOIDCCredentialsConnection struct {
+	Nodes []db.OidcCredential `json:"nodes"`
+}
+
 type AdminOffersConnection struct {
 	Nodes []db.Offer `json:"nodes"`
 }
@@ -1258,6 +1274,23 @@ type CreateNotFoundIgnoredPatternPayload struct {
 
 func (CreateNotFoundIgnoredPatternPayload) IsCreateNotFoundIgnoredPatternOrErrorPayload() {}
 
+type CreateOIDCCredentialsInput struct {
+	Name               string  `json:"name"`
+	Issuer             string  `json:"issuer"`
+	ClientID           string  `json:"clientId"`
+	ClientSecret       string  `json:"clientSecret"`
+	Scopes             *string `json:"scopes,omitempty"`
+	AutoProvision      *bool   `json:"autoProvision,omitempty"`
+	AllowedEmailDomain *string `json:"allowedEmailDomain,omitempty"`
+	RequiredGroup      *string `json:"requiredGroup,omitempty"`
+}
+
+type CreateOIDCCredentialsPayload struct {
+	Credentials *db.OidcCredential `json:"credentials"`
+}
+
+func (CreateOIDCCredentialsPayload) IsCreateOIDCCredentialsOrErrorPayload() {}
+
 type CreateOfferInput struct {
 	Lifetime    *string    `json:"lifetime,omitempty"`
 	PriceUsd    float64    `json:"priceUSD"`
@@ -1472,6 +1505,16 @@ type DeleteNotFoundIgnoredPatternPayload struct {
 
 func (DeleteNotFoundIgnoredPatternPayload) IsDeleteNotFoundIgnoredPatternOrErrorPayload() {}
 
+type DeleteOIDCCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteOIDCCredentialsPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteOIDCCredentialsPayload) IsDeleteOIDCCredentialsOrErrorPayload() {}
+
 type DeletePatreonCredentialsInput struct {
 	ID int64 `json:"id"`
 }
@@ -1667,6 +1710,12 @@ func (ErrorPayload) IsCreateGoogleOAuthCredentialsOrErrorPayload() {}
 func (ErrorPayload) IsDeleteGoogleOAuthCredentialsOrErrorPayload() {}
 
 func (ErrorPayload) IsSetActiveGoogleOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateOIDCCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteOIDCCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsSetActiveOIDCCredentialsOrErrorPayload() {}
 
 func (ErrorPayload) IsDeactivateGoogleOAuthOrErrorPayload() {}
 
@@ -2222,6 +2271,16 @@ type SetActiveGoogleOAuthCredentialsPayload struct {
 }
 
 func (SetActiveGoogleOAuthCredentialsPayload) IsSetActiveGoogleOAuthCredentialsOrErrorPayload() {}
+
+type SetActiveOIDCCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type SetActiveOIDCCredentialsPayload struct {
+	Credentials *db.OidcCredential `json:"credentials"`
+}
+
+func (SetActiveOIDCCredentialsPayload) IsSetActiveOIDCCredentialsOrErrorPayload() {}
 
 type SetAPIKeyMcpAdminToolsInput struct {
 	ID      int64 `json:"id"`

@@ -93,6 +93,8 @@ type ResolverRoot interface {
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminNoteAsset() AdminNoteAssetResolver
 	AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryConnectionResolver
+	AdminOIDCCredentials() AdminOIDCCredentialsResolver
+	AdminOIDCCredentialsConnection() AdminOIDCCredentialsConnectionResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
 	AdminPatreonCredentials() AdminPatreonCredentialsResolver
@@ -412,6 +414,9 @@ type AdminMutationResolver interface {
 	DeleteGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteGoogleOAuthCredentialsInput) (model.DeleteGoogleOAuthCredentialsOrErrorPayload, error)
 	SetActiveGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.SetActiveGoogleOAuthCredentialsInput) (model.SetActiveGoogleOAuthCredentialsOrErrorPayload, error)
 	DeactivateGoogleOAuth(ctx context.Context, obj *model1.AdminMutation) (model.DeactivateGoogleOAuthOrErrorPayload, error)
+	CreateOIDCCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreateOIDCCredentialsInput) (model.CreateOIDCCredentialsOrErrorPayload, error)
+	DeleteOIDCCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteOIDCCredentialsInput) (model.DeleteOIDCCredentialsOrErrorPayload, error)
+	SetActiveOIDCCredentials(ctx context.Context, obj *model1.AdminMutation, input model.SetActiveOIDCCredentialsInput) (model.SetActiveOIDCCredentialsOrErrorPayload, error)
 	CreateGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreateGitHubOAuthCredentialsInput) (model.CreateGitHubOAuthCredentialsOrErrorPayload, error)
 	DeleteGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteGitHubOAuthCredentialsInput) (model.DeleteGitHubOAuthCredentialsOrErrorPayload, error)
 	SetActiveGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.SetActiveGitHubOAuthCredentialsInput) (model.SetActiveGitHubOAuthCredentialsOrErrorPayload, error)
@@ -465,6 +470,12 @@ type AdminNoteAssetResolver interface {
 type AdminNoteVersionHistoryConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error)
 	TotalCount(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) (int32, error)
+}
+type AdminOIDCCredentialsResolver interface {
+	CreatedBy(ctx context.Context, obj *db.OidcCredential) (*db.User, error)
+}
+type AdminOIDCCredentialsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminOIDCCredentialsConnection) ([]db.OidcCredential, error)
 }
 type AdminOfferResolver interface {
 	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
@@ -538,6 +549,8 @@ type AdminQueryResolver interface {
 	BoostyCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.BoostyCredential, error)
 	AllGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGoogleOAuthCredentialsConnection, error)
 	GoogleOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GoogleOauthCredential, error)
+	AllOIDCCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminOIDCCredentialsConnection, error)
+	OidcCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.OidcCredential, error)
 	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	FederationSecrets(ctx context.Context, obj *model1.AdminQuery) ([]db.ListFederationSecretsRow, error)
@@ -779,6 +792,7 @@ type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
 	PublicURL(ctx context.Context) (string, error)
 	GoogleAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
+	OidcAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
@@ -926,6 +940,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateHtmlInjectionInput,
 		ec.unmarshalInputCreateInboundFederationSecretInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
+		ec.unmarshalInputCreateOIDCCredentialsInput,
 		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreateOutboundFederationSecretInput,
 		ec.unmarshalInputCreatePatreonCredentialsInput,
@@ -944,6 +959,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteGoogleOAuthCredentialsInput,
 		ec.unmarshalInputDeleteHtmlInjectionInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
+		ec.unmarshalInputDeleteOIDCCredentialsInput,
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
@@ -985,6 +1001,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSendTelegramPublishNoteNowInput,
 		ec.unmarshalInputSetActiveGitHubOAuthCredentialsInput,
 		ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput,
+		ec.unmarshalInputSetActiveOIDCCredentialsInput,
 		ec.unmarshalInputSetApiKeyMcpAdminToolsInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetConfigBoolValueInput,
@@ -1375,6 +1392,17 @@ func (ec *executionContext) field_AdminMutation_createNotFoundIgnoredPattern_arg
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createOIDCCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOIDCCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createOffer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1544,6 +1572,17 @@ func (ec *executionContext) field_AdminMutation_deleteNotFoundIgnoredPattern_arg
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteOIDCCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteOIDCCredentialsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1808,6 +1847,17 @@ func (ec *executionContext) field_AdminMutation_setActiveGoogleOAuthCredentials_
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetActiveGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setActiveOIDCCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetActiveOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveOIDCCredentialsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -2464,6 +2514,17 @@ func (ec *executionContext) field_AdminQuery_offer_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminQuery_oidcCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminQuery_patreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2831,6 +2892,17 @@ func (ec *executionContext) field_Query_note_args(ctx context.Context, rawArgs m
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_oidcAuthUrl_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNOAuthUrlInput2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLInput)
 	if err != nil {
 		return nil, err
 	}
@@ -13200,6 +13272,129 @@ func (ec *executionContext) fieldContext_AdminMutation_deactivateGoogleOAuth(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_createOIDCCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createOIDCCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateOIDCCredentials(ctx, obj, fc.Args["input"].(model.CreateOIDCCredentialsInput))
+		},
+		nil,
+		ec.marshalNCreateOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOIDCCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createOIDCCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateOIDCCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createOIDCCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteOIDCCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deleteOIDCCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().DeleteOIDCCredentials(ctx, obj, fc.Args["input"].(model.DeleteOIDCCredentialsInput))
+		},
+		nil,
+		ec.marshalNDeleteOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteOIDCCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteOIDCCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteOIDCCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteOIDCCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setActiveOIDCCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setActiveOIDCCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetActiveOIDCCredentials(ctx, obj, fc.Args["input"].(model.SetActiveOIDCCredentialsInput))
+		},
+		nil,
+		ec.marshalNSetActiveOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveOIDCCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setActiveOIDCCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetActiveOIDCCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setActiveOIDCCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_createGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -15593,6 +15788,390 @@ func (ec *executionContext) fieldContext_AdminNoteVersionMeta_createdAt(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_name(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_issuer(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_issuer,
+		func(ctx context.Context) (any, error) {
+			return obj.Issuer, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_issuer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_clientId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_scopes(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_scopes,
+		func(ctx context.Context) (any, error) {
+			return obj.Scopes, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_scopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_autoProvision(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_autoProvision,
+		func(ctx context.Context) (any, error) {
+			return obj.AutoProvision, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_autoProvision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_allowedEmailDomain(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_allowedEmailDomain,
+		func(ctx context.Context) (any, error) {
+			return obj.AllowedEmailDomain, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_allowedEmailDomain(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_requiredGroup(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_requiredGroup,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiredGroup, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_requiredGroup(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_active(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_active,
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentials_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminOIDCCredentials().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOIDCCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminOIDCCredentialsConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentialsConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminOIDCCredentialsConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminOIDCCredentials2ᚕtrip2gᚋinternalᚋdbᚐOidcCredentialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentialsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentialsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "issuer":
+				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminOIDCCredentials_clientId(ctx, field)
+			case "scopes":
+				return ec.fieldContext_AdminOIDCCredentials_scopes(ctx, field)
+			case "autoProvision":
+				return ec.fieldContext_AdminOIDCCredentials_autoProvision(ctx, field)
+			case "allowedEmailDomain":
+				return ec.fieldContext_AdminOIDCCredentials_allowedEmailDomain(ctx, field)
+			case "requiredGroup":
+				return ec.fieldContext_AdminOIDCCredentials_requiredGroup(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminOIDCCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOIDCCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminOIDCCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOIDCCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -18782,6 +19361,104 @@ func (ec *executionContext) fieldContext_AdminQuery_googleOAuthCredentials(ctx c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_googleOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allOIDCCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allOIDCCredentials,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllOIDCCredentials(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminOIDCCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminOIDCCredentialsConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allOIDCCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminOIDCCredentialsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOIDCCredentialsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_oidcCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_oidcCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().OidcCredentials(ctx, obj, fc.Args["id"].(int32))
+		},
+		nil,
+		ec.marshalOAdminOIDCCredentials2ᚖtrip2gᚋinternalᚋdbᚐOidcCredential,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_oidcCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "issuer":
+				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminOIDCCredentials_clientId(ctx, field)
+			case "scopes":
+				return ec.fieldContext_AdminOIDCCredentials_scopes(ctx, field)
+			case "autoProvision":
+				return ec.fieldContext_AdminOIDCCredentials_autoProvision(ctx, field)
+			case "allowedEmailDomain":
+				return ec.fieldContext_AdminOIDCCredentials_allowedEmailDomain(ctx, field)
+			case "requiredGroup":
+				return ec.fieldContext_AdminOIDCCredentials_requiredGroup(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminOIDCCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOIDCCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminOIDCCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOIDCCredentials", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_oidcCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26759,6 +27436,59 @@ func (ec *executionContext) fieldContext_CreateNotFoundIgnoredPatternPayload_not
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateOIDCCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.CreateOIDCCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateOIDCCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminOIDCCredentials2ᚖtrip2gᚋinternalᚋdbᚐOidcCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateOIDCCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateOIDCCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "issuer":
+				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminOIDCCredentials_clientId(ctx, field)
+			case "scopes":
+				return ec.fieldContext_AdminOIDCCredentials_scopes(ctx, field)
+			case "autoProvision":
+				return ec.fieldContext_AdminOIDCCredentials_autoProvision(ctx, field)
+			case "allowedEmailDomain":
+				return ec.fieldContext_AdminOIDCCredentials_allowedEmailDomain(ctx, field)
+			case "requiredGroup":
+				return ec.fieldContext_AdminOIDCCredentials_requiredGroup(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminOIDCCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOIDCCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminOIDCCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOIDCCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateOfferPayload_offer(ctx context.Context, field graphql.CollectedField, obj *model.CreateOfferPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27601,6 +28331,35 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload_deletedId(ctx c
 func (ec *executionContext) fieldContext_DeleteNotFoundIgnoredPatternPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteNotFoundIgnoredPatternPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteOIDCCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteOIDCCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteOIDCCredentialsPayload_deletedId,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteOIDCCredentialsPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteOIDCCredentialsPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -29692,6 +30451,12 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setActiveGoogleOAuthCredentials(ctx, field)
 			case "deactivateGoogleOAuth":
 				return ec.fieldContext_AdminMutation_deactivateGoogleOAuth(ctx, field)
+			case "createOIDCCredentials":
+				return ec.fieldContext_AdminMutation_createOIDCCredentials(ctx, field)
+			case "deleteOIDCCredentials":
+				return ec.fieldContext_AdminMutation_deleteOIDCCredentials(ctx, field)
+			case "setActiveOIDCCredentials":
+				return ec.fieldContext_AdminMutation_setActiveOIDCCredentials(ctx, field)
 			case "createGitHubOAuthCredentials":
 				return ec.fieldContext_AdminMutation_createGitHubOAuthCredentials(ctx, field)
 			case "deleteGitHubOAuthCredentials":
@@ -32278,6 +33043,53 @@ func (ec *executionContext) fieldContext_Query_googleAuthUrl(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_oidcAuthUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_oidcAuthUrl,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().OidcAuthURL(ctx, fc.Args["input"].(model.OAuthURLInput))
+		},
+		nil,
+		ec.marshalNOAuthUrlPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_oidcAuthUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "authUrl":
+				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
+			case "callbackUrl":
+				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_oidcAuthUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_githubAuthUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32417,6 +33229,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allGoogleOAuthCredentials(ctx, field)
 			case "googleOAuthCredentials":
 				return ec.fieldContext_AdminQuery_googleOAuthCredentials(ctx, field)
+			case "allOIDCCredentials":
+				return ec.fieldContext_AdminQuery_allOIDCCredentials(ctx, field)
+			case "oidcCredentials":
+				return ec.fieldContext_AdminQuery_oidcCredentials(ctx, field)
 			case "allGitHubOAuthCredentials":
 				return ec.fieldContext_AdminQuery_allGitHubOAuthCredentials(ctx, field)
 			case "gitHubOAuthCredentials":
@@ -34326,6 +35142,59 @@ func (ec *executionContext) fieldContext_SetActiveGoogleOAuthCredentialsPayload_
 				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetActiveOIDCCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.SetActiveOIDCCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetActiveOIDCCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminOIDCCredentials2ᚖtrip2gᚋinternalᚋdbᚐOidcCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetActiveOIDCCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetActiveOIDCCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "issuer":
+				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminOIDCCredentials_clientId(ctx, field)
+			case "scopes":
+				return ec.fieldContext_AdminOIDCCredentials_scopes(ctx, field)
+			case "autoProvision":
+				return ec.fieldContext_AdminOIDCCredentials_autoProvision(ctx, field)
+			case "allowedEmailDomain":
+				return ec.fieldContext_AdminOIDCCredentials_allowedEmailDomain(ctx, field)
+			case "requiredGroup":
+				return ec.fieldContext_AdminOIDCCredentials_requiredGroup(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminOIDCCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOIDCCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminOIDCCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOIDCCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -41690,6 +42559,82 @@ func (ec *executionContext) unmarshalInputCreateNotFoundIgnoredPatternInput(ctx 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateOIDCCredentialsInput(ctx context.Context, obj any) (model.CreateOIDCCredentialsInput, error) {
+	var it model.CreateOIDCCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "issuer", "clientId", "clientSecret", "scopes", "autoProvision", "allowedEmailDomain", "requiredGroup"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "issuer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("issuer"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Issuer = data
+		case "clientId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "clientSecret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientSecret"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientSecret = data
+		case "scopes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scopes"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Scopes = data
+		case "autoProvision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("autoProvision"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AutoProvision = data
+		case "allowedEmailDomain":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedEmailDomain"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowedEmailDomain = data
+		case "requiredGroup":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredGroup"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredGroup = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, obj any) (model.CreateOfferInput, error) {
 	var it model.CreateOfferInput
 	asMap := map[string]any{}
@@ -42277,6 +43222,33 @@ func (ec *executionContext) unmarshalInputDeleteHtmlInjectionInput(ctx context.C
 
 func (ec *executionContext) unmarshalInputDeleteNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.DeleteNotFoundIgnoredPatternInput, error) {
 	var it model.DeleteNotFoundIgnoredPatternInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteOIDCCredentialsInput(ctx context.Context, obj any) (model.DeleteOIDCCredentialsInput, error) {
+	var it model.DeleteOIDCCredentialsInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -43573,6 +44545,33 @@ func (ec *executionContext) unmarshalInputSetActiveGitHubOAuthCredentialsInput(c
 
 func (ec *executionContext) unmarshalInputSetActiveGoogleOAuthCredentialsInput(ctx context.Context, obj any) (model.SetActiveGoogleOAuthCredentialsInput, error) {
 	var it model.SetActiveGoogleOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetActiveOIDCCredentialsInput(ctx context.Context, obj any) (model.SetActiveOIDCCredentialsInput, error) {
+	var it model.SetActiveOIDCCredentialsInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -45802,6 +46801,29 @@ func (ec *executionContext) _CreateNotFoundIgnoredPatternOrErrorPayload(ctx cont
 	}
 }
 
+func (ec *executionContext) _CreateOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateOIDCCredentialsPayload:
+		return ec._CreateOIDCCredentialsPayload(ctx, sel, &obj)
+	case *model.CreateOIDCCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateOIDCCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateOfferOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -46257,6 +47279,29 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternOrErrorPayload(ctx cont
 			return graphql.Null
 		}
 		return ec._DeleteNotFoundIgnoredPatternPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteOIDCCredentialsPayload:
+		return ec._DeleteOIDCCredentialsPayload(ctx, sel, &obj)
+	case *model.DeleteOIDCCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteOIDCCredentialsPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -46931,6 +47976,29 @@ func (ec *executionContext) _SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx c
 			return graphql.Null
 		}
 		return ec._SetActiveGoogleOAuthCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetActiveOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetActiveOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetActiveOIDCCredentialsPayload:
+		return ec._SetActiveOIDCCredentialsPayload(ctx, sel, &obj)
+	case *model.SetActiveOIDCCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetActiveOIDCCredentialsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -55322,6 +56390,114 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createOIDCCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createOIDCCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteOIDCCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteOIDCCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setActiveOIDCCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setActiveOIDCCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createGitHubOAuthCredentials":
 			field := field
 
@@ -57247,6 +58423,196 @@ func (ec *executionContext) _AdminNoteVersionMeta(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminOIDCCredentialsImplementors = []string{"AdminOIDCCredentials"}
+
+func (ec *executionContext) _AdminOIDCCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.OidcCredential) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminOIDCCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminOIDCCredentials")
+		case "id":
+			out.Values[i] = ec._AdminOIDCCredentials_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._AdminOIDCCredentials_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "issuer":
+			out.Values[i] = ec._AdminOIDCCredentials_issuer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clientId":
+			out.Values[i] = ec._AdminOIDCCredentials_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "scopes":
+			out.Values[i] = ec._AdminOIDCCredentials_scopes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "autoProvision":
+			out.Values[i] = ec._AdminOIDCCredentials_autoProvision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "allowedEmailDomain":
+			out.Values[i] = ec._AdminOIDCCredentials_allowedEmailDomain(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requiredGroup":
+			out.Values[i] = ec._AdminOIDCCredentials_requiredGroup(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "active":
+			out.Values[i] = ec._AdminOIDCCredentials_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminOIDCCredentials_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOIDCCredentials_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminOIDCCredentialsConnectionImplementors = []string{"AdminOIDCCredentialsConnection"}
+
+func (ec *executionContext) _AdminOIDCCredentialsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminOIDCCredentialsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminOIDCCredentialsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminOIDCCredentialsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOIDCCredentialsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -59615,6 +60981,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_googleOAuthCredentials(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allOIDCCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allOIDCCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "oidcCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_oidcCredentials(ctx, field, obj)
 				return res
 			}
 
@@ -65559,6 +66994,45 @@ func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload(ctx context.Con
 	return out
 }
 
+var createOIDCCredentialsPayloadImplementors = []string{"CreateOIDCCredentialsPayload", "CreateOIDCCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _CreateOIDCCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateOIDCCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createOIDCCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateOIDCCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._CreateOIDCCredentialsPayload_credentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createOfferPayloadImplementors = []string{"CreateOfferPayload", "CreateOfferOrErrorPayload"}
 
 func (ec *executionContext) _CreateOfferPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateOfferPayload) graphql.Marshaler {
@@ -66387,6 +67861,45 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload(ctx context.Con
 	return out
 }
 
+var deleteOIDCCredentialsPayloadImplementors = []string{"DeleteOIDCCredentialsPayload", "DeleteOIDCCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _DeleteOIDCCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteOIDCCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteOIDCCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteOIDCCredentialsPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteOIDCCredentialsPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deletePatreonCredentialsPayloadImplementors = []string{"DeletePatreonCredentialsPayload", "DeletePatreonCredentialsOrErrorPayload"}
 
 func (ec *executionContext) _DeletePatreonCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeletePatreonCredentialsPayload) graphql.Marshaler {
@@ -66657,7 +68170,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -69180,6 +70693,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "oidcAuthUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oidcAuthUrl(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "githubAuthUrl":
 			field := field
 
@@ -70388,6 +71923,45 @@ func (ec *executionContext) _SetActiveGoogleOAuthCredentialsPayload(ctx context.
 			out.Values[i] = graphql.MarshalString("SetActiveGoogleOAuthCredentialsPayload")
 		case "credentials":
 			out.Values[i] = ec._SetActiveGoogleOAuthCredentialsPayload_credentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setActiveOIDCCredentialsPayloadImplementors = []string{"SetActiveOIDCCredentialsPayload", "SetActiveOIDCCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _SetActiveOIDCCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetActiveOIDCCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setActiveOIDCCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetActiveOIDCCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._SetActiveOIDCCredentialsPayload_credentials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -76080,6 +77654,78 @@ func (ec *executionContext) marshalNAdminNoteVersionMeta2ᚕtrip2gᚋinternalᚋ
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminOIDCCredentials2trip2gᚋinternalᚋdbᚐOidcCredential(ctx context.Context, sel ast.SelectionSet, v db.OidcCredential) graphql.Marshaler {
+	return ec._AdminOIDCCredentials(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminOIDCCredentials2ᚕtrip2gᚋinternalᚋdbᚐOidcCredentialᚄ(ctx context.Context, sel ast.SelectionSet, v []db.OidcCredential) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminOIDCCredentials2trip2gᚋinternalᚋdbᚐOidcCredential(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminOIDCCredentials2ᚖtrip2gᚋinternalᚋdbᚐOidcCredential(ctx context.Context, sel ast.SelectionSet, v *db.OidcCredential) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminOIDCCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminOIDCCredentialsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminOIDCCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminOIDCCredentialsConnection) graphql.Marshaler {
+	return ec._AdminOIDCCredentialsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminOIDCCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminOIDCCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminOIDCCredentialsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminOIDCCredentialsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
 	return ec._AdminOffer(ctx, sel, &v)
 }
@@ -78027,6 +79673,21 @@ func (ec *executionContext) marshalNCreateNotFoundIgnoredPatternOrErrorPayload2t
 	return ec._CreateNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOIDCCredentialsInput(ctx context.Context, v any) (model.CreateOIDCCredentialsInput, error) {
+	res, err := ec.unmarshalInputCreateOIDCCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateOIDCCredentialsOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferInput(ctx context.Context, v any) (model.CreateOfferInput, error) {
 	res, err := ec.unmarshalInputCreateOfferInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -78325,6 +79986,21 @@ func (ec *executionContext) marshalNDeleteNotFoundIgnoredPatternOrErrorPayload2t
 		return graphql.Null
 	}
 	return ec._DeleteNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteOIDCCredentialsInput(ctx context.Context, v any) (model.DeleteOIDCCredentialsInput, error) {
+	res, err := ec.unmarshalInputDeleteOIDCCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteOIDCCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeletePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeletePatreonCredentialsInput(ctx context.Context, v any) (model.DeletePatreonCredentialsInput, error) {
@@ -80058,6 +81734,21 @@ func (ec *executionContext) marshalNSetActiveGoogleOAuthCredentialsOrErrorPayloa
 	return ec._SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNSetActiveOIDCCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveOIDCCredentialsInput(ctx context.Context, v any) (model.SetActiveOIDCCredentialsInput, error) {
+	res, err := ec.unmarshalInputSetActiveOIDCCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetActiveOIDCCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveOIDCCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetActiveOIDCCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetActiveOIDCCredentialsOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSetApiKeyMcpAdminToolsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetAPIKeyMcpAdminToolsInput(ctx context.Context, v any) (model.SetAPIKeyMcpAdminToolsInput, error) {
 	res, err := ec.unmarshalInputSetApiKeyMcpAdminToolsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -81555,6 +83246,13 @@ func (ec *executionContext) marshalOAdminNoteVersionDetail2ᚖtrip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._AdminNoteVersionDetail(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminOIDCCredentials2ᚖtrip2gᚋinternalᚋdbᚐOidcCredential(ctx context.Context, sel ast.SelectionSet, v *db.OidcCredential) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminOIDCCredentials(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v *db.Offer) graphql.Marshaler {
