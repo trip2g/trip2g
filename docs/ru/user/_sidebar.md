@@ -39,6 +39,7 @@ title: "Навигация"
 
 - [[ru/user/mcp|MCP-сервер]]
 - [[ru/user/federation|MCP Federation]]
+- [[ru/user/context-separation|Разделение контекста]]
 - [[ru/user/llm-wiki|LLM Wiki для агентов]]
 - [[ru/user/renderlayout|Превью лейаута]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
