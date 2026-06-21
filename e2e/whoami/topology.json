@@ -1,0 +1,30 @@
+{
+  "_comment": "Single source of truth for the whoami federation e2e. Drives docker-compose generation, note seeding, edge wiring, federation-index materialization, and Playwright assertions. Topology mirrors docs/dev/whoami_test.md §2. Derived per node: service=whoami-<id>, internal URL=http://<service>:<port>, MCP=<url>/_system/mcp, cookie=trip2g_whoami_<id with - => _>, host URL=http://localhost:<port>, internal/health port=<port>+1.",
+  "publicSubgraph": "public",
+  "privateSubgraph": "private-internal",
+  "nodes": [
+    { "id": "owner",         "port": 41011, "hub": false },
+    { "id": "boss-a",        "port": 41021, "hub": false },
+    { "id": "boss-b",        "port": 41031, "hub": false },
+    { "id": "company-a-hub", "port": 41041, "hub": true  },
+    { "id": "dept-a-hub",    "port": 41051, "hub": true  },
+    { "id": "dept-b-hub",    "port": 41061, "hub": true  },
+    { "id": "company-b-hub", "port": 41071, "hub": true  },
+    { "id": "company-site",  "port": 41081, "hub": true  },
+    { "id": "sub-a",         "port": 41091, "hub": false },
+    { "id": "sub-b",         "port": 41101, "hub": false }
+  ],
+  "edges": [
+    ["owner",         "company-a-hub"],
+    ["owner",         "company-b-hub"],
+    ["boss-a",        "company-a-hub"],
+    ["boss-b",        "company-b-hub"],
+    ["company-a-hub", "dept-a-hub"],
+    ["company-a-hub", "dept-b-hub"],
+    ["company-b-hub", "company-site"],
+    ["company-b-hub", "sub-b"],
+    ["dept-a-hub",    "sub-a"],
+    ["dept-b-hub",    "sub-b"],
+    ["company-site",  "sub-a"]
+  ]
+}

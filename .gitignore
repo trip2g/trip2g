@@ -65,3 +65,6 @@ docs/.sync-state.json
 /testdata/seedvault3/.sync-state.json
 /docs/knowlume
 *.swp
+
+# whoami federation e2e (generated from e2e/whoami/topology.json)
+docker-compose.whoami.yml
