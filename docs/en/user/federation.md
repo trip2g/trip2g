@@ -59,6 +59,23 @@ Sync. Done. The agent can now reach that base via `federated_search` with `kb_id
 
 Private peers authenticate with a shared HMAC secret. The setup is a one-time key exchange — each side generates a secret for the other.
 
+```mermaid
+sequenceDiagram
+    participant You as Your hub
+    participant Ch as Trusted channel
+    participant Bob as Bob's hub
+
+    Note over Bob: Admin -> Federation -> Add inbound secret
+    Bob->>Bob: Generate secret for kid "alice-2026"<br/>pick allowed subgraphs
+    Bob->>Ch: Send kid + secretHex
+    Ch->>You: kid + secretHex
+    Note over You: Admin -> Federation -> Add outbound secret
+    You->>You: Save kid, secretHex, Bob's kb_url
+    You->>You: Create KB-note (mcp_federation_kb_url)
+    Note over You,Bob: Now your agent can federated_search Bob's base
+    Note over You,Bob: Reverse direction (optional): repeat the other way
+```
+
 **Step 1 — Bob generates a secret for you.**
 
 Bob opens Admin → Federation → Add inbound secret. He picks a short key ID (`alice-2026`), optionally selects which of his subgraphs you may access, and clicks Generate. The admin shows the secret hex once. Bob sends you the `kid` and `secretHex` over a trusted channel (a direct Telegram message is fine).
@@ -136,6 +153,21 @@ Edge colours reflect the connection status:
 | `no_access` | Link is established but the inbound secret grants zero subgraphs — the peer can call but receives no results. Expand the scope. |
 | `revoked` | The outbound secret has been revoked. The route is broken and should be cleaned up. |
 | `external` | Target URL is not a pool instance (points to a public or external base). Informational only. |
+
+```mermaid
+flowchart TD
+    A{KB-note points<br/>at peer?} -->|No, but outbound secret exists| ORPH[orphan_secret]
+    A -->|Yes| B{Target is a<br/>pool instance?}
+    B -->|No| EXT[external]
+    B -->|Yes| C{Outbound secret?}
+    C -->|No| NA[no_auth - peer 401s]
+    C -->|Revoked| REV[revoked]
+    C -->|Yes| D{Peer has matching<br/>inbound secret for kid?}
+    D -->|No| OW[one_way - peer 401s]
+    D -->|Yes| E{Inbound grants<br/>at least 1 subgraph?}
+    E -->|No| NAC[no_access - 0 results]
+    E -->|Yes| OK[ok - link works]
+```
 
 The graph also lists **Issues** — misconfigurations detected at crawl time, with severity (`error` / `warning` / `info`) and per-edge descriptions. Use the Issues list to diagnose broken links without reading logs.
 

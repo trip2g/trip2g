@@ -1,7 +1,7 @@
 ---
 title: Use cases
 free: true
-home_position: 9
+home_position: 65
 lang_redirect: "[[ru/user/use-cases]]"
 ---
 

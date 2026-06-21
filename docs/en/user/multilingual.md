@@ -1,6 +1,7 @@
 ---
 title: "Multilingual sites"
 free: true
+home_position: 28
 lang_redirect: "[[ru/user/multilingual]]"
 ---
 

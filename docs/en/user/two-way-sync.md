@@ -1,5 +1,5 @@
 ---
-home_position: 5
+home_position: 75
 title: Two-Way Sync
 free: true
 lang_redirect: "[[ru/user/Двухсторонняя синхронизация]]"
@@ -44,3 +44,17 @@ A colored dot on the sync icon shows the current state:
 | 🟢 Green | Local changes pending |
 | 🟠 Orange | Both sides have changes |
 | 🔴 Red | Conflicts detected |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Synced
+    Synced --> ServerChanges: server edited a file
+    Synced --> LocalChanges: you edited a file
+    ServerChanges --> BothChanged: you also edit
+    LocalChanges --> BothChanged: server also edits
+    BothChanged --> Conflict: same file, both sides
+    ServerChanges --> Synced: sync downloads (blue)
+    LocalChanges --> Synced: sync uploads (green)
+    BothChanged --> Synced: auto-merge (orange)
+    Conflict --> Synced: resolve - keep / accept / both (red)
+```

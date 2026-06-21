@@ -32,6 +32,17 @@ Trip2g resolves which note to show in each section in this order:
 3. **Auto-load fallback** — `_header.md`, `_footer.md`, `_left_sidebar.md`, `_right_sidebar.md`
 4. Section absent
 
+```mermaid
+flowchart TD
+    Start([Resolve a section]) --> A{Per-note frontmatter?<br/>header: [[my-header]]}
+    A -->|set| UseA[Use that note]
+    A -->|none| B{Matching glob section?<br/>header_includes: blog/*}
+    B -->|matches| UseB[Use highest-priority match]
+    B -->|none| C{Auto-load file exists?<br/>_header.md / _footer.md}
+    C -->|yes| UseC[Use the auto-load note]
+    C -->|no| None[Section absent]
+```
+
 #### Auto-load (recommended for most sites)
 
 If your vault contains a note named `_header.md`, trip2g automatically uses it as the header on every page — no configuration needed in individual notes.
@@ -284,6 +295,18 @@ Body text starts here...
 This note gets the title "My Article Title" without any frontmatter. The `<h1>` is rendered inside the article body — no duplicate title element is added above it.
 
 If a note has **both** a `title` frontmatter field and a leading `# Heading`, the frontmatter `title` still wins as the title value — it's what goes into `<title>`, OpenGraph tags, and listings. The in-content H1 is detected anyway, so the template skips its own title element. The page shows exactly one heading at the top — the in-content `# Heading` — and never two stacked titles, even if its text differs from the frontmatter `title`.
+
+```mermaid
+flowchart TD
+    Start([Determine page title]) --> T{title frontmatter set?}
+    T -->|yes| UseT[Title = frontmatter value<br/>used in title tag, OG, listings]
+    T -->|no| H{Leading H1 in body?}
+    H -->|yes| UseH[Title = H1 text<br/>no separate title element rendered]
+    H -->|no| File[Title = filename]
+    UseT --> H1check{Leading H1 also present?}
+    H1check -->|yes| Skip[Template skips its own title element<br/>shows only the in-content H1]
+    H1check -->|no| Render[Template renders its title element]
+```
 
 ### Magazine layout
 

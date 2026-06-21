@@ -1,7 +1,7 @@
 ---
 title: Монетизация
 free: true
-home_position: 6
+home_position: 80
 lang_redirect: "[[en/user/monetization]]"
 ---
 

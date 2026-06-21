@@ -49,30 +49,25 @@ Agents can access an LLM Wiki in two ways. The mode is usually described in `AGE
 
 #### Mode A — Index-first traversal
 
-Best for curated or smaller bases where the structure is intentional.
-
-```
-Question
-→ read index.md
-→ open relevant pages
-→ follow wikilinks
-→ answer with citations
-```
-
-The agent walks the graph the same way a human would. Well suited for interconnected concept bases, decision logs, and research notes.
+Best for curated or smaller bases where the structure is intentional. The agent walks the graph the same way a human would. Well suited for interconnected concept bases, decision logs, and research notes.
 
 #### Mode B — Search/RAG-assisted retrieval
 
 Best for large or less structured bases.
 
-```
-Question
-→ search(query)
-→ inspect matches and TOC
-→ note_html() to load sections
-→ follow wikilinks
-→ verify sources
-→ answer
+```mermaid
+flowchart TD
+    Q[Question] --> Mode{Base size<br/>& structure}
+    Mode -->|Curated / smaller| A1[read index.md]
+    A1 --> A2[open relevant pages]
+    A2 --> A3[follow wikilinks]
+    A3 --> AC[Answer with citations]
+    Mode -->|Large / less structured| B1[search query]
+    B1 --> B2[inspect matches & TOC]
+    B2 --> B3[note_html to load sections]
+    B3 --> B4[follow wikilinks]
+    B4 --> B5[verify sources]
+    B5 --> AC
 ```
 
 RAG retrieves. LLM Wiki compounds. Use both when needed — the base grows from each session's synthesis, making future retrieval more precise.

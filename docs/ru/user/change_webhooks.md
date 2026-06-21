@@ -21,6 +21,22 @@ title: Вебхуки при изменении заметок
 
 ### Как это работает
 
+```mermaid
+sequenceDiagram
+    participant Author as Автор
+    participant trip2g
+    participant Service as Ваш сервис
+
+    Author->>trip2g: Сохранить / удалить заметку
+    Note over trip2g: Заметка подходит под паттерн пути
+    trip2g->>Service: POST payload (changes[], instruction)
+    Note right of trip2g: Подпись: X-Webhook-Signature sha256
+    Service->>Service: AI / индексация / уведомление
+    Service-->>trip2g: { status: ok, changes[] }
+    Note over trip2g: Проверить expected_hash
+    trip2g->>Author: Применить исправленную заметку
+```
+
 1. Создаёте вебхук: URL + паттерны путей
 2. При изменении подходящей заметки — сервер отправляет POST
 3. Ваш сервис обрабатывает данные: запускает AI, обновляет индекс, отправляет уведомление

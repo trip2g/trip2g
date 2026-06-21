@@ -17,6 +17,18 @@ This setup is for a single server, a single `docker-compose.yml`, and a straight
 - `caddy` handles incoming HTTP/HTTPS traffic and proxies it into the compose network.
 - Vector search can stay disabled, or you can enable it later with OpenAI or another OpenAI-compatible embeddings API.
 
+```mermaid
+flowchart TD
+    Net[Internet] -->|443| Caddy[Caddy<br/>ports 80/443]
+    Caddy -->|docs.example.com| T[trip2g :8081]
+    Caddy -->|files.example.com| M[MinIO :9000]
+    T -->|S3 API| M
+    subgraph compose_network_internal
+        T
+        M
+    end
+```
+
 ## Easy-to-miss requirements
 
 - A public server should use `HTTPS`. Otherwise secure auth cookies will not work correctly.
@@ -217,6 +229,25 @@ USER_TOKEN_INSECURE=true
 ```
 
 Use that only for temporary testing. For a public instance, keep secure cookies and use TLS.
+
+## Background job schedules
+
+Two background jobs run **every minute** by default:
+
+- `send_scheduled_telegram_publishposts` — sends scheduled Telegram posts that are due.
+- `execute_cron_webhooks` — fires your cron webhooks that are due.
+
+Each does a small database write on every tick. On a busy instance you can lower the frequency with a cron expression (6-field, **with a leading seconds field**):
+
+```dotenv
+# Run both hourly instead of every minute
+CRON_TELEGRAM_PUBLISH_SCHEDULE=0 0 * * * *
+CRON_EXECUTE_WEBHOOKS_SCHEDULE=0 0 * * * *
+```
+
+A longer interval means scheduled Telegram posts and cron webhooks fire less precisely (up to an hour late) in exchange for less database load.
+
+> The managed (public cloud) instances run these **hourly** by default to keep the shared database light. Self-hosted instances keep the every-minute default unless you change it.
 
 ## `Caddyfile`
 

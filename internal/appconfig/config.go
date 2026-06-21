@@ -69,6 +69,9 @@ type Config struct {
 	MCPFederationAllowPrivate  bool
 	MCPFederatedGraphQLEnabled bool
 
+	CronExecuteWebhooksSchedule string
+	CronTelegramPublishSchedule string
+
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
@@ -421,6 +424,8 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
+	flag.StringVar(&c.CronExecuteWebhooksSchedule, "cron-execute-webhooks-schedule", "0 * * * * *", "Cron schedule (6-field, with seconds) for the execute_cron_webhooks job. Default every minute; the public cloud sets it hourly.")
+	flag.StringVar(&c.CronTelegramPublishSchedule, "cron-telegram-publish-schedule", "0 * * * * *", "Cron schedule (6-field, with seconds) for the send_scheduled_telegram_publishposts job. Default every minute; the public cloud sets it hourly.")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false, "Disable SSRF protection for federation calls (allow private/internal addresses).")

@@ -1,7 +1,7 @@
 ---
 title: "One HTML page"
 free: true
-home_position: 4
+home_position: 20
 lang_redirect: "[[ru/user/One HTML Page]]"
 ---
 

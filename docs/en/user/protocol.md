@@ -1,7 +1,7 @@
 ---
 title: "How trip2g works"
 free: true
-home_position: 15
+home_position: 95
 lang_redirect: "[[ru/user/protocol]]"
 ---
 
@@ -11,14 +11,13 @@ This page explains the full end-to-end picture: what happens to a note from the 
 
 ## The pipeline
 
-```
-Obsidian vault
-    ↓ sync plugin
-trip2g server (your instance)
-    ↓ rendering
-Website (HTML pages, sitemap, RSS)
-    ↓ optional channels
-Telegram channel  ·  MCP server  ·  AI assistant
+```mermaid
+flowchart TD
+    A[Obsidian vault] -->|sync plugin| B[trip2g server<br/>your instance]
+    B -->|rendering| C[Website<br/>HTML pages, sitemap, RSS]
+    C -.optional.-> D[Telegram channel]
+    C -.optional.-> E[MCP server]
+    C -.optional.-> F[AI assistant]
 ```
 
 Each stage is independent. You can stop at "website" and never touch Telegram or AI. Or you can use all of it.
@@ -147,13 +146,12 @@ Agents interact with a node through a consistent set of MCP methods regardless o
 
 Multiple trip2g instances can be connected into a mesh. Your AI agent points at your own hub; from there it can transparently search peer bases — public references, private team wikis, external adapters for GitHub or Telegram — through a single `federated_search` call.
 
-```
-Your agent
-    ↓
-Your trip2g hub
-    ↓──────────────────┐──────────────────┐
-Public base        Private peer       External adapter
-(no auth)          (HMAC key)         (HMAC key)
+```mermaid
+flowchart TD
+    Agent[Your agent] --> Hub[Your trip2g hub]
+    Hub -->|no auth| Public[Public base]
+    Hub -->|HMAC key| Private[Private peer]
+    Hub -->|HMAC key| Adapter[External adapter<br/>GitHub / Telegram]
 ```
 
 Each peer base keeps its own access control. You can give a colleague access to one subgraph of your notes without exposing everything else.

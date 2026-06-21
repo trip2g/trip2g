@@ -120,6 +120,12 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 			return nil, fmt.Errorf("failed to get cron job %s from database: %w", name, getErr)
 		}
 
+		// Code/config is authoritative for the schedule. UpsertCronJob only inserts
+		// on first run (insert-if-not-exists), so override the stored expression here
+		// to ensure appconfig changes take effect on restart. The admin Cron Jobs UI
+		// only displays the expression (read-only), so nothing user-editable is lost.
+		dbJob.Expression = job.Schedule()
+
 		// Register job with cronjobs prefix
 		jobName := jobQueueID(name)
 		cj.env.RegisterJob(model.BackgroundDefaultQueue, jobName, func(ctx context.Context, m []byte) error {

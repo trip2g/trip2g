@@ -101,6 +101,17 @@ Admin status gives full access to the admin panel and all GraphQL mutations. Use
 
 By default, any note that has no `subgraph` or `subgraphs` in its frontmatter is visible to every authenticated user — including users you grant access to only one specific subgraph.
 
+```mermaid
+flowchart TD
+    N[Note] --> Q{Has subgraph / subgraphs?}
+    Q -->|No, untagged| Leak[Visible to EVERY signed-in user]
+    Q -->|Yes: assigned subgraph| Gated[Visible only to granted users]
+    Leak -. apply frontmatter patch .-> Patched[Reassigned to notes_without_subgraph]
+    Patched --> Hidden[Nobody is granted it -> invisible to regular users]
+    Hidden --> AdminNote[Admins always see everything]
+    Gated --> AdminNote
+```
+
 **Fix: hide unassigned notes behind a system subgraph.**
 
 Create a vault-based frontmatter patch (`_private.md` or similar):
