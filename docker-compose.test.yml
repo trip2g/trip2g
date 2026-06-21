@@ -40,6 +40,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: trip2g-test-app
+    # Lets the container reach a mock OIDC issuer running on the host (e2e/oidc.spec.js).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       minio:
         condition: service_healthy
