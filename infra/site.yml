@@ -8,23 +8,33 @@
     app_group: trip2g
     bin_path: "{{ app_dir }}/bin/app"
     data_dir: "{{ app_dir }}/data"
+    # Zero-downtime drain defaults (see docs/dev/zerodowntime.md).
+    # shutdown_grace_period must be >= the Traefik health-check detection window
+    # (interval + timeout, currently 1s + 1s) so the backend is pulled out of
+    # rotation before its socket closes. stop_timeout_sec must exceed
+    # grace + shutdown_timeout so systemd never SIGKILLs mid-drain.
+    shutdown_grace_period: "5s"
+    shutdown_timeout: "10s"
+    stop_timeout_sec: 20
+    # internal_addr carries /healthz + /metrics and MUST be unique per service
+    # (the app default :8082 would collide across units).
     trip2g_services:
-      - { service_name: trip2g, listen_addr: "localhost:8081", domain: "demo.trip2g.com" }
-      # - { service_name: trip2g_mbti, listen_addr: "localhost:8082", domain: "mbti.trip2g.com" }
-      # - { service_name: trip2g_taro, listen_addr: "localhost:8083", domain: "taro.trip2g.com" }
-      # - { service_name: trip2g_secondbrain, listen_addr: "localhost:8085", domain: "secondbrain.trip2g.com" }
-      # - { service_name: trip2g_blizzard, listen_addr: "localhost:8086", domain: "blizzard.trip2g.com" }
-      - { service_name: trip2g_landing, listen_addr: "localhost:8087", domain: "trip2g.com", extra_domains: ["extra.trip2g.com"] }
-      - { service_name: trip2g_demo2, listen_addr: "localhost:8088", domain: "simple.trip2g.com" }
-      - { service_name: trip2g_founder, listen_addr: "localhost:8092", domain: "keeper.trip2g.com" }
-      - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", domain: "internaldev.trip2g.com" }
+      - { service_name: trip2g, listen_addr: "localhost:8081", internal_addr: "localhost:19081", domain: "demo.trip2g.com" }
+      # - { service_name: trip2g_mbti, listen_addr: "localhost:8082", internal_addr: "localhost:19082", domain: "mbti.trip2g.com" }
+      # - { service_name: trip2g_taro, listen_addr: "localhost:8083", internal_addr: "localhost:19083", domain: "taro.trip2g.com" }
+      # - { service_name: trip2g_secondbrain, listen_addr: "localhost:8085", internal_addr: "localhost:19085", domain: "secondbrain.trip2g.com" }
+      # - { service_name: trip2g_blizzard, listen_addr: "localhost:8086", internal_addr: "localhost:19086", domain: "blizzard.trip2g.com" }
+      - { service_name: trip2g_landing, listen_addr: "localhost:8087", internal_addr: "localhost:19087", domain: "trip2g.com", extra_domains: ["extra.trip2g.com"] }
+      - { service_name: trip2g_demo2, listen_addr: "localhost:8088", internal_addr: "localhost:19088", domain: "simple.trip2g.com" }
+      - { service_name: trip2g_founder, listen_addr: "localhost:8092", internal_addr: "localhost:19092", domain: "keeper.trip2g.com" }
+      - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", internal_addr: "localhost:19093", domain: "internaldev.trip2g.com" }
       # Retired instances (stopped + disabled on host 2026-06-22):
-      # - { service_name: trip2g_demo3, listen_addr: "localhost:8089", domain: "simple2.trip2g.com" }
-      # - { service_name: trip2g_sn, listen_addr: "localhost:8090", domain: "sn.trip2g.com" }
-      # - { service_name: trip2g_alexkey, listen_addr: "localhost:8091", domain: "alexkey.trip2g.com" }
-      # - { service_name: trip2g_ns, listen_addr: "localhost:8094", domain: "ns.trip2g.com" }
-      # - { service_name: trip2g_yuriysann, listen_addr: "localhost:8095", domain: "yuriysann.trip2g.com" }
-      # - { service_name: trip2g_aim, listen_addr: "localhost:8096", domain: "aim.trip2g.com" }
+      # - { service_name: trip2g_demo3, listen_addr: "localhost:8089", internal_addr: "localhost:19089", domain: "simple2.trip2g.com" }
+      # - { service_name: trip2g_sn, listen_addr: "localhost:8090", internal_addr: "localhost:19090", domain: "sn.trip2g.com" }
+      # - { service_name: trip2g_alexkey, listen_addr: "localhost:8091", internal_addr: "localhost:19091", domain: "alexkey.trip2g.com" }
+      # - { service_name: trip2g_ns, listen_addr: "localhost:8094", internal_addr: "localhost:19094", domain: "ns.trip2g.com" }
+      # - { service_name: trip2g_yuriysann, listen_addr: "localhost:8095", internal_addr: "localhost:19095", domain: "yuriysann.trip2g.com" }
+      # - { service_name: trip2g_aim, listen_addr: "localhost:8096", internal_addr: "localhost:19096", domain: "aim.trip2g.com" }
   tasks:
     - name: Create trip2g user
       user:

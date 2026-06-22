@@ -1,4 +1,13 @@
 http:
+  # Idempotent GETs that hit a backend mid-restart are retried. With a single
+  # backend per site this only helps once a second backend exists (blue-green —
+  # see docs/dev/zerodowntime.md); it is harmless otherwise and covers transient
+  # upstream blips.
+  middlewares:
+    retry-idempotent:
+      retry:
+        attempts: 4
+
   routers:
 {% for svc in trip2g_services %}
     {{ svc.service_name }}:
@@ -6,6 +15,8 @@ http:
       entryPoints:
         - websecure
       service: {{ svc.service_name }}
+      middlewares:
+        - retry-idempotent
       tls:
         certResolver: letsencrypt
 {% if svc.extra_domains is defined %}
@@ -15,6 +26,8 @@ http:
       entryPoints:
         - websecure
       service: {{ svc.service_name }}
+      middlewares:
+        - retry-idempotent
       tls:
         certResolver: letsencrypt
 {% endfor %}
@@ -34,6 +47,15 @@ http:
       loadBalancer:
         servers:
           - url: "http://{{ svc.listen_addr }}"
+        # Active readiness probe on the app's internal port. /healthz returns 503
+        # while draining (SIGTERM) or warming up, so Traefik stops routing to a
+        # backend ~1-2s before its socket closes. port overrides the server URL's
+        # port to reach the internal listener on the same host.
+        healthCheck:
+          path: /healthz
+          port: {{ svc.internal_addr.split(':')[1] }}
+          interval: "1s"
+          timeout: "1s"
 {% endfor %}
     lottie-converter:
       loadBalancer:

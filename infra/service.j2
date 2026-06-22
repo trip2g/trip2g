@@ -7,9 +7,25 @@ User=trip2g
 Group=trip2g
 
 WorkingDirectory=/opt/trip2g/data
-ExecStart=/opt/trip2g/bin/app --listen-addr {{ item.listen_addr }}
+# Public traffic on listen_addr; health/metrics on a per-service internal_addr
+# (Traefik probes /healthz there). internal_addr MUST be unique per service —
+# the app default is :8082, so without this every unit would collide.
+ExecStart=/opt/trip2g/bin/app \
+    --listen-addr {{ item.listen_addr }} \
+    --internal-listen-addr {{ item.internal_addr }} \
+    --shutdown-grace-period {{ item.shutdown_grace_period | default(shutdown_grace_period) }} \
+    --shutdown-timeout {{ item.shutdown_timeout | default(shutdown_timeout) }}
 EnvironmentFile=/etc/{{ item.service_name }}.env
 Restart=on-failure
+
+# Zero-downtime drain: SIGTERM makes the app flip /healthz to 503 immediately,
+# wait shutdown-grace-period (so Traefik's active health check pulls the backend
+# out of rotation before the socket closes), then shut the HTTP server down.
+# Give systemd more than grace+timeout so it never SIGKILLs mid-drain.
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec={{ stop_timeout_sec | default(15) }}
+
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
