@@ -751,7 +751,7 @@ func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
 		return fmt.Errorf("failed to list admins for hide: %w", err)
 	}
 	if len(admins) == 0 {
-		return fmt.Errorf("cannot hide note paths: no admin user to attribute the hide to")
+		return errors.New("cannot hide note paths: no admin user to attribute the hide to")
 	}
 	// ListAllAdmins orders by user_id DESC, so the last element is the oldest.
 	hiddenBy := admins[len(admins)-1].UserID
@@ -940,7 +940,7 @@ func (a *app) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.Co
 }
 
 // LoadSiteConfig implements noteloader.Env interface.
-func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) { //nolint:unparam // may return error in future
+func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
 	return a.SiteConfig(ctx), nil
 }
 

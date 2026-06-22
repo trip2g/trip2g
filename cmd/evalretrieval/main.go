@@ -14,6 +14,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -38,7 +39,7 @@ func main() {
 	}
 	queries := gs.Verified()
 	if len(queries) == 0 {
-		fail(fmt.Errorf("golden set has no verified queries"))
+		fail(errors.New("golden set has no verified queries"))
 	}
 
 	client := retrievaleval.NewSearchClient(*endpoint, *bearer)

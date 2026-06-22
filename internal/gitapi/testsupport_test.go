@@ -3,7 +3,7 @@ package gitapi
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -77,7 +77,7 @@ func (f *fakeEnv) AllVisibleNotePaths(context.Context) ([]db.NotePath, error) {
 }
 func (f *fakeEnv) PushNotes(_ context.Context, in model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
 	if f.pushErr {
-		return nil, fmt.Errorf("boom")
+		return nil, errors.New("boom")
 	}
 	for _, u := range in.Updates {
 		f.pushed = append(f.pushed, u.Path)

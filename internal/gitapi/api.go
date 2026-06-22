@@ -427,7 +427,7 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 
 	newRev := strings.TrimSpace(mustGit(api, "rev-parse", api.config.MasterBranch))
 	if newRev == "" {
-		return fmt.Errorf("rev-parse after receive-pack failed")
+		return errors.New("rev-parse after receive-pack failed")
 	}
 	if newRev == oldRev {
 		return nil // nothing advanced (rejected by denyNonFastForwards or no-op)

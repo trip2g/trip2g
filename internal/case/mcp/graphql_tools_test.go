@@ -178,7 +178,7 @@ func TestHandleGraphQLRequest_StructuredContent(t *testing.T) {
 	require.NoError(t, err)
 	gotJSON, err := json.Marshal(result.StructuredContent)
 	require.NoError(t, err)
-	require.Equal(t, string(wantJSON), string(gotJSON))
+	require.JSONEq(t, string(wantJSON), string(gotJSON))
 }
 
 // --- validateReadOnlyQuery tests ---

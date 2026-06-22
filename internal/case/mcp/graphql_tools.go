@@ -3,13 +3,15 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
+	"trip2g/internal/logger"
+
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/parser"
-	"trip2g/internal/logger"
 )
 
 const fullIntrospectionQuery = `{
@@ -99,7 +101,7 @@ func validateReadOnlyQuery(query string, allowed map[string]bool) error {
 		for _, sel := range op.SelectionSet {
 			field, ok := sel.(*ast.Field)
 			if !ok {
-				return fmt.Errorf("only field selections are allowed at query root")
+				return errors.New("only field selections are allowed at query root")
 			}
 			if !allowed[field.Name] {
 				return fmt.Errorf("root field %q is not allowed", field.Name)
