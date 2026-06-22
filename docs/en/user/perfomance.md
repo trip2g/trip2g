@@ -192,9 +192,9 @@ We deployed trip2g on a range of cheap VMs and load-tested each **from a separat
 |---|---|---|---|---|
 | Hetzner cpx32 | 4 / 8 GB | ~€10/mo | ~4 000 rps (real 52 KB doc pages) | — |
 | Hetzner cpx22 | 2 / 4 GB | ~€6/mo | ≥4 000 rps (its `/` landing, ~43 KB — not saturated) | **0 dropped** |
-| DigitalOcean basic | 1 / 512 MB | **$4/mo** | network-capped in this test* | **0 dropped** |
+| DigitalOcean basic | 1 / 512 MB | **$4/mo** | ~500 rps* | **0 dropped** |
 
-\*The $4 droplet sat in New York while the load generator was in Germany — an 86 ms round trip — so its rate was capped by the transatlantic link (p50 ≈ the 88 ms RTT), not its CPU. Its own ceiling is higher; measuring it needs a generator in the same region. Prices are provider list rates.
+\*Its single core holds **~500 rps** of the `/` page (~43 KB) at 100 % with p99 < 50 ms; the knee is ~600–700 rps and past ~900 latency falls apart. Measured with the generator in the same US-East area (~23 ms away) — a first run with the generator in Germany showed a misleading "1 000 rps", but that 86 ms transatlantic link just throttled the generator so the droplet never got pushed. Prices are provider list rates.
 
 Two findings matter more than the raw rates.
 
