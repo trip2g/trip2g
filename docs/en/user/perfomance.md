@@ -145,6 +145,17 @@ Keeping thousands of rendered pages in RAM turns out to be surprisingly cheap. A
 
 There is still room to go further — the current architecture renders notes individually and assembles the final page (layout, injections) on each request. Pre-rendering complete pages would push latency even lower. But even without that, trip2g is already orders of magnitude faster than traditional database-backed CMS platforms on equivalent hardware.
 
+### Measured on real content
+
+We loaded this very documentation — 35 real pages (the `/en/user` set: custom HTML inside the default template) — onto a Hetzner **cpx32** (4 vCPU AMD EPYC-Genoa, 8 GB RAM) and hit them with [vegeta](https://github.com/tsenart/vegeta), round-robin across all pages (~52 KB each):
+
+| Load | Success | p50 | p95 | p99 |
+|------:|:-------:|----:|----:|----:|
+| 500 req/s | 100 % | 1.9 ms | 4.2 ms | 12 ms |
+| 1 000 req/s | 100 % | 3.3 ms | 18 ms | 26 ms |
+
+A single 4-core node serves **~1 000 real pages per second** at 100 % success with a p99 of 26 ms — this is the hot path (pre-rendered note HTML + per-request layout assembly), the same path every reader hits. Past ~1 000–1 500 req/s the node becomes CPU-bound on layout assembly and latency climbs sharply; that's the per-node ceiling on this hardware, and where a second node (or a read replica — see [[zerodowntime]] / [[litestream]]) earns its keep. Measured 2026-06-22.
+
 ## What this means for you
 
 - **Vaults up to ~1 000 notes**: everything is instant — syncs are tens of milliseconds.
