@@ -10,6 +10,9 @@
  *   trip2g-memory status
  *   trip2g-memory logs
  *   trip2g-memory key
+ *   trip2g-memory daily "<text>" [--folder <vault>] [--context <n>]
+ *   trip2g-memory log <file> "<text>" [--folder <vault>] [--context <n>]
+ *   trip2g-memory mcp   (or pipe stdin to run as MCP stdio server)
  */
 
 import crypto from 'node:crypto';
@@ -37,13 +40,14 @@ const READY_POLL_MS = 500;
 export interface Flags {
   dryRun: boolean;
   help: boolean;
-  folder: string | null;
+  folder: string;
   port: number;
   email: string;
   image: string;
   publicUrl: string | null;
   noHub: boolean;
   hubUrl: string;
+  context: number;
 }
 
 export interface ServerEnv {
@@ -64,6 +68,12 @@ export interface DataJson {
     apiKey: string;
     twoWaySync: boolean;
   }>;
+}
+
+/** Result returned by every runXxx() handler: collected output + error flag. */
+export interface CommandResult {
+  text: string;
+  isError: boolean;
 }
 
 const DEFAULT_HUB_URL = 'https://trip2g.com/_system/mcp';
@@ -120,25 +130,30 @@ To disable: delete this file or run \`memcli up\` with \`--no-hub\`.
 }
 
 /**
- * Parse process.argv (or a provided array) into { cmd, flags }.
- * Subcommands: up (default), down, status, logs, key.
+ * Parse process.argv (or a provided array) into { cmd, flags, positional }.
+ * Subcommands: up (default), down, status, logs, key, daily, log, mcp.
+ *
+ * daily: positional[0] = text
+ * log:   positional[0] = file, positional[1] = text
  */
-export function parseArgs(argv: string[]): { cmd: string; flags: Flags } {
-  const SUBCOMMANDS = new Set(['up', 'down', 'status', 'logs', 'key']);
+export function parseArgs(argv: string[]): { cmd: string; flags: Flags; positional: string[] } {
+  const SUBCOMMANDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log', 'mcp']);
   const flags: Flags = {
     dryRun: false,
     help: false,
-    folder: null,
+    folder: './memory-vault',
     port: DEFAULT_PORT,
     email: DEFAULT_EMAIL,
     image: DEFAULT_IMAGE,
     publicUrl: null,
     noHub: false,
     hubUrl: DEFAULT_HUB_URL,
+    context: 15,
   };
 
   let cmd = 'up';
   let i = 0;
+  const positional: string[] = [];
 
   if (argv.length > 0 && !argv[0].startsWith('-')) {
     if (SUBCOMMANDS.has(argv[0])) {
@@ -167,11 +182,150 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags } {
       flags.noHub = true;
     } else if (arg === '--hub-url') {
       flags.hubUrl = argv[++i];
+    } else if (arg === '--context') {
+      flags.context = parseInt(argv[++i], 10);
+    } else if (!arg.startsWith('-')) {
+      positional.push(arg);
     }
     i++;
   }
 
-  return { cmd, flags };
+  return { cmd, flags, positional };
+}
+
+/**
+ * Determine whether to start the MCP stdio server.
+ *
+ * Rules:
+ * - If argv[0] is a known non-mcp subcommand → false (run CLI as normal)
+ * - If --help / -h is anywhere in argv → false (show help via CLI path)
+ * - If argv[0] === 'mcp' → true
+ * - If stdin is not a TTY (piped) and no non-mcp subcommand → true
+ * - Otherwise → false (interactive TTY, show help / default behavior)
+ */
+export function shouldRunMcp(argv: string[], isTty: boolean): boolean {
+  const KNOWN_CLI_CMDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log']);
+  const first = argv[0];
+  if (first !== undefined && KNOWN_CLI_CMDS.has(first)) return false;
+  if (argv.includes('--help') || argv.includes('-h')) return false;
+  if (first === 'mcp') return true;
+  if (!isTty) return true;
+  return false;
+}
+
+/**
+ * Metadata for a single MCP tool exposed by this server.
+ */
+export interface ToolDef {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+/**
+ * Return the static list of MCP tools this server exposes.
+ * Pure function: no side-effects, suitable for unit testing.
+ */
+export function buildToolList(): ToolDef[] {
+  return [
+    {
+      name: 'memory_up',
+      description:
+        'Boot a local trip2g memory server + sync watcher and mint an admin API key. ' +
+        'Idempotent: safe to call when the server is already running.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder: { type: 'string', description: 'Vault directory path (default: ./memory-vault)' },
+          port: { type: 'number', description: 'Public port (default: 24081)' },
+          email: { type: 'string', description: 'Owner email (default: memory@local)' },
+          image: { type: 'string', description: 'Docker image ref (default: ghcr.io/trip2g/trip2g:latest)' },
+          noHub: { type: 'boolean', description: 'Skip writing the federation hub note' },
+          hubUrl: { type: 'string', description: 'Override hub MCP endpoint URL' },
+          publicUrl: { type: 'string', description: 'Override PUBLIC_URL for the server' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'memory_down',
+      description: 'Stop and remove the trip2g-memory Docker container.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder: { type: 'string', description: 'Vault directory (used for context only)' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'memory_status',
+      description: 'Show the status of the trip2g-memory Docker container.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder: { type: 'string', description: 'Vault directory (used for context only)' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'memory_logs',
+      description: 'Fetch a snapshot of the trip2g-memory container logs (not streaming).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder: { type: 'string', description: 'Vault directory (used for context only)' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'memory_key',
+      description: 'Re-mint the admin API key and rewrite the Obsidian plugin data.json.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder: { type: 'string', description: 'Vault directory (default: ./memory-vault)' },
+          port: { type: 'number', description: 'Public port (default: 24081)' },
+          email: { type: 'string', description: 'Owner email (default: memory@local)' },
+          publicUrl: { type: 'string', description: 'Override PUBLIC_URL' },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'memory_daily',
+      description:
+        'Append a timestamped entry to today\'s daily note in the vault. ' +
+        'Use this to record a log entry, thought, or event for the current day.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to append (use \\n for newlines)' },
+          folder: { type: 'string', description: 'Vault directory (default: ./memory-vault)' },
+          context: { type: 'number', description: 'Lines of note context to return after write (default: 15)' },
+        },
+        required: ['text'],
+      },
+    },
+    {
+      name: 'memory_log',
+      description:
+        'Append a timestamped entry under today\'s ### [[date]] section in a named note. ' +
+        'Use this to maintain a structured log in a specific file.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          file: { type: 'string', description: 'Note filename (without .md extension, e.g. "work")' },
+          text: { type: 'string', description: 'Text to append (use \\n for newlines)' },
+          folder: { type: 'string', description: 'Vault directory (default: ./memory-vault)' },
+          context: { type: 'number', description: 'Lines of note context to return after write (default: 15)' },
+        },
+        required: ['file', 'text'],
+      },
+    },
+  ];
 }
 
 /**
@@ -405,6 +559,309 @@ function repoRoot(): string {
 }
 
 // ---------------------------------------------------------------------------
+// Daily / Log helpers (exported for unit tests)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the timezone label for the daily-note frontmatter.
+ * Uses TZ env var if set, then Intl to detect the system zone, then UTC.
+ */
+function _tzLabel(): string {
+  const tz = process.env.TZ?.trim();
+  if (tz) return tz;
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'UTC';
+  }
+}
+
+/**
+ * Prefix the first line of text with "HH:MM " from the given Date.
+ * Normalizes a literal backslash-n ("\\n") in the text to a real newline
+ * before splitting, so agents can pass multi-line text through a shell.
+ */
+export function _stampBlock(text: string, now: Date): string {
+  const normalized = text.replace(/\\n/g, '\n');
+  const lines = normalized.split('\n');
+  const hhmm = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+  lines[0] = `${hhmm} ${lines[0]}`;
+  return lines.join('\n');
+}
+
+/**
+ * Normalize text (backslash-n → real newline) without adding a timestamp.
+ * Used for the first entry of a day, where no HH:MM prefix is written.
+ */
+export function _plainBlock(text: string): string {
+  return text.replace(/\\n/g, '\n');
+}
+
+/**
+ * Write content to path atomically: write to a sibling temp file, then rename.
+ * Creates parent directories as needed.
+ */
+export function atomicWrite(filePath: string, content: string): void {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = path.join(dir, `.memcli-${process.pid}-${Date.now()}.tmp`);
+  try {
+    fs.writeFileSync(tmp, content, 'utf8');
+    fs.renameSync(tmp, filePath);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch { /* ignore */ }
+    throw err;
+  }
+}
+
+/**
+ * Return the last `n` lines of a file as a string.
+ * Returns empty string if the file does not exist or n <= 0.
+ */
+function tailLines(filePath: string, n: number): string {
+  if (n <= 0) return '';
+  if (!fs.existsSync(filePath)) return '';
+  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+  return lines.slice(-n).join('\n');
+}
+
+/**
+ * Build the initial content for a new daily note.
+ * Includes frontmatter, navigation header, and the first stamped entry.
+ */
+export function buildDailyEntry(day: string, tz: string, stampedEntry: string): string {
+  const frontmatter = `---\ntimezone: ${tz}\n---\n`;
+  const header = `- [[_index|Home]]\n- [[daily/_index|Daily]]\n\n# ${day}\n`;
+  return `${frontmatter}${header}\n${stampedEntry}\n`;
+}
+
+/**
+ * Ensure vault/daily/_index.md exists and contains a `- [[<day>]]` link
+ * under the `# Daily` heading. Port of _ensure_daily_index.
+ */
+export function ensureDailyIndex(vault: string, day: string): void {
+  const idx = path.join(vault, 'daily', '_index.md');
+  if (!fs.existsSync(idx)) {
+    atomicWrite(idx, '- [[_index|Home]]\n- [[daily/_index|Daily]]\n\n# Daily\n');
+  }
+  const text = fs.readFileSync(idx, 'utf8');
+  if (text.includes(`[[${day}]]`)) return;
+
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inserted = false;
+  for (const line of lines) {
+    out.push(line);
+    if (!inserted && line.trim() === '# Daily') {
+      out.push(`- [[${day}]]`);
+      inserted = true;
+    }
+  }
+  if (!inserted) out.push(`- [[${day}]]`);
+  // Remove trailing empty line added by split, then rejoin
+  atomicWrite(idx, out.join('\n') + '\n');
+}
+
+/**
+ * Append a timestamped entry to vault/daily/<day>.md (creating the note if needed).
+ * Also maintains vault/daily/_index.md.
+ * Note: sync is NOT called here — the running trip2g-sync --watch daemon picks up the change.
+ *
+ * @returns path to the note file
+ */
+export function appendDaily(vault: string, text: string, now: Date): string {
+  // Use local date to match the user's timezone
+  const localDay = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+  const note = path.join(vault, 'daily', `${localDay}.md`);
+  if (!fs.existsSync(note)) {
+    // First entry of the day: no HH:MM prefix
+    const entry = _plainBlock(text);
+    atomicWrite(note, buildDailyEntry(localDay, _tzLabel(), entry));
+  } else {
+    // Subsequent entries: add HH:MM prefix
+    const entry = _stampBlock(text, now);
+    const existing = fs.readFileSync(note, 'utf8').replace(/\n+$/, '');
+    atomicWrite(note, `${existing}\n\n${entry}\n`);
+  }
+  ensureDailyIndex(vault, localDay);
+  return note;
+}
+
+/**
+ * Append a timestamped entry under today's `### [[<day>]]` section in vault/<file>.md.
+ * Creates the section at end of file if absent.
+ * Note: sync is NOT called here — the running trip2g-sync --watch daemon picks up the change.
+ *
+ * @returns path to the note file
+ */
+export function appendLog(vault: string, file: string, text: string, now: Date): string {
+  const localDay = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+  const fileMd = file.endsWith('.md') ? file : `${file}.md`;
+  const note = path.join(vault, fileMd);
+  const header = `### [[${localDay}]]`;
+
+  const existing = fs.existsSync(note) ? fs.readFileSync(note, 'utf8') : '';
+  if (existing.split('\n').includes(header)) {
+    // Section already exists: subsequent entry, add HH:MM prefix
+    const entry = _stampBlock(text, now);
+    const base = existing.replace(/\n+$/, '');
+    atomicWrite(note, `${base}\n\n${entry}\n`);
+  } else {
+    // First entry under this day's section: no HH:MM prefix
+    const entry = _plainBlock(text);
+    const base = existing.replace(/\n+$/, '');
+    const prefix = base ? `${base}\n\n` : '';
+    atomicWrite(note, `${prefix}${header}\n\n${entry}\n`);
+  }
+  return note;
+}
+
+// ---------------------------------------------------------------------------
+// Subcommand runner functions (return CommandResult, no process.exit)
+// ---------------------------------------------------------------------------
+
+/** Capture lines written by fn() into a string. */
+function captureLines(fn: () => void): string {
+  const lines: string[] = [];
+  const origLog = console.log;
+  const origErr = console.error;
+  const origWarn = console.warn;
+  console.log = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  console.error = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  console.warn = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  try {
+    fn();
+  } finally {
+    console.log = origLog;
+    console.error = origErr;
+    console.warn = origWarn;
+  }
+  return lines.join('\n');
+}
+
+async function captureAsync(fn: () => Promise<void>): Promise<string> {
+  const lines: string[] = [];
+  const origLog = console.log;
+  const origErr = console.error;
+  const origWarn = console.warn;
+  console.log = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  console.error = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  console.warn = (...args: unknown[]) => lines.push(args.map(String).join(' '));
+  try {
+    await fn();
+  } finally {
+    console.log = origLog;
+    console.error = origErr;
+    console.warn = origWarn;
+  }
+  return lines.join('\n');
+}
+
+export async function runUp(flags: Flags): Promise<CommandResult> {
+  try {
+    const text = await captureAsync(() => cmdUp(flags, flags.dryRun));
+    return { text, isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export function runDown(flags: Flags): CommandResult {
+  try {
+    const text = captureLines(() => cmdDown(flags.dryRun));
+    return { text, isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export function runStatus(): CommandResult {
+  try {
+    const text = captureLines(() => cmdStatus());
+    return { text, isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export function runLogs(): CommandResult {
+  // For MCP mode: capture output via spawnSync with pipe instead of inherit
+  try {
+    const result = spawnSync('docker', ['logs', CONTAINER_NAME], {
+      encoding: 'utf8',
+    });
+    if (result.error) throw result.error;
+    const text = [result.stdout, result.stderr].filter(Boolean).join('\n');
+    return { text, isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export async function runKey(flags: Flags): Promise<CommandResult> {
+  try {
+    const text = await captureAsync(() => cmdKey(flags, flags.dryRun));
+    return { text, isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export function runDaily(vault: string, text: string, context: number): CommandResult {
+  if (!text) {
+    return { text: 'Error: `daily` requires a text argument', isError: true };
+  }
+  try {
+    const note = appendDaily(path.resolve(vault), text, new Date());
+    return { text: tailLines(note, context), isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+export function runLog(vault: string, file: string, text: string, context: number): CommandResult {
+  if (!file || !text) {
+    return { text: 'Error: `log` requires <file> and <text> arguments', isError: true };
+  }
+  try {
+    const note = appendLog(path.resolve(vault), file, text, new Date());
+    return { text: tailLines(note, context), isError: false };
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy command wrappers (print + exit — used by the CLI path only)
+// ---------------------------------------------------------------------------
+
+function cmdDaily(vault: string, text: string, context: number): void {
+  if (!text) {
+    console.error('Error: `daily` requires a text argument');
+    process.exit(1);
+  }
+  const note = appendDaily(path.resolve(vault), text, new Date());
+  console.log(tailLines(note, context));
+}
+
+function cmdLog(vault: string, file: string, text: string, context: number): void {
+  if (!file || !text) {
+    console.error('Error: `log` requires <file> and <text> arguments');
+    process.exit(1);
+  }
+  const note = appendLog(path.resolve(vault), file, text, new Date());
+  console.log(tailLines(note, context));
+}
+
+// ---------------------------------------------------------------------------
 // Subcommand handlers
 // ---------------------------------------------------------------------------
 
@@ -421,15 +878,22 @@ SUBCOMMANDS
   status        Show container and watcher status
   logs          Stream container logs
   key           Re-mint the API key (rewrites data.json)
+  daily "<text>"         Append a HH:MM entry to today's daily note
+  log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
+  mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
-  --folder <path>      Vault directory (required)
+  --folder <path>      Vault directory (default: ./memory-vault)
   --port <n>           Public port (default: ${DEFAULT_PORT})
   --email <addr>       Owner email (default: ${DEFAULT_EMAIL})
   --image <ref>        Docker image (default: ${DEFAULT_IMAGE})
   --public-url <url>   Override PUBLIC_URL (default: http://localhost:<port>)
   --no-hub             Skip writing the federation hub note (hub.md)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+
+FLAGS (daily / log)
+  --folder <path>      Vault directory (default: ./memory-vault)
+  --context <n>        Lines of note context to print after write (default: 15)
 
 GLOBAL FLAGS
   --dry-run    Print commands without executing
@@ -438,6 +902,8 @@ GLOBAL FLAGS
 NOTES
   State is stored in <vault>/.trip2g-memory/ (env file, data dir, PID file).
   The Docker image MUST include local-storage backend support (feat/filestorage).
+  daily/log do not call sync — the running trip2g-sync --watch daemon picks up changes.
+  Pipe stdin or use the mcp subcommand to run as an MCP stdio JSON-RPC server.
 `.trim());
 }
 
@@ -722,6 +1188,168 @@ async function cmdKey(flags: Flags, dryRun: boolean): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// MCP stdio server (hand-rolled JSON-RPC 2.0 over stdio, zero external deps)
+// ---------------------------------------------------------------------------
+
+interface JsonRpcRequest {
+  jsonrpc: '2.0';
+  id?: string | number | null;
+  method: string;
+  params?: unknown;
+}
+
+interface JsonRpcResponse {
+  jsonrpc: '2.0';
+  id: string | number | null;
+  result?: unknown;
+  error?: { code: number; message: string };
+}
+
+function mcpSend(resp: JsonRpcResponse): void {
+  process.stdout.write(JSON.stringify(resp) + '\n');
+}
+
+function mcpError(id: string | number | null, code: number, message: string): void {
+  mcpSend({ jsonrpc: '2.0', id, error: { code, message } });
+}
+
+function defaultFlags(): Flags {
+  return {
+    dryRun: false,
+    help: false,
+    folder: './memory-vault',
+    port: DEFAULT_PORT,
+    email: DEFAULT_EMAIL,
+    image: DEFAULT_IMAGE,
+    publicUrl: null,
+    noHub: false,
+    hubUrl: DEFAULT_HUB_URL,
+    context: 15,
+  };
+}
+
+async function dispatchMcpTool(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
+  function flagsFrom(a: Record<string, unknown>): Flags {
+    const f = defaultFlags();
+    if (typeof a.folder === 'string') f.folder = a.folder;
+    if (typeof a.port === 'number') f.port = a.port;
+    if (typeof a.email === 'string') f.email = a.email;
+    if (typeof a.image === 'string') f.image = a.image;
+    if (typeof a.publicUrl === 'string') f.publicUrl = a.publicUrl;
+    if (typeof a.noHub === 'boolean') f.noHub = a.noHub;
+    if (typeof a.hubUrl === 'string') f.hubUrl = a.hubUrl;
+    return f;
+  }
+
+  let result: CommandResult;
+  switch (name) {
+    case 'memory_up':
+      result = await runUp(flagsFrom(args));
+      break;
+    case 'memory_down':
+      result = runDown(flagsFrom(args));
+      break;
+    case 'memory_status':
+      result = runStatus();
+      break;
+    case 'memory_logs':
+      result = runLogs();
+      break;
+    case 'memory_key':
+      result = await runKey(flagsFrom(args));
+      break;
+    case 'memory_daily': {
+      const folder = typeof args.folder === 'string' ? args.folder : './memory-vault';
+      const context = typeof args.context === 'number' ? args.context : 15;
+      const text = typeof args.text === 'string' ? args.text : '';
+      result = runDaily(folder, text, context);
+      break;
+    }
+    case 'memory_log': {
+      const folder = typeof args.folder === 'string' ? args.folder : './memory-vault';
+      const context = typeof args.context === 'number' ? args.context : 15;
+      const file = typeof args.file === 'string' ? args.file : '';
+      const text = typeof args.text === 'string' ? args.text : '';
+      result = runLog(folder, file, text, context);
+      break;
+    }
+    default:
+      return {
+        content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+        isError: true,
+      };
+  }
+
+  return {
+    content: [{ type: 'text', text: result.text }],
+    ...(result.isError ? { isError: true } : {}),
+  };
+}
+
+async function startMcpServer(): Promise<void> {
+  const { createInterface } = await import('node:readline');
+
+  const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+
+  for await (const line of rl) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let msg: JsonRpcRequest;
+    try {
+      msg = JSON.parse(trimmed) as JsonRpcRequest;
+    } catch {
+      // Can't recover id from malformed JSON — send parse error with null id
+      mcpError(null, -32700, 'Parse error');
+      continue;
+    }
+
+    const id = msg.id ?? null;
+
+    // Notifications (no id field) → no response
+    if (!('id' in msg)) continue;
+
+    const method = msg.method;
+
+    if (method === 'initialize') {
+      mcpSend({
+        jsonrpc: '2.0',
+        id,
+        result: {
+          protocolVersion: '2024-11-05',
+          capabilities: { tools: {} },
+          serverInfo: { name: 'memcli', version: '0.1.0' },
+        },
+      });
+    } else if (method === 'tools/list') {
+      mcpSend({ jsonrpc: '2.0', id, result: { tools: buildToolList() } });
+    } else if (method === 'tools/call') {
+      const params = (msg.params ?? {}) as Record<string, unknown>;
+      const toolName = typeof params.name === 'string' ? params.name : '';
+      const toolArgs = (params.arguments ?? {}) as Record<string, unknown>;
+      try {
+        const toolResult = await dispatchMcpTool(toolName, toolArgs);
+        mcpSend({ jsonrpc: '2.0', id, result: toolResult });
+      } catch (err) {
+        mcpSend({
+          jsonrpc: '2.0',
+          id,
+          result: {
+            content: [{ type: 'text', text: `Error: ${(err as Error).message}` }],
+            isError: true,
+          },
+        });
+      }
+    } else {
+      mcpError(id, -32601, 'Method not found');
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main entry point (only runs when executed directly, not when imported)
 // ---------------------------------------------------------------------------
 
@@ -744,39 +1372,55 @@ const _argv1Url = process.argv[1]
 
 if (_mainUrl === _argv1Url) {
   const argv = process.argv.slice(2);
-  const { cmd, flags } = parseArgs(argv);
+  const isTty = process.stdin.isTTY === true;
 
-  if (flags.help) {
-    printHelp();
-    process.exit(0);
-  }
-
-  (async () => {
-    try {
-      switch (cmd) {
-        case 'up':
-          await cmdUp(flags, flags.dryRun);
-          break;
-        case 'down':
-          cmdDown(flags.dryRun);
-          break;
-        case 'status':
-          cmdStatus();
-          break;
-        case 'logs':
-          cmdLogs();
-          break;
-        case 'key':
-          await cmdKey(flags, flags.dryRun);
-          break;
-        default:
-          console.error(`Unknown subcommand: ${cmd}`);
-          printHelp();
-          process.exit(1);
-      }
-    } catch (err) {
-      console.error('Error:', (err as Error).message);
+  // MCP mode: piped stdin with no explicit subcommand, or explicit `mcp` subcommand
+  if (shouldRunMcp(argv, isTty)) {
+    startMcpServer().catch((err) => {
+      process.stderr.write(`MCP server error: ${(err as Error).message}\n`);
       process.exit(1);
+    });
+  } else {
+    const { cmd, flags, positional } = parseArgs(argv);
+
+    if (flags.help) {
+      printHelp();
+      process.exit(0);
     }
-  })();
+
+    (async () => {
+      try {
+        switch (cmd) {
+          case 'up':
+            await cmdUp(flags, flags.dryRun);
+            break;
+          case 'down':
+            cmdDown(flags.dryRun);
+            break;
+          case 'status':
+            cmdStatus();
+            break;
+          case 'logs':
+            cmdLogs();
+            break;
+          case 'key':
+            await cmdKey(flags, flags.dryRun);
+            break;
+          case 'daily':
+            cmdDaily(flags.folder, positional[0] ?? '', flags.context);
+            break;
+          case 'log':
+            cmdLog(flags.folder, positional[0] ?? '', positional[1] ?? '', flags.context);
+            break;
+          default:
+            console.error(`Unknown subcommand: ${cmd}`);
+            printHelp();
+            process.exit(1);
+        }
+      } catch (err) {
+        console.error('Error:', (err as Error).message);
+        process.exit(1);
+      }
+    })();
+  }
 }

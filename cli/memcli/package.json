@@ -9,7 +9,7 @@
   },
   "scripts": {
     "codegen": "graphql-codegen --config codegen.ts",
-    "build": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/memcli.js",
+    "build": "node esbuild.mjs",
     "dev": "node --experimental-strip-types src/cli.ts",
     "test": "node --experimental-transform-types --test src/cli.test.ts"
   },

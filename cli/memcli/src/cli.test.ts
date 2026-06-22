@@ -7,6 +7,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   signHatJwt,
   parseArgs,
@@ -14,6 +17,13 @@ import {
   buildDataJson,
   buildDockerRunArgs,
   buildHubNote,
+  _stampBlock,
+  buildDailyEntry,
+  appendDaily,
+  appendLog,
+  ensureDailyIndex,
+  shouldRunMcp,
+  buildToolList,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -369,4 +379,309 @@ test('parseArgs: --hub-url sets hubUrl', () => {
 test('parseArgs: hubUrl defaults to trip2g.com endpoint', () => {
   const { flags } = parseArgs(['up']);
   assert.equal(flags.hubUrl, 'https://trip2g.com/_system/mcp');
+});
+
+// ---------------------------------------------------------------------------
+// _stampBlock
+// ---------------------------------------------------------------------------
+
+test('_stampBlock: first line is prefixed with HH:MM timestamp', () => {
+  const now = new Date(2024, 0, 15, 9, 5); // 09:05 local
+  const result = _stampBlock('hello', now);
+  assert.match(result, /^\d\d:\d\d hello$/);
+});
+
+test('_stampBlock: timestamp matches /^\\d\\d:\\d\\d/', () => {
+  const now = new Date();
+  const result = _stampBlock('msg', now);
+  assert.match(result, /^\d\d:\d\d /);
+});
+
+test('_stampBlock: only first line gets the timestamp', () => {
+  const now = new Date(2024, 0, 15, 14, 30);
+  const result = _stampBlock('line1\nline2\nline3', now);
+  const lines = result.split('\n');
+  assert.match(lines[0], /^\d\d:\d\d line1$/);
+  assert.equal(lines[1], 'line2');
+  assert.equal(lines[2], 'line3');
+});
+
+test('_stampBlock: literal \\\\n (backslash-n) is normalized to real newline', () => {
+  const now = new Date(2024, 0, 15, 14, 30);
+  const result = _stampBlock('first\\nsecond', now);
+  const lines = result.split('\n');
+  assert.equal(lines.length, 2);
+  assert.match(lines[0], /^\d\d:\d\d first$/);
+  assert.equal(lines[1], 'second');
+});
+
+// ---------------------------------------------------------------------------
+// appendDaily
+// ---------------------------------------------------------------------------
+
+function makeTmpVault(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-test-'));
+}
+
+test('appendDaily: creates note with frontmatter, header, and entry (no time on first)', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 8, 0); // 2024-06-10 08:00 local
+    appendDaily(vault, 'first entry', now);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const note = path.join(vault, 'daily', `${localDay}.md`);
+    assert.ok(fs.existsSync(note), 'note file must exist');
+    const content = fs.readFileSync(note, 'utf8');
+    assert.ok(content.startsWith('---\ntimezone:'), 'must start with frontmatter');
+    assert.ok(content.includes(`# ${localDay}`), 'must contain date header');
+    // First entry of the day: no HH:MM prefix
+    assert.ok(content.includes('first entry'), 'must contain entry text');
+    assert.doesNotMatch(content, /\d\d:\d\d first entry/, 'first entry must NOT have a timestamp prefix');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendDaily: second same-day entry gets HH:MM prefix', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 8, 0);
+    appendDaily(vault, 'first entry', now);
+    const now2 = new Date(2024, 5, 10, 14, 30);
+    appendDaily(vault, 'second entry', now2);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const note = path.join(vault, 'daily', `${localDay}.md`);
+    const content = fs.readFileSync(note, 'utf8');
+    assert.match(content, /\d\d:\d\d second entry/, 'second entry must have HH:MM prefix');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendDaily: appends a second entry without re-creating frontmatter', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 8, 0);
+    appendDaily(vault, 'entry one', now);
+    const now2 = new Date(2024, 5, 10, 9, 15);
+    appendDaily(vault, 'entry two', now2);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const note = path.join(vault, 'daily', `${localDay}.md`);
+    const content = fs.readFileSync(note, 'utf8');
+    // Only one frontmatter block
+    assert.equal((content.match(/^---$/gm) ?? []).length, 2, 'exactly one frontmatter block');
+    assert.match(content, /entry one/);
+    assert.match(content, /entry two/);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendDaily: maintains _index.md with date link', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 8, 0);
+    appendDaily(vault, 'hello', now);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const idx = path.join(vault, 'daily', '_index.md');
+    assert.ok(fs.existsSync(idx), '_index.md must exist');
+    const content = fs.readFileSync(idx, 'utf8');
+    assert.ok(content.includes(`[[${localDay}]]`), `_index.md must contain [[${localDay}]]`);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('ensureDailyIndex: does not duplicate link on second call', () => {
+  const vault = makeTmpVault();
+  try {
+    fs.mkdirSync(path.join(vault, 'daily'), { recursive: true });
+    ensureDailyIndex(vault, '2024-06-10');
+    ensureDailyIndex(vault, '2024-06-10');
+    const content = fs.readFileSync(path.join(vault, 'daily', '_index.md'), 'utf8');
+    const count = (content.match(/\[\[2024-06-10\]\]/g) ?? []).length;
+    assert.equal(count, 1, 'link must appear exactly once');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// appendLog
+// ---------------------------------------------------------------------------
+
+test('appendLog: creates ### [[date]] section and entry (no time on first)', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 10, 30);
+    appendLog(vault, 'work', 'did something', now);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const note = path.join(vault, 'work.md');
+    assert.ok(fs.existsSync(note), 'log note must exist');
+    const content = fs.readFileSync(note, 'utf8');
+    assert.ok(content.includes(`### [[${localDay}]]`), 'must have date section header');
+    // First entry under this day's section: no HH:MM prefix
+    assert.ok(content.includes('did something'), 'must contain entry text');
+    assert.doesNotMatch(content, /\d\d:\d\d did something/, 'first entry must NOT have a timestamp prefix');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendLog: second same-day entry gets HH:MM prefix', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 10, 30);
+    appendLog(vault, 'work', 'first thought', now);
+    const now2 = new Date(2024, 5, 10, 14, 30);
+    appendLog(vault, 'work', 'second thought', now2);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const content = fs.readFileSync(path.join(vault, 'work.md'), 'utf8');
+    assert.ok(content.includes('first thought'), 'must contain first entry text');
+    assert.doesNotMatch(content, /\d\d:\d\d first thought/, 'first entry must NOT have a timestamp');
+    assert.match(content, /\d\d:\d\d second thought/, 'second entry must have HH:MM prefix');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendLog: appends under existing ### [[date]] section', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 10, 30);
+    appendLog(vault, 'work', 'first', now);
+    const now2 = new Date(2024, 5, 10, 11, 0);
+    appendLog(vault, 'work', 'second', now2);
+    const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const content = fs.readFileSync(path.join(vault, 'work.md'), 'utf8');
+    // Only one date section
+    const sectionCount = (content.match(new RegExp(`### \\[\\[${localDay}\\]\\]`, 'g')) ?? []).length;
+    assert.equal(sectionCount, 1, 'date section must appear exactly once');
+    assert.match(content, /first/);
+    assert.match(content, /second/);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('appendLog: adds .md extension if missing from file arg', () => {
+  const vault = makeTmpVault();
+  try {
+    const now = new Date(2024, 5, 10, 10, 30);
+    appendLog(vault, 'notes', 'entry', now); // no .md
+    assert.ok(fs.existsSync(path.join(vault, 'notes.md')));
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// parseArgs — daily / log subcommands
+// ---------------------------------------------------------------------------
+
+test('parseArgs: "daily" subcommand is recognized', () => {
+  const { cmd } = parseArgs(['daily', 'some text']);
+  assert.equal(cmd, 'daily');
+});
+
+test('parseArgs: "log" subcommand is recognized', () => {
+  const { cmd } = parseArgs(['log', 'myfile', 'some text']);
+  assert.equal(cmd, 'log');
+});
+
+test('parseArgs: daily positional arg is captured', () => {
+  const { positional } = parseArgs(['daily', 'my note text']);
+  assert.equal(positional[0], 'my note text');
+});
+
+test('parseArgs: log positional args are captured', () => {
+  const { positional } = parseArgs(['log', 'journal', 'did work']);
+  assert.equal(positional[0], 'journal');
+  assert.equal(positional[1], 'did work');
+});
+
+test('parseArgs: --context flag sets context', () => {
+  const { flags } = parseArgs(['daily', 'x', '--context', '5']);
+  assert.equal(flags.context, 5);
+});
+
+test('parseArgs: context defaults to 15', () => {
+  const { flags } = parseArgs(['daily', 'x']);
+  assert.equal(flags.context, 15);
+});
+
+// ---------------------------------------------------------------------------
+// shouldRunMcp — detection logic
+// ---------------------------------------------------------------------------
+
+test('shouldRunMcp: explicit known subcommand → false (never MCP)', () => {
+  for (const cmd of ['up', 'down', 'status', 'logs', 'key', 'daily', 'log']) {
+    assert.equal(shouldRunMcp([cmd], true), false, `${cmd} should not trigger MCP`);
+    assert.equal(shouldRunMcp([cmd], false), false, `${cmd} piped should not trigger MCP`);
+  }
+});
+
+test('shouldRunMcp: explicit "mcp" arg → true regardless of TTY', () => {
+  assert.equal(shouldRunMcp(['mcp'], true), true);
+  assert.equal(shouldRunMcp(['mcp'], false), true);
+});
+
+test('shouldRunMcp: piped stdin + no subcommand → true', () => {
+  assert.equal(shouldRunMcp([], false), true);
+});
+
+test('shouldRunMcp: TTY + no subcommand → false', () => {
+  assert.equal(shouldRunMcp([], true), false);
+});
+
+test('shouldRunMcp: piped stdin + flags only (no subcommand) → true', () => {
+  assert.equal(shouldRunMcp(['--folder', '/tmp/v'], false), true);
+});
+
+// ---------------------------------------------------------------------------
+// buildToolList — tool registry
+// ---------------------------------------------------------------------------
+
+test('buildToolList: returns exactly 7 tools', () => {
+  const tools = buildToolList();
+  assert.equal(tools.length, 7);
+});
+
+test('buildToolList: all expected tool names are present', () => {
+  const names = new Set(buildToolList().map((t) => t.name));
+  const expected = ['memory_up', 'memory_down', 'memory_status', 'memory_logs', 'memory_key', 'memory_daily', 'memory_log'];
+  for (const name of expected) {
+    assert.ok(names.has(name), `Expected tool ${name} to be in list`);
+  }
+});
+
+test('buildToolList: every tool has a non-empty description', () => {
+  for (const tool of buildToolList()) {
+    assert.ok(tool.description.length > 0, `Tool ${tool.name} must have a description`);
+  }
+});
+
+test('buildToolList: every tool has an inputSchema with type=object', () => {
+  for (const tool of buildToolList()) {
+    assert.equal(
+      (tool.inputSchema as { type?: string }).type,
+      'object',
+      `Tool ${tool.name} inputSchema.type must be "object"`,
+    );
+  }
+});
+
+test('buildToolList: memory_daily requires text', () => {
+  const daily = buildToolList().find((t) => t.name === 'memory_daily');
+  assert.ok(daily, 'memory_daily must exist');
+  const required = (daily!.inputSchema as { required?: string[] }).required ?? [];
+  assert.ok(required.includes('text'), 'memory_daily must require text');
+});
+
+test('buildToolList: memory_log requires file and text', () => {
+  const log = buildToolList().find((t) => t.name === 'memory_log');
+  assert.ok(log, 'memory_log must exist');
+  const required = (log!.inputSchema as { required?: string[] }).required ?? [];
+  assert.ok(required.includes('file'), 'memory_log must require file');
+  assert.ok(required.includes('text'), 'memory_log must require text');
 });
