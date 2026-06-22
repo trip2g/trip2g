@@ -128,9 +128,23 @@ mcp_federation_kb_url: ${hubUrl}
 mcp_federation_kb_id: ${host}
 ---
 
-This memory federates to **${host}** via MCP. An agent that connects to this instance's \`/_system/mcp\` can pull ${host}'s published docs (including the trip2g memory docs) without leaving its own memory scope.
+# Your trip2g memory
 
-To disable: delete this file or run \`memcli up\` with \`--no-hub\`.
+**trip2g** turns a folder of Markdown notes into living memory: you write notes, an agent reads and searches them as persistent long-term memory, and the same notes can be published as a website with subscriptions and a Telegram channel. It is a self-hosted Go + SQLite app.
+
+## What you can do here
+- **Remember** — write Markdown notes into this vault (\`memcli daily "…"\`, \`memcli log <topic> "…"\`, or just create \`.md\` files).
+- **Recall** — grep/read the vault, or query this instance's \`/_system/mcp\` tools (\`search\`, \`expand\`).
+- **Search the wider trip2g knowledge base** — this memory federates to **${host}**. Use the **\`federated_search\`** MCP tool to search ${host} and pull matching docs back, without leaving your own memory.
+
+## Docs
+- Long-term memory for agents — https://trip2g.com/en/user/agent_memory
+- Local MCP server & tools — https://trip2g.com/en/user/mcp
+- Federation — https://trip2g.com/en/user/federation
+- How trip2g works — https://trip2g.com/en/user/protocol
+- Self-hosting — https://trip2g.com/en/user/selfhosted
+
+To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 `.trimStart();
 }
 

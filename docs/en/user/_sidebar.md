@@ -70,3 +70,4 @@ title: "Navigation"
 
 - [[en/user/use-cases|Examples by role]]
 - [[en/user/digital-garden|Digital garden]]
+- [[en/team-knowledge-base|Team knowledge base on a bare VM]]
