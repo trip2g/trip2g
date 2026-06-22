@@ -50,6 +50,7 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `key` | Rotate the admin API key — mints a new one and disables the previous |
 | `daily "<text>"` | Append a thought to today's daily note |
 | `log <file> "<text>"` | Append a thought under today's section in a named note |
+| `hub <url>` | Bind an additional remote federation hub to the vault |
 | `mcp` | Run as MCP stdio server (also auto-detected when stdin is piped) |
 
 **Flags for `up`:**
@@ -125,6 +126,35 @@ This connects the local server's MCP endpoint to trip2g.com's published knowledg
 ```bash
 node cli/memcli/dist/memcli.js up --folder ./memory-vault --hub-url https://example.com/_system/mcp
 ```
+
+## Bind your own remote hub
+
+You can federate your memory to **your own trip2g instance** (or any other) alongside the default trip2g.com hub. Multiple hubs coexist — each gets its own note file.
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp
+```
+
+This writes `hub-demo.lahab.cc.md` into the vault with `free: true` (required for the federation scan to recognize the note) and `mcp_federation_kb_url: https://demo.lahab.cc/_system/mcp`. After the running `--watch` daemon pushes the note to the server, `federated_search` also queries your hub.
+
+Pass `--id` to use a shorter identifier:
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp --id my-team
+```
+
+Pass `--folder` to target a specific vault and `--dry-run` to preview without writing:
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp --folder ./memory-vault --dry-run
+```
+
+The `memory_bind_hub` MCP tool does the same thing from within an MCP session.
+
+Notes:
+- The `free: true` frontmatter field is handled automatically — do not remove it or the federation scan will ignore the note.
+- Re-running `hub` with the same URL overwrites the note (updating the id or content).
+- The default `hub.md` (trip2g.com) and additional `hub-<host>.md` files coexist independently.
 
 ## MCP mode
 

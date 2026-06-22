@@ -17,6 +17,7 @@ import {
   buildDataJson,
   buildDockerRunArgs,
   buildHubNote,
+  hubSlug,
   _stampBlock,
   buildDailyEntry,
   appendDaily,
@@ -674,14 +675,14 @@ test('shouldRunMcp: piped stdin + flags only (no subcommand) → true', () => {
 // buildToolList — tool registry
 // ---------------------------------------------------------------------------
 
-test('buildToolList: returns exactly 7 tools', () => {
+test('buildToolList: returns exactly 8 tools', () => {
   const tools = buildToolList();
-  assert.equal(tools.length, 7);
+  assert.equal(tools.length, 8);
 });
 
 test('buildToolList: all expected tool names are present', () => {
   const names = new Set(buildToolList().map((t) => t.name));
-  const expected = ['memory_up', 'memory_down', 'memory_status', 'memory_logs', 'memory_key', 'memory_daily', 'memory_log'];
+  const expected = ['memory_up', 'memory_down', 'memory_status', 'memory_logs', 'memory_key', 'memory_daily', 'memory_log', 'memory_bind_hub'];
   for (const name of expected) {
     assert.ok(names.has(name), `Expected tool ${name} to be in list`);
   }
@@ -716,4 +717,69 @@ test('buildToolList: memory_log requires file and text', () => {
   const required = (log!.inputSchema as { required?: string[] }).required ?? [];
   assert.ok(required.includes('file'), 'memory_log must require file');
   assert.ok(required.includes('text'), 'memory_log must require text');
+});
+
+test('buildToolList: memory_bind_hub is present with required url', () => {
+  const tool = buildToolList().find((t) => t.name === 'memory_bind_hub');
+  assert.ok(tool, 'memory_bind_hub must be in the tool list');
+  const required = (tool!.inputSchema as { required?: string[] }).required ?? [];
+  assert.ok(required.includes('url'), 'memory_bind_hub must require url');
+});
+
+// ---------------------------------------------------------------------------
+// buildHubNote — custom id
+// ---------------------------------------------------------------------------
+
+test('buildHubNote: custom id sets mcp_federation_kb_id to the provided id', () => {
+  const note = buildHubNote('https://demo.lahab.cc/_system/mcp', 'my-team');
+  assert.ok(
+    note.includes('mcp_federation_kb_id: my-team'),
+    `Expected mcp_federation_kb_id: my-team, got:\n${note}`,
+  );
+});
+
+test('buildHubNote: custom id with free: true still present', () => {
+  const note = buildHubNote('https://demo.lahab.cc/_system/mcp', 'my-team');
+  assert.ok(note.includes('free: true'), 'free: true must be present even with custom id');
+});
+
+test('buildHubNote: without id defaults to hostname', () => {
+  const note = buildHubNote('https://demo.lahab.cc/_system/mcp');
+  assert.ok(note.includes('mcp_federation_kb_id: demo.lahab.cc'));
+});
+
+// ---------------------------------------------------------------------------
+// hubSlug
+// ---------------------------------------------------------------------------
+
+test('hubSlug: returns hostname for standard url', () => {
+  assert.equal(hubSlug('https://demo.lahab.cc/_system/mcp'), 'demo.lahab.cc');
+});
+
+test('hubSlug: returns hostname for trip2g.com', () => {
+  assert.equal(hubSlug('https://trip2g.com/_system/mcp'), 'trip2g.com');
+});
+
+// ---------------------------------------------------------------------------
+// parseArgs — hub subcommand
+// ---------------------------------------------------------------------------
+
+test('parseArgs: "hub" subcommand is recognized', () => {
+  const { cmd } = parseArgs(['hub', 'https://demo.lahab.cc/_system/mcp']);
+  assert.equal(cmd, 'hub');
+});
+
+test('parseArgs: hub url is captured as positional[0]', () => {
+  const { positional } = parseArgs(['hub', 'https://demo.lahab.cc/_system/mcp']);
+  assert.equal(positional[0], 'https://demo.lahab.cc/_system/mcp');
+});
+
+test('parseArgs: hub --id flag sets flags.id', () => {
+  const { flags } = parseArgs(['hub', 'https://demo.lahab.cc/_system/mcp', '--id', 'my-team']);
+  assert.equal(flags.id, 'my-team');
+});
+
+test('parseArgs: flags.id defaults to null', () => {
+  const { flags } = parseArgs(['hub', 'https://demo.lahab.cc/_system/mcp']);
+  assert.equal(flags.id, null);
 });

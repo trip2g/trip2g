@@ -50,6 +50,7 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `key` | Ротация API-ключа — выпускает новый, отключает предыдущий |
 | `daily "<текст>"` | Добавить мысль в дневную заметку |
 | `log <файл> "<текст>"` | Добавить мысль в раздел сегодняшнего дня именованной заметки |
+| `hub <url>` | Подключить дополнительный удалённый hub федерации к хранилищу |
 | `mcp` | Запустить как MCP stdio-сервер (также определяется автоматически при пайпе stdin) |
 
 **Флаги для `up`:**
@@ -125,6 +126,35 @@ mcp_federation_kb_url: https://trip2g.com/_system/mcp
 ```bash
 node cli/memcli/dist/memcli.js up --folder ./memory-vault --hub-url https://example.com/_system/mcp
 ```
+
+## Подключить собственный удалённый хаб
+
+Вы можете добавить федерацию с **вашим собственным экземпляром trip2g** (или любым другим) — наряду с хабом trip2g.com по умолчанию. Несколько хабов сосуществуют: каждый получает собственный файл заметки.
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp
+```
+
+Команда записывает `hub-demo.lahab.cc.md` в хранилище с полями `free: true` (обязательно для обнаружения заметки при сканировании федерации) и `mcp_federation_kb_url: https://demo.lahab.cc/_system/mcp`. После того как запущенный демон `--watch` отправит заметку на сервер, инструмент `federated_search` будет также обращаться к вашему хабу.
+
+Для краткого идентификатора используйте `--id`:
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp --id my-team
+```
+
+Для предпросмотра без записи — `--dry-run`:
+
+```bash
+node cli/memcli/dist/memcli.js hub https://demo.lahab.cc/_system/mcp --folder ./memory-vault --dry-run
+```
+
+MCP-инструмент `memory_bind_hub` делает то же самое в рамках MCP-сессии.
+
+Замечания:
+- Поле `free: true` добавляется автоматически — не удаляйте его, иначе сканер федерации проигнорирует заметку.
+- Повторный запуск `hub` с тем же URL перезаписывает заметку (обновляя id или содержимое).
+- Файл по умолчанию `hub.md` (trip2g.com) и дополнительные `hub-<host>.md` сосуществуют независимо.
 
 ## Режим MCP
 

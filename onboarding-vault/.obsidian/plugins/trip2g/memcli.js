@@ -20287,12 +20287,17 @@ function signHatJwt(secret, email) {
   const sig = crypto.createHmac("sha256", secret).update(signingInput).digest();
   return `${signingInput}.${base64url(sig)}`;
 }
-function buildHubNote(hubUrl) {
+function hubSlug(hubUrl) {
   const host = new URL(hubUrl).hostname;
+  return host.replace(/[^a-zA-Z0-9._-]/g, "-");
+}
+function buildHubNote(hubUrl, id) {
+  const host = new URL(hubUrl).hostname;
+  const kbId = id ?? host;
   return `---
 free: true
 mcp_federation_kb_url: ${hubUrl}
-mcp_federation_kb_id: ${host}
+mcp_federation_kb_id: ${kbId}
 ---
 
 # Your trip2g memory
@@ -20315,7 +20320,7 @@ To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 `.trimStart();
 }
 function parseArgs(argv) {
-  const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp"]);
+  const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp", "hub"]);
   const flags = {
     dryRun: false,
     help: false,
@@ -20326,7 +20331,8 @@ function parseArgs(argv) {
     publicUrl: null,
     noHub: false,
     hubUrl: DEFAULT_HUB_URL,
-    context: 15
+    context: 15,
+    id: null
   };
   let cmd = "up";
   let i = 0;
@@ -20359,6 +20365,8 @@ function parseArgs(argv) {
       flags.hubUrl = argv[++i];
     } else if (arg === "--context") {
       flags.context = parseInt(argv[++i], 10);
+    } else if (arg === "--id") {
+      flags.id = argv[++i];
     } else if (!arg.startsWith("-")) {
       positional.push(arg);
     }
@@ -20367,7 +20375,7 @@ function parseArgs(argv) {
   return { cmd, flags, positional };
 }
 function shouldRunMcp(argv, isTty) {
-  const KNOWN_CLI_CMDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log"]);
+  const KNOWN_CLI_CMDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "hub"]);
   const first = argv[0];
   if (first !== void 0 && KNOWN_CLI_CMDS.has(first)) return false;
   if (argv.includes("--help") || argv.includes("-h")) return false;
@@ -20466,6 +20474,19 @@ function buildToolList() {
           context: { type: "number", description: "Lines of note context to return after write (default: 15)" }
         },
         required: ["file", "text"]
+      }
+    },
+    {
+      name: "memory_bind_hub",
+      description: "Bind an additional remote trip2g federation hub to this memory so federated_search also queries it. Writes a hub-<host>.md note (with free: true + mcp_federation_kb_url) into the vault. Multiple hubs coexist alongside the default hub.md (trip2g.com). The running --watch daemon will push the note so federation takes effect; if no daemon, run `up` first. Args: url (the hub's /_system/mcp endpoint), folder, id (optional short id, defaults to hostname).",
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The hub MCP endpoint URL (e.g. https://demo.lahab.cc/_system/mcp)" },
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" },
+          id: { type: "string", description: "Optional short id for mcp_federation_kb_id (default: hostname)" }
+        },
+        required: ["url"]
       }
     }
   ];
@@ -20857,6 +20878,46 @@ function runLog(vault, file, text, context) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+function runHub(hubUrl, folder, id, dryRun) {
+  if (!hubUrl) {
+    return { text: "Error: `hub` requires a <url> argument", isError: true };
+  }
+  let parsed;
+  try {
+    parsed = new URL(hubUrl);
+  } catch {
+    return { text: `Error: invalid URL: ${hubUrl}`, isError: true };
+  }
+  if (!parsed.protocol.startsWith("http")) {
+    return { text: `Error: URL must start with http:// or https://, got: ${hubUrl}`, isError: true };
+  }
+  const slug = hubSlug(hubUrl);
+  const kbId = id ?? parsed.hostname;
+  const vault = path.resolve(folder);
+  const notePath = path.join(vault, `hub-${slug}.md`);
+  const noteContent = buildHubNote(hubUrl, kbId);
+  if (dryRun) {
+    const lines = [
+      `[dry-run] would write hub note: ${notePath}`,
+      `[dry-run] content:`,
+      noteContent,
+      `[dry-run] note: the running --watch daemon will push the note so federation takes effect (or run \`up\` first if no daemon).`
+    ];
+    return { text: lines.join("\n"), isError: false };
+  }
+  try {
+    atomicWrite(notePath, noteContent);
+    return {
+      text: [
+        `bound hub ${kbId} \u2192 ${hubUrl} (note: ${notePath})`,
+        `Note: the running --watch daemon will push the note so federation takes effect (or run \`up\` first if no daemon).`
+      ].join("\n"),
+      isError: false
+    };
+  } catch (err) {
+    return { text: `Error: ${err.message}`, isError: true };
+  }
+}
 function cmdDaily(vault, text, context) {
   if (!text) {
     console.error("Error: `daily` requires a text argument");
@@ -20873,6 +20934,14 @@ function cmdLog(vault, file, text, context) {
   const note = appendLog(path.resolve(vault), file, text, /* @__PURE__ */ new Date());
   console.log(tailLines(note, context));
 }
+function cmdHub(hubUrl, folder, id, dryRun) {
+  const result = runHub(hubUrl, folder, id, dryRun);
+  if (result.isError) {
+    console.error(result.text);
+    process.exit(1);
+  }
+  console.log(result.text);
+}
 function printHelp() {
   console.log(`
 memcli \u2014 minimal self-hosted agent memory backed by trip2g
@@ -20888,6 +20957,7 @@ SUBCOMMANDS
   key           Re-mint the API key (rewrites data.json)
   daily "<text>"         Append a HH:MM entry to today's daily note
   log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
+  hub <url>              Bind an additional remote federation hub to the vault
   mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
@@ -20898,6 +20968,11 @@ FLAGS (up)
   --public-url <url>   Override PUBLIC_URL (default: http://localhost:<port>)
   --no-hub             Skip writing the federation hub note (hub.md)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+
+FLAGS (hub)
+  --folder <path>      Vault directory (default: ./memory-vault)
+  --id <kb-id>         Short id for mcp_federation_kb_id (default: hostname)
+  --dry-run            Print what would be written, write nothing
 
 FLAGS (daily / log)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -21206,7 +21281,8 @@ function defaultFlags() {
     publicUrl: null,
     noHub: false,
     hubUrl: DEFAULT_HUB_URL,
-    context: 15
+    context: 15,
+    id: null
   };
 }
 async function dispatchMcpTool(name, args) {
@@ -21251,6 +21327,13 @@ async function dispatchMcpTool(name, args) {
       const file = typeof args.file === "string" ? args.file : "";
       const text = typeof args.text === "string" ? args.text : "";
       result = runLog(folder, file, text, context);
+      break;
+    }
+    case "memory_bind_hub": {
+      const folder = typeof args.folder === "string" ? args.folder : "./memory-vault";
+      const hubUrl = typeof args.url === "string" ? args.url : "";
+      const hubId = typeof args.id === "string" ? args.id : null;
+      result = runHub(hubUrl, folder, hubId, false);
       break;
     }
     default:
@@ -21363,6 +21446,9 @@ if (_mainUrl === _argv1Url) {
           case "log":
             cmdLog(flags.folder, positional[0] ?? "", positional[1] ?? "", flags.context);
             break;
+          case "hub":
+            cmdHub(positional[0] ?? "", flags.folder, flags.id, flags.dryRun);
+            break;
           default:
             console.error(`Unknown subcommand: ${cmd}`);
             printHelp();
@@ -21388,9 +21474,11 @@ export {
   buildServerEnv,
   buildToolList,
   ensureDailyIndex,
+  hubSlug,
   parseArgs,
   runDaily,
   runDown,
+  runHub,
   runKey,
   runLog,
   runLogs,
