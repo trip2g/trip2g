@@ -53,6 +53,21 @@ func (m EmbeddingModel) Dimensions() int {
 	}
 }
 
+// MaxInputTokens returns the hard input-token limit the model's embedding
+// endpoint accepts in a single request. Inputs beyond this are rejected
+// (OpenAI returns HTTP 400 "maximum input length is 8192 tokens"), so callers
+// must truncate before embedding whole notes.
+func (m EmbeddingModel) MaxInputTokens() int {
+	switch m {
+	case EmbeddingModelSmall, EmbeddingModelLarge, EmbeddingModelAda, EmbeddingModelBGEM3:
+		return 8192
+	case EmbeddingModelMultilingualE5Base:
+		return 512
+	default:
+		return 8192
+	}
+}
+
 // ParseEmbeddingModel parses model name string to EmbeddingModel.
 func ParseEmbeddingModel(s string) (EmbeddingModel, error) {
 	switch s {

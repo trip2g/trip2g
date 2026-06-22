@@ -75,8 +75,13 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
 	// Prepare text for embedding (title + stripped content, with model-specific passage prefix).
-	passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
-	text := passagePrefix + noteView.Title + "\n\n" + strippedContent
+	embModel := env.Features().VectorSearch.Model
+	passagePrefix := embModel.PassagePrefix()
+	// Cap whole-note input to the model's hard token limit; notes can be larger
+	// than the embedding window, which otherwise fails with HTTP 400 and retries
+	// forever. estimateTokens is approximate, so leave a 10% safety margin.
+	budget := embModel.MaxInputTokens() * 9 / 10
+	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+strippedContent, budget)
 
 	// Generate embedding
 	result, err := env.OpenAI().CreateEmbedding(ctx, text)
