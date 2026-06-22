@@ -87,6 +87,38 @@ node obsidian-sync/dist/trip2g-sync.mjs \
   --verbose
 ```
 
+### Continuous sync with `--watch`
+
+`--watch` (alias `-w`) keeps the CLI running as a long-running daemon. It does a full two-way reconcile on startup, then maintains a live connection:
+
+- **Remote → local**: subscribes to the server's `noteChanges` SSE stream and writes any server-side change back to the vault folder immediately.
+- **Local → remote**: watches the filesystem and pushes edits to the server after a ~500 ms debounce.
+
+```bash
+node obsidian-sync/dist/trip2g-sync.mjs --watch \
+  --folder /path/to/your/vault \
+  --api-key "$API_KEY" \
+  --api-url http://localhost:24081/_system/graphql
+```
+
+The process stays in the foreground. Press Ctrl-C for a clean shutdown. It exits non-zero on a fatal error, so a container restart policy or `systemd` service can restart it automatically.
+
+#### Filtering with `--include` and `--exclude`
+
+Use `--include <glob>` (`-i`) and `--exclude <glob>` (`-x`) to control which paths the SSE follower tracks. Both flags are repeatable.
+
+```bash
+# Only follow notes under journal/ and projects/
+node obsidian-sync/dist/trip2g-sync.mjs --watch \
+  --folder /path/to/vault \
+  --api-key "$API_KEY" \
+  --api-url http://localhost:24081/_system/graphql \
+  --include "journal/**" \
+  --include "projects/**"
+```
+
+Precedence: CLI flags override any `livePull` patterns stored in `data.json`, which override the built-in default (`**` — follow everything). With `--watch` and no patterns set anywhere, all paths are followed.
+
 ## 4. View it
 
 Open the note's permalink, e.g. `http://localhost:24081/<path>/<note>`.

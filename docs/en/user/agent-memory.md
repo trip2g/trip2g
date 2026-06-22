@@ -148,6 +148,38 @@ A note is publicly accessible (reachable by the agent without authentication) on
 
 For the full sync CLI reference and options, see [[en/user/local-quickstart]].
 
+## 3a. Continuous sync: `--watch` as a sidecar
+
+The one-shot sync from section 3 uploads notes once. If your agent writes notes — and you want those writes visible to readers or to other agents immediately — run the sync CLI in watch mode as a long-running sidecar alongside the trip2g daemon.
+
+```bash
+node obsidian-sync/dist/trip2g-sync.mjs --watch \
+  --folder /path/to/your/vault \
+  --api-key "$API_KEY" \
+  --api-url http://localhost:24081/_system/graphql
+```
+
+On startup it does a full two-way reconcile. After that:
+
+- Any note your agent writes to disk is pushed to the server within ~500 ms (filesystem watcher + debounce).
+- Any note changed on the server side (e.g. by another process or a human editor) is written back to the vault folder immediately via the `noteChanges` SSE subscription.
+
+The process stays in the foreground and exits non-zero on a fatal error. In Docker Compose, add it as a second service that mounts the same vault volume as the agent container. Ctrl-C shuts it down cleanly.
+
+To limit which paths the sync daemon follows from the server, pass `--include` and `--exclude` globs. See [[en/user/local-quickstart]] (section "Filtering with --include and --exclude") for the full reference.
+
+### Watch the agent work in the browser
+
+Once `--watch` is running, open any page on your site and append `?#!live_follow=1` to the URL:
+
+```
+http://localhost:24081/some-note?#!live_follow=1
+```
+
+The browser enters live-follow (cinema) mode and automatically navigates to whichever note changes next. The setting persists across the auto-navigations, so the browser keeps following until you disable it. This gives you a real-time view of what the agent is editing without any manual refreshing.
+
+For full details on live-follow and the reload toggle, see [[en/user/live-editing]].
+
 ## 4. Recall: search → expand → note_html
 
 Once notes are synced, the agent retrieves memory through the MCP tools in three steps:
@@ -176,9 +208,10 @@ For a deeper explanation of the mechanism: [[Token Economy]].
 
 ## Related
 
-- [[en/user/local-quickstart]] — full local setup reference
+- [[en/user/local-quickstart]] — full local setup reference, including `--watch` flag reference
 - [[en/user/selfhosted]] — production Docker Compose setup with Caddy and TLS
 - [[en/user/ai-agent-mcp-adapter]] — the stdio adapter: one tool, just the right section
 - [[en/user/mcp]] — all MCP methods, access control, and named entry points
 - [[en/user/expand]] — level-by-level TOC navigation explained
 - [[en/user/token-economy-bench]] — measured token savings, reproducible benchmark
+- [[en/user/live-editing]] — live-follow (cinema mode) and reload toggle for watching edits in real time

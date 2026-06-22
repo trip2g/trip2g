@@ -34,8 +34,33 @@ Live updates are active for every published page automatically. There is no togg
 
 Admins who use the in-browser editor — the editor icon in the admin panel — also see live updates. If an AI agent or a colleague edits a note through the API while you have the admin editor open, the editor content refreshes automatically.
 
+### Reload toggle
+
+The reload toggle makes the browser reload the current page whenever the server emits a `noteChanges` event for it. After reload, the changed parts of the page are highlighted briefly so you can see what changed at a glance.
+
+This differs from the default DOM-patch behavior: instead of surgically updating the HTML in place, it does a full page reload. Use it when you want to verify the full rendered result — including navigation, sidebar, and any template logic — rather than just the content area.
+
+Enable it from the page toolbar that appears when you are signed in as an admin.
+
+### Live-follow (cinema mode)
+
+Live-follow automatically navigates the browser to whichever note changes next. Every time the server publishes a `noteChanges` event for any note, the browser opens that note's URL.
+
+This is useful for watching an AI agent work through a vault in real time — the browser follows the agent from note to note without any manual clicking.
+
+**Enable by URL.** Add `?#!live_follow=1` to any page on your site:
+
+```
+https://yourdomain.com/any-note?#!live_follow=1
+```
+
+Opening that URL turns on live-follow in that browser tab. The setting persists in local storage, so it survives the automatic navigations that follow. To turn it off, reload without the flag and disable it from the toolbar.
+
+Combine with `trip2g-sync --watch` running as a sidecar to get a fully automated feed: the sync daemon pushes agent edits to the server, the server fires `noteChanges`, and the browser follows along automatically. See [[en/user/agent-memory]] for the complete headless agent setup.
+
 ### Related
 
 - [[en/user/two-way-sync|Two-way sync]] — receive server-side changes back into Obsidian automatically
 - [[en/user/publishing|Publishing notes]] — how notes reach the server
 - [[en/user/webhooks|Webhooks & automation]] — `noteChanges` as a webhook trigger for custom integrations
+- [[en/user/agent-memory]] — headless agent setup with `--watch` sidecar and live-follow
