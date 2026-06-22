@@ -1,0 +1,24 @@
+# Rolling, time-staggered restart.
+# Restart one instance, wait until it reports ready (readyz=200) on its internal
+# addr, settle, then move to the next. A deploy must never restart all units at
+# once: on 2026-06-22 the simultaneous warmup (every unit reloading notes from a
+# 93%-full disk) blew the startup DB context deadline, panicking at
+# cmd/server/main.go:500 and crash-looping the fleet. Sequencing the restarts
+# keeps IO contention bounded so each startup finishes within its deadline.
+- name: "Restart {{ svc.service_name }}"
+  ansible.builtin.systemd:
+    name: "{{ svc.service_name }}"
+    state: restarted
+
+- name: "Wait for {{ svc.service_name }} readiness (readyz)"
+  ansible.builtin.uri:
+    url: "http://{{ svc.internal_addr }}/readyz"
+    status_code: 200
+  register: _svc_ready
+  retries: 40
+  delay: 3
+  until: _svc_ready.status == 200
+
+- name: "Settle after {{ svc.service_name }}"
+  ansible.builtin.pause:
+    seconds: 5

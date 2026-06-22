@@ -27,8 +27,8 @@
       - { service_name: trip2g_landing, listen_addr: "localhost:8087", internal_addr: "localhost:19087", domain: "trip2g.com", extra_domains: ["extra.trip2g.com"] }
       - { service_name: trip2g_demo2, listen_addr: "localhost:8088", internal_addr: "localhost:19088", domain: "simple.trip2g.com" }
       - { service_name: trip2g_founder, listen_addr: "localhost:8092", internal_addr: "localhost:19092", domain: "keeper.trip2g.com" }
-      - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", internal_addr: "localhost:19093", domain: "internaldev.trip2g.com" }
       # Retired instances (stopped + disabled on host 2026-06-22):
+      # - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", internal_addr: "localhost:19093", domain: "internaldev.trip2g.com" }
       # - { service_name: trip2g_demo3, listen_addr: "localhost:8089", internal_addr: "localhost:19089", domain: "simple2.trip2g.com" }
       # - { service_name: trip2g_sn, listen_addr: "localhost:8090", internal_addr: "localhost:19090", domain: "sn.trip2g.com" }
       # - { service_name: trip2g_alexkey, listen_addr: "localhost:8091", internal_addr: "localhost:19091", domain: "alexkey.trip2g.com" }
@@ -189,11 +189,13 @@
     - name: Reload systemd
       command: systemctl daemon-reload
 
+    # Rolling restart: bring each unit fully ready before touching the next, so a
+    # deploy never restarts the whole fleet at once (see rolling_restart.yml).
     - name: Restart service
-      systemd:
-        name: "{{ item.service_name }}"
-        state: restarted
+      ansible.builtin.include_tasks: rolling_restart.yml
       loop: "{{ trip2g_services }}"
+      loop_control:
+        loop_var: svc
 
     - name: Restart litestream
       systemd:
