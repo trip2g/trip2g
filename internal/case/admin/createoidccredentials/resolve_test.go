@@ -218,18 +218,18 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validation error - client id too short",
+			name: "validation error - client id empty",
 			input: model.CreateOIDCCredentialsInput{
 				Name:         "Production",
 				Issuer:       "https://accounts.example.com",
-				ClientID:     "short",
+				ClientID:     "",
 				ClientSecret: "secret-key-12345",
 			},
 			mockFunc: func() *envMock {
 				return &envMock{}
 			},
 			want: &model.ErrorPayload{
-				ByFields: []model.FieldMessage{{Name: "clientId", Value: "the length must be between 10 and 200"}},
+				ByFields: []model.FieldMessage{{Name: "clientId", Value: "cannot be blank"}},
 			},
 			wantErr: false,
 		},

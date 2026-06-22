@@ -29,7 +29,7 @@ func validateRequest(r *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(r,
 		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(1, 100)),
 		ozzo.Field(&r.Issuer, ozzo.Required, is.URL),
-		ozzo.Field(&r.ClientID, ozzo.Required, ozzo.Length(10, 200)),
+		ozzo.Field(&r.ClientID, ozzo.Required, ozzo.Length(1, 200)),
 		ozzo.Field(&r.ClientSecret, ozzo.Required, ozzo.Length(10, 200)),
 	))
 }
