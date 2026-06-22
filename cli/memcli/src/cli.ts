@@ -57,6 +57,7 @@ export interface ServerEnv {
   OWNER_EMAIL: string;
   PUBLIC_URL: string;
   JWT_SECRET: string;
+  DATA_ENCRYPTION_KEY: string;
   STORAGE_BACKEND: string;
   STORAGE_LOCAL_DIR: string;
 }
@@ -347,8 +348,9 @@ export function buildServerEnv(opts: {
   iport: number;
   email: string;
   secret: string;
+  encryptionKey: string;
 }): ServerEnv {
-  const { port, iport, email, secret } = opts;
+  const { port, iport, email, secret, encryptionKey } = opts;
   const env: ServerEnv = {
     LISTEN_ADDR: `0.0.0.0:${port}`,
     INTERNAL_LISTEN_ADDR: `:${iport}`,
@@ -356,6 +358,7 @@ export function buildServerEnv(opts: {
     OWNER_EMAIL: email,
     PUBLIC_URL: `http://localhost:${port}`,
     JWT_SECRET: secret,
+    DATA_ENCRYPTION_KEY: encryptionKey,
     STORAGE_BACKEND: 'local',
     STORAGE_LOCAL_DIR: '/data/storage',
   };
@@ -379,6 +382,7 @@ export function buildDockerRunArgs(opts: {
   iport: number;
   email: string;
   secret: string;
+  encryptionKey: string;
   stateDir: string;
   image: string;
 }): string[] {
@@ -785,7 +789,7 @@ export async function runUp(flags: Flags): Promise<CommandResult> {
 
 export function runDown(flags: Flags): CommandResult {
   try {
-    const text = captureLines(() => cmdDown(flags.dryRun));
+    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
@@ -960,21 +964,30 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   }
 
   let secret: string;
+  let encryptionKey: string;
   const existingEnv = dryRun ? {} : readEnvFile(envFile);
+  const needsWrite = !existingEnv.JWT_SECRET || !existingEnv.DATA_ENCRYPTION_KEY;
   if (existingEnv.JWT_SECRET) {
     secret = existingEnv.JWT_SECRET;
     console.log('Reusing existing JWT_SECRET from state dir.');
   } else {
     secret = crypto.randomBytes(32).toString('hex');
-    if (!dryRun) {
-      writeEnvFile(envFile, { JWT_SECRET: secret });
-      console.log('Generated new JWT_SECRET and wrote to state dir.');
-    } else {
-      console.log('[dry-run] Would generate new JWT_SECRET and write to', envFile);
-    }
+  }
+  if (existingEnv.DATA_ENCRYPTION_KEY) {
+    encryptionKey = existingEnv.DATA_ENCRYPTION_KEY;
+    console.log('Reusing existing DATA_ENCRYPTION_KEY from state dir.');
+  } else {
+    // AES-256 requires a 32-byte key; hex-encoding 16 random bytes yields 32 ASCII chars
+    encryptionKey = crypto.randomBytes(16).toString('hex');
+  }
+  if (!dryRun && needsWrite) {
+    writeEnvFile(envFile, { JWT_SECRET: secret, DATA_ENCRYPTION_KEY: encryptionKey });
+    console.log('Generated secrets and wrote to state dir.');
+  } else if (dryRun && needsWrite) {
+    console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
   }
 
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, stateDir, image });
+  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image });
 
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(' ')}`);
@@ -1077,10 +1090,14 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   console.log(`memory live — web: ${publicUrl}  read/write .md in ${vault}`);
 }
 
-function cmdDown(dryRun: boolean): void {
+function cmdDown(dryRun: boolean, folder?: string): void {
   if (dryRun) {
     console.log(`[dry-run] docker stop ${CONTAINER_NAME}`);
     console.log(`[dry-run] docker rm ${CONTAINER_NAME}`);
+    if (folder) {
+      const pidFile = path.join(path.resolve(folder), '.trip2g-memory', 'watch.pid');
+      console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
+    }
   } else {
     try {
       spawnSync('docker', ['stop', CONTAINER_NAME], { encoding: 'utf8' });
@@ -1093,6 +1110,28 @@ function cmdDown(dryRun: boolean): void {
       // ignore
     }
     console.log(`Container ${CONTAINER_NAME} stopped and removed.`);
+
+    // Kill the detached watcher process if a pid file exists
+    if (folder) {
+      const pidFile = path.join(path.resolve(folder), '.trip2g-memory', 'watch.pid');
+      if (fs.existsSync(pidFile)) {
+        const raw = fs.readFileSync(pidFile, 'utf8').trim();
+        const pid = parseInt(raw, 10);
+        if (!isNaN(pid) && isPidAlive(pid, /trip2g-sync/)) {
+          try {
+            process.kill(pid, 'SIGTERM');
+            console.log(`Watcher process (PID ${pid}) terminated.`);
+          } catch {
+            // ignore if already gone
+          }
+        }
+        try {
+          fs.unlinkSync(pidFile);
+        } catch {
+          // ignore
+        }
+      }
+    }
   }
 }
 
@@ -1404,7 +1443,7 @@ if (_mainUrl === _argv1Url) {
             await cmdUp(flags, flags.dryRun);
             break;
           case 'down':
-            cmdDown(flags.dryRun);
+            cmdDown(flags.dryRun, flags.folder);
             break;
           case 'status':
             cmdStatus();

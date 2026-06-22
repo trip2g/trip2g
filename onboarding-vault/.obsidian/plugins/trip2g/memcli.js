@@ -20456,7 +20456,7 @@ function buildToolList() {
   ];
 }
 function buildServerEnv(opts) {
-  const { port, iport, email, secret } = opts;
+  const { port, iport, email, secret, encryptionKey } = opts;
   const env = {
     LISTEN_ADDR: `0.0.0.0:${port}`,
     INTERNAL_LISTEN_ADDR: `:${iport}`,
@@ -20464,6 +20464,7 @@ function buildServerEnv(opts) {
     OWNER_EMAIL: email,
     PUBLIC_URL: `http://localhost:${port}`,
     JWT_SECRET: secret,
+    DATA_ENCRYPTION_KEY: encryptionKey,
     STORAGE_BACKEND: "local",
     STORAGE_LOCAL_DIR: "/data/storage"
   };
@@ -20785,7 +20786,7 @@ async function runUp(flags) {
 }
 function runDown(flags) {
   try {
-    const text = captureLines(() => cmdDown(flags.dryRun));
+    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${err.message}`, isError: true };
@@ -20936,20 +20937,28 @@ async function cmdUp(flags, dryRun) {
     fs.chmodSync(stateDir, 448);
   }
   let secret;
+  let encryptionKey;
   const existingEnv = dryRun ? {} : readEnvFile(envFile);
+  const needsWrite = !existingEnv.JWT_SECRET || !existingEnv.DATA_ENCRYPTION_KEY;
   if (existingEnv.JWT_SECRET) {
     secret = existingEnv.JWT_SECRET;
     console.log("Reusing existing JWT_SECRET from state dir.");
   } else {
     secret = crypto.randomBytes(32).toString("hex");
-    if (!dryRun) {
-      writeEnvFile(envFile, { JWT_SECRET: secret });
-      console.log("Generated new JWT_SECRET and wrote to state dir.");
-    } else {
-      console.log("[dry-run] Would generate new JWT_SECRET and write to", envFile);
-    }
   }
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, stateDir, image });
+  if (existingEnv.DATA_ENCRYPTION_KEY) {
+    encryptionKey = existingEnv.DATA_ENCRYPTION_KEY;
+    console.log("Reusing existing DATA_ENCRYPTION_KEY from state dir.");
+  } else {
+    encryptionKey = crypto.randomBytes(16).toString("hex");
+  }
+  if (!dryRun && needsWrite) {
+    writeEnvFile(envFile, { JWT_SECRET: secret, DATA_ENCRYPTION_KEY: encryptionKey });
+    console.log("Generated secrets and wrote to state dir.");
+  } else if (dryRun && needsWrite) {
+    console.log("[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to", envFile);
+  }
+  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image });
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(" ")}`);
   } else if (!containerRunning) {
@@ -21042,10 +21051,14 @@ async function cmdUp(flags, dryRun) {
   console.log("");
   console.log(`memory live \u2014 web: ${publicUrl}  read/write .md in ${vault}`);
 }
-function cmdDown(dryRun) {
+function cmdDown(dryRun, folder) {
   if (dryRun) {
     console.log(`[dry-run] docker stop ${CONTAINER_NAME}`);
     console.log(`[dry-run] docker rm ${CONTAINER_NAME}`);
+    if (folder) {
+      const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
+      console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
+    }
   } else {
     try {
       spawnSync("docker", ["stop", CONTAINER_NAME], { encoding: "utf8" });
@@ -21056,6 +21069,24 @@ function cmdDown(dryRun) {
     } catch {
     }
     console.log(`Container ${CONTAINER_NAME} stopped and removed.`);
+    if (folder) {
+      const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
+      if (fs.existsSync(pidFile)) {
+        const raw = fs.readFileSync(pidFile, "utf8").trim();
+        const pid = parseInt(raw, 10);
+        if (!isNaN(pid) && isPidAlive(pid, /trip2g-sync/)) {
+          try {
+            process.kill(pid, "SIGTERM");
+            console.log(`Watcher process (PID ${pid}) terminated.`);
+          } catch {
+          }
+        }
+        try {
+          fs.unlinkSync(pidFile);
+        } catch {
+        }
+      }
+    }
   }
 }
 function cmdStatus() {
@@ -21300,7 +21331,7 @@ if (_mainUrl === _argv1Url) {
             await cmdUp(flags, flags.dryRun);
             break;
           case "down":
-            cmdDown(flags.dryRun);
+            cmdDown(flags.dryRun, flags.folder);
             break;
           case "status":
             cmdStatus();
