@@ -188,18 +188,35 @@ fd-passing / `cloudflare/tableflip`.
 
 ### E5 — Caddy reverse_proxy + health_uri (running)
 
-## Backup interaction
+## Backup interaction (resolved — code in PR #23)
 
-- **simplebackup** shutdown-backup (`PerformBackup` in `waitForShutdown`) must be
-  **skipped during a rolling handoff** (a peer is taking over; the departing instance
-  backing up is redundant and can race the new writer). Gate behind a flag, off in the
-  rolling path.
-- **restore-on-boot** (`RestoreOnStartup`, pre-DB-init) must **not** run on a warming
-  peer against a live shared DB — verify it skips when a local DB already exists.
-- **Litestream** vs simplebackup: do they coexist? Litestream does continuous WAL
-  replication; simplebackup does S3 snapshots. Need to confirm they don't fight over
-  the WAL / checkpointing, and decide which owns backup in the zero-downtime model.
-- Requires **MinIO** (S3) on the node. → separate backup doc.
+1. **simplebackup shutdown-backup skipped during rolling handoff.** On SIGTERM
+   `waitForShutdown` ran `simpleBackup.PerformBackup` (a full gzipped DB snapshot to S3).
+   In a rolling deploy a peer is already taking over (cron backups continue, the new
+   writer is live), so the departing instance's dump is redundant and races the new
+   writer / delays the drain. **Fix:** `--simple-backup-on-shutdown` (default true; set
+   false in the rolling path).
+
+2. **simplebackup's VACUUM is incompatible with Litestream** (answer to "do they get
+   along": **no, out of the box**). `VacuumDB` runs `PRAGMA wal_checkpoint(TRUNCATE)` +
+   `VACUUM` + `ANALYZE` on a cron. Litestream (any external WAL replicator) must be the
+   ONLY process that checkpoints the WAL: `wal_checkpoint(TRUNCATE)` truncates frames
+   Litestream may not have replicated; `VACUUM` rewrites the whole DB → a new Litestream
+   generation. Litestream does NOT vacuum (only checkpoints), so the VACUUM job is both
+   heavy and harmful under it. **Fix:** the vacuum/analyze cron is now **opt-in** via
+   `--vacuum-cron` (default OFF) — Litestream-friendly out of the box + a heavy optional
+   op removed from the default path.
+
+3. **restore-on-boot** (`RestoreOnStartup`, pre-DB-init) restores only when no local DB
+   exists (normal cold start), so on a shared/persistent volume during rolling deploy it
+   does not fire. Keep `--simple-backup` restore off the rolling-update path to be safe.
+
+**Litestream is NOT in trip2g itself** (sidecar, in the ops/simplepanel layer). To run
+trip2g with a Litestream sidecar: `--vacuum-cron=false` (default) + `--simple-backup=false`
+(Litestream is the backup). See `docs/{en,ru}/user/litestream.md`.
+
+**Live read-replicas (Litestream VFS / LiteFS)** — separate larger direction, under
+research; test plan + applicability to be appended.
 
 ## Endpoint decision (settled)
 
