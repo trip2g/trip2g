@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -95,7 +96,6 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/metrics"
-	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/notebus"
 	"trip2g/internal/noteloader"
@@ -152,7 +152,7 @@ type app struct {
 	*db.Queries
 	*db.WriteQueries
 
-	*miniostorage.FileStorage
+	Storage
 	*dataencryption.Manager
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
@@ -253,6 +253,9 @@ type app struct {
 
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
+	// localAssetsFS serves note assets from the local-storage dir via the
+	// /_assets/ route. nil unless the local storage backend is active.
+	localAssetsFS *fasthttp.FS
 	// Pointer, not value: app is shallow-copied per request (newEnv := *a), and
 	// assetHashes is shared by reference. A copied value mutex would not guard
 	// the shared map, risking a fatal concurrent map write. See noteWriteMu.
@@ -367,7 +370,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fileStorage, err := miniostorage.New(ctx, config.Storage)
+	fileStorage, err := newStorage(ctx, config)
 	if err != nil {
 		panic(err)
 	}
@@ -378,8 +381,8 @@ func main() {
 		Queries:      queries,
 		WriteQueries: writeQueries,
 
-		FileStorage: fileStorage,
-		Manager:     initDataEncryptionManager(config),
+		Storage: fileStorage,
+		Manager: initDataEncryptionManager(config),
 
 		config: config,
 
@@ -556,7 +559,7 @@ func restoreBackup(log logger.Logger, config *appconfig.Config) {
 	defer cancel()
 
 	// Create temporary storage client for restore
-	restoreStorage, restoreErr := miniostorage.New(ctx, config.Storage)
+	restoreStorage, restoreErr := newStorage(ctx, config)
 	if restoreErr != nil {
 		log.Error("FATAL: failed to init storage for restore", "error", restoreErr)
 		panic(fmt.Errorf("failed to init storage for restore: %w", restoreErr))
@@ -564,8 +567,8 @@ func restoreBackup(log logger.Logger, config *appconfig.Config) {
 
 	// Create restore environment adapter
 	restoreEnv := &restoreEnvAdapter{
-		FileStorage: restoreStorage,
-		log:         log,
+		Storage: restoreStorage,
+		log:     log,
 	}
 
 	restoreMgr := simplebackup.New(restoreEnv, config.DatabaseFile)
@@ -667,7 +670,7 @@ func (a *app) setTokenValidator() {
 }
 
 func (a *app) setFileStorageExpiringCallback() {
-	a.FileStorage.OnURLExpiring(func() {
+	a.Storage.OnURLExpiring(func() {
 		a.log.Info("presigned URLs expiring, reloading notes")
 
 		reloadCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -1165,6 +1168,26 @@ func (a *app) setupAssets() {
 			// remove /assets prefix
 			return ctx.Path()[7:]
 		},
+	}
+
+	// When the local storage backend is active, serve note assets from disk via
+	// the /_assets/ route. fasthttp.FS confines reads to Root and cleans paths,
+	// so traversal outside the assets dir is rejected. Root mirrors the
+	// localstorage layout: <StorageLocalDir>/assets/<NoteAssetPath>.
+	if a.config.StorageBackend == appconfig.StorageBackendLocal {
+		a.localAssetsFS = &fasthttp.FS{
+			Root:               filepath.Join(a.config.StorageLocalDir, "assets"),
+			IndexNames:         []string{},
+			GenerateIndexPages: false,
+			Compress:           !a.config.DevMode,
+			SkipCache:          a.config.DevMode,
+			AcceptByteRange:    true,
+
+			PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
+				// remove /_assets prefix (len("/_assets") == 8)
+				return ctx.Path()[8:]
+			},
+		}
 	}
 
 	// initialize asset hashes map
@@ -2484,6 +2507,13 @@ type Middleware func(req *appreq.Request) bool
 func (a *app) prepareMiddlewares() []Middleware {
 	fsHandler := a.assetsFS.NewRequestHandler()
 
+	// Local-storage asset handler: serves GET /_assets/<NoteAssetPath> from disk.
+	// nil unless the local storage backend is active.
+	var localAssetsHandler fasthttp.RequestHandler
+	if a.localAssetsFS != nil {
+		localAssetsHandler = a.localAssetsFS.NewRequestHandler()
+	}
+
 	return []Middleware{
 		a.handleRobotsTxt,
 		a.handleSitemap,
@@ -2503,6 +2533,14 @@ func (a *app) prepareMiddlewares() []Middleware {
 		func(req *appreq.Request) bool {
 			if strings.HasPrefix(req.Path, "/assets/") {
 				fsHandler(req.Req)
+				return true
+			}
+
+			return false
+		},
+		func(req *appreq.Request) bool {
+			if localAssetsHandler != nil && strings.HasPrefix(req.Path, "/_assets/") {
+				localAssetsHandler(req.Req)
 				return true
 			}
 
@@ -2545,6 +2583,17 @@ func (a *app) systemdListener() net.Listener {
 
 	a.log.Info("using systemd socket-activated listener", "fd", sdListenFdsStart)
 	return ln
+}
+
+// serveHTTP serves the public listener, preferring a systemd socket-activated
+// listener (so the socket survives restarts and queues connections during
+// warmup) and falling back to a fresh bind on --listen-addr.
+func (a *app) serveHTTP(s *fasthttp.Server) error {
+	if ln := a.systemdListener(); ln != nil {
+		return s.Serve(ln)
+	}
+
+	return s.ListenAndServe(a.config.ListenAddr)
 }
 
 func (a *app) startServer() {
@@ -2669,19 +2718,7 @@ func (a *app) startServer() {
 
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
-			// Socket activation: if systemd passed the listening socket (LISTEN_FDS),
-			// serve on the inherited listener so the socket survives a restart —
-			// connections queue in the kernel backlog instead of being refused while
-			// the new process warms up (zero-downtime single-server deploys).
-			if ln := a.systemdListener(); ln != nil {
-				if err := s.Serve(ln); err != nil {
-					panic(err)
-				}
-
-				return
-			}
-
-			if err := s.ListenAndServe(a.config.ListenAddr); err != nil {
+			if err := a.serveHTTP(s); err != nil {
 				panic(err)
 			}
 
@@ -3023,7 +3060,7 @@ func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
 
 // restoreEnvAdapter adapts dependencies for the restore phase (before DB init).
 type restoreEnvAdapter struct {
-	*miniostorage.FileStorage
+	Storage
 	log logger.Logger
 }
 
