@@ -17,6 +17,18 @@ services:
       timeout: 5s
       retries: 5
 
+  # Light OIDC IdP (Dex) for the real-IdP login test (e2e/oidc-dex.spec.js).
+  # Published on :5556 so the browser (host-resolver rule) and the app container
+  # (host gateway) both reach the issuer http://host.docker.internal:5556.
+  dex:
+    image: ghcr.io/dexidp/dex:latest
+    container_name: trip2g-test-dex
+    command: ["dex", "serve", "/config.yaml"]
+    volumes:
+      - ./testdata/dex/config.yaml:/config.yaml:ro
+    ports:
+      - "5556:5556"
+
   # Local embedding server — bge-m3 via sentence-transformers.
   # First start downloads the model (~2.3 GB) — subsequent starts reuse shared ~/models/embedding.
   embedding:
@@ -40,7 +52,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: trip2g-test-app
-    # Lets the container reach a mock OIDC issuer running on the host (e2e/oidc.spec.js).
+    # Lets the container reach an OIDC issuer over the host gateway: the host-run
+    # node mock (e2e/oidc.spec.js) and the published Dex service (e2e/oidc-dex.spec.js).
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -48,6 +61,8 @@ services:
         condition: service_healthy
       embedding:
         condition: service_healthy
+      dex:
+        condition: service_started
     ports:
       - "20081:20081"
       - "20082:20082"
