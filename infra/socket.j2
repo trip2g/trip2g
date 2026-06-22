@@ -5,7 +5,10 @@ Description=trip2g listening socket ({{ item.service_name }})
 # backlog while the new process warms up, so a deploy never refuses a connection.
 
 [Socket]
-ListenStream={{ item.listen_addr }}
+# systemd cannot parse a hostname in ListenStream ("localhost:8081" -> bad unit
+# setting). Only the socket unit needs the numeric form; the app's --listen-addr
+# still accepts localhost. Map localhost -> 127.0.0.1.
+ListenStream={{ item.listen_addr | regex_replace('^localhost:', '127.0.0.1:') }}
 # The matching {{ item.service_name }}.service inherits this fd via socket
 # activation (LISTEN_FDS); the app picks it up in systemdListener().
 
