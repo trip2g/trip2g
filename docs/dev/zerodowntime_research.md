@@ -111,11 +111,54 @@ incremental updates to Traefik's Consul provider. → E4 (next).
 
 ---
 
-## E4 — Consul SD + Traefik Consul provider — PENDING
+## E4 — Consul service discovery (Traefik consulcatalog)
 
-Plan: run Consul, register the service in Consul (via Nomad's consul provider or
-direct), Traefik `--providers.consulcatalog`, repeat the vegeta rolling deploy.
-Expect ~0 drops if the health-gated catalog hypothesis holds.
+`consul agent -dev`, nomad restarted to integrate, job `service.provider = "consul"`,
+Traefik `--providers.consulcatalog`. Consul runs the `/readyz` check; an instance is a
+routable catalog entry **only while its check passes**.
+
+- **E4 (Consul SD only, 3200 req): 97.72 %** — `200:3127 502:73`. **No 503!** The
+  health-gated catalog means the warming canary never enters the pool until
+  `/readyz=200` — this kills E2's assume-up problem. Residual is **502 (~2.3 %):
+  deregister-lag** — when the old alloc is killed on promote, Traefik still routes to
+  it for ~1 catalog refresh.
+- **E4b (Consul SD + Nomad `group.shutdown_delay=6s`): 91.11 % — WORSE** — `502:320`.
+  Counter-intuitive but real: deregister-then-wait *lengthens* the window where the
+  backend is "deregistered-but-Traefik-still-routing" → more 502. **shutdown_delay is
+  the wrong knob.**
+- **E4c (Consul SD + Traefik active `/readyz` hc): 98.12 %** — `502:75`. The active
+  check trims but does not eliminate the deregister-lag (~1.9 %).
+
+### Conclusion of the LB matrix (E1–E4c)
+
+| Path | Success | 503 | 502 |
+|---|---|---|---|
+| E1 Nomad SD, no LB hc | ~77 % | yes (warming) | yes |
+| E2 Nomad SD + Traefik hc | 97.6 % | ~1.2 % (assume-up) | ~1.1 % |
+| E3 systemd + file flip | 94.8 % | reload transients | none |
+| E4 Consul SD | 97.7 % | **0** | ~2.3 % |
+| E4b Consul + shutdown_delay | 91.1 % | 0 | ~8.9 % (worse) |
+| E4c Consul + Traefik hc | 98.1 % | 0 | ~1.9 % |
+
+**Two independent failure modes, two independent fixes:**
+
+1. **503 (route to warming new)** → **Consul SD** (health-gated catalog) — definitively
+   removes it (E4/E4b/E4c all show 0 × 503). Traefik active hc alone only trims it
+   (assume-up gap, E2).
+2. **502 (route to dying old)** → **app graceful drain**: on SIGTERM keep serving 200
+   while `/readyz`→503, for **`grace ≥ LB-detection-window`**, THEN stop. The LB marks
+   the instance unhealthy and drains it *before* the process dies. `shutdown_delay`
+   (deregister-then-kill) does NOT do this and made it worse.
+
+**Phase-1 code consequence (a real bug the test found):** `ShutdownGracePeriod` was set
+to **200 ms — too short**. For zero-downtime it must be **≥ the LB's unhealthy-detection
+window** (e.g. 3–5 s for a 1 s active check / 2 s Consul check). During that grace the
+app stays UP and serves 200 on reads with `/readyz=503`, so the LB drains it cleanly →
+no 502. → fix in Phase-1 (config default / docs); verify as E4d.
+
+**Documented prod recipe:** **Consul SD** (no 503) **+ app graceful drain with
+`ShutdownGracePeriod ≥ LB window`** (no 502) → ~0 dropped reads. Traefik active hc is a
+weaker substitute for Consul; `shutdown_delay` is a red herring.
 
 ## Backup interaction — PENDING
 
