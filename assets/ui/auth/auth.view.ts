@@ -97,6 +97,14 @@ namespace $.$$ {
 
 			return [ this.EmailForm() ]
 		}
+
+		// Return from the code step to the email step: clear the entered email so
+		// sub() falls back to EmailForm, and reset code_sent so the next email
+		// re-requests a code. Also called on dialog open for a clean start.
+		back() {
+			this.entered_email( '' )
+			this.code_sent( false )
+		}
 	}
 
 	const oauth_error_messages: Record<string, string> = {

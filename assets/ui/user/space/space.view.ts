@@ -77,6 +77,10 @@ namespace $.$$ {
 		}
 
 		open() {
+			// The AuthWrapper instance is long-lived, so its entered_email/code_sent
+			// would otherwise persist across close/reopen and skip straight to the
+			// code step. Reset to a clean email prompt every time the dialog opens.
+			this.AuthWrapper().back()
 			this.open_status(true)
 		}
 

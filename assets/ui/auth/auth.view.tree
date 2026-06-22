@@ -4,6 +4,7 @@ $trip2g_auth $mol_view
 	me_user_email? \???
 	reload_me null
 	code_sent? false
+	back? null
 	EmailForm $trip2g_auth_email_form
 		code_sent? <=> code_sent?
 		entered_email? <=> entered_email?
@@ -11,6 +12,7 @@ $trip2g_auth $mol_view
 		reload_me <= reload_me
 		email <= entered_email?
 		code_sent? <=> code_sent?
+		back? <=> back?
 	AppView $mol_view
 		sub / \TODO: Replace AppView
 
@@ -46,6 +48,7 @@ $trip2g_auth_code_form $trip2g_form
 	reload_me null
 	email \
 	code_sent? false
+	back? null
 	body /
 		<= Code_hint $mol_paragraph
 			title @ \We sent a code to your email. Please enter it below.
@@ -59,6 +62,9 @@ $trip2g_auth_code_form $trip2g_form
 				value? <=> code? \
 				focused true
 	buttons /
+		<= Back $mol_button_minor
+			title @ \Back
+			click? <=> back? null
 		<= Signup $mol_button_major
 			title \Enter
 			click? <=> submit? null
