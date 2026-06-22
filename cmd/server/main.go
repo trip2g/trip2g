@@ -2520,6 +2520,33 @@ func (a *app) prepareMiddlewares() []Middleware {
 	}
 }
 
+// systemdListener returns the socket-activated listener passed by systemd via
+// the LISTEN_FDS protocol, or nil when not running under socket activation.
+// Inheriting the listening socket lets it survive a restart: the kernel keeps
+// accepting and queuing connections in the backlog while the new process warms
+// up, instead of refusing them — the basis for zero-downtime single-server
+// deploys without a load balancer (pair with a trip2g.socket unit).
+func (a *app) systemdListener() net.Listener {
+	if pid, _ := strconv.Atoi(os.Getenv("LISTEN_PID")); pid != os.Getpid() {
+		return nil
+	}
+	if n, _ := strconv.Atoi(os.Getenv("LISTEN_FDS")); n < 1 {
+		return nil
+	}
+
+	const sdListenFdsStart = 3 // systemd passes the first socket on fd 3
+	f := os.NewFile(sdListenFdsStart, "systemd-listen-fd")
+	ln, err := net.FileListener(f)
+	_ = f.Close() // net.FileListener duplicates the fd
+	if err != nil {
+		a.log.Error("socket activation: failed to inherit listener fd", "error", err)
+		return nil
+	}
+
+	a.log.Info("using systemd socket-activated listener", "fd", sdListenFdsStart)
+	return ln
+}
+
 func (a *app) startServer() {
 	makeGraphQLHandler := a.prepareGraphQLHandler()
 	handleGraphQL := makeGraphQLHandler("/_system/graphql")
@@ -2642,8 +2669,19 @@ func (a *app) startServer() {
 
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
-			err := s.ListenAndServe(a.config.ListenAddr)
-			if err != nil {
+			// Socket activation: if systemd passed the listening socket (LISTEN_FDS),
+			// serve on the inherited listener so the socket survives a restart —
+			// connections queue in the kernel backlog instead of being refused while
+			// the new process warms up (zero-downtime single-server deploys).
+			if ln := a.systemdListener(); ln != nil {
+				if err := s.Serve(ln); err != nil {
+					panic(err)
+				}
+
+				return
+			}
+
+			if err := s.ListenAndServe(a.config.ListenAddr); err != nil {
 				panic(err)
 			}
 
