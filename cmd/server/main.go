@@ -202,7 +202,7 @@ type app struct {
 	stopped *atomic.Bool
 	// ready reports whether the instance can fully serve, including writes. It
 	// flips true only after the writer slot is acquired and writer subsystems
-	// (queues, cron, patreon/boosty refresh) have started. /ready returns 503
+	// (queues, cron, patreon/boosty refresh) have started. /readyz returns 503
 	// until then so Nomad/Traefik route traffic only to fully-ready instances.
 	// Pointer for the same reason as stopped (shared across per-request copies).
 	ready *atomic.Bool
@@ -433,7 +433,7 @@ func main() {
 	// new instance can fully warm up (load notes, build in-memory indexes,
 	// construct handlers) while the OLD instance keeps serving, including
 	// writes. No writer subsystem (queues, cron, patreon/boosty refresh) is
-	// started here. /ready stays 503 until Block B finishes.
+	// started here. /readyz stays 503 until Block B finishes.
 	// ========================================================================
 
 	// No-DB construction halves (client managers, job handlers).
@@ -543,7 +543,7 @@ func main() {
 	a.telegramAccountAPIQueue.start()
 	a.telegramLongRunningQueue.start()
 
-	// Fully ready: can serve reads AND writes. /ready flips to 200.
+	// Fully ready: can serve reads AND writes. /readyz flips to 200.
 	a.ready.Store(true)
 
 	a.startServer()
@@ -2724,7 +2724,7 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 
 	// Stop writer subsystems BEFORE draining HTTP and BEFORE releasing the
 	// writer slot. a.stopped is already true (set at the top of shutdown), so
-	// /ready is already 503 and traffic is being routed away. Stopping writers
+	// /readyz is already 503 and traffic is being routed away. Stopping writers
 	// here lets the NEXT instance acquire the writer slot for handoff.
 	a.stopWriters()
 
@@ -2778,7 +2778,7 @@ func (a *app) stopWriters() {
 
 // isReady reports whether the instance can fully serve, including writes. It is
 // false while warming up (writer slot not yet acquired / writer subsystems not
-// started) and while shutting down. Backs the /ready readiness endpoint.
+// started) and while shutting down. Backs the /readyz readiness endpoint.
 func (a *app) isReady() bool {
 	return !a.stopped.Load() && a.ready.Load()
 }
@@ -2797,12 +2797,12 @@ func (a *app) startInternalServer() {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	// /ready is readiness (not liveness): 200 only when the instance can fully
+	// /readyz is readiness (not liveness): 200 only when the instance can fully
 	// serve, including writes. It returns 503 while warming up (writer slot not
 	// yet acquired, writer subsystems not started) and while shutting down.
 	// Nomad health-checks this and Traefik (via Consul) routes only to ready
 	// instances, so the old instance keeps serving until the new one is ready.
-	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if !a.isReady() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("not ready"))
