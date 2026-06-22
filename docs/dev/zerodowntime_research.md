@@ -236,6 +236,14 @@ a primary restart/deploy; the primary lease ≈ a managed version of our writer-
 Caveats: FUSE overhead, write-forwarding latency, read-your-writes consistency, each replica
 must rebuild its NoteViews cache from its local replicated DB.
 
+**Tested on 2× Hetzner cpx32 (static lease, no Consul, LiteFS v0.5.11):** the primary mounts
+the FUSE DB and writes; the replica replicates it and serves reads. A marker row written on
+the primary appeared on the replica in **<0.1 s**, and the replica **kept serving reads
+through a primary `systemctl restart`** (read its rows while the primary remounted). The
+read-replica + survive-primary-restart story works end to end with the simplest possible
+setup (static lease, public IP, port 20202) — the concrete basis for the "Fly.io + LiteFS =
+managed zero-downtime + read scaling" recommendation above.
+
 ### Fly.io
 `fly launch` (interactive scaffold) + `fly deploy` is the closest to one-click (no literal
 deploy button). Strategies: rolling (default), bluegreen, canary — **health-gated** on

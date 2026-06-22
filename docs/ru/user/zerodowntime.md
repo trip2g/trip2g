@@ -26,15 +26,15 @@ trip2g отдаёт два пробника на внутреннем порту
 
 ## Ручки хэндоффа
 
-- `--shutdown-grace-period` — при выключении trip2g переводит `/readyz` в 503 и продолжает обслуживать ещё столько времени перед реальным стопом. Ставь **≥ окна детекта нездоровья у балансировщика** (например 5с при health-check раз в 1–2с), чтобы балансировщик успел дренировать старый инстанс до его смерти. Слишком мало → несколько `502 Bad Gateway` на переключении.
+- `--shutdown-grace-period` — при выключении trip2g переводит `/readyz` в 503 и продолжает обслуживать ещё столько времени перед реальным стопом. Ставьте **≥ окна детекта нездоровья у балансировщика** (например 5с при health-check раз в 1–2с), чтобы балансировщик успел дренировать старый инстанс до его смерти. Слишком мало → несколько `502 Bad Gateway` на переключении.
 - `--simple-backup-on-shutdown=false` — пропустить финальный бэкап при rolling-деплое; рядом уже встаёт сменщик (см. [[backup]]).
-- `--vacuum-cron` — по умолчанию выключен; так и оставь (см. [[litestream]]).
+- `--vacuum-cron` — по умолчанию выключен; так и оставьте (см. [[litestream]]).
 
 ## Рецепты
 
 ### Managed: Fly.io
 
-Самый простой путь. `fly launch` создаёт `fly.toml`; маппишь его health-check на `/readyz` и `/livez`, и деплой Fly гейтится по ним автоматически. Для настоящего zero-downtime SQLite пара к этому — **LiteFS** (read-реплики): bluegreen-стратегия Fly не умеет делить volume, а LiteFS обходит это, давая каждой машине свою реплику. Читай статьи Fly: [Litestream VFS](https://fly.io/blog/litestream-vfs/), [Introducing LiteFS](https://fly.io/blog/introducing-litefs/), [LiteFS docs](https://fly.io/docs/litefs/), [Seamless deployments](https://fly.io/docs/blueprints/seamless-deployments/).
+Самый простой путь. `fly launch` создаёт `fly.toml`; сопоставьте его health-check с `/readyz` и `/livez`, и деплой Fly гейтится по ним автоматически. Для настоящего zero-downtime SQLite пара к этому — **LiteFS** (read-реплики): bluegreen-стратегия Fly не умеет делить volume, а LiteFS обходит это, давая каждой машине свою реплику. Читайте статьи Fly: [Litestream VFS](https://fly.io/blog/litestream-vfs/), [Introducing LiteFS](https://fly.io/blog/introducing-litefs/), [LiteFS docs](https://fly.io/docs/litefs/), [Seamless deployments](https://fly.io/docs/blueprints/seamless-deployments/).
 
 ### Self-hosted: Nomad + Traefik + Consul
 
@@ -59,7 +59,7 @@ Blue-green из двух юнитов (`trip2g@blue` / `trip2g@green`) на ра
 }
 ```
 
-Деплой: подними простаивающий цвет, дождись его `/readyz = 200`, добавь в прокси, убери старый, погаси. `caddy reload` graceful (не рвёт соединения).
+Деплой: поднимите простаивающий цвет, дождитесь его `/readyz = 200`, добавьте в прокси, уберите старый, погасите. `caddy reload` graceful (не рвёт соединения).
 
 ### Голый сервер, один порт, БЕЗ балансировщика
 
@@ -76,4 +76,4 @@ trip2g умеет передать слушающий порт от старог
 | Consul SD + app graceful drain | ~99 % |
 | SO_REUSEPORT, один порт, без LB | ~99.8 % |
 
-Закономерность: прокси без health-гейта шлёт и на прогревающийся (503), и на умирающий (502) инстанс. Загейти по `/readyz` (Consul или собственный health-check прокси) и дай приложению реальное окно дренажа — и потери чтений падают почти в ноль.
+Закономерность: прокси без health-гейта шлёт и на прогревающийся (503), и на умирающий (502) инстанс. Загейтите по `/readyz` (Consul или собственный health-check прокси) и дайте приложению реальное окно дренажа — и потери чтений падают почти в ноль.
