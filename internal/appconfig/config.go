@@ -119,6 +119,11 @@ type Config struct {
 	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
+	// VacuumCron enables the periodic VACUUM/ANALYZE + wal_checkpoint(TRUNCATE)
+	// maintenance job. Off by default: VACUUM is a heavy full-DB rewrite most
+	// deployments don't need, and it is incompatible with an external WAL
+	// replicator (Litestream owns WAL checkpointing).
+	VacuumCron bool
 
 	CronJobs CronJobsConfig
 
@@ -436,6 +441,7 @@ func (c *Config) defineServerFlags() {
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(&c.SimpleBackup.BackupOnShutdown, "simple-backup-on-shutdown", true, "Run a final backup on graceful shutdown. Set false for zero-downtime rolling deploys where a peer takes over.")
+	flag.BoolVar(&c.VacuumCron, "vacuum-cron", false, "Enable the periodic VACUUM/ANALYZE database maintenance cron. Off by default (heavy full-DB rewrite; incompatible with Litestream WAL replication).")
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 
 	// Storage limits.
