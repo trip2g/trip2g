@@ -21,6 +21,12 @@ ExecStart=/opt/trip2g/bin/app \
     --shutdown-grace-period {{ item.shutdown_grace_period | default(shutdown_grace_period) }} \
     --shutdown-timeout {{ item.shutdown_timeout | default(shutdown_timeout) }}
 EnvironmentFile=/etc/{{ item.service_name }}.env
+# GC tuning — authoritative here (comes after EnvironmentFile, so it overrides any
+# GOGC/GOMEMLIMIT left in the hand-managed .env). GOMEMLIMIT must stay above the
+# instance's peak working set or the runtime GCs nonstop and pins ~50% CPU.
+# See docs/dev/gc_tuning.md.
+Environment=GOGC={{ go_gc | default(100) }}
+Environment=GOMEMLIMIT={{ item.go_mem_limit | default(go_mem_limit_default) }}
 Restart=on-failure
 
 # Zero-downtime drain: SIGTERM makes the app flip /healthz to 503 immediately,

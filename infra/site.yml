@@ -16,17 +16,22 @@
     shutdown_grace_period: "5s"
     shutdown_timeout: "10s"
     stop_timeout_sec: 20
+    # Go GC tuning (see docs/dev/gc_tuning.md). GOMEMLIMIT must stay ABOVE each
+    # instance's peak working set, or the runtime GCs nonstop and pins ~50% CPU.
+    # Per-instance override via go_mem_limit; default below for unlisted ones.
+    go_gc: 100
+    go_mem_limit_default: "500MiB"
     # internal_addr carries /healthz + /metrics and MUST be unique per service
     # (the app default :8082 would collide across units).
     trip2g_services:
-      - { service_name: trip2g, listen_addr: "localhost:8081", internal_addr: "localhost:19081", domain: "demo.trip2g.com" }
+      - { service_name: trip2g, listen_addr: "localhost:8081", internal_addr: "localhost:19081", domain: "demo.trip2g.com", go_mem_limit: "500MiB" }
       # - { service_name: trip2g_mbti, listen_addr: "localhost:8082", internal_addr: "localhost:19082", domain: "mbti.trip2g.com" }
       # - { service_name: trip2g_taro, listen_addr: "localhost:8083", internal_addr: "localhost:19083", domain: "taro.trip2g.com" }
       # - { service_name: trip2g_secondbrain, listen_addr: "localhost:8085", internal_addr: "localhost:19085", domain: "secondbrain.trip2g.com" }
       # - { service_name: trip2g_blizzard, listen_addr: "localhost:8086", internal_addr: "localhost:19086", domain: "blizzard.trip2g.com" }
-      - { service_name: trip2g_landing, listen_addr: "localhost:8087", internal_addr: "localhost:19087", domain: "trip2g.com", extra_domains: ["extra.trip2g.com"] }
-      - { service_name: trip2g_demo2, listen_addr: "localhost:8088", internal_addr: "localhost:19088", domain: "simple.trip2g.com" }
-      - { service_name: trip2g_founder, listen_addr: "localhost:8092", internal_addr: "localhost:19092", domain: "keeper.trip2g.com" }
+      - { service_name: trip2g_landing, listen_addr: "localhost:8087", internal_addr: "localhost:19087", domain: "trip2g.com", extra_domains: ["extra.trip2g.com"], go_mem_limit: "700MiB" }
+      - { service_name: trip2g_demo2, listen_addr: "localhost:8088", internal_addr: "localhost:19088", domain: "simple.trip2g.com", go_mem_limit: "500MiB" }
+      - { service_name: trip2g_founder, listen_addr: "localhost:8092", internal_addr: "localhost:19092", domain: "keeper.trip2g.com", go_mem_limit: "500MiB" }
       # Retired instances (stopped + disabled on host 2026-06-22):
       # - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", internal_addr: "localhost:19093", domain: "internaldev.trip2g.com" }
       # - { service_name: trip2g_demo3, listen_addr: "localhost:8089", internal_addr: "localhost:19089", domain: "simple2.trip2g.com" }
