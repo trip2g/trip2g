@@ -34,6 +34,24 @@ Complex conflicts can be subtle. Set up backups before enabling.
 
 On the first sync, the plugin asks which version to treat as the source of truth: local or server.
 
+### Live updates (real-time)
+
+With two-way sync on, you can also turn on **live updates**: server changes appear in your vault the instant they happen — no sync click, no waiting for the periodic check. The plugin keeps a live connection and pulls changes as they land.
+
+**Enable it:** with two-way sync on, set **Live pull patterns** in the plugin settings — include/exclude globs that choose which folders update live:
+
+- `**` — everything
+- `blog/**`, `docs/**` — only these folders
+- exclude `drafts/**` — never auto-pull drafts
+- leave empty — live updates off
+
+**It stays safe:**
+
+- Only non-conflicting changes apply automatically. If you edited a file locally, a server change never overwrites it — you get a conflict prompt.
+- Server-side deletions don't silently remove your local file — the plugin asks first.
+
+A background reconciliation (every few minutes) and manual sync still catch anything missed — for example, changes that happened while you were offline.
+
 ### Status indicator
 
 A colored dot on the sync icon shows the current state:

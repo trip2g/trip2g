@@ -4,6 +4,8 @@
 
 Плагин для синхронизации Obsidian vault с сервером trip2g. По умолчанию работает в режиме односторонней синхронизации (push only). Двусторонняя синхронизация включается опционально для импорта TG каналов или серверной автоматизации.
 
+> **Обновлено 2026-06-22 (v0.5.0):** добавлены live-pull (живые обновления через SSE), команда «Sync now», фикс `skipCommit` на загрузке ассетов и фикс гонки в notebus. Детали — в разделе «Обновление 2026-06-22» в конце документа.
+
 ## Настройки плагина
 
 ### API URL
@@ -642,3 +644,44 @@ executePlan flow:
 
 - При `twoWaySync: false` ассеты **не скачиваются** с сервера
 - Но missing assets всегда **загружаются** на сервер (независимо от twoWaySync)
+
+---
+
+## Обновление 2026-06-22 (v0.5.0): live-pull + skipCommit
+
+Дополняет документ для версии плагина 0.5.0. Подробный дизайн — [[obsidian_sync_livepull_2026-06-21]], бенчмарк — [[obsidian_sync_bench_2026-06-21]].
+
+### Live-pull (живые обновления через SSE)
+
+Плагин подписывается на серверную GraphQL-подписку `noteChanges` через **SSE** и тянет изменения в реальном времени, не дожидаясь опроса.
+
+**Клиент:** `obsidian-sync/src/sync/LivePullConnection.ts` — чистый JS поверх `fetch` + `response.body.getReader()` (graphql-request не умеет стримить). POST на `/_system/graphql` с `Accept: text/event-stream` + `X-API-Key`, построчный парсинг `event:`/`data:` (как `assets/ui/sse/sse.ts`), реконнект с backoff `[3,6,12,30]s`, health-check 60s (нет байт, включая keepalive → abort + reconnect), очистка через `AbortController`.
+
+**`autoPull(changes)`** — безопасный авто-pull. Инварианты:
+
+- Пишет файл **только** при `classifyFile === "pull"` (локальное не трогали с последнего синка) или `create` без локальной копии. `conflict` → только бейдж + Notice, файл не перезаписывается.
+- Зовёт `executePulls` + `downloadAssetsForNotes` **напрямую**, НЕ `executePlan` (у того безусловные asset-пассы по `unchanged` → запушил бы на сервер).
+- `NoteHideEvent` → существующая модалка `ServerDeletedModal`, без авто-удаления.
+- Классификация против свежего in-memory `syncState` → собственное эхо пуша = `unchanged` (нет петли).
+- Если идёт ручной синк (`isSyncing`) — события в очередь `pendingLivePull`, дренятся после.
+
+**`catchUpPull`** — на каждый (ре)коннект: берёт sync-lock, один `classifySync` (один `FetchServerHashes`), выполняет только `pulls`, дренит очередь. Закрывает gap после оффлайна.
+
+**Polling не убран, а реже:** старый 60s `setInterval` → **5-минутная** фоновая сверка-страховка (шина лоссовая — дропает при переполнении буфера 64, поэтому периодическая сверка обязательна). Свежесть между сверками несут SSE-события.
+
+**Настройки** (`SyncDir`): `livePullIncludePatterns` / `livePullExcludePatterns` (glob, doublestar). Требуют `twoWaySync`. Пусто → live-pull выключен. `reconcileLiveConnections()` пересобирает соединения при смене настроек; по одному соединению на syncDir (ключ `apiUrl+path`).
+
+Проверено вживую E2E: бэкенд-событие, авто-pull серверного изменения на диск, и 4 edge-кейса (конфликт без перезаписи, hide без авто-удаления, отсутствие эхо-петли, glob-фильтр).
+
+### Команда «Sync now»
+
+Добавлена команда палитры `trip2g:sync` (раньше синк запускался только по иконке ribbon).
+
+### Производительность: что изменилось
+
+- **skipCommit на загрузке ассета.** Сервер (`uploadnoteasset/resolve.go:108`) делал полный `PrepareLatestNotes` на КАЖДУЮ загрузку, если не передан `skipCommit`. Плагин (`src/env.ts:308`) его слал, а **CLI и browser — нет** → на bulk-синке 2000 заметок + 2000 картинок холодный пуш был **231.8s**. После `skipCommit:true` в `cli/env.ts` и `browser/index.ts` → **8.8s** (×26). Живой плагин не был подвержен (6.0s, ~20 reload вместо 2000).
+- **`latestContentHash` — сохранённая колонка**, не пересчитывается на запрос. `FetchServerHashes` всех 2000 ≈ 10.5ms / 80KB. То есть `notePaths` НЕ медленный, а мёртвый mtime/hash-кэш на этом размере заметок ≈ 18ms — не узкое место. Live-pull — это UX (мгновенность, меньше WAN-трафика), а не сырая скорость.
+
+### Backend: notebus
+
+Шина `noteChanges` (`internal/notebus`) починена: была гонка `send on closed channel` (Unsubscribe закрывал канал, Publish слал после RUnlock → паника всего монолита). Решение — **per-subscriber `done`-канал**: Unsubscribe закрывает `done`, Publish `select { case ch<-: case <-done: default: drop }`. Прогнано `-race -count=50` чисто.

@@ -30,3 +30,5 @@ title: "Навигация"
 
 **Инструменты**
 - [[ru/thoughts/patching-obsidian-canvas-on-minimal-linux|Чиним Obsidian Canvas на минимальном Linux]]
+- [[ru/thoughts/sync-benchmark|Бенчмарк синхронизации Obsidian]]
+- [[ru/thoughts/search-benchmark|Бенчмарк поиска]]

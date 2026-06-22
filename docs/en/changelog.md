@@ -8,6 +8,28 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.6.1 — 2026-06-22
+
+### Live updates in the Obsidian plugin (plugin v0.5.0)
+
+- **What.** The trip2g sync plugin now consumes the `noteChanges` subscription (shipped in v0.6.0) and pulls server-side changes into your vault in real time — no sync click, no waiting for the periodic check.
+- **Why.** For multi-device and agent-driven editing, a change made on the server (or another device) shows up in Obsidian within a second instead of after the next poll. It's a UX win — instant freshness and less idle traffic — not a raw-speed change: the underlying note-list query was already a ~10 ms indexed read.
+- **How.** Update the plugin to 0.5.0 (via BRAT), turn on **Two-way sync**, then set **Live pull patterns** in the plugin settings (include/exclude globs, e.g. `**`, or `blog/**` excluding `drafts/**`). Safety is preserved: local edits are never overwritten (you get a conflict prompt), and server-side deletions ask before removing locally. The 60-second background poll becomes a lighter 5-minute reconciliation backstop. User docs: [`docs/en/user/two-way-sync.md`](./en/user/two-way-sync.md). The story: [`docs/en/thoughts/sync-benchmark.md`](./en/thoughts/sync-benchmark.md).
+
+### Much faster bulk and CLI sync of notes with assets
+
+- **What.** Syncing many notes that embed images is dramatically faster from the CLI and browser-sync. A cold push of 2000 notes with 2000 images dropped from **231.8 s to 8.8 s (~26×)**.
+- **Why.** Each asset upload was triggering a full server-side note reload, because the CLI and browser-sync didn't batch uploads the way the Obsidian plugin already did — one missing flag (`skipCommit`) turned 2000 uploads into 2000 full reloads.
+- **How.** No action needed beyond updating to plugin/CLI 0.5.0. The interactive Obsidian plugin was already unaffected.
+
+### Stability: the real-time subscription could crash the server (`c283963b`)
+
+- **What.** A race in the in-process event bus behind the `noteChanges` subscription could panic the whole server when a subscriber disconnected during a save (`send on closed channel`).
+- **Why.** It never fired while nothing subscribed, but the new live-pull plugin connects and disconnects routinely — making it a real risk for anyone running the subscription.
+- **How.** No action needed; the bus now uses a per-subscriber done channel and is race-tested under stress. A **Sync now** command was also added to the plugin (command palette).
+
+---
+
 ## v0.6.0 — 2026-06-17
 
 ### Mermaid diagrams
