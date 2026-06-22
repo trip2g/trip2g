@@ -205,8 +205,9 @@ type app struct {
 	// (queues, cron, patreon/boosty refresh) have started. /readyz returns 503
 	// until then so Nomad/Traefik route traffic only to fully-ready instances.
 	// Pointer for the same reason as stopped (shared across per-request copies).
-	ready *atomic.Bool
-	ctx   context.Context
+	ready          *atomic.Bool
+	internalServer *http.Server
+	ctx            context.Context
 
 	graphTxs *graphTransactions
 
@@ -461,6 +462,12 @@ func main() {
 			a.config.Features.VectorSearch.BaseURL,
 		)
 	}
+
+	// Start the internal health server early so /livez answers 200 throughout
+	// the read-only warmup (loadAllNotes). Traefik active-health-checks /livez
+	// and would pull the backend out of rotation during ~12s warmup if this
+	// server were started later. /readyz correctly stays 503 until a.ready flips.
+	go a.startInternalServer()
 
 	a.constructJobs()
 
@@ -2728,8 +2735,6 @@ func (a *app) startServer() {
 		a.startACMEServer(s)
 	}
 
-	go a.startInternalServer()
-
 	if a.config.DevMode {
 		runServer()
 	} else {
@@ -2821,7 +2826,14 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 	err := s.ShutdownWithContext(shutdownCtx)
 	if err != nil {
 		a.log.Error("failed to shutdown server gracefully", "error", err)
-		return
+	}
+
+	if a.internalServer != nil {
+		internalShutdownCtx, internalCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
+		defer internalCancel()
+		if err := a.internalServer.Shutdown(internalShutdownCtx); err != nil {
+			a.log.Error("failed to shutdown internal server", "error", err)
+		}
 	}
 
 	a.log.Info("server stopped")
@@ -2938,7 +2950,7 @@ func (a *app) startInternalServer() {
 		mux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
 	}
 
-	server := &http.Server{
+	a.internalServer = &http.Server{
 		Addr:    a.config.InternalListenAddr,
 		Handler: mux,
 
@@ -2946,18 +2958,7 @@ func (a *app) startInternalServer() {
 		WriteTimeout: 2 * time.Minute, // allow for slow Ollama first-load
 	}
 
-	go func() {
-		<-a.shutdownCtx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
-		defer cancel()
-
-		err := server.Shutdown(shutdownCtx)
-		if err != nil {
-			a.log.Error("failed to shutdown internal server", "error", err)
-		}
-	}()
-
-	err := server.ListenAndServe()
+	err := a.internalServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}
