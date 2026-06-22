@@ -2709,8 +2709,12 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 
 	time.Sleep(a.config.ShutdownGracePeriod)
 
-	// Perform shutdown backup if simple backup enabled
-	if a.simpleBackup != nil {
+	// Perform shutdown backup if enabled AND this is not a zero-downtime handoff.
+	// In a rolling deploy a peer is taking over: the departing instance's backup
+	// is redundant (cron backups continue and the new writer is live) and the dump
+	// would race the new writer / delay the drain. Gate with
+	// --simple-backup-on-shutdown=false in the rolling path.
+	if a.simpleBackup != nil && a.config.SimpleBackup.BackupOnShutdown {
 		a.log.Info("performing shutdown backup...")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

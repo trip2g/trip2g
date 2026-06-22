@@ -139,6 +139,11 @@ type Config struct {
 // SimpleBackupConfig holds simple backup system configuration.
 type SimpleBackupConfig struct {
 	Enabled bool
+	// BackupOnShutdown runs a final backup on graceful shutdown. Disable for
+	// zero-downtime rolling deploys: a departing instance backing up is
+	// redundant (a peer takes over and cron backups continue) and the dump can
+	// race the new writer / delay the drain.
+	BackupOnShutdown bool
 }
 
 // CronJobsConfig holds cron jobs admin configuration.
@@ -430,6 +435,7 @@ func (c *Config) defineServerFlags() {
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
+	flag.BoolVar(&c.SimpleBackup.BackupOnShutdown, "simple-backup-on-shutdown", true, "Run a final backup on graceful shutdown. Set false for zero-downtime rolling deploys where a peer takes over.")
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 
 	// Storage limits.
