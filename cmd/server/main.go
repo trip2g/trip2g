@@ -2797,6 +2797,15 @@ func (a *app) startInternalServer() {
 		_, _ = w.Write([]byte("ok"))
 	})
 
+	// /livez is liveness (k8s convention): 200 whenever the process can answer,
+	// regardless of warmup or shutdown state. A warming or draining instance is
+	// still ALIVE and must NOT be restarted — orchestrators use this only for
+	// restart-on-hang. Pair it with /readyz (readiness) for routing/deploy gating.
+	mux.HandleFunc("/livez", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("alive"))
+	})
+
 	// /readyz is readiness (not liveness): 200 only when the instance can fully
 	// serve, including writes. It returns 503 while warming up (writer slot not
 	// yet acquired, writer subsystems not started) and while shutting down.
