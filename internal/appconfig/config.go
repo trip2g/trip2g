@@ -73,6 +73,13 @@ type Config struct {
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
+	// StorageBackend selects the file-storage backend: "minio" (default,
+	// MinIO/S3) or "local" (local filesystem, no MinIO required).
+	StorageBackend string
+	// StorageLocalDir is the base directory for the local storage backend.
+	// Only used when StorageBackend == "local".
+	StorageLocalDir string
+
 	// MinIO storage configuration
 	Storage miniostorage.Config
 
@@ -164,6 +171,12 @@ const (
 	DefaultLogLevel     = "info"
 	DefaultDevMode      = false
 
+	// Storage backend selection.
+	StorageBackendMinIO    = "minio"
+	StorageBackendLocal    = "local"
+	DefaultStorageBackend  = StorageBackendMinIO
+	DefaultStorageLocalDir = "/data/storage"
+
 	// MinIO defaults.
 	DefaultMinIOEndpoint    = "localhost:9000"
 	DefaultMinIOAccessKey   = "root"
@@ -192,16 +205,18 @@ func DefaultStorageConfig() miniostorage.Config {
 // DefaultConfig returns a configuration with default values.
 func DefaultConfig() *Config {
 	return &Config{
-		ListenAddr:    DefaultListenAddr,
-		DatabaseFile:  DefaultDatabaseFile,
-		DevMode:       DefaultDevMode,
-		AdminJSURL:    DefaultAdminJSURL,
-		LogLevel:      DefaultLogLevel,
-		AcmeDomains:   ArrayFlags{},
-		Storage:       DefaultStorageConfig(),
-		Metrics:       DefaultMetricsConfig(),
-		RenderPreview: renderpreview.DefaultConfig(),
-		APIKeyLogs:    cleanupapikeylogs.DefaultConfig(),
+		ListenAddr:      DefaultListenAddr,
+		DatabaseFile:    DefaultDatabaseFile,
+		DevMode:         DefaultDevMode,
+		AdminJSURL:      DefaultAdminJSURL,
+		LogLevel:        DefaultLogLevel,
+		AcmeDomains:     ArrayFlags{},
+		StorageBackend:  DefaultStorageBackend,
+		StorageLocalDir: DefaultStorageLocalDir,
+		Storage:         DefaultStorageConfig(),
+		Metrics:         DefaultMetricsConfig(),
+		RenderPreview:   renderpreview.DefaultConfig(),
+		APIKeyLogs:      cleanupapikeylogs.DefaultConfig(),
 	}
 }
 
@@ -470,6 +485,18 @@ func (c *Config) defineServerFlags() {
 }
 
 func (c *Config) defineMinioFlags() {
+	flag.StringVar(
+		&c.StorageBackend,
+		"storage-backend",
+		c.StorageBackend,
+		"File storage backend: minio (S3/MinIO) or local (local filesystem, no MinIO required)",
+	)
+	flag.StringVar(
+		&c.StorageLocalDir,
+		"storage-local-dir",
+		c.StorageLocalDir,
+		"Base directory for the local storage backend (used when storage-backend=local)",
+	)
 	flag.StringVar(&c.Storage.Endpoint, "minio-endpoint", c.Storage.Endpoint, "MinIO endpoint")
 	flag.StringVar(&c.Storage.AccessKey, "minio-access-key-id", c.Storage.AccessKey, "MinIO access key ID")
 	flag.StringVar(&c.Storage.SecretKey, "minio-secret-key", c.Storage.SecretKey, "MinIO secret key")
@@ -544,14 +571,21 @@ func (c *Config) validate() error {
 		// URLs should be valid if provided
 		ozzo.Field(&c.PublicURL, ozzo.When(c.PublicURL != "", is.URL)),
 
-		// Storage configuration (delegated to storage's own validation)
-		ozzo.Field(&c.Storage, ozzo.By(func(value interface{}) error {
+		// Storage backend selection.
+		ozzo.Field(&c.StorageBackend, ozzo.Required, ozzo.In(StorageBackendMinIO, StorageBackendLocal)),
+
+		// Local storage requires a base directory.
+		ozzo.Field(&c.StorageLocalDir, ozzo.When(c.StorageBackend == StorageBackendLocal, ozzo.Required)),
+
+		// MinIO storage configuration (delegated to storage's own validation).
+		// Only validated for the MinIO backend; the local backend needs no MinIO config.
+		ozzo.Field(&c.Storage, ozzo.When(c.StorageBackend == StorageBackendMinIO, ozzo.By(func(value interface{}) error {
 			storage, ok := value.(miniostorage.Config)
 			if !ok {
 				return errors.New("invalid storage config type")
 			}
 			return storage.ValidateConfig()
-		})),
+		}))),
 	)
 }
 
