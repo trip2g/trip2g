@@ -202,6 +202,43 @@ func TestDotSimilarity_UnitVectors(t *testing.T) {
 	require.InDelta(t, 0.7071067811865475, dotSimilarity(d, e), 1e-6)
 }
 
+func TestMergeResultsDeterministic(t *testing.T) {
+	// /a and /b are each rank 0 in exactly one list, so their RRF scores are equal
+	// (both = 1/(rrfK+1)). The tie-break must put lower URL first, i.e. /a before /b.
+	textResults := []appmodel.SearchResult{
+		makeResult("/b", 1.0, "B"), // rank 0 in text
+	}
+	vectorResults := []appmodel.SearchResult{
+		makeResult("/a", 1.0, "A"), // rank 0 in vector
+	}
+
+	// Run mergeResults 50 times and assert consistent ordering every time.
+	var firstOrder []string
+	for i := range 50 {
+		got := mergeResults(textResults, vectorResults)
+		require.Len(t, got, 2, "iteration %d: expected 2 results", i)
+
+		order := make([]string, len(got))
+		for j, r := range got {
+			order[j] = r.URL
+		}
+
+		if i == 0 {
+			firstOrder = order
+			// Tie-break: equal RRF scores → lower URL (/a) must come first.
+			require.Equal(t, "/a", got[0].URL, "equal-score tie-break must put lower URL first")
+			require.Equal(t, "/b", got[1].URL, "equal-score tie-break: /b must be second")
+		} else {
+			require.Equal(t, firstOrder, order, "iteration %d: ordering must be identical every run", i)
+		}
+
+		// Both entries must have the same score (1/(rrfK+1)).
+		expected := 1.0 / float64(rrfK+1)
+		require.InDelta(t, expected, got[0].Score, 1e-10, "iteration %d: score of first result", i)
+		require.InDelta(t, expected, got[1].Score, 1e-10, "iteration %d: score of second result", i)
+	}
+}
+
 func TestDotSimilarity_EdgeCases(t *testing.T) {
 	// Empty slice → 0.
 	require.InDelta(t, 0.0, dotSimilarity(nil, nil), 0)

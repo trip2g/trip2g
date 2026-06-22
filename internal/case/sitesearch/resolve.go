@@ -157,7 +157,12 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	}
 	env.Logger().Warn("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
-	sort.Slice(candidates, func(i, j int) bool { return candidates[i].sim > candidates[j].sim })
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].sim != candidates[j].sim {
+			return candidates[i].sim > candidates[j].sim
+		}
+		return candidates[i].path < candidates[j].path
+	})
 
 	var noteViews *appmodel.NoteViews
 	if useLatest {
@@ -321,7 +326,10 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 	}
 
 	sort.Slice(finalResults, func(i, j int) bool {
-		return finalResults[i].Score > finalResults[j].Score
+		if finalResults[i].Score != finalResults[j].Score {
+			return finalResults[i].Score > finalResults[j].Score
+		}
+		return finalResults[i].URL < finalResults[j].URL
 	})
 
 	if len(finalResults) > 20 {

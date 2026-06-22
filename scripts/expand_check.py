@@ -140,7 +140,13 @@ def run(endpoint, queries):
             answer_terms = {w.lower() for m in marked for w in _WORD_RE.findall(m) if len(w) > 2}
             qwords = words(q + " " + snippet)
 
-            path, nav_tokens, levels = navigate(endpoint, pid, qwords)
+            match_toc_path = matches[0].get("toc_path") if matches else None
+            if match_toc_path:
+                path = match_toc_path
+                nav_tokens = 0
+                levels = 0
+            else:
+                path, nav_tokens, levels = navigate(endpoint, pid, qwords)
             section = result_text(call_tool(endpoint, "note_html", {"pid": pid, "toc_path": path})) if path else ""
             read_tokens = approx_tokens(section)
             full_tokens = approx_tokens(result_text(call_tool(endpoint, "note_html", {"pid": pid})))
