@@ -138,7 +138,7 @@ func WithFederatedToken(ctx context.Context, allowedSubgraphs []string) context.
 
 // FederatedScope reports whether this request is a federated-scoped identity
 // and returns its AllowedSubgraphs.
-func (c *Request) FederatedScope() (allowed []string, ok bool) {
+func (c *Request) FederatedScope() ([]string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.FederatedSubgraphs, c.federatedScoped
@@ -196,7 +196,7 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 
 	// 2. Try Authorization: Bearer <value>.
 	bearer := string(c.Req.Request.Header.Peek("Authorization"))
-	if value, ok := strings.CutPrefix(bearer, "Bearer "); ok {
+	if value, ok := strings.CutPrefix(bearer, "Bearer "); ok { //nolint:nestif // auth fallback chain requires nested branching
 		// 2a. Personal token (t2g_*).
 		if personaltoken.IsPersonal(value) {
 			data, resolveErr := c.resolvePersonalToken(value)

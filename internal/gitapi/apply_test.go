@@ -84,7 +84,7 @@ func TestApplyHidesDeletedNote(t *testing.T) {
 	old := commitFile(t, api, "gone.md", "x")
 	newRev := commitFile(t, api, "gone.md", "")
 
-	if _, err := api.applyDiff(context.Background(), old, newRev); err != nil {
+	if err := api.applyDiff(context.Background(), old, newRev); err != nil {
 		t.Fatal(err)
 	}
 	if len(env.hidden) != 1 || env.hidden[0] != "gone.md" {
@@ -109,7 +109,7 @@ func TestApplyRollbackOnError(t *testing.T) {
 	old := commitFile(t, api, "a.md", "one")
 	newRev := commitFile(t, api, "a.md", "two")
 
-	_, err := api.applyDiff(context.Background(), old, newRev)
+	err := api.applyDiff(context.Background(), old, newRev)
 	if err == nil {
 		t.Fatal("expected apply error")
 	}

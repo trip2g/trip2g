@@ -26,10 +26,12 @@ func LoadGoldenSet(path string) (*GoldenSet, error) {
 		return nil, fmt.Errorf("read golden set: %w", err)
 	}
 	var gs GoldenSet
-	if err := json.Unmarshal(data, &gs); err != nil {
+	err = json.Unmarshal(data, &gs)
+	if err != nil {
 		return nil, fmt.Errorf("parse golden set: %w", err)
 	}
-	if err := gs.Validate(); err != nil {
+	err = gs.Validate()
+	if err != nil {
 		return nil, err
 	}
 	return &gs, nil

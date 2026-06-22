@@ -46,7 +46,7 @@ func Parse(jsonStr string) Features {
 	}
 
 	// Check required environment variables and parse models for enabled features
-	if f.VectorSearch.Enabled {
+	if f.VectorSearch.Enabled { //nolint:nestif // feature validation needs nested checks for sub-options
 		// OPENAI_API_KEY is only required when using the OpenAI endpoint (base_url not set).
 		// When base_url is set (e.g. local Ollama), no API key is needed.
 		if f.VectorSearch.BaseURL == "" && os.Getenv("OPENAI_API_KEY") == "" {

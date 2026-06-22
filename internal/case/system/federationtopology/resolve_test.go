@@ -75,7 +75,7 @@ func TestRevokedAndEmptyScope(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, out.Outbound[0].RevokedAt)
 	require.NotNil(t, out.Outbound[0].Subgraphs)
-	require.Len(t, out.Outbound[0].Subgraphs, 0)
+	require.Empty(t, out.Outbound[0].Subgraphs)
 }
 
 func TestSelfKBIDFromConfigAndFallback(t *testing.T) {

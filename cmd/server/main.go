@@ -821,18 +821,20 @@ func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
 		return fmt.Errorf("failed to list admins for hide: %w", err)
 	}
 	if len(admins) == 0 {
-		return fmt.Errorf("cannot hide note paths: no admin user to attribute the hide to")
+		return errors.New("cannot hide note paths: no admin user to attribute the hide to")
 	}
 	// ListAllAdmins orders by user_id DESC, so the last element is the oldest.
 	hiddenBy := admins[len(admins)-1].UserID
 
 	for _, p := range paths {
-		if err := a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{HiddenBy: &hiddenBy, Value: p}); err != nil {
+		err = a.WriteQueries.HideNotePath(ctx, db.HideNotePathParams{HiddenBy: &hiddenBy, Value: p})
+		if err != nil {
 			return fmt.Errorf("failed to hide note path %s: %w", p, err)
 		}
 	}
 
-	if _, err := a.PrepareLatestNotes(ctx, false); err != nil {
+	_, err = a.PrepareLatestNotes(ctx, false)
+	if err != nil {
 		return fmt.Errorf("failed to prepare latest notes after hide: %w", err)
 	}
 	return nil
@@ -947,14 +949,14 @@ func (a *app) SendMail(_ context.Context, data model.Mail) error {
 	body := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
 		data.To, a.config.MailFrom, data.Subject, string(data.Plain))
 
-	if a.config.SMTPStartTLS {
+	if a.config.SMTPStartTLS { //nolint:nestif // SMTP send has inherent nested control flow
 		c, err := smtp.Dial(addr)
 		if err != nil {
 			return fmt.Errorf("smtp dial: %w", err)
 		}
 		defer c.Close()
 
-		err = c.StartTLS(&tls.Config{ServerName: a.config.SMTPHost})
+		err = c.StartTLS(&tls.Config{ServerName: a.config.SMTPHost, MinVersion: tls.VersionTLS12})
 		if err != nil {
 			return fmt.Errorf("smtp starttls: %w", err)
 		}
@@ -1010,7 +1012,7 @@ func (a *app) LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.Co
 }
 
 // LoadSiteConfig implements noteloader.Env interface.
-func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) { //nolint:unparam // may return error in future
+func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
 	return a.SiteConfig(ctx), nil
 }
 

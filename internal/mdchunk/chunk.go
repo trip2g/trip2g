@@ -39,7 +39,7 @@ func estimateTokens(s string) int {
 // chunks by accumulating below chunkMinTokens, sizes by estimated tokens, and
 // prepends a heading breadcrumb ("{title} > {h1} > {h2}...") to every chunk so
 // deep chunks carry their document context (a cheap form of contextual retrieval).
-func Split(title string, rawContent []byte) []Chunk {
+func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inherently complex markdown chunking logic
 	body := StripFrontmatter(string(rawContent))
 	blocks := splitIntoBlocks(body)
 	if len(blocks) == 0 {
@@ -173,16 +173,10 @@ func splitIntoBlocks(content string) []string {
 	return blocks
 }
 
-// isHeadingBlock reports whether a block starts with a Markdown heading (# to ######).
-func isHeadingBlock(block string) bool {
-	_, _, ok := parseHeading(block)
-	return ok
-}
-
 // parseHeading returns the level (1–6) and trimmed text of a Markdown heading
 // block, or ok=false if the block is not a heading. Only the first line is
 // considered, so a heading followed by body text in the same block still parses.
-func parseHeading(block string) (level int, text string, ok bool) {
+func parseHeading(block string) (int, string, bool) {
 	line := block
 	if nl := strings.IndexByte(block, '\n'); nl >= 0 {
 		line = block[:nl]

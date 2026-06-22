@@ -153,7 +153,7 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 func (e *Manager) ParseToken(ctx context.Context, raw string) (*Data, error) {
 	token, err := e.parseClaims(raw)
 	if err != nil {
-		return nil, nil
+		return nil, nil //nolint:nilerr // intentional: invalid/expired token → anonymous (nil, nil)
 	}
 
 	if validationErr := e.runValidators(ctx, token); validationErr != nil {

@@ -6,12 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSearchClientReturnsOrderedURLs(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/_system/graphql", r.URL.Path)
+		assert.Equal(t, "/_system/graphql", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":{"search":{"totalCount":2,"nodes":[
 			{"url":"/first","score":0.9,"matchOrigin":"HYBRID"},

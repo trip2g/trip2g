@@ -472,7 +472,9 @@ func findRouteForHost(routes []model.ParsedRoute, host, requestPath string) *mod
 }
 
 // buildDefaultTemplateCtx constructs a *defaulttemplate.Ctx from the request, layout params, and response.
-func buildDefaultTemplateCtx(req *appreq.Request, layoutParams renderlayout.Params, resp *Response, env Env) *defaulttemplate.Ctx {
+func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly requires many optional fields
+	req *appreq.Request, layoutParams renderlayout.Params, resp *Response, env Env,
+) *defaulttemplate.Ctx {
 	// Fetch JS/CSS URLs and dev mode from the renderlayout.Env interface.
 	rlEnv, ok := req.Env.(renderlayout.Env)
 

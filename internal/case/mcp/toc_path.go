@@ -21,6 +21,8 @@ type TOCItem struct {
 	Path  []string `json:"path"`
 }
 
+const htmlDivElement = "div"
+
 // buildNoteTOC builds a flat TOC list with full hierarchical paths from NoteViewHeadings.
 // Handles repeated heading names by including the full ancestor chain in Path.
 func buildNoteTOC(headings model.NoteViewHeadings) []TOCItem {
@@ -100,7 +102,7 @@ func tocPathForSnippet(noteHTML, snippet, chunkContent string) []string {
 // findDeepestSection walks the HTML tree and returns the path to the innermost
 // data-header div whose text content contains target.
 func findDeepestSection(n *html.Node, target string, currentPath []string) ([]string, bool) {
-	if n.Type == html.ElementNode && n.Data == "div" {
+	if n.Type == html.ElementNode && n.Data == htmlDivElement {
 		if header := htmlNodeAttr(n, "data-header"); header != "" {
 			return matchHeaderDiv(n, header, target, currentPath)
 		}
@@ -176,7 +178,7 @@ func findFirstSectionWithTitle(root *html.Node, title string) *html.Node {
 		if found != nil {
 			return
 		}
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == htmlDivElement {
 			if htmlNodeAttr(n, "data-header") == title {
 				found = n
 				return
@@ -470,7 +472,7 @@ func firstSectionPath(noteHTML string) []string {
 		if firstHeader != "" {
 			return
 		}
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == htmlDivElement {
 			if h := htmlNodeAttr(n, "data-header"); h != "" {
 				firstHeader = h
 				return

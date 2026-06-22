@@ -15,7 +15,7 @@ import (
 
 // sharedHTTP is reused across clients so connections pool even when callers
 // construct a Client per request from config.
-var sharedHTTP = &http.Client{Timeout: 10 * time.Second}
+var sharedHTTP = &http.Client{Timeout: 10 * time.Second} //nolint:gochecknoglobals // intentional shared pool
 
 type Client struct {
 	endpoint string
@@ -55,7 +55,8 @@ func (c *Client) Rerank(ctx context.Context, query string, docs []string) ([]int
 			Score float64 `json:"relevance_score"`
 		} `json:"results"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	if err != nil {
 		return nil, fmt.Errorf("decode rerank response: %w", err)
 	}
 

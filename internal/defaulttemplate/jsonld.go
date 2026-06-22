@@ -123,6 +123,8 @@ func (ctx *Ctx) JSONLDLogo() string {
 		note = ctx.Notes.ByPath(ref.Value)
 	case ContentRefWikiLink:
 		note = ctx.Notes.ByWikilink(ref.Value)
+	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone:
+		// no header note to resolve — note stays nil
 	}
 	if note == nil {
 		return ""
@@ -173,7 +175,7 @@ func humanizeSegment(seg string) string {
 // "My Blog" from "%s | My Blog"); falls back to the public URL host.
 func DeriveSiteName(titleTemplate, publicURL string) string {
 	name := strings.ReplaceAll(titleTemplate, "%s", "")
-	name = strings.Trim(name, " |-—–·•:•")
+	name = strings.Trim(name, " |-—–·•:")
 	name = strings.TrimSpace(name)
 	if name != "" {
 		return name

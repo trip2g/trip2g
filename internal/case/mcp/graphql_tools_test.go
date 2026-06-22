@@ -172,13 +172,9 @@ func TestHandleGraphQLRequest_StructuredContent(t *testing.T) {
 	require.NotNil(t, result.StructuredContent, "StructuredContent must be set")
 
 	// StructuredContent must deep-equal the parsed envelope.
-	var want any
-	require.NoError(t, json.Unmarshal(canned, &want))
-	wantJSON, err := json.Marshal(want)
-	require.NoError(t, err)
 	gotJSON, err := json.Marshal(result.StructuredContent)
 	require.NoError(t, err)
-	require.Equal(t, string(wantJSON), string(gotJSON))
+	require.JSONEq(t, string(canned), string(gotJSON))
 }
 
 // --- validateReadOnlyQuery tests ---

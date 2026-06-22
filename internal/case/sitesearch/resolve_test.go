@@ -204,9 +204,9 @@ func TestDotSimilarity_UnitVectors(t *testing.T) {
 
 func TestDotSimilarity_EdgeCases(t *testing.T) {
 	// Empty slice → 0.
-	require.Equal(t, 0.0, dotSimilarity(nil, nil))
-	require.Equal(t, 0.0, dotSimilarity([]float32{}, []float32{}))
+	require.InDelta(t, 0.0, dotSimilarity(nil, nil), 0)
+	require.InDelta(t, 0.0, dotSimilarity([]float32{}, []float32{}), 0)
 
 	// Length mismatch → 0.
-	require.Equal(t, 0.0, dotSimilarity([]float32{1, 0}, []float32{1, 0, 0}))
+	require.InDelta(t, 0.0, dotSimilarity([]float32{1, 0}, []float32{1, 0, 0}), 0)
 }

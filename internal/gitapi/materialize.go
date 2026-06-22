@@ -35,12 +35,14 @@ func (api *API) materialize(ctx context.Context) error {
 	)
 
 	for _, n := range notes {
-		if err := api.addBlob(gitEnv, n.Path, n.Content); err != nil {
+		err = api.addBlob(gitEnv, n.Path, n.Content)
+		if err != nil {
 			return fmt.Errorf("materialize note %s: %w", n.Path, err)
 		}
 	}
 	for _, a := range assets {
-		rc, err := api.env.ReadAssetObject(ctx, a.Asset)
+		var rc io.ReadCloser
+		rc, err = api.env.ReadAssetObject(ctx, a.Asset)
 		if err != nil {
 			api.logger.Warn("materialize: skip unreadable asset", "path", a.AbsolutePath, "error", err)
 			continue
@@ -56,7 +58,8 @@ func (api *API) materialize(ctx context.Context) error {
 			return fmt.Errorf("materialize asset %s: %w", a.AbsolutePath, readErr)
 		}
 		repoPath := strings.TrimPrefix(a.AbsolutePath, "/")
-		if err := api.addBlob(gitEnv, repoPath, content); err != nil {
+		err = api.addBlob(gitEnv, repoPath, content)
+		if err != nil {
 			return fmt.Errorf("materialize asset %s: %w", repoPath, err)
 		}
 	}
@@ -83,7 +86,8 @@ func (api *API) materialize(ctx context.Context) error {
 	}
 	commit = strings.TrimSpace(commit)
 
-	if _, err := api.gitCmd(gitEnv, nil, "update-ref", "refs/heads/"+api.config.MasterBranch, commit); err != nil {
+	_, err = api.gitCmd(gitEnv, nil, "update-ref", "refs/heads/"+api.config.MasterBranch, commit)
+	if err != nil {
 		return fmt.Errorf("materialize: update-ref: %w", err)
 	}
 	return nil

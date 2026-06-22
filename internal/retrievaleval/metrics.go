@@ -56,7 +56,7 @@ func NDCGAtK(retrieved, relevant []string, k int) float64 {
 		}
 	}
 	var idcg float64
-	for i := 0; i < minInt(k, len(relevant)); i++ {
+	for i := range minInt(k, len(relevant)) {
 		idcg += 1.0 / math.Log2(float64(i+2))
 	}
 	if idcg == 0 {

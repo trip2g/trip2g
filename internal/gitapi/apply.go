@@ -16,7 +16,7 @@ const emptyTree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" // git's well-known
 
 // diffChangedFiles returns added/modified and deleted paths between two commits.
 // If oldRev is empty, everything in newRev counts as added.
-func (api *API) diffChangedFiles(oldRev, newRev string) (changed, deleted []string, err error) {
+func (api *API) diffChangedFiles(oldRev, newRev string) ([]string, []string, error) {
 	base := oldRev
 	if base == "" {
 		base = emptyTree
@@ -27,6 +27,7 @@ func (api *API) diffChangedFiles(oldRev, newRev string) (changed, deleted []stri
 	}
 	// -z output: STATUS\0PATH\0STATUS\0PATH\0...
 	parts := strings.Split(out, "\x00")
+	var changed, deleted []string
 	for i := 0; i+1 < len(parts); i += 2 {
 		status, path := parts[i], parts[i+1]
 		if path == "" {
@@ -44,16 +45,16 @@ func (api *API) diffChangedFiles(oldRev, newRev string) (changed, deleted []stri
 
 // applyDiff applies the changes between oldRev and newRev to the DB:
 // changed markdown/html notes are pushed (hash-skipped if already current),
-// deletions are hidden. Returns the list of changed note paths.
-func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) ([]string, error) {
+// deletions are hidden.
+func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) error {
 	changed, deleted, err := api.diffChangedFiles(oldRev, newRev)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	notePaths, err := api.env.AllVisibleNotePaths(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("apply: note paths: %w", err)
+		return fmt.Errorf("apply: note paths: %w", err)
 	}
 	dbHash := map[string]string{}
 	for _, np := range notePaths {
@@ -61,7 +62,6 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) ([]string,
 	}
 
 	input := model.PushNotesInput{}
-	applied := []string{}
 	for _, f := range changed {
 		ext := strings.ToLower(filepath.Ext(f))
 		if ext != ".md" && ext != ".html" {
@@ -77,16 +77,15 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) ([]string,
 			continue // already current in DB — breaks the materialize<->apply loop
 		}
 		input.Updates = append(input.Updates, model.PushNoteInput{Path: f, Content: string(content)})
-		applied = append(applied, f)
 	}
 
 	if len(input.Updates) > 0 {
 		payload, perr := api.env.PushNotes(ctx, input)
 		if perr != nil {
-			return nil, fmt.Errorf("apply: push notes: %w", perr)
+			return fmt.Errorf("apply: push notes: %w", perr)
 		}
 		if ep, ok := payload.(*model.ErrorPayload); ok {
-			return nil, fmt.Errorf("apply: push notes: %s", ep.Message)
+			return fmt.Errorf("apply: push notes: %s", ep.Message)
 		}
 	}
 
@@ -99,11 +98,11 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) ([]string,
 	}
 	if len(deletedNotes) > 0 {
 		if herr := api.env.HideNotePaths(ctx, deletedNotes); herr != nil {
-			return nil, fmt.Errorf("apply: hide notes: %w", herr)
+			return fmt.Errorf("apply: hide notes: %w", herr)
 		}
 	}
 
-	return applied, nil
+	return nil
 }
 
 // showFile reads a file's content at a given commit.

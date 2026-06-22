@@ -30,7 +30,7 @@ func (n *NoteView) extractJSONLDFields() {
 // extractTagList returns the first non-empty tag list among the given frontmatter
 // values (so "tags" wins over "keywords"). Each value may be a []string,
 // []interface{} of strings, or a comma-separated string.
-func extractTagList(values ...interface{}) []string {
+func extractTagList(values ...interface{}) []string { //nolint:gocognit // handles multiple frontmatter value types
 	for _, v := range values {
 		var out []string
 		switch val := v.(type) {

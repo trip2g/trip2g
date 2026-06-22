@@ -70,7 +70,8 @@ func (c *SearchClient) Search(ctx context.Context, query string) (*SearchRespons
 			Message string `json:"message"`
 		} `json:"errors"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	if err != nil {
 		return nil, fmt.Errorf("decode search response: %w", err)
 	}
 	if len(out.Errors) > 0 {

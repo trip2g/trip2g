@@ -436,7 +436,8 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
-	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false, "Disable SSRF protection for federation calls (allow private/internal addresses).")
+	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false,
+		"Disable SSRF protection for federation calls (allow private/internal addresses).")
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
@@ -501,7 +502,6 @@ func (c *Config) Prepare() {
 	c.Features = features.Parse(c.FeaturesJSON)
 }
 
-// validate checks if the configuration is valid using ozzo validation.
 // CronScheduleOverride returns a cron schedule override for the named job from
 // the environment — <JOB_NAME>_SCHEDULE (or TRIP2G_<JOB_NAME>_SCHEDULE) — or ""
 // if unset. Centralizes env access so callers don't read os.Getenv directly.
