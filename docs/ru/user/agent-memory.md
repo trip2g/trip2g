@@ -8,15 +8,10 @@ lang_redirect: "[[en/user/agent-memory]]"
 
 ## 1. Запустить демон (Docker)
 
-trip2g использует S3-совместимое хранилище для ассетов. Для локальной разработки сначала поднимите MinIO, затем приложение.
+Для одиночного агента или локальной установки в trip2g есть встроенный **бэкенд локального хранилища**: ассеты сохраняются на диск, S3 и MinIO не нужны. Укажите `STORAGE_BACKEND=local` и смонтируйте директорию с данными:
 
 ```bash
-# MinIO (пропустить, если уже есть)
-docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=trip2g -e MINIO_ROOT_PASSWORD=trip2g-secret \
-  minio/minio:latest server /data --console-address ":9001"
-
-# Приложение trip2g на порту 24081 (healthcheck на 24082), свежая локальная БД
+# Приложение trip2g на порту 24081 (healthcheck на 24082), хранение ассетов на диске
 # Скачивается актуальный опубликованный образ. Для сборки локально из исходников
 # выполните `docker build -t trip2g:local .` в корне репозитория trip2g и замените
 # тег образа ниже на `trip2g:local`.
@@ -24,11 +19,9 @@ mkdir -p /tmp/trip2g-local
 docker run -d --name trip2g-local --network host \
   -e LISTEN_ADDR=0.0.0.0:24081 -e INTERNAL_LISTEN_ADDR=:24082 \
   -e DB_FILE=/data/local.sqlite3 \
+  -e STORAGE_BACKEND=local -e STORAGE_LOCAL_DIR=/data/storage \
   -e DEV=true \
   -e OWNER_EMAIL=hello@example.com \
-  -e MINIO_ENDPOINT=localhost:9000 \
-  -e MINIO_ACCESS_KEY_ID=trip2g -e MINIO_SECRET_KEY=trip2g-secret \
-  -e MINIO_BUCKET=trip2g-local -e MINIO_USE_SSL=false \
   -e PUBLIC_URL=http://localhost:24081 \
   -e JWT_SECRET=dev-secret-not-for-prod \
   -e USER_TOKEN_INSECURE=true \
@@ -45,9 +38,10 @@ until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo
 Демон слушает на **порту 24081**. MCP-эндпоинт: `http://localhost:24081/_system/mcp`.
 
 Важно:
+- `STORAGE_BACKEND=local` сохраняет загружаемые ассеты в `STORAGE_LOCAL_DIR` внутри смонтированного тома. S3 и MinIO не нужны для одиночной установки.
 - `DEV=true` включает фиксированный код входа (`111111`) — реальная почта не нужна. **Не используйте в продакшене.**
-- `--network host` даёт приложению доступ к MinIO на `localhost:9000` и публикует порт приложения напрямую.
-- Для продакшена с Caddy, TLS и внешним хранилищем — см. [[ru/user/selfhosted]].
+- `--network host` публикует порт приложения напрямую; другие контейнеры для работы не нужны.
+- Для многоинстансной или продакшен-установки с Caddy, TLS и S3-совместимым хранилищем — см. [[ru/user/selfhosted]].
 
 ### Завести API-ключ
 
@@ -69,6 +63,44 @@ API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie:
 
 echo "API-ключ: $API_KEY"
 ```
+
+### Автоматизация через memcli
+
+Весь headless-сценарий — запуск сервера с локальным хранилищем, получение admin-ключа через HAT (Hot Auth Token) и запуск сайдкара `trip2g-sync --watch` — автоматизирован через **memcli**, скомпилированный TypeScript CLI, собранный с помощью esbuild и graphql-codegen.
+
+Соберите один раз из корня исходников trip2g (codegen читает схему прямо из репозитория — запущенный сервер не нужен):
+
+```bash
+cd cli/memcli && npm install && npm run codegen && npm run build
+```
+
+Затем запустите:
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./memory-vault
+```
+
+Исходники CLI находятся по адресу [`cli/memcli/`](https://github.com/trip2g/trip2g/blob/master/cli/memcli/) в основном репозитории. Он создаёт admin-ключ через HAT, поэтому не требует ни адреса электронной почты, ни `DEV=true`. По умолчанию устанавливает `STORAGE_BACKEND=local` — переменные окружения для S3 не нужны.
+
+### Федерационная hub-заметка
+
+`memcli up` по умолчанию записывает в ваш волт заметку `hub.md`. Её frontmatter содержит:
+
+```yaml
+mcp_federation_kb_url: https://trip2g.com/_system/mcp
+```
+
+Это федерирует MCP-эндпоинт вашего локального инстанса с trip2g.com: всё, что подключается к вашему `/_system/mcp`, получает доступ и к базе знаний trip2g.com (например, к документации о памяти) через ваш собственный инстанс — федерация, а не копия данных.
+
+Чтобы пропустить создание hub-заметки, передайте `--no-hub`. Чтобы указать другой хаб, используйте `--hub-url <url>`:
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./memory-vault --hub-url https://example.com/_system/mcp
+```
+
+`hub.md` — обычная Markdown-заметка. Удалите её — и федерационная ссылка исчезнет при следующей синхронизации.
+
+Используйте ручные шаги выше, если нужен точный контроль над отдельными контейнерами или интеграция с существующим compose-стеком.
 
 ## 2. Подключить агента (MCP)
 

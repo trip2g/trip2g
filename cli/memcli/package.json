@@ -1,0 +1,27 @@
+{
+  "name": "memcli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal self-hosted agent memory backed by trip2g — boots a local trip2g server + sync watcher, mints an admin API key.",
+  "bin": {
+    "memcli": "dist/memcli.js"
+  },
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "build": "esbuild src/cli.ts --bundle --platform=node --target=node18 --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/memcli.js",
+    "dev": "node --experimental-strip-types src/cli.ts",
+    "test": "node --experimental-transform-types --test src/cli.test.ts"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.5",
+    "@graphql-codegen/typed-document-node": "^5.0.13",
+    "@graphql-codegen/typescript": "^4.1.5",
+    "@graphql-codegen/typescript-operations": "^4.5.0",
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.24.2",
+    "graphql": "^16.10.0",
+    "typescript": "^5.7.3"
+  }
+}

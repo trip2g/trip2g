@@ -8,15 +8,10 @@ Self-host trip2g in Docker, point your agent's MCP client at it, sync your notes
 
 ## 1. Run the daemon (Docker)
 
-trip2g needs an S3-compatible store for assets. For a local dev setup, start MinIO first, then the app.
+For a single-agent or local setup, trip2g's built-in **local filesystem storage backend** stores assets on disk — no S3 or MinIO needed. Set `STORAGE_BACKEND=local` and mount a data directory:
 
 ```bash
-# MinIO (skip if you already have one)
-docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=trip2g -e MINIO_ROOT_PASSWORD=trip2g-secret \
-  minio/minio:latest server /data --console-address ":9001"
-
-# trip2g app on port 24081 (health on 24082), fresh local DB
+# trip2g app on port 24081 (health on 24082), local storage on disk
 # This pulls the current published image. To use a locally built image instead,
 # run `docker build -t trip2g:local .` from a trip2g source checkout and replace
 # the image tag below with `trip2g:local`.
@@ -24,11 +19,9 @@ mkdir -p /tmp/trip2g-local
 docker run -d --name trip2g-local --network host \
   -e LISTEN_ADDR=0.0.0.0:24081 -e INTERNAL_LISTEN_ADDR=:24082 \
   -e DB_FILE=/data/local.sqlite3 \
+  -e STORAGE_BACKEND=local -e STORAGE_LOCAL_DIR=/data/storage \
   -e DEV=true \
   -e OWNER_EMAIL=hello@example.com \
-  -e MINIO_ENDPOINT=localhost:9000 \
-  -e MINIO_ACCESS_KEY_ID=trip2g -e MINIO_SECRET_KEY=trip2g-secret \
-  -e MINIO_BUCKET=trip2g-local -e MINIO_USE_SSL=false \
   -e PUBLIC_URL=http://localhost:24081 \
   -e JWT_SECRET=dev-secret-not-for-prod \
   -e USER_TOKEN_INSECURE=true \
@@ -45,9 +38,10 @@ until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo
 The daemon listens on **port 24081**. The MCP endpoint is at `http://localhost:24081/_system/mcp`.
 
 Notes:
+- `STORAGE_BACKEND=local` stores uploaded assets under `STORAGE_LOCAL_DIR` inside the mounted data volume. No S3 or MinIO required for a single-instance setup.
 - `DEV=true` enables a fixed sign-in code (`111111`) so no real email is needed — **never use in production**.
-- `--network host` lets the app reach MinIO on `localhost:9000` and exposes the app port directly.
-- For a production self-hosted setup with Caddy, TLS, and external object storage, see [[en/user/selfhosted]].
+- `--network host` exposes the app port directly; no other containers need reachability here.
+- For a multi-instance or production setup with Caddy, TLS, and S3-compatible object storage, see [[en/user/selfhosted]].
 
 ### Mint an API key
 
@@ -69,6 +63,44 @@ API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie:
 
 echo "API key: $API_KEY"
 ```
+
+### Automate with memcli
+
+The entire headless flow — start the server with local storage, mint an admin key via HAT (Hot Auth Token), and launch the `trip2g-sync --watch` sidecar — is automated by **memcli**, a compiled TypeScript CLI built with esbuild and graphql-codegen.
+
+Build it once from a trip2g source checkout (codegen reads the in-repo schema — no running server needed):
+
+```bash
+cd cli/memcli && npm install && npm run codegen && npm run build
+```
+
+Then run:
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./memory-vault
+```
+
+The CLI source lives at [`cli/memcli/`](https://github.com/trip2g/trip2g/blob/master/cli/memcli/) in the main repository. It uses HAT to create the admin key, so it requires no email address and no `DEV=true`. It also sets `STORAGE_BACKEND=local` by default, so no S3 environment variables are needed.
+
+### Federation hub note
+
+`memcli up` writes a `hub.md` note into your vault by default. Its frontmatter contains:
+
+```yaml
+mcp_federation_kb_url: https://trip2g.com/_system/mcp
+```
+
+This federates your local instance's MCP endpoint to trip2g.com: anything connecting to your local `/_system/mcp` can also query trip2g.com's published knowledge base (for example, the docs about memory itself) through your own instance — federation, not a copy.
+
+To skip the hub note, pass `--no-hub`. To point at a different hub, pass `--hub-url <url>`:
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./memory-vault --hub-url https://example.com/_system/mcp
+```
+
+`hub.md` is a plain Markdown note. Deleting it removes the federation link immediately on the next sync.
+
+Use the manual steps above when you want fine-grained control over individual containers or need to integrate with an existing compose stack.
 
 ## 2. Connect your agent (MCP)
 

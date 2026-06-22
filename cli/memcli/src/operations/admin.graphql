@@ -1,0 +1,32 @@
+mutation CreateApiKey($description: String!) {
+  admin {
+    createApiKey(input: { description: $description }) {
+      __typename
+      ... on CreateApiKeyPayload {
+        value
+        apiKey {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
+
+mutation DisableApiKey($id: Int64!) {
+  admin {
+    disableApiKey(input: { id: $id }) {
+      __typename
+      ... on DisableApiKeyPayload {
+        apiKey {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
