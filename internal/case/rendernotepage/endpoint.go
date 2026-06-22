@@ -530,10 +530,10 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 	}
 
 	dtCtx := &defaulttemplate.Ctx{
-		Note:            resp.NoteView,
-		Notes:           templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
-		Title:           layoutParams.Title,
-		JSURLs:          jsURLs,
+		Note:   resp.NoteView,
+		Notes:  templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
+		Title:  layoutParams.Title,
+		JSURLs: jsURLs,
 		LocaleHashes: func() map[string]string {
 			if ok {
 				return rlEnv.UserLocaleHashes()

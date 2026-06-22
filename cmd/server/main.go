@@ -2861,8 +2861,8 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 	if a.internalServer != nil {
 		internalShutdownCtx, internalCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
 		defer internalCancel()
-		if err := a.internalServer.Shutdown(internalShutdownCtx); err != nil {
-			a.log.Error("failed to shutdown internal server", "error", err)
+		if internalErr := a.internalServer.Shutdown(internalShutdownCtx); internalErr != nil {
+			a.log.Error("failed to shutdown internal server", "error", internalErr)
 		}
 	}
 
