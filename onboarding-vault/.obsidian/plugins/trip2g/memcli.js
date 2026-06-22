@@ -20364,7 +20364,7 @@ function buildToolList() {
   return [
     {
       name: "memory_up",
-      description: "Boot a local trip2g memory server + sync watcher and mint an admin API key. Idempotent: safe to call when the server is already running.",
+      description: "Start the local trip2g memory: boots a server (local filesystem storage, no S3 or dev mode), mints an admin key via HAT, starts a two-way sync watcher, and drops a hub note federating to trip2g.com. Idempotent \u2014 safe to call if already running. Call once before remembering/recalling. Arg: folder (vault path, default ./memory-vault).",
       inputSchema: {
         type: "object",
         properties: {
@@ -20381,44 +20381,44 @@ function buildToolList() {
     },
     {
       name: "memory_down",
-      description: "Stop and remove the trip2g-memory Docker container.",
+      description: "Stop the memory server container and the sync watcher for a vault. Arg: folder.",
       inputSchema: {
         type: "object",
         properties: {
-          folder: { type: "string", description: "Vault directory (used for context only)" }
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" }
         },
         required: []
       }
     },
     {
       name: "memory_status",
-      description: "Show the status of the trip2g-memory Docker container.",
+      description: "Report whether the memory server and sync watcher are running for a vault. Arg: folder.",
       inputSchema: {
         type: "object",
         properties: {
-          folder: { type: "string", description: "Vault directory (used for context only)" }
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" }
         },
         required: []
       }
     },
     {
       name: "memory_logs",
-      description: "Fetch a snapshot of the trip2g-memory container logs (not streaming).",
+      description: "Show recent server logs (docker logs snapshot) for diagnostics. Arg: folder.",
       inputSchema: {
         type: "object",
         properties: {
-          folder: { type: "string", description: "Vault directory (used for context only)" }
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" }
         },
         required: []
       }
     },
     {
       name: "memory_key",
-      description: "Re-mint the admin API key and rewrite the Obsidian plugin data.json.",
+      description: "Rotate the admin API key (mints a new one, disables the previous). Use if the key leaked or you need a fresh one. Arg: folder.",
       inputSchema: {
         type: "object",
         properties: {
-          folder: { type: "string", description: "Vault directory (default: ./memory-vault)" },
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" },
           port: { type: "number", description: "Public port (default: 24081)" },
           email: { type: "string", description: "Owner email (default: memory@local)" },
           publicUrl: { type: "string", description: "Override PUBLIC_URL" }
@@ -20428,12 +20428,12 @@ function buildToolList() {
     },
     {
       name: "memory_daily",
-      description: "Append a timestamped entry to today's daily note in the vault. Use this to record a log entry, thought, or event for the current day.",
+      description: "Append a thought to TODAY'S daily note \u2014 the day's general working space for capturing thoughts as they come. The first entry of the day is plain; later same-day entries are timestamped HH:MM. Use this to 'remember' something now. Args: text (the thought), folder, context (lines of the note to echo back).",
       inputSchema: {
         type: "object",
         properties: {
-          text: { type: "string", description: "Text to append (use \\n for newlines)" },
-          folder: { type: "string", description: "Vault directory (default: ./memory-vault)" },
+          text: { type: "string", description: "The thought to append (use \\n for newlines)" },
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" },
           context: { type: "number", description: "Lines of note context to return after write (default: 15)" }
         },
         required: ["text"]
@@ -20441,13 +20441,13 @@ function buildToolList() {
     },
     {
       name: "memory_log",
-      description: "Append a timestamped entry under today's ### [[date]] section in a named note. Use this to maintain a structured log in a specific file.",
+      description: "Append a thought to a specific note's running log, under a '### [[today]]' day header \u2014 an append-only journal of how ONE idea/topic evolves over days. First entry under a new day is plain; later same-day entries get HH:MM. Use this (not memory_daily) when you're tracking the evolution of a specific named topic over time. Args: file (note name without .md), text, folder, context.",
       inputSchema: {
         type: "object",
         properties: {
-          file: { type: "string", description: 'Note filename (without .md extension, e.g. "work")' },
-          text: { type: "string", description: "Text to append (use \\n for newlines)" },
-          folder: { type: "string", description: "Vault directory (default: ./memory-vault)" },
+          file: { type: "string", description: 'Note name without .md extension (e.g. "work", "project-ideas")' },
+          text: { type: "string", description: "The thought to append (use \\n for newlines)" },
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" },
           context: { type: "number", description: "Lines of note context to return after write (default: 15)" }
         },
         required: ["file", "text"]
