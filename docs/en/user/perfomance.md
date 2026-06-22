@@ -178,7 +178,11 @@ Every request succeeds (100 % `200`) right through 6 000 req/s — the limit is 
 
 > **How to benchmark this honestly.** Run with `DEV=false` (dev mode recomputes asset hashes per request, ~2× slower), run the load generator on a *separate* machine (sharing the box steals ~2× the CPU), and hit many real pages with a warm cache. Skipping any of these understated our first run by ~4×.
 
-Two things dominate the per-request cost at the ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable — pages are static between writes — so there is clear headroom for a future optimization pass to push the ceiling several times higher.
+Two things dominate the per-request cost at the ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable — pages are static between writes — so there is clear headroom for a future optimization pass to push the ceiling several times higher. *(That optimization is planned, not yet done.)*
+
+### Static files, and a bandwidth reality check
+
+We also served the same 35 pages as plain files from nginx on the same node, to size the engine's overhead against raw static serving. The surprise: at ~52 KB per page, **both** nginx and trip2g top out in the same low-thousands req/s range — the wall there is **network bandwidth** (52 KB × 5 000 ≈ 2 Gbit/s) plus per-request gzip, not trip2g's render path. So on this hardware and page size, trip2g already runs close to raw static file serving; the engine's per-request cost (layout assembly + the bookkeeping DB lookups) would only become the dominant limit on smaller pages or a faster link. Placing trip2g cleanly on the spectrum from static files to a database-backed CMS like WordPress needs that cleaner setup (smaller pages / simpler hardware) — noted as future work.
 
 ## What this means for you
 
