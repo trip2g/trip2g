@@ -76,6 +76,18 @@ func New(ctx context.Context, env Env, config Config) (*BoostyJobs, error) {
 	return &io, nil
 }
 
+// Stop cancels all running Boosty refresh background jobs. Mirrors
+// PatreonJobs.Stop; Boosty has no webhooks to unregister.
+func (io *BoostyJobs) Stop(_ context.Context) {
+	io.mu.Lock()
+	defer io.mu.Unlock()
+
+	for id, cancel := range io.cancelMap {
+		cancel()
+		delete(io.cancelMap, id)
+	}
+}
+
 func (io *BoostyJobs) StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error {
 	io.mu.Lock()
 	defer io.mu.Unlock()

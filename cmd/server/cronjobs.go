@@ -50,12 +50,17 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&updatetelegrampublishposts.Job{},
 		&refreshtelegramaccounts.Job{},
 		&refreshtelegramchatusernames.Job{},
-		&vacuumdatabase.Job{},
 		&regeneratenoteembeddings.Job{},
 		&executecronwebhooks.Job{},
 		&cleanupwebhookdeliverylogs.Job{},
 		&cleanupwebhookdeliveries.Job{},
 		&cleanupapikeylogs.Job{Config: app.config.APIKeyLogs},
+	}
+
+	// VACUUM/ANALYZE maintenance is opt-in (heavy full-DB rewrite; incompatible
+	// with Litestream, which owns WAL checkpointing).
+	if app.config.VacuumCron {
+		jobs = append(jobs, &vacuumdatabase.Job{})
 	}
 
 	// Conditionally add simple backup job if enabled

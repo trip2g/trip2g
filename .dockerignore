@@ -20,6 +20,9 @@ tmp/
 server
 *.fasthttp.gz
 *easyjson-bootstrap*
+# generated at build by `go generate ./onboarding-vault`; a stale/empty local
+# placeholder breaks the in-build `zip -r` (it tries to append to a non-zip).
+onboarding-vault/vault.zip
 
 # Database files
 *.sqlite*

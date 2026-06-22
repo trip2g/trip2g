@@ -63,6 +63,7 @@ type Config struct {
 
 	ShutdownGracePeriod        time.Duration
 	ShutdownTimeout            time.Duration
+	WriterAcquireTimeout       time.Duration
 	GlobalQueuePollInterval    time.Duration
 	InternalListenAddr         string
 	MCPFederationMaxDepth      int
@@ -118,6 +119,11 @@ type Config struct {
 	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
+	// VacuumCron enables the periodic VACUUM/ANALYZE + wal_checkpoint(TRUNCATE)
+	// maintenance job. Off by default: VACUUM is a heavy full-DB rewrite most
+	// deployments don't need, and it is incompatible with an external WAL
+	// replicator (Litestream owns WAL checkpointing).
+	VacuumCron bool
 
 	CronJobs CronJobsConfig
 
@@ -138,6 +144,11 @@ type Config struct {
 // SimpleBackupConfig holds simple backup system configuration.
 type SimpleBackupConfig struct {
 	Enabled bool
+	// BackupOnShutdown runs a final backup on graceful shutdown. Disable for
+	// zero-downtime rolling deploys: a departing instance backing up is
+	// redundant (a peer takes over and cron backups continue) and the dump can
+	// race the new writer / delay the drain.
+	BackupOnShutdown bool
 }
 
 // CronJobsConfig holds cron jobs admin configuration.
@@ -418,8 +429,10 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
-	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
+	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 200*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
+	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
+		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
@@ -427,6 +440,8 @@ func (c *Config) defineServerFlags() {
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
+	flag.BoolVar(&c.SimpleBackup.BackupOnShutdown, "simple-backup-on-shutdown", true, "Run a final backup on graceful shutdown. Set false for zero-downtime rolling deploys where a peer takes over.")
+	flag.BoolVar(&c.VacuumCron, "vacuum-cron", false, "Enable the periodic VACUUM/ANALYZE database maintenance cron. Off by default (heavy full-DB rewrite; incompatible with Litestream WAL replication).")
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
 
 	// Storage limits.
