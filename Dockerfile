@@ -20,9 +20,7 @@ RUN mkdir fragment && \
 
 COPY ./assets/ui ./trip2g
 
-# skip type-checking (bundleAuditJS) — audit runs a separate tsc process and takes ~10s per component
-RUN npm install && \
-    node -e "const fs=require('fs'),f='node_modules/mam/node.js'; fs.writeFileSync(f, fs.readFileSync(f,'utf8').replace('bundleAuditJS({ path, exclude, bundle }) {', 'bundleAuditJS({ path, exclude, bundle }) { if(true) return [];'))"
+RUN npm install
 
 RUN npm start trip2g && \
     npm start trip2g/user && \
