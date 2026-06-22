@@ -12,8 +12,9 @@ namespace $ {
 		@$mol_mem_key
 		static locale_source( lang: string ) {
 			let path = `web.locale=${ lang }.json`
-			if( hash ) {
-				path += `?h=${ hash }`
+			const lhash = $.$$.$trip2g_settings.locale_hash( lang ) || hash
+			if( lhash ) {
+				path += `?h=${ lhash }`
 			}
 
 			return JSON.parse( this.$.$mol_file.relative( path ).text().toString() )

@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -1255,6 +1256,29 @@ func (a *app) UserJSURLs() []string {
 		a.assetURL("/assets/defaulttemplate.js"),
 		a.assetURL("/assets/ui/user/-/web.js"),
 	}
+}
+
+// UserLocaleHashes returns a map of language -> 8-char content hash for the user
+// web.locale=<lang>.json files. The locale JSON is a separate artifact from web.js,
+// so it must be cache-busted by its own content hash; otherwise locale-only changes
+// keep the same URL and the browser/CDN serves a stale locale file. Reuses assetURL
+// so hashing/caching stays single-source.
+func (a *app) UserLocaleHashes() map[string]string {
+	out := map[string]string{}
+	matches, err := fs.Glob(assets.FS, "ui/user/-/web.locale=*.json")
+	if err != nil {
+		a.log.Error("failed to glob user locale files", "error", err)
+		return out
+	}
+	for _, m := range matches {
+		base := path.Base(m) // e.g. web.locale=en.json
+		lang := strings.TrimSuffix(strings.TrimPrefix(base, "web.locale="), ".json")
+		url := a.assetURL("/assets/" + m)
+		if i := strings.Index(url, "?h="); i >= 0 {
+			out[lang] = url[i+3:]
+		}
+	}
+	return out
 }
 
 // AssetURL returns the cache-busting URL for an embedded asset path. Exposed so

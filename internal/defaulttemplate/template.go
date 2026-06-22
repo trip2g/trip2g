@@ -44,9 +44,10 @@ type Ctx struct {
 	Note  *templateviews.Note
 	Notes *templateviews.NVS
 
-	Title     string
-	JSURLs    []string
-	CSSURLs   []string
+	Title        string
+	JSURLs       []string
+	LocaleHashes map[string]string // lang -> content hash for web.locale=<lang>.json cache-busting
+	CSSURLs      []string
 	InlineCSS string
 	DevMode   string
 

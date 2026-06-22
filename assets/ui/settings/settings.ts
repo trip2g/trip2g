@@ -10,6 +10,7 @@ namespace $.$$ {
 		ui_lang: '',
 		note_lang: '',
 		js_urls: [] as string[],
+		locale_hashes: {} as Record<string, string>,
 		note_path: '',
 		note_path_id: 0,
 		note_version_id: '',
@@ -37,6 +38,10 @@ namespace $.$$ {
 
 		static js_urls(): string[] {
 			return settings.js_urls
+		}
+
+		static locale_hash(lang: string): string {
+			return settings.locale_hashes[lang] || ''
 		}
 
 		static note_path() {

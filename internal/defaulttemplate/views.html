@@ -57,6 +57,7 @@ window.__trip2g_settings = {
   title: {%q= ctx.Title %},
   ui_lang: {%q= ctx.UILang %},
   js_urls: [{% for _, u := range ctx.JSURLs %}{%q= u %},{% endfor %}],
+  locale_hashes: {{% for l, h := range ctx.LocaleHashes %}{%q= l %}:{%q= h %},{% endfor %}},
 {% if ctx.Note != nil %}  note_lang: {%q= ctx.Note.Lang() %},
   note_path: {%q= ctx.Note.Path() %},
   note_path_id: {%dl ctx.Note.PathID() %},

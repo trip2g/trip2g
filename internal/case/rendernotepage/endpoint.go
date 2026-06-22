@@ -534,6 +534,12 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 		Notes:           templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
 		Title:           layoutParams.Title,
 		JSURLs:          jsURLs,
+		LocaleHashes: func() map[string]string {
+			if ok {
+				return rlEnv.UserLocaleHashes()
+			}
+			return nil
+		}(),
 		CSSURLs:         cssURLs,
 		InlineCSS:       inlineCSS,
 		DevMode:         devMode,

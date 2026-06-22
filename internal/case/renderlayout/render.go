@@ -37,6 +37,7 @@ type Params struct {
 
 type Env interface {
 	UserJSURLs() []string
+	UserLocaleHashes() map[string]string
 	UserCSSURLs() []string
 	UserInlineCSS() string
 	IsDevMode() bool

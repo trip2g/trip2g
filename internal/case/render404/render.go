@@ -39,12 +39,14 @@ func Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	var jsURLs, cssURLs []string
+	var localeHashes map[string]string
 	devMode := "false"
 	injections := map[string][]db.HtmlInjection{}
 
 	if rlEnv, rlOk := req.Env.(renderlayout.Env); rlOk {
 		jsURLs = rlEnv.UserJSURLs()
 		cssURLs = rlEnv.UserCSSURLs()
+		localeHashes = rlEnv.UserLocaleHashes()
 		if rlEnv.IsDevMode() {
 			devMode = "true"
 		}
@@ -63,6 +65,7 @@ func Handle(req *appreq.Request) (interface{}, error) {
 	dtCtx := &defaulttemplate.Ctx{
 		Title:          "Page not found",
 		JSURLs:         jsURLs,
+		LocaleHashes:   localeHashes,
 		CSSURLs:        cssURLs,
 		DevMode:        devMode,
 		HTMLInjections: injections,
