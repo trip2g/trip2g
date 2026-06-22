@@ -1,9 +1,9 @@
 query,whole_note,focused_read
+templates,7668,206
 webhooks,4654,302
-publish to Telegram,4654,302
+publish to Telegram,3108,201
+Telegram limits,3108,277
 custom domain,2698,155
-multilingual,2681,212
 two-way sync,2529,163
-templates,1845,298
-subscriptions,641,155
-Telegram limits,3108,201
+multilingual,2234,185
+subscriptions,920,248
