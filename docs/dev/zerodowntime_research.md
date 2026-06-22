@@ -160,7 +160,35 @@ no 502. → fix in Phase-1 (config default / docs); verify as E4d.
 `ShutdownGracePeriod ≥ LB window`** (no 502) → ~0 dropped reads. Traefik active hc is a
 weaker substitute for Consul; `shutdown_delay` is a red herring.
 
-## Backup interaction — PENDING
+## E4d — Consul SD + app graceful drain
+
+Synthetic drains on SIGTERM (serve 200 + `/readyz=503` for 5 s, then exit), task
+`kill_timeout=10s`. **98.56 %** — `200:4435 502:65`. The drain trimmed the 502 but did not
+zero it: the residual is the promote→kill→catalog-refresh race. Honest verdict for a
+Nomad+Traefik+Consul single-instance canary: **~98–99 %; the last ~1–2 % are retryable
+502s** (an idempotent-GET retry middleware makes them invisible — see the 502 research).
+
+## E5 / E6 — beyond the load balancer
+
+### E6 — SO_REUSEPORT, single port, NO load balancer
+
+The "pure trip2g, one port, bare server" path. Two processes share `:80` via SO_REUSEPORT;
+a process binds the port **only after** warmup (bind-after-warmup), so the kernel routes
+everything to the already-bound old process during the new one's warmup. New warms → binds
+→ kernel LBs to both (both ready) → old gets SIGTERM → closes its listener (kernel routes
+only to new) → drains → exits.
+
+**99.80 %** (3000 req @ 100 rps) — `200:2994`, **6 connection-resets** (NO 503, NO 502).
+The 6 are in-flight connections cut at the old process's hard `os._exit`; a proper in-flight
+drain (close the listener, let active requests finish before exit) removes them. **Cleanest
+result of all** — no LB, no 503, no 502, just a drain-tuning tail. Resolves the earlier
+"SO_REUSEPORT fights Nomad" confusion: wrong UNDER Nomad (it owns the process), right for a
+bare single-port server. Needs the same Phase-1 warmup + writer-probe. Alternative:
+fd-passing / `cloudflare/tableflip`.
+
+### E5 — Caddy reverse_proxy + health_uri (running)
+
+## Backup interaction
 
 - **simplebackup** shutdown-backup (`PerformBackup` in `waitForShutdown`) must be
   **skipped during a rolling handoff** (a peer is taking over; the departing instance
