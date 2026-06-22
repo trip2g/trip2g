@@ -365,6 +365,11 @@ test('buildHubNote: contains mcp_federation_kb_url with the given url', () => {
   );
 });
 
+test('buildHubNote: includes "free: true" (required for the federation scan to recognize the KB-note)', () => {
+  const note = buildHubNote('https://trip2g.com/_system/mcp');
+  assert.ok(note.includes('free: true'), `Expected "free: true" in hub note, got:\n${note}`);
+});
+
 test('buildHubNote: contains mcp_federation_kb_id derived from hostname', () => {
   const note = buildHubNote('https://trip2g.com/_system/mcp');
   assert.ok(

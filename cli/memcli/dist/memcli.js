@@ -20290,6 +20290,7 @@ function signHatJwt(secret, email) {
 function buildHubNote(hubUrl) {
   const host = new URL(hubUrl).hostname;
   return `---
+free: true
 mcp_federation_kb_url: ${hubUrl}
 mcp_federation_kb_id: ${host}
 ---

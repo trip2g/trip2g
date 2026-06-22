@@ -115,11 +115,15 @@ export function signHatJwt(secret: string, email: string): string {
 /**
  * Build the hub federation note content.
  * Frontmatter wires mcp_federation_kb_url so the local trip2g instance
- * federates outbound to the given hub MCP endpoint.
+ * federates outbound to the given hub MCP endpoint. `free: true` marks the
+ * KB-note as openly readable — REQUIRED for the federation scan to recognize
+ * it (without it `accessibleKBNotes` excludes the note and federated_* tools
+ * report "Federation is not configured").
  */
 export function buildHubNote(hubUrl: string): string {
   const host = new URL(hubUrl).hostname;
   return `---
+free: true
 mcp_federation_kb_url: ${hubUrl}
 mcp_federation_kb_id: ${host}
 ---
