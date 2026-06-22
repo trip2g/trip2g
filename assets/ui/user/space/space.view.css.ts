@@ -13,7 +13,7 @@ namespace $.$$ {
 		// flex children to shrink below their content size.
 		AuthWrapper: {
 			flex: { grow: 1, shrink: 1, basis: 'auto' },
-			minWidth: '0',
+			minWidth: 0,
 			maxWidth: '100%',
 		},
 
@@ -33,7 +33,7 @@ namespace $.$$ {
 		},
 
 		Content: {
-			minWidth: '0',
+			minWidth: 0,
 			maxWidth: '100%',
 			Placeholder: {
 				flexGrow: '0',
