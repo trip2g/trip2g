@@ -24,8 +24,9 @@ export default defineConfig({
   /* Opt out of parallel tests on CI */
   workers: process.env.CI ? 1 : undefined,
 
-  /* Reporter to use */
-  reporter: process.env.CI ? 'github' : 'html',
+  /* Reporter to use. open:'never' so a failing local run exits instead of
+     blocking on the served HTML report. */
+  reporter: process.env.CI ? 'github' : [['list'], ['html', { open: 'never' }]],
 
   /* Shared settings for all the projects below */
   use: {
