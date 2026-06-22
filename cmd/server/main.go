@@ -2547,6 +2547,17 @@ func (a *app) systemdListener() net.Listener {
 	return ln
 }
 
+// serveHTTP serves the public listener, preferring a systemd socket-activated
+// listener (so the socket survives restarts and queues connections during
+// warmup) and falling back to a fresh bind on --listen-addr.
+func (a *app) serveHTTP(s *fasthttp.Server) error {
+	if ln := a.systemdListener(); ln != nil {
+		return s.Serve(ln)
+	}
+
+	return s.ListenAndServe(a.config.ListenAddr)
+}
+
 func (a *app) startServer() {
 	makeGraphQLHandler := a.prepareGraphQLHandler()
 	handleGraphQL := makeGraphQLHandler("/_system/graphql")
@@ -2669,19 +2680,7 @@ func (a *app) startServer() {
 
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
-			// Socket activation: if systemd passed the listening socket (LISTEN_FDS),
-			// serve on the inherited listener so the socket survives a restart —
-			// connections queue in the kernel backlog instead of being refused while
-			// the new process warms up (zero-downtime single-server deploys).
-			if ln := a.systemdListener(); ln != nil {
-				if err := s.Serve(ln); err != nil {
-					panic(err)
-				}
-
-				return
-			}
-
-			if err := s.ListenAndServe(a.config.ListenAddr); err != nil {
+			if err := a.serveHTTP(s); err != nil {
 				panic(err)
 			}
 
