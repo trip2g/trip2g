@@ -346,6 +346,9 @@ func main() {
 
 	log := zerologger.New(config.LogLevel, config.DevMode)
 
+	// Deprecated: map legacy RESEND_API_KEY onto Resend SMTP (warns if it fires).
+	applyLegacyEmailConfig(config, log)
+
 	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled
 	if config.SimpleBackup.Enabled {
 		restoreBackup(log, config)
@@ -942,7 +945,7 @@ func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]stri
 
 func (a *app) SendMail(_ context.Context, data model.Mail) error {
 	if a.config.SMTPHost == "" {
-		a.log.Info("send email (no smtp configured)", "to", data.To, "subject", data.Subject)
+		a.log.Warn("send email skipped: no SMTP/RESEND configured", "to", data.To, "subject", data.Subject)
 		return nil
 	}
 

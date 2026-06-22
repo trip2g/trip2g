@@ -81,8 +81,8 @@ services:
       - GIT_API_REPO_PATH=/data/git
       - GIT_API_BASE_PATH=/git
 
-      # Email (mock for tests)
-      - RESEND_API_KEY=test-key
+      # Email (mock for tests): no SMTP/RESEND configured, so SendMail logs and
+      # skips — the send_sign_in_code job succeeds instead of exhausting retries.
       - MAIL_FROM=test@example.com
 
       # OpenAI key (optional — pass through if you need to switch back to text-embedding-3-small)
@@ -147,8 +147,7 @@ services:
       - GIT_API_REPO_PATH=/data/git-peer
       - GIT_API_BASE_PATH=/git
 
-      # Email (mock)
-      - RESEND_API_KEY=test-key
+      # Email (mock): no SMTP/RESEND configured, so SendMail logs and skips.
       - MAIL_FROM=test@example.com
 
       # MCP federation
@@ -209,8 +208,7 @@ services:
       - GIT_API_REPO_PATH=/data/git-peer2
       - GIT_API_BASE_PATH=/git
 
-      # Email (mock)
-      - RESEND_API_KEY=test-key
+      # Email (mock): no SMTP/RESEND configured, so SendMail logs and skips.
       - MAIL_FROM=test@example.com
 
       # MCP federation
@@ -271,8 +269,7 @@ services:
       - GIT_API_REPO_PATH=/data/git-peer3
       - GIT_API_BASE_PATH=/git
 
-      # Email (mock)
-      - RESEND_API_KEY=test-key
+      # Email (mock): no SMTP/RESEND configured, so SendMail logs and skips.
       - MAIL_FROM=test@example.com
 
       # MCP federation
