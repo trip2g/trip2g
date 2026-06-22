@@ -394,7 +394,10 @@ func main() {
 		webhookTestMu: &sync.Mutex{},
 		debugJobMu:    &sync.Mutex{},
 		stopped:       &atomic.Bool{},
+<<<<<<< HEAD
 		ready:         &atomic.Bool{},
+=======
+>>>>>>> 03acdd55 (fix(gitapi): cancel-on-close for private objects, pointer-ize copied sync state, deterministic delete attribution)
 
 		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
