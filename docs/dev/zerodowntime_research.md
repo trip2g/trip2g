@@ -166,7 +166,37 @@ Synthetic drains on SIGTERM (serve 200 + `/readyz=503` for 5 s, then exit), task
 `kill_timeout=10s`. **98.56 %** — `200:4435 502:65`. The drain trimmed the 502 but did not
 zero it: the residual is the promote→kill→catalog-refresh race. Honest verdict for a
 Nomad+Traefik+Consul single-instance canary: **~98–99 %; the last ~1–2 % are retryable
-502s** (an idempotent-GET retry middleware makes them invisible — see the 502 research).
+502s** (an idempotent-GET retry middleware makes them invisible) — **but E7 below closes
+it all the way to 100 %.**
+
+## E7 — Consul + Nomad + Traefik to 100 % (cracked)
+
+The ~1–2 % residual 502 in E4–E4d was NOT inherent — it was **Traefik consulcatalog's
+default `refreshInterval` of 15 s**: even after Consul marks the draining instance critical
+(~2–3 s), Traefik keeps the dead backend in its pool for up to 15 s, and the worker exits
+mid-window → 502. The combination that gives **100 %**:
+
+1. **Consul SD** — no 503 (warming gated).
+2. **Traefik `--providers.consulcatalog.refreshInterval=2s`** — drops the dead backend from
+   the catalog within ~2 s instead of 15 s.
+3. **Traefik LB active health-check on `/readyz`** (interval 1 s) — marks the draining
+   backend down within ~1 s, independent of catalog refresh.
+4. **retry middleware** (`retry.attempts=4`) — the real safety net: an idempotent GET that
+   still hits a just-dead backend retries on a live one → 200.
+5. **app graceful drain** — SIGTERM → `/readyz`→503 + serve 200 for 6 s, `kill_timeout=15s`.
+
+Result, two runs through a Nomad canary rolling deploy (auto_promote):
+**11 000 req → 200:11000 (100 %)** and **12 500 req → 200:12500 (100 %)**, p99 ~3.6 ms.
+
+**`refreshInterval` is one of two equivalent knobs.** The invariant is *worker stays
+servable ≥ Traefik's time-to-stop-routing*. Instead of lowering it to 2 s you can keep the
+15 s default and drain ≥ ~20 s. 2 s is fine for a small/medium catalog but adds steady
+polling load at scale; **5 s + LB hc (1 s) + retry** is the balanced prod choice — and the
+retry middleware alone makes 100 % robust to timing.
+
+**Port note:** in real trip2g `/readyz` lives on the **internal port**, so the Traefik LB
+health-check, the Nomad `check`, and k8s probes must target that port (Traefik
+`loadbalancer.healthcheck.port=<internal>`; a Nomad second port + `check.port`).
 
 ## E5 / E6 — beyond the load balancer
 
@@ -186,7 +216,13 @@ result of all** — no LB, no 503, no 502, just a drain-tuning tail. Resolves th
 bare single-port server. Needs the same Phase-1 warmup + writer-probe. Alternative:
 fd-passing / `cloudflare/tableflip`.
 
-### E5 — Caddy reverse_proxy + health_uri (running)
+### E5 — Caddy, health-gated upstreams
+
+Both colours as Caddy upstreams with an active health-check on `/readyz`; Caddy routes only
+to healthy ones. On a blue→green flip (start green, wait ready, SIGTERM blue → blue
+`/readyz`→503 while still serving 200, drains), Caddy drops blue within ~1 s. **100 %**
+(9 000 req, zero errors). No reload needed (`caddy reload` is graceful too). For trip2g's
+internal-port `/readyz`, point the check there with Caddy `health_port`.
 
 ## Backup interaction (resolved — code in PR #23)
 

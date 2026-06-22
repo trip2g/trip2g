@@ -8,7 +8,7 @@ lang_redirect: "[[en/user/zerodowntime]]"
 
 ## Две health-ручки (нужны ОБЕ)
 
-trip2g отдаёт два пробника на внутреннем порту. Правильно подключить обе — это вся суть; они отвечают на разные вопросы.
+trip2g отдаёт эти пробники на **внутреннем порту** — *втором* порту (задаётся `--internal-listen-addr`, например `:8081`), отдельном от публичного веб-порта, на котором живёт ваш сайт. Публичные посетители на него не попадают, и — важно — **каждый health-check в рецептах ниже должен целиться в этот internal-порт, а не в публичный веб-порт.** (Сайт на, скажем, `:8080`; `/readyz` отвечает на `:8081`.) Правильно подключить обе ручки — это вся суть; они отвечают на разные вопросы.
 
 ### `/livez` — liveness (обязательно)
 
@@ -38,28 +38,49 @@ trip2g отдаёт два пробника на внутреннем порту
 
 ### Self-hosted: Nomad + Traefik + Consul
 
-Рецепт, который мы замерили:
+Замерено до чистых **100%** (ноль потерянных чтений сквозь rolling canary-деплой). Пять частей:
 
-- Nomad `update { canary = 1, auto_promote = true, health_check = "checks" }` с Consul-`check` на `/readyz`.
-- **Consul service discovery** (не голый Nomad SD): каталог гейтится по health, поэтому прогревающийся canary не получает трафик, пока `/readyz` ≠ 200. Это убирает ошибки «роут на прогревающийся инстанс».
-- App graceful drain (`--shutdown-grace-period` ≥ интервала проверки) убирает ошибки «роут на умирающий инстанс».
+1. **Consul service discovery** (`provider = "consul"`, не голый Nomad SD) с Consul-`check` на `/readyz` на internal-порту. Каталог гейтится по health, поэтому прогревающийся canary не получает трафик, пока `/readyz` ≠ 200 — убирает все 503 «роут на прогревающийся инстанс».
+2. **`--providers.consulcatalog.refreshInterval=5s`** у Traefik. Дефолт — **15с**, слишком медленно: только что убитый бэкенд остаётся в пуле до 15с, это и есть главный источник 502.
+3. **Traefik LB active health-check** на `/readyz` (interval 1с, `loadbalancer.healthcheck.port` = internal-порт) — выкидывает дренажащийся бэкенд за ~1с, независимо от обновления каталога.
+4. **retry middleware** (`retry.attempts = 4`) — страховка: идемпотентный GET, попавший на только что убитый бэкенд, ретраится на живой → читатель получает 200.
+5. **App graceful drain** — `--shutdown-grace-period` ≥ окна детекта (5–6с), Nomad `kill_timeout` чуть выше, чтобы старый инстанс отдавал 200, пока балансировщик его дренажит.
 
-Итог: ~99% чтений остаются 200 сквозь деплой; последний ~1% — ретраябельные 502 на кромке переключения (маскируются retry-middleware для идемпотентных GET).
+Два rolling-деплоя замерены **100% (11 000 и 12 500 запросов, ноль ошибок)**, p99 ~4ms. Инвариант: *старый инстанс должен отдавать 200, пока Traefik не перестанет на него слать* — крути либо скорость детекта (низкий `refreshInterval` + health-check 1с), либо длину drain (≥ окна обновления); это эквивалентно, а retry-middleware делает 100% устойчивым к таймингу в любом случае.
 
-### Self-hosted: systemd, без оркестратора
+### Self-hosted: Kubernetes / k3s
 
-Blue-green из двух юнитов (`trip2g@blue` / `trip2g@green`) на разных портах + reverse-proxy. Caddy ложится чисто:
+Самый чистый 100%, и то, что у большинства корпоратов уже крутится. `Deployment` с rolling-обновлениями, `readinessProbe` на `/readyz` и `livenessProbe` на `/livez`, обе целятся в **internal-порт**:
+
+```yaml
+strategy:
+  rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+# ...
+readinessProbe:
+  httpGet: { path: /readyz, port: 8081 }
+  periodSeconds: 2
+livenessProbe:
+  httpGet: { path: /livez, port: 8081 }
+  periodSeconds: 5
+```
+
+Kubernetes не шлёт трафик в Pod, пока не пройдёт readiness-проба, а с `maxUnavailable: 0` не убирает старый Pod, пока новый не готов — выкатка гейтится от и до без доп. настройки. Замерено на k3s: **100%** (7 000 запросов, ноль ошибок) сквозь `v1→v2`. Для масштаба чтения / multi-node SQLite — пара с LiteFS (см. [[litestream]]).
+
+### Self-hosted: Caddy (blue-green)
+
+Поднимите два инстанса trip2g (`trip2g@blue` / `trip2g@green`, на двух машинах или двух container-IP) и пропишите оба как upstreams Caddy с active health-check. Поскольку `/readyz` на **internal-порту**, целимся в него через `health_port`:
 
 ```
 :80 {
-	reverse_proxy 127.0.0.1:8081 127.0.0.1:8082 {
-		health_uri /readyz
+	reverse_proxy blue:8080 green:8080 {
+		health_uri  /readyz
+		health_port 8081
 		health_interval 1s
 	}
 }
 ```
 
-Деплой: поднимите простаивающий цвет, дождитесь его `/readyz = 200`, добавьте в прокси, уберите старый, погасите. `caddy reload` graceful (не рвёт соединения).
+Caddy шлёт только на upstreams, чей `/readyz` отдаёт 200. Деплой по одному цвету: поднимите новый, дождитесь его `/readyz`, затем `SIGTERM` старому — он переводит `/readyz` в 503 (но ещё отдаёт 200 своё grace-окно), Caddy выкидывает его за ~1с и шлёт на живой цвет. Reload не нужен (а `caddy reload` graceful, если правите Caddyfile). Замерено **100%** (9 000 запросов, ноль ошибок) сквозь blue→green.
 
 ### Голый сервер, один порт, БЕЗ балансировщика
 
@@ -73,7 +94,10 @@ trip2g умеет передать слушающий порт от старог
 |---|---|
 | Наивный (прокси не гейтит по health) | ~77 % |
 | Traefik active `/readyz` health-check | ~98 % |
-| Consul SD + app graceful drain | ~99 % |
+| Consul SD + app drain (частично) | ~99 % |
+| **Nomad + Traefik + Consul** (полный рецепт выше) | **100 %** |
+| **Caddy** (health-gated upstreams) | **100 %** |
+| **Kubernetes / k3s** (readiness-gated rollout) | **100 %** |
 | SO_REUSEPORT, один порт, без LB | ~99.8 % |
 
-Закономерность: прокси без health-гейта шлёт и на прогревающийся (503), и на умирающий (502) инстанс. Загейтите по `/readyz` (Consul или собственный health-check прокси) и дайте приложению реальное окно дренажа — и потери чтений падают почти в ноль.
+Закономерность: прокси без health-гейта шлёт и на прогревающийся (503), и на умирающий (502) инстанс. Загейтите по `/readyz` (Consul, собственный health-check прокси или k8s readiness) и дайте приложению реальное окно дренажа — и потери чтений падают **в ноль**: все три оркестрированных пути выше дают чистые 100%. Однопортовый SO_REUSEPORT даёт 99.8% (его хвост — in-flight соединения на выходе процесса, не роутинг).

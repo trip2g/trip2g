@@ -8,7 +8,7 @@ Shipping a new version of trip2g should not drop a single read. trip2g gives you
 
 ## The two health endpoints (you need BOTH)
 
-trip2g serves two probes on its internal port. Wiring both correctly is the whole game — they answer different questions.
+trip2g serves these probes on its **internal port** — a *second* port (set by `--internal-listen-addr`, e.g. `:8081`), separate from the public web port that serves your site. Public visitors never reach it, and — importantly — **every health check in the recipes below must target this internal port, not the public web port.** (The website is on, say, `:8080`; `/readyz` answers on `:8081`.) Wiring the two probes correctly is the whole game — they answer different questions.
 
 ### `/livez` — liveness (mandatory)
 
@@ -38,28 +38,49 @@ The simplest path. `fly launch` scaffolds a `fly.toml`; map its health checks to
 
 ### Self-hosted: Nomad + Traefik + Consul
 
-The recipe we measured:
+Measured to a clean **100 %** (zero dropped reads through a rolling canary deploy). Five parts:
 
-- Nomad `update { canary = 1, auto_promote = true, health_check = "checks" }` with a Consul `check` on `/readyz`.
-- **Consul service discovery** (not plain Nomad SD): the catalog is health-gated, so the warming canary never receives traffic until `/readyz = 200`. This alone removes "route to a warming instance" errors.
-- App graceful drain (`--shutdown-grace-period` ≥ the check interval) removes "route to a dying instance" errors.
+1. **Consul service discovery** (`provider = "consul"`, not plain Nomad SD) with a Consul `check` on `/readyz` at the internal port. The catalog is health-gated, so a warming canary never gets traffic until `/readyz = 200` — removes every "route to a warming instance" 503.
+2. **`--providers.consulcatalog.refreshInterval=5s`** on Traefik. The default is **15 s** — far too slow: it leaves a just-killed backend routable for up to 15 s, which is the main source of 502s.
+3. **Traefik load-balancer active health-check** on `/readyz` (interval 1 s, `loadbalancer.healthcheck.port` = the internal port) — drops a draining backend within ~1 s, independent of catalog refresh.
+4. **A retry middleware** (`retry.attempts = 4`) — the safety net: an idempotent GET that still lands on a just-killed backend is retried on a live one, so the reader gets 200.
+5. **App graceful drain** — `--shutdown-grace-period` ≥ the detection window (5–6 s), Nomad `kill_timeout` a little higher, so the old instance keeps serving 200 while the LB drains it.
 
-Result: ~99 % of reads stay 200 through a deploy; the last ~1 % are retryable 502s at the cutover edge, which an idempotent-GET retry middleware masks.
+Two rolling deploys measured **100 % (11 000 and 12 500 requests, zero errors)**, p99 ~4 ms. The invariant: *the old instance must keep serving until Traefik stops routing to it* — tune detection speed (low `refreshInterval` + 1 s health-check) **or** drain length (≥ the refresh window); they're equivalent, and the retry middleware makes 100 % robust to timing either way.
 
-### Self-hosted: systemd, no orchestrator
+### Self-hosted: Kubernetes / k3s
 
-Blue-green with two units (`trip2g@blue` / `trip2g@green`) on different ports and a reverse proxy. Caddy is a clean fit:
+The cleanest 100 %, and what most enterprises already run. A `Deployment` with rolling updates, a `readinessProbe` on `/readyz` and a `livenessProbe` on `/livez`, both pointing at the **internal port**:
+
+```yaml
+strategy:
+  rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+# ...
+readinessProbe:
+  httpGet: { path: /readyz, port: 8081 }
+  periodSeconds: 2
+livenessProbe:
+  httpGet: { path: /livez, port: 8081 }
+  periodSeconds: 5
+```
+
+Kubernetes never routes to a Pod until its readiness probe passes, and with `maxUnavailable: 0` it never removes an old Pod until the new one is ready — the rollout is gated end to end with no extra tuning. Measured on k3s: **100 %** (7 000 requests, zero errors) through a `v1→v2` rollout. For read scaling / multi-node SQLite, pair it with LiteFS (see [[litestream]]).
+
+### Self-hosted: Caddy (blue-green)
+
+Run two trip2g instances (`trip2g@blue` / `trip2g@green`, on two machines or two container IPs) and list both as Caddy upstreams with an active health-check. Since `/readyz` is on the **internal port**, target it with `health_port`:
 
 ```
 :80 {
-	reverse_proxy 127.0.0.1:8081 127.0.0.1:8082 {
-		health_uri /readyz
+	reverse_proxy blue:8080 green:8080 {
+		health_uri  /readyz
+		health_port 8081
 		health_interval 1s
 	}
 }
 ```
 
-Deploy: start the idle colour, wait for its `/readyz = 200`, add it to the proxy, remove the old one, stop it. `caddy reload` is graceful (no dropped connections).
+Caddy routes only to upstreams whose `/readyz` returns 200. Deploy one colour at a time: bring the new one up, wait for its `/readyz`, then `SIGTERM` the old one — it flips `/readyz` to 503 while still serving 200 for its grace window, Caddy drops it within ~1 s and routes to the live colour. No reload required (and `caddy reload` is graceful if you do edit the Caddyfile). Measured **100 %** (9 000 requests, zero errors) through a blue→green flip.
 
 ### Bare server, one port, NO load balancer
 
@@ -73,7 +94,10 @@ All on a Hetzner **cpx32** (4 vCPU / 8 GB, x86, AMD), single SQLite writer, vege
 |---|---|
 | Naive (proxy not health-gated) | ~77 % |
 | Traefik active `/readyz` health-check | ~98 % |
-| Consul SD + app graceful drain | ~99 % |
+| Consul SD + app drain (partial) | ~99 % |
+| **Nomad + Traefik + Consul** (full recipe above) | **100 %** |
+| **Caddy** (health-gated upstreams) | **100 %** |
+| **Kubernetes / k3s** (readiness-gated rollout) | **100 %** |
 | SO_REUSEPORT, single port, no LB | ~99.8 % |
 
-The pattern: a proxy that is not health-gated routes to the warming instance (503s) and to the dying instance (502s). Gate it on `/readyz` (Consul, or the proxy's own health check) and give the app a real drain window, and dropped reads go to near zero.
+The pattern: a proxy that is not health-gated routes to the warming instance (503s) and to the dying instance (502s). Gate it on `/readyz` (Consul, the proxy's own health check, or k8s readiness) and give the app a real drain window, and dropped reads go to **zero** — all three orchestrated paths above hit a clean 100 %. The single-port SO_REUSEPORT path gets to 99.8 % (its tail is in-flight connections at process exit, not routing).
