@@ -215,8 +215,43 @@ fd-passing / `cloudflare/tableflip`.
 trip2g with a Litestream sidecar: `--vacuum-cron=false` (default) + `--simple-backup=false`
 (Litestream is the backup). See `docs/{en,ru}/user/litestream.md`.
 
-**Live read-replicas (Litestream VFS / LiteFS)** — separate larger direction, under
-research; test plan + applicability to be appended.
+## Read replicas & managed platforms (research)
+
+### Litestream VFS — read-from-S3 replica
+Litestream VFS (fly.io/blog/litestream-vfs) is a SQLite VFS that queries the DB **directly
+from the S3 Litestream backup** without downloading it; polling the S3 path gives a
+**near-real-time read replica**. Production-ready (Fly uses it). Read-only; writes still go
+through the primary. Uses LTX compaction (read ~1% index to find latest pages) →
+single-second point-in-time queries. Limitation: the app must explicitly load the VFS lib.
+Fit for trip2g: a warm read-only replica / "read prod without touching prod" / PITR — but
+per-page S3 range fetches add latency, so NOT a hot primary read path.
+
+### LiteFS — live read replicas across servers (the real one)
+FUSE filesystem (superfly/litefs) replicating SQLite across machines: writes forwarded to
+the primary, reads served locally from each replica (fast), primary election via Consul
+leases OR a **static-lease** option (Consul now optional for single-primary). Transactions
+stream primary→replicas over HTTP (LTX). This IS "read replicas on a pair of servers." Fit
+for trip2g (single writer + in-memory cache rebuilt from DB): replicas serve reads + survive
+a primary restart/deploy; the primary lease ≈ a managed version of our writer-probe.
+Caveats: FUSE overhead, write-forwarding latency, read-your-writes consistency, each replica
+must rebuild its NoteViews cache from its local replicated DB.
+
+### Fly.io
+`fly launch` (interactive scaffold) + `fly deploy` is the closest to one-click (no literal
+deploy button). Strategies: rolling (default), bluegreen, canary — **health-gated** on
+checks, so our `/readyz` + `/livez` map directly. KEY: the **bluegreen strategy cannot use a
+volume**, so a single-instance SQLite-on-volume app must use rolling (machine replace =
+downtime); zero-downtime SQLite on Fly therefore means **LiteFS** (no shared volume →
+multiple machines → bluegreen works). Pricing: no free tier since 2024, $5 trial credits,
+~$2/mo minimal, ~$13–20/mo typical. No standing OSS/free program surfaced.
+
+**Takeaway:** Fly.io + LiteFS is essentially the *managed* version of everything we built by
+hand (read-only warmup → `/readyz`; LiteFS lease ≈ writer-probe; bluegreen ≈ health-gated
+cutover) PLUS read-scaling. Worth a spike. Litestream (snapshot/VFS) stays the simple
+single-node backup; LiteFS is the HA / read-replica path.
+
+Sources: fly.io/blog/litestream-vfs, fly.io/docs/litefs, superfly/litefs, fly.io/docs
+(deploy strategies, health checks).
 
 ## Endpoint decision (settled)
 
