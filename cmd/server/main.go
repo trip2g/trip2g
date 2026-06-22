@@ -1024,7 +1024,10 @@ func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
 }
 
 func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
-	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// Whole warmup (live + latest note loaders) shares one budget. Large vaults
+	// on a resource-starved box can need well over 10s; too tight a budget makes
+	// the startup warmup fail mid-DB-read and panic into a restart crash-loop.
+	startCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	// Patches are now loaded automatically by noteloader.Load()
