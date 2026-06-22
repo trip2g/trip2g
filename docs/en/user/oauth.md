@@ -97,6 +97,7 @@ The Client Secret is stored encrypted in the database. Even if a database backup
 
 ## Related
 
+- [[en/user/oidc]] — OIDC / Corporate SSO (Authentik and other OpenID Connect providers)
 - [[en/user/monetization]] — control which notes are public vs subscriber-only
 - [[en/user/user_management]] — add readers and assign roles
 - [[en/user/advanced]] — custom domains, SEO, and other hosting settings
