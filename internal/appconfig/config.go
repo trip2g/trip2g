@@ -427,7 +427,7 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.Turnstile.SecretKey, "turnstile-secret-key", "", "Cloudflare Turnstile secret key")
 
 	// OIDC env-managed provider (OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET ...)
-	flag.StringVar(&c.OIDC.Issuer, "oidc-issuer", "", "OIDC issuer URL; when set (with client id+secret) an env-managed OIDC provider takes precedence over DB config")
+	flag.StringVar(&c.OIDC.Issuer, "oidc-issuer", "", "OIDC issuer URL for the env-managed provider")
 	flag.StringVar(&c.OIDC.ClientID, "oidc-client-id", "", "OIDC client id for the env-managed provider")
 	flag.StringVar(&c.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret for the env-managed provider")
 	flag.StringVar(&c.OIDC.Scopes, "oidc-scopes", "openid email profile", "OIDC scopes for the env-managed provider")

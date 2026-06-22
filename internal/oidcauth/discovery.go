@@ -42,7 +42,10 @@ func Discover(issuer string) (Endpoints, error) {
 	}
 
 	if endpoints.AuthorizationEndpoint == "" || endpoints.TokenEndpoint == "" {
-		return Endpoints{}, fmt.Errorf("oidc discovery missing required endpoints: authorization=%q, token=%q", endpoints.AuthorizationEndpoint, endpoints.TokenEndpoint)
+		return Endpoints{}, fmt.Errorf(
+			"oidc discovery missing required endpoints: authorization=%q, token=%q",
+			endpoints.AuthorizationEndpoint, endpoints.TokenEndpoint,
+		)
 	}
 
 	return endpoints, nil

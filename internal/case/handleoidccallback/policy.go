@@ -7,6 +7,12 @@ import (
 	"trip2g/internal/oidcauth"
 )
 
+// berror codes returned to the sign-in page via ?berror=.
+const (
+	berrUserNotFound    = "user_not_found"
+	berrEmailNotAllowed = "email_not_allowed"
+)
+
 // accessBError returns a non-empty berror code if a configured access gate
 // rejects this identity. Applies to EVERY login (existing users and new).
 // Empty allowed_email_domain / required_group are no-ops.
@@ -19,7 +25,7 @@ func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 			domain = strings.ToLower(info.Email[at+1:])
 		}
 		if domain != strings.ToLower(creds.AllowedEmailDomain) {
-			return "email_not_allowed"
+			return berrEmailNotAllowed
 		}
 	}
 	if creds.RequiredGroup != "" {
@@ -31,7 +37,7 @@ func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 			}
 		}
 		if !found {
-			return "email_not_allowed"
+			return berrEmailNotAllowed
 		}
 	}
 	return ""
@@ -41,10 +47,10 @@ func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 // OIDC identity may not be auto-provisioned into an account.
 func provisionBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 	if !creds.AutoProvision {
-		return "user_not_found"
+		return berrUserNotFound
 	}
 	if !info.EmailVerified {
-		return "email_not_allowed" // verify email before creating an account
+		return berrEmailNotAllowed // verify email before creating an account
 	}
 	return ""
 }

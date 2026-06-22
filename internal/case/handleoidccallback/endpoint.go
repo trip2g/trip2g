@@ -121,7 +121,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"error", err.Error(),
 			"ip", clientIP)
 		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
-		return nil, nil //nolint:nilerr // redirect response with error logged
+		return nil, nil
 	}
 	exists := err == nil
 
@@ -139,8 +139,8 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		// No existing user: decide whether to auto-provision
 		if berr := provisionBError(creds, userInfo); berr != "" {
 			reason := "access denied"
-			if berr == "user_not_found" {
-				reason = "user_not_found"
+			if berr == berrUserNotFound {
+				reason = berrUserNotFound
 			}
 			env.Logger().Info("oauth login failed: "+reason,
 				"provider", "oidc",
