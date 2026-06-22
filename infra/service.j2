@@ -1,10 +1,15 @@
 [Unit]
 Description=trip2g service
-After=network.target
+Requires={{ item.service_name }}.socket
+After=network.target {{ item.service_name }}.socket
 
 [Service]
 User=trip2g
 Group=trip2g
+# Inherit the listening socket from {{ item.service_name }}.socket (socket
+# activation) so it survives restarts and queues connections during warmup.
+# --listen-addr below is only the fallback when not socket-activated.
+Sockets={{ item.service_name }}.socket
 
 WorkingDirectory=/opt/trip2g/data
 # Public traffic on listen_addr; health/metrics on a per-service internal_addr

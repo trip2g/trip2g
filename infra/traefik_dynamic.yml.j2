@@ -47,12 +47,17 @@ http:
       loadBalancer:
         servers:
           - url: "http://{{ svc.listen_addr }}"
-        # Active readiness probe on the app's internal port. /healthz returns 503
-        # while draining (SIGTERM) or warming up, so Traefik stops routing to a
-        # backend ~1-2s before its socket closes. port overrides the server URL's
-        # port to reach the internal listener on the same host.
+        # Active LIVENESS probe on the app's internal port. With socket activation
+        # (the systemd .socket owns the public port), a restart keeps the socket
+        # open and queues connections while the new process warms — so Traefik must
+        # KEEP routing to the single backend during warmup, otherwise it would have
+        # no backend and 503 clients. /livez stays 200 the whole time the process is
+        # alive (incl. warmup) and only fails if the process is truly down, so the
+        # check provides dead-backend failover without fighting the warmup queue.
+        # (Use /readyz here only in a multi-backend blue-green setup.) port overrides
+        # the server URL's port to reach the internal listener on the same host.
         healthCheck:
-          path: /healthz
+          path: /livez
           port: {{ svc.internal_addr.split(':')[1] }}
           interval: "1s"
           timeout: "1s"

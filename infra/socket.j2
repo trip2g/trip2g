@@ -1,0 +1,13 @@
+[Unit]
+Description=trip2g listening socket ({{ item.service_name }})
+# Deliberately NOT PartOf/BindsTo the service: the socket must OUTLIVE a service
+# restart. systemd keeps it open and queues incoming connections in the kernel
+# backlog while the new process warms up, so a deploy never refuses a connection.
+
+[Socket]
+ListenStream={{ item.listen_addr }}
+# The matching {{ item.service_name }}.service inherits this fd via socket
+# activation (LISTEN_FDS); the app picks it up in systemdListener().
+
+[Install]
+WantedBy=sockets.target

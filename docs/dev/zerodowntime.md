@@ -1,7 +1,24 @@
 # Zero-downtime deploys (infra)
 
-How the `infra/` Ansible deploy avoids dropping requests during a restart, what
-is wired today, and the remaining step to true 100%.
+How the `infra/` Ansible deploy avoids dropping requests during a restart.
+
+> **Status update (socket activation now implemented).** Parts of the prose below
+> were written before the Phase-1 merge and assumed a single `/healthz`. Two things
+> changed:
+> 1. The app exposes **`/livez`** (liveness — 200 while the process is alive, incl.
+>    warmup) and **`/readyz`** (readiness — 503 during warmup/drain) on the internal
+>    port, plus the legacy `/healthz`.
+> 2. **Socket activation is implemented** (`systemdListener` in `cmd/server/main.go`
+>    inherits the `LISTEN_FDS` fd; `infra/socket.j2` defines the per-service
+>    `.socket`). The listening socket now outlives a restart, so connections queue
+>    in the backlog instead of being refused — **true zero-downtime on one server,
+>    no LB, no SQLite contention.** The Traefik active check targets **`/livez`**
+>    (not `/readyz`): with a single backend the socket queues the warmup, so the
+>    check must keep the backend in rotation and only catch a genuinely dead process.
+>
+> Canonical references: `docs/dev/zerodowntime_research.md` (E1–E7 experiments) and
+> `docs/en/user/zerodowntime.md` (user recipes). The sections below describe the
+> earlier health-check + drain wiring, kept as the fallback path.
 
 ## Current deploy flow
 

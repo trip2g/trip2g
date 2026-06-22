@@ -134,6 +134,25 @@
         group: root
         mode: '0755'
 
+    - name: Generate systemd socket units
+      notify:
+        - Reload systemd
+      template:
+        src: socket.j2
+        dest: "/etc/systemd/system/{{ item.service_name }}.socket"
+        mode: '0644'
+      loop: "{{ trip2g_services }}"
+
+    # Socket must be up before the service so the service inherits its fd. The
+    # socket outlives service restarts, queuing connections during warmup.
+    - name: Enable and start trip2g sockets
+      systemd:
+        name: "{{ item.service_name }}.socket"
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      loop: "{{ trip2g_services }}"
+
     - name: Generate systemd unit
       notify:
         - Reload systemd
