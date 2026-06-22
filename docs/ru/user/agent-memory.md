@@ -68,19 +68,21 @@ echo "API-ключ: $API_KEY"
 
 Весь headless-сценарий — запуск сервера с локальным хранилищем, получение admin-ключа через HAT (Hot Auth Token) и запуск сайдкара `trip2g-sync --watch` — автоматизирован через **memcli**, скомпилированный TypeScript CLI, собранный с помощью esbuild и graphql-codegen.
 
-Соберите один раз из корня исходников trip2g (codegen читает схему прямо из репозитория — запущенный сервер не нужен):
-
-```bash
-cd cli/memcli && npm install && npm run codegen && npm run build
-```
-
-Затем запустите:
+Скомпилированный бандл поставляется в репозитории, поэтому запустить его можно сразу из свежего клона — сборка не нужна:
 
 ```bash
 node cli/memcli/dist/memcli.js up --folder ./memory-vault
 ```
 
 Исходники CLI находятся по адресу [`cli/memcli/`](https://github.com/trip2g/trip2g/blob/master/cli/memcli/) в основном репозитории. Он создаёт admin-ключ через HAT, поэтому не требует ни адреса электронной почты, ни `DEV=true`. По умолчанию устанавливает `STORAGE_BACKEND=local` — переменные окружения для S3 не нужны.
+
+**Опционально: пересобрать из исходников** — нужно только при изменении исходного кода CLI:
+
+```bash
+cd cli/memcli && npm install && npm run codegen && npm run build
+```
+
+`codegen` читает схему из репозитория — запущенный сервер не нужен. Команда пересоздаёт `dist/memcli.js`.
 
 ### Федерационная hub-заметка
 

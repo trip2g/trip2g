@@ -68,19 +68,21 @@ echo "API key: $API_KEY"
 
 The entire headless flow — start the server with local storage, mint an admin key via HAT (Hot Auth Token), and launch the `trip2g-sync --watch` sidecar — is automated by **memcli**, a compiled TypeScript CLI built with esbuild and graphql-codegen.
 
-Build it once from a trip2g source checkout (codegen reads the in-repo schema — no running server needed):
-
-```bash
-cd cli/memcli && npm install && npm run codegen && npm run build
-```
-
-Then run:
+The compiled bundle ships in the repository, so you can run it directly from a fresh checkout — no build step needed:
 
 ```bash
 node cli/memcli/dist/memcli.js up --folder ./memory-vault
 ```
 
 The CLI source lives at [`cli/memcli/`](https://github.com/trip2g/trip2g/blob/master/cli/memcli/) in the main repository. It uses HAT to create the admin key, so it requires no email address and no `DEV=true`. It also sets `STORAGE_BACKEND=local` by default, so no S3 environment variables are needed.
+
+**Optional: rebuild from source** — only needed if you modify the CLI source:
+
+```bash
+cd cli/memcli && npm install && npm run codegen && npm run build
+```
+
+`codegen` reads the in-repo schema — no running server needed. This regenerates `dist/memcli.js`.
 
 ### Federation hub note
 

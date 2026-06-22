@@ -1,3 +1,4 @@
 node_modules/
-dist/
 src/generated/
+# dist/memcli.js is committed (self-contained esbuild bundle) so the CLI can be
+# run from a fresh checkout without npm install / codegen / build.
