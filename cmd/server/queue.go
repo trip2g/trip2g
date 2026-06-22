@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 	"trip2g/internal/appreq"
@@ -15,6 +16,23 @@ import (
 	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 )
+
+// runnerLogger adapts our logger.Logger to the goqite jobs.Runner, whose logger
+// interface only exposes Info. The runner logs two Info lines per job execution
+// ("Running job"/"Ran job"), which floods syslog under frequent cron polling.
+// We downgrade that routine chatter to Debug while keeping failures (errors and
+// recovered panics) at Info so real problems stay visible.
+type runnerLogger struct {
+	logger.Logger
+}
+
+func (l runnerLogger) Info(msg string, keysAndValues ...interface{}) {
+	if strings.Contains(msg, "Error") || strings.Contains(msg, "panic") {
+		l.Logger.Info(msg, keysAndValues...)
+		return
+	}
+	l.Logger.Debug(msg, keysAndValues...)
+}
 
 type appQueue struct {
 	name string
@@ -68,7 +86,7 @@ func (a *app) createQueue(ctx context.Context, name string, opts QueueOpts) *app
 		PollInterval: opts.PollInterval,
 		Extend:       opts.Extend,
 		Queue:        q,
-		Log:          logger,
+		Log:          runnerLogger{logger},
 	}
 
 	runner := jobs.NewRunner(runnerOpts)
