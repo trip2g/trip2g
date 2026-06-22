@@ -25,7 +25,8 @@ sequenceDiagram
 
 | Method | Description |
 |--------|-------------|
-| `search(query)` | Vector search across the knowledge base |
+| `search(query)` | Vector search across the knowledge base. Returns slim snippets — a heading breadcrumb and a precise `toc_path` per match, not the full table of contents |
+| `expand(pid, toc_path?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note. See [[en/user/expand]] for a detailed explanation |
 | `note_html(path, toc_path?)` | Full note or a specific section |
 | `similar(path)` | Notes similar to the given note |
 | `instructions()` | Author-defined AI instructions |
@@ -33,50 +34,79 @@ sequenceDiagram
 | `graphql_introspection(pattern)` | Inspect the GraphQL schema — returns types and operations matching the pattern, plus types they reference. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. |
 | `graphql_request(query, variables?)` | Execute any GraphQL query or mutation as admin. Requires admin tools enabled on the API key. See [[en/user/agent_admin]]. Example use case: [[en/user/version_requests\|recovering overwritten notes]]. |
 
-#### `search` — TOC and match location
+#### Drill-down: search → expand → note_html
 
-Each result item returned by `search` includes a `toc` field: an array of objects describing the document's table of contents.
+**TL;DR:** `search` returns slim results — a heading breadcrumb and a precise `toc_path` per match, not the whole table of contents. To navigate a note's structure, call `expand` to walk the TOC one level at a time, then `note_html(toc_path=[...])` to read the exact section you want. This keeps token usage low: you only load the sections you actually need.
+
+#### `search` — slim snippets and match location
+
+Each match returned by `search` carries:
+
+- a **heading breadcrumb** (`title > section > subsection`) that locates the *approximate* section the snippet lives in;
+- a precise **`toc_path`** field (string array) pointing to the innermost section that contains that snippet.
+
+`toc_path` is a breadcrumb array that uniquely identifies a section. Heading titles can repeat under different parents; the array disambiguates them. For example, two sections both titled "Introduction" under "Chapter 1" and "Chapter 2" produce distinct paths: `["Chapter 1", "Introduction"]` and `["Chapter 2", "Introduction"]`.
+
+Search results no longer include a full flat `toc` array. To explore a note's structure beyond the matched section, use `expand` (below).
+
+#### `expand` — walk the table of contents level by level
+
+`expand` returns the direct children of a TOC node (progressive disclosure), so an agent can navigate a note's structure without loading its content or its full table of contents. For a full explanation of the tool and its workflow, see [[en/user/expand]].
+
+It accepts a note reference (`pid`, `note_id`, `href`, or `path`) and an optional `toc_path`:
+
+- Omit `toc_path` (or pass `[]`) to get the **top-level sections**.
+- Pass a `toc_path` to list **that section's subsections**.
+
+```
+expand(pid=42)                                  → top-level sections
+expand(pid=42, toc_path=["Chapter 1"])          → subsections of Chapter 1
+```
+
+Each child node has:
 
 ```json
 {
   "title": "Introduction",
   "level": 2,
-  "path": ["Chapter 1", "Introduction"]
+  "path": ["Chapter 1", "Introduction"],
+  "has_children": false
 }
 ```
 
-`path` is a breadcrumb array that uniquely identifies a section. Heading titles can repeat under different parents; `path` disambiguates them. For example, two sections both titled "Introduction" under "Chapter 1" and "Chapter 2" produce distinct paths: `["Chapter 1", "Introduction"]` and `["Chapter 2", "Introduction"]`.
-
-Each match inside `matches[]` also carries a `toc_path` field (string array) pointing to the innermost section that contains that snippet. Use it to know where in the document a match lives without loading the full note.
+- `title` — the heading text.
+- `level` — the heading level (1–6).
+- `path` — the full breadcrumb to this node; pass it back as `toc_path` to expand it further or to read it with `note_html`.
+- `has_children` — whether this node has subsections of its own. Use it to decide whether to keep drilling down with `expand` or to read the leaf with `note_html`.
 
 #### `note_html` — retrieve a single section
 
-`note_html` accepts an optional `toc_path` parameter. Pass a `path` value from a TOC item to retrieve only that section's HTML instead of the full note.
+`note_html` accepts an optional `toc_path` parameter. Pass a `path` value from a search match or an `expand` child to retrieve only that section's HTML instead of the full note.
 
 ```
 note_html(pid=42, toc_path=["Chapter 1", "Introduction"])
 ```
 
-This is useful when a note is long: load the TOC via `search`, pick the relevant section by its `path`, then fetch just that section with `note_html`.
+This is useful when a note is long: locate the section via `search` or `expand`, then fetch just that section with `note_html`. Pass `match_id` from a search match instead for a focused chunk window around that specific hit.
 
 #### Saving tokens with TOC navigation
 
-Long notes can cost many tokens if loaded in full. The `toc` and `toc_path` fields let an agent fetch only the section it actually needs.
+Long notes can cost many tokens if loaded in full. The `toc_path` and `expand` mechanics let an agent fetch only the section it actually needs.
 
-**How the fields work:**
+**How it works:**
 
-- `search` results include `toc` — the full table of contents for each returned document. Each TOC item has `title`, `level`, and `path` (a breadcrumb array identifying that section).
-- Each item in `matches[]` includes `toc_path` — the breadcrumb path of the innermost section containing that match. This tells you exactly where in the document the relevant snippet lives.
-- `note_html` accepts `toc_path` — pass any `path` value from the TOC to receive only that section's HTML, not the entire note.
+- `search` returns slim matches — each carries a heading breadcrumb (approximate location) and a `toc_path` (the breadcrumb of the innermost section containing the match). It does **not** return the document's full table of contents.
+- `expand` walks the TOC one level at a time. Each child reports `has_children`, so you can drill down only where you need to.
+- `note_html` accepts `toc_path` — pass any `path` from a search match or an `expand` child to receive only that section's HTML, not the entire note.
 
 **Recommended workflow:**
 
-1. `search(query)` — get results with `toc` (document structure) and `matches[].toc_path` (match location)
-2. Read `toc_path` on the best match to identify the relevant section
-3. `note_html(pid=N, toc_path=match.toc_path)` — load only that section
-4. If you need a different section, use `toc` items from the same search result to navigate without another search call
+1. `search(query)` — get slim matches with a heading breadcrumb and `matches[].toc_path` (match location).
+2. `note_html(pid=N, toc_path=match.toc_path)` — load only the matched section. *Or*, to explore the note's structure first:
+3. `expand(pid=N)` — list top-level sections, then `expand(pid=N, toc_path=[...])` to drill into a section, following `has_children`.
+4. `note_html(pid=N, toc_path=[...])` — read the exact leaf section you found.
 
-For searching and retrieving notes across federated peer bases, see [[en/user/federation]].
+For searching and retrieving notes across federated peer bases, see [[en/user/federation]]. Federated bases expose the same drill-down: `federated_search` → `federated_expand` → `federated_note_html`. The `federated_expand` interface mirrors [[en/user/expand|expand]] applied to a remote knowledge base.
 
 ### Setting up your own MCP knowledge base
 
@@ -131,7 +161,7 @@ Enable the MCP server in site settings. Access can be:
 
 ### Custom tools and discovery
 
-Any note with a `mcp_method` frontmatter value (other than the reserved names `initialize`, `search`, `similar`, `note_html`, `federated_search`, `federated_similar`, `federated_note_html`) becomes a callable tool. The tool appears in `tools/list` automatically — no configuration needed.
+Any note with a `mcp_method` frontmatter value (other than the reserved names `initialize`, `search`, `similar`, `note_html`, `expand`, `federated_search`, `federated_similar`, `federated_note_html`, `federated_expand`) becomes a callable tool. The tool appears in `tools/list` automatically — no configuration needed.
 
 ```yaml
 ---

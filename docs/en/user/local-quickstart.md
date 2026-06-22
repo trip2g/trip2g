@@ -20,6 +20,9 @@ docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
   minio/minio:latest server /data --console-address ":9001"
 
 # trip2g app on port 24081 (health on 24082), fresh local DB
+# This pulls the current published image. To build locally from source instead,
+# run `docker build -t trip2g:local .` from a trip2g checkout and replace the
+# image tag below with `trip2g:local`.
 mkdir -p /tmp/trip2g-local
 docker run -d --name trip2g-local --network host \
   -e LISTEN_ADDR=0.0.0.0:24081 -e INTERNAL_LISTEN_ADDR=:24082 \
@@ -35,9 +38,10 @@ docker run -d --name trip2g-local --network host \
   -e GIT_API_REPO_PATH=/data/git -e GIT_API_BASE_PATH=/git \
   -e RESEND_API_KEY=dev -e MAIL_FROM=dev@example.com \
   -v /tmp/trip2g-local:/data \
-  trip2g:local
+  ghcr.io/trip2g/trip2g:latest
 
-# wait until healthy
+# wait until healthy — also verify the container is actually running
+docker ps | grep trip2g-local
 until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo "up"
 ```
 
@@ -62,18 +66,18 @@ TOKEN=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' \
   -d '{"query":"mutation($i:SignInByEmailInput!){signInByEmail(input:$i){__typename ... on SignInPayload{token} ... on ErrorPayload{message}}}","variables":{"i":{"email":"hello@example.com","code":"111111"}}}' \
   | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
-API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie: trip2g_session=$TOKEN" \
+API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie: trip2g_token=$TOKEN" \
   -d '{"query":"mutation($i:CreateApiKeyInput!){admin{createApiKey(input:$i){__typename ... on CreateApiKeyPayload{value} ... on ErrorPayload{message}}}}","variables":{"i":{"description":"local"}}}' \
   | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
 
 echo "API key: $API_KEY"
 ```
 
-(If you set a custom `USER_TOKEN_COOKIE_NAME`, use that cookie name instead of `trip2g_session`.)
+(If you set a custom `USER_TOKEN_COOKIE_NAME`, use that cookie name instead of `trip2g_token`.)
 
 ## 3. Push your content
 
-Use the bundled sync CLI to publish a folder of notes (`.md`) plus any `_layouts/` templates and assets:
+Use the sync CLI to publish a folder of notes (`.md`) plus any `_layouts/` templates and assets. The CLI (`obsidian-sync/dist/trip2g-sync.mjs`) lives in the trip2g source repository — run the following from the root of a trip2g checkout:
 
 ```bash
 node obsidian-sync/dist/trip2g-sync.mjs \
@@ -88,6 +92,8 @@ node obsidian-sync/dist/trip2g-sync.mjs \
 Open the note's permalink, e.g. `http://localhost:24081/<path>/<note>`.
 
 A note with `route: yourdomain.com/` in frontmatter is served on that custom domain (needs a `Host:` header or DNS locally). To preview without DNS, hit the plain permalink instead.
+
+Using this instance as AI-agent memory? See [[en/user/agent-memory]].
 
 ## Gotchas
 

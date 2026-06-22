@@ -112,9 +112,11 @@ Your hub always exposes six MCP methods regardless of how many peers are connect
 | `search(query)` | Local search on your own notes |
 | `similar(note_id)` | Local similar-note lookup |
 | `note_html(note_id)` | Local note content |
+| `expand(pid, toc_path?)` | Walk a local note's table of contents level by level — see [[en/user/expand]] |
 | `federated_search(query, kb_id?)` | Search across peers (fan-out or targeted) |
 | `federated_similar(note_id, kb_id)` | Similar notes on a specific peer |
 | `federated_note_html(note_id, kb_id)` | Note content from a specific peer |
+| `federated_expand(kb_id, pid, toc_path?)` | Walk a remote note's table of contents on a specific peer — same interface as [[en/user/expand\|expand]], applied to a remote base |
 
 `federated_search` without `kb_id` fans out to all accessible peers in parallel and merges results. With `kb_id="bob"` it targets Bob's base only. With `kb_ids=["bob","philosophy"]` it hits exactly those two.
 

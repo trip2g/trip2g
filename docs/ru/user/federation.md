@@ -95,9 +95,11 @@ mcp_federation_kb_id: bob
 | `search(query)` | Локальный поиск по вашим заметкам |
 | `similar(note_id)` | Похожие заметки локально |
 | `note_html(note_id)` | Содержимое локальной заметки |
+| `expand(pid, toc_path?)` | Обход оглавления локальной заметки по уровням — см. [[ru/user/expand]] |
 | `federated_search(query, kb_id?)` | Поиск по пирам (веерный или точечный) |
 | `federated_similar(note_id, kb_id)` | Похожие заметки у конкретного пира |
 | `federated_note_html(note_id, kb_id)` | Содержимое заметки у конкретного пира |
+| `federated_expand(kb_id, pid, toc_path?)` | Обход оглавления удалённой заметки у конкретного пира — тот же интерфейс, что [[ru/user/expand\|expand]], применённый к удалённой базе |
 
 `federated_search` без `kb_id` веерно обращается ко всем доступным пирам параллельно и объединяет результаты. С `kb_id="bob"` — только к базе Боба. С `kb_ids=["bob","philosophy"]` — ровно к этим двум.
 

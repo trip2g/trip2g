@@ -20,6 +20,9 @@ docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
   minio/minio:latest server /data --console-address ":9001"
 
 # Приложение trip2g на порту 24081 (healthcheck на 24082), свежая локальная БД
+# Скачивается актуальный опубликованный образ. Для сборки из исходников
+# выполните `docker build -t trip2g:local .` в корне репозитория trip2g и замените
+# тег образа ниже на `trip2g:local`.
 mkdir -p /tmp/trip2g-local
 docker run -d --name trip2g-local --network host \
   -e LISTEN_ADDR=0.0.0.0:24081 -e INTERNAL_LISTEN_ADDR=:24082 \
@@ -35,9 +38,10 @@ docker run -d --name trip2g-local --network host \
   -e GIT_API_REPO_PATH=/data/git -e GIT_API_BASE_PATH=/git \
   -e RESEND_API_KEY=dev -e MAIL_FROM=dev@example.com \
   -v /tmp/trip2g-local:/data \
-  trip2g:local
+  ghcr.io/trip2g/trip2g:latest
 
-# ждём, пока поднимется
+# ждём, пока поднимется — и проверяем, что контейнер действительно запущен
+docker ps | grep trip2g-local
 until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo "up"
 ```
 
@@ -62,18 +66,18 @@ TOKEN=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' \
   -d '{"query":"mutation($i:SignInByEmailInput!){signInByEmail(input:$i){__typename ... on SignInPayload{token} ... on ErrorPayload{message}}}","variables":{"i":{"email":"hello@example.com","code":"111111"}}}' \
   | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
-API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie: trip2g_session=$TOKEN" \
+API_KEY=$(curl -s -X POST "$GQL" -H 'Content-Type: application/json' -H "Cookie: trip2g_token=$TOKEN" \
   -d '{"query":"mutation($i:CreateApiKeyInput!){admin{createApiKey(input:$i){__typename ... on CreateApiKeyPayload{value} ... on ErrorPayload{message}}}}","variables":{"i":{"description":"local"}}}' \
   | grep -o '"value":"[^"]*"' | cut -d'"' -f4)
 
 echo "API-ключ: $API_KEY"
 ```
 
-(Если задали свой `USER_TOKEN_COOKIE_NAME` — используйте это имя cookie вместо `trip2g_session`.)
+(Если задали свой `USER_TOKEN_COOKIE_NAME` — используйте это имя cookie вместо `trip2g_token`.)
 
 ## 3. Запушить контент
 
-CLI синка публикует папку с нотами (`.md`), шаблонами `_layouts/` и ассетами:
+CLI синка публикует папку с нотами (`.md`), шаблонами `_layouts/` и ассетами. Бинарь (`obsidian-sync/dist/trip2g-sync.mjs`) находится в репозитории trip2g — запустите из корня исходников:
 
 ```bash
 node obsidian-sync/dist/trip2g-sync.mjs \
@@ -88,6 +92,8 @@ node obsidian-sync/dist/trip2g-sync.mjs \
 Откройте permalink ноты, напр. `http://localhost:24081/<путь>/<нота>`.
 
 Нота с `route: yourdomain.com/` во frontmatter обслуживается на этом домене (локально нужен `Host:`-хедер или DNS). Для превью без DNS открывайте обычный permalink.
+
+Используете этот инстанс как память для ИИ-агента? Смотрите [[ru/user/agent-memory]].
 
 ## Грабли
 
