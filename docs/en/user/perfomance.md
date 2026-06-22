@@ -184,6 +184,24 @@ Two things dominate the per-request cost at the ceiling: **gzip compression** of
 
 We also served the same 35 pages as plain files from nginx on the same node, to size the engine's overhead against raw static serving. The surprise: at ~52 KB per page, **both** nginx and trip2g top out in the same low-thousands req/s range — the wall there is **network bandwidth** (52 KB × 5 000 ≈ 2 Gbit/s) plus per-request gzip, not trip2g's render path. So on this hardware and page size, trip2g already runs close to raw static file serving; the engine's per-request cost (layout assembly + the bookkeeping DB lookups) would only become the dominant limit on smaller pages or a faster link. Placing trip2g cleanly on the spectrum from static files to a database-backed CMS like WordPress needs that cleaner setup (smaller pages / simpler hardware) — noted as future work.
 
+## How small a box can run it
+
+We deployed trip2g on a range of cheap VMs and load-tested each **from a separate machine** (so the generator never steals the server's CPU), in production mode (`DEV=false`):
+
+| Box | vCPU / RAM | ~Price | Served at 100 % | Restart under load |
+|---|---|---|---|---|
+| Hetzner cpx32 | 4 / 8 GB | ~€10/mo | ~4 000 rps (real 52 KB doc pages) | — |
+| Hetzner cpx22 | 2 / 4 GB | ~€6/mo | ≥4 000 rps (its `/` landing, ~43 KB — not saturated) | **0 dropped** |
+| DigitalOcean basic | 1 / 512 MB | **$4/mo** | network-capped in this test* | **0 dropped** |
+
+\*The $4 droplet sat in New York while the load generator was in Germany — an 86 ms round trip — so its rate was capped by the transatlantic link (p50 ≈ the 88 ms RTT), not its CPU. Its own ceiling is higher; measuring it needs a generator in the same region. Prices are provider list rates.
+
+Two findings matter more than the raw rates.
+
+**A deploy drops nothing.** Restarting the service under live traffic — `systemctl restart` while requests were firing — dropped **zero** connections on both the 2-core Hetzner node and the $4 droplet (20 000 / 20 000 and 12 000 / 12 000 requests answered `200`, no refusals). The listening socket stays open across the restart via **systemd socket activation**, so in-flight requests wait in the kernel queue for a few hundred milliseconds instead of being refused. One server, no load balancer, no downtime — see [[zerodowntime]].
+
+**No object storage needed.** With the local file-storage backend (`--storage-backend=local`), trip2g keeps assets and backups on the server's own disk — no MinIO, no S3. It booted on the $4 droplet using ~57 MB of RAM. The cheapest VM you can rent is enough to run a real site.
+
 ## What this means for you
 
 - **Vaults up to ~1 000 notes**: everything is instant — syncs are tens of milliseconds.
