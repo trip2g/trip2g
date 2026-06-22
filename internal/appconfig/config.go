@@ -136,6 +136,23 @@ type Config struct {
 
 	// Cloudflare Turnstile captcha
 	Turnstile turnstile.Config
+
+	// OIDC env-managed provider. When Issuer/ClientID/ClientSecret are all set,
+	// a virtual OIDC provider built from these values takes precedence over any
+	// DB-configured one. It is never persisted — remove the env vars and it is
+	// gone on the next boot.
+	OIDC OIDCConfig
+}
+
+// OIDCConfig configures an optional environment-managed OIDC login provider.
+type OIDCConfig struct {
+	Issuer             string
+	ClientID           string
+	ClientSecret       string
+	Scopes             string
+	AutoProvision      bool
+	AllowedEmailDomain string
+	RequiredGroup      string
 }
 
 // SimpleBackupConfig holds simple backup system configuration.
@@ -408,6 +425,15 @@ func (c *Config) defineFlags() {
 	// Cloudflare Turnstile captcha
 	flag.StringVar(&c.Turnstile.SiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key")
 	flag.StringVar(&c.Turnstile.SecretKey, "turnstile-secret-key", "", "Cloudflare Turnstile secret key")
+
+	// OIDC env-managed provider (OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET ...)
+	flag.StringVar(&c.OIDC.Issuer, "oidc-issuer", "", "OIDC issuer URL; when set (with client id+secret) an env-managed OIDC provider takes precedence over DB config")
+	flag.StringVar(&c.OIDC.ClientID, "oidc-client-id", "", "OIDC client id for the env-managed provider")
+	flag.StringVar(&c.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret for the env-managed provider")
+	flag.StringVar(&c.OIDC.Scopes, "oidc-scopes", "openid email profile", "OIDC scopes for the env-managed provider")
+	flag.BoolVar(&c.OIDC.AutoProvision, "oidc-auto-provision", false, "auto-create users on first OIDC login (env-managed provider)")
+	flag.StringVar(&c.OIDC.AllowedEmailDomain, "oidc-allowed-email-domain", "", "restrict OIDC logins to this email domain (env-managed provider)")
+	flag.StringVar(&c.OIDC.RequiredGroup, "oidc-required-group", "", "restrict OIDC logins to members of this group (env-managed provider)")
 
 	// Metrics
 	c.defineMetricsFlags()

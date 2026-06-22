@@ -1783,6 +1783,65 @@ func (a *app) PublicURL() string {
 	return a.config.PublicURL
 }
 
+// envOIDCCredential builds a virtual OIDC credential from the OIDC_* env vars.
+// It is never persisted: set the env vars and it appears as the active provider;
+// remove them and it is gone on the next boot. Editing or deleting it via the
+// admin API hits no DB row (id 0) and harmlessly no-ops.
+func (a *app) envOIDCCredential() (db.OidcCredential, bool) {
+	o := a.config.OIDC
+	if o.Issuer == "" || o.ClientID == "" || o.ClientSecret == "" {
+		return db.OidcCredential{}, false
+	}
+	enc, err := a.EncryptData([]byte(o.ClientSecret))
+	if err != nil {
+		a.log.Error("failed to encrypt env OIDC client secret", "error", err.Error())
+		return db.OidcCredential{}, false
+	}
+	scopes := o.Scopes
+	if scopes == "" {
+		scopes = "openid email profile"
+	}
+	return db.OidcCredential{
+		ID:                    0, // sentinel: virtual, env-managed (not in DB)
+		Name:                  "env",
+		Issuer:                o.Issuer,
+		ClientID:              o.ClientID,
+		ClientSecretEncrypted: enc,
+		Scopes:                scopes,
+		AutoProvision:         o.AutoProvision,
+		AllowedEmailDomain:    o.AllowedEmailDomain,
+		RequiredGroup:         o.RequiredGroup,
+		Active:                true,
+		CreatedAt:             time.Now(),
+	}, true
+}
+
+// GetActiveOIDCCredentials shadows the generated query: the env-managed provider
+// (if configured) always wins; otherwise fall back to the DB-stored active row.
+func (a *app) GetActiveOIDCCredentials(ctx context.Context) (db.OidcCredential, error) {
+	if cred, ok := a.envOIDCCredential(); ok {
+		return cred, nil
+	}
+	return a.Queries.GetActiveOIDCCredentials(ctx)
+}
+
+// ListOIDCCredentials shadows the generated query so the admin UI also lists the
+// env-managed provider (read-only) alongside any DB-stored ones.
+func (a *app) ListOIDCCredentials(ctx context.Context) ([]db.OidcCredential, error) {
+	rows, err := a.Queries.ListOIDCCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if cred, ok := a.envOIDCCredential(); ok {
+		// give the virtual row a real created_by so the GraphQL createdBy field resolves
+		if owner, e := a.UserByEmail(ctx, a.config.OwnerEmail); e == nil {
+			cred.CreatedBy = owner.ID
+		}
+		rows = append([]db.OidcCredential{cred}, rows...)
+	}
+	return rows, nil
+}
+
 func (a *app) NoteURL(note *model.NoteView) string {
 	return a.LatestNoteViews().ResolveFullURL(note, a.config.PublicURL)
 }
