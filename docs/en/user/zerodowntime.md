@@ -48,6 +48,57 @@ Measured to a clean **100 %** (zero dropped reads through a rolling canary deplo
 
 Two rolling deploys measured **100 % (11 000 and 12 500 requests, zero errors)**, p99 ~4 ms. The invariant: *the old instance must keep serving until Traefik stops routing to it* — tune detection speed (low `refreshInterval` + 1 s health-check) **or** drain length (≥ the refresh window); they're equivalent, and the retry middleware makes 100 % robust to timing either way.
 
+The full thing, copy-paste. Note the **two ports** and the health check pointed at the internal one:
+
+```hcl
+# nomad job — group
+network {
+  port "http"     { to = 8080 }   # public website
+  port "internal" { to = 8081 }   # /livez, /readyz, /healthz
+}
+
+update {
+  canary           = 1
+  auto_promote     = true
+  health_check     = "checks"
+  min_healthy_time = "5s"
+}
+
+service {
+  name     = "trip2g"
+  port     = "http"
+  provider = "consul"
+  tags = [
+    "traefik.enable=true",
+    "traefik.http.routers.t.rule=Host(`example.com`)",
+    "traefik.http.routers.t.middlewares=t-retry",
+    "traefik.http.middlewares.t-retry.retry.attempts=4",
+    "traefik.http.services.t.loadbalancer.healthcheck.path=/readyz",
+    "traefik.http.services.t.loadbalancer.healthcheck.port=8081",   # internal port
+    "traefik.http.services.t.loadbalancer.healthcheck.interval=1s",
+  ]
+  check {                 # Consul gate — also on the internal port
+    type     = "http"
+    port     = "internal"
+    path     = "/readyz"
+    interval = "2s"
+    timeout  = "1s"
+  }
+}
+
+task "trip2g" {
+  driver       = "docker"
+  kill_timeout = "15s"    # must exceed the shutdown grace below
+  env {
+    LISTEN_ADDR           = "0.0.0.0:8080"
+    INTERNAL_LISTEN_ADDR  = ":8081"
+    SHUTDOWN_GRACE_PERIOD = "6s"
+  }
+}
+```
+
+And start Traefik with `--providers.consulcatalog.refreshInterval=5s` (the one non-default flag; the rest is in the tags above).
+
 ### Self-hosted: Kubernetes / k3s
 
 The cleanest 100 %, and what most enterprises already run. A `Deployment` with rolling updates, a `readinessProbe` on `/readyz` and a `livenessProbe` on `/livez`, both pointing at the **internal port**:

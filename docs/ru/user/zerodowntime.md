@@ -48,6 +48,57 @@ trip2g отдаёт эти пробники на **внутреннем порт
 
 Два rolling-деплоя замерены **100% (11 000 и 12 500 запросов, ноль ошибок)**, p99 ~4ms. Инвариант: *старый инстанс должен отдавать 200, пока Traefik не перестанет на него слать* — крути либо скорость детекта (низкий `refreshInterval` + health-check 1с), либо длину drain (≥ окна обновления); это эквивалентно, а retry-middleware делает 100% устойчивым к таймингу в любом случае.
 
+Целиком, копипаст. Обратите внимание на **два порта** и health-check, нацеленный на internal:
+
+```hcl
+# nomad job — group
+network {
+  port "http"     { to = 8080 }   # публичный сайт
+  port "internal" { to = 8081 }   # /livez, /readyz, /healthz
+}
+
+update {
+  canary           = 1
+  auto_promote     = true
+  health_check     = "checks"
+  min_healthy_time = "5s"
+}
+
+service {
+  name     = "trip2g"
+  port     = "http"
+  provider = "consul"
+  tags = [
+    "traefik.enable=true",
+    "traefik.http.routers.t.rule=Host(`example.com`)",
+    "traefik.http.routers.t.middlewares=t-retry",
+    "traefik.http.middlewares.t-retry.retry.attempts=4",
+    "traefik.http.services.t.loadbalancer.healthcheck.path=/readyz",
+    "traefik.http.services.t.loadbalancer.healthcheck.port=8081",   # internal-порт
+    "traefik.http.services.t.loadbalancer.healthcheck.interval=1s",
+  ]
+  check {                 # Consul-гейт — тоже на internal-порту
+    type     = "http"
+    port     = "internal"
+    path     = "/readyz"
+    interval = "2s"
+    timeout  = "1s"
+  }
+}
+
+task "trip2g" {
+  driver       = "docker"
+  kill_timeout = "15s"    # должен превышать grace ниже
+  env {
+    LISTEN_ADDR           = "0.0.0.0:8080"
+    INTERNAL_LISTEN_ADDR  = ":8081"
+    SHUTDOWN_GRACE_PERIOD = "6s"
+  }
+}
+```
+
+И запустите Traefik с `--providers.consulcatalog.refreshInterval=5s` (единственный не-дефолтный флаг; остальное — в тегах выше).
+
 ### Self-hosted: Kubernetes / k3s
 
 Самый чистый 100%, и то, что у большинства корпоратов уже крутится. `Deployment` с rolling-обновлениями, `readinessProbe` на `/readyz` и `livenessProbe` на `/livez`, обе целятся в **internal-порт**:
