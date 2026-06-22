@@ -1,42 +1,44 @@
 $trip2g_user_space_tokens $mol_view
 	style *
 		flexDirection \column
+	plaintext_modal_open? null
 	sub /
 		<= Page $mol_page
 			title @ \Personal Tokens
-			body /
+			body <= page_body /
 				<= TokenList $mol_list
 					rows <= token_rows /
-						<= TokenRow*0 $mol_row
-							minimal_height 32
+						<= TokenRow*0 $mol_view
 							sub <= token_row_content* /
-								<= TokenName* $mol_labeler
-									title @ \Name
-									Content <= TokenNameValue* $mol_view
-										sub / <= token_name* \
-								<= TokenPrefix* $mol_labeler
-									title @ \Prefix
-									Content <= TokenPrefixValue* $mol_view
-										sub / <= token_prefix* \
-								<= TokenScope* $mol_labeler
-									title @ \Scope
-									Content <= TokenScopeValue* $mol_view
-										sub / <= token_scope* \
-								<= TokenCreatedAt* $mol_labeler
-									title @ \Created
-									Content <= TokenCreatedAtValue* $trip2g_table_cell_time
-										value <= token_created_at* null
-								<= TokenLastUsed* $mol_labeler
-									title @ \Last Used
-									Content <= TokenLastUsedValue* $trip2g_table_cell_time
-										value <= token_last_used_at* null
-								<= TokenExpires* $mol_labeler
-									title @ \Expires
-									Content <= TokenExpiresValue* $trip2g_table_cell_time
-										value <= token_expires_at* null
-								<= RevokeButton* $mol_button_minor
-									title @ \Revoke
-									click? <=> revoke*? null
+								<= TokenHead* $mol_view
+									sub /
+										<= TokenNameValue* $mol_view
+											sub / <= token_name* \
+										<= RevokeButton* $mol_button_minor
+											title @ \Revoke
+											click? <=> revoke*? null
+								<= TokenMeta* $mol_view
+									sub /
+										<= TokenPrefix* $mol_labeler
+											title @ \Prefix
+											Content <= TokenPrefixValue* $mol_view
+												sub / <= token_prefix* \
+										<= TokenScope* $mol_labeler
+											title @ \Scope
+											Content <= TokenScopeValue* $mol_view
+												sub / <= token_scope* \
+										<= TokenCreatedAt* $mol_labeler
+											title @ \Created
+											Content <= TokenCreatedAtValue* $trip2g_table_cell_time
+												value <= token_created_at* null
+										<= TokenLastUsed* $mol_labeler
+											title @ \Last Used
+											Content <= TokenLastUsedValue* $trip2g_table_cell_time
+												value <= token_last_used_at* null
+										<= TokenExpires* $mol_labeler
+											title @ \Expires
+											Content <= TokenExpiresValue* $trip2g_table_cell_time
+												value <= token_expires_at* null
 				<= AddPanel $mol_form
 					body /
 						<= NameField $mol_form_field
@@ -58,28 +60,28 @@ $trip2g_user_space_tokens $mol_view
 							click? <=> generate? null
 						<= GenerateResult $mol_status
 							message <= generate_result? \
-				<= PlaintextModal $mol_view
-					dom_name \dialog
-					attr * open <= plaintext_modal_open null null|string
-					sub /
-						<= ModalTitle $mol_view
-							sub / @ \New Token Created
-						<= PlaintextNote $mol_view
-							sub / @ \Copy this token now. It will not be shown again.
-						<= PlaintextValue $mol_view
-							sub / <= plaintext_token \
-						<= CopyTokenButton $mol_button_copy
-							title @ \Copy Token
-							text <= plaintext_token \
-						<= McpUrlLabel $mol_view
-							sub / @ \MCP URL
-						<= McpUrlValue $mol_view
-							sub / <= mcp_url \
-						<= CopyMcpButton $mol_button_copy
-							title @ \Copy MCP URL
-							text <= mcp_url \
-						<= CurlExample $mol_view
-							sub / <= curl_example \
-						<= CloseModalButton $mol_button_major
-							title @ \Close
-							click? <=> close_modal? null
+	Backdrop $mol_view
+		sub /
+			<= PlaintextModal $mol_view
+				sub /
+					<= ModalTitle $mol_view
+						sub / @ \New Token Created
+					<= PlaintextNote $mol_view
+						sub / @ \Copy this token now. It will not be shown again.
+					<= PlaintextValue $mol_view
+						sub / <= plaintext_token \
+					<= CopyTokenButton $mol_button_copy
+						title @ \Copy Token
+						text <= plaintext_token \
+					<= McpUrlLabel $mol_view
+						sub / @ \MCP URL
+					<= McpUrlValue $mol_view
+						sub / <= mcp_url \
+					<= CopyMcpButton $mol_button_copy
+						title @ \Copy MCP URL
+						text <= mcp_url \
+					<= CurlExample $mol_view
+						sub / <= curl_example \
+					<= CloseModalButton $mol_button_major
+						title @ \Close
+						click? <=> close_modal? null

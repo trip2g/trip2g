@@ -68,19 +68,21 @@ namespace $.$$ {
 			return this.data().map(key => this.TokenRow(key))
 		}
 
+		override page_body() {
+			const items: readonly any[] = [ this.TokenList(), this.AddPanel() ]
+			return this.plaintext_modal_open()
+				? [ ...items, this.Backdrop() ]
+				: items
+		}
+
 		row(id: any) {
 			return this.data().get(id)
 		}
 
 		override token_row_content(id: any) {
 			return [
-				this.TokenName(id),
-				this.TokenPrefix(id),
-				this.TokenScope(id),
-				this.TokenCreatedAt(id),
-				this.TokenLastUsed(id),
-				this.TokenExpires(id),
-				this.RevokeButton(id),
+				this.TokenHead(id),
+				this.TokenMeta(id),
 			]
 		}
 
