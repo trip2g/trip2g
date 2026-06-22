@@ -26,5 +26,5 @@ node "$SYNC_BIN" \
     --folder "$PROJECT_ROOT/docs" \
     --api-url https://trip2g.com/graphql \
     --conflict-resolution local \
-    --exclude demo --exclude dev \
+    --exclude demo --exclude dev --exclude marketing --exclude superpowers \
     --verbose
