@@ -1,10 +1,16 @@
 # Render hot-path performance — optimization plan (TODO)
 
 Profiled 2026-06-22 on a Hetzner cpx32 (4 vCPU AMD EPYC-Genoa, 8 GB), **production mode**,
-real default-template doc pages (~52 KB) at escalating load. One node serves **~2 000 rps at
-100 %** (p99 ~60 ms); the knee is ~2 500–3 000 rps. Two costs dominate the per-request hot
-path, both cacheable (pages are static between writes), so there is room to push the ceiling
-several×. Not doing this yet — recording the plan.
+load generated from a **separate machine**, real default-template doc pages (~52 KB) at
+escalating load. One node serves **~4 000 rps at 100 %** (p99 ~30 ms); the knee is
+~4 000–5 000 rps. Two costs dominate the per-request hot path, both cacheable (pages are
+static between writes), so there is room to push the ceiling several×. Not doing this yet —
+recording the plan.
+
+Benchmark methodology matters a lot here — three traps each cost ~2× and compounded to a 4×
+understatement on the first run: (1) DevMode recomputes asset hashes per request (finding #4
+below); (2) running vegeta on the same box steals ~2 cores from the server; (3) cold cache /
+single URL. Always: `DEV=false`, separate load generator, warm cache, many real pages.
 
 ## Findings (pprof CPU profile, internal port `/debug/pprof`)
 

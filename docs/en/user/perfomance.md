@@ -5,6 +5,22 @@ lang_redirect: "[[ru/user/perfomance]]"
 chart_bench: "[[pushnotes_bench.datachart.csv]]"
 ---
 
+## In short
+
+- **Sync** (the everyday write): one changed note pushes in tens of milliseconds even on a 10 000-note vault; the *first* full import of 10 000 notes takes ~14 s on one core.
+- **Serving** (the read hot path): a single small server (Hetzner cpx32, 4 vCPU) serves **~4 000 real documentation pages per second** at 100 % success with a p99 of ~30 ms.
+- **Memory**: ~80 MB per 100 notes, ~1 GB per 10 000.
+
+Getting an *honest* serving number turned out to be surprisingly hard — three measurement traps, each costing roughly 2×:
+
+1. **Dev mode** recomputes every asset's hash on each request (~2× slower) → benchmark with `DEV=false`.
+2. **Load generator on the same box** steals CPU from the server (~2× slower) → run it from a separate machine.
+3. **Cold cache / a single URL** flatters the result → hit many real pages with a warmed cache.
+
+Our naïve first attempt was ~4× too pessimistic. The numbers below are after controlling for all three. Read on for the detail and the charts.
+
+---
+
 How fast is a vault sync, and how big can your vault get before you feel it? We measured the `pushNotes` mutation — the call the Obsidian plugin and the CLI make on every sync — on vaults of 10 to 10 000 notes.
 
 The charts below are live [[chartdata|datachart]] blocks reading the raw benchmark CSV from this vault — the same feature you can use for your own data.
@@ -147,17 +163,22 @@ There is still room to go further — the current architecture renders notes ind
 
 ### Measured on real content
 
-We loaded this very documentation — 35 real pages (the `/en/user` set: custom HTML inside the default template) — onto a Hetzner **cpx32** (4 vCPU AMD EPYC-Genoa, 8 GB RAM) and hit them with [vegeta](https://github.com/tsenart/vegeta), round-robin across all pages (~52 KB each), in production mode:
+We loaded this very documentation — 35 real pages (the `/en/user` set: custom HTML inside the default template) — onto a Hetzner **cpx32** (4 vCPU AMD EPYC-Genoa, 8 GB RAM) and hit them with [vegeta](https://github.com/tsenart/vegeta) **from a separate machine** (so the load generator doesn't steal the server's CPU), round-robin across all pages (~52 KB each), in **production mode** with a warm cache:
 
 | Load | Success | p50 | p95 | p99 |
 |------:|:-------:|----:|----:|----:|
-| 1 000 req/s | 100 % | 1.3 ms | 2.5 ms | 11 ms |
-| 2 000 req/s | 100 % | 6.9 ms | 38 ms | 62 ms |
-| 3 000 req/s | 100 % | 212 ms | 513 ms | 740 ms |
+| 1 000 req/s | 100 % | 2.7 ms | 3.9 ms | 10 ms |
+| 2 000 req/s | 100 % | 1.4 ms | 3.3 ms | 12 ms |
+| 3 000 req/s | 100 % | 1.8 ms | 6.2 ms | 16 ms |
+| 4 000 req/s | 100 % | 2.6 ms | 13 ms | 32 ms |
+| 5 000 req/s | 100 % | 9.1 ms | 74 ms | 169 ms |
+| 6 000 req/s | 100 % | 241 ms | 645 ms | 898 ms |
 
-A single 4-core node serves **~2 000 real pages per second** at 100 % success with a p99 of ~60 ms; the knee is around 2 500–3 000 req/s, past which latency climbs into the hundreds of ms. That's the per-node ceiling on this hardware, and where a second node (or a read replica — see [[zerodowntime]] / [[litestream]]) earns its keep. Measured 2026-06-22.
+Every request succeeds (100 % `200`) right through 6 000 req/s — the limit is *latency*, not errors. A single 4-core node comfortably serves **~4 000 real pages per second** with a p99 of ~30 ms; the knee is around 4 000–5 000 req/s, past which latency climbs into the hundreds of ms as the node becomes CPU-bound. That's the per-node ceiling on this hardware, and where a second node (or a read replica — see [[zerodowntime]] / [[litestream]]) earns its keep. Measured 2026-06-22.
 
-Two things dominate the per-request cost at that ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable — pages are static between writes — so there is clear headroom for a future optimization pass to push the ceiling several times higher.
+> **How to benchmark this honestly.** Run with `DEV=false` (dev mode recomputes asset hashes per request, ~2× slower), run the load generator on a *separate* machine (sharing the box steals ~2× the CPU), and hit many real pages with a warm cache. Skipping any of these understated our first run by ~4×.
+
+Two things dominate the per-request cost at the ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable — pages are static between writes — so there is clear headroom for a future optimization pass to push the ceiling several times higher.
 
 ## What this means for you
 
