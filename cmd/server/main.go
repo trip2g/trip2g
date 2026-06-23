@@ -386,6 +386,10 @@ func main() {
 	// Deprecated: map legacy RESEND_API_KEY onto Resend SMTP (warns if it fires).
 	applyLegacyEmailConfig(config, log)
 
+	if config.SMTPHost == "" {
+		log.Warn("no email transport configured: outgoing email (including sign-in codes) will be skipped; codes are logged instead — set SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY to enable delivery")
+	}
+
 	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled
 	if config.SimpleBackup.Enabled {
 		restoreBackup(log, config)
