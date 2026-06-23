@@ -16789,7 +16789,6 @@ var import_graphql = __toESM(require_graphql2(), 1);
 import crypto from "node:crypto";
 import { spawnSync, spawn } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 // src/generated/graphql.ts
@@ -16821,21 +16820,8 @@ function signHatJwt(secret, email) {
   const sig = crypto.createHmac("sha256", secret).update(signingInput).digest();
   return `${signingInput}.${base64url(sig)}`;
 }
-function buildHatLoginHtml(publicUrl, jwt) {
-  const escaped = jwt.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-  return `<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Signing in\u2026</title></head>
-<body>
-<form method="POST" action="${publicUrl}/_system/hat">
-<input type="hidden" name="token" value="${escaped}">
-<noscript><p>JavaScript is disabled \u2014 click the button to sign in.</p></noscript>
-<button type="submit">Sign in</button>
-</form>
-<script>document.forms[0].submit()</script>
-</body>
-</html>
-`;
+function buildHatLoginUrl(publicUrl, jwt) {
+  return `${publicUrl}/?hat=${encodeURIComponent(jwt)}`;
 }
 function hubSlug(hubUrl) {
   const host = new URL(hubUrl).hostname;
@@ -17543,13 +17529,30 @@ async function runKey(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+function brokenLinkWarning(vault, note) {
+  const root = path.resolve(vault);
+  const files = walkMarkdown(root);
+  const resolveSet = buildResolutionSet(root, files);
+  let body;
+  try {
+    body = splitFrontmatter(fs.readFileSync(note, "utf8")).body;
+  } catch {
+    return "";
+  }
+  const broken = findBrokenLinks(body, resolveSet);
+  if (broken.length === 0) return "";
+  const rel = path.relative(root, note);
+  const links = broken.map((t) => `[[${t}]]`).join(", ");
+  return `
+\u26A0 broken links in ${rel}: ${links} \u2014 create the target note(s) or fix the link.`;
+}
 function runDaily(vault, text, context) {
   if (!text) {
     return { text: "Error: `daily` requires a text argument", isError: true };
   }
   try {
     const note = appendDaily(path.resolve(vault), text, /* @__PURE__ */ new Date());
-    return { text: tailLines(note, context), isError: false };
+    return { text: tailLines(note, context) + brokenLinkWarning(vault, note), isError: false };
   } catch (err) {
     return { text: `Error: ${err.message}`, isError: true };
   }
@@ -17560,7 +17563,7 @@ function runLog(vault, file, text, context) {
   }
   try {
     const note = appendLog(path.resolve(vault), file, text, /* @__PURE__ */ new Date());
-    return { text: tailLines(note, context), isError: false };
+    return { text: tailLines(note, context) + brokenLinkWarning(vault, note), isError: false };
   } catch (err) {
     return { text: `Error: ${err.message}`, isError: true };
   }
@@ -17635,12 +17638,47 @@ function splitFrontmatter(content) {
   const afterFence = rest.slice(end).replace(/^---\s*$/m, "");
   return { frontmatter, body: afterFence };
 }
+function stripCode(body) {
+  return body.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+}
+function extractWikilinks(body) {
+  const stripped = stripCode(body);
+  const out = [];
+  const re = /(!?)\[\[([^\]]+)\]\]/g;
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    if (m[1] === "!") continue;
+    let target = m[2].split("|")[0].split("#")[0].trim();
+    if (!target) continue;
+    if (/\.[a-z0-9]{1,4}$/i.test(target)) continue;
+    out.push(target);
+  }
+  return out;
+}
+function buildResolutionSet(root, files) {
+  const set = /* @__PURE__ */ new Set();
+  for (const file of files) {
+    const rel = path.relative(root, file).replace(/\.md$/i, "");
+    const base = path.basename(file).replace(/\.md$/i, "");
+    set.add(rel.toLowerCase());
+    set.add(base.toLowerCase());
+  }
+  return set;
+}
+function findBrokenLinks(body, resolveSet) {
+  const broken = [];
+  for (const target of extractWikilinks(body)) {
+    if (!resolveSet.has(target.toLowerCase())) broken.push(target);
+  }
+  return broken;
+}
 function lintVault(vault, staleDays) {
   const violations = [];
   const root = path.resolve(vault);
   const files = walkMarkdown(root);
   const now = /* @__PURE__ */ new Date();
   const staleMs = staleDays * 24 * 60 * 60 * 1e3;
+  const resolveSet = buildResolutionSet(root, files);
   for (const file of files) {
     const rel = path.relative(root, file);
     let content;
@@ -17650,7 +17688,7 @@ function lintVault(vault, staleDays) {
       continue;
     }
     const { frontmatter, body } = splitFrontmatter(content);
-    const bodyForGate = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+    const bodyForGate = stripCode(body);
     if (/Status:\s*Unresolved/i.test(bodyForGate) || bodyForGate.includes("CONTRADICTION")) {
       violations.push({
         level: "error",
@@ -17682,6 +17720,14 @@ function lintVault(vault, staleDays) {
           });
         }
       }
+    }
+    for (const target of findBrokenLinks(body, resolveSet)) {
+      violations.push({
+        level: "warn",
+        kind: "broken-link",
+        file: rel,
+        detail: `[[${target}]]`
+      });
     }
   }
   for (const reserved of ["index.md", "log.md"]) {
@@ -17735,56 +17781,50 @@ function runOpen(flags) {
   const port = flags.port;
   const publicUrl = flags.publicUrl || `http://localhost:${port}`;
   const jwt = signHatJwt(secret, email);
-  const html = buildHatLoginHtml(publicUrl, jwt);
-  const htmlFile = path.join(os.tmpdir(), `trip2g-login-${process.pid}.html`);
+  const loginUrl = buildHatLoginUrl(publicUrl, jwt);
   if (flags.dryRun) {
     return {
       text: [
-        `[dry-run] would write login form to ${htmlFile}`,
-        `[dry-run] would open it in the browser \u2192 POST ${publicUrl}/_system/hat (signs in as ${email}, lands on /)`
+        `[dry-run] would open this ?hat= login URL in the browser (signs in as ${email}, lands on /):`,
+        loginUrl
       ].join("\n"),
       isError: false
     };
   }
-  try {
-    fs.writeFileSync(htmlFile, html, { mode: 384 });
-  } catch (err) {
-    return { text: `Error: ${err.message}`, isError: true };
-  }
-  const opener = process.platform === "darwin" ? { cmd: "open", args: [htmlFile] } : process.platform === "win32" ? { cmd: "cmd", args: ["/c", "start", "", htmlFile] } : { cmd: "xdg-open", args: [htmlFile] };
+  const opener = process.platform === "darwin" ? { cmd: "open", args: [loginUrl] } : process.platform === "win32" ? { cmd: "cmd", args: ["/c", "start", "", loginUrl] } : { cmd: "xdg-open", args: [loginUrl] };
   try {
     const child = spawn(opener.cmd, opener.args, { detached: true, stdio: "ignore" });
     child.unref();
   } catch {
     return {
-      text: `Could not launch a browser automatically. Open this file manually to sign in: ${htmlFile}
-(it POSTs a hot auth token to ${publicUrl}/_system/hat and signs you in as ${email})`,
+      text: `Could not launch a browser automatically. Open this URL manually to sign in as ${email}:
+` + loginUrl,
       isError: false
     };
   }
   return {
     text: [
       `Opening the web UI in your browser, signed in as ${email} \u2192 ${publicUrl}`,
-      `If the browser did not open, open this file manually: ${htmlFile}`
+      `If the browser did not open, open this URL manually: ${loginUrl}`
     ].join("\n"),
     isError: false
   };
 }
 function cmdDaily(vault, text, context) {
-  if (!text) {
-    console.error("Error: `daily` requires a text argument");
+  const result = runDaily(vault, text, context);
+  if (result.isError) {
+    console.error(result.text);
     process.exit(1);
   }
-  const note = appendDaily(path.resolve(vault), text, /* @__PURE__ */ new Date());
-  console.log(tailLines(note, context));
+  console.log(result.text);
 }
 function cmdLog(vault, file, text, context) {
-  if (!file || !text) {
-    console.error("Error: `log` requires <file> and <text> arguments");
+  const result = runLog(vault, file, text, context);
+  if (result.isError) {
+    console.error(result.text);
     process.exit(1);
   }
-  const note = appendLog(path.resolve(vault), file, text, /* @__PURE__ */ new Date());
-  console.log(tailLines(note, context));
+  console.log(result.text);
 }
 function cmdHub(hubUrl, folder, id, dryRun) {
   const result = runHub(hubUrl, folder, id, dryRun);
@@ -17827,7 +17867,7 @@ SUBCOMMANDS
   log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
   hub <url>              Bind an additional remote federation hub to the vault
   lint          Commit-gate + OKF validation + stale report over the vault
-  open          Open the web UI in your browser, signed in via hot auth token
+  open          Open the web UI in your browser via a ?hat= login URL (signs in via hot auth token)
   mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
@@ -17851,7 +17891,7 @@ FLAGS (hub)
 
 FLAGS (open)
   Reuses --folder/--port/--email/--public-url (same defaults as \`up\`).
-  --dry-run            Print the login-form path + URL, do not launch a browser.
+  --dry-run            Print the ?hat= login URL, do not launch a browser.
 
 FLAGS (daily / log)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -18386,7 +18426,7 @@ export {
   buildDailyEntry,
   buildDataJson,
   buildDockerRunArgs,
-  buildHatLoginHtml,
+  buildHatLoginUrl,
   buildHeaderNote,
   buildHomeNote,
   buildHubNote,
@@ -18396,6 +18436,8 @@ export {
   buildServerEnv,
   buildToolList,
   ensureDailyIndex,
+  extractWikilinks,
+  findBrokenLinks,
   formatLintReport,
   hubSlug,
   lintVault,

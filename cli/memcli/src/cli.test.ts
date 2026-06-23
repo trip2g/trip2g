@@ -32,7 +32,10 @@ import {
   buildHomeNote,
   buildHeaderNote,
   lintVault,
-  buildHatLoginHtml,
+  buildHatLoginUrl,
+  extractWikilinks,
+  runDaily,
+  runLog,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -162,18 +165,13 @@ test('parseArgs: --email flag', () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildHatLoginHtml
+// buildHatLoginUrl
 // ---------------------------------------------------------------------------
 
-test('buildHatLoginHtml: POSTs the jwt to /_system/hat with auto-submit', () => {
+test('buildHatLoginUrl: returns ${publicUrl}/?hat=<jwt>', () => {
   const jwt = signHatJwt('mysecret', 'admin@example.com');
-  const html = buildHatLoginHtml('http://localhost:24095', jwt);
-
-  assert.match(html, /action="http:\/\/localhost:24095\/_system\/hat"/);
-  assert.match(html, /method="POST"/);
-  assert.match(html, /<input type="hidden" name="token" value="/);
-  assert.ok(html.includes(jwt), 'the hidden token input must carry the jwt');
-  assert.match(html, /document\.forms\[0\]\.submit\(\)/);
+  const url = buildHatLoginUrl('http://localhost:24095', jwt);
+  assert.equal(url, `http://localhost:24095/?hat=${encodeURIComponent(jwt)}`);
 });
 
 test('parseArgs: --image flag', () => {
@@ -1068,6 +1066,138 @@ test('lintVault: prose Status: Unresolved (not in code span) still errors', () =
     );
     assert.ok(hit, 'prose Status: Unresolved must produce a commit-gate error');
     assert.equal(hit!.level, 'error');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// extractWikilinks
+// ---------------------------------------------------------------------------
+
+test('extractWikilinks: plain [[a]] is extracted', () => {
+  assert.deepEqual(extractWikilinks('see [[a]] here'), ['a']);
+});
+
+test('extractWikilinks: aliased [[a|b]] yields a (the target before |)', () => {
+  assert.deepEqual(extractWikilinks('see [[a|b]]'), ['a']);
+});
+
+test('extractWikilinks: heading [[a#h]] yields a (the target before #)', () => {
+  assert.deepEqual(extractWikilinks('see [[a#h]]'), ['a']);
+});
+
+test('extractWikilinks: ignores ![[a.svg]] embed', () => {
+  assert.deepEqual(extractWikilinks('![[a.svg]] and [[real]]'), ['real']);
+});
+
+test('extractWikilinks: ignores links inside an inline code span', () => {
+  assert.deepEqual(extractWikilinks('use `[[x]]` syntax and [[real]]'), ['real']);
+});
+
+test('extractWikilinks: ignores links inside a fenced code block', () => {
+  const body = '```\n[[x]]\n```\nthen [[real]]';
+  assert.deepEqual(extractWikilinks(body), ['real']);
+});
+
+// ---------------------------------------------------------------------------
+// lintVault — broken-link
+// ---------------------------------------------------------------------------
+
+test('lintVault: broken-link warns for [[missing]] with no target note', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'note.md'), '---\ntype: concept\n---\n\nsee [[missing]]\n');
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'broken-link' && v.file === 'note.md');
+    assert.ok(hit, 'must flag [[missing]] as broken-link');
+    assert.equal(hit!.level, 'warn');
+    assert.equal(hit!.detail, '[[missing]]');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: broken-link does NOT warn when target note exists', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'exists.md'), '---\ntype: concept\n---\n\nbody\n');
+    fs.writeFileSync(path.join(vault, 'note.md'), '---\ntype: concept\n---\n\nsee [[exists]]\n');
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'broken-link');
+    assert.ok(!hit, 'resolvable [[exists]] must not be flagged');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: broken-link ignores asset embeds', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'note.md'), '---\ntype: concept\n---\n\n![[diagram.svg]]\n');
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'broken-link');
+    assert.ok(!hit, 'asset embed must not be flagged as broken-link');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// runDaily / runLog — broken-link warning surfaced after write
+// ---------------------------------------------------------------------------
+
+test('runDaily: output includes broken-links warning for [[missing]]', () => {
+  const vault = makeLintVault();
+  try {
+    const result = runDaily(vault, 'see [[missing]]', 15);
+    assert.equal(result.isError, false);
+    assert.match(result.text, /broken links/);
+    assert.match(result.text, /\[\[missing\]\]/);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('runDaily: no broken-links warning when all links resolve', () => {
+  const vault = makeLintVault();
+  try {
+    fs.writeFileSync(path.join(vault, 'exists.md'), '---\ntype: concept\n---\n\nbody\n');
+    const result = runDaily(vault, 'see [[exists]]', 15);
+    assert.equal(result.isError, false);
+    assert.doesNotMatch(result.text, /broken links/);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('runLog: output includes broken-links warning for [[missing]]', () => {
+  const vault = makeLintVault();
+  try {
+    const result = runLog(vault, 'topic', 'see [[missing]]', 15);
+    assert.equal(result.isError, false);
+    assert.match(result.text, /broken links/);
+    assert.match(result.text, /\[\[missing\]\]/);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('runLog: no broken-links warning when all links resolve', () => {
+  const vault = makeLintVault();
+  try {
+    fs.writeFileSync(path.join(vault, 'exists.md'), '---\ntype: concept\n---\n\nbody\n');
+    // A new log note adds a `### [[<today>]]` day-section heading; seed that day
+    // note so it resolves too and only [[exists]] remains to check.
+    const now = new Date();
+    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    fs.writeFileSync(path.join(vault, `${day}.md`), '---\ntype: daily\n---\n\nbody\n');
+    const result = runLog(vault, 'topic', 'see [[exists]]', 15);
+    assert.equal(result.isError, false);
+    assert.doesNotMatch(result.text, /broken links/);
   } finally {
     fs.rmSync(vault, { recursive: true });
   }

@@ -18,7 +18,6 @@
 import crypto from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { print } from 'graphql';
 import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql.ts';
@@ -120,35 +119,20 @@ export function signHatJwt(secret: string, email: string): string {
 }
 
 /**
- * Build a minimal self-submitting HTML page that POSTs a HAT JWT to
- * `${publicUrl}/_system/hat`. Opening this page in a browser authenticates the
- * user and lands them on `/` (the `/_system/hat` endpoint is POST-only and
- * responds 302 → `/`; a plain GET link with ?token= will NOT authenticate).
+ * Build a single GET login URL that carries a HAT JWT in the `?hat=` query
+ * parameter. Opening `${publicUrl}/?hat=<jwt>` in a browser hits the server's
+ * restored hot-auth-token query consumer, which reads the token, sets the
+ * trip2g_token session cookie, strips the param, and 302s home — logging the
+ * user in with a single GET (no POST form needed).
  *
- * The jwt is HTML-escaped into the value attribute defensively (it is base64url
- * + dots, so escaping `"`/`<`/`&` is belt-and-suspenders).
+ * NOTE: the `?hat=` login requires a server image with the restored query
+ * consumer; older images won't honor it.
  *
  * @param publicUrl - the running instance's public URL (no trailing slash)
  * @param jwt       - the HAT JWT (from signHatJwt)
  */
-export function buildHatLoginHtml(publicUrl: string, jwt: string): string {
-  const escaped = jwt
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;');
-  return `<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Signing in…</title></head>
-<body>
-<form method="POST" action="${publicUrl}/_system/hat">
-<input type="hidden" name="token" value="${escaped}">
-<noscript><p>JavaScript is disabled — click the button to sign in.</p></noscript>
-<button type="submit">Sign in</button>
-</form>
-<script>document.forms[0].submit()</script>
-</body>
-</html>
-`;
+export function buildHatLoginUrl(publicUrl: string, jwt: string): string {
+  return `${publicUrl}/?hat=${encodeURIComponent(jwt)}`;
 }
 
 /**
@@ -1097,13 +1081,35 @@ export async function runKey(flags: Flags): Promise<CommandResult> {
   }
 }
 
+/**
+ * Build a one-line broken-links warning for a just-written note by checking its
+ * wikilinks against the full vault resolution set, or '' if all links resolve.
+ * Surfaces dangling links immediately after a daily/log write.
+ */
+function brokenLinkWarning(vault: string, note: string): string {
+  const root = path.resolve(vault);
+  const files = walkMarkdown(root);
+  const resolveSet = buildResolutionSet(root, files);
+  let body: string;
+  try {
+    body = splitFrontmatter(fs.readFileSync(note, 'utf8')).body;
+  } catch {
+    return '';
+  }
+  const broken = findBrokenLinks(body, resolveSet);
+  if (broken.length === 0) return '';
+  const rel = path.relative(root, note);
+  const links = broken.map((t) => `[[${t}]]`).join(', ');
+  return `\n⚠ broken links in ${rel}: ${links} — create the target note(s) or fix the link.`;
+}
+
 export function runDaily(vault: string, text: string, context: number): CommandResult {
   if (!text) {
     return { text: 'Error: `daily` requires a text argument', isError: true };
   }
   try {
     const note = appendDaily(path.resolve(vault), text, new Date());
-    return { text: tailLines(note, context), isError: false };
+    return { text: tailLines(note, context) + brokenLinkWarning(vault, note), isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
@@ -1115,7 +1121,7 @@ export function runLog(vault: string, file: string, text: string, context: numbe
   }
   try {
     const note = appendLog(path.resolve(vault), file, text, new Date());
-    return { text: tailLines(note, context), isError: false };
+    return { text: tailLines(note, context) + brokenLinkWarning(vault, note), isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
@@ -1232,6 +1238,70 @@ function splitFrontmatter(content: string): { frontmatter: string; body: string 
 }
 
 /**
+ * Strip fenced code blocks and inline code spans from a note body, matching the
+ * stripping used by the commit-gate so wikilinks inside backticks are ignored.
+ */
+function stripCode(body: string): string {
+  return body
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '');
+}
+
+/**
+ * Extract `[[target]]` / `[[target|alias]]` wikilink targets from a note body.
+ * - Strips fenced code blocks and inline code spans first (reuses the
+ *   commit-gate stripping) so links inside backticks are ignored.
+ * - Takes the substring before `|` (alias) and before `#` (heading anchor).
+ * - EXCLUDES embeds `![[...]]`.
+ * - EXCLUDES targets that look like asset files (a `.` followed by a short
+ *   extension, e.g. `.svg`, `.png`) to avoid false positives.
+ */
+export function extractWikilinks(body: string): string[] {
+  const stripped = stripCode(body);
+  const out: string[] = [];
+  const re = /(!?)\[\[([^\]]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(stripped)) !== null) {
+    if (m[1] === '!') continue; // embed — skip
+    let target = m[2].split('|')[0].split('#')[0].trim();
+    if (!target) continue;
+    // Skip asset-file-looking targets (e.g. foo.svg, foo.png): a dot followed
+    // by a short (1-4 char) alphanumeric extension.
+    if (/\.[a-z0-9]{1,4}$/i.test(target)) continue;
+    out.push(target);
+  }
+  return out;
+}
+
+/**
+ * Build the case-insensitive resolution set for a vault: for every .md note,
+ * add both its basename-without-`.md` and its vault-relative path-without-`.md`
+ * (lowercased). A wikilink resolves if its (lowercased) target matches an entry.
+ */
+function buildResolutionSet(root: string, files: string[]): Set<string> {
+  const set = new Set<string>();
+  for (const file of files) {
+    const rel = path.relative(root, file).replace(/\.md$/i, '');
+    const base = path.basename(file).replace(/\.md$/i, '');
+    set.add(rel.toLowerCase());
+    set.add(base.toLowerCase());
+  }
+  return set;
+}
+
+/**
+ * Return the unresolved wikilink targets in `body` against the resolution set.
+ * Reusable for a single note (CHANGE 3) and for the vault-wide lint check.
+ */
+export function findBrokenLinks(body: string, resolveSet: Set<string>): string[] {
+  const broken: string[] = [];
+  for (const target of extractWikilinks(body)) {
+    if (!resolveSet.has(target.toLowerCase())) broken.push(target);
+  }
+  return broken;
+}
+
+/**
  * Walk a vault and produce a structured lint result.
  *
  * Checks:
@@ -1239,6 +1309,8 @@ function splitFrontmatter(content: string): { frontmatter: string; body: string 
  * - okf-type   (warn):  note has no `type:` field in frontmatter.
  * - okf-reserved (error): index.md or log.md missing at the vault root.
  * - stale      (warn):  note has a `timestamp:`/`date:` frontmatter older than staleDays.
+ * - broken-link (warn): a `[[target]]` does not resolve against any vault note
+ *   (lazy/dangling links are allowed by OKF, so this is a warning, not an error).
  */
 export function lintVault(vault: string, staleDays: number): LintResult {
   const violations: LintViolation[] = [];
@@ -1246,6 +1318,10 @@ export function lintVault(vault: string, staleDays: number): LintResult {
   const files = walkMarkdown(root);
   const now = new Date();
   const staleMs = staleDays * 24 * 60 * 60 * 1000;
+
+  // Resolution set built from ALL notes so broken-link can match by basename or
+  // vault-relative path (lowercased for case-insensitive matching).
+  const resolveSet = buildResolutionSet(root, files);
 
   for (const file of files) {
     const rel = path.relative(root, file);
@@ -1260,9 +1336,7 @@ export function lintVault(vault: string, staleDays: number): LintResult {
     // Strip fenced code blocks and inline code spans before commit-gate checks
     // so instructional prose like `Status: Unresolved` inside backticks does not
     // produce a false-positive (e.g. AGENTS.md explains the rule in a code span).
-    const bodyForGate = body
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/`[^`]*`/g, '');
+    const bodyForGate = stripCode(body);
 
     // commit-gate (error)
     if (/Status:\s*Unresolved/i.test(bodyForGate) || bodyForGate.includes('CONTRADICTION')) {
@@ -1302,6 +1376,17 @@ export function lintVault(vault: string, staleDays: number): LintResult {
           });
         }
       }
+    }
+
+    // broken-link (warn) — wikilinks that resolve against no vault note.
+    // Lazy/dangling links are allowed by OKF, so this is a warning, not an error.
+    for (const target of findBrokenLinks(body, resolveSet)) {
+      violations.push({
+        level: 'warn',
+        kind: 'broken-link',
+        file: rel,
+        detail: `[[${target}]]`,
+      });
     }
   }
 
@@ -1364,9 +1449,12 @@ export function runLint(folder: string, staleDays: number): CommandResult {
  * Sign the user into the running instance's web UI in their browser, landing on
  * the home page, via the HAT (hot auth token) flow.
  *
- * Writes a self-submitting HTML POST form to a temp file and opens it with the
- * OS opener. The form POSTs the HAT JWT to `/_system/hat` (POST-only), which
- * loads/creates the user by email, grants admin (ae flag), and 302s to `/`.
+ * Builds a single `?hat=<jwt>` GET login URL and opens it with the OS opener.
+ * The server reads the token from the query, sets the trip2g_token session
+ * cookie, strips the param, and 302s to `/`.
+ *
+ * NOTE: the `?hat=` login needs a server image with the restored query consumer
+ * (older images won't honor it).
  */
 export function runOpen(flags: Flags): CommandResult {
   const vault = path.resolve(flags.folder);
@@ -1384,31 +1472,24 @@ export function runOpen(flags: Flags): CommandResult {
   const publicUrl = flags.publicUrl || `http://localhost:${port}`;
 
   const jwt = signHatJwt(secret, email);
-  const html = buildHatLoginHtml(publicUrl, jwt);
-  const htmlFile = path.join(os.tmpdir(), `trip2g-login-${process.pid}.html`);
+  const loginUrl = buildHatLoginUrl(publicUrl, jwt);
 
   if (flags.dryRun) {
     return {
       text: [
-        `[dry-run] would write login form to ${htmlFile}`,
-        `[dry-run] would open it in the browser → POST ${publicUrl}/_system/hat (signs in as ${email}, lands on /)`,
+        `[dry-run] would open this ?hat= login URL in the browser (signs in as ${email}, lands on /):`,
+        loginUrl,
       ].join('\n'),
       isError: false,
     };
   }
 
-  try {
-    fs.writeFileSync(htmlFile, html, { mode: 0o600 });
-  } catch (err) {
-    return { text: `Error: ${(err as Error).message}`, isError: true };
-  }
-
   const opener: { cmd: string; args: string[] } =
     process.platform === 'darwin'
-      ? { cmd: 'open', args: [htmlFile] }
+      ? { cmd: 'open', args: [loginUrl] }
       : process.platform === 'win32'
-        ? { cmd: 'cmd', args: ['/c', 'start', '', htmlFile] }
-        : { cmd: 'xdg-open', args: [htmlFile] };
+        ? { cmd: 'cmd', args: ['/c', 'start', '', loginUrl] }
+        : { cmd: 'xdg-open', args: [loginUrl] };
 
   try {
     const child = spawn(opener.cmd, opener.args, { detached: true, stdio: 'ignore' });
@@ -1416,8 +1497,8 @@ export function runOpen(flags: Flags): CommandResult {
   } catch {
     return {
       text:
-        `Could not launch a browser automatically. Open this file manually to sign in: ${htmlFile}\n` +
-        `(it POSTs a hot auth token to ${publicUrl}/_system/hat and signs you in as ${email})`,
+        `Could not launch a browser automatically. Open this URL manually to sign in as ${email}:\n` +
+        loginUrl,
       isError: false,
     };
   }
@@ -1425,7 +1506,7 @@ export function runOpen(flags: Flags): CommandResult {
   return {
     text: [
       `Opening the web UI in your browser, signed in as ${email} → ${publicUrl}`,
-      `If the browser did not open, open this file manually: ${htmlFile}`,
+      `If the browser did not open, open this URL manually: ${loginUrl}`,
     ].join('\n'),
     isError: false,
   };
@@ -1436,21 +1517,21 @@ export function runOpen(flags: Flags): CommandResult {
 // ---------------------------------------------------------------------------
 
 function cmdDaily(vault: string, text: string, context: number): void {
-  if (!text) {
-    console.error('Error: `daily` requires a text argument');
+  const result = runDaily(vault, text, context);
+  if (result.isError) {
+    console.error(result.text);
     process.exit(1);
   }
-  const note = appendDaily(path.resolve(vault), text, new Date());
-  console.log(tailLines(note, context));
+  console.log(result.text);
 }
 
 function cmdLog(vault: string, file: string, text: string, context: number): void {
-  if (!file || !text) {
-    console.error('Error: `log` requires <file> and <text> arguments');
+  const result = runLog(vault, file, text, context);
+  if (result.isError) {
+    console.error(result.text);
     process.exit(1);
   }
-  const note = appendLog(path.resolve(vault), file, text, new Date());
-  console.log(tailLines(note, context));
+  console.log(result.text);
 }
 
 function cmdHub(hubUrl: string, folder: string, id: string | null, dryRun: boolean): void {
@@ -1501,7 +1582,7 @@ SUBCOMMANDS
   log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
   hub <url>              Bind an additional remote federation hub to the vault
   lint          Commit-gate + OKF validation + stale report over the vault
-  open          Open the web UI in your browser, signed in via hot auth token
+  open          Open the web UI in your browser via a ?hat= login URL (signs in via hot auth token)
   mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
@@ -1525,7 +1606,7 @@ FLAGS (hub)
 
 FLAGS (open)
   Reuses --folder/--port/--email/--public-url (same defaults as \`up\`).
-  --dry-run            Print the login-form path + URL, do not launch a browser.
+  --dry-run            Print the ?hat= login URL, do not launch a browser.
 
 FLAGS (daily / log)
   --folder <path>      Vault directory (default: ./memory-vault)
