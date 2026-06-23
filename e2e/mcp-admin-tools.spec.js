@@ -13,8 +13,15 @@
  * 1. With X-API-Key but flag OFF → graphql tools hidden in tools/list,
  *    tools/call graphql_request returns Method not found.
  * 2. With X-API-Key and flag ON → graphql tools visible, tools/call
- *    graphql_introspection works, tools/call graphql_request executes a real mutation.
+ *    graphql_introspection works, tools/call graphql_request executes real
+ *    queries AND mutations (admin path is write-capable).
+ *    - Queries including the admin field are allowed.
+ *    - Mutations are allowed.
+ *    - Subscriptions are rejected (cannot stream over JSON-RPC).
  * 3. After toggling flag back OFF → tools disappear again.
+ *
+ * NOTE: The federated path (federated_graphql_request tool) remains read-only
+ * and is tested separately in federation-graphql.spec.js.
  */
 
 import { test, expect } from '@playwright/test';
@@ -225,16 +232,15 @@ test.describe.serial('MCP API Key admin tools', () => {
     }
   });
 
-  test('flag ON: graphql_request allows allowlisted queries, rejects mutations and admin field', async ({ playwright }) => {
+  test('flag ON: graphql_request allows queries, mutations, and admin field; rejects subscriptions', async ({ playwright }) => {
     await setAdminToolsFlag(adminRequest, APP_URL, adminCookie, apiKeyId, true);
 
     const ctx = await playwright.request.newContext({});
     try {
-      // graphql_request is query-only and limited to an allowlist of read-only root fields
-      // (note, search, similarNotes, viewer, notePaths, resolveWikilinks).
-      // admin field and mutations are intentionally rejected for security.
+      // The admin graphql_request path is write-capable: queries and mutations are
+      // both allowed. Only subscriptions are rejected (cannot stream over JSON-RPC).
 
-      // An allowlisted query (viewer) must succeed.
+      // A plain query (viewer) must succeed.
       // The response carries data in structuredContent, not content[0].text.
       const queryResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
         name: 'graphql_request',
@@ -247,18 +253,19 @@ test.describe.serial('MCP API Key admin tools', () => {
       expect(viewerData).toBeDefined();
       expect(viewerData.role).toBeTruthy();
 
-      // admin field is not in the read-only allowlist — must be rejected.
+      // admin field is now allowed on the admin path.
       const adminQueryResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
         name: 'graphql_request',
         arguments: {
           query: 'query { admin { allApiKeys { nodes { id } } } }',
         },
       });
-      expect(adminQueryResult.error).toBeDefined();
-      expect(adminQueryResult.error.code).toBe(-32602); // InvalidParams
-      expect(adminQueryResult.error.message).toContain('"admin" is not allowed');
+      expect(adminQueryResult.error).toBeUndefined();
+      const adminNodes = adminQueryResult.result?.structuredContent?.data?.admin?.allApiKeys?.nodes;
+      expect(Array.isArray(adminNodes)).toBe(true);
 
-      // Mutations are rejected — graphql_request is query-only.
+      // Mutations are allowed on the admin path. Toggle the flag OFF via MCP
+      // graphql_request, then re-enable it so subsequent test state is correct.
       const mutationResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
         name: 'graphql_request',
         arguments: {
@@ -273,10 +280,26 @@ test.describe.serial('MCP API Key admin tools', () => {
           variables: { input: { id: apiKeyId, enabled: false } },
         },
       });
-      expect(mutationResult.error).toBeDefined();
-      expect(mutationResult.error.code).toBe(-32602); // InvalidParams — only queries allowed
+      expect(mutationResult.error).toBeUndefined();
+      const mutatedKey = mutationResult.result?.structuredContent?.data?.admin?.setApiKeyMcpAdminTools?.apiKey;
+      expect(mutatedKey?.enableMcpAdminTools).toBe(false);
 
-      // Toggle the flag OFF via the admin GraphQL endpoint (not MCP) and verify
+      // Re-enable the flag via admin GraphQL (not MCP, since the tool is now hidden)
+      // so the "flag disappears" check below starts from a clean known state.
+      await setAdminToolsFlag(adminRequest, APP_URL, adminCookie, apiKeyId, true);
+
+      // Subscriptions are rejected — cannot stream over JSON-RPC request/response.
+      const subscriptionResult = await mcpCallWithAPIKey(ctx, apiKey, 'tools/call', {
+        name: 'graphql_request',
+        arguments: {
+          query: 'subscription { __typename }',
+        },
+      });
+      expect(subscriptionResult.error).toBeDefined();
+      expect(subscriptionResult.error.code).toBe(-32602); // InvalidParams
+      expect(subscriptionResult.error.message.toLowerCase()).toContain('subscription');
+
+      // Toggle the flag OFF via the admin GraphQL endpoint and verify
       // that graphql_request then disappears from tools/list.
       await setAdminToolsFlag(adminRequest, APP_URL, adminCookie, apiKeyId, false);
       const afterList = await mcpCallWithAPIKey(ctx, apiKey, 'tools/list');
