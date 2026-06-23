@@ -144,9 +144,12 @@ func readUserVersion(path string) (int, error) {
 	defer db.Close()
 
 	var gen int
-	if err := db.QueryRow("PRAGMA user_version").Scan(&gen); err != nil {
+
+	err = db.QueryRow("PRAGMA user_version").Scan(&gen)
+	if err != nil {
 		return 0, err
 	}
+
 	return gen, nil
 }
 
