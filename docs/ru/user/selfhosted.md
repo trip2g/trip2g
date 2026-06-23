@@ -45,7 +45,7 @@ docker create --name tmp ghcr.io/trip2g/trip2g && \
 sudo chmod +x /usr/local/bin/trip2g
 ```
 
-**(в) Собрать из исходников**:
+**(в) Собрать из исходников** — важно: фронтенд должен быть уже собран в `assets/ui` до сборки (в `Dockerfile` это делает сборщик `$mol`). Варианты (а) и (б) самодостаточны; (в) — только для полного чекаута с собранным фронтендом:
 
 ```bash
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/server
@@ -56,7 +56,7 @@ sudo chmod +x /usr/local/bin/trip2g
 ### Установите зависимости
 
 ```bash
-apt-get install -y git ca-certificates
+apt-get update && apt-get install -y git ca-certificates
 ```
 
 Бинарник вызывает `git` внутри себя и использует CA-сертификаты для проверки TLS.

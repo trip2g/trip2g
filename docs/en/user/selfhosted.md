@@ -45,7 +45,7 @@ docker create --name tmp ghcr.io/trip2g/trip2g && \
 sudo chmod +x /usr/local/bin/trip2g
 ```
 
-**(c) Build from source**:
+**(c) Build from source** — note: the frontend assets must already be built into `assets/ui` before this (the `Dockerfile` does that with the `$mol` builder). Options (a) and (b) are self-contained; (c) is only for a full checkout with the frontend built:
 
 ```bash
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/server
@@ -56,7 +56,7 @@ sudo chmod +x /usr/local/bin/trip2g
 ### Install runtime dependencies
 
 ```bash
-apt-get install -y git ca-certificates
+apt-get update && apt-get install -y git ca-certificates
 ```
 
 The binary shells out to `git` internally and needs CA certificates for TLS verification.
