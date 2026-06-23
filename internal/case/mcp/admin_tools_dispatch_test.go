@@ -141,17 +141,19 @@ func TestAPIKeyAdminTools_GraphQLRequestDispatched(t *testing.T) {
 	require.Contains(t, string(structuredJSON), `"note"`)
 }
 
-// TestAPIKeyAdminTools_GraphQLRequestMutationBlocked: mutations must be rejected
-// even when admin tools are enabled.
-func TestAPIKeyAdminTools_GraphQLRequestMutationBlocked(t *testing.T) {
+// TestAPIKeyAdminTools_GraphQLRequestMutationDispatched: mutations must be
+// dispatched to env.GraphQLRequest when admin tools are enabled.
+func TestAPIKeyAdminTools_GraphQLRequestMutationDispatched(t *testing.T) {
 	env := buildDispatchEnv(t, true)
 	adminTools := true
 	env.ResolveAPIKeyFunc = func(_ context.Context, _, _ string) (*db.ApiKey, error) {
 		return &db.ApiKey{ID: 1, EnableMcpAdminTools: &adminTools}, nil
 	}
-	env.GraphQLRequestFunc = func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
-		t.Error("GraphQLRequest must NOT be called for mutation queries")
-		return nil, errors.New("must not be called")
+	gqlCalled := false
+	env.GraphQLRequestFunc = func(_ context.Context, query string, _ map[string]any) ([]byte, error) {
+		gqlCalled = true
+		require.Contains(t, query, "mutation")
+		return []byte(`{"data":{"adminMutation":{"setApiKeyMcpAdminTools":{"apiKey":{"id":42}}}}}`), nil
 	}
 
 	body := mcpToolsCallBody(t, "graphql_request", map[string]any{
@@ -169,9 +171,8 @@ func TestAPIKeyAdminTools_GraphQLRequestMutationBlocked(t *testing.T) {
 
 	var resp mcp.Response
 	require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
-	require.NotNil(t, resp.Error, "mutation must be rejected")
-	require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
-	require.Contains(t, resp.Error.Message, "mutation")
+	require.Nil(t, resp.Error, "admin mutation must succeed, got: %v", resp.Error)
+	require.True(t, gqlCalled, "GraphQLRequest must be invoked for admin mutation")
 }
 
 // TestAPIKeyAdminTools_GraphQLRequestBlockedWithoutFlag: tools/call graphql_request
