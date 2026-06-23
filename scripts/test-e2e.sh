@@ -446,13 +446,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --ui
 else
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation"
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence"
 fi
 
 TEST_EXIT_CODE=$?
@@ -528,6 +528,19 @@ npx playwright test e2e/federation-bidir.spec.js || {
   exit 1
 }
 echo -e "${GREEN}✓ Bidirectional federation E2E tests passed${NC}"
+
+# Run git<->plugin coexistence E2E tests in isolation. gitsync shares the single
+# instance's DB-canonical git mirror; under fullyParallel it races note-mutating
+# specs (e.g. updatenotes) whose materialize advances master between gitsync's
+# pull and push -> spurious non-fast-forward. Run it alone so nothing mutates the
+# mirror concurrently. Must precede unreleased-changes/show-draft (serving-state poison).
+echo ""
+echo "🔁 Running git<->plugin coexistence E2E tests..."
+npx playwright test e2e/gitsync.spec.js || {
+  echo -e "${RED}✗ gitsync E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ gitsync E2E tests passed${NC}"
 
 # Run webhook E2E tests (when job queue is empty). Must run BEFORE
 # unreleased-changes: webhooks push notes and serve them at their public URL,
