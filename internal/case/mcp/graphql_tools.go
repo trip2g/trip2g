@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"strings"
 
+	"trip2g/internal/logger"
+
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/parser"
-
-	"trip2g/internal/logger"
 )
 
 const fullIntrospectionQuery = `{

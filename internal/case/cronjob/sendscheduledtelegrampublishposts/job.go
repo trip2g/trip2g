@@ -5,6 +5,8 @@ import (
 )
 
 type Job struct {
+	// Cron is the schedule expression, injected from appconfig (env/flag).
+	Cron string
 }
 
 func (j *Job) Name() string {
@@ -12,7 +14,10 @@ func (j *Job) Name() string {
 }
 
 func (j *Job) Schedule() string {
-	return "0 * * * * *" // every minute
+	if j.Cron != "" {
+		return j.Cron
+	}
+	return "0 * * * * *" // default: every minute
 }
 
 func (j *Job) ExecuteAfterStart() bool {

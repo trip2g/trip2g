@@ -1,0 +1,33 @@
+# Dex OIDC IdP for e2e (e2e/oidc-dex.spec.js) — a light real IdP, no DB.
+#
+# Issuer uses host.docker.internal so it resolves from BOTH sides:
+#   - the trip2g app container reaches it via the host gateway (extra_hosts);
+#   - the Playwright browser reaches it via --host-resolver-rules (MAP
+#     host.docker.internal 127.0.0.1), since Dex is published on host :5556.
+issuer: http://host.docker.internal:5556
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+oauth2:
+  skipApprovalScreen: true
+
+staticClients:
+  - id: trip2g-sso-client
+    secret: trip2g-secret
+    name: trip2g
+    redirectURIs:
+      # compose app (PUBLIC_URL=:20081) and the standalone verify run (:31081)
+      - http://localhost:20081/_system/auth/oidc/callback
+      - http://localhost:31081/_system/auth/oidc/callback
+
+enablePasswordDB: true
+staticPasswords:
+  # login: alice@example.com / password123
+  - email: "alice@example.com"
+    hash: "$2b$10$seHp7mURU5gz8cKqOP.Wgucx9ZUPGstGoN9B0iIbx9OYHgK.xCVOu"
+    username: "alice"
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

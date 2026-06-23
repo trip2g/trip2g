@@ -5,14 +5,13 @@
 package router
 
 import (
-	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
-	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
-	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
 	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
 	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
 	handlegooglecallbackhandlegooglecallback "trip2g/internal/case/handlegooglecallback"
 	handlegooglestarthandlegooglestart "trip2g/internal/case/handlegooglestart"
+	handleoidccallbackhandleoidccallback "trip2g/internal/case/handleoidccallback"
+	handleoidcstarthandleoidcstart "trip2g/internal/case/handleoidcstart"
 	mcpmcp "trip2g/internal/case/mcp"
 	processnotionwebookprocessnotionwebook "trip2g/internal/case/processnotionwebook"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
@@ -22,6 +21,9 @@ import (
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	rendersearchpagerendersearchpage "trip2g/internal/case/rendersearchpage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
+	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
+	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
+	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	federationtopologyfederationtopology "trip2g/internal/case/system/federationtopology"
 )
 
@@ -31,6 +33,8 @@ var endpoints = []Endpoint{
 	&handlegithubstarthandlegithubstart.Endpoint{},
 	&handlegooglecallbackhandlegooglecallback.Endpoint{},
 	&handlegooglestarthandlegooglestart.Endpoint{},
+	&handleoidccallbackhandleoidccallback.Endpoint{},
+	&handleoidcstarthandleoidcstart.Endpoint{},
 	&mcpmcp.Endpoint{},
 	&mcpmcp.GetEndpoint{},
 	&processnotionwebookprocessnotionwebook.Endpoint{},
@@ -54,6 +58,8 @@ type RoutesEnv interface {
 	handlegithubstarthandlegithubstart.Env
 	handlegooglecallbackhandlegooglecallback.Env
 	handlegooglestarthandlegooglestart.Env
+	handleoidccallbackhandleoidccallback.Env
+	handleoidcstarthandleoidcstart.Env
 	mcpmcp.Env
 	processnotionwebookprocessnotionwebook.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
@@ -68,3 +74,4 @@ type RoutesEnv interface {
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 	federationtopologyfederationtopology.Env
 }
+

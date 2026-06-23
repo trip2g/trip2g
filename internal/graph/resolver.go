@@ -22,6 +22,7 @@ import (
 	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createoidccredentials"
 	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
@@ -40,6 +41,7 @@ import (
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
+	"trip2g/internal/case/admin/deleteoidccredentials"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/deletesecret"
@@ -65,6 +67,7 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
+	"trip2g/internal/case/admin/setactiveoidccredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
@@ -356,14 +359,19 @@ type Env interface {
 	creategoogleoauthcredentials.Env
 	deletegoogleoauthcredentials.Env
 	setactivegoogleoauthcredentials.Env
+	createoidccredentials.Env
+	deleteoidccredentials.Env
+	setactiveoidccredentials.Env
 	creategithuboauthcredentials.Env
 	deletegithuboauthcredentials.Env
 	setactivegithuboauthcredentials.Env
 	deactivategoogleoauth.Env
 	deactivategithuboauth.Env
 	ListGoogleOAuthCredentials(ctx context.Context) ([]db.GoogleOauthCredential, error)
+	ListOIDCCredentials(ctx context.Context) ([]db.OidcCredential, error)
 	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
 	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+	BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 
 	// Federation secrets

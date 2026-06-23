@@ -471,6 +471,21 @@ type OfferSubgraph struct {
 	SubgraphID int64 `json:"subgraph_id"`
 }
 
+type OidcCredential struct {
+	ID                    int64     `json:"id"`
+	Name                  string    `json:"name"`
+	Issuer                string    `json:"issuer"`
+	ClientID              string    `json:"client_id"`
+	ClientSecretEncrypted []byte    `json:"client_secret_encrypted"`
+	Scopes                string    `json:"scopes"`
+	AutoProvision         bool      `json:"auto_provision"`
+	AllowedEmailDomain    string    `json:"allowed_email_domain"`
+	RequiredGroup         string    `json:"required_group"`
+	Active                bool      `json:"active"`
+	CreatedAt             time.Time `json:"created_at"`
+	CreatedBy             int64     `json:"created_by"`
+}
+
 type PatreonCampaign struct {
 	ID            int64      `json:"id"`
 	CredentialsID int64      `json:"credentials_id"`

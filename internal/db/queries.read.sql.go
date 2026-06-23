@@ -1539,6 +1539,30 @@ func (q *Queries) GetActiveGoogleOAuthCredentials(ctx context.Context) (GoogleOa
 	return i, err
 }
 
+const getActiveOIDCCredentials = `-- name: GetActiveOIDCCredentials :one
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials where active = true limit 1
+`
+
+func (q *Queries) GetActiveOIDCCredentials(ctx context.Context) (OidcCredential, error) {
+	row := q.db.QueryRowContext(ctx, getActiveOIDCCredentials)
+	var i OidcCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Issuer,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Scopes,
+		&i.AutoProvision,
+		&i.AllowedEmailDomain,
+		&i.RequiredGroup,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const getAllLatestNoteChunksWithEmbeddings = `-- name: GetAllLatestNoteChunksWithEmbeddings :many
 select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
 from note_paths np
@@ -2234,6 +2258,30 @@ func (q *Queries) GetNotesWithFormSubmits(ctx context.Context) ([]GetNotesWithFo
 		return nil, err
 	}
 	return items, nil
+}
+
+const getOIDCCredentials = `-- name: GetOIDCCredentials :one
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials where id = ?
+`
+
+func (q *Queries) GetOIDCCredentials(ctx context.Context, id int64) (OidcCredential, error) {
+	row := q.db.QueryRowContext(ctx, getOIDCCredentials, id)
+	var i OidcCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Issuer,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Scopes,
+		&i.AutoProvision,
+		&i.AllowedEmailDomain,
+		&i.RequiredGroup,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
@@ -5299,6 +5347,46 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 			&i.GraphPositionY,
 			&i.HiddenBy,
 			&i.HiddenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOIDCCredentials = `-- name: ListOIDCCredentials :many
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials order by created_at desc
+`
+
+func (q *Queries) ListOIDCCredentials(ctx context.Context) ([]OidcCredential, error) {
+	rows, err := q.db.QueryContext(ctx, listOIDCCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OidcCredential
+	for rows.Next() {
+		var i OidcCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Issuer,
+			&i.ClientID,
+			&i.ClientSecretEncrypted,
+			&i.Scopes,
+			&i.AutoProvision,
+			&i.AllowedEmailDomain,
+			&i.RequiredGroup,
+			&i.Active,
+			&i.CreatedAt,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

@@ -70,6 +70,9 @@ type Config struct {
 	MCPFederationAllowPrivate  bool
 	MCPFederatedGraphQLEnabled bool
 
+	CronExecuteWebhooksSchedule string
+	CronTelegramPublishSchedule string
+
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
@@ -146,6 +149,23 @@ type Config struct {
 
 	// Cloudflare Turnstile captcha
 	Turnstile turnstile.Config
+
+	// OIDC env-managed provider. When Issuer/ClientID/ClientSecret are all set,
+	// a virtual OIDC provider built from these values takes precedence over any
+	// DB-configured one. It is never persisted — remove the env vars and it is
+	// gone on the next boot.
+	OIDC OIDCConfig
+}
+
+// OIDCConfig configures an optional environment-managed OIDC login provider.
+type OIDCConfig struct {
+	Issuer             string
+	ClientID           string
+	ClientSecret       string
+	Scopes             string
+	AutoProvision      bool
+	AllowedEmailDomain string
+	RequiredGroup      string
 }
 
 // SimpleBackupConfig holds simple backup system configuration.
@@ -432,6 +452,15 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.Turnstile.SiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key")
 	flag.StringVar(&c.Turnstile.SecretKey, "turnstile-secret-key", "", "Cloudflare Turnstile secret key")
 
+	// OIDC env-managed provider (OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET ...)
+	flag.StringVar(&c.OIDC.Issuer, "oidc-issuer", "", "OIDC issuer URL for the env-managed provider")
+	flag.StringVar(&c.OIDC.ClientID, "oidc-client-id", "", "OIDC client id for the env-managed provider")
+	flag.StringVar(&c.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret for the env-managed provider")
+	flag.StringVar(&c.OIDC.Scopes, "oidc-scopes", "openid email profile", "OIDC scopes for the env-managed provider")
+	flag.BoolVar(&c.OIDC.AutoProvision, "oidc-auto-provision", false, "auto-create users on first OIDC login (env-managed provider)")
+	flag.StringVar(&c.OIDC.AllowedEmailDomain, "oidc-allowed-email-domain", "", "restrict OIDC logins to this email domain (env-managed provider)")
+	flag.StringVar(&c.OIDC.RequiredGroup, "oidc-required-group", "", "restrict OIDC logins to members of this group (env-managed provider)")
+
 	// Metrics
 	c.defineMetricsFlags()
 }
@@ -449,10 +478,26 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
 		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
+	flag.StringVar(
+		&c.CronExecuteWebhooksSchedule,
+		"cron-execute-webhooks-schedule",
+		"0 * * * * *",
+		"Cron schedule (6-field, with seconds) for the execute_cron_webhooks job. Default every minute; the public cloud sets it hourly.",
+	)
+	flag.StringVar(
+		&c.CronTelegramPublishSchedule,
+		"cron-telegram-publish-schedule",
+		"0 * * * * *",
+		"Cron schedule (6-field, with seconds) for the send_scheduled_telegram_publishposts job. Default every minute; the public cloud sets it hourly.",
+	)
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
-	flag.BoolVar(&c.MCPFederationAllowPrivate, "mcp-federation-allow-private", false,
-		"Disable SSRF protection for federation calls (allow private/internal addresses).")
+	flag.BoolVar(
+		&c.MCPFederationAllowPrivate,
+		"mcp-federation-allow-private",
+		false,
+		"Disable SSRF protection for federation calls (allow private/internal addresses).",
+	)
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")

@@ -555,6 +555,20 @@ CREATE TABLE github_oauth_credentials (
     created_at datetime not null default (datetime('now')),
     created_by integer not null references users(id)
 );
+CREATE TABLE oidc_credentials (
+    id integer primary key,
+    name text not null,
+    issuer text not null,
+    client_id text not null,
+    client_secret_encrypted blob not null,
+    scopes text not null default 'openid email profile',
+    auto_provision boolean not null default false,
+    allowed_email_domain text not null default '',
+    required_group text not null default '',
+    active boolean not null default false,
+    created_at datetime not null default (datetime('now')),
+    created_by integer not null references users(id)
+);
 CREATE TABLE config_changes (
   id integer primary key autoincrement,
   value_id text not null,
@@ -964,4 +978,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260524105749'),
   ('20260526120000'),
   ('20260602095046'),
-  ('20260615120000');
+  ('20260615120000'),
+  ('20260621150755');

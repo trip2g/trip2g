@@ -36,6 +36,7 @@ import (
 	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createoidccredentials"
 	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
@@ -54,6 +55,7 @@ import (
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
+	"trip2g/internal/case/admin/deleteoidccredentials"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/deletesecret"
@@ -79,6 +81,7 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
+	"trip2g/internal/case/admin/setactiveoidccredentials"
 	"trip2g/internal/case/admin/setapikeymcpadmintools"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
@@ -1109,6 +1112,21 @@ func (r *adminMutationResolver) DeactivateGoogleOAuth(ctx context.Context, obj *
 	return deactivategoogleoauth.Resolve(ctx, r.env(ctx))
 }
 
+// CreateOIDCCredentials is the resolver for the createOIDCCredentials field.
+func (r *adminMutationResolver) CreateOIDCCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateOIDCCredentialsInput) (model.CreateOIDCCredentialsOrErrorPayload, error) {
+	return createoidccredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteOIDCCredentials is the resolver for the deleteOIDCCredentials field.
+func (r *adminMutationResolver) DeleteOIDCCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteOIDCCredentialsInput) (model.DeleteOIDCCredentialsOrErrorPayload, error) {
+	return deleteoidccredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetActiveOIDCCredentials is the resolver for the setActiveOIDCCredentials field.
+func (r *adminMutationResolver) SetActiveOIDCCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.SetActiveOIDCCredentialsInput) (model.SetActiveOIDCCredentialsOrErrorPayload, error) {
+	return setactiveoidccredentials.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreateGitHubOAuthCredentials is the resolver for the createGitHubOAuthCredentials field.
 func (r *adminMutationResolver) CreateGitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateGitHubOAuthCredentialsInput) (model.CreateGitHubOAuthCredentialsOrErrorPayload, error) {
 	return creategithuboauthcredentials.Resolve(ctx, r.env(ctx), input)
@@ -1380,6 +1398,16 @@ func (r *adminNoteVersionHistoryConnectionResolver) TotalCount(ctx context.Conte
 		return 0, err
 	}
 	return int32(count), nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminOIDCCredentialsResolver) CreatedBy(ctx context.Context, obj *db.OidcCredential) (*db.User, error) {
+	return resolveOnePtr[db.User](ctx, &obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminOIDCCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminOIDCCredentialsConnection) ([]db.OidcCredential, error) {
+	return r.env(ctx).ListOIDCCredentials(ctx)
 }
 
 // LifeTime is the resolver for the lifetime field.
@@ -1722,6 +1750,20 @@ func (r *adminQueryResolver) AllGoogleOAuthCredentials(ctx context.Context, obj 
 // GoogleOAuthCredentials is the resolver for the googleOAuthCredentials field.
 func (r *adminQueryResolver) GoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int32) (*db.GoogleOauthCredential, error) {
 	creds, err := r.env(ctx).GetGoogleOAuthCredentials(ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	return &creds, nil
+}
+
+// AllOIDCCredentials is the resolver for the allOIDCCredentials field.
+func (r *adminQueryResolver) AllOIDCCredentials(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminOIDCCredentialsConnection, error) {
+	return &model.AdminOIDCCredentialsConnection{}, nil
+}
+
+// OidcCredentials is the resolver for the oidcCredentials field.
+func (r *adminQueryResolver) OidcCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int32) (*db.OidcCredential, error) {
+	creds, err := r.env(ctx).GetOIDCCredentials(ctx, int64(id))
 	if err != nil {
 		return nil, err
 	}
@@ -2978,6 +3020,23 @@ func (r *queryResolver) GoogleAuthURL(ctx context.Context, input model.OAuthURLI
 	}, nil
 }
 
+// OidcAuthURL is the resolver for the oidcAuthUrl field.
+func (r *queryResolver) OidcAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error) {
+	dry := input.Dry != nil && *input.Dry
+	callbackURL, authURL, err := r.env(ctx).BuildOIDCAuthURL(ctx, input.RedirectURL, dry)
+	if err != nil {
+		return nil, err
+	}
+	var authURLPtr *string
+	if authURL != "" {
+		authURLPtr = &authURL
+	}
+	return &model.OAuthURLPayload{
+		AuthURL:     authURLPtr,
+		CallbackURL: callbackURL,
+	}, nil
+}
+
 // GithubAuthURL is the resolver for the githubAuthUrl field.
 func (r *queryResolver) GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error) {
 	dry := input.Dry != nil && *input.Dry
@@ -3783,6 +3842,16 @@ func (r *Resolver) AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryCo
 	return &adminNoteVersionHistoryConnectionResolver{r}
 }
 
+// AdminOIDCCredentials returns AdminOIDCCredentialsResolver implementation.
+func (r *Resolver) AdminOIDCCredentials() AdminOIDCCredentialsResolver {
+	return &adminOIDCCredentialsResolver{r}
+}
+
+// AdminOIDCCredentialsConnection returns AdminOIDCCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminOIDCCredentialsConnection() AdminOIDCCredentialsConnectionResolver {
+	return &adminOIDCCredentialsConnectionResolver{r}
+}
+
 // AdminOffer returns AdminOfferResolver implementation.
 func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
 
@@ -4123,6 +4192,8 @@ type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminNoteAssetResolver struct{ *Resolver }
 type adminNoteVersionHistoryConnectionResolver struct{ *Resolver }
+type adminOIDCCredentialsResolver struct{ *Resolver }
+type adminOIDCCredentialsConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
 type adminPatreonCredentialsResolver struct{ *Resolver }

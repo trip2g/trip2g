@@ -607,6 +607,24 @@ type AdminGoogleOAuthCredentialsConnection {
   nodes: [AdminGoogleOAuthCredentials!]! @goField(forceResolver: true)
 }
 
+type AdminOIDCCredentials @goModel(model: "trip2g/internal/db.OidcCredential") {
+  id: Int64!
+  name: String!
+  issuer: String!
+  clientId: String!
+  scopes: String!
+  autoProvision: Boolean!
+  allowedEmailDomain: String!
+  requiredGroup: String!
+  active: Boolean!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminOIDCCredentialsConnection {
+  nodes: [AdminOIDCCredentials!]! @goField(forceResolver: true)
+}
+
 type AdminGitHubOAuthCredentials @goModel(model: "trip2g/internal/db.GithubOauthCredential") {
   id: Int64!
   name: String!
@@ -1175,6 +1193,8 @@ type AdminQuery {
 
   allGoogleOAuthCredentials: AdminGoogleOAuthCredentialsConnection!
   googleOAuthCredentials(id: Int!): AdminGoogleOAuthCredentials
+  allOIDCCredentials: AdminOIDCCredentialsConnection!
+  oidcCredentials(id: Int!): AdminOIDCCredentials
   allGitHubOAuthCredentials: AdminGitHubOAuthCredentialsConnection!
   gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
 
@@ -1480,6 +1500,11 @@ type Query {
   Returns Google OAuth URLs for authentication.
   """
   googleAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
+
+  """
+  Returns OIDC URLs for authentication.
+  """
+  oidcAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
 
   """
   Returns GitHub OAuth URLs for authentication.
@@ -2704,6 +2729,55 @@ type SetActiveGoogleOAuthCredentialsPayload {
 union SetActiveGoogleOAuthCredentialsOrErrorPayload = SetActiveGoogleOAuthCredentialsPayload | ErrorPayload
 
 #
+# createOIDCCredentials
+#
+
+input CreateOIDCCredentialsInput {
+  name: String!
+  issuer: String!
+  clientId: String!
+  clientSecret: String!
+  scopes: String
+  autoProvision: Boolean
+  allowedEmailDomain: String
+  requiredGroup: String
+}
+
+type CreateOIDCCredentialsPayload {
+  credentials: AdminOIDCCredentials!
+}
+
+union CreateOIDCCredentialsOrErrorPayload = CreateOIDCCredentialsPayload | ErrorPayload
+
+#
+# deleteOIDCCredentials
+#
+
+input DeleteOIDCCredentialsInput {
+  id: Int64!
+}
+
+type DeleteOIDCCredentialsPayload {
+  deletedId: Int64!
+}
+
+union DeleteOIDCCredentialsOrErrorPayload = DeleteOIDCCredentialsPayload | ErrorPayload
+
+#
+# setActiveOIDCCredentials
+#
+
+input SetActiveOIDCCredentialsInput {
+  id: Int64!
+}
+
+type SetActiveOIDCCredentialsPayload {
+  credentials: AdminOIDCCredentials!
+}
+
+union SetActiveOIDCCredentialsOrErrorPayload = SetActiveOIDCCredentialsPayload | ErrorPayload
+
+#
 # deactivateGoogleOAuth
 #
 
@@ -3111,6 +3185,11 @@ type AdminMutation {
   deleteGoogleOAuthCredentials(input: DeleteGoogleOAuthCredentialsInput!): DeleteGoogleOAuthCredentialsOrErrorPayload!
   setActiveGoogleOAuthCredentials(input: SetActiveGoogleOAuthCredentialsInput!): SetActiveGoogleOAuthCredentialsOrErrorPayload!
   deactivateGoogleOAuth: DeactivateGoogleOAuthOrErrorPayload!
+
+  # OIDC credentials mutations
+  createOIDCCredentials(input: CreateOIDCCredentialsInput!): CreateOIDCCredentialsOrErrorPayload!
+  deleteOIDCCredentials(input: DeleteOIDCCredentialsInput!): DeleteOIDCCredentialsOrErrorPayload!
+  setActiveOIDCCredentials(input: SetActiveOIDCCredentialsInput!): SetActiveOIDCCredentialsOrErrorPayload!
 
   # GitHub OAuth credentials mutations
   createGitHubOAuthCredentials(input: CreateGitHubOAuthCredentialsInput!): CreateGitHubOAuthCredentialsOrErrorPayload!
