@@ -177,88 +177,88 @@ func TestHandleGraphQLRequest_StructuredContent(t *testing.T) {
 	require.JSONEq(t, string(canned), string(gotJSON))
 }
 
-// --- validateReadOnlyQuery tests ---
+// --- validateReadOnlyQuery tests (federated/scoped path) ---
 
 func TestValidateReadOnlyQuery_RejectsMutation(t *testing.T) {
-	err := validateReadOnlyQuery(`mutation { createNote { id } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`mutation { createNote { id } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "mutation")
 }
 
 func TestValidateReadOnlyQuery_RejectsDisallowedRootField(t *testing.T) {
-	err := validateReadOnlyQuery(`{ admin { users { id } } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`{ admin { users { id } } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "admin")
 }
 
 func TestValidateReadOnlyQuery_RejectsMultiOpWithMutation(t *testing.T) {
-	err := validateReadOnlyQuery(`query A { note(path: "x") { title } } mutation B { createNote { id } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`query A { note(path: "x") { title } } mutation B { createNote { id } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "mutation")
 }
 
 func TestValidateReadOnlyQuery_AllowsNote(t *testing.T) {
-	err := validateReadOnlyQuery(`{ note(path: "x") { title } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`{ note(path: "x") { title } }`, graphqlFederatedRootFields)
 	require.NoError(t, err)
 }
 
 func TestValidateReadOnlyQuery_AllowsSearch(t *testing.T) {
-	err := validateReadOnlyQuery(`{ search(query: "y") { title notePath } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`{ search(query: "y") { title notePath } }`, graphqlFederatedRootFields)
 	require.NoError(t, err)
 }
 
 func TestValidateReadOnlyQuery_RejectsSubscription(t *testing.T) {
-	err := validateReadOnlyQuery(`subscription { noteUpdated { id } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`subscription { noteUpdated { id } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "subscription")
 }
 
 func TestValidateReadOnlyQuery_RejectsPublicUrl(t *testing.T) {
-	err := validateReadOnlyQuery(`{ publicUrl }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`{ publicUrl }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "publicUrl")
 }
 
 func TestValidateReadOnlyQuery_ParseError(t *testing.T) {
-	err := validateReadOnlyQuery(`{{{not valid graphql`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`{{{not valid graphql`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse error")
 }
 
 // --- validateReadOnlyQuery guard-bypass regression tests ---
 // These vectors are security-relevant: they confirm that inline fragments,
-// fragment spreads, and field aliases cannot be used to bypass the allowlist.
+// fragment spreads, and field aliases cannot be used to bypass the allowlist
+// on the federated/scoped path.
 
 func TestValidateReadOnlyQuery_RejectsRootInlineFragment(t *testing.T) {
 	// Inline fragment at root level must be rejected — the selector is not a *ast.Field.
-	err := validateReadOnlyQuery(`query { ... on Query { admin { id } } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`query { ... on Query { admin { id } } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only field selections are allowed at query root")
 }
 
 func TestValidateReadOnlyQuery_RejectsRootFragmentSpread(t *testing.T) {
 	// Fragment spread at root level must be rejected — same reason.
-	err := validateReadOnlyQuery(`query Q { ...F } fragment F on Query { admin { id } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`query Q { ...F } fragment F on Query { admin { id } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only field selections are allowed at query root")
 }
 
 func TestValidateReadOnlyQuery_RejectsAliasedBannedField(t *testing.T) {
 	// Field.Name (not Field.Alias) is checked; an alias must not bypass the allowlist.
-	err := validateReadOnlyQuery(`query { n: admin { id } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`query { n: admin { id } }`, graphqlFederatedRootFields)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "admin")
 }
 
 func TestValidateReadOnlyQuery_AllowsAliasedAllowedField(t *testing.T) {
 	// An alias on an allowed field must be accepted.
-	err := validateReadOnlyQuery(`query { n: note(path:"x") { title } }`, graphqlReadOnlyRootFields)
+	err := validateReadOnlyQuery(`query { n: note(path:"x") { title } }`, graphqlFederatedRootFields)
 	require.NoError(t, err)
 }
 
 // --- Federated allowlist tests ---
-// notePaths and resolveWikilinks must be blocked on the federated path but
-// allowed on the admin path, to prevent path-structure leakage to peers.
+// notePaths and resolveWikilinks must be blocked on the federated path.
 
 func TestValidateReadOnlyQuery_Federated_RejectsNotePaths(t *testing.T) {
 	// notePaths is NOT in the federated allowlist.
@@ -274,19 +274,29 @@ func TestValidateReadOnlyQuery_Federated_RejectsResolveWikilinks(t *testing.T) {
 	require.Contains(t, err.Error(), "resolveWikilinks")
 }
 
-func TestValidateReadOnlyQuery_Admin_AllowsNotePaths(t *testing.T) {
-	// notePaths IS in the admin allowlist.
-	err := validateReadOnlyQuery(`{ notePaths }`, graphqlReadOnlyRootFields)
-	require.NoError(t, err)
+// --- rejectSubscription tests (admin path) ---
+
+func TestRejectSubscription_AllowsQuery(t *testing.T) {
+	require.NoError(t, rejectSubscription(`{ note(path: "x") { title } }`))
 }
 
-func TestValidateReadOnlyQuery_Admin_AllowsResolveWikilinks(t *testing.T) {
-	// resolveWikilinks IS in the admin allowlist.
-	err := validateReadOnlyQuery(`{ resolveWikilinks(paths: ["x"]) { path href } }`, graphqlReadOnlyRootFields)
-	require.NoError(t, err)
+func TestRejectSubscription_AllowsMutation(t *testing.T) {
+	require.NoError(t, rejectSubscription(`mutation { createNote { id } }`))
 }
 
-// --- handleGraphQLRequest Option A edge-case tests ---
+func TestRejectSubscription_RejectsSubscription(t *testing.T) {
+	err := rejectSubscription(`subscription { noteUpdated { id } }`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "subscription")
+}
+
+func TestRejectSubscription_ParseError(t *testing.T) {
+	err := rejectSubscription(`{{{not valid graphql`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse error")
+}
+
+// --- handleGraphQLRequest edge-case tests ---
 
 // TestHandleGraphQLRequest_ErrorsPreserved: a GraphQL errors-bearing response
 // (data: null, errors: [...]) must be forwarded as StructuredContent so the
@@ -340,19 +350,45 @@ func TestHandleGraphQLRequest_MalformedJSONFallback(t *testing.T) {
 	require.Nil(t, result.StructuredContent, "StructuredContent must be nil for malformed JSON")
 }
 
-// TestHandleGraphQLRequest_MutationRejectedByHandler: handler-level check that a
-// mutation query yields an InvalidParams error without reaching the env.
-func TestHandleGraphQLRequest_MutationRejectedByHandler(t *testing.T) {
+// TestHandleGraphQLRequest_MutationDispatched: admin handler must forward mutations
+// to env.GraphQLRequest without rejection.
+func TestHandleGraphQLRequest_MutationDispatched(t *testing.T) {
+	canned := []byte(`{"data":{"adminMutation":{"createNote":{"id":"1"}}}}`)
+	called := false
+	env := &gqlRequestEnv{
+		graphqlFunc: func(_ context.Context, query string, _ map[string]any) ([]byte, error) {
+			called = true
+			require.Contains(t, query, "mutation")
+			return canned, nil
+		},
+	}
+	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `mutation { adminMutation { createNote { id } } }`})
+	require.NoError(t, err)
+
+	resp := handleGraphQLRequest(context.Background(), env, 1, json.RawMessage(argsRaw))
+	require.Nil(t, resp.Error, "admin mutation must succeed, got: %v", resp.Error)
+	require.True(t, called, "GraphQLRequest must be invoked for admin mutation")
+
+	result, ok := resp.Result.(CallToolResult)
+	require.True(t, ok, "result must be CallToolResult")
+	require.Len(t, result.Content, 1)
+	require.Equal(t, "structured result", result.Content[0].Text)
+	require.NotNil(t, result.StructuredContent)
+}
+
+// TestHandleGraphQLRequest_SubscriptionRejectedByHandler: subscriptions must be
+// rejected before reaching env.GraphQLRequest (unsupported transport).
+func TestHandleGraphQLRequest_SubscriptionRejectedByHandler(t *testing.T) {
 	env := &gqlRequestEnv{
 		graphqlFunc: func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
 			panic("must not be called")
 		},
 	}
-	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `mutation { createNote { id } }`})
+	argsRaw, err := json.Marshal(GraphQLRequestArguments{Query: `subscription { noteUpdated { id } }`})
 	require.NoError(t, err)
 
 	resp := handleGraphQLRequest(context.Background(), env, 1, json.RawMessage(argsRaw))
 	require.NotNil(t, resp.Error)
 	require.Equal(t, ErrCodeInvalidParams, resp.Error.Code)
-	require.Contains(t, resp.Error.Message, "mutation")
+	require.Contains(t, resp.Error.Message, "subscription")
 }
