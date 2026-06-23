@@ -505,6 +505,9 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 		if note.HasCodeLanguage("mermaid") {
 			jsURLs = append(jsURLs, env.AssetURL("/assets/mermaid.js"))
 		}
+		if note.HasAnyCodeBlock() {
+			jsURLs = append(jsURLs, env.AssetURL("/assets/codeblock.js"))
+		}
 	}
 
 	// Build HTML injections map.

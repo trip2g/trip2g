@@ -1088,3 +1088,162 @@ dialog article {
     border-bottom: 0;
   }
 }
+
+// --- Code blocks: copy button + highlight.js theme ---
+
+// Copy button — positioned in the top-right of the <pre> container.
+// The button is injected by codeblock.js when any code block is present.
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 4px;
+  background: var(--pico-card-background-color);
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s, background 0.15s;
+  z-index: 1;
+  box-shadow: none;
+
+  svg { display: block; }
+
+  pre:hover &,
+  pre:focus-within & {
+    opacity: 1;
+  }
+
+  &:hover {
+    color: var(--pico-primary);
+    border-color: var(--pico-primary);
+    background: var(--pico-card-sectioning-background-color);
+  }
+
+  &--copied {
+    opacity: 1;
+    color: var(--pico-ins-color, #197b30);
+    border-color: var(--pico-ins-color, #197b30);
+  }
+
+  // Always visible on touch devices (no hover state).
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+// Highlight.js theme — minimal GitHub-style, light/dark aware.
+// Scoped to .hljs so it only applies to highlighted code blocks.
+// Light theme (default).
+.hljs {
+  color: #24292e;
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-punctuation {
+  color: #6e7781;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-variable {
+  color: #005cc5;
+}
+
+.hljs-built_in,
+.hljs-symbol,
+.hljs-tag,
+.hljs-type {
+  color: #d73a49;
+}
+
+.hljs-keyword,
+.hljs-deletion {
+  color: #d73a49;
+}
+
+.hljs-string,
+.hljs-addition {
+  color: #032f62;
+}
+
+.hljs-title,
+.hljs-section {
+  color: #6f42c1;
+  font-weight: 600;
+}
+
+.hljs-name,
+.hljs-selector-tag {
+  color: #22863a;
+}
+
+.hljs-emphasis { font-style: italic; }
+.hljs-strong  { font-weight: 600; }
+
+// Dark theme — flipped when <html class="dark"> is set by the theme switcher.
+.dark {
+  .hljs {
+    color: #e1e4e8;
+  }
+
+  .hljs-comment,
+  .hljs-punctuation {
+    color: #8b949e;
+  }
+
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-literal,
+  .hljs-meta,
+  .hljs-number,
+  .hljs-operator,
+  .hljs-selector-attr,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-variable {
+    color: #79c0ff;
+  }
+
+  .hljs-built_in,
+  .hljs-symbol,
+  .hljs-tag,
+  .hljs-type {
+    color: #ff7b72;
+  }
+
+  .hljs-keyword,
+  .hljs-deletion {
+    color: #ff7b72;
+  }
+
+  .hljs-string,
+  .hljs-addition {
+    color: #a5d6ff;
+  }
+
+  .hljs-title,
+  .hljs-section {
+    color: #d2a8ff;
+    font-weight: 600;
+  }
+
+  .hljs-name,
+  .hljs-selector-tag {
+    color: #7ee787;
+  }
+}
