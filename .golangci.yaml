@@ -484,6 +484,9 @@ linters:
       - path: 'internal/mdloader/highlight/'
         linters:
           - gochecknoglobals  # Package-level variables needed for goldmark extension registration
+      - path: 'internal/mdloader/callout/'
+        linters:
+          - gochecknoglobals  # Package-level variables needed for goldmark extension registration
       - path: 'internal/mdloader/obsidiancomments/'
         linters:
           - gochecknoglobals  # Package-level variables needed for goldmark extension registration
