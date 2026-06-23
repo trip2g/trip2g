@@ -50,7 +50,7 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 	userID, err := env.VerifySignInCode(ctx, codeParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return gmodel.NewFieldError("email", "not_found"), nil
+			return gmodel.NewFieldError("code", "Code is invalid or expired"), nil
 		}
 
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
