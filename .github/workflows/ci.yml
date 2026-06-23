@@ -11,6 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  check-doc-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check bilingual doc cross-language link leaks
+        run: ./scripts/check-doc-lang-links.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:

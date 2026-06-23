@@ -8,19 +8,43 @@ lang_redirect: "[[ru/user/read-replica]]"
 
 ---
 
-A read replica lets you split traffic: a second trip2g instance handles all public reads locally while the primary handles all writes. This lowers read latency, removes read load from the primary, and lets you restart the primary without interrupting readers. See also [[zerodowntime]] and [[litestream]].
+A read replica lets you split traffic: a second trip2g instance handles all public reads locally while the primary handles all writes. This lowers read latency, removes read load from the primary, and lets you restart the primary without interrupting readers. See also [[en/user/zerodowntime]] and [[en/user/litestream]].
 
 ## How it works
 
-Three moving parts work together:
+```mermaid
+flowchart LR
+    clients([Clients])
 
-**LiteFS** streams every SQLite write from the primary to the replica at the filesystem level. The replica's `/litefs` mount is read-only; every WAL page the primary commits appears on the replica within single-digit milliseconds (median 9 ms in our test). The app on the replica reads from this local copy — no S3 round-trip, no network hop to the primary.
+    subgraph replica["Replica (10.20.0.3)"]
+        rapp["trip2g\n(read-only)"]
+        rdb[("SQLite\n/litefs — read-only")]
+    end
 
-**Read-only mode** (`TRIP2G_LEADER_ADDR` set) changes trip2g's behavior at startup: it skips migrations, opens the SQLite file with SQLite's `query_only` pragma (stray writes error immediately instead of corrupting data), and starts no background writer, queue, or cron subsystems.
+    subgraph leader["Leader (10.20.0.2)"]
+        lapp["trip2g\n(leader)"]
+        ldb[("SQLite\n/litefs — read-write")]
+    end
 
-**Write forwarding** — when the replica receives a mutating request (POST, PUT, PATCH, DELETE), it forwards the full request to the leader's internal HTTP address, waits for the response, and returns it verbatim to the caller. The decision is made by HTTP method before any handler runs, so no side effect is ever executed twice.
+    clients -- "GET (reads)" --> rapp
+    rapp -- "reads locally" --> rdb
+    clients -- "POST/PUT/... (writes)" --> rapp
+    rapp -- "X-Replica-Auth\n→ :8082 (internal)" --> lapp
+    lapp -- "writes" --> ldb
+    ldb -- "LiteFS\nWAL streaming" --> rdb
+```
 
-Security: each forwarded request carries an `X-Replica-Auth` header — an HMAC signed with the shared `TRIP2G_JWT_SECRET`, valid for 30 seconds. The leader accepts forwarded writes only on its internal port (`TRIP2G_INTERNAL_LISTEN_ADDR`), which must be bound to the private NIC. Requests without a valid `X-Replica-Auth` get a 401.
+_The replica serves GETs from its local SQLite copy. Writes are forwarded to the leader over the private network. LiteFS streams committed WAL pages back to the replica._
+
+Three moving parts work together.
+
+LiteFS streams every SQLite write from the primary to the replica at the filesystem level. The replica's `/litefs` mount is read-only; every WAL page the primary commits appears on the replica within single-digit milliseconds (median 9 ms in our test). The app on the replica reads from this local copy, with no S3 round-trip and no network hop to the primary.
+
+Read-only mode (set via `TRIP2G_LEADER_ADDR`) changes trip2g's behavior at startup: it skips migrations, opens the SQLite file with SQLite's `query_only` pragma (stray writes error immediately instead of corrupting data), and starts no background writer, queue, or cron subsystems.
+
+Write forwarding: when the replica receives a mutating request (POST, PUT, PATCH, DELETE), it forwards the full request to the leader's internal HTTP address, waits for the response, and returns it verbatim to the caller. The decision is made by HTTP method before any handler runs, so no side effect is ever executed twice.
+
+Security: each forwarded request carries an `X-Replica-Auth` header, an HMAC signed with the shared `TRIP2G_JWT_SECRET`, valid for 30 seconds. The leader accepts forwarded writes only on its internal port (`TRIP2G_INTERNAL_LISTEN_ADDR`), which must be bound to the private NIC. Requests without a valid `X-Replica-Auth` get a 401.
 
 > **Note on GraphQL:** GraphQL queries are HTTP POST, so they also go to the leader. This gives you always-fresh data for the low-volume admin API. The high-volume public page path is HTTP GET, served locally on the replica.
 
@@ -30,9 +54,9 @@ Security: each forwarded request carries an `X-Replica-Auth` header — an HMAC 
 - `litefs` binary on both servers (`/usr/local/bin/litefs`)
 - `trip2g` binary on both servers
 
-Note: Litestream (continuous S3 backup) and LiteFS (live replication) are separate tools targeting the same WAL. If you run both, run Litestream on a standalone primary that is not on the LiteFS mount. See [[litestream]] and [[backup]].
+Note: Litestream (continuous S3 backup) and LiteFS (live replication) are separate tools targeting the same WAL. If you run both, run Litestream on a standalone primary that is not on the LiteFS mount. See [[en/user/litestream]] and [[en/user/backup]].
 
-## Step 1 — Install LiteFS
+## Step 1: install LiteFS
 
 Place the `litefs` binary at `/usr/local/bin/litefs` on both servers.
 
@@ -114,9 +138,9 @@ WantedBy=multi-user.target
 
 The only difference between nodes is `/etc/litefs.yml`. The systemd unit is identical.
 
-## Step 2 — Configure trip2g
+## Step 2: configure trip2g
 
-Build locally and ship the binary — do not build on the server:
+Build locally and ship the binary. Do not build on the server:
 
 ```sh
 make build-amd64
@@ -147,7 +171,7 @@ TRIP2G_MINIO_SECRET_KEY=your-secret
 TRIP2G_MINIO_BUCKET=trip2g-backups
 ```
 
-Key points:
+Notes:
 - The DB env var is `TRIP2G_DB_FILE` (flag `--db-file`), not `TRIP2G_DATABASE_FILE`.
 - `TRIP2G_INTERNAL_LISTEN_ADDR` must be on the private NIC. This is the write intake the replica forwards to.
 - `TRIP2G_DATA_ENCRYPTION_KEY` must be exactly 32 bytes.
@@ -211,9 +235,9 @@ Create the working directory before starting:
 mkdir -p /var/lib/trip2g
 ```
 
-## Step 3 — Start in order
+## Step 3: start in order
 
-Start the primary first. trip2g on the primary runs migrations and creates the database. Then start the replica — LiteFS streams the database before trip2g starts.
+Start the primary first. trip2g on the primary runs migrations and creates the database. Then start the replica; LiteFS streams the database before trip2g starts.
 
 ```sh
 # On the primary
@@ -233,7 +257,7 @@ The replica's trip2g waits for `/litefs/data.sqlite3` to exist (guaranteed by `R
 
 All commands below were run against a two-Hetzner-VM test stand (primary `10.20.0.2`, replica `10.20.0.3`).
 
-**Replica is alive:**
+Replica is alive:
 
 ```sh
 curl -s http://10.20.0.3:8082/livez
@@ -243,14 +267,14 @@ curl -s -o /dev/null -w "%{http_code}" http://10.20.0.3:8081/
 # 200
 ```
 
-**Read parity — leader and replica return identical content:**
+Read parity (leader and replica return identical content):
 
 ```sh
 curl -s http://10.20.0.2:8081/ | wc -c   # 43979
 curl -s http://10.20.0.3:8081/ | wc -c   # 43979
 ```
 
-**Write forwarding works — POST to replica is executed on the leader and relayed back:**
+Write forwarding (POST to replica is executed on the leader and relayed back):
 
 ```sh
 curl -s -X POST \
@@ -260,7 +284,7 @@ curl -s -X POST \
 # {"data":{"__typename":"Query"}}
 ```
 
-**Auth enforced — direct POST to leader's internal port without the header gets 401:**
+Auth enforced (direct POST to the leader's internal port without the header gets 401):
 
 ```sh
 curl -s -o /dev/null -w "%{http_code}" \
@@ -269,7 +293,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 # 401
 ```
 
-**Replication lag — write on the leader, check the replica:**
+Replication lag (write on the leader, check the replica):
 
 ```sh
 # Write on the primary, watch it appear on the replica. Measured properly
@@ -279,14 +303,14 @@ curl -s -o /dev/null -w "%{http_code}" \
 cat /litefs/.lag   # on the replica; live lag reported by LiteFS
 ```
 
-**Read-only guardrail — direct write to the replica's FUSE mount fails:**
+Read-only guardrail (direct write to the replica's FUSE mount fails):
 
 ```sh
 sqlite3 /litefs/data.sqlite3 "INSERT INTO notes(id) VALUES(1);"
 # Error: disk I/O error (read-only filesystem)
 ```
 
-**Zero-downtime — restart the leader while the replica serves reads:**
+Zero-downtime (restart the leader while the replica serves reads):
 
 ```sh
 # Loop 60 GETs against the replica while restarting the leader:
@@ -297,14 +321,57 @@ done | sort | uniq -c
 # 0 non-200
 ```
 
-Sixty out of sixty reads succeeded. The replica never stopped serving. See [[zerodowntime]] for the full zero-downtime deploy flow.
+Sixty out of sixty reads succeeded. The replica never stopped serving. See [[en/user/zerodowntime]] for the full zero-downtime deploy flow.
+
+## Testing with a leader + two read replicas
+
+One replica is enough for most deployments. Two replicas verify that the design scales horizontally: each additional replica is just another trip2g process pointed at the same leader.
+
+### How to add a second replica
+
+The second replica needs three things that differ from the first:
+
+- distinct host ports (so both can run on the same machine in a test, or on separate VMs in production)
+- its own cookie name (`TRIP2G_SESSION_COOKIE_NAME`) to avoid session conflicts
+- its own git-replica working directory (`WorkingDirectory` or `TRIP2G_GIT_REPLICA_PATH`)
+
+`TRIP2G_LEADER_ADDR`, `TRIP2G_JWT_SECRET`, `TRIP2G_DATA_ENCRYPTION_KEY`, and the SQLite path are identical to the first replica. There is no coordination between replicas; they forward writes to the leader independently.
+
+In the e2e test stack, the two replicas are defined in Docker Compose as:
+
+| Service | Public port | Internal port | Cookie name |
+|---|---|---|---|
+| `app-replica` | 20071 (HTTP), 20072 (internal) | n/a | `session_r1` |
+| `app-replica2` | 20073 (HTTP), 20074 (internal) | n/a | `session_r2` |
+
+Both set `LEADER_ADDR=app:20082` and share the leader's SQLite data through a bind-mount. Each has its own git-replica path. Both expose `/livez` for health checks.
+
+### What the e2e suite verifies
+
+The spec at `e2e/read-replica.spec.js` defines a shared test suite and runs it against each replica URL in turn: 5 tests per replica, 10 total. All 10 passed, 0 failed.
+
+Per-replica checks:
+
+1. `GET /` returns 200 (the replica serves reads locally without hitting the leader).
+2. `/livez` returns alive.
+3. A GraphQL write (POST) is forwarded to the leader and lands; the response comes back through the replica.
+4. A direct POST to the leader's internal intake port **without** the `X-Replica-Auth` HMAC header → 401. The intake enforces authentication; unauthenticated access is rejected.
+5. After a write through the replica, the data is readable, meaning replication has caught up.
+
+The fourth check is worth noting explicitly: the leader's internal port is not a public write endpoint. Any client that bypasses a replica and posts directly to `:8082` without a valid HMAC gets a 401. This is enforced regardless of which replica forwarded the request.
+
+### Bug fixed during this test run
+
+When adding the second replica, a crash appeared on startup: the not-found tracker was starting a background goroutine that writes to the database before the read-replica guard ran. On a replica the SQLite file is opened with `query_only`, so the goroutine panicked immediately.
+
+The fix skips that background writer entirely when `TRIP2G_LEADER_ADDR` is set. The not-found tracking feature is not needed on replicas, since writes go to the leader anyway.
 
 ## Tradeoffs
 
 **Replication lag:** A write forwarded by the replica (login session, note publish) takes sub-second to appear in the replica's local read. If you immediately read back that data from the replica, you may see the pre-write state for a brief window. For the public read path this is acceptable. For transactional flows (login → immediate redirect), the leader handles both the write and the subsequent read anyway (the redirect goes through the leader's response).
 
-**GraphQL mutations and queries:** GraphQL uses HTTP POST, so all GraphQL traffic — queries and mutations — goes to the leader. This keeps admin API data fresh at the cost of sending low-volume GraphQL reads over the internal network. The high-volume public content path (GET) stays entirely local on the replica.
+**GraphQL mutations and queries:** GraphQL uses HTTP POST, so all GraphQL traffic (queries and mutations) goes to the leader. This keeps admin API data fresh at the cost of sending low-volume GraphQL reads over the internal network. The high-volume public content path (GET) stays entirely local on the replica.
 
 **Static lease, no failover:** `candidate: false` means the replica never becomes primary. This is intentional for a simple two-node setup. If the primary is down, the replica continues serving reads but write forwarding fails until the primary is restored.
 
-See also [[backup]], [[litestream]], [[zerodowntime]].
+See also [[en/user/backup]], [[en/user/litestream]], [[en/user/zerodowntime]].

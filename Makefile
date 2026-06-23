@@ -54,6 +54,9 @@ lint:
 	./internal/db/list_queries.sh
 	go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run
 
+check-doc-links:
+	./scripts/check-doc-lang-links.sh
+
 docker-deps:
 	docker-compose up -d minio
 

@@ -8,6 +8,46 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.7.0 (2026-06-23)
+
+### Read replica mode (`a4423895`)
+
+- **What.** A second trip2g instance can now run as a read-only replica. Set `TRIP2G_LEADER_ADDR` on it and it will serve all GET requests from a LiteFS-replicated local SQLite copy and forward every write to the primary.
+- **Why.** This halves read latency when the primary is under load, lets you restart the primary without dropping a single reader request, and opens the door to horizontal read scaling on separate machines. During a leader restart in tests, zero read failures were observed on the replica.
+- **How.** Run LiteFS on both machines so the replica gets a streaming copy of the SQLite WAL. Start the replica with `--leader-addr=http://10.x.x.x:8082 --leader-shared-secret=...`. The `--leader-shared-secret` must match `TRIP2G_LEADER_REPLICA_SECRET` on the primary. Full wiring guide: [[en/user/read-replica]].
+
+### OIDC / Corporate SSO login (`1d2b12b5`, `b6446f76`, `e6d7afe9`)
+
+- **What.** Users can now sign in with a corporate identity (Authentik, Keycloak, any standards-compliant OpenID Connect provider). A "Sign in with SSO" button appears on the login page when an OIDC provider is configured. Auto-provisioning is optional: turn it on and a valid IdP identity creates the trip2g user automatically; leave it off and only pre-existing accounts are admitted.
+- **Why.** Teams that already have a company IdP no longer need to manage separate trip2g passwords. One click, IdP MFA included.
+- **How.** Set `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, and `OIDC_DISCOVERY_URL` on the server. No database row is needed; the provider is read from env at request time. Admin credential CRUD is available via GraphQL mutations for setups that need it. Full guide: [[en/user/oidc]].
+
+### Local filesystem storage backend (`0f5b84e2`)
+
+- **What.** Trip2g can now store uploaded assets (images, attachments) on the local filesystem instead of S3 or MinIO. Set `STORAGE_BACKEND=local` (or `--storage-backend=local`) and optionally `STORAGE_LOCAL_PATH` to pick the directory.
+- **Why.** Running without an object storage service removes the main external dependency for single-server self-hosting. A $4 VPS with a volume attached is now a complete, standalone deployment.
+- **How.** Add `STORAGE_BACKEND=local` to your env file. The default path is `./data/storage`; override with `STORAGE_LOCAL_PATH`. Switching from an existing S3 setup requires copying the bucket contents to the local path first. See [[en/user/local-quickstart]] for the full single-server setup.
+
+### Zero-downtime deploys (`08a6cfde`, `22dd8cf3`)
+
+- **What.** Trip2g now supports systemd socket activation (`LISTEN_FDS`) and exposes two health probes on a separate internal port: `/livez` (always 200, even during warmup) and `/readyz` (503 until the instance is warmed up and again during drain). Together they give a load balancer or orchestrator the signals it needs to cut traffic from old to new without dropping requests.
+- **Why.** Before this, a rolling restart caused a gap: the old process was gone before the new one finished warming the note cache. Now the new instance warms up in parallel and traffic only moves once `/readyz` returns 200.
+- **How.** Add the socket unit to systemd so the OS holds the port during the restart gap. Set `--internal-listen-addr=:8081` and wire your load balancer to wait for `/readyz` before routing. `--shutdown-grace-period` controls how long the old instance keeps serving after `/readyz` flips to 503. Use `--simple-backup-on-shutdown=false` to skip the shutdown backup during rolling restarts. Full recipes (Nomad/Traefik, Caddy, k3s): [[en/user/zerodowntime]].
+
+### memcli: agent-memory bootstrap CLI (`a4e6fd1e`, `951d52ed`)
+
+- **What.** `memcli` is a single-command tool that boots a trip2g instance as persistent long-term memory for AI agents. One command (`node memcli.js up --folder ./memory`) starts the Docker container with local storage, mints an admin key via HAT, starts the `trip2g-sync --watch` sidecar, and writes a `hub.md` federation note into the memory vault. The new `hub` subcommand and `memory_bind_hub` MCP tool bind the memory instance to a remote federation hub, so agent searches reach federated knowledge bases through a single MCP endpoint.
+- **Why.** Setting up a standalone trip2g for an agent previously required four separate manual steps (server, key, sync, MCP config). memcli collapses them to one command. The compiled `dist/memcli.js` ships in the repository; no build step is required.
+- **How.** `node cli/memcli/dist/memcli.js up --folder ./memory-vault`. When it finishes, the MCP endpoint is at `http://localhost:24081/_system/mcp`. Add it to your agent's `.mcp.json`. Full guide: [[en/user/agent-memory]].
+
+### gitapi mirror stability (`2845bb82`, `8082c24d`)
+
+- **What.** Two fixes to the DB→git mirror (gitapi). When a `materialize` call fails mid-way, orphaned loose objects are now cleaned up before returning the error. After a successful materialize, gc runs immediately to pack loose objects. Previously, failed runs could leave orphaned files that accumulated across nightly rebuilds and eventually filled the disk; objects were packed only on the next gc cycle.
+- **Why.** On instances with many notes, repeated materialize failures left the git data directory growing unbounded. Operators with a small VPS saw disk pressure that required manual cleanup.
+- **How.** No action needed. Both behaviors are automatic after upgrading. If you saw disk growth from orphaned objects, a `git gc --prune=now` in the repo directory (or a server restart that triggers the next materialize) will clear the backlog.
+
+---
+
 ## v0.6.1 — 2026-06-22
 
 ### Live updates in the Obsidian plugin (plugin v0.5.0)

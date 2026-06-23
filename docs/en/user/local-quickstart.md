@@ -1,21 +1,26 @@
 ---
-title: Local quickstart — run trip2g and push content
+title: Local quickstart: run trip2g and push content
 description: Run a trip2g instance locally from the Docker image (or a binary) and publish a content vault over the API in a few minutes.
 ---
 
 # Local quickstart
 
-Run a trip2g instance on your machine and push a content vault to it over the API. No Git remote, no `GIT_API_REPO_PATH` — just the server plus the sync CLI.
+Run a trip2g instance on your machine and push a content vault to it over the API. This requires only the server and the sync CLI; no Git remote or `GIT_API_REPO_PATH` is needed.
 
 You need: the `trip2g` Docker image (or a locally built binary) and a MinIO (S3-compatible) endpoint for assets.
 
 ## 1. Run the server
 
-trip2g needs an S3-compatible store (MinIO) for assets. Start one, then the app.
+trip2g needs an S3-compatible store (MinIO) for assets. The commands below put both containers on a shared Docker network so they can talk to each other by name, and publish the ports you need to the host. This works on Linux, Mac, and Windows.
 
 ```bash
-# MinIO (skip if you already have one)
-docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
+# Shared network so the app can reach MinIO by container name
+docker network create trip2g-local-net
+
+# MinIO (skip if you already have one; attach it to the same network)
+docker run -d --name trip2g-minio \
+  --network trip2g-local-net \
+  -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=trip2g -e MINIO_ROOT_PASSWORD=trip2g-secret \
   minio/minio:latest server /data --console-address ":9001"
 
@@ -24,12 +29,14 @@ docker run -d --name trip2g-minio -p 9000:9000 -p 9001:9001 \
 # run `docker build -t trip2g:local .` from a trip2g checkout and replace the
 # image tag below with `trip2g:local`.
 mkdir -p /tmp/trip2g-local
-docker run -d --name trip2g-local --network host \
+docker run -d --name trip2g-local \
+  --network trip2g-local-net \
+  -p 24081:24081 -p 24082:24082 \
   -e LISTEN_ADDR=0.0.0.0:24081 -e INTERNAL_LISTEN_ADDR=:24082 \
   -e DB_FILE=/data/local.sqlite3 \
   -e DEV=true \
   -e OWNER_EMAIL=hello@example.com \
-  -e MINIO_ENDPOINT=localhost:9000 \
+  -e MINIO_ENDPOINT=trip2g-minio:9000 \
   -e MINIO_ACCESS_KEY_ID=trip2g -e MINIO_SECRET_KEY=trip2g-secret \
   -e MINIO_BUCKET=trip2g-local -e MINIO_USE_SSL=false \
   -e PUBLIC_URL=http://localhost:24081 \
@@ -40,15 +47,17 @@ docker run -d --name trip2g-local --network host \
   -v /tmp/trip2g-local:/data \
   ghcr.io/trip2g/trip2g:latest
 
-# wait until healthy — also verify the container is actually running
+# wait until healthy (also verify the container is actually running)
 docker ps | grep trip2g-local
 until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo "up"
 ```
 
 Notes:
-- `DEV=true` enables the dev sign-in code (no real email needed) — **never use in production**.
+- `DEV=true` enables the dev sign-in code (no real email needed). **Never use in production.**
 - You do **not** need the `FEATURES` / vector-search env for plain content; omit it to avoid the embedding-server dependency.
-- `--network host` lets the app reach MinIO on `localhost:9000` and exposes the app port directly.
+- `-p 24081:24081 -p 24082:24082` publishes the app and health ports to your host machine. MinIO's `-p 9000:9000` does the same for S3 access (MinIO console is on 9001).
+- `MINIO_ENDPOINT=trip2g-minio:9000` uses the container name as the hostname. Docker's built-in DNS resolves it on the shared network. From your host browser or CLI you still reach MinIO at `localhost:9000`.
+- On Linux you can skip the network setup and use `--network host` on the trip2g container with `MINIO_ENDPOINT=localhost:9000` instead. Docker Desktop on Mac and Windows does not support host networking, so the `-p` approach above is the portable default.
 
 Building from source instead of the image: `make build` produces `./tmp/server`; run it with the same env vars (and a reachable MinIO).
 
@@ -77,7 +86,7 @@ echo "API key: $API_KEY"
 
 ## 3. Push your content
 
-Use the sync CLI to publish a folder of notes (`.md`) plus any `_layouts/` templates and assets. The CLI (`obsidian-sync/dist/trip2g-sync.mjs`) lives in the trip2g source repository — run the following from the root of a trip2g checkout:
+Use the sync CLI to publish a folder of notes (`.md`) plus any `_layouts/` templates and assets. The CLI (`obsidian-sync/dist/trip2g-sync.mjs`) lives in the trip2g source repository. Run the following from the root of a trip2g checkout:
 
 ```bash
 node obsidian-sync/dist/trip2g-sync.mjs \
@@ -117,7 +126,7 @@ node obsidian-sync/dist/trip2g-sync.mjs --watch \
   --include "projects/**"
 ```
 
-Precedence: CLI flags override any `livePull` patterns stored in `data.json`, which override the built-in default (`**` — follow everything). With `--watch` and no patterns set anywhere, all paths are followed.
+Precedence: CLI flags override any `livePull` patterns stored in `data.json`, which override the built-in default (`**`, meaning follow everything). With `--watch` and no patterns set anywhere, all paths are followed.
 
 ## 4. View it
 
@@ -131,6 +140,6 @@ Using this instance as AI-agent memory? See [[en/user/agent-memory]].
 
 - **Dev sign-in code** is `111111` (also `000000`). Only with `DEV=true`.
 - **`route:` frontmatter** maps a note to a custom domain. Locally, view via the plain permalink (`/path/note`) or send a `Host:` header.
-- **Custom Jet layouts**: a note with `layout: <theme>/<page>` renders through `_layouts/<theme>/<page>.html`. If the template fails to parse, the server silently falls back to the default layout (HTTP 200) — so the page "works" but looks wrong.
-- **`{{/* ... */}}` block comments break the template engine** in current builds — don't put them in `_layouts/*.html`.
+- **Custom Jet layouts**: a note with `layout: <theme>/<page>` renders through `_layouts/<theme>/<page>.html`. If the template fails to parse, the server silently falls back to the default layout (HTTP 200), so the page "works" but looks wrong.
+- `{{/* ... */}}` block comments break the template engine in current builds. Don't put them in `_layouts/*.html`.
 - A note is public (served to anonymous visitors) only with `free: true` in frontmatter, or a `**/*.md → { free: true }` frontmatter patch.

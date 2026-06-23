@@ -1,0 +1,87 @@
+name: Release Binaries
+
+# Builds cross-platform server binaries and attaches them to the GitHub Release
+# on every v* tag push. Docker remains the recommended server deploy method.
+# macOS binaries are unsigned/unnotarized — Gatekeeper will warn on first run.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write  # needed to create/upload GitHub Release assets
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}_${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Prepare generated files
+        run: go generate ./...
+
+      - name: Set binary name
+        id: names
+        run: |
+          VERSION="${{ github.ref_name }}"
+          ARTIFACT="trip2g_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          BINARY="trip2g-server"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY="trip2g-server.exe"
+            ARCHIVE="${ARTIFACT}.zip"
+          else
+            ARCHIVE="${ARTIFACT}.tar.gz"
+          fi
+          echo "artifact=${ARTIFACT}" >> "$GITHUB_OUTPUT"
+          echo "binary=${BINARY}" >> "$GITHUB_OUTPUT"
+          echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X main.GitCommit=${{ github.ref_name }}" \
+            -o "${{ steps.names.outputs.binary }}" \
+            ./cmd/server
+
+      - name: Package archive (tar.gz)
+        if: matrix.goos != 'windows'
+        run: tar czf "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.binary }}"
+
+      - name: Package archive (zip)
+        if: matrix.goos == 'windows'
+        run: zip "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.binary }}"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.names.outputs.archive }}

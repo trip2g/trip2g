@@ -11,7 +11,7 @@ Wants=network-online.target
 Type=simple
 EnvironmentFile=/etc/trip2g.env
 # Must be a normal writable dir, NOT the /litefs FUSE mount (which only accepts
-# SQLite databases). Only TRIP2G_DATABASE_FILE points into /litefs.
+# SQLite databases). Only TRIP2G_DB_FILE points into /litefs.
 WorkingDirectory=/var/lib/trip2g
 ExecStart=/usr/local/bin/trip2g
 Restart=on-failure
