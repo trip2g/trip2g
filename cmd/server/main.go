@@ -72,6 +72,7 @@ import (
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/case/submitform"
@@ -526,9 +527,13 @@ func main() {
 		panic(fmt.Errorf("failed to create redirect manager: %w", err))
 	}
 
-	a.notFoundTracker, err = notfoundtracker.New(ctx, a)
-	if err != nil {
-		panic(fmt.Errorf("failed to create not found tracker: %w", err))
+	// Read-only replica: skip the not-found tracker (it writes to the DB every
+	// minute via runDumpTicker; the replica's connection is read-only).
+	if !config.IsReadReplica() {
+		a.notFoundTracker, err = notfoundtracker.New(ctx, a)
+		if err != nil {
+			panic(fmt.Errorf("failed to create not found tracker: %w", err))
+		}
 	}
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
@@ -2470,12 +2475,19 @@ func (a *app) AssetVersion() string {
 }
 
 func (a *app) RefreshNotFoundTracker(ctx context.Context) error {
+	if a.notFoundTracker == nil {
+		return nil
+	}
 	return a.notFoundTracker.Refresh(ctx)
 }
 
 func (a *app) TrackNotFound(path string, ip string) {
 	if a.config.DevMode {
 		a.log.Warn("page not found", "path", path)
+	}
+
+	if a.notFoundTracker == nil {
+		return
 	}
 
 	err := a.notFoundTracker.Track(path, ip)
@@ -2825,28 +2837,26 @@ func (a *app) startServer() {
 			}
 		}
 
-		// handle hot auth token from ?hot=...
-		// hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
-		// if hatAuthToken != "" {
-		// 	hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
-		// 	if hatErr != nil {
-		// 		a.log.Warn("failed to resolve hot auth token", "error", hatErr)
-		// 	}
-		//
-		// 	parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
-		// 	if err != nil {
-		// 		a.log.Warn("failed to parse URL", "error", err)
-		// 		ctx.SetStatusCode(http.StatusBadRequest)
-		// 		return
-		// 	}
-		//
-		// 	query := parsedURL.Query()
-		// 	query.Del("hat")
-		// 	parsedURL.RawQuery = query.Encode()
-		//
-		// 	ctx.Redirect(parsedURL.String(), http.StatusFound)
-		// 	return
-		// }
+		// Hot auth token consumer: a buyer redirected back after payment with
+		// ?hat=<token> gets auto-logged-in. Resolve sets the trip2g_token cookie
+		// on this response (via SetupUserToken -> TokenManager.Store), then we
+		// strip ?hat and redirect to the cleaned URL so the token doesn't linger
+		// in the address bar. A bad/expired token is logged and falls through so
+		// it never breaks the return page.
+		if hatAuthToken := string(ctx.QueryArgs().Peek("hat")); hatAuthToken != "" {
+			if hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken); hatErr != nil {
+				a.log.Warn("failed to resolve hot auth token", "error", hatErr)
+			} else if parsedURL, parseErr := url.Parse(string(ctx.Request.Header.RequestURI())); parseErr != nil {
+				a.log.Warn("failed to parse URL after hat sign-in", "error", parseErr)
+			} else {
+				query := parsedURL.Query()
+				query.Del("hat")
+				parsedURL.RawQuery = query.Encode()
+
+				ctx.Redirect(parsedURL.String(), http.StatusFound)
+				return
+			}
+		}
 
 		if handleGraphQL(ctx, path) {
 			return
