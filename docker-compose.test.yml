@@ -113,7 +113,7 @@ services:
       - ./tmp/data:/data
       - ./testdata/vault:/app/testdata/vault:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20082/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20082/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -171,7 +171,7 @@ services:
     volumes:
       - ./tmp/data:/data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20072/livez"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20072/livez"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -233,7 +233,7 @@ services:
       - ./tmp/data:/data
       - ./testdata/seedvault:/app/testdata/seedvault:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20092/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20092/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -294,7 +294,7 @@ services:
       - ./tmp/data:/data
       - ./testdata/seedvault2:/app/testdata/seedvault2:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20094/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20094/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -355,7 +355,7 @@ services:
       - ./tmp/data:/data
       - ./testdata/seedvault3:/app/testdata/seedvault3:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20096/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20096/healthz"]
       interval: 5s
       timeout: 5s
       retries: 10
