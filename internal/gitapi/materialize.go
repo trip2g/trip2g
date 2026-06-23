@@ -14,7 +14,7 @@ import (
 // materialize rebuilds refs/heads/<master> from the DB (notes + assets) as one
 // commit. It is idempotent: if the resulting tree equals the current HEAD tree,
 // no commit is made. Callers must hold the note-write lock.
-func (api *API) materialize(ctx context.Context) error {
+func (api *API) materialize(ctx context.Context) (err error) {
 	notes, err := api.env.LatestNoteSources(ctx)
 	if err != nil {
 		return fmt.Errorf("materialize: note sources: %w", err)
@@ -27,6 +27,31 @@ func (api *API) materialize(ctx context.Context) error {
 	indexPath := filepath.Join(api.config.RepoPath, "index.materialize")
 	_ = os.Remove(indexPath) // start from an empty index so deletions drop out
 	defer os.Remove(indexPath)
+	// On failure, remove any loose objects written by hash-object -w that were
+	// never reachable (no commit was created). Without cleanup these orphaned
+	// blobs accumulate on disk indefinitely — the root cause of the production
+	// incident where a single interrupted rebuild stranded ~1.7 G of dangling
+	// objects and filled the disk.
+	defer func() {
+		if err == nil {
+			return
+		}
+		// Remove git temp object files left by an interrupted hash-object run.
+		for _, pattern := range []string{
+			filepath.Join(api.config.RepoPath, "objects", "*", "tmp_obj_*"),
+			filepath.Join(api.config.RepoPath, "objects", "tmp_obj_*"),
+		} {
+			if matches, gErr := filepath.Glob(pattern); gErr == nil {
+				for _, f := range matches {
+					_ = os.Remove(f)
+				}
+			}
+		}
+		// Drop unreachable loose objects immediately (default grace is 2 weeks).
+		if _, pErr := api.gitCmd(os.Environ(), nil, "prune", "--expire=now"); pErr != nil {
+			api.logger.Warn("materialize: prune after failure", "error", pErr)
+		}
+	}()
 
 	gitEnv := append(os.Environ(),
 		"GIT_INDEX_FILE="+indexPath,
