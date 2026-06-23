@@ -119,6 +119,64 @@ services:
       retries: 10
       start_period: 10s
 
+  # Read-only replica of the leader (`app`). Same DB file (same ./tmp/data
+  # volume → /data/test.sqlite3), so the shared SQLite file IS the replication —
+  # no LiteFS needed for local e2e. TRIP2G_LEADER_ADDR makes it serve GET locally
+  # and forward every mutating request to the leader's internal intake (app:20082)
+  # with an X-Replica-Auth HMAC. Must share JWT_SECRET (X-Replica-Auth + sessions)
+  # and the cookie name so sessions created on the leader resolve on the replica.
+  # See docs/dev/readreplica.md + e2e/read-replica.spec.js.
+  app-replica:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-test-app-replica
+    depends_on:
+      minio:
+        condition: service_healthy
+      app:
+        condition: service_healthy # leader migrates the shared DB first
+    ports:
+      - "20071:20071"
+      - "20072:20072"
+    environment:
+      - LISTEN_ADDR=0.0.0.0:20071
+      - INTERNAL_LISTEN_ADDR=:20072
+      - DB_FILE=/data/test.sqlite3 # SAME file as the leader
+      - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
+      - DEV=true
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+
+      # MinIO — same bucket/no prefix as the leader so the replica reads the
+      # leader's assets.
+      - MINIO_ENDPOINT=minio:29000
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_USE_SSL=false
+
+      - PUBLIC_URL=http://localhost:20071
+
+      # MUST match the leader exactly (shared DB + X-Replica-Auth signing).
+      - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_e2e
+
+      # gitapi materializes its own mirror from the (read-only) shared DB.
+      - GIT_API_REPO_PATH=/data/git-replica
+      - GIT_API_BASE_PATH=/git
+      - MAIL_FROM=test@example.com
+    volumes:
+      - ./tmp/data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20072/livez"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   # Peer instance for MCP federation e2e tests.
   # Separate DB, cookie name, and minio prefix to keep sessions isolated.
   app-peer:

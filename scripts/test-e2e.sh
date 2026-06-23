@@ -264,8 +264,8 @@ trap cleanup EXIT INT TERM
 
 # Clean up any existing test containers (keep embedding running to avoid slow model reload)
 echo "🧹 Cleaning up existing test containers..."
-docker compose -f docker-compose.test.yml stop app app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
-docker compose -f docker-compose.test.yml rm -f app app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
+docker compose -f docker-compose.test.yml stop app app-replica app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
+docker compose -f docker-compose.test.yml rm -f app app-replica app-peer app-peer2 app-peer3 minio test-data 2>/dev/null || true
 
 # Prepare database
 export DB_PATH="tmp/data/test.sqlite3"
@@ -326,11 +326,17 @@ fi
 # Start services (embedding is kept alive between runs; start it without recreate if not running)
 echo "🚀 Starting services..."
 docker compose -f docker-compose.test.yml up -d --no-recreate embedding 2>/dev/null || true
-docker compose -f docker-compose.test.yml up -d --build app app-peer app-peer2 app-peer3 minio
+docker compose -f docker-compose.test.yml up -d --build app app-replica app-peer app-peer2 app-peer3 minio
 
 # Wait for services
 ./scripts/waitfor localhost:20081 || {
   echo -e "${RED}✗ Services failed to start${NC}"
+  exit 1
+}
+
+# Wait for the read replica (read-replica.spec.js)
+./scripts/waitfor localhost:20071 || {
+  echo -e "${RED}✗ Read replica failed to start${NC}"
   exit 1
 }
 
