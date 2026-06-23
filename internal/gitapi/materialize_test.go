@@ -3,6 +3,7 @@ package gitapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os/exec"
 	"path/filepath"
@@ -90,6 +91,58 @@ type errReader struct{ err error }
 
 func (e *errReader) Read(_ []byte) (int, error) { return 0, e.err }
 func (e *errReader) Close() error               { return nil }
+
+// TestMaterializePacksLooseObjects verifies that exported Materialize() packs
+// loose objects into a pack file after a successful mirror refresh. Before the
+// fix, git hash-object -w writes loose objects that are never packed; after,
+// git gc --prune=now is run so count-objects reports 0 loose objects and at
+// least 1 pack.
+func TestMaterializePacksLooseObjects(t *testing.T) {
+	env := &EnvMock{
+		LoggerFunc:              func() logger.Logger { return &logger.DummyLogger{} },
+		LockNoteWritesFunc:      func() {},
+		UnlockNoteWritesFunc:    func() {},
+		PrivateObjectExistsFunc: func(_ context.Context, _ string) (bool, error) { return false, nil },
+		LatestNoteSourcesFunc: func(_ context.Context) ([]NoteSource, error) {
+			return []NoteSource{{Path: "hello.md", Content: []byte("# Hello\n")}}, nil
+		},
+		LatestAssetSourcesFunc: func(_ context.Context) ([]AssetSource, error) {
+			return []AssetSource{}, nil
+		},
+	}
+
+	api := newTestAPI(t, env)
+
+	if err := api.Materialize(context.Background()); err != nil {
+		t.Fatalf("Materialize returned unexpected error: %v", err)
+	}
+
+	// Parse "git count-objects -v" output.
+	// Expected after gc: count: 0 (no loose), packs: >= 1.
+	raw := gitOut(t, api.config.RepoPath, "count-objects", "-v")
+	counts := map[string]int{}
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, ": ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		var v int
+		if _, err := fmt.Sscanf(parts[1], "%d", &v); err == nil {
+			counts[parts[0]] = v
+		}
+	}
+
+	if counts["count"] != 0 {
+		t.Errorf("loose objects after Materialize: count=%d, want 0", counts["count"])
+	}
+	if counts["packs"] < 1 {
+		t.Errorf("no pack files after Materialize: packs=%d, want >= 1", counts["packs"])
+	}
+}
 
 // TestMaterializeCleansUpOrphansOnFailure reproduces the production incident:
 // materialize() writes loose git objects via hash-object -w before it fails.

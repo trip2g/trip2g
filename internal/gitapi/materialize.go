@@ -133,13 +133,29 @@ func (api *API) addBlob(gitEnv []string, path string, content []byte) error {
 }
 
 // Materialize is the exported entrypoint for scheduled mirror refreshes.
+// After a successful rebuild it runs gc to pack loose objects and prune any
+// unreachable ones left from rolled-back pushes, keeping the mirror compact
+// on disk-constrained servers.
 func (api *API) Materialize(ctx context.Context) error {
 	api.env.LockNoteWrites()
 	defer api.env.UnlockNoteWrites()
 	if err := api.initRepo(); err != nil {
 		return err
 	}
-	return api.materialize(ctx)
+	if err := api.materialize(ctx); err != nil {
+		return err
+	}
+	api.gc()
+	return nil
+}
+
+// gc packs loose objects and prunes unreachable ones. It is non-fatal: a
+// failure (e.g. ENOSPC) is logged as a warning and does not turn a successful
+// Materialize into an error.
+func (api *API) gc() {
+	if _, err := api.gitCmd(os.Environ(), nil, "gc", "--prune=now"); err != nil {
+		api.logger.Warn("materialize: git gc failed (non-fatal)", "error", err)
+	}
 }
 
 // gitCmd runs a git command in the bare repo with the given env and optional stdin.
