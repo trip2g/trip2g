@@ -8,6 +8,7 @@ title: "Navigation"
 - [[en/user/protocol|How trip2g works]]
 - [[en/user/hosting|Hosting options]]
 - [[en/user/selfhosted|Self-hosted deployment]]
+- [[en/user/fly|Deploy on fly.io]]
 - [[en/user/cli|CLI sync tool]]
 - [[en/user/markdown|Markdown syntax]]
 - [[en/user/publishing|Publishing notes]]

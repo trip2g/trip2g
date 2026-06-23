@@ -26,6 +26,7 @@ Good for: people who want their own instance without dealing with setup.
 Use the minimal self-hosting guide with `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend, and optional vector search:
 
 - [[en/user/selfhosted|Deploy on your own server]]
+- [[en/user/fly|Deploy on fly.io]] — one machine, one volume, no extra services
 - [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
 
 trip2g is a single Go binary with SQLite. For a simple production deployment, Docker, MinIO, and one `.env` file are enough.

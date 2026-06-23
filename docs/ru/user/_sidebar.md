@@ -8,6 +8,7 @@ title: "Навигация"
 - [[ru/user/protocol|Как работает trip2g]]
 - [[ru/user/hosting|Хостинг]]
 - [[ru/user/selfhosted|Self-hosted]]
+- [[ru/user/fly|Развёртывание на fly.io]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
 - [[ru/user/editor|Редактор в браузере]]

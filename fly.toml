@@ -1,0 +1,53 @@
+# fly.io deployment for trip2g — single machine, single volume, local file storage.
+# See docs/en/user/fly.md (RU: docs/ru/user/fly.md) for the full walkthrough.
+#
+# Per-instance values (app name, PUBLIC_URL, OWNER_EMAIL) and all secrets
+# (JWT_SECRET, DATA_ENCRYPTION_KEY) are set by scripts/deploy-fly.sh, not here,
+# so this file stays reusable across deployments.
+
+app = "trip2g"
+primary_region = "fra"
+
+[build]
+  # Prebuilt published image — the robust "couple of clicks" path.
+  # Building from source on fly's default remote builder OOMs on the large
+  # telegram (gotd/td) package; see docs/en/user/fly.md "Build from source".
+  image = "ghcr.io/trip2g/trip2g:latest"
+
+[env]
+  LISTEN_ADDR = "0.0.0.0:8081"
+  INTERNAL_LISTEN_ADDR = ":8082"
+  DB_FILE = "/data/data.sqlite3"
+  GIT_API_REPO_PATH = "/data/git"
+  STORAGE_BACKEND = "local"
+  STORAGE_LOCAL_DIR = "/data/storage"
+  LOG_LEVEL = "info"
+  DEV = "false"
+  SIMPLE_BACKUP = "false"
+
+# Persistent disk for SQLite, the git mirror and uploaded files.
+[mounts]
+  source = "trip2g_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+# trip2g serves liveness/readiness on the internal port (INTERNAL_LISTEN_ADDR).
+[[checks]]
+  name = "health"
+  port = 8082
+  type = "http"
+  method = "GET"
+  path = "/livez"
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

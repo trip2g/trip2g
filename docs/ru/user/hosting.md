@@ -24,6 +24,7 @@ free: true
 Минимальная инструкция с `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend и optional vector search:
 
 - [[ru/user/selfhosted|Развернуть у себя на сервере]]
+- [[ru/user/fly|Развернуть на fly.io]] — одна машина, один диск, без лишних сервисов
 - [github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
 
 trip2g — это один бинарник на Go с SQLite. Для простого production-развертывания достаточно Docker, MinIO и одного `.env`.
