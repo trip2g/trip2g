@@ -25,6 +25,11 @@ import {
   ensureDailyIndex,
   shouldRunMcp,
   buildToolList,
+  buildIndexNote,
+  buildLogNote,
+  buildAgentsNote,
+  buildSchemaNote,
+  lintVault,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -675,14 +680,14 @@ test('shouldRunMcp: piped stdin + flags only (no subcommand) → true', () => {
 // buildToolList — tool registry
 // ---------------------------------------------------------------------------
 
-test('buildToolList: returns exactly 8 tools', () => {
+test('buildToolList: returns exactly 9 tools', () => {
   const tools = buildToolList();
-  assert.equal(tools.length, 8);
+  assert.equal(tools.length, 9);
 });
 
 test('buildToolList: all expected tool names are present', () => {
   const names = new Set(buildToolList().map((t) => t.name));
-  const expected = ['memory_up', 'memory_down', 'memory_status', 'memory_logs', 'memory_key', 'memory_daily', 'memory_log', 'memory_bind_hub'];
+  const expected = ['memory_up', 'memory_down', 'memory_status', 'memory_logs', 'memory_key', 'memory_daily', 'memory_log', 'memory_bind_hub', 'memory_lint'];
   for (const name of expected) {
     assert.ok(names.has(name), `Expected tool ${name} to be in list`);
   }
@@ -782,4 +787,220 @@ test('parseArgs: hub --id flag sets flags.id', () => {
 test('parseArgs: flags.id defaults to null', () => {
   const { flags } = parseArgs(['hub', 'https://demo.lahab.cc/_system/mcp']);
   assert.equal(flags.id, null);
+});
+
+// ---------------------------------------------------------------------------
+// OKF seed builders
+// ---------------------------------------------------------------------------
+
+test('buildIndexNote: contains a type: line (type: index)', () => {
+  const note = buildIndexNote();
+  assert.match(note, /^type: index$/m, `Expected "type: index" line, got:\n${note}`);
+});
+
+test('buildIndexNote: starts with frontmatter and is free', () => {
+  const note = buildIndexNote();
+  assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
+  assert.ok(note.includes('free: true'), 'must be free: true');
+});
+
+test('buildLogNote: contains a type: line (type: log)', () => {
+  const note = buildLogNote();
+  assert.match(note, /^type: log$/m, `Expected "type: log" line, got:\n${note}`);
+});
+
+test('buildAgentsNote: contains type: instructions and mcp_method: instructions', () => {
+  const note = buildAgentsNote();
+  assert.match(note, /^type: instructions$/m, 'must have type: instructions');
+  assert.ok(note.includes('mcp_method: instructions'), 'must have mcp_method: instructions');
+});
+
+test('buildSchemaNote: contains type: schema and mcp_method: schema', () => {
+  const note = buildSchemaNote();
+  assert.match(note, /^type: schema$/m, 'must have type: schema');
+  assert.ok(note.includes('mcp_method: schema'), 'must have mcp_method: schema');
+});
+
+// ---------------------------------------------------------------------------
+// parseArgs / shouldRunMcp — lint & no-seed
+// ---------------------------------------------------------------------------
+
+test('parseArgs: "lint" subcommand is recognized', () => {
+  const { cmd } = parseArgs(['lint']);
+  assert.equal(cmd, 'lint');
+});
+
+test('parseArgs: --no-seed sets noSeed=true', () => {
+  const { flags } = parseArgs(['up', '--no-seed']);
+  assert.equal(flags.noSeed, true);
+});
+
+test('parseArgs: noSeed defaults to false', () => {
+  const { flags } = parseArgs(['up']);
+  assert.equal(flags.noSeed, false);
+});
+
+test('parseArgs: --stale-days sets staleDays', () => {
+  const { flags } = parseArgs(['lint', '--stale-days', '30']);
+  assert.equal(flags.staleDays, 30);
+});
+
+test('parseArgs: staleDays defaults to 60', () => {
+  const { flags } = parseArgs(['lint']);
+  assert.equal(flags.staleDays, 60);
+});
+
+test('shouldRunMcp: "lint" subcommand → false (never MCP)', () => {
+  assert.equal(shouldRunMcp(['lint'], true), false);
+  assert.equal(shouldRunMcp(['lint'], false), false);
+});
+
+// ---------------------------------------------------------------------------
+// buildToolList — memory_lint
+// ---------------------------------------------------------------------------
+
+test('buildToolList: memory_lint is present', () => {
+  const tool = buildToolList().find((t) => t.name === 'memory_lint');
+  assert.ok(tool, 'memory_lint must be in the tool list');
+  assert.equal((tool!.inputSchema as { type?: string }).type, 'object');
+});
+
+// ---------------------------------------------------------------------------
+// lintVault
+// ---------------------------------------------------------------------------
+
+function makeLintVault(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-lint-'));
+}
+
+function writeWellFormed(vault: string): void {
+  fs.writeFileSync(path.join(vault, 'index.md'), '---\nfree: true\ntype: index\n---\n\n# Index\n');
+  fs.writeFileSync(path.join(vault, 'log.md'), '---\nfree: true\ntype: log\n---\n\n# Log\n');
+}
+
+test('lintVault: passes clean on a well-formed vault', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'concept.md'), '---\ntype: concept\n---\n\nbody\n');
+    const result = lintVault(vault, 60);
+    assert.equal(result.violations.length, 0, `expected no violations, got: ${JSON.stringify(result.violations)}`);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: detects a note missing type (okf-type warn)', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'untyped.md'), '---\nfree: true\n---\n\nbody\n');
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'okf-type' && v.file === 'untyped.md');
+    assert.ok(hit, 'must flag untyped.md as okf-type');
+    assert.equal(hit!.level, 'warn');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: detects an unresolved marker (commit-gate error)', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(path.join(vault, 'wip.md'), '---\ntype: concept\n---\n\nStatus: Unresolved\nstill thinking\n');
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'commit-gate' && v.file === 'wip.md');
+    assert.ok(hit, 'must flag wip.md as commit-gate');
+    assert.equal(hit!.level, 'error');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: detects missing index.md/log.md (okf-reserved error)', () => {
+  const vault = makeLintVault();
+  try {
+    fs.writeFileSync(path.join(vault, 'note.md'), '---\ntype: concept\n---\n\nbody\n');
+    const result = lintVault(vault, 60);
+    const reserved = result.violations.filter((v) => v.kind === 'okf-reserved');
+    const files = new Set(reserved.map((v) => v.file));
+    assert.ok(files.has('index.md'), 'must flag missing index.md');
+    assert.ok(files.has('log.md'), 'must flag missing log.md');
+    assert.ok(reserved.every((v) => v.level === 'error'), 'okf-reserved must be error level');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: detects a stale timestamp (stale warn)', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.writeFileSync(
+      path.join(vault, 'old.md'),
+      '---\ntype: concept\ntimestamp: 2000-01-01\n---\n\nbody\n',
+    );
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find((v) => v.kind === 'stale' && v.file === 'old.md');
+    assert.ok(hit, 'must flag old.md as stale');
+    assert.equal(hit!.level, 'warn');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: skips .trip2g-memory and .obsidian directories', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    fs.mkdirSync(path.join(vault, '.trip2g-memory'), { recursive: true });
+    fs.writeFileSync(path.join(vault, '.trip2g-memory', 'junk.md'), 'Status: Unresolved\n');
+    fs.mkdirSync(path.join(vault, '.obsidian'), { recursive: true });
+    fs.writeFileSync(path.join(vault, '.obsidian', 'junk.md'), 'no type here\n');
+    const result = lintVault(vault, 60);
+    assert.equal(result.violations.length, 0, `expected no violations, got: ${JSON.stringify(result.violations)}`);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: seeded vault (actual builders) has zero error-level violations', () => {
+  // Reproduce the exact content a user gets from `memcli up` — the real false-positive scenario.
+  const vault = makeLintVault();
+  try {
+    fs.writeFileSync(path.join(vault, 'index.md'), buildIndexNote());
+    fs.writeFileSync(path.join(vault, 'log.md'), buildLogNote());
+    fs.writeFileSync(path.join(vault, 'AGENTS.md'), buildAgentsNote());
+    fs.writeFileSync(path.join(vault, 'SCHEMA.md'), buildSchemaNote());
+    const result = lintVault(vault, 60);
+    const errors = result.violations.filter((v) => v.level === 'error');
+    assert.equal(
+      errors.length,
+      0,
+      `Expected 0 errors on seeded vault, got: ${JSON.stringify(errors)}`,
+    );
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: prose Status: Unresolved (not in code span) still errors', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    // Bare prose — NOT inside backticks — must still be caught.
+    fs.writeFileSync(
+      path.join(vault, 'bare-unresolved.md'),
+      '---\ntype: concept\n---\n\nStatus: Unresolved\nstill working on it\n',
+    );
+    const result = lintVault(vault, 60);
+    const hit = result.violations.find(
+      (v) => v.kind === 'commit-gate' && v.file === 'bare-unresolved.md',
+    );
+    assert.ok(hit, 'prose Status: Unresolved must produce a commit-gate error');
+    assert.equal(hit!.level, 'error');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
 });

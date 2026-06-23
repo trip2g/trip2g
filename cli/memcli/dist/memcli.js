@@ -20271,6 +20271,7 @@ var DEFAULT_EMAIL = "memory@local";
 var READY_TIMEOUT_MS = 6e4;
 var READY_POLL_MS = 500;
 var DEFAULT_HUB_URL = "https://trip2g.com/_system/mcp";
+var DEFAULT_STALE_DAYS = 60;
 function base64url(buf) {
   const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
   return b.toString("base64url");
@@ -20319,8 +20320,97 @@ mcp_federation_kb_id: ${kbId}
 To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 `.trimStart();
 }
+function buildIndexNote() {
+  return `---
+free: true
+type: index
+---
+
+# Index
+
+This is the entry point for your trip2g memory base \u2014 a folder of Markdown notes
+an agent reads and searches as persistent long-term memory.
+
+## What this base covers
+- Captured thoughts (daily notes, per-topic logs).
+- Concepts, sources, decisions, and queries you accumulate over time.
+- A living synthesis of open questions and answers.
+
+## Map
+- [[AGENTS]] \u2014 the retrieval workflow and the commit-gate rule.
+- [[SCHEMA]] \u2014 page types and the OKF \`type:\` requirement.
+- [[log]] \u2014 running synthesis and open questions.
+`.trimStart();
+}
+function buildLogNote() {
+  return `---
+free: true
+type: log
+---
+
+# Log
+
+A running synthesis of what this memory base knows, and the open questions still
+to resolve. Append as understanding evolves; promote settled answers into their
+own typed notes (concept / source / decision).
+
+## Synthesis
+_(running summary \u2014 keep this current)_
+
+## Open questions
+- _(none yet \u2014 add questions here as they surface)_
+`.trimStart();
+}
+function buildAgentsNote() {
+  return `---
+free: true
+mcp_method: instructions
+type: instructions
+---
+
+# Agent instructions
+
+## Retrieval workflow
+1. **search** \u2014 query the base for notes relevant to the task.
+2. **expand** \u2014 pull the full body of the most promising matches.
+3. **note_html** \u2014 render a note when you need its formatted content.
+
+Prefer recalling existing notes over re-deriving knowledge. Link related notes
+with \`[[wikilinks]]\` so the graph stays navigable.
+
+## Commit-gate rule
+Before treating a write as done, run \`memcli lint\` (or the \`memory_lint\` MCP
+tool) and resolve every \`Status: Unresolved\` marker. Do not leave contradictions
+or unresolved markers behind \u2014 an unresolved marker means the write is not yet
+committed.
+`.trimStart();
+}
+function buildSchemaNote() {
+  return `---
+free: true
+mcp_method: schema
+type: schema
+---
+
+# Schema
+
+This base follows the Open Knowledge Format (OKF): **every note carries a
+\`type:\` field** in its frontmatter so it can be classified and validated.
+
+## Page types
+- **concept** \u2014 a durable idea, definition, or model.
+- **source** \u2014 an external reference (article, paper, repo, conversation).
+- **decision** \u2014 a choice made, with its rationale and alternatives.
+- **query** \u2014 an open question being investigated.
+- **daily** \u2014 a dated working-space note of captured thoughts.
+
+## Rule
+Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
+(see \`memcli lint\` / \`memory_lint\`).
+`.trimStart();
+}
 function parseArgs(argv) {
-  const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp", "hub"]);
+  const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp", "hub", "lint"]);
   const flags = {
     dryRun: false,
     help: false,
@@ -20330,8 +20420,10 @@ function parseArgs(argv) {
     image: DEFAULT_IMAGE,
     publicUrl: null,
     noHub: false,
+    noSeed: false,
     hubUrl: DEFAULT_HUB_URL,
     context: 15,
+    staleDays: DEFAULT_STALE_DAYS,
     id: null
   };
   let cmd = "up";
@@ -20361,10 +20453,14 @@ function parseArgs(argv) {
       flags.publicUrl = argv[++i];
     } else if (arg === "--no-hub") {
       flags.noHub = true;
+    } else if (arg === "--no-seed") {
+      flags.noSeed = true;
     } else if (arg === "--hub-url") {
       flags.hubUrl = argv[++i];
     } else if (arg === "--context") {
       flags.context = parseInt(argv[++i], 10);
+    } else if (arg === "--stale-days") {
+      flags.staleDays = parseInt(argv[++i], 10);
     } else if (arg === "--id") {
       flags.id = argv[++i];
     } else if (!arg.startsWith("-")) {
@@ -20375,7 +20471,7 @@ function parseArgs(argv) {
   return { cmd, flags, positional };
 }
 function shouldRunMcp(argv, isTty) {
-  const KNOWN_CLI_CMDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "hub"]);
+  const KNOWN_CLI_CMDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "hub", "lint"]);
   const first = argv[0];
   if (first !== void 0 && KNOWN_CLI_CMDS.has(first)) return false;
   if (argv.includes("--help") || argv.includes("-h")) return false;
@@ -20396,6 +20492,7 @@ function buildToolList() {
           email: { type: "string", description: "Owner email (default: memory@local)" },
           image: { type: "string", description: "Docker image ref (default: ghcr.io/trip2g/trip2g:latest)" },
           noHub: { type: "boolean", description: "Skip writing the federation hub note" },
+          noSeed: { type: "boolean", description: "Skip seeding the OKF starter notes (index.md/log.md/AGENTS.md/SCHEMA.md)" },
           hubUrl: { type: "string", description: "Override hub MCP endpoint URL" },
           publicUrl: { type: "string", description: "Override PUBLIC_URL for the server" }
         },
@@ -20487,6 +20584,18 @@ function buildToolList() {
           id: { type: "string", description: "Optional short id for mcp_federation_kb_id (default: hostname)" }
         },
         required: ["url"]
+      }
+    },
+    {
+      name: "memory_lint",
+      description: "Zero-LLM commit-gate + OKF validation + stale report for a vault. Walks every .md note and reports: unresolved markers / contradictions (errors), notes missing a `type:` field (warnings), a missing index.md/log.md at the vault root (errors), and notes whose timestamp/date frontmatter is older than --stale-days (warnings). Run before treating a write as done. Args: folder, staleDays (default 60).",
+      inputSchema: {
+        type: "object",
+        properties: {
+          folder: { type: "string", description: "Vault directory path (default: ./memory-vault)" },
+          staleDays: { type: "number", description: "Flag notes older than this many days as stale (default: 60)" }
+        },
+        required: []
       }
     }
   ];
@@ -20696,6 +20805,7 @@ function tailLines(filePath, n) {
 function buildDailyEntry(day, tz, stampedEntry) {
   const frontmatter = `---
 timezone: ${tz}
+type: daily
 ---
 `;
   const header = `- [[_index|Home]]
@@ -20770,7 +20880,7 @@ ${entry}
     const base = existing.replace(/\n+$/, "");
     const prefix = base ? `${base}
 
-` : "";
+` : "---\ntype: note\n---\n\n";
     atomicWrite(note, `${prefix}${header}
 
 ${entry}
@@ -20918,6 +21028,122 @@ function runHub(hubUrl, folder, id, dryRun) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+function walkMarkdown(dir) {
+  const out = [];
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === ".trip2g-memory" || entry.name === ".obsidian") continue;
+      out.push(...walkMarkdown(full));
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+function splitFrontmatter(content) {
+  if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
+    return { frontmatter: "", body: content };
+  }
+  const rest = content.slice(content.indexOf("\n") + 1);
+  const end = rest.search(/^---\s*$/m);
+  if (end < 0) return { frontmatter: "", body: content };
+  const frontmatter = rest.slice(0, end);
+  const afterFence = rest.slice(end).replace(/^---\s*$/m, "");
+  return { frontmatter, body: afterFence };
+}
+function lintVault(vault, staleDays) {
+  const violations = [];
+  const root = path.resolve(vault);
+  const files = walkMarkdown(root);
+  const now = /* @__PURE__ */ new Date();
+  const staleMs = staleDays * 24 * 60 * 60 * 1e3;
+  for (const file of files) {
+    const rel = path.relative(root, file);
+    let content;
+    try {
+      content = fs.readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+    const { frontmatter, body } = splitFrontmatter(content);
+    const bodyForGate = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+    if (/Status:\s*Unresolved/i.test(bodyForGate) || bodyForGate.includes("CONTRADICTION")) {
+      violations.push({
+        level: "error",
+        kind: "commit-gate",
+        file: rel,
+        detail: "unresolved marker or CONTRADICTION found in note body"
+      });
+    }
+    if (!/^\s*type:\s*\S/m.test(frontmatter)) {
+      violations.push({
+        level: "warn",
+        kind: "okf-type",
+        file: rel,
+        detail: "note has no `type:` field in frontmatter (OKF)"
+      });
+    }
+    const dateMatch = frontmatter.match(/^\s*(?:timestamp|date):\s*(.+?)\s*$/m);
+    if (dateMatch) {
+      const parsed = new Date(dateMatch[1]);
+      if (!isNaN(parsed.getTime())) {
+        const age = now.getTime() - parsed.getTime();
+        if (age > staleMs) {
+          violations.push({
+            level: "warn",
+            kind: "stale",
+            file: rel,
+            detail: `note dated ${dateMatch[1]} is older than ${staleDays} days`
+          });
+        }
+      }
+    }
+  }
+  for (const reserved of ["index.md", "log.md"]) {
+    if (!fs.existsSync(path.join(root, reserved))) {
+      violations.push({
+        level: "error",
+        kind: "okf-reserved",
+        file: reserved,
+        detail: `reserved OKF note ${reserved} missing at vault root`
+      });
+    }
+  }
+  return { violations };
+}
+function formatLintReport(result) {
+  const { violations } = result;
+  const errors = violations.filter((v) => v.level === "error");
+  const warns = violations.filter((v) => v.level === "warn");
+  const lines = [];
+  if (violations.length === 0) {
+    lines.push("lint: clean \u2014 0 errors, 0 warnings");
+    return lines.join("\n");
+  }
+  for (const v of violations) {
+    const tag = v.level === "error" ? "ERROR" : "warn ";
+    lines.push(`${tag} [${v.kind}] ${v.file}: ${v.detail}`);
+  }
+  lines.push("");
+  lines.push(`lint: ${errors.length} error(s), ${warns.length} warning(s)`);
+  return lines.join("\n");
+}
+function runLint(folder, staleDays) {
+  try {
+    const result = lintVault(path.resolve(folder), staleDays);
+    const isError = result.violations.some((v) => v.level === "error");
+    return { text: formatLintReport(result), isError };
+  } catch (err) {
+    return { text: `Error: ${err.message}`, isError: true };
+  }
+}
 function cmdDaily(vault, text, context) {
   if (!text) {
     console.error("Error: `daily` requires a text argument");
@@ -20942,6 +21168,14 @@ function cmdHub(hubUrl, folder, id, dryRun) {
   }
   console.log(result.text);
 }
+function cmdLint(folder, staleDays) {
+  const result = runLint(folder, staleDays);
+  if (result.isError) {
+    console.error(result.text);
+    process.exit(1);
+  }
+  console.log(result.text);
+}
 function printHelp() {
   console.log(`
 memcli \u2014 minimal self-hosted agent memory backed by trip2g
@@ -20958,6 +21192,7 @@ SUBCOMMANDS
   daily "<text>"         Append a HH:MM entry to today's daily note
   log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
   hub <url>              Bind an additional remote federation hub to the vault
+  lint          Commit-gate + OKF validation + stale report over the vault
   mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
@@ -20967,7 +21202,12 @@ FLAGS (up)
   --image <ref>        Docker image (default: ${DEFAULT_IMAGE})
   --public-url <url>   Override PUBLIC_URL (default: http://localhost:<port>)
   --no-hub             Skip writing the federation hub note (hub.md)
+  --no-seed            Skip seeding OKF starter notes (index/log/AGENTS/SCHEMA)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+
+FLAGS (lint)
+  --folder <path>      Vault directory (default: ./memory-vault)
+  --stale-days <n>     Flag notes older than this many days (default: ${DEFAULT_STALE_DAYS})
 
 FLAGS (hub)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -21110,6 +21350,25 @@ async function cmdUp(flags, dryRun) {
     } else {
       fs.writeFileSync(hubNotePath, buildHubNote(flags.hubUrl), "utf8");
       console.log(`Wrote hub note to ${hubNotePath} (federates \u2192 ${flags.hubUrl})`);
+    }
+  }
+  if (!flags.noSeed) {
+    const seeds = [
+      { file: "index.md", content: buildIndexNote() },
+      { file: "log.md", content: buildLogNote() },
+      { file: "AGENTS.md", content: buildAgentsNote() },
+      { file: "SCHEMA.md", content: buildSchemaNote() }
+    ];
+    for (const { file, content } of seeds) {
+      const seedPath = path.join(vault, file);
+      if (dryRun) {
+        console.log(`[dry-run] would write ${seedPath}`);
+      } else if (fs.existsSync(seedPath)) {
+        console.log(`Seed note already present at ${seedPath}, skipping.`);
+      } else {
+        fs.writeFileSync(seedPath, content, "utf8");
+        console.log(`Wrote seed note ${seedPath}`);
+      }
     }
   }
   const repo = repoRoot();
@@ -21280,8 +21539,10 @@ function defaultFlags() {
     image: DEFAULT_IMAGE,
     publicUrl: null,
     noHub: false,
+    noSeed: false,
     hubUrl: DEFAULT_HUB_URL,
     context: 15,
+    staleDays: DEFAULT_STALE_DAYS,
     id: null
   };
 }
@@ -21294,6 +21555,7 @@ async function dispatchMcpTool(name, args) {
     if (typeof a.image === "string") f.image = a.image;
     if (typeof a.publicUrl === "string") f.publicUrl = a.publicUrl;
     if (typeof a.noHub === "boolean") f.noHub = a.noHub;
+    if (typeof a.noSeed === "boolean") f.noSeed = a.noSeed;
     if (typeof a.hubUrl === "string") f.hubUrl = a.hubUrl;
     return f;
   }
@@ -21334,6 +21596,12 @@ async function dispatchMcpTool(name, args) {
       const hubUrl = typeof args.url === "string" ? args.url : "";
       const hubId = typeof args.id === "string" ? args.id : null;
       result = runHub(hubUrl, folder, hubId, false);
+      break;
+    }
+    case "memory_lint": {
+      const folder = typeof args.folder === "string" ? args.folder : "./memory-vault";
+      const staleDays = typeof args.staleDays === "number" ? args.staleDays : DEFAULT_STALE_DAYS;
+      result = runLint(folder, staleDays);
       break;
     }
     default:
@@ -21449,6 +21717,9 @@ if (_mainUrl === _argv1Url) {
           case "hub":
             cmdHub(positional[0] ?? "", flags.folder, flags.id, flags.dryRun);
             break;
+          case "lint":
+            cmdLint(flags.folder, flags.staleDays);
+            break;
           default:
             console.error(`Unknown subcommand: ${cmd}`);
             printHelp();
@@ -21467,19 +21738,26 @@ export {
   appendDaily,
   appendLog,
   atomicWrite,
+  buildAgentsNote,
   buildDailyEntry,
   buildDataJson,
   buildDockerRunArgs,
   buildHubNote,
+  buildIndexNote,
+  buildLogNote,
+  buildSchemaNote,
   buildServerEnv,
   buildToolList,
   ensureDailyIndex,
+  formatLintReport,
   hubSlug,
+  lintVault,
   parseArgs,
   runDaily,
   runDown,
   runHub,
   runKey,
+  runLint,
   runLog,
   runLogs,
   runStatus,
