@@ -16,8 +16,6 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// ── AST nodes ────────────────────────────────────────────────────────────────
-
 // ObsidianInlineComment is an inline AST node for %%...%%.
 type ObsidianInlineComment struct {
 	gast.BaseInline
@@ -54,8 +52,6 @@ func (n *ObsidianBlockComment) Kind() gast.NodeKind {
 	return KindObsidianBlockComment
 }
 
-// ── Inline parser ─────────────────────────────────────────────────────────────
-
 type inlineCommentParser struct{}
 
 var defaultInlineCommentParser = &inlineCommentParser{}
@@ -68,7 +64,7 @@ func (p *inlineCommentParser) Trigger() []byte {
 // Parse tries to parse %%...%% at the current position.
 // Returns nil if not a valid comment (e.g. lone %%).
 func (p *inlineCommentParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) gast.Node {
-	line, segment := block.PeekLine()
+	line, _ := block.PeekLine()
 
 	// Need at least %%%% (4 bytes: open %%, close %%)
 	if len(line) < 4 || line[0] != '%' || line[1] != '%' {
@@ -85,7 +81,6 @@ func (p *inlineCommentParser) Parse(parent gast.Node, block text.Reader, pc pars
 	// Advance past the entire %%...%% span
 	advance := 2 + idx + 2
 	block.Advance(advance)
-	_ = segment // suppress unused warning
 
 	return &ObsidianInlineComment{}
 }
@@ -93,8 +88,6 @@ func (p *inlineCommentParser) Parse(parent gast.Node, block text.Reader, pc pars
 func (p *inlineCommentParser) CloseBlock(parent gast.Node, pc parser.Context) {
 	// nothing to do
 }
-
-// ── Block parser ──────────────────────────────────────────────────────────────
 
 type blockCommentParser struct{}
 
@@ -142,8 +135,6 @@ func (p *blockCommentParser) CanAcceptIndentedLine() bool { return false }
 // IsRaw returns true to prevent child parsing.
 func (p *blockCommentParser) IsRaw() bool { return true }
 
-// ── Renderer ──────────────────────────────────────────────────────────────────
-
 type commentRenderer struct{}
 
 // RegisterFuncs registers render functions that produce no output.
@@ -157,8 +148,6 @@ func (r *commentRenderer) renderNothing(
 ) (gast.WalkStatus, error) {
 	return gast.WalkSkipChildren, nil
 }
-
-// ── Extension ─────────────────────────────────────────────────────────────────
 
 type obsidianComments struct{}
 
