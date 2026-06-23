@@ -42,9 +42,11 @@ When `enable_mcp_admin_tools` is on, two extra MCP tools appear:
 | Tool | What it does |
 |------|-------------|
 | `graphql_introspection(pattern)` | Find GraphQL operations matching a keyword (regexp). Returns matched types + every type they reference — like `grep -A -B` on the schema. |
-| `graphql_request(query, variables?)` | Execute any query or mutation as admin. Full access. |
+| `graphql_request(query, variables?)` | Execute any query or mutation as admin. Full write access — queries and mutations both pass through. Subscriptions are not supported over this transport. |
 
 Agents typically use them in pairs: first introspect to discover the right operation and its inputs, then request to execute it.
+
+> **Federated / peer path:** When another trip2g instance calls `graphql_request` via a federation secret, it goes through the federated path — which is read-only and restricted to an approved allowlist of root fields. Only the admin path (API key with `enable_mcp_admin_tools`) has write access.
 
 ### Example: apply a frontmatter patch
 

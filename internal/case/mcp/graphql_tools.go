@@ -57,17 +57,6 @@ func handleGraphQLIntrospection(ctx context.Context, env Env, id any, argsRaw js
 	return successResponse(id, textToolResult(string(filtered)))
 }
 
-// graphqlReadOnlyRootFields is the allowlist of Query root fields accessible via graphql_request
-// on the admin (non-federated) path.
-var graphqlReadOnlyRootFields = map[string]bool{ //nolint:gochecknoglobals // immutable allowlist
-	"note":             true,
-	"search":           true,
-	"similarNotes":     true,
-	"viewer":           true,
-	"notePaths":        true,
-	"resolveWikilinks": true,
-}
-
 // graphqlFederatedRootFields is the subset of read-only root fields safe to
 // expose to a federation peer: every field here enforces per-note access via
 // canreadnote. notePaths/resolveWikilinks are deliberately excluded — they
@@ -86,9 +75,9 @@ var graphqlFederatedRootFields = map[string]bool{ //nolint:gochecknoglobals // i
 //  3. Every top-level root field must be in the provided allowlist.
 //     Inline fragments and fragment spreads at root are rejected.
 //
-// The function is intentionally standalone and reusable by other tools
-// (e.g. federated_graphql_request). Pass graphqlReadOnlyRootFields for the
-// admin path and graphqlFederatedRootFields for the federated/scoped path.
+// Used by the federated/scoped path (handleGraphQLRequestScoped) to restrict
+// federation peers to read-only operations on approved root fields.
+// Pass graphqlFederatedRootFields for the federated/scoped path.
 func validateReadOnlyQuery(query string, allowed map[string]bool) error {
 	doc, err := parser.ParseQuery(&ast.Source{Input: query})
 	if err != nil {
@@ -106,6 +95,22 @@ func validateReadOnlyQuery(query string, allowed map[string]bool) error {
 			if !allowed[field.Name] {
 				return fmt.Errorf("root field %q is not allowed", field.Name)
 			}
+		}
+	}
+	return nil
+}
+
+// rejectSubscription parses the query and returns an error if any operation is
+// a subscription. Queries and mutations are allowed. Used by the admin
+// graphql_request handler, which cannot stream responses over JSON-RPC.
+func rejectSubscription(query string) error {
+	doc, err := parser.ParseQuery(&ast.Source{Input: query})
+	if err != nil {
+		return fmt.Errorf("query parse error: %w", err)
+	}
+	for _, op := range doc.Operations {
+		if op.Operation == ast.Subscription {
+			return fmt.Errorf("subscriptions are not supported over JSON-RPC transport, got %s", op.Operation)
 		}
 	}
 	return nil
@@ -147,7 +152,9 @@ func handleGraphQLRequest(ctx context.Context, env Env, id any, argsRaw json.Raw
 		return errorResponse(id, ErrCodeInvalidParams, "query is required")
 	}
 
-	if err := validateReadOnlyQuery(args.Query, graphqlReadOnlyRootFields); err != nil {
+	// Subscriptions cannot work over JSON-RPC request/response transport.
+	// Queries and mutations are both allowed for the admin path.
+	if err := rejectSubscription(args.Query); err != nil {
 		return errorResponse(id, ErrCodeInvalidParams, "query rejected: "+err.Error())
 	}
 	log := logger.WithPrefix(env.Logger(), "mcp:handleGraphQLRequest")
