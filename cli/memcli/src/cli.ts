@@ -187,11 +187,10 @@ To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 
 /**
  * Build the OKF starter index note (index.md).
- * Free + `type: index` so it is OKF-valid and openly readable.
+ * `type: index` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildIndexNote(): string {
   return `---
-free: true
 type: index
 ---
 
@@ -214,11 +213,10 @@ an agent reads and searches as persistent long-term memory.
 
 /**
  * Build the OKF running-log note (log.md).
- * Free + `type: log` so it is OKF-valid.
+ * `type: log` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildLogNote(): string {
   return `---
-free: true
 type: log
 ---
 
@@ -239,11 +237,10 @@ _(running summary — keep this current)_
 /**
  * Build the OKF agent-instructions note (AGENTS.md).
  * `mcp_method: instructions` exposes it via the instructions MCP method.
- * Free + `type: instructions` so it is OKF-valid.
+ * `type: instructions` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildAgentsNote(): string {
   return `---
-free: true
 mcp_method: instructions
 type: instructions
 ---
@@ -269,11 +266,10 @@ committed.
 /**
  * Build the OKF schema note (SCHEMA.md).
  * `mcp_method: schema` exposes it via the schema MCP method.
- * Free + `type: schema` so it is OKF-valid.
+ * `type: schema` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildSchemaNote(): string {
   return `---
-free: true
 mcp_method: schema
 type: schema
 ---
@@ -299,11 +295,10 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
 /**
  * Build the home page note (_index.md).
  * trip2g serves the site root `/` from this underscore-prefixed home note.
- * Free + `type: index` so it is OKF-valid and openly readable.
+ * `type: index` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildHomeNote(): string {
   return `---
-free: true
 type: index
 ---
 
@@ -322,11 +317,10 @@ writes back as it works.
 /**
  * Build the site header/nav note (_header.md).
  * trip2g renders the header/login chrome only when this underscore-prefixed
- * note exists. Free + `type: header` so it is OKF-valid and openly readable.
+ * note exists. `type: header` so it is OKF-valid. Private by default (no `free: true`).
  */
 export function buildHeaderNote(): string {
   return `---
-free: true
 type: header
 ---
 

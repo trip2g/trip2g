@@ -16857,7 +16857,6 @@ To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 }
 function buildIndexNote() {
   return `---
-free: true
 type: index
 ---
 
@@ -16879,7 +16878,6 @@ an agent reads and searches as persistent long-term memory.
 }
 function buildLogNote() {
   return `---
-free: true
 type: log
 ---
 
@@ -16898,7 +16896,6 @@ _(running summary \u2014 keep this current)_
 }
 function buildAgentsNote() {
   return `---
-free: true
 mcp_method: instructions
 type: instructions
 ---
@@ -16922,7 +16919,6 @@ committed.
 }
 function buildSchemaNote() {
   return `---
-free: true
 mcp_method: schema
 type: schema
 ---
@@ -16946,7 +16942,6 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
 }
 function buildHomeNote() {
   return `---
-free: true
 type: index
 ---
 
@@ -16963,7 +16958,6 @@ writes back as it works.
 }
 function buildHeaderNote() {
   return `---
-free: true
 type: header
 ---
 

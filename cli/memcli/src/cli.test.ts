@@ -819,10 +819,10 @@ test('buildIndexNote: contains a type: line (type: index)', () => {
   assert.match(note, /^type: index$/m, `Expected "type: index" line, got:\n${note}`);
 });
 
-test('buildIndexNote: starts with frontmatter and is free', () => {
+test('buildIndexNote: starts with frontmatter and is NOT publicly free', () => {
   const note = buildIndexNote();
   assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
-  assert.ok(note.includes('free: true'), 'must be free: true');
+  assert.ok(!note.includes('free: true'), 'must NOT have free: true (private by default)');
 });
 
 test('buildLogNote: contains a type: line (type: log)', () => {
@@ -842,22 +842,46 @@ test('buildSchemaNote: contains type: schema and mcp_method: schema', () => {
   assert.ok(note.includes('mcp_method: schema'), 'must have mcp_method: schema');
 });
 
-test('buildHomeNote: is index-typed and links to index/log/AGENTS', () => {
+test('buildHomeNote: is index-typed, links to index/log/AGENTS, and is NOT publicly free', () => {
   const note = buildHomeNote();
   assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
-  assert.ok(note.includes('free: true'), 'must be free: true');
+  assert.ok(!note.includes('free: true'), 'must NOT have free: true (private by default)');
   assert.match(note, /^type: index$/m, 'must have type: index');
   assert.ok(note.includes('[[index|'), 'must link to index');
   assert.ok(note.includes('[[log|'), 'must link to log');
   assert.ok(note.includes('[[AGENTS|'), 'must link to AGENTS');
 });
 
-test('buildHeaderNote: contains [[_index|Home]] and type: header', () => {
+test('buildHeaderNote: contains [[_index|Home]], type: header, and is NOT publicly free', () => {
   const note = buildHeaderNote();
   assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
-  assert.ok(note.includes('free: true'), 'must be free: true');
+  assert.ok(!note.includes('free: true'), 'must NOT have free: true (private by default)');
   assert.match(note, /^type: header$/m, 'must have type: header');
   assert.ok(note.includes('[[_index|Home]]'), 'must contain [[_index|Home]] nav link');
+});
+
+// ---------------------------------------------------------------------------
+// OKF seed builders — privacy (private by default, no free: true)
+// ---------------------------------------------------------------------------
+
+test('buildLogNote: does NOT contain free: true (private by default)', () => {
+  const note = buildLogNote();
+  assert.ok(!note.includes('free: true'), `buildLogNote must NOT have free: true, got:\n${note}`);
+});
+
+test('buildAgentsNote: does NOT contain free: true (private by default)', () => {
+  const note = buildAgentsNote();
+  assert.ok(!note.includes('free: true'), `buildAgentsNote must NOT have free: true, got:\n${note}`);
+});
+
+test('buildSchemaNote: does NOT contain free: true (private by default)', () => {
+  const note = buildSchemaNote();
+  assert.ok(!note.includes('free: true'), `buildSchemaNote must NOT have free: true, got:\n${note}`);
+});
+
+test('buildHubNote: still has free: true (required for federation scan)', () => {
+  const note = buildHubNote('https://trip2g.com/_system/mcp');
+  assert.ok(note.includes('free: true'), `buildHubNote must still have free: true for federation to work, got:\n${note}`);
 });
 
 // ---------------------------------------------------------------------------
