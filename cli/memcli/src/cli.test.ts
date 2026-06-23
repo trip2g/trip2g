@@ -30,6 +30,7 @@ import {
   buildAgentsNote,
   buildSchemaNote,
   lintVault,
+  buildHatLoginHtml,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +129,11 @@ test('parseArgs: "key" subcommand', () => {
   assert.equal(cmd, 'key');
 });
 
+test('parseArgs: "open" subcommand', () => {
+  const { cmd } = parseArgs(['open']);
+  assert.equal(cmd, 'open');
+});
+
 test('parseArgs: --dry-run flag', () => {
   const { flags } = parseArgs(['up', '--dry-run']);
   assert.equal(flags.dryRun, true);
@@ -151,6 +157,21 @@ test('parseArgs: --port flag', () => {
 test('parseArgs: --email flag', () => {
   const { flags } = parseArgs(['up', '--email', 'me@example.com']);
   assert.equal(flags.email, 'me@example.com');
+});
+
+// ---------------------------------------------------------------------------
+// buildHatLoginHtml
+// ---------------------------------------------------------------------------
+
+test('buildHatLoginHtml: POSTs the jwt to /_system/hat with auto-submit', () => {
+  const jwt = signHatJwt('mysecret', 'admin@example.com');
+  const html = buildHatLoginHtml('http://localhost:24095', jwt);
+
+  assert.match(html, /action="http:\/\/localhost:24095\/_system\/hat"/);
+  assert.match(html, /method="POST"/);
+  assert.match(html, /<input type="hidden" name="token" value="/);
+  assert.ok(html.includes(jwt), 'the hidden token input must carry the jwt');
+  assert.match(html, /document\.forms\[0\]\.submit\(\)/);
 });
 
 test('parseArgs: --image flag', () => {

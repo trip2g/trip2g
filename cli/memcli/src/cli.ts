@@ -18,6 +18,7 @@
 import crypto from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { print } from 'graphql';
 import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql.ts';
@@ -116,6 +117,38 @@ export function signHatJwt(secret: string, email: string): string {
   const signingInput = `${headerB64}.${payloadB64}`;
   const sig = crypto.createHmac('sha256', secret).update(signingInput).digest();
   return `${signingInput}.${base64url(sig)}`;
+}
+
+/**
+ * Build a minimal self-submitting HTML page that POSTs a HAT JWT to
+ * `${publicUrl}/_system/hat`. Opening this page in a browser authenticates the
+ * user and lands them on `/` (the `/_system/hat` endpoint is POST-only and
+ * responds 302 → `/`; a plain GET link with ?token= will NOT authenticate).
+ *
+ * The jwt is HTML-escaped into the value attribute defensively (it is base64url
+ * + dots, so escaping `"`/`<`/`&` is belt-and-suspenders).
+ *
+ * @param publicUrl - the running instance's public URL (no trailing slash)
+ * @param jwt       - the HAT JWT (from signHatJwt)
+ */
+export function buildHatLoginHtml(publicUrl: string, jwt: string): string {
+  const escaped = jwt
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+  return `<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Signing in…</title></head>
+<body>
+<form method="POST" action="${publicUrl}/_system/hat">
+<input type="hidden" name="token" value="${escaped}">
+<noscript><p>JavaScript is disabled — click the button to sign in.</p></noscript>
+<button type="submit">Sign in</button>
+</form>
+<script>document.forms[0].submit()</script>
+</body>
+</html>
+`;
 }
 
 /**
@@ -287,7 +320,7 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
  * log:   positional[0] = file, positional[1] = text
  */
 export function parseArgs(argv: string[]): { cmd: string; flags: Flags; positional: string[] } {
-  const SUBCOMMANDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log', 'mcp', 'hub', 'lint']);
+  const SUBCOMMANDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log', 'mcp', 'hub', 'lint', 'open']);
   const flags: Flags = {
     dryRun: false,
     help: false,
@@ -363,7 +396,7 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
  * - Otherwise → false (interactive TTY, show help / default behavior)
  */
 export function shouldRunMcp(argv: string[], isTty: boolean): boolean {
-  const KNOWN_CLI_CMDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log', 'hub', 'lint']);
+  const KNOWN_CLI_CMDS = new Set(['up', 'down', 'status', 'logs', 'key', 'daily', 'log', 'hub', 'lint', 'open']);
   const first = argv[0];
   if (first !== undefined && KNOWN_CLI_CMDS.has(first)) return false;
   if (argv.includes('--help') || argv.includes('-h')) return false;
@@ -1281,6 +1314,81 @@ export function runLint(folder: string, staleDays: number): CommandResult {
 }
 
 // ---------------------------------------------------------------------------
+// Open (browser login via HAT)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sign the user into the running instance's web UI in their browser, landing on
+ * the home page, via the HAT (hot auth token) flow.
+ *
+ * Writes a self-submitting HTML POST form to a temp file and opens it with the
+ * OS opener. The form POSTs the HAT JWT to `/_system/hat` (POST-only), which
+ * loads/creates the user by email, grants admin (ae flag), and 302s to `/`.
+ */
+export function runOpen(flags: Flags): CommandResult {
+  const vault = path.resolve(flags.folder);
+  const stateDir = path.join(vault, '.trip2g-memory');
+  const envFile = path.join(stateDir, 'env');
+
+  const existingEnv = readEnvFile(envFile);
+  if (!existingEnv.JWT_SECRET) {
+    return { text: 'Error: no JWT_SECRET found — run `up` first', isError: true };
+  }
+  const secret = existingEnv.JWT_SECRET;
+
+  const email = flags.email;
+  const port = flags.port;
+  const publicUrl = flags.publicUrl || `http://localhost:${port}`;
+
+  const jwt = signHatJwt(secret, email);
+  const html = buildHatLoginHtml(publicUrl, jwt);
+  const htmlFile = path.join(os.tmpdir(), `trip2g-login-${process.pid}.html`);
+
+  if (flags.dryRun) {
+    return {
+      text: [
+        `[dry-run] would write login form to ${htmlFile}`,
+        `[dry-run] would open it in the browser → POST ${publicUrl}/_system/hat (signs in as ${email}, lands on /)`,
+      ].join('\n'),
+      isError: false,
+    };
+  }
+
+  try {
+    fs.writeFileSync(htmlFile, html, { mode: 0o600 });
+  } catch (err) {
+    return { text: `Error: ${(err as Error).message}`, isError: true };
+  }
+
+  const opener: { cmd: string; args: string[] } =
+    process.platform === 'darwin'
+      ? { cmd: 'open', args: [htmlFile] }
+      : process.platform === 'win32'
+        ? { cmd: 'cmd', args: ['/c', 'start', '', htmlFile] }
+        : { cmd: 'xdg-open', args: [htmlFile] };
+
+  try {
+    const child = spawn(opener.cmd, opener.args, { detached: true, stdio: 'ignore' });
+    child.unref();
+  } catch {
+    return {
+      text:
+        `Could not launch a browser automatically. Open this file manually to sign in: ${htmlFile}\n` +
+        `(it POSTs a hot auth token to ${publicUrl}/_system/hat and signs you in as ${email})`,
+      isError: false,
+    };
+  }
+
+  return {
+    text: [
+      `Opening the web UI in your browser, signed in as ${email} → ${publicUrl}`,
+      `If the browser did not open, open this file manually: ${htmlFile}`,
+    ].join('\n'),
+    isError: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Legacy command wrappers (print + exit — used by the CLI path only)
 // ---------------------------------------------------------------------------
 
@@ -1320,6 +1428,15 @@ function cmdLint(folder: string, staleDays: number): void {
   console.log(result.text);
 }
 
+function cmdOpen(flags: Flags): void {
+  const result = runOpen(flags);
+  if (result.isError) {
+    console.error(result.text);
+    process.exit(1);
+  }
+  console.log(result.text);
+}
+
 // ---------------------------------------------------------------------------
 // Subcommand handlers
 // ---------------------------------------------------------------------------
@@ -1341,6 +1458,7 @@ SUBCOMMANDS
   log <file> "<text>"    Append a HH:MM entry under today's ### [[date]] section
   hub <url>              Bind an additional remote federation hub to the vault
   lint          Commit-gate + OKF validation + stale report over the vault
+  open          Open the web UI in your browser, signed in via hot auth token
   mcp           Run as MCP stdio server (also auto-detected when stdin is piped)
 
 FLAGS (up)
@@ -1361,6 +1479,10 @@ FLAGS (hub)
   --folder <path>      Vault directory (default: ./memory-vault)
   --id <kb-id>         Short id for mcp_federation_kb_id (default: hostname)
   --dry-run            Print what would be written, write nothing
+
+FLAGS (open)
+  Reuses --folder/--port/--email/--public-url (same defaults as \`up\`).
+  --dry-run            Print the login-form path + URL, do not launch a browser.
 
 FLAGS (daily / log)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -1961,6 +2083,9 @@ if (_mainUrl === _argv1Url) {
             break;
           case 'lint':
             cmdLint(flags.folder, flags.staleDays);
+            break;
+          case 'open':
+            cmdOpen(flags);
             break;
           default:
             console.error(`Unknown subcommand: ${cmd}`);
