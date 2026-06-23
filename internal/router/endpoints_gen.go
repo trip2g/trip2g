@@ -45,6 +45,7 @@ var endpoints = []Endpoint{
 	&rendernotepagerendernotepage.Endpoint{},
 	&rendersearchpagerendersearchpage.Endpoint{},
 	&signinbyhatsigninbyhat.Endpoint{},
+	&signinbyhatsigninbyhat.GetEndpoint{},
 	&renderlayoutpreviewrenderlayoutpreview.Endpoint{},
 	&renderpreviewrenderpreview.Endpoint{},
 	&renderpreviewrenderpreview.GetEndpoint{},
