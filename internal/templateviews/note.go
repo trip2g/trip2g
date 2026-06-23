@@ -177,6 +177,13 @@ func (n *Note) HasCodeLanguage(lang string) bool {
 	return n.nv.HasCodeLanguage(lang)
 }
 
+// HasAnyCodeBlock reports whether the note contains at least one fenced code
+// block (any language). Used to conditionally load the codeblock widget (copy
+// button + syntax highlighting).
+func (n *Note) HasAnyCodeBlock() bool {
+	return len(n.nv.CodeLanguages) > 0
+}
+
 var langAliases = map[string]string{ //nolint:gochecknoglobals // package-level lookup table
 	"english":    "en",
 	"russian":    "ru",
