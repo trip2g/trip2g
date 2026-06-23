@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/image"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
+	"trip2g/internal/mdloader/obsidiancomments"
 	"trip2g/internal/model"
 	"trip2g/internal/obsidiancanvas"
 
@@ -135,6 +136,7 @@ func Load(options Options) (*model.NoteViews, error) {
 			extension.GFM,
 			enclavefix.New(&enclavecore.Config{}),
 			meta.Meta,
+			obsidiancomments.ObsidianComments,
 		),
 	)
 
