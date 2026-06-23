@@ -4,18 +4,177 @@ free: true
 lang_redirect: "[[ru/user/selfhosted]]"
 ---
 
-Minimal self-hosted setup for trip2g: `ghcr.io/trip2g/trip2g:latest` + `MinIO` + `Caddy`.
+Three ways to run trip2g on your own server. Pick the one that fits your setup.
 
 [★ GitHub — github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
 
-This setup is for a single server, a single `docker-compose.yml`, and a straightforward `docker compose up -d`.
+| Variant | Best for |
+|---|---|
+| **Single binary on bare Linux** | One site on one VM. No Docker, no Caddy, no MinIO. Built-in HTTPS via Let's Encrypt. |
+| **Docker Compose (full stack)** | You want S3-compatible object storage and a managed reverse proxy. |
+| **fly.io** | Managed PaaS, no server to maintain. See [[en/user/fly]]. |
 
-## What this setup runs
+---
 
-- `trip2g` is a platform for publishing Obsidian notes as a website.
-- `minio` stores uploaded files and database backups.
-- `caddy` handles incoming HTTP/HTTPS traffic and proxies it into the compose network.
-- Vector search can stay disabled, or you can enable it later with OpenAI or another OpenAI-compatible embeddings API.
+## Single binary on bare Linux
+
+One binary, one systemd unit, HTTPS out of the box. No containers required.
+
+The `trip2g-server` binary embeds all frontend assets. The only host dependencies are `git` and `ca-certificates`.
+
+### Get the binary
+
+Three options, in order of preference:
+
+**(a) Download from GitHub Releases** (recommended):
+
+```bash
+# Replace <version> with the latest tag from https://github.com/trip2g/trip2g/releases
+curl -L https://github.com/trip2g/trip2g/releases/download/<version>/trip2g_<version>_linux_amd64.tar.gz \
+  | tar xz trip2g
+sudo mv trip2g /usr/local/bin/trip2g
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+**(b) Extract from the Docker image**:
+
+```bash
+docker create --name tmp ghcr.io/trip2g/trip2g && \
+  docker cp tmp:/trip2g /usr/local/bin/trip2g && \
+  docker rm tmp
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+**(c) Build from source**:
+
+```bash
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/server
+sudo mv server /usr/local/bin/trip2g
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+### Install runtime dependencies
+
+```bash
+apt-get install -y git ca-certificates
+```
+
+The binary shells out to `git` internally and needs CA certificates for TLS verification.
+
+### Create data directories
+
+```bash
+mkdir -p /var/lib/trip2g/storage
+```
+
+### Configure
+
+Create `/etc/trip2g.env` and set permissions so only root can read it:
+
+```bash
+touch /etc/trip2g.env
+chmod 600 /etc/trip2g.env
+```
+
+Paste and fill in the values:
+
+```dotenv
+ACME_DOMAIN=docs.example.com
+PUBLIC_URL=https://docs.example.com
+INTERNAL_LISTEN_ADDR=:8082
+DB_FILE=/var/lib/trip2g/data.sqlite3
+GIT_API_REPO_PATH=/var/lib/trip2g/git
+STORAGE_BACKEND=local
+STORAGE_LOCAL_DIR=/var/lib/trip2g/storage
+LOG_LEVEL=info
+DEV=false
+OWNER_EMAIL=owner@example.com
+JWT_SECRET=<openssl rand -hex 32>
+DATA_ENCRYPTION_KEY=<openssl rand -hex 16>
+SMTP_HOST=smtp.resend.com
+SMTP_USER=resend
+SMTP_PASS=<resend api key>
+MAIL_FROM=no-reply@your-verified-domain
+```
+
+What each setting does:
+
+- `ACME_DOMAIN` — the domain to get a Let's Encrypt certificate for. The binary listens on `:443` with TLS-ALPN-01 and runs an HTTP→HTTPS redirect on `:80`. No Caddy needed.
+- `PUBLIC_URL` — the external URL of your site, used in links and email flows.
+- `INTERNAL_LISTEN_ADDR` — internal address for health checks (`/healthz`).
+- `DB_FILE` — SQLite database path.
+- `GIT_API_REPO_PATH` — path to trip2g's internal bare git repository.
+- `STORAGE_BACKEND=local` — stores uploaded files on disk at `STORAGE_LOCAL_DIR`. Files are served by trip2g itself at `/_assets/...`. To switch to S3 later, use the same `MINIO_*` variables as the Compose variant.
+- `LOG_LEVEL` — `info` is a good default for production.
+- `DEV=false` — enables production behavior (secure cookies, no debug output).
+- `OWNER_EMAIL` — the owner account email.
+- `JWT_SECRET` — signs user session tokens. Rotating it invalidates existing sessions.
+- `DATA_ENCRYPTION_KEY` — 32-character key for encrypting sensitive stored data. Generate with `openssl rand -hex 16` (produces exactly 32 hex chars).
+- `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` — email credentials. The example uses Resend's SMTP gateway (`smtp.resend.com`, user `resend`, password = API key). Without a working SMTP config the server runs fine, but sign-in codes appear only in the logs — useful for initial testing.
+- `MAIL_FROM` — sender address. Must belong to a domain verified in your email provider.
+
+**ACME requirements**: the domain's A/AAAA record must point at this server, and ports `80` and `443` must be open before you start the service. For a quick test without owning a domain, a wildcard DNS like `<ip>.nip.io` works.
+
+Generate secrets before starting:
+
+```bash
+openssl rand -hex 32   # use as JWT_SECRET
+openssl rand -hex 16   # use as DATA_ENCRYPTION_KEY (exactly 32 chars)
+```
+
+### Create the systemd unit
+
+Create `/etc/systemd/system/trip2g.service`:
+
+```ini
+[Unit]
+Description=trip2g publishing server
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/trip2g.env
+ExecStart=/usr/local/bin/trip2g
+WorkingDirectory=/var/lib/trip2g
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The unit runs as root so the binary can bind ports `80` and `443`.
+
+### Start and verify
+
+```bash
+systemctl daemon-reload
+systemctl enable --now trip2g
+```
+
+Check the service is running:
+
+```bash
+systemctl is-active trip2g
+journalctl -u trip2g -f
+```
+
+Verify HTTPS:
+
+```bash
+curl -I https://docs.example.com/
+```
+
+Expect `HTTP/2 200` with a valid Let's Encrypt certificate.
+
+After that, open `https://docs.example.com`, sign in with `OWNER_EMAIL`, and continue with [[en/user/getting-started|Getting started]].
+
+**If email is not configured yet**: sign-in codes appear in `journalctl -u trip2g`. Copy the code from there to log in.
+
+---
+
+## Docker Compose (full stack)
+
+trip2g + MinIO (S3-compatible object storage) + Caddy, all in one `docker-compose.yml`.
 
 ```mermaid
 flowchart TD
@@ -29,14 +188,14 @@ flowchart TD
     end
 ```
 
-## Easy-to-miss requirements
+### Easy-to-miss requirements
 
 - A public server should use `HTTPS`. Otherwise secure auth cookies will not work correctly.
 - Email sign-in needs a `resend.com` account, an API key, and a verified sender domain or subdomain.
 - In production you must set your own `JWT_SECRET` and `DATA_ENCRYPTION_KEY`.
 - In practice, only `80` and `443` should be exposed externally by `caddy`.
 
-## Prerequisites
+### Prerequisites
 
 You need:
 
@@ -60,7 +219,7 @@ If the server is not fresh, verify the following before starting:
 
 If those ports are already claimed by an existing reverse proxy (Nginx, Caddy, Traefik), there is no need to remove it — just add trip2g as an upstream in your existing config, drop the `caddy` service from `docker-compose.yml`, and publish port `8081` directly. The same applies to MinIO: if you already have your own object storage, skip the `minio` service entirely and point `.env` at your existing bucket.
 
-## `docker-compose.yml`
+### `docker-compose.yml`
 
 ```yaml
 services:
@@ -131,7 +290,7 @@ Why these choices matter:
 - `minio-data` keeps MinIO objects.
 - `trip2g` and `minio` stay internal to the compose network.
 
-## `.env`
+### `.env`
 
 Minimal production `.env`:
 
@@ -176,7 +335,7 @@ FEATURES={}
 # FEATURES={"vector_search":{"enabled":true,"model":"bge-m3","base_url":"https://embeddings.example.com/v1"}}
 ```
 
-## Using a `TRIP2G_` prefix
+### Using a `TRIP2G_` prefix
 
 By default, trip2g reads configuration from plain env vars like `LISTEN_ADDR` or `JWT_SECRET`.
 
@@ -191,7 +350,7 @@ TRIP2G_JWT_SECRET=replace-with-long-random-secret
 
 When a `TRIP2G_` var is present it takes precedence over the plain counterpart. Any `TRIP2G_` var that does not map to a known setting is logged as a warning on startup — useful for catching typos without crashing the server.
 
-## What each setting does
+### What each setting does
 
 - `PUBLIC_URL` is the external URL of your site. trip2g uses it for links, email flows, and integrations.
 - `LISTEN_ADDR` is the main HTTP listen address.
@@ -230,7 +389,7 @@ USER_TOKEN_INSECURE=true
 
 Use that only for temporary testing. For a public instance, keep secure cookies and use TLS.
 
-## Background job schedules
+### Background job schedules
 
 Background jobs run on a schedule stored in the `cron_jobs` table; most run **every minute** by default. To change any job, set an env var named after the job — `<JOB_NAME>_SCHEDULE` — to a cron expression (6-field, **with a leading seconds field**):
 
@@ -244,7 +403,7 @@ The variable name is the job's name upper-cased plus `_SCHEDULE`. A longer inter
 
 > The managed (public cloud) instances run these **hourly** by default to keep the shared database light. Self-hosted instances keep the every-minute default unless you set the override.
 
-## `Caddyfile`
+### `Caddyfile`
 
 For a clean public setup, give the site and file storage separate hostnames:
 
@@ -283,7 +442,7 @@ Why this matters:
 - file URLs use a public MinIO hostname;
 - `caddy` reaches `trip2g` and `minio` by service name inside the docker network.
 
-## External object storage instead of MinIO
+### External object storage instead of MinIO
 
 By default MinIO runs on the same server as trip2g. That is convenient to start but offers no protection against server loss: if the disk dies, files and backups go with it.
 
@@ -303,7 +462,7 @@ MINIO_USE_SSL=true
 
 With that in place, `SIMPLE_BACKUP=true` stores SQLite backups on the external service automatically — no extra work, and protected from server-level failure.
 
-## SQLite replication with Litestream
+### SQLite replication with Litestream
 
 `SIMPLE_BACKUP=true` takes periodic SQLite snapshots to MinIO. For continuous replication with a one-second interval, add [Litestream](https://litestream.io).
 
@@ -323,7 +482,7 @@ sudo systemctl enable --now litestream
 
 Litestream and `SIMPLE_BACKUP` can run together — they do not conflict. The combination is especially useful with external object storage: both files and the database then live outside the server.
 
-## Create a free Resend account
+### Create a free Resend account
 
 On `resend.com`:
 
@@ -341,13 +500,13 @@ Why a subdomain is better:
 
 If you do not verify a sender domain in Resend, email delivery is effectively just for your own address. That is enough if only the owner signs in by email. If other users need email login, verify the sender domain.
 
-## Enable vector search with OpenAI or another compatible service
+### Enable vector search with OpenAI or another compatible service
 
 trip2g works fine without vector search. Full-text search still works.
 
 If you want semantic search:
 
-### OpenAI
+#### OpenAI
 
 ```dotenv
 OPENAI_API_KEY=sk-...
@@ -356,7 +515,7 @@ FEATURES={"vector_search":{"enabled":true,"model":"text-embedding-3-small"}}
 
 Recommended starting model: `text-embedding-3-small`.
 
-### OpenAI-compatible embeddings API
+#### OpenAI-compatible embeddings API
 
 ```dotenv
 OPENAI_API_KEY=provider-token-if-needed
@@ -371,9 +530,9 @@ Important: trip2g validates the embedding model name. The currently supported va
 - `multilingual-e5-base`
 - `bge-m3`
 
-So “any OpenAI-compatible service” only works if it exposes a compatible `/v1` embeddings API and you configure one of those supported model names.
+So "any OpenAI-compatible service" only works if it exposes a compatible `/v1` embeddings API and you configure one of those supported model names.
 
-## Start the stack
+### Start the stack
 
 Inside the directory with `docker-compose.yml`:
 
@@ -400,9 +559,10 @@ After startup:
 - sign in with the owner email from `OWNER_EMAIL`
 - on an empty instance, the service itself will offer a link to download a preconfigured vault ZIP
 - configure the Obsidian plugin with your `PUBLIC_URL`
+
 From there, continue with [[en/user/getting-started|Getting started]].
 
-## Things people often forget
+### Things people often forget
 
 - `A` / `AAAA` DNS record for `PUBLIC_URL`
 - `A` / `AAAA` DNS record for `MINIO_PUBLIC_URL`
@@ -413,3 +573,9 @@ From there, continue with [[en/user/getting-started|Getting started]].
 - checking logs after the first login and the first outbound email
 
 For the smoothest rollout, start without vector search, verify email sign-in first, and only then enable embeddings in `FEATURES`.
+
+---
+
+## fly.io
+
+Deploy trip2g on fly.io without managing a server. See [[en/user/fly]] for the full guide.

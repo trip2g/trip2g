@@ -4,27 +4,198 @@ free: true
 lang_redirect: "[[en/user/selfhosted]]"
 ---
 
-Минимальный self-hosted вариант trip2g: `ghcr.io/trip2g/trip2g:latest` + `MinIO` + `Caddy`.
+Три способа запустить trip2g на своём сервере. Выберите подходящий.
 
 [★ GitHub — github.com/trip2g/trip2g](https://github.com/trip2g/trip2g)
 
-Этот вариант подходит, если вам нужен один сервер, один `docker-compose.yml` и запуск через `docker compose up -d`.
+| Вариант | Подходит когда |
+|---|---|
+| **Один бинарник на Linux** | Один сайт, одна VM. Без Docker, без Caddy, без MinIO. HTTPS встроен через Let's Encrypt. |
+| **Docker Compose (полный стек)** | Нужны S3-совместимое хранилище и reverse proxy в одной конфигурации. |
+| **fly.io** | Managed PaaS, без своего сервера. См. [[ru/user/fly]]. |
 
-## Что поднимется
+---
 
-- `trip2g` — платформа для публикации заметок из Obsidian в виде сайта.
-- `minio` хранит файлы и резервные копии базы данных.
-- `caddy` принимает входящий HTTP/HTTPS-трафик и проксирует его внутрь compose-сети.
-- Векторный поиск можно оставить выключенным или включить через OpenAI / OpenAI-compatible embeddings API.
+## Один бинарник на Linux
 
-## Что важно не забыть
+Один бинарник, один systemd-юнит, HTTPS из коробки. Docker не нужен.
+
+Бинарник `trip2g` содержит все frontend-ассеты внутри. На хосте нужны только `git` и `ca-certificates`.
+
+### Получите бинарник
+
+Три способа — в порядке предпочтения:
+
+**(а) Скачать с GitHub Releases** (рекомендуется):
+
+```bash
+# Замените <version> на актуальный тег с https://github.com/trip2g/trip2g/releases
+curl -L https://github.com/trip2g/trip2g/releases/download/<version>/trip2g_<version>_linux_amd64.tar.gz \
+  | tar xz trip2g
+sudo mv trip2g /usr/local/bin/trip2g
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+**(б) Извлечь из Docker-образа**:
+
+```bash
+docker create --name tmp ghcr.io/trip2g/trip2g && \
+  docker cp tmp:/trip2g /usr/local/bin/trip2g && \
+  docker rm tmp
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+**(в) Собрать из исходников**:
+
+```bash
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/server
+sudo mv server /usr/local/bin/trip2g
+sudo chmod +x /usr/local/bin/trip2g
+```
+
+### Установите зависимости
+
+```bash
+apt-get install -y git ca-certificates
+```
+
+Бинарник вызывает `git` внутри себя и использует CA-сертификаты для проверки TLS.
+
+### Создайте директории для данных
+
+```bash
+mkdir -p /var/lib/trip2g/storage
+```
+
+### Настройте конфигурацию
+
+Создайте файл `/etc/trip2g.env` и ограничьте доступ к нему:
+
+```bash
+touch /etc/trip2g.env
+chmod 600 /etc/trip2g.env
+```
+
+Вставьте и заполните значения:
+
+```dotenv
+ACME_DOMAIN=docs.example.com
+PUBLIC_URL=https://docs.example.com
+INTERNAL_LISTEN_ADDR=:8082
+DB_FILE=/var/lib/trip2g/data.sqlite3
+GIT_API_REPO_PATH=/var/lib/trip2g/git
+STORAGE_BACKEND=local
+STORAGE_LOCAL_DIR=/var/lib/trip2g/storage
+LOG_LEVEL=info
+DEV=false
+OWNER_EMAIL=owner@example.com
+JWT_SECRET=<openssl rand -hex 32>
+DATA_ENCRYPTION_KEY=<openssl rand -hex 16>
+SMTP_HOST=smtp.resend.com
+SMTP_USER=resend
+SMTP_PASS=<resend api key>
+MAIL_FROM=no-reply@your-verified-domain
+```
+
+Что означает каждая настройка:
+
+- `ACME_DOMAIN` — домен для получения сертификата Let's Encrypt. Бинарник слушает `:443` (TLS-ALPN-01) и делает HTTP→HTTPS редирект на `:80`. Caddy не нужен.
+- `PUBLIC_URL` — внешний адрес сайта. Используется в ссылках и email-флоу.
+- `INTERNAL_LISTEN_ADDR` — внутренний адрес для healthcheck (`/healthz`).
+- `DB_FILE` — путь к SQLite-базе.
+- `GIT_API_REPO_PATH` — путь к внутреннему bare git-репозиторию trip2g.
+- `STORAGE_BACKEND=local` — хранит загруженные файлы на диске в `STORAGE_LOCAL_DIR`. trip2g отдаёт их сам по пути `/_assets/...`. Чтобы позже переключиться на S3, используйте те же переменные `MINIO_*`, что и в Compose-варианте.
+- `LOG_LEVEL` — уровень логов. `info` — хорошо для production.
+- `DEV=false` — production-режим (secure cookies, без debug-вывода).
+- `OWNER_EMAIL` — email владельца инстанса.
+- `JWT_SECRET` — секрет для подписи сессионных токенов. После смены все старые сессии станут недействительными.
+- `DATA_ENCRYPTION_KEY` — 32-символьный ключ для шифрования чувствительных данных. `openssl rand -hex 16` выдаёт ровно 32 символа.
+- `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` — параметры SMTP. В примере используется шлюз Resend (`smtp.resend.com`, пользователь `resend`, пароль = API key). Без настроенного SMTP сервер запустится, но коды входа будут отображаться только в логах — удобно для первоначальной проверки.
+- `MAIL_FROM` — адрес отправителя. Должен принадлежать домену, подтверждённому в почтовом провайдере.
+
+**Требования ACME**: до запуска сервиса DNS A/AAAA запись домена должна указывать на этот сервер, порты `80` и `443` должны быть открыты. Для быстрой проверки без собственного домена подойдёт wildcard DNS вроде `<ip>.nip.io`.
+
+Сгенерируйте секреты заранее:
+
+```bash
+openssl rand -hex 32   # JWT_SECRET
+openssl rand -hex 16   # DATA_ENCRYPTION_KEY (ровно 32 символа)
+```
+
+### Создайте systemd-юнит
+
+Создайте файл `/etc/systemd/system/trip2g.service`:
+
+```ini
+[Unit]
+Description=trip2g publishing server
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/trip2g.env
+ExecStart=/usr/local/bin/trip2g
+WorkingDirectory=/var/lib/trip2g
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Юнит запускается от root, чтобы бинарник мог занять порты `80` и `443`.
+
+### Запустите и проверьте
+
+```bash
+systemctl daemon-reload
+systemctl enable --now trip2g
+```
+
+Проверьте статус:
+
+```bash
+systemctl is-active trip2g
+journalctl -u trip2g -f
+```
+
+Проверьте HTTPS:
+
+```bash
+curl -I https://docs.example.com/
+```
+
+Ожидаемый результат: `HTTP/2 200` с сертификатом Let's Encrypt.
+
+После этого откройте `https://docs.example.com`, войдите под `OWNER_EMAIL` и продолжайте в [[ru/user/Начало работы|Начало работы]].
+
+**Если SMTP не настроен**: коды входа появляются в `journalctl -u trip2g`. Скопируйте код оттуда, чтобы войти.
+
+---
+
+## Docker Compose (полный стек)
+
+trip2g + MinIO (S3-совместимое хранилище) + Caddy в одном `docker-compose.yml`.
+
+```mermaid
+flowchart TD
+    Net[Internet] -->|443| Caddy[Caddy<br/>ports 80/443]
+    Caddy -->|docs.example.com| T[trip2g :8081]
+    Caddy -->|files.example.com| M[MinIO :9000]
+    T -->|S3 API| M
+    subgraph compose_network_internal
+        T
+        M
+    end
+```
+
+### Что важно не забыть
 
 - Для публичного сервера нужен `HTTPS`. Иначе secure-cookie для входа не будет работать.
 - Для входа по email нужен аккаунт в `resend.com`, API key и подтвержденный домен или поддомен отправителя.
-- Для production обязательно задайте свои `JWT_SECRET` и `DATA_ENCRYPTION_KEY`. Со значениями по умолчанию сервер падать или работать небезопасно.
+- Для production обязательно задайте свои `JWT_SECRET` и `DATA_ENCRYPTION_KEY`. Со значениями по умолчанию сервер работает небезопасно.
 - Наружу обычно публикуются только `80` и `443` у `caddy`.
 
-## Подготовка
+### Подготовка
 
 Нужны:
 
@@ -48,7 +219,7 @@ lang_redirect: "[[en/user/selfhosted]]"
 
 Если порты заняты существующим reverse proxy (Nginx, Caddy, Traefik), убирать его не нужно — достаточно прописать trip2g как upstream в нём. Тогда сервис `caddy` из `docker-compose.yml` можно убрать, а порт `8081` опубликовать напрямую. То же самое касается MinIO: если у вас уже есть своё объектное хранилище — MinIO поднимать не нужно, достаточно указать его реквизиты в `.env`.
 
-## `docker-compose.yml`
+### `docker-compose.yml`
 
 ```yaml
 services:
@@ -119,7 +290,7 @@ volumes:
 - `minio-data` хранит MinIO-объекты.
 - `trip2g` и `minio` доступны только внутри compose-сети.
 
-## `.env`
+### `.env`
 
 Минимальный `.env` для production:
 
@@ -164,7 +335,7 @@ FEATURES={}
 # FEATURES={"vector_search":{"enabled":true,"model":"bge-m3","base_url":"https://embeddings.example.com/v1"}}
 ```
 
-## Префикс `TRIP2G_`
+### Префикс `TRIP2G_`
 
 По умолчанию trip2g читает конфиг из обычных переменных окружения: `LISTEN_ADDR`, `JWT_SECRET` и т.д.
 
@@ -179,7 +350,7 @@ TRIP2G_JWT_SECRET=replace-with-long-random-secret
 
 Если переменная с префиксом `TRIP2G_` присутствует, она имеет приоритет над одноимённой без префикса. Любая `TRIP2G_*` переменная, не соответствующая известной настройке, выводит предупреждение при старте — помогает замечать опечатки, не роняя сервер.
 
-## Что означает каждая настройка
+### Что означает каждая настройка
 
 - `PUBLIC_URL` — внешний адрес вашего сайта. Используется в ссылках, email и интеграциях.
 - `LISTEN_ADDR` — адрес, на котором слушает основной HTTP-сервер.
@@ -218,7 +389,7 @@ USER_TOKEN_INSECURE=true
 
 Но это только для временной проверки. Для публичного сервера оставляйте secure cookies и ставьте TLS.
 
-## Расписание фоновых задач
+### Расписание фоновых задач
 
 Фоновые задачи работают по расписанию из таблицы `cron_jobs`; большинство — **каждую минуту**. Чтобы изменить любую задачу, задайте env-переменную с именем задачи — `<JOB_NAME>_SCHEDULE` — и cron-выражением (6 полей, **с ведущим полем секунд**):
 
@@ -232,7 +403,7 @@ SEND_SCHEDULED_TELEGRAM_PUBLISHPOSTS_SCHEDULE=0 0 * * * *
 
 > Инстансы в облаке (managed) по умолчанию запускают их **раз в час**, чтобы не нагружать общую базу. Self-hosted-инстансы сохраняют дефолт «каждую минуту», пока вы не зададите override.
 
-## `Caddyfile`
+### `Caddyfile`
 
 Если хотите нормальный публичный setup, дайте сайту и файлам отдельные домены:
 
@@ -271,7 +442,7 @@ MINIO_PUBLIC_URL=https://files.example.com
 - ссылки на файлы отдаются с публичного MinIO-домена;
 - `caddy` ходит к сервисам по именам `trip2g` и `minio` внутри docker-сети.
 
-## Внешнее объектное хранилище вместо MinIO
+### Внешнее объектное хранилище вместо MinIO
 
 По умолчанию MinIO работает на том же сервере, что и trip2g. Это удобно для старта, но не защищает от потери сервера: если диск умрёт, пропадут и файлы, и резервные копии.
 
@@ -291,7 +462,7 @@ MINIO_USE_SSL=true
 
 Тогда `SIMPLE_BACKUP=true` будет складывать резервные копии SQLite уже на внешний сервис — автоматически, без дополнительных усилий и с защитой от потери сервера.
 
-## Репликация SQLite через Litestream
+### Репликация SQLite через Litestream
 
 `SIMPLE_BACKUP=true` делает периодические snapshot'ы базы в MinIO. Если нужна непрерывная репликация SQLite с интервалом в 1 секунду, добавьте [Litestream](https://litestream.io).
 
@@ -311,7 +482,7 @@ sudo systemctl enable --now litestream
 
 Litestream и `SIMPLE_BACKUP` можно использовать одновременно — они не конфликтуют. Особенно полезна эта связка с внешним объектным хранилищем: тогда и файлы, и база данных хранятся вне сервера.
 
-## Как создать бесплатный аккаунт Resend
+### Как создать бесплатный аккаунт Resend
 
 На `resend.com`:
 
@@ -320,7 +491,7 @@ Litestream и `SIMPLE_BACKUP` можно использовать одновре
 3. Подтвердите DNS-записи, которые покажет Resend.
 4. Создайте API key.
 5. Поставьте этот ключ в `RESEND_API_KEY`.
-6. Укажите `MAIL_FROM` на адрес внутри подтвержденного домена, например `no-reply@mg.example.com`.
+6. Укажите `MAIL_FROM` на адрес внутри подтверждённого домена, например `no-reply@mg.example.com`.
 
 Почему лучше поддомен:
 
@@ -329,13 +500,13 @@ Litestream и `SIMPLE_BACKUP` можно использовать одновре
 
 Если домен в Resend не подтверждать, письма будут приходить только вам самому. Этого достаточно, если email-вход нужен только владельцу инстанса. Если по email должны входить другие пользователи, домен отправителя нужно подтвердить.
 
-## Векторный поиск через OpenAI или совместимый сервис
+### Векторный поиск через OpenAI или совместимый сервис
 
 По умолчанию trip2g прекрасно работает и без этого. Полнотекстовый поиск останется доступен.
 
 Если нужен семантический поиск:
 
-### OpenAI
+#### OpenAI
 
 ```dotenv
 OPENAI_API_KEY=sk-...
@@ -344,7 +515,7 @@ FEATURES={"vector_search":{"enabled":true,"model":"text-embedding-3-small"}}
 
 Рекомендуемая модель для старта: `text-embedding-3-small`.
 
-### OpenAI-compatible embeddings API
+#### OpenAI-compatible embeddings API
 
 ```dotenv
 OPENAI_API_KEY=provider-token-if-needed
@@ -359,9 +530,9 @@ FEATURES={"vector_search":{"enabled":true,"model":"bge-m3","base_url":"https://e
 - `multilingual-e5-base`
 - `bge-m3`
 
-То есть “любой OpenAI-compatible сервис” подойдет только если он умеет отдавать embeddings через совместимый `/v1` API и вы используете одно из поддерживаемых имен моделей.
+То есть «любой OpenAI-compatible сервис» подойдёт только если он умеет отдавать embeddings через совместимый `/v1` API и вы используете одно из поддерживаемых имён моделей.
 
-## Запуск
+### Запуск
 
 В директории с `docker-compose.yml`:
 
@@ -388,9 +559,10 @@ docker compose logs -f caddy trip2g
 - войдите по email владельца из `OWNER_EMAIL`
 - на пустом инстансе сервис сам предложит ссылку на скачивание ZIP с настроенным vault
 - настройте Obsidian plugin на ваш `PUBLIC_URL`
+
 Дальше можно идти в [[ru/user/Начало работы|Начало работы]] и продолжать уже с плагином Obsidian.
 
-## Что еще легко забыть
+### Что ещё легко забыть
 
 - DNS `A`/`AAAA` запись для `PUBLIC_URL`
 - DNS `A`/`AAAA` запись для `MINIO_PUBLIC_URL`
@@ -401,3 +573,9 @@ docker compose logs -f caddy trip2g
 - мониторинг логов после первого входа и первой отправки письма
 
 Если нужен максимально простой старт, сначала поднимите инстанс без векторного поиска, проверьте вход по email, и только потом добавляйте `FEATURES` для embeddings.
+
+---
+
+## fly.io
+
+Запустите trip2g на fly.io без своего сервера. Полный гайд: [[ru/user/fly]].
