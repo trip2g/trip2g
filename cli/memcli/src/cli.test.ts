@@ -29,6 +29,8 @@ import {
   buildLogNote,
   buildAgentsNote,
   buildSchemaNote,
+  buildHomeNote,
+  buildHeaderNote,
   lintVault,
   buildHatLoginHtml,
 } from './cli.ts';
@@ -842,6 +844,24 @@ test('buildSchemaNote: contains type: schema and mcp_method: schema', () => {
   assert.ok(note.includes('mcp_method: schema'), 'must have mcp_method: schema');
 });
 
+test('buildHomeNote: is index-typed and links to index/log/AGENTS', () => {
+  const note = buildHomeNote();
+  assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
+  assert.ok(note.includes('free: true'), 'must be free: true');
+  assert.match(note, /^type: index$/m, 'must have type: index');
+  assert.ok(note.includes('[[index|'), 'must link to index');
+  assert.ok(note.includes('[[log|'), 'must link to log');
+  assert.ok(note.includes('[[AGENTS|'), 'must link to AGENTS');
+});
+
+test('buildHeaderNote: contains [[_index|Home]] and type: header', () => {
+  const note = buildHeaderNote();
+  assert.ok(note.startsWith('---\n'), 'must start with frontmatter');
+  assert.ok(note.includes('free: true'), 'must be free: true');
+  assert.match(note, /^type: header$/m, 'must have type: header');
+  assert.ok(note.includes('[[_index|Home]]'), 'must contain [[_index|Home]] nav link');
+});
+
 // ---------------------------------------------------------------------------
 // parseArgs / shouldRunMcp — lint & no-seed
 // ---------------------------------------------------------------------------
@@ -994,6 +1014,8 @@ test('lintVault: seeded vault (actual builders) has zero error-level violations'
     fs.writeFileSync(path.join(vault, 'log.md'), buildLogNote());
     fs.writeFileSync(path.join(vault, 'AGENTS.md'), buildAgentsNote());
     fs.writeFileSync(path.join(vault, 'SCHEMA.md'), buildSchemaNote());
+    fs.writeFileSync(path.join(vault, '_index.md'), buildHomeNote());
+    fs.writeFileSync(path.join(vault, '_header.md'), buildHeaderNote());
     const result = lintVault(vault, 60);
     const errors = result.violations.filter((v) => v.level === 'error');
     assert.equal(
@@ -1001,6 +1023,31 @@ test('lintVault: seeded vault (actual builders) has zero error-level violations'
       0,
       `Expected 0 errors on seeded vault, got: ${JSON.stringify(errors)}`,
     );
+    const warns = result.violations.filter((v) => v.level === 'warn');
+    assert.equal(
+      warns.length,
+      0,
+      `Expected 0 warnings on seeded vault, got: ${JSON.stringify(warns)}`,
+    );
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('lintVault: underscore-prefixed note with no type produces no okf-type warning', () => {
+  const vault = makeLintVault();
+  try {
+    writeWellFormed(vault);
+    // System/layout note without a type: must be exempt from okf-type.
+    fs.writeFileSync(path.join(vault, '_sidebar.md'), '---\nfree: true\n---\n\nnav\n');
+    // A normal note without a type: must still be flagged.
+    fs.writeFileSync(path.join(vault, 'plain.md'), '---\nfree: true\n---\n\nbody\n');
+    const result = lintVault(vault, 60);
+    const sysHit = result.violations.find((v) => v.kind === 'okf-type' && v.file === '_sidebar.md');
+    assert.ok(!sysHit, 'underscore-prefixed system note must NOT be flagged okf-type');
+    const normalHit = result.violations.find((v) => v.kind === 'okf-type' && v.file === 'plain.md');
+    assert.ok(normalHit, 'normal untyped note must still be flagged okf-type');
+    assert.equal(normalHit!.level, 'warn');
   } finally {
     fs.rmSync(vault, { recursive: true });
   }

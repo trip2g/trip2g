@@ -16958,6 +16958,34 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
 (see \`memcli lint\` / \`memory_lint\`).
 `.trimStart();
 }
+function buildHomeNote() {
+  return `---
+free: true
+type: index
+---
+
+# Memory
+
+An Open Knowledge Format (OKF) / LLM-wiki base served over MCP as an agent's
+persistent memory \u2014 a folder of Markdown notes an agent reads, searches, and
+writes back as it works.
+
+- [[index|What this base covers]]
+- [[log|Activity log]]
+- [[AGENTS|Agent instructions]]
+`.trimStart();
+}
+function buildHeaderNote() {
+  return `---
+free: true
+type: header
+---
+
+- [[_index|Home]]
+- [[index|Index]]
+- [[log|Log]]
+`.trimStart();
+}
 function parseArgs(argv) {
   const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp", "hub", "lint", "open"]);
   const flags = {
@@ -17631,7 +17659,8 @@ function lintVault(vault, staleDays) {
         detail: "unresolved marker or CONTRADICTION found in note body"
       });
     }
-    if (!/^\s*type:\s*\S/m.test(frontmatter)) {
+    const isSystemNote = path.basename(file).startsWith("_");
+    if (!isSystemNote && !/^\s*type:\s*\S/m.test(frontmatter)) {
       violations.push({
         level: "warn",
         kind: "okf-type",
@@ -17967,7 +17996,9 @@ async function cmdUp(flags, dryRun) {
       { file: "index.md", content: buildIndexNote() },
       { file: "log.md", content: buildLogNote() },
       { file: "AGENTS.md", content: buildAgentsNote() },
-      { file: "SCHEMA.md", content: buildSchemaNote() }
+      { file: "SCHEMA.md", content: buildSchemaNote() },
+      { file: "_index.md", content: buildHomeNote() },
+      { file: "_header.md", content: buildHeaderNote() }
     ];
     for (const { file, content } of seeds) {
       const seedPath = path.join(vault, file);
@@ -18356,6 +18387,8 @@ export {
   buildDataJson,
   buildDockerRunArgs,
   buildHatLoginHtml,
+  buildHeaderNote,
+  buildHomeNote,
   buildHubNote,
   buildIndexNote,
   buildLogNote,

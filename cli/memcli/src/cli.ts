@@ -313,6 +313,46 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
 }
 
 /**
+ * Build the home page note (_index.md).
+ * trip2g serves the site root `/` from this underscore-prefixed home note.
+ * Free + `type: index` so it is OKF-valid and openly readable.
+ */
+export function buildHomeNote(): string {
+  return `---
+free: true
+type: index
+---
+
+# Memory
+
+An Open Knowledge Format (OKF) / LLM-wiki base served over MCP as an agent's
+persistent memory — a folder of Markdown notes an agent reads, searches, and
+writes back as it works.
+
+- [[index|What this base covers]]
+- [[log|Activity log]]
+- [[AGENTS|Agent instructions]]
+`.trimStart();
+}
+
+/**
+ * Build the site header/nav note (_header.md).
+ * trip2g renders the header/login chrome only when this underscore-prefixed
+ * note exists. Free + `type: header` so it is OKF-valid and openly readable.
+ */
+export function buildHeaderNote(): string {
+  return `---
+free: true
+type: header
+---
+
+- [[_index|Home]]
+- [[index|Index]]
+- [[log|Log]]
+`.trimStart();
+}
+
+/**
  * Parse process.argv (or a provided array) into { cmd, flags, positional }.
  * Subcommands: up (default), down, status, logs, key, daily, log, mcp.
  *
@@ -1234,8 +1274,11 @@ export function lintVault(vault: string, staleDays: number): LintResult {
       });
     }
 
-    // okf-type (warn)
-    if (!/^\s*type:\s*\S/m.test(frontmatter)) {
+    // okf-type (warn) — skip underscore-prefixed system/layout notes
+    // (e.g. _index, _header, _sidebar, _mcp_initialize). These are layout/system
+    // notes, not content, so they are exempt from the OKF `type:` requirement.
+    const isSystemNote = path.basename(file).startsWith('_');
+    if (!isSystemNote && !/^\s*type:\s*\S/m.test(frontmatter)) {
       violations.push({
         level: 'warn',
         kind: 'okf-type',
@@ -1648,6 +1691,8 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
       { file: 'log.md', content: buildLogNote() },
       { file: 'AGENTS.md', content: buildAgentsNote() },
       { file: 'SCHEMA.md', content: buildSchemaNote() },
+      { file: '_index.md', content: buildHomeNote() },
+      { file: '_header.md', content: buildHeaderNote() },
     ];
     for (const { file, content } of seeds) {
       const seedPath = path.join(vault, file);
