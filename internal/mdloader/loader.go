@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/image"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader/callout"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
 	"trip2g/internal/obsidiancanvas"
@@ -129,6 +130,7 @@ func Load(options Options) (*model.NoteViews, error) {
 		goldmark.WithRendererOptions(renderOptions...),
 		goldmark.WithExtensions(
 			highlight.Highlight,
+			callout.Extension,
 			&wikilink.Extender{
 				Resolver: ldr.linkResolver,
 			},

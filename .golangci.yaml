@@ -484,6 +484,9 @@ linters:
       - path: 'internal/mdloader/highlight/'
         linters:
           - gochecknoglobals  # Package-level variables needed for goldmark extension registration
+      - path: 'internal/mdloader/callout/'
+        linters:
+          - gochecknoglobals  # Package-level variables needed for goldmark extension registration
       - path: 'cmd/testgoqite/'
         linters:
           - cyclop       # Test code can be complex
