@@ -36,7 +36,7 @@ CLAUDE.md
 .test-api-key
 .vecbench-api-key
 # obsidian-sync writes local sync state into the vault; not source
-testdata/vecbench/vault/.sync-state.json
+testdata/vecbench/vault/.sync-state*.json
 # stray binary from `go build ./cmd/evalretrieval`
 /evalretrieval
 
@@ -58,11 +58,11 @@ db.sqlite
 .mcp.json
 
 docs/.obsidian
-docs/.sync-state.json
+docs/.sync-state*.json
 .omx/
-/testdata/seedvault/.sync-state.json
-/testdata/seedvault2/.sync-state.json
-/testdata/seedvault3/.sync-state.json
+/testdata/seedvault/.sync-state*.json
+/testdata/seedvault2/.sync-state*.json
+/testdata/seedvault3/.sync-state*.json
 /docs/knowlume
 *.swp
 
