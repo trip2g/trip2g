@@ -56,6 +56,43 @@ func TestSetup(t *testing.T) {
 	}
 }
 
+// TestStrictReadOnlyRejectsWrites verifies that a connection opened with
+// StrictReadOnly serves reads but fails writes with an error (the replica
+// guardrail), and that SkipMigrations leaves the existing schema intact.
+func TestStrictReadOnlyRejectsWrites(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "test.db")
+
+	// First, set up the DB normally (runs migrations) and seed a row.
+	rw, err := Setup(SetupConfig{SkipDump: true, DatabaseFile: dbFile})
+	require.NoError(t, err)
+	_, err = rw.Exec("CREATE TABLE rr_probe (id INTEGER PRIMARY KEY, v TEXT)")
+	require.NoError(t, err)
+	_, err = rw.Exec("INSERT INTO rr_probe (id, v) VALUES (1, 'hello')")
+	require.NoError(t, err)
+	require.NoError(t, rw.Close())
+
+	// Now open the same file strict read-only, skipping migrations.
+	ro, err := Setup(SetupConfig{
+		SkipDump:       true,
+		DatabaseFile:   dbFile,
+		ReadOnly:       true,
+		StrictReadOnly: true,
+		SkipMigrations: true,
+	})
+	require.NoError(t, err)
+	defer ro.Close()
+
+	// Reads work.
+	var v string
+	require.NoError(t, ro.QueryRow("SELECT v FROM rr_probe WHERE id = 1").Scan(&v))
+	require.Equal(t, "hello", v)
+
+	// Writes fail (do not silently mutate the file).
+	_, err = ro.Exec("INSERT INTO rr_probe (id, v) VALUES (2, 'nope')")
+	require.Error(t, err, "write on strict read-only connection must fail")
+}
+
 // TestPragmasAppliedToAllConnections verifies that busy_timeout and
 // foreign_keys are set on every pooled connection, not just the one that
 // happened to run a `PRAGMA` exec during setup. modernc.org/sqlite only

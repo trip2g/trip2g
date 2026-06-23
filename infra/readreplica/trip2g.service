@@ -1,0 +1,26 @@
+# /etc/systemd/system/trip2g.service — identical on primary and replica
+# (role is decided by /etc/trip2g.env: replica sets TRIP2G_LEADER_ADDR).
+# Waits for the LiteFS mount so /litefs/data.sqlite3 exists before starting.
+[Unit]
+Description=trip2g
+After=litefs.service network-online.target
+Requires=litefs.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/trip2g.env
+# Must be a normal writable dir, NOT the /litefs FUSE mount (which only accepts
+# SQLite databases). Only TRIP2G_DATABASE_FILE points into /litefs.
+WorkingDirectory=/var/lib/trip2g
+ExecStart=/usr/local/bin/trip2g
+Restart=on-failure
+RestartSec=2
+# Zero-downtime drain (see docs/dev/zerodowntime.md): give the app time to
+# flip /readyz=503 and drain before stop.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

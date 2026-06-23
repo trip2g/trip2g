@@ -1,0 +1,25 @@
+# LiteFS config for the PRIMARY (leader) node — /etc/litefs.yml
+# Static lease: this node is the fixed primary; it never fails over.
+# Replicas stream the DB from this node's LiteFS HTTP API (:20202).
+
+fuse:
+  # Where the application sees the database. trip2g opens
+  # /litefs/data.sqlite3 here. On the primary this mount is read-write.
+  dir: "/litefs"
+
+data:
+  # LiteFS internal state (LTX pages). Put on a persistent volume.
+  dir: "/var/lib/litefs"
+
+# Bind the LiteFS API on all interfaces (default is localhost only) so the
+# replica can reach it at 10.20.0.2:20202. The firewall keeps :20202 private.
+http:
+  addr: ":20202"
+
+lease:
+  type: "static"
+  # This node's LiteFS API URL. Replicas connect here to stream.
+  # Bind on the PRIVATE NIC so replication never crosses the public net.
+  advertise-url: "http://10.20.0.2:20202"
+  # candidate: true => this node is the primary.
+  candidate: true

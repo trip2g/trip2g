@@ -1,0 +1,19 @@
+# /etc/systemd/system/litefs.service — identical on primary and replica
+# (the difference is only in /etc/litefs.yml). litefs mounts the FUSE dir
+# and keeps it in sync; trip2g.service depends on it.
+[Unit]
+Description=LiteFS distributed SQLite
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/litefs mount
+# FUSE needs these:
+ExecStopPost=/bin/fusermount -uz /litefs
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

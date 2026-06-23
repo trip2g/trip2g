@@ -1,0 +1,17 @@
+# LiteFS config for a REPLICA node — /etc/litefs.yml
+# Static lease: this node never becomes primary. Its /litefs mount is
+# read-only; LiteFS streams every change from the primary's API.
+
+fuse:
+  dir: "/litefs"
+
+data:
+  dir: "/var/lib/litefs"
+
+lease:
+  type: "static"
+  # IMPORTANT: advertise-url points at the PRIMARY (not this node) so the
+  # replica knows where to stream the database from.
+  advertise-url: "http://10.20.0.2:20202"
+  # candidate: false => read-only replica, never elected primary.
+  candidate: false

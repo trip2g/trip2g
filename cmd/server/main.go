@@ -111,6 +111,7 @@ import (
 	"trip2g/internal/personaltoken"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
+	"trip2g/internal/readreplica"
 	"trip2g/internal/router"
 	"trip2g/internal/rssfeed"
 	"trip2g/internal/simplebackup"
@@ -208,7 +209,12 @@ type app struct {
 	// until then so Nomad/Traefik route traffic only to fully-ready instances.
 	// Pointer for the same reason as stopped (shared across per-request copies).
 	ready          *atomic.Bool
-	internalServer *http.Server
+	internalServer *fasthttp.Server
+	// appHandler holds the full public request handler once startServer has
+	// built it. The internal server's leader-side replica intake reads it to run
+	// forwarded writes through the real pipeline; nil (→ 503) until ready.
+	// Pointer (like stopped/ready) so per-request app copies share one atomic.
+	appHandler     *atomic.Pointer[fasthttp.RequestHandler]
 	ctx            context.Context
 
 	graphTxs *graphTransactions
@@ -290,9 +296,23 @@ type app struct {
 
 	gqlServer   *handler.Server
 	gqlExecutor graphql.GraphExecutor
+
+	// replicaForwarder is non-nil only in read-only replica mode. It reverse-
+	// proxies mutating requests to the leader (--leader-addr).
+	replicaForwarder *readreplica.Forwarder
 }
 
-func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB, *sql.DB) {
+// DBSet holds the three pooled connections the app uses. In a read replica all
+// three point to the same strict-read-only pool: there is no local writer, and
+// the query_only guardrail turns any stray write into an error rather than
+// silent corruption — every mutation is forwarded to the leader instead.
+type DBSet struct {
+	Read  *sql.DB // application reads + maintenance (checkpoint/vacuum/analyze)
+	Write *sql.DB // write transactions
+	Queue *sql.DB // goqite queue, isolated so polling never blocks app writes
+}
+
+func initDBs(config *appconfig.Config, log logger.Logger) DBSet {
 	dbConfig := db.SetupConfig{
 		DatabaseFile: config.DatabaseFile,
 		Logger:       log,
@@ -302,9 +322,24 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB, *sq
 		DevMode:      config.DevMode,
 	}
 
+	// Read-only replica: skip migrations (the DB is owned by the replicator and
+	// already migrated by the leader) and open strict read-only. There is no
+	// local writer — reuse the read-only pool for all three handles; the
+	// query_only guardrail turns any stray local write into an error instead of
+	// silent corruption. All mutating requests are forwarded to the leader.
+	if config.IsReadReplica() {
+		dbConfig.SkipMigrations = true
+		dbConfig.StrictReadOnly = true
+	}
+
 	conn, err := db.Setup(dbConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to setup database: %w", err))
+	}
+
+	if config.IsReadReplica() {
+		// One strict-read-only pool serves all three roles; see DBSet doc.
+		return DBSet{Read: conn, Write: conn, Queue: conn}
 	}
 
 	dbConfig.ReadOnly = false
@@ -324,7 +359,7 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB, *sq
 		panic(fmt.Errorf("failed to setup queue database: %w", err))
 	}
 
-	return conn, writeConn, queueConn
+	return DBSet{Read: conn, Write: writeConn, Queue: queueConn}
 }
 
 func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager {
@@ -356,7 +391,8 @@ func main() {
 		restoreBackup(log, config)
 	}
 
-	conn, writeConn, queueConn := initDBs(config, log)
+	dbs := initDBs(config, log)
+	conn, writeConn, queueConn := dbs.Read, dbs.Write, dbs.Queue
 
 	tokenManager := usertoken.NewManager(config.UserToken)
 	// use USER_TOKEN_INSECURE instead
@@ -404,6 +440,7 @@ func main() {
 		debugJobMu:    &sync.Mutex{},
 		stopped:       &atomic.Bool{},
 		ready:         &atomic.Bool{},
+		appHandler:    &atomic.Pointer[fasthttp.RequestHandler]{},
 
 		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
@@ -425,6 +462,10 @@ func main() {
 
 		Client:        turnstile.New(config.Turnstile),
 		signinCounter: &requestemailsignin.SignInCounter{},
+	}
+
+	if config.IsReadReplica() {
+		a.replicaForwarder = readreplica.NewForwarder(config.LeaderAddr, config.UserToken.Secret)
 	}
 
 	a.ctx = ctx
@@ -527,6 +568,17 @@ func main() {
 	// after stopping its own writers. It does NOT hold the lock open and does
 	// NOT guarantee hard cross-process single-writer (deferred to Phase 2).
 	// ========================================================================
+	// Read-only replica: never acquire the writer slot or start any writer
+	// subsystem. The replica serves reads off the replicated DB and forwards
+	// every mutating request to the leader (--leader-addr). It becomes ready as
+	// soon as the read-only warmup (Block A) is done.
+	if config.IsReadReplica() {
+		log.Info("read-only replica mode: skipping writer subsystems, forwarding writes to leader", "leader", config.LeaderAddr)
+		a.ready.Store(true)
+		a.startServer()
+		return
+	}
+
 	if acquireErr := db.AcquireWriterSlot(ctx, config.DatabaseFile, config.WriterAcquireTimeout); acquireErr != nil {
 		panic(fmt.Errorf("failed to acquire writer slot: %w", acquireErr))
 	}
@@ -2648,6 +2700,19 @@ func (a *app) prepareMiddlewares() []Middleware {
 	}
 
 	return []Middleware{
+		// Read-only replica: forward every mutating request to the leader before
+		// any local handler runs (so no handler side effects are replayed). Safe
+		// methods (GET/HEAD/OPTIONS) fall through and are served locally.
+		func(req *appreq.Request) bool {
+			if a.replicaForwarder == nil {
+				return false
+			}
+			if !readreplica.IsWrite(string(req.Req.Method())) {
+				return false
+			}
+			a.replicaForwarder.Forward(req.Req)
+			return true
+		},
 		a.handleRobotsTxt,
 		a.handleSitemap,
 		a.handleRSSFeed,
@@ -2849,6 +2914,12 @@ func (a *app) startServer() {
 		IdleTimeout:        handlerTimeout,
 	}
 
+	// Publish the full request handler so the internal server's leader-side
+	// replica intake (handleReplicaIntake) can run forwarded writes through the
+	// real pipeline on --internal-listen-addr. Until this point it returns 503.
+	appHandler := s.Handler
+	a.appHandler.Store(&appHandler)
+
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
 			if err := a.serveHTTP(s); err != nil {
@@ -2955,9 +3026,7 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 	}
 
 	if a.internalServer != nil {
-		internalShutdownCtx, internalCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
-		defer internalCancel()
-		if internalErr := a.internalServer.Shutdown(internalShutdownCtx); internalErr != nil {
+		if internalErr := a.internalServer.Shutdown(); internalErr != nil {
 			a.log.Error("failed to shutdown internal server", "error", internalErr)
 		}
 	}
@@ -3007,46 +3076,36 @@ func (a *app) isReady() bool {
 }
 
 func (a *app) startInternalServer() {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		if a.stopped.Load() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("shutting down"))
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-
-	// /livez is liveness (k8s convention): 200 whenever the process can answer,
-	// regardless of warmup or shutdown state. A warming or draining instance is
-	// still ALIVE and must NOT be restarted — orchestrators use this only for
-	// restart-on-hang. Pair it with /readyz (readiness) for routing/deploy gating.
-	mux.HandleFunc("/livez", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("alive"))
-	})
-
-	// /readyz is readiness (not liveness): 200 only when the instance can fully
-	// serve, including writes. It returns 503 while warming up (writer slot not
-	// yet acquired, writer subsystems not started) and while shutting down.
-	// Nomad health-checks this and Traefik (via Consul) routes only to ready
-	// instances, so the old instance keeps serving until the new one is ready.
-	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		if !a.isReady() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("not ready"))
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ready"))
-	})
+	// Metrics, pprof and the embedding debug endpoint keep their net/http
+	// handlers; they're mounted on a mux and adapted to fasthttp once below. The
+	// internal server itself is fasthttp so the leader-side replica intake can
+	// run forwarded writes through the real (fasthttp) app handler on the same
+	// port — no separate listener, no net/http→fasthttp request bridge.
+	debugMux := http.NewServeMux()
 
 	// Prometheus metrics endpoint
-	mux.Handle("/metrics", metrics.Setup())
+	debugMux.Handle("/metrics", metrics.Setup())
+
+	// Register pprof endpoints
+	debugMux.HandleFunc("/debug/pprof/", pprof.Index)
+	debugMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	debugMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	debugMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	debugMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	debugMux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	debugMux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	debugMux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	debugMux.Handle("/debug/pprof/block", pprof.Handler("block"))
+	debugMux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	debugMux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
+
+	// Embedding debug endpoint — step-by-step pipeline: split → embed → JSON result.
+	// Only registered when vector search is enabled.
+	if a.openaiClient != nil {
+		debugMux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
+	}
+
+	debugHandler := fasthttpadaptor.NewFastHTTPHandler(debugMux)
 
 	// Start metrics updater
 	metricsUpdater := metrics.NewUpdater(a, a.config.Metrics.UpdateInterval)
@@ -3057,37 +3116,85 @@ func (a *app) startInternalServer() {
 		}
 	}()
 
-	// Register pprof endpoints
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-	mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-	mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-	mux.Handle("/debug/pprof/block", pprof.Handler("block"))
-	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
-	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
+	handler := func(ctx *fasthttp.RequestCtx) {
+		switch string(ctx.Path()) {
+		case "/healthz":
+			if a.stopped.Load() {
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("shutting down")
+				return
+			}
+			ctx.SetStatusCode(http.StatusOK)
+			ctx.SetBodyString("ok")
+			return
+		// /livez is liveness (k8s convention): 200 whenever the process can
+		// answer, regardless of warmup or shutdown state. A warming or draining
+		// instance is still ALIVE and must NOT be restarted.
+		case "/livez":
+			ctx.SetStatusCode(http.StatusOK)
+			ctx.SetBodyString("alive")
+			return
+		// /readyz is readiness: 200 only when the instance can fully serve. 503
+		// while warming up or shutting down so routing/deploy gating is correct.
+		case "/readyz":
+			if !a.isReady() {
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("not ready")
+				return
+			}
+			ctx.SetStatusCode(http.StatusOK)
+			ctx.SetBodyString("ready")
+			return
+		}
 
-	// Embedding debug endpoint — step-by-step pipeline: split → embed → JSON result.
-	// Only registered when vector search is enabled.
-	if a.openaiClient != nil {
-		mux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
+		path := string(ctx.Path())
+		if path == "/metrics" || strings.HasPrefix(path, "/debug/") {
+			debugHandler(ctx)
+			return
+		}
+
+		// Leader-side replica intake: any other path is a forwarded write from a
+		// replica. Authenticate it (HMAC over --jwt-secret) and run it through the
+		// real app pipeline. Replicas never accept intake (they forward, not host).
+		if !a.config.IsReadReplica() {
+			a.handleReplicaIntake(ctx)
+			return
+		}
+
+		ctx.SetStatusCode(http.StatusNotFound)
 	}
 
-	a.internalServer = &http.Server{
-		Addr:    a.config.InternalListenAddr,
-		Handler: mux,
-
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 2 * time.Minute, // allow for slow Ollama first-load
+	a.internalServer = &fasthttp.Server{
+		Handler: handler,
+		Name:    "trip2g-internal",
 	}
 
-	err := a.internalServer.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	a.log.Info("starting internal server", "addr", a.config.InternalListenAddr)
+	if err := a.internalServer.ListenAndServe(a.config.InternalListenAddr); err != nil {
 		panic(err)
 	}
+}
+
+// handleReplicaIntake authenticates a forwarded write from a read replica and
+// runs it through the full app handler. Reject (401) on a missing/invalid
+// X-Replica-Auth; 503 until the app handler is built (leader still warming up).
+func (a *app) handleReplicaIntake(ctx *fasthttp.RequestCtx) {
+	auth := string(ctx.Request.Header.Peek(readreplica.AuthHeader))
+	if err := readreplica.VerifyAuth(a.config.UserToken.Secret, auth, time.Now()); err != nil {
+		a.log.Warn("replica intake: rejected request", "error", err, "remote", ctx.RemoteIP().String(), "path", string(ctx.Path()))
+		ctx.SetStatusCode(http.StatusUnauthorized)
+		ctx.SetBodyString("401 replica intake: invalid X-Replica-Auth")
+		return
+	}
+
+	h := a.appHandler.Load()
+	if h == nil {
+		ctx.SetStatusCode(http.StatusServiceUnavailable)
+		ctx.SetBodyString("503 replica intake: leader not ready")
+		return
+	}
+
+	(*h)(ctx)
 }
 
 func (a *app) startACMEServer(s *fasthttp.Server) {

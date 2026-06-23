@@ -66,6 +66,12 @@ type Config struct {
 	WriterAcquireTimeout       time.Duration
 	GlobalQueuePollInterval    time.Duration
 	InternalListenAddr         string
+	// LeaderAddr, when non-empty, puts this instance in read-only replica mode:
+	// it serves safe (GET/HEAD/OPTIONS) requests locally off a replicated DB and
+	// reverse-proxies every mutating request to the leader's internal address
+	// (host:port — plain HTTP over the private network). Skips migrations and the
+	// writer/queue connections; disables cron and queue workers.
+	LeaderAddr                 string
 	MCPFederationMaxDepth      int
 	MCPFederationAllowPrivate  bool
 	MCPFederatedGraphQLEnabled bool
@@ -491,6 +497,7 @@ func (c *Config) defineServerFlags() {
 		"Cron schedule (6-field, with seconds) for the send_scheduled_telegram_publishposts job. Default every minute; the public cloud sets it hourly.",
 	)
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
+	flag.StringVar(&c.LeaderAddr, "leader-addr", "", "Leader internal address as host:port (the leader's --internal-listen-addr, plain HTTP over the private network). When set, this instance runs as a read-only replica: serves reads locally and forwards writes to the leader.")
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
 	flag.BoolVar(
 		&c.MCPFederationAllowPrivate,
@@ -575,6 +582,13 @@ func (c *Config) defineMinioFlags() {
 	)
 }
 
+// IsReadReplica reports whether this instance runs in read-only replica mode
+// (a leader URL was configured). In this mode migrations and the writer/queue
+// connections are skipped and mutating requests are forwarded to the leader.
+func (c *Config) IsReadReplica() bool {
+	return c.LeaderAddr != ""
+}
+
 func (c *Config) Prepare() {
 	c.PurchaseToken.Secret = c.UserToken.Secret
 	c.HotAuthToken.Secret = c.UserToken.Secret
@@ -615,6 +629,7 @@ func (c *Config) validate() error {
 
 		// URLs should be valid if provided
 		ozzo.Field(&c.PublicURL, ozzo.When(c.PublicURL != "", is.URL)),
+		ozzo.Field(&c.LeaderAddr, ozzo.When(c.LeaderAddr != "", is.DialString)),
 
 		// Storage backend selection.
 		ozzo.Field(&c.StorageBackend, ozzo.Required, ozzo.In(StorageBackendMinIO, StorageBackendLocal)),

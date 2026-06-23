@@ -32,15 +32,27 @@ type SetupConfig struct {
 	LogQueries   bool
 	CheckStatus  bool
 	DevMode      bool
+	// SkipMigrations skips running dbmate migrations on setup. Used by read-only
+	// replicas whose DB file is owned by the replicator (LiteFS/Litestream) and
+	// already migrated by the leader — running migrations would write or fail on
+	// a read-only mount.
+	SkipMigrations bool
+	// StrictReadOnly opens the SQLite connection with mode=ro so any write
+	// attempt fails with SQLITE_READONLY instead of mutating the file. Used by
+	// replicas as a hard guardrail.
+	StrictReadOnly bool
 }
 
 // Setup initializes the database with migrations, pragmas, and validation.
 // It returns a configured database connection ready for use.
 func Setup(config SetupConfig) (*sql.DB, error) {
-	// Run migrations
-	err := runMigrations(config.DatabaseFile, config.SkipDump)
-	if err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	// Run migrations (skipped on read-only replicas: the file is owned by the
+	// replicator and already migrated by the leader).
+	if !config.SkipMigrations {
+		err := runMigrations(config.DatabaseFile, config.SkipDump)
+		if err != nil {
+			return nil, fmt.Errorf("failed to run migrations: %w", err)
+		}
 	}
 
 	var queryLogger logger.Logger
@@ -56,8 +68,7 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// Open database connection
-	panicOnWrite := config.DevMode && config.ReadOnly
-	conn, err := openConnection(config.DatabaseFile, queryLogger, panicOnWrite, config.ReadOnly)
+	conn, err := openConnection(config, queryLogger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -140,10 +151,17 @@ func (p *queryInterceptor) Log(ctx context.Context, level sqldblogger.Level, msg
 // pool. A one-off `db.Exec("PRAGMA ...")` only configures the single pooled
 // connection it happens to run on, leaving the rest with defaults
 // (busy_timeout=0, foreign_keys=OFF).
-func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bool, readOnly bool) (*sql.DB, error) {
+func openConnection(config SetupConfig, queryLog logger.Logger) (*sql.DB, error) {
 	// build url with params
-	url := &url.URL{Path: databaseFile}
+	url := &url.URL{Path: config.DatabaseFile}
 	q := url.Query()
+	// Strict read-only: set query_only so any write fails ("attempt to write a
+	// readonly database") instead of mutating the file, while WAL reads keep
+	// working normally. The replica's hard guardrail. Applied per pooled
+	// connection via modernc's _pragma DSN mechanism (same as the pragmas below).
+	if config.StrictReadOnly {
+		q.Add("_pragma", "query_only(1)")
+	}
 	// The driver always applies busy_timeout before the other pragmas.
 	q.Add("_pragma", "busy_timeout(20000)")
 	q.Add("_pragma", "journal_mode(WAL)")
@@ -154,7 +172,7 @@ func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bo
 	q.Add("_pragma", "cache_size(-64000)")
 	q.Add("_pragma", "wal_autocheckpoint(1000)")
 
-	if !readOnly {
+	if !config.ReadOnly {
 		// Writers must take the write lock at BEGIN. The default deferred
 		// mode starts every transaction as a reader; upgrading to a write
 		// after another connection has committed fails instantly with
@@ -178,6 +196,9 @@ func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bo
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	// panicOnWrite is a dev-only guardrail: crash loudly if a write hits the
+	// read-only connection. (In production the replica relies on query_only.)
+	panicOnWrite := config.DevMode && config.ReadOnly
 	if queryLog != nil || panicOnWrite {
 		conn = sqldblogger.OpenDriver(url.String(), conn.Driver(), &queryInterceptor{
 			logger:       queryLog,

@@ -37,10 +37,12 @@ Litestream 0.3.13+ supports native client-side **age encryption** (end-to-end) �
 
 ## Beyond backup: read replicas
 
-Litestream's newer **[VFS](https://fly.io/blog/litestream-vfs/)** can query the database *directly from the S3 backup* without downloading it, giving a near-real-time **read-only replica** — handy for "read production data without touching production" and point-in-time queries, though per-page S3 fetches add latency (not a hot read path).
+Litestream ships a **[VFS](https://fly.io/blog/litestream-vfs/)** — a SQLite virtual filesystem extension (`litestream.so`) that an application loads via `load_extension()` to query the S3 backup stream directly from code. It is not a standalone CLI feature or a separate read-replica server. Using it requires application integration; it is not something you point at an S3 bucket from the command line. Per-page S3 fetches also add latency, so it is not suitable for a hot read path.
 
-For live, low-latency read replicas across machines (reads served locally, writes forwarded to a primary, automatic primary election), the sibling project is **[LiteFS](https://fly.io/docs/litefs/)** ([introduction](https://fly.io/blog/introducing-litefs/)) — a FUSE filesystem that replicates SQLite across a cluster. It pairs naturally with trip2g's single-writer model and with [[zerodowntime|zero-downtime deploys]] (replicas keep serving reads while the primary is replaced). It's the backbone of SQLite apps on [Fly.io](https://fly.io/docs/litefs/).
+For a validated, production-ready live read replica of trip2g — reads served locally with sub-second replication lag, writes forwarded to the primary, zero read failures during primary restarts — see [[read-replica]]. That setup uses **LiteFS** ([docs](https://fly.io/docs/litefs/)) as the replication layer: a FUSE filesystem that streams SQLite changes across machines. It pairs naturally with trip2g's single-writer model and with [[zerodowntime|zero-downtime deploys]].
 
 ## Which backup should I use?
 
-See [[backup]] for the full comparison. Short version: **simple backup** (built-in S3 snapshots) is the zero-setup default; **Litestream** is the upgrade when you want continuous replication / minimal data loss, and the prerequisite for the read-replica path above.
+See [[backup]] for the full comparison. Short version: **simple backup** (built-in S3 snapshots) is the zero-setup default; **Litestream** is the upgrade when you want continuous replication and minimal data loss.
+
+If you also run a live [[read-replica|read replica]] using LiteFS, note that Litestream and LiteFS both target the SQLite WAL. Run Litestream backup on a standalone primary that is not mounted by LiteFS — not on the LiteFS FUSE mount itself.
