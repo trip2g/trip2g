@@ -278,6 +278,14 @@ window.__trip2g_settings = {
       {% if refNote != nil %}
       <div class="content__body">{%s= refNote.HTMLString() %}</div>
       {% endif %}
+    {% case ContentRefSimilar %}
+      {%= SimilarWidget(ctx) %}
+    {% case ContentRefInLinks %}
+      {%= InLinksWidget(ctx) %}
+    {% case ContentRefOutLinks %}
+      {%= OutLinksWidget(ctx) %}
+    {% case ContentRefTOC %}
+      {%= TOCWidget(ctx) %}
     {% endswitch %}
   {% endfor %}
 </main>
