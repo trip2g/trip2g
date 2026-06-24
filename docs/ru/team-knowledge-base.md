@@ -232,7 +232,7 @@ mcp_federation_kb_id: hub-name
 
 После синхронизации `/_system/mcp` предоставляет `federated_search`, `federated_similar`, `federated_note_html` и `federated_expand`.
 
-`memcli hub <url>` автоматизирует создание KB-заметки и синхронизацию. Подробнее — [[ru/memcli]].
+`memcli hub <url>` автоматизирует создание KB-заметки и синхронизацию. Подробнее — [[ru/user/memcli]].
 
 ---
 
@@ -360,7 +360,7 @@ https://kb.yourteam.example/_system/mcp?token=t2g_...
 
 - [[ru/user/local-quickstart]] — полный справочник по локальному запуску, флаги CLI синка, mint-поток через HAT
 - [[ru/user/agent-memory]] — память для одиночного агента; подробности выпуска ключа через HAT
-- [[ru/memcli]] — сервер + API-ключ + sync watcher одной командой; подкоманда `hub` для федерации
+- [[ru/user/memcli]] — сервер + API-ключ + sync watcher одной командой; подкоманда `hub` для федерации
 - [[ru/user/federation]] — полная настройка федерации: публичные пиры, обмен HMAC-ключами, scope подграфов, граф федерации
 - [[ru/user/selfhosted]] — Caddy + MinIO + TLS для продакшена (если нужен вход по email или внешнее хранилище объектов)
 - [[ru/user/mcp]] — все MCP-инструменты, режимы аутентификации, персональные токены
