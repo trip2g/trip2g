@@ -10,6 +10,8 @@ $trip2g_admin_menu_system $trip2g_admin_catalog
 			close_icon <= Spread_close
 		healthchecks <= ListHealthChecks $trip2g_admin_healthchecks
 			close_icon <= Spread_close
+		sync <= Sync $trip2g_admin_sync
+			close_icon <= Spread_close
 		releases <= ListReleases $trip2g_admin_release_catalog
 			close_icon <= Spread_close
 		admins <= Admins $trip2g_admin_admin_catalog

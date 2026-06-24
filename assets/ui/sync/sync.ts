@@ -1,8 +1,8 @@
 // Load IIFE bundle (sets global $trip2g_sync_bundle)
 require('./browser-sync.js')
 
-// Declare the global created by IIFE bundle
-declare const $trip2g_sync_bundle: typeof import('./browser-sync.bundle')
+// Declare the global created by IIFE bundle (types are ambient: $trip2g_sync_types)
+declare const $trip2g_sync_bundle: $trip2g_sync_types.Bundle
 
 namespace $ {
 	/**

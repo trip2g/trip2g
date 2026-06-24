@@ -1148,6 +1148,14 @@ var $trip2g_sync_bundle = (() => {
      */
     async selectDirectory() {
       try {
+        const picker = globalThis.showDirectoryPicker;
+        if (picker) {
+          const handle = await picker({ mode: "readwrite" });
+          this.directoryHandle = handle;
+          await saveDirectoryHandle(handle);
+          this.log(`Directory selected: ${handle.name}`);
+          return true;
+        }
         const blobs = await i({
           recursive: true,
           mode: "readwrite"
@@ -1646,12 +1654,16 @@ ${body}`);
     }
     // ============ Private Helpers ============
     async graphqlRequest(query, variables) {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (!this.options.useCookieAuth && this.options.apiKey) {
+        headers["X-API-Key"] = this.options.apiKey;
+      }
       const response = await fetch(this.options.apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": this.options.apiKey
-        },
+        headers,
+        credentials: this.options.useCookieAuth ? "include" : "same-origin",
         body: JSON.stringify({ query, variables })
       });
       if (!response.ok) {

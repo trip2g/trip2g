@@ -1,0 +1,9 @@
+{
+	"$trip2g_admin_sync_title": "Браузерная синхронизация",
+	"$trip2g_admin_sync_note": "Загружает заметки из выбранной папки на сайт (в одну сторону). Для двусторонней синхронизации используйте плагин Obsidian.",
+	"$trip2g_admin_sync_SelectFolder_title": "Выбрать папку",
+	"$trip2g_admin_sync_Refresh_title": "Обновить",
+	"$trip2g_admin_sync_UploadButton_title": "Загрузить",
+	"$trip2g_admin_sync_AutoSyncCheck_title": "Авто-синхронизация (каждые 30с)",
+	"$trip2g_admin_sync_ClearFolder_title": "Очистить папку"
+}

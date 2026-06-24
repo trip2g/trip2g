@@ -4,6 +4,11 @@ $trip2g_admin_dashboard $mol_page
 		<= CurrentTime $trip2g_time_current
 		<= Editor $trip2g_editor
 			edit_title \
+		<= SyncLink $mol_link
+			arg *
+				nav \system
+				system_nav \sync
+			title @ \Browser Sync
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
 		<= StorageUsage $trip2g_admin_dashboard_storageusage

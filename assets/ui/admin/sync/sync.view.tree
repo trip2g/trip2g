@@ -1,0 +1,58 @@
+$trip2g_admin_sync $mol_page
+	title @ \Browser Sync
+	note @ \Uploads notes from the selected folder to your site (one-way). For two-way sync, use the Obsidian plugin.
+	close_icon null $mol_view
+	tools / <= close_icon
+	AutoSyncCheck $mol_check_box
+		checked? <=> auto_sync? false
+		title @ \Auto-sync (every 30s)
+	UploadButton $mol_button_major
+		disabled <= sync_disabled false
+		click? <=> sync_now? null
+		sub /
+			<= Upload_icon $mol_icon_upload
+			<= UploadButton_title @ \Upload
+	ClearFolder $mol_button_minor
+		click? <=> clear_dir? null
+		sub /
+			<= ClearFolder_icon $mol_icon_broom
+			<= ClearFolder_title @ \Clear folder
+	upload_button null $mol_view
+	clear_folder_button null $mol_view
+	body /
+		<= Note $mol_view
+			sub / <= note
+		<= Status $mol_view
+			sub / <= status_text \
+		<= Controls $mol_row
+			sub /
+				<= SelectFolder $mol_button_minor
+					click? <=> select_dir? null
+					sub /
+						<= SelectFolder_icon $mol_icon_folder
+						<= SelectFolder_title @ \Select folder
+				<= Refresh $mol_button_minor
+					enabled <= folder_ready false
+					click? <=> refresh? null
+					sub /
+						<= Refresh_icon $mol_icon_refresh
+						<= Refresh_title @ \Refresh
+		<= UploadSummary $mol_view
+			sub / <= upload_summary \
+		<= UploadList $mol_list
+			rows <= upload_rows /$mol_view
+				<= Row*0 $mol_row
+					sub /
+						<= Row_icon* $mol_icon_file
+						<= Row_path* $mol_view
+							sub / <= upload_path* \
+		<= upload_button
+		<= SyncResult $mol_view
+			sub / <= sync_result \
+		<= AutoSyncRow $mol_view
+			sub <= auto_sync_controls /$mol_view
+		<= clear_folder_button
+		<= Log $mol_view
+			style *
+				whiteSpace \pre-wrap
+			sub / <= log_text \
