@@ -7,6 +7,9 @@ interface TOCItem {
   ID: string;
 }
 
+// Strip a trailing slash from a path (but keep root "/").
+const normalize = (p: string) => (p.length > 1 ? p.replace(/\/$/, '') : p);
+
 function initTOC() {
   const dataEl = document.querySelector<HTMLScriptElement>('script.widget__data[type="application/json"]');
   if (!dataEl) return;
@@ -64,7 +67,6 @@ function initTOC() {
 }
 
 function initSidebarActiveLink() {
-  const normalize = (p: string) => p.length > 1 ? p.replace(/\/$/, '') : p;
   const current = normalize(location.pathname);
 
   const links = document.querySelectorAll<HTMLAnchorElement>(
