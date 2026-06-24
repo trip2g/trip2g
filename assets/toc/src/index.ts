@@ -63,8 +63,34 @@ function initTOC() {
   headings.forEach(h => observer.observe(h));
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTOC);
-} else {
+function initSidebarActiveLink() {
+  const normalize = (p: string) => p.length > 1 ? p.replace(/\/$/, '') : p;
+  const current = normalize(location.pathname);
+
+  const links = document.querySelectorAll<HTMLAnchorElement>(
+    '.sidebar-nav a, .layout__sidebar--left .widget--content a'
+  );
+
+  links.forEach(a => {
+    try {
+      const url = new URL(a.href, location.href);
+      if (normalize(url.pathname) === current) {
+        a.classList.add('is-active');
+        a.setAttribute('aria-current', 'page');
+      }
+    } catch {
+      // skip malformed hrefs
+    }
+  });
+}
+
+function initAll() {
   initTOC();
+  initSidebarActiveLink();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAll);
+} else {
+  initAll();
 }
