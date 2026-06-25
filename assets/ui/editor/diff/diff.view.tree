@@ -1,0 +1,9 @@
+$trip2g_editor_diff $mol_page
+	from_version_id 0
+	to_version_id 0
+	title @ \Diff
+	body /
+		<= Stats $mol_view
+			sub <= stats_rows /$mol_view
+		<= Unified $mol_view
+			sub <= unified_lines /$mol_view
