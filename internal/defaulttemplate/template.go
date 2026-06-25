@@ -487,9 +487,8 @@ func (ctx *Ctx) resolveNoteRef(ref ContentRef) *templateviews.Note {
 		return ctx.Notes.ByPermalink("/" + strings.ToLower(strings.ReplaceAll(ref.Value, " ", "_")))
 	case ContentRefFile:
 		return ctx.Notes.ByPath(ref.Value)
-	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone:
-		return nil
-	default:
+	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
 		return nil
 	}
+	return nil
 }

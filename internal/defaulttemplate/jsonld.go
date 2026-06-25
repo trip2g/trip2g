@@ -123,7 +123,7 @@ func (ctx *Ctx) JSONLDLogo() string {
 		note = ctx.Notes.ByPath(ref.Value)
 	case ContentRefWikiLink:
 		note = ctx.Notes.ByWikilink(ref.Value)
-	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone:
+	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
 		// no header note to resolve — note stays nil
 	}
 	if note == nil {
