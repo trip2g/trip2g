@@ -14,7 +14,9 @@ import (
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/markdownv2"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/telegram"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
 
@@ -618,4 +620,46 @@ func resolveHandlerValue(ctx context.Context, a *app, botID int64, bcID string, 
 	}
 
 	return ""
+}
+
+func (a *app) GetTgUserCanvasState(ctx context.Context, p db.GetTgUserCanvasStateParams) (db.TgUserCanvasState, error) {
+	return a.queries.GetTgUserCanvasState(ctx, p)
+}
+
+func (a *app) UpsertTgUserCanvasState(ctx context.Context, p db.UpsertTgUserCanvasStateParams) error {
+	return a.WriteQueries.UpsertTgUserCanvasState(ctx, p)
+}
+
+func (a *app) DeleteTgUserCanvasState(ctx context.Context, p db.DeleteTgUserCanvasStateParams) error {
+	return a.WriteQueries.DeleteTgUserCanvasState(ctx, p)
+}
+
+func (a *app) UpsertTgUserCurrentHandler(ctx context.Context, p db.UpsertTgUserCurrentHandlerParams) error {
+	return a.WriteQueries.UpsertTgUserCurrentHandler(ctx, p)
+}
+
+func (a *app) GetTgUserCurrentHandler(ctx context.Context, p db.GetTgUserCurrentHandlerParams) (string, error) {
+	return a.queries.GetTgUserCurrentHandler(ctx, p)
+}
+
+func (a *app) GetTgBotDefaultCanvas(ctx context.Context, botID int64) (string, error) {
+	return a.queries.GetTgBotDefaultCanvas(ctx, botID)
+}
+
+func (a *app) RenderNoteHTML(nv *appmodel.NoteView) (string, string) {
+	converter := markdownv2.HTMLConverter{}
+	res := converter.Process(nv)
+	text := res.Content
+
+	firstMedia := ""
+	if nv.FirstImage != nil && *nv.FirstImage != "" {
+		firstMedia = *nv.FirstImage
+	}
+
+	limit := 3800
+	if firstMedia != "" {
+		limit = 1000
+	}
+	text = telegram.TruncateContent(text, limit)
+	return text, firstMedia
 }
