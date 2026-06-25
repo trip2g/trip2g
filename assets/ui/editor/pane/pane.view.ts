@@ -323,22 +323,29 @@ namespace $.$$ {
 			const sub = this.subscription()
 			if (!sub) return null
 
+			const err = sub.error()
+			if (err) console.log('editor subscription error', err)
+
 			const data = sub.data()
 			if (!data) return null
 
 			const path = this.path()
 			if (!path) return null
 
+			// Match incoming events by note path id (robust), like user/live does —
+			// the raw path string can differ from the editor's open-file path.
+			const currentPathId = this.note_path_id()
 			const changes: any[] = data.noteChanges?.changes ?? []
+			if (changes.length) console.log('editor noteChanges', changes, 'myPathId', currentPathId, 'baseline', this.baseline_version_id(path))
 			for (const ch of changes) {
-				if (ch.__typename === 'NoteUpsertEvent' && ch.path === path) {
-					const versionId: number = ch.versionId
-					if (!versionId) continue
-					// Suppress self-echo: ignore events at or below the baseline version.
-					if (versionId <= this.baseline_version_id(path)) continue
-					// Defer state write to avoid synchronous mol memo mutation.
-					setTimeout(() => { this.pending_external_update(versionId) }, 0)
-				}
+				if (ch.__typename !== 'NoteUpsertEvent') continue
+				if (String(ch.pathId) !== String(currentPathId)) continue
+				const versionId: number = ch.versionId
+				if (!versionId) continue
+				// Suppress self-echo: ignore events at or below the baseline version.
+				if (versionId <= this.baseline_version_id(path)) continue
+				// Defer state write to avoid synchronous mol memo mutation.
+				setTimeout(() => { this.pending_external_update(versionId) }, 0)
 			}
 
 			return null
