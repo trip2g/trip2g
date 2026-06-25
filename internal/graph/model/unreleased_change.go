@@ -55,6 +55,12 @@ func derefStr(s *string) string {
 	return *s
 }
 
+// ComputeDiff computes a diff between two strings, returning a DiffResult with
+// unified diff, word diff, and change statistics.
+func ComputeDiff(old, nw string) *DiffResult {
+	return computeDiff(old, nw)
+}
+
 func computeDiff(old, nw string) *DiffResult {
 	unified, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 		A:        difflib.SplitLines(old),

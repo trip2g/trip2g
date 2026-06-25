@@ -1840,6 +1840,26 @@ func (r *adminQueryResolver) NoteVersion(ctx context.Context, obj *appmodel.Admi
 	}, nil
 }
 
+// NoteVersionDiff is the resolver for the noteVersionDiff field.
+func (r *adminQueryResolver) NoteVersionDiff(ctx context.Context, obj *appmodel.AdminQuery, fromVersionID int64, toVersionID int64) (*model.NoteVersionDiff, error) {
+	from, err := r.env(ctx).NoteVersionByID(ctx, fromVersionID)
+	if err != nil {
+		return nil, err
+	}
+	to, err := r.env(ctx).NoteVersionByID(ctx, toVersionID)
+	if err != nil {
+		return nil, err
+	}
+	d := model.ComputeDiff(from.Content, to.Content)
+	return &model.NoteVersionDiff{
+		Unified:      d.Unified,
+		Word:         d.Word,
+		AddedLines:   int32(d.AddedLines),
+		RemovedLines: int32(d.RemovedLines),
+		ChangedWords: int32(d.ChangedWords),
+	}, nil
+}
+
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, id, r.env(ctx).UserSubgraphAccessByID)
