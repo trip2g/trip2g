@@ -111,8 +111,8 @@ import (
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/personaltoken"
 	"trip2g/internal/purchasetoken"
-	"trip2g/internal/redirectmanager"
 	"trip2g/internal/readreplica"
+	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
 	"trip2g/internal/rssfeed"
 	"trip2g/internal/simplebackup"
@@ -215,8 +215,8 @@ type app struct {
 	// built it. The internal server's leader-side replica intake reads it to run
 	// forwarded writes through the real pipeline; nil (→ 503) until ready.
 	// Pointer (like stopped/ready) so per-request app copies share one atomic.
-	appHandler     *atomic.Pointer[fasthttp.RequestHandler]
-	ctx            context.Context
+	appHandler *atomic.Pointer[fasthttp.RequestHandler]
+	ctx        context.Context
 
 	graphTxs *graphTransactions
 
@@ -388,7 +388,9 @@ func main() {
 	applyLegacyEmailConfig(config, log)
 
 	if config.SMTPHost == "" {
-		log.Warn("no email transport configured: outgoing email (including sign-in codes) will be skipped; codes are logged instead — set SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY to enable delivery")
+		log.Warn(
+			"no email transport configured: outgoing email (including sign-in codes) will be skipped; codes are logged instead — set SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY to enable delivery",
+		)
 	}
 
 	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled
@@ -2810,7 +2812,7 @@ func (a *app) serveHTTP(s *fasthttp.Server) error {
 	return s.ListenAndServe(a.config.ListenAddr)
 }
 
-func (a *app) startServer() {
+func (a *app) startServer() { //nolint:gocognit // server startup wiring
 	makeGraphQLHandler := a.prepareGraphQLHandler()
 	handleGraphQL := makeGraphQLHandler("/_system/graphql")
 	handleGraphQLCompat := makeGraphQLHandler("/graphql")

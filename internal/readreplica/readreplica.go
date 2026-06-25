@@ -25,7 +25,7 @@ const AuthHeader = "X-Replica-Auth"
 // safeMethods are read-only per HTTP semantics and are served locally on a
 // replica. Every other method (POST/PUT/PATCH/DELETE and any unknown verb) is
 // treated as a write and forwarded to the leader.
-var safeMethods = map[string]struct{}{
+var safeMethods = map[string]struct{}{ //nolint:gochecknoglobals // read-only HTTP method allowlist
 	http.MethodGet:     {},
 	http.MethodHead:    {},
 	http.MethodOptions: {},

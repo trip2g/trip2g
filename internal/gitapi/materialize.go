@@ -14,7 +14,7 @@ import (
 // materialize rebuilds refs/heads/<master> from the DB (notes + assets) as one
 // commit. It is idempotent: if the resulting tree equals the current HEAD tree,
 // no commit is made. Callers must hold the note-write lock.
-func (api *API) materialize(ctx context.Context) (err error) {
+func (api *API) materialize(ctx context.Context) (err error) { //nolint:gocognit,nonamedreturns // named return drives deferred cleanup
 	notes, err := api.env.LatestNoteSources(ctx)
 	if err != nil {
 		return fmt.Errorf("materialize: note sources: %w", err)
