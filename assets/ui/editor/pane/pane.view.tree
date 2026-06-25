@@ -6,6 +6,7 @@ $trip2g_editor_pane $mol_view
 	diff_to_version_id? 0
 	close null
 	sub /
+		<= watcher_result null
 		<= Navigation $mol_page
 			title @ \Files
 			tools /
