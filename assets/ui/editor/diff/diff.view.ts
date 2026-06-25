@@ -38,21 +38,16 @@ namespace $.$$ {
 
 		override unified_lines(): readonly $mol_view[] {
 			const d = this.diff_result()
-			if (!d || !d.unified) {
-				const empty = new $mol_view()
-				empty.sub = () => [this.title()]
-				return []
-			}
+			if (!d || !d.unified) return []
 			return d.unified.split('\n').map(line => {
 				const v = new $mol_view()
-				const text = line
 				const cls = line.startsWith('+') && !line.startsWith('+++')
 					? 'diff-add'
 					: line.startsWith('-') && !line.startsWith('---')
 						? 'diff-del'
 						: ''
 				v.attr = () => cls ? { class: cls } : {}
-				v.sub = () => [text || ' ']
+				v.sub = () => [line || ' ']
 				return v
 			})
 		}

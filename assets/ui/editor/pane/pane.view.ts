@@ -87,12 +87,20 @@ namespace $.$$ {
 		}
 
 		@$mol_mem_key
-		loaded_note_path(path: string): { id: any; content: string } | null {
+		loaded_note_path(path: string): { id: any; content: string; versionId?: number } | null {
 			if (!path) return null
 			this.reload_counter(path) // reactive dependency
 			const res = content_request({ filter: { paths: [path] } })
 			const np = res.notePaths[0]
-			return np ? { id: np.id, content: np.content } : null
+			if (!np) return null
+			// Initialise baseline from the freshly loaded version (if available).
+			// Use the version history to get the latest versionId for this path.
+			const hist = history_request({ filter: { path, limit: 1 } })
+			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
+			if (latestVersionId) {
+				this.baseline_version_id(path, latestVersionId)
+			}
+			return { id: np.id, content: np.content }
 		}
 
 		@$mol_mem_key
@@ -102,6 +110,12 @@ namespace $.$$ {
 
 		note_path_id(): any {
 			return this.loaded_note_path(this.path())?.id ?? null
+		}
+
+		// Version-ID baseline per path: events with versionId <= baseline are self-echoes.
+		@$mol_mem_key
+		baseline_version_id(path: string, next?: number): number {
+			return next ?? 0
 		}
 
 		wikilink_at(text: string, offset: number): string | null {
@@ -227,10 +241,14 @@ namespace $.$$ {
 			if (res.pushNotes.__typename === 'ErrorPayload') {
 				throw new Error(res.pushNotes.message)
 			}
-			// After a successful save, update the baseline so the self-echo does not
-			// trigger the "updated elsewhere" banner.
+			// After a successful save, advance the baseline to the latest known version
+			// so self-echo SSE events do not trigger the "updated elsewhere" banner.
 			for (const p of paths) {
-				this.just_saved_path(p, Date.now())
+				const hist = history_request({ filter: { path: p, limit: 1 } })
+				const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
+				if (latestVersionId) {
+					this.baseline_version_id(p, latestVersionId)
+				}
 			}
 			this.changed_paths(this.changed_paths().filter(p => !paths.includes(p)))
 			for (const p of paths) this.change(p, null)
@@ -263,17 +281,6 @@ namespace $.$$ {
 			}
 		}
 
-		// Override the auto-generated state setter from the tree so that setting
-		// a non-zero diff_from_version_id also opens the diff sidebar.
-		override diff_from_version_id(next?: number): number {
-			if (next !== undefined && next !== 0) {
-				super.diff_from_version_id(next)
-				this.right_sidebar('diff')
-				return next
-			}
-			return super.diff_from_version_id(next)
-		}
-
 		override handle_versions_click() {
 			this.toggle_right_sidebar('versions')
 		}
@@ -296,16 +303,12 @@ namespace $.$$ {
 		subscription() {
 			const path = this.path()
 			if (!path) return null
-			return $trip2g_graphql_raw_subscription(EDITOR_CHANGES_QUERY, {
-				filter: { includePatterns: ['**/*.md'] },
-			})
-		}
-
-		// Per-path record of the timestamp of the last local save — used to
-		// suppress self-echo events that arrive shortly after we save.
-		@$mol_mem_key
-		just_saved_path(path: string, next?: number): number {
-			return next ?? 0
+			// Create an owned host (not the module-level cached one) so mol lifecycle
+			// can tear it down (via source() destructor) when this pane unmounts.
+			const host = new $trip2g_sse_host()
+			host.query = () => EDITOR_CHANGES_QUERY
+			host.variables = () => ({ filter: { includePatterns: ['**/*.md'] } })
+			return host
 		}
 
 		// Whether the current path has a pending external update waiting for
@@ -331,13 +334,12 @@ namespace $.$$ {
 			const changes: any[] = data.noteChanges?.changes ?? []
 			for (const ch of changes) {
 				if (ch.__typename === 'NoteUpsertEvent' && ch.path === path) {
-					const savedAt = this.just_saved_path(path)
-					// Suppress self-echo: ignore events within 5 seconds of a local save.
-					if (savedAt && Date.now() - savedAt < 5000) continue
 					const versionId: number = ch.versionId
-					if (versionId) {
-						this.pending_external_update(versionId)
-					}
+					if (!versionId) continue
+					// Suppress self-echo: ignore events at or below the baseline version.
+					if (versionId <= this.baseline_version_id(path)) continue
+					// Defer state write to avoid synchronous mol memo mutation.
+					setTimeout(() => { this.pending_external_update(versionId) }, 0)
 				}
 			}
 
@@ -353,15 +355,20 @@ namespace $.$$ {
 				// Fetch the two most recent version IDs for this path.
 				const res = history_request({ filter: { path, limit: 2 } })
 				const nodes = res.admin.noteVersionHistory.nodes
-				if (nodes.length >= 2) {
-					// nodes[0] is newest (highest version number), nodes[1] is previous
-					this.diff_from_version_id(nodes[1].versionId)
-					this.diff_to_version_id(nodes[0].versionId)
-				} else if (nodes.length === 1) {
-					this.diff_from_version_id(nodes[0].versionId)
-					this.diff_to_version_id(nodes[0].versionId)
-				}
-				this.toggle_right_sidebar('diff')
+				// Need at least 2 versions to show a meaningful diff.
+				if (nodes.length < 2) return null
+				// nodes[0] is newest (highest version number), nodes[1] is previous
+				this.diff_from_version_id(nodes[1].versionId)
+				this.diff_to_version_id(nodes[0].versionId)
+				this.right_sidebar('diff')
+			}
+			return null
+		}
+
+		// Called when Versions panel triggers a diff via its show_diff? callback.
+		override handle_versions_show_diff(next?: Event | null): null {
+			if (next !== undefined) {
+				this.right_sidebar('diff')
 			}
 			return null
 		}
@@ -380,9 +387,9 @@ namespace $.$$ {
 					this.changed_paths(this.changed_paths().filter(p => p !== path))
 				}
 				// Increment the reload counter to force loaded_note_path to re-fetch.
+				// loaded_note_path will update the baseline after fetching the new content.
 				this.reload_counter(path, this.reload_counter(path) + 1)
 				this.pending_external_update(null)
-				this.just_saved_path(path, Date.now())
 			}
 			return null
 		}

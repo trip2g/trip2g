@@ -1844,10 +1844,16 @@ func (r *adminQueryResolver) NoteVersion(ctx context.Context, obj *appmodel.Admi
 func (r *adminQueryResolver) NoteVersionDiff(ctx context.Context, obj *appmodel.AdminQuery, fromVersionID int64, toVersionID int64) (*model.NoteVersionDiff, error) {
 	from, err := r.env(ctx).NoteVersionByID(ctx, fromVersionID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	to, err := r.env(ctx).NoteVersionByID(ctx, toVersionID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	d := model.ComputeDiff(from.Content, to.Content)

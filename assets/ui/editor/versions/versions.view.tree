@@ -3,6 +3,7 @@ $trip2g_editor_versions $mol_page
 	content? \
 	diff_from_version_id? 0
 	diff_to_version_id? 0
+	show_diff? null
 	title @ \Versions
 	body /
 		<= List $mol_list

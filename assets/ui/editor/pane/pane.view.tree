@@ -70,6 +70,7 @@ $trip2g_editor_pane $mol_view
 		content? <=> content?
 		diff_from_version_id? <=> diff_from_version_id?
 		diff_to_version_id? <=> diff_to_version_id?
+		show_diff? <=> handle_versions_show_diff? null
 	Diff $trip2g_editor_diff
 		from_version_id <= diff_from_version_id 0
 		to_version_id <= diff_to_version_id 0

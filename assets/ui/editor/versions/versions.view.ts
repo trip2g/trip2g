@@ -65,6 +65,8 @@ namespace $.$$ {
 				const fromVersionId = idx + 1 < versions.length ? versions[idx + 1].versionId : toVersionId
 				this.diff_from_version_id(fromVersionId)
 				this.diff_to_version_id(toVersionId)
+				// Signal pane to open the diff sidebar via the show_diff? callback.
+				this.show_diff(null)
 			}
 			return null
 		}
