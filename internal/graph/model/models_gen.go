@@ -1983,6 +1983,14 @@ type NoteUpsertEvent struct {
 
 func (NoteUpsertEvent) IsNoteChangeItem() {}
 
+type NoteVersionDiff struct {
+	Unified      string `json:"unified"`
+	Word         string `json:"word"`
+	AddedLines   int32  `json:"addedLines"`
+	RemovedLines int32  `json:"removedLines"`
+	ChangedWords int32  `json:"changedWords"`
+}
+
 type NoteViewMeta struct {
 	Key string `json:"key"`
 	Raw string `json:"raw"`

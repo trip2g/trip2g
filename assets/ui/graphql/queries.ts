@@ -3010,6 +3010,15 @@ export enum NoteUpsertEventType {
   Update = 'update'
 }
 
+export type NoteVersionDiff = {
+  __typename?: 'NoteVersionDiff';
+  unified: Scalars['String']['output'];
+  word: Scalars['String']['output'];
+  addedLines: Scalars['Int']['output'];
+  removedLines: Scalars['Int']['output'];
+  changedWords: Scalars['Int']['output'];
+};
+
 export type NoteView = {
   __typename?: 'NoteView';
   appliedFrontmatterPatches: Array<AppliedFrontmatterPatchInfo>;
@@ -5432,6 +5441,25 @@ export type EditorNoteVersionQueryVariables = Exact<{
 
 export type EditorNoteVersionQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersion?: { __typename?: 'AdminNoteVersionDetail', versionId: any, content: string } | null } };
 
+export type EditorNoteVersionsForDiffQueryVariables = Exact<{
+  filter: AdminNoteVersionHistoryFilter;
+}>;
+
+export type EditorNoteVersionsForDiffQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersionHistory: { __typename?: 'AdminNoteVersionHistoryConnection', nodes: Array<{ __typename?: 'AdminNoteVersionMeta', versionId: any, version: number }> } } };
+
+export type EditorNoteVersionDiffQueryVariables = Exact<{
+  fromVersionId: Scalars['Int64']['input'];
+  toVersionId: Scalars['Int64']['input'];
+}>;
+
+export type EditorNoteVersionDiffQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersionDiff?: { __typename?: 'NoteVersionDiff', unified: string, word: string, addedLines: number, removedLines: number, changedWords: number } | null } };
+
+export type EditorNoteChangesSubscriptionVariables = Exact<{
+  filter: NoteChangesFilter;
+}>;
+
+export type EditorNoteChangesSubscription = { __typename?: 'Subscription', noteChanges: { __typename?: 'NoteChangesPayload', changes: Array<{ __typename: 'NoteHideEvent', path: string } | { __typename: 'NoteUpsertEvent', path: string, pathId: any, versionId: any }> } };
+
 export type ReaderQueryQueryVariables = Exact<{
   input: NoteInput;
 }>;
@@ -5939,6 +5967,10 @@ export function $trip2g_graphql_request(query: '\n\t\tmutation CreateUserToken($
 
 export function $trip2g_graphql_request(query: '\n\t\tmutation RevokeUserToken($input: RevokeUserTokenInput!) {\n\t\t\trevokeUserToken(input: $input) {\n\t\t\t\t... on RevokeUserTokenPayload {\n\t\t\t\t\ttoken {\n\t\t\t\t\t\tid\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t... on ErrorPayload {\n\t\t\t\t\tmessage\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): (variables: RevokeUserTokenMutationVariables) => RevokeUserTokenMutation
 
+export function $trip2g_graphql_request(query: '\n\t\tquery EditorNoteVersionsForDiff($filter: AdminNoteVersionHistoryFilter!) {\n\t\t\tadmin {\n\t\t\t\tnoteVersionHistory(filter: $filter) {\n\t\t\t\t\tnodes {\n\t\t\t\t\t\tversionId\n\t\t\t\t\t\tversion\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): (variables: EditorNoteVersionsForDiffQueryVariables) => EditorNoteVersionsForDiffQuery
+
+export function $trip2g_graphql_request(query: '\n\t\tquery EditorNoteVersionDiff($fromVersionId: Int64!, $toVersionId: Int64!) {\n\t\t\tadmin {\n\t\t\t\tnoteVersionDiff(fromVersionId: $fromVersionId, toVersionId: $toVersionId) {\n\t\t\t\t\tunified\n\t\t\t\t\tword\n\t\t\t\t\taddedLines\n\t\t\t\t\tremovedLines\n\t\t\t\t\tchangedWords\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t'): (variables: EditorNoteVersionDiffQueryVariables) => EditorNoteVersionDiffQuery
+
 export function $trip2g_graphql_request(query: any) { return $trip2g_graphql_raw_request(query); }
 
 export function $trip2g_graphql_subscription(query: '\n\t\tsubscription CurrentTime($format: String) {\n\t\t\tcurrentTime(format: $format)\n\t\t}\n\t', variables: CurrentTimeSubscriptionVariables): $trip2g_sse_host
@@ -6268,6 +6300,12 @@ export type $trip2g_graphql_ResolveWikilinksVariables = ResolveWikilinksQueryVar
 export type $trip2g_graphql_EditorNoteVersionsVariables = EditorNoteVersionsQueryVariables
 
 export type $trip2g_graphql_EditorNoteVersionVariables = EditorNoteVersionQueryVariables
+
+export type $trip2g_graphql_EditorNoteVersionsForDiffVariables = EditorNoteVersionsForDiffQueryVariables
+
+export type $trip2g_graphql_EditorNoteVersionDiffVariables = EditorNoteVersionDiffQueryVariables
+
+export type $trip2g_graphql_EditorNoteChangesVariables = EditorNoteChangesSubscriptionVariables
 
 export type $trip2g_graphql_ReaderQueryVariables = ReaderQueryQueryVariables
 
