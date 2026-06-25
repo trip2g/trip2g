@@ -1883,15 +1883,15 @@ func (r *adminQueryResolver) NoteVersion(ctx context.Context, obj *appmodel.Admi
 }
 
 // NoteVersionDiff is the resolver for the noteVersionDiff field.
-func (r *adminQueryResolver) NoteVersionDiff(ctx context.Context, obj *appmodel.AdminQuery, fromVersionID int64, toVersionID int64) (*model.NoteVersionDiff, error) {
-	from, err := r.env(ctx).NoteVersionByID(ctx, fromVersionID)
+func (r *adminQueryResolver) NoteVersionDiff(ctx context.Context, obj *appmodel.AdminQuery, filter model.NoteVersionDiffFilter) (*model.NoteVersionDiff, error) {
+	from, err := r.env(ctx).NoteVersionByID(ctx, filter.FromVersionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	to, err := r.env(ctx).NoteVersionByID(ctx, toVersionID)
+	to, err := r.env(ctx).NoteVersionByID(ctx, filter.ToVersionID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

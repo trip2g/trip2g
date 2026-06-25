@@ -563,7 +563,7 @@ type AdminQueryResolver interface {
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	NoteVersionHistory(ctx context.Context, obj *model1.AdminQuery, filter model.AdminNoteVersionHistoryFilter) (*model.AdminNoteVersionHistoryConnection, error)
 	NoteVersion(ctx context.Context, obj *model1.AdminQuery, versionID int64) (*model.AdminNoteVersionDetail, error)
-	NoteVersionDiff(ctx context.Context, obj *model1.AdminQuery, fromVersionID int64, toVersionID int64) (*model.NoteVersionDiff, error)
+	NoteVersionDiff(ctx context.Context, obj *model1.AdminQuery, filter model.NoteVersionDiffFilter) (*model.NoteVersionDiff, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
 	User(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.User, error)
@@ -979,6 +979,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteChangesFilter,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
+		ec.unmarshalInputNoteVersionDiffFilter,
 		ec.unmarshalInputOAuthUrlInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
@@ -2474,16 +2475,11 @@ func (ec *executionContext) field_AdminQuery_noteAsset_args(ctx context.Context,
 func (ec *executionContext) field_AdminQuery_noteVersionDiff_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "fromVersionId", ec.unmarshalNInt642int64)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNNoteVersionDiffFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteVersionDiffFilter)
 	if err != nil {
 		return nil, err
 	}
-	args["fromVersionId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "toVersionId", ec.unmarshalNInt642int64)
-	if err != nil {
-		return nil, err
-	}
-	args["toVersionId"] = arg1
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -20064,7 +20060,7 @@ func (ec *executionContext) _AdminQuery_noteVersionDiff(ctx context.Context, fie
 		ec.fieldContext_AdminQuery_noteVersionDiff,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminQuery().NoteVersionDiff(ctx, obj, fc.Args["fromVersionId"].(int64), fc.Args["toVersionId"].(int64))
+			return ec.resolvers.AdminQuery().NoteVersionDiff(ctx, obj, fc.Args["filter"].(model.NoteVersionDiffFilter))
 		},
 		nil,
 		ec.marshalONoteVersionDiff2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteVersionDiff,
@@ -44090,6 +44086,40 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 				return it, err
 			}
 			it.Paths = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteVersionDiffFilter(ctx context.Context, obj any) (model.NoteVersionDiffFilter, error) {
+	var it model.NoteVersionDiffFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fromVersionId", "toVersionId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fromVersionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fromVersionId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FromVersionID = data
+		case "toVersionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("toVersionId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ToVersionID = data
 		}
 	}
 
@@ -81132,6 +81162,11 @@ func (ec *executionContext) unmarshalNNoteUpsertEventType2trip2gᚋinternalᚋgr
 
 func (ec *executionContext) marshalNNoteUpsertEventType2trip2gᚋinternalᚋgraphᚋmodelᚐNoteUpsertEventType(ctx context.Context, sel ast.SelectionSet, v model.NoteUpsertEventType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNNoteVersionDiffFilter2trip2gᚋinternalᚋgraphᚋmodelᚐNoteVersionDiffFilter(ctx context.Context, v any) (model.NoteVersionDiffFilter, error) {
+	res, err := ec.unmarshalInputNoteVersionDiffFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNNoteView2trip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v model1.NoteView) graphql.Marshaler {

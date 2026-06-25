@@ -1991,6 +1991,11 @@ type NoteVersionDiff struct {
 	ChangedWords int32  `json:"changedWords"`
 }
 
+type NoteVersionDiffFilter struct {
+	FromVersionID int64 `json:"fromVersionId"`
+	ToVersionID   int64 `json:"toVersionId"`
+}
+
 type NoteViewMeta struct {
 	Key string `json:"key"`
 	Raw string `json:"raw"`

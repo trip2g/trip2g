@@ -1,8 +1,8 @@
 namespace $.$$ {
 	const diff_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNoteVersionDiff($fromVersionId: Int64!, $toVersionId: Int64!) {
+		query EditorNoteVersionDiff($filter: NoteVersionDiffFilter!) {
 			admin {
-				noteVersionDiff(fromVersionId: $fromVersionId, toVersionId: $toVersionId) {
+				noteVersionDiff(filter: $filter) {
 					unified
 					word
 					addedLines
@@ -19,7 +19,7 @@ namespace $.$$ {
 			const from = this.from_version_id()
 			const to = this.to_version_id()
 			if (!from || !to) return null
-			const res = diff_request({ fromVersionId: from, toVersionId: to })
+			const res = diff_request({ filter: { fromVersionId: from, toVersionId: to } })
 			return res.admin.noteVersionDiff ?? null
 		}
 
