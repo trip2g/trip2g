@@ -1,13 +1,21 @@
 $trip2g_editor_versions $mol_page
 	path \
 	content? \
+	diff_from_version_id? 0
+	diff_to_version_id? 0
 	title @ \Versions
 	body /
 		<= List $mol_list
 			Empty <= Empty $mol_view
 				sub / <= empty_text @ \No versions
 			rows <= version_rows /$mol_view
-	Version* $mol_button_minor
-		click? <=> version_click*? null
+	Version* $mol_view
 		sub /
-			<= version_title* \
+			<= VersionLoad* $mol_button_minor
+				click? <=> version_click*? null
+				sub /
+					<= version_title* \
+			<= VersionDiff* $mol_button_minor
+				click? <=> version_diff_click*? null
+				sub /
+					<= version_diff_text* @ \Diff vs prev

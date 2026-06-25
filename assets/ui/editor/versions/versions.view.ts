@@ -54,5 +54,19 @@ namespace $.$$ {
 			}
 			return null
 		}
+
+		override version_diff_click(id: string, next?: Event): null {
+			if (next !== undefined) {
+				const versions = this.versions()
+				const idx = versions.findIndex(v => String(v.versionId) === id)
+				if (idx < 0) return null
+				const toVersionId = versions[idx].versionId
+				// Previous version is the next one in the list (versions are desc by version number)
+				const fromVersionId = idx + 1 < versions.length ? versions[idx + 1].versionId : toVersionId
+				this.diff_from_version_id(fromVersionId)
+				this.diff_to_version_id(toVersionId)
+			}
+			return null
+		}
 	}
 }

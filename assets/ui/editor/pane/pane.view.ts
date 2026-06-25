@@ -36,6 +36,37 @@ namespace $.$$ {
 		}
 	`)
 
+	const history_request = $trip2g_graphql_request(/* GraphQL */ `
+		query EditorNoteVersionsForDiff($filter: AdminNoteVersionHistoryFilter!) {
+			admin {
+				noteVersionHistory(filter: $filter) {
+					nodes {
+						versionId
+						version
+					}
+				}
+			}
+		}
+	`)
+
+	const EDITOR_CHANGES_QUERY = /* GraphQL */ `
+		subscription EditorNoteChanges($filter: NoteChangesFilter!) {
+			noteChanges(filter: $filter) {
+				changes {
+					__typename
+					... on NoteUpsertEvent {
+						path
+						pathId
+						versionId
+					}
+					... on NoteHideEvent {
+						path
+					}
+				}
+			}
+		}
+	`
+
 	export class $trip2g_editor_pane extends $.$trip2g_editor_pane {
 		@$mol_mem
 		override path(next?: string): string {
@@ -49,9 +80,16 @@ namespace $.$$ {
 			return $trip2g_settings.note_path()
 		}
 
+		// Per-path reload counter: incrementing it forces loaded_note_path to re-fetch.
+		@$mol_mem_key
+		reload_counter(path: string, next?: number): number {
+			return next ?? 0
+		}
+
 		@$mol_mem_key
 		loaded_note_path(path: string): { id: any; content: string } | null {
 			if (!path) return null
+			this.reload_counter(path) // reactive dependency
 			const res = content_request({ filter: { paths: [path] } })
 			const np = res.notePaths[0]
 			return np ? { id: np.id, content: np.content } : null
@@ -143,7 +181,10 @@ namespace $.$$ {
 		}
 
 		override editor_body(): readonly $mol_view[] {
-			return this.path() ? [this.ContentTextarea()] : [this.Placeholder()]
+			const views: $mol_view[] = []
+			if (this.pending_external_update()) views.push(this.UpdateBanner())
+			views.push(this.path() ? this.ContentTextarea() : this.Placeholder())
+			return views
 		}
 
 		override has_content(): boolean {
@@ -186,6 +227,11 @@ namespace $.$$ {
 			if (res.pushNotes.__typename === 'ErrorPayload') {
 				throw new Error(res.pushNotes.message)
 			}
+			// After a successful save, update the baseline so the self-echo does not
+			// trigger the "updated elsewhere" banner.
+			for (const p of paths) {
+				this.just_saved_path(p, Date.now())
+			}
 			this.changed_paths(this.changed_paths().filter(p => !paths.includes(p)))
 			for (const p of paths) this.change(p, null)
 		}
@@ -213,7 +259,19 @@ namespace $.$$ {
 			return {
 				versions: this.Versions(),
 				save: this.SaveList(),
+				diff: this.Diff(),
 			}
+		}
+
+		// Override the auto-generated state setter from the tree so that setting
+		// a non-zero diff_from_version_id also opens the diff sidebar.
+		override diff_from_version_id(next?: number): number {
+			if (next !== undefined && next !== 0) {
+				super.diff_from_version_id(next)
+				this.right_sidebar('diff')
+				return next
+			}
+			return super.diff_from_version_id(next)
 		}
 
 		override handle_versions_click() {
@@ -228,6 +286,110 @@ namespace $.$$ {
 			const w = this.$.$mol_dom_context as unknown as Window
 			if (w.parent && w.parent !== w) {
 				w.parent.postMessage('trip2g_editor_close', '*')
+			}
+			return null
+		}
+
+		// ── Live update subscription ──────────────────────────────────────────────
+
+		@$mol_mem
+		subscription() {
+			const path = this.path()
+			if (!path) return null
+			return $trip2g_graphql_raw_subscription(EDITOR_CHANGES_QUERY, {
+				filter: { includePatterns: ['**/*.md'] },
+			})
+		}
+
+		// Per-path record of the timestamp of the last local save — used to
+		// suppress self-echo events that arrive shortly after we save.
+		@$mol_mem_key
+		just_saved_path(path: string, next?: number): number {
+			return next ?? 0
+		}
+
+		// Whether the current path has a pending external update waiting for
+		// the user's attention.
+		@$mol_mem
+		pending_external_update(next?: number | null): number | null {
+			return next !== undefined ? next : null
+		}
+
+		// Reactive watcher: reads SSE data and sets pending_external_update when
+		// the currently-open file is modified externally.
+		@$mol_mem
+		watcher_result(): null {
+			const sub = this.subscription()
+			if (!sub) return null
+
+			const data = sub.data()
+			if (!data) return null
+
+			const path = this.path()
+			if (!path) return null
+
+			const changes: any[] = data.noteChanges?.changes ?? []
+			for (const ch of changes) {
+				if (ch.__typename === 'NoteUpsertEvent' && ch.path === path) {
+					const savedAt = this.just_saved_path(path)
+					// Suppress self-echo: ignore events within 5 seconds of a local save.
+					if (savedAt && Date.now() - savedAt < 5000) continue
+					const versionId: number = ch.versionId
+					if (versionId) {
+						this.pending_external_update(versionId)
+					}
+				}
+			}
+
+			return null
+		}
+
+		// ── Banner actions ────────────────────────────────────────────────────────
+
+		override handle_show_diff(next?: Event): null {
+			if (next !== undefined) {
+				const path = this.path()
+				if (!path) return null
+				// Fetch the two most recent version IDs for this path.
+				const res = history_request({ filter: { path, limit: 2 } })
+				const nodes = res.admin.noteVersionHistory.nodes
+				if (nodes.length >= 2) {
+					// nodes[0] is newest (highest version number), nodes[1] is previous
+					this.diff_from_version_id(nodes[1].versionId)
+					this.diff_to_version_id(nodes[0].versionId)
+				} else if (nodes.length === 1) {
+					this.diff_from_version_id(nodes[0].versionId)
+					this.diff_to_version_id(nodes[0].versionId)
+				}
+				this.toggle_right_sidebar('diff')
+			}
+			return null
+		}
+
+		override handle_load_latest(next?: Event): null {
+			if (next !== undefined) {
+				const path = this.path()
+				if (!path) return null
+				const hasChanges = this.changed_paths().includes(path)
+				if (hasChanges) {
+					if (!confirm('You have unsaved changes. Load the latest version and discard them?')) {
+						return null
+					}
+					// Discard local changes for this path.
+					this.change(path, null)
+					this.changed_paths(this.changed_paths().filter(p => p !== path))
+				}
+				// Increment the reload counter to force loaded_note_path to re-fetch.
+				this.reload_counter(path, this.reload_counter(path) + 1)
+				this.pending_external_update(null)
+				this.just_saved_path(path, Date.now())
+			}
+			return null
+		}
+
+		override handle_dismiss(next?: Event): null {
+			if (next !== undefined) {
+				this.pending_external_update(null)
 			}
 			return null
 		}

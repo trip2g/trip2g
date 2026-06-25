@@ -2,6 +2,8 @@ $trip2g_editor_pane $mol_view
 	path? \
 	content? \
 	right_sidebar? \
+	diff_from_version_id? 0
+	diff_to_version_id? 0
 	close null
 	sub /
 		<= Navigation $mol_page
@@ -45,9 +47,31 @@ $trip2g_editor_pane $mol_view
 	Placeholder $mol_view
 		sub /
 			<= placeholder_text @ \Choose file in the left panel
+	UpdateBanner $mol_view
+		sub /
+			<= BannerText $mol_view
+				sub /
+					<= banner_text @ \This file was updated elsewhere
+			<= ShowDiffButton $mol_button_minor
+				click? <=> handle_show_diff? null
+				sub /
+					<= show_diff_text @ \Show diff
+			<= LoadLatestButton $mol_button_minor
+				click? <=> handle_load_latest? null
+				sub /
+					<= load_latest_text @ \Load latest
+			<= DismissButton $mol_button_minor
+				click? <=> handle_dismiss? null
+				sub /
+					<= dismiss_text @ \Dismiss
 	Versions $trip2g_editor_versions
 		path <= path
 		content? <=> content?
+		diff_from_version_id? <=> diff_from_version_id?
+		diff_to_version_id? <=> diff_to_version_id?
+	Diff $trip2g_editor_diff
+		from_version_id <= diff_from_version_id 0
+		to_version_id <= diff_to_version_id 0
 	SaveList $trip2g_editor_savelist
 		files <= changed_paths /string
 		submit? <=> save_confirm? null
