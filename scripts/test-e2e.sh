@@ -326,7 +326,7 @@ fi
 # Start services (embedding is kept alive between runs; start it without recreate if not running)
 echo "🚀 Starting services..."
 docker compose -f docker-compose.test.yml up -d --no-recreate embedding 2>/dev/null || true
-docker compose -f docker-compose.test.yml up -d --build app app-replica app-peer app-peer2 app-peer3 minio
+docker compose -f docker-compose.test.yml up -d --build --force-recreate app app-replica app-peer app-peer2 app-peer3 minio
 
 # Wait for services
 ./scripts/waitfor localhost:20081 || {

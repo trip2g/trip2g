@@ -10,9 +10,9 @@ trip2g speaks [[mcp|MCP]] (Model Context Protocol). This small adapter wraps the
 
 ### What you get
 
-One Python script. **No dependencies, no `pip install`** — your agent launches it directly. The whole thing is below:
+One Python script. **No dependencies, no `pip install`** — your agent launches it directly. Download it from GitHub:
 
-![[trip2g_mcp_stdio_adapter.py]]
+[trip2g_mcp_stdio_adapter.py](https://github.com/trip2g/trip2g/blob/main/docs/en/user/trip2g_mcp_stdio_adapter.py)
 
 ### Set it up
 

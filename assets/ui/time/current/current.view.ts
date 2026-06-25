@@ -12,7 +12,7 @@ namespace $.$$ {
 		}
 
 		override current_time(): string {
-			return this.sse().data()?.currentTime ?? ''
+			return this.sse().data()?.currentTime ?? '00:00'
 		}
 	}
 
