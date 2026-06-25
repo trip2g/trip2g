@@ -297,8 +297,6 @@ namespace $.$$ {
 			return null
 		}
 
-		// ── Live update subscription ──────────────────────────────────────────────
-
 		@$mol_mem
 		subscription() {
 			const path = this.path()
@@ -345,8 +343,6 @@ namespace $.$$ {
 
 			return null
 		}
-
-		// ── Banner actions ────────────────────────────────────────────────────────
 
 		override handle_show_diff(next?: Event): null {
 			if (next !== undefined) {
