@@ -335,7 +335,6 @@ namespace $.$$ {
 			// the raw path string can differ from the editor's open-file path.
 			const currentPathId = this.note_path_id()
 			const changes: any[] = data.noteChanges?.changes ?? []
-			if (changes.length) console.log('editor noteChanges', changes, 'myPathId', currentPathId, 'baseline', this.baseline_version_id(path))
 			for (const ch of changes) {
 				if (ch.__typename !== 'NoteUpsertEvent') continue
 				if (String(ch.pathId) !== String(currentPathId)) continue
