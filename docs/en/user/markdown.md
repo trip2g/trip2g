@@ -149,6 +149,61 @@ The link shows the filename and downloads the file when clicked.
 > A new paragraph within the same quote.
 ```
 
+### Callouts
+
+A callout is a blockquote whose first line is a `[!type]` marker. trip2g renders it as a styled block with an icon and title.
+
+Basic callout — the type name becomes the title:
+
+```markdown
+> [!note]
+> Content of the callout.
+```
+
+Custom title — add text after the type:
+
+```markdown
+> [!info] Getting Started
+> This title overrides the default.
+```
+
+Foldable collapsed — readers click to expand:
+
+```markdown
+> [!tip]- How to fold a callout
+> Add `-` after the type to start collapsed.
+```
+
+Foldable expanded — starts open, can be collapsed:
+
+```markdown
+> [!faq]+ Is this open by default?
+> Yes. `+` means expanded by default.
+```
+
+Built-in types with distinct icons: `note`, `abstract`, `summary`, `tldr`, `info`, `todo`, `tip`, `hint`, `important`, `success`, `check`, `done`, `question`, `help`, `faq`, `warning`, `caution`, `attention`, `failure`, `fail`, `missing`, `danger`, `error`, `bug`, `example`, `quote`, `cite`. Custom types are also valid — they render with a fallback icon.
+
+### Comments
+
+Text wrapped in `%%` is an Obsidian comment and is removed from the rendered output.
+
+Inline comment — stripped between surrounding text:
+
+```markdown
+The word BEFORE%%this is hidden%%AFTER is visible.
+```
+
+Block comment — a standalone `%%` on its own line opens the comment; a second standalone `%%` closes it. Everything in between is hidden:
+
+```markdown
+%%
+This entire block is stripped from the page.
+Multiple lines are hidden.
+%%
+```
+
+Literal `%%` inside fenced code blocks and inline code spans is preserved as-is.
+
 ### Code
 
 Inline: `` `code` ``
@@ -228,6 +283,8 @@ The renderer is built on [Goldmark](https://github.com/yuin/goldmark) with the G
 - GFM additions: tables, strikethrough (`~~`), task lists (`- [x]`), autolinks (bare URLs become clickable links)
 - Wikilinks and embed syntax (`![[...]]`)
 - Syntax highlighting in code blocks (via the Chroma library, server-side — no client-side JS needed)
+- Obsidian callouts (`> [!type]`) rendered as styled blocks with icon and title
+- Obsidian `%%` comments stripped from output (inline and block)
 - YouTube URLs in image syntax render as embedded players: `![](https://youtube.com/watch?v=...)`
 - Audio files embed as `<audio controls>` players
 - Video files embed as `<video controls>` players
@@ -235,6 +292,7 @@ The renderer is built on [Goldmark](https://github.com/yuin/goldmark) with the G
 
 ### What is not rendered
 
+- **Obsidian `%%` comments** — text inside `%%...%%` (inline or block) is stripped from the output. It does not appear on the published page.
 - **Footnotes** — the `[^1]` / `[^1]: ...` syntax is not processed. The markers appear as literal text.
 - **Math / LaTeX** — `$...$` and `$$...$$` blocks are not rendered. The content appears as plain text.
 - **Smart quotes** — straight quotes `"..."` and `'...'` are not converted to curly quotes.
