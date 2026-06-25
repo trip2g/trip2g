@@ -31,6 +31,9 @@ const (
 	DefaultSimilarLimit      = 10
 	MaxSimilarLimit          = 100
 	MaxMergedResults         = 20
+	DefaultSearchLimit       = 6
+	DefaultSearchDetailLimit = 3
+	MaxSearchLimit           = 20 // aligns with MaxMergedResults
 
 	// Hybrid search rank constant.
 	rrfK = 60
@@ -186,6 +189,11 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				Type: "object",
 				Properties: map[string]Property{
 					"query": {Type: "string", Description: "Search query"},
+					"limit": {Type: "number", Description: "Max number of results to return (default 6)"},
+					"detail_limit": {
+						Type:        "number",
+						Description: "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)",
+					},
 				},
 				Required: []string{"query"},
 			},
@@ -251,6 +259,11 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 					"query":  {Type: "string", Description: "Search query"},
 					"kb_id":  {Type: "string", Description: "Target knowledge base id"},
 					"kb_ids": {Type: "array", Description: "Target knowledge base ids", Items: &Property{Type: "string"}},
+					"limit":  {Type: "number", Description: "Max number of results to return (default 6)"},
+					"detail_limit": {
+						Type:        "number",
+						Description: "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)",
+					},
 				},
 				Required: []string{"query"},
 			},
@@ -420,6 +433,24 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 	}
 }
 
+// resolveSearchLimits normalises and clamps limit and detailLimit following the
+// same pattern as handleSimilar's limit handling.
+func resolveSearchLimits(log logger.Logger, limit, detailLimit int) (int, int) {
+	if limit <= 0 {
+		limit = DefaultSearchLimit
+	} else if limit > MaxSearchLimit {
+		log.Warn("search limit exceeds maximum, capping", "requested", limit, "max", MaxSearchLimit)
+		limit = MaxSearchLimit
+	}
+	if detailLimit <= 0 {
+		detailLimit = DefaultSearchDetailLimit
+	}
+	if detailLimit > limit {
+		detailLimit = limit
+	}
+	return limit, detailLimit
+}
+
 func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleSearch")
 
@@ -454,7 +485,8 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
 
-	payload := buildSearchPayload(args.Query, results, env.NoteURL, env.LatestNoteChunks())
+	limit, detailLimit := resolveSearchLimits(log, args.Limit, args.DetailLimit)
+	payload := buildSearchPayload(args.Query, results, env.NoteURL, env.LatestNoteChunks(), limit, detailLimit)
 
 	// Format response
 	var sb strings.Builder
@@ -463,10 +495,6 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	} else {
 		sb.WriteString(fmt.Sprintf("Found %d notes:\n\n", len(payload.Results)))
 		for i, r := range payload.Results {
-			if i >= DefaultDisplayLimit {
-				sb.WriteString(fmt.Sprintf("\n... and %d more", len(payload.Results)-DefaultDisplayLimit))
-				break
-			}
 			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, r.Title, r.NotePath, r.URL))
 			if len(r.Matches) > 0 {
 				sb.WriteString(fmt.Sprintf("   %s\n", r.Matches[0].Snippet))
@@ -563,35 +591,50 @@ func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, e
 	return env.CanReadNote(ctx, note)
 }
 
-func buildSearchPayload(query string, results []model.SearchResult, noteURL func(*model.NoteView) string, chunks []model.NoteChunk) SearchResultPayload {
+func buildSearchPayload(
+	query string,
+	results []model.SearchResult,
+	noteURL func(*model.NoteView) string,
+	chunks []model.NoteChunk,
+	limit, detailLimit int,
+) SearchResultPayload {
 	payload := SearchResultPayload{Query: query}
+	count := 0
 	for _, r := range results {
 		if r.NoteView == nil {
 			continue
 		}
+		if count >= limit {
+			break
+		}
 
 		item := searchResultItemFromNote(r.NoteView, r.Score, noteURL)
-		for i, snippet := range r.HighlightedContent {
-			matchID := fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1)
-			chunkIndex := 0
-			if r.ChunkIndex != nil {
-				chunkIndex = *r.ChunkIndex
-			} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, snippet, chunks); ok {
-				chunkIndex = nearest
+		if count < detailLimit {
+			// Full detail: include snippet Matches.
+			for i, snippet := range r.HighlightedContent {
+				matchID := fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1)
+				chunkIndex := 0
+				if r.ChunkIndex != nil {
+					chunkIndex = *r.ChunkIndex
+				} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, snippet, chunks); ok {
+					chunkIndex = nearest
+				}
+				if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
+					matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
+				}
+				chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
+				item.Matches = append(item.Matches, SearchMatch{
+					MatchID:      matchID,
+					ChunkIndex:   chunkIndex,
+					Snippet:      snippet,
+					ContextWords: 10,
+					TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent),
+				})
 			}
-			if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
-				matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
-			}
-			chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
-			item.Matches = append(item.Matches, SearchMatch{
-				MatchID:      matchID,
-				ChunkIndex:   chunkIndex,
-				Snippet:      snippet,
-				ContextWords: 10,
-				TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent),
-			})
 		}
+		// Beyond detailLimit: item.Matches stays nil (lightweight preview).
 		payload.Results = append(payload.Results, item)
+		count++
 	}
 	return payload
 }

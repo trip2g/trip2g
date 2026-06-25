@@ -3,6 +3,7 @@ package mcp_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"trip2g/internal/case/mcp"
@@ -1292,5 +1293,158 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 
 		require.Nil(t, resp.Error)
 		// Test passes if no error - limit should be capped
+	})
+}
+
+// makeSearchNote creates a NoteView with a given PathID, path, and title for search tests.
+func makeSearchNote(pathID int64, path, title string) *appmodel.NoteView {
+	return &appmodel.NoteView{
+		Path:      path,
+		PathID:    pathID,
+		Title:     title,
+		Permalink: "/" + path,
+	}
+}
+
+// makeSearchEnv builds a minimal Env mock that returns results from SearchLatestNotes.
+func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
+	t.Helper()
+	return &EnvMock{
+		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+			return results, nil
+		},
+		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
+		FeaturesFunc:         func() features.Features { return features.Features{} },
+		PublicURLFunc:        func() string { return "https://example.test" },
+		NoteURLFunc: func(note *appmodel.NoteView) string {
+			return "https://example.test" + note.Permalink
+		},
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+	}
+}
+
+// searchCall issues a tools/call search request and returns the payload.
+func searchCall(t *testing.T, env *EnvMock, argsJSON string) mcp.SearchResultPayload {
+	t.Helper()
+	params := mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(argsJSON),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
+	})
+	require.Nil(t, resp.Error, "unexpected error: %v", resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	return result.StructuredContent.(mcp.SearchResultPayload)
+}
+
+// makeNResults builds N search results with distinct notes.
+func makeNResults(n int) []appmodel.SearchResult {
+	results := make([]appmodel.SearchResult, n)
+	for i := range n {
+		note := makeSearchNote(int64(i+1), fmt.Sprintf("note%d.md", i+1), fmt.Sprintf("Note %d", i+1))
+		results[i] = appmodel.SearchResult{
+			NoteView:           note,
+			URL:                note.Permalink,
+			Score:              float64(n - i),
+			HighlightedContent: []string{fmt.Sprintf("Snippet for note %d", i+1)},
+		}
+	}
+	return results
+}
+
+func TestSearchLimitAndDetailLimit(t *testing.T) {
+	t.Run("defaults: 6 total, 3 full detail", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(10))
+		payload := searchCall(t, env, `{"query":"test"}`)
+
+		// default limit = 6
+		require.Len(t, payload.Results, 6)
+
+		// first 3 have Matches, results[3..5] are previews (Matches nil)
+		for i := range 3 {
+			require.NotNil(t, payload.Results[i].Matches, "result[%d] should have Matches", i)
+		}
+		for i := 3; i < 6; i++ {
+			require.Nil(t, payload.Results[i].Matches, "result[%d] should be a preview (no Matches)", i)
+		}
+	})
+
+	t.Run("explicit limit honored", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(10))
+		payload := searchCall(t, env, `{"query":"test","limit":4}`)
+		require.Len(t, payload.Results, 4)
+	})
+
+	t.Run("explicit detail_limit honored", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(8))
+		payload := searchCall(t, env, `{"query":"test","limit":5,"detail_limit":2}`)
+		require.Len(t, payload.Results, 5)
+		for i := range 2 {
+			require.NotNil(t, payload.Results[i].Matches, "result[%d] should have Matches", i)
+		}
+		for i := 2; i < 5; i++ {
+			require.Nil(t, payload.Results[i].Matches, "result[%d] should be preview", i)
+		}
+	})
+
+	t.Run("detail_limit clamped to limit", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(8))
+		// detail_limit=10 > limit=4 → clamp to 4, all have Matches
+		payload := searchCall(t, env, `{"query":"test","limit":4,"detail_limit":10}`)
+		require.Len(t, payload.Results, 4)
+		for i := range payload.Results {
+			require.NotNil(t, payload.Results[i].Matches, "result[%d] should have Matches (clamped detail_limit)", i)
+		}
+	})
+
+	t.Run("limit capped at MaxSearchLimit", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(25))
+		payload := searchCall(t, env, `{"query":"test","limit":999}`)
+		require.LessOrEqual(t, len(payload.Results), mcp.MaxSearchLimit)
+	})
+
+	t.Run("total results do not exceed limit when fewer results exist", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(3))
+		payload := searchCall(t, env, `{"query":"test"}`) // default limit=6
+		require.Len(t, payload.Results, 3)                // only 3 available
+	})
+
+	t.Run("detail_limit=0 defaults to DefaultSearchDetailLimit", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(8))
+		payload := searchCall(t, env, `{"query":"test","limit":6,"detail_limit":0}`)
+		// default detail_limit=3
+		require.Len(t, payload.Results, 6)
+		for i := range 3 {
+			require.NotNil(t, payload.Results[i].Matches, "result[%d] should have Matches", i)
+		}
+		for i := 3; i < 6; i++ {
+			require.Nil(t, payload.Results[i].Matches, "result[%d] should be preview", i)
+		}
+	})
+
+	t.Run("text output shows snippets for detail results, path-only for previews", func(t *testing.T) {
+		env := makeSearchEnv(t, makeNResults(4))
+		params := mcp.CallToolParams{
+			Name:      "search",
+			Arguments: json.RawMessage(`{"query":"test","limit":4,"detail_limit":2}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
+		})
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		text := result.Content[0].Text
+		// Full detail results include snippet; previews should include "[preview]" marker or similar
+		require.Contains(t, text, "Snippet for note 1")
+		require.Contains(t, text, "Snippet for note 2")
+		// Preview results (index 2,3) should NOT contain their snippets in the text
+		require.NotContains(t, text, "Snippet for note 3")
+		require.NotContains(t, text, "Snippet for note 4")
 	})
 }

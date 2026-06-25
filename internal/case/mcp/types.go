@@ -72,13 +72,17 @@ type Content struct {
 // Tool-specific argument types
 
 type SearchArguments struct {
-	Query string `json:"query"`
+	Query       string `json:"query"`
+	Limit       int    `json:"limit,omitempty"`
+	DetailLimit int    `json:"detail_limit,omitempty"`
 }
 
 type FederatedSearchArguments struct {
-	Query string   `json:"query"`
-	KBID  string   `json:"kb_id,omitempty"`
-	KBIDs []string `json:"kb_ids,omitempty"`
+	Query       string   `json:"query"`
+	KBID        string   `json:"kb_id,omitempty"`
+	KBIDs       []string `json:"kb_ids,omitempty"`
+	Limit       int      `json:"limit,omitempty"`
+	DetailLimit int      `json:"detail_limit,omitempty"`
 }
 
 type FederatedSimilarArguments struct {
