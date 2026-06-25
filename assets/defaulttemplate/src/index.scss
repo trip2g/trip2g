@@ -335,6 +335,7 @@ body {
     text-align: left;
 
     &:hover { color: var(--pico-primary); }
+    &.is-active { color: var(--pico-primary); font-weight: 700; }
   }
 
   @media (max-width: 1023px) {

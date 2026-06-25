@@ -26,15 +26,15 @@ $trip2g_user_search_panel $mol_view
 	CloseButton $mol_view
 		sub /
 			<= CloseButtonButton $mol_button_major
-				title \Закрыть поиск
+				title @ \$trip2g_user_search_panel_CloseButtonButton_title
 				click? <=> close? null
 	sub /
 		<= Form $mol_view
 			sub /
 				<= Search $mol_search
-					query? <=> query? \Сон
+					query? <=> query? \
 				<= SubmitButton $mol_button_major
-					title \Поиск
+					title @ \$trip2g_user_search_panel_SubmitButton_title
 		<= Results $mol_list
 			rows <= results /$mol_view
 				<= ResultItem*0 $mol_view

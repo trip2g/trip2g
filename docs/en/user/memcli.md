@@ -1,7 +1,8 @@
 ---
 title: "memcli — one command to give an agent a local memory"
 free: true
-lang_redirect: "[[ru/memcli]]"
+routes: [en/memcli]
+lang_redirect: "[[ru/user/memcli]]"
 ---
 
 One command boots a local trip2g server, mints an admin API key via HAT, and starts a two-way `trip2g-sync --watch` sidecar — your agent reads and writes plain Markdown files, and the server indexes them instantly. No S3, no email, no dev mode required.

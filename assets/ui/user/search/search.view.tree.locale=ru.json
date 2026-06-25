@@ -4,5 +4,7 @@
 	"$trip2g_user_search_panel_ReadMore": "Подробнее",
 	"$trip2g_user_search_panel_messages_no_results": "Ничего не найдено.",
 	"$trip2g_user_search_panel_messages_results_count": "Результатов:",
-	"$trip2g_user_search_panel_VectorWarning_message": "Точных совпадений нет. Показаны похожие результаты."
+	"$trip2g_user_search_panel_VectorWarning_message": "Точных совпадений нет. Показаны похожие результаты.",
+	"$trip2g_user_search_panel_CloseButtonButton_title": "Закрыть поиск",
+	"$trip2g_user_search_panel_SubmitButton_title": "Поиск"
 }

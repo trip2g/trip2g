@@ -495,6 +495,10 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 		}
 	}
 
+	// toc.js handles both TOC scrollspy and sidebar active-link highlighting;
+	// load it on every note page.
+	jsURLs = append(jsURLs, env.AssetURL("/assets/toc/toc.js"))
+
 	// Append per-note widget glue conditionally, so a page only downloads the
 	// script for widgets it actually uses. Emitted server-side (not via a client
 	// loader) so the browser's preload scanner fetches them immediately.

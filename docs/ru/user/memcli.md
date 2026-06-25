@@ -1,7 +1,8 @@
 ---
 title: "memcli — одна команда для локальной памяти агента"
 free: true
-lang_redirect: "[[en/memcli]]"
+routes: [ru/memcli]
+lang_redirect: "[[en/user/memcli]]"
 ---
 
 Одна команда запускает локальный сервер trip2g, выпускает административный API-ключ через HAT и стартует двусторонний sidecar `trip2g-sync --watch`. Агент читает и пишет обычные Markdown-файлы, сервер индексирует их в реальном времени. S3, почта и dev-режим не нужны.

@@ -138,9 +138,7 @@ namespace $.$$ {
 			const maxScore = Math.max( ...scores )
 			const normalized = maxScore > 0 ? Math.round( item.score / maxScore * 10 ) : 0
 
-			const origin = item.matchOrigin
-			const badge = origin === 'VECTOR' ? ' V' : origin === 'HYBRID' ? ' M' : ''
-			return `${ super.result_score(id) } ${ normalized }/10${ badge }`
+			return `${ super.result_score(id) } ${ normalized }/10`
 		}
 	}
 

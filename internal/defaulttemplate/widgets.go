@@ -11,6 +11,10 @@ const (
 	ContentRefWikiLink // [[Title]] - resolve via ctx.Notes.ByPermalink
 	ContentRefFile     // "path/file.md" - resolve via ctx.Notes.ByPath
 	ContentRefNone
+	ContentRefSimilar
+	ContentRefInLinks
+	ContentRefOutLinks
+	ContentRefTOC
 )
 
 // ContentRef represents a content block reference in frontmatter.

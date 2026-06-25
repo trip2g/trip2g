@@ -232,7 +232,7 @@ Use when: searching shared team knowledge and public references.
 
 After syncing, `/_system/mcp` exposes `federated_search`, `federated_similar`, `federated_note_html`, and `federated_expand`.
 
-`memcli hub <url>` automates the KB-note creation and sync. See [[en/memcli]].
+`memcli hub <url>` automates the KB-note creation and sync. See [[en/user/memcli]].
 
 ---
 
@@ -360,7 +360,7 @@ Another trip2g instance can federate your KB into its own MCP search. This uses 
 
 - [[en/user/local-quickstart]] — full local setup reference, sync CLI flags, HAT mint flow
 - [[en/user/agent-memory]] — single-agent memory setup; HAT mint flow detail
-- [[en/memcli]] — automated server + API key + sync watcher in one command; `hub` subcommand for federation
+- [[en/user/memcli]] — automated server + API key + sync watcher in one command; `hub` subcommand for federation
 - [[en/user/federation]] — full federation setup: public peers, private HMAC exchange, subgraph scope, federation graph
 - [[en/user/selfhosted]] — Caddy + MinIO + TLS production setup (if you need email sign-in or external object storage)
 - [[en/user/mcp]] — all MCP tools, authentication modes, personal access tokens
