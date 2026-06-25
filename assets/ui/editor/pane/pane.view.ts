@@ -98,7 +98,7 @@ namespace $.$$ {
 			const hist = history_request({ filter: { path, limit: 1 } })
 			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
 			if (latestVersionId) {
-				this.baseline_version_id(path, latestVersionId)
+				setTimeout(() => { this.baseline_version_id(path, latestVersionId) }, 0)
 			}
 			return { id: np.id, content: np.content }
 		}

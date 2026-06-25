@@ -61,8 +61,9 @@ namespace $.$$ {
 				const idx = versions.findIndex(v => String(v.versionId) === id)
 				if (idx < 0) return null
 				const toVersionId = versions[idx].versionId
-				// Previous version is the next one in the list (versions are desc by version number)
-				const fromVersionId = idx + 1 < versions.length ? versions[idx + 1].versionId : toVersionId
+				// No previous version — opening an empty diff is not useful, so no-op.
+				if (idx + 1 >= versions.length) return null
+				const fromVersionId = versions[idx + 1].versionId
 				this.diff_from_version_id(fromVersionId)
 				this.diff_to_version_id(toVersionId)
 				// Signal pane to open the diff sidebar via the show_diff? callback.
