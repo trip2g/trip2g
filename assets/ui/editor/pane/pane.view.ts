@@ -301,12 +301,11 @@ namespace $.$$ {
 		subscription() {
 			const path = this.path()
 			if (!path) return null
-			// Create an owned host (not the module-level cached one) so mol lifecycle
-			// can tear it down (via source() destructor) when this pane unmounts.
-			const host = new $trip2g_sse_host()
-			host.query = () => EDITOR_CHANGES_QUERY
-			host.variables = () => ({ filter: { includePatterns: ['**/*.md'] } })
-			return host
+			// Use the shared cached host (same proven pattern as user/live): one stable
+			// stream per query+vars, so re-evaluating this getter does not abort it.
+			return $trip2g_graphql_raw_subscription(EDITOR_CHANGES_QUERY, {
+				filter: { includePatterns: ['**/*.md'] },
+			})
 		}
 
 		// Whether the current path has a pending external update waiting for
