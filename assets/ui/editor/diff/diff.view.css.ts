@@ -18,6 +18,7 @@ namespace $ {
 			flex: {
 				grow: 1,
 			},
+			flexDirection: 'column',
 			fontFamily: 'monospace',
 			fontSize: '13px',
 			whiteSpace: 'pre',
