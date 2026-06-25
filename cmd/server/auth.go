@@ -118,6 +118,7 @@ func (a *app) GenerateTgAuthURL(_ context.Context, path string, data model.TgAut
 
 	publicURL := a.PublicURL()
 	if publicURL == "" {
+		a.log.Warn("GenerateTgAuthURL: empty public URL")
 		publicURL = "https://example.com" // Fallback URL, must has a https scheme
 	}
 

@@ -110,6 +110,7 @@ func restoreBackup(log logger.Logger, config *appconfig.Config) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
+	// TODO: maybe we should encrypt/decrypt dump?
 	// Create temporary storage client for restore
 	restoreStorage, restoreErr := newStorage(ctx, config)
 	if restoreErr != nil {

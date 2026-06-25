@@ -392,6 +392,7 @@ func main() {
 	// Read-only replica: skip the not-found tracker (it writes to the DB every
 	// minute via runDumpTicker; the replica's connection is read-only).
 	if !config.IsReadReplica() {
+		// TODO: remove this tracker. it's extra work
 		a.notFoundTracker, err = notfoundtracker.New(ctx, a)
 		if err != nil {
 			panic(fmt.Errorf("failed to create not found tracker: %w", err))
@@ -412,6 +413,7 @@ func main() {
 
 	a.previewBuffer = renderpreview.NewPreviewBuffer(a.config.RenderPreview)
 
+	// TODO: remove notion at all
 	a.notionClientManager = notion.NewClientManager(a, a.config.Notion)
 
 	// Initialize simple backup manager if enabled
@@ -543,5 +545,3 @@ func (a *app) LiveNoteViews() *model.NoteViews {
 
 	return a.liveNoteLoader.NoteViews()
 }
-
-// --- Canvas handler DB wrappers ---
