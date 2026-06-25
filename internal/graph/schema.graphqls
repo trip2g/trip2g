@@ -1193,6 +1193,7 @@ type AdminQuery {
   noteView(id: String!): NoteView
   noteVersionHistory(filter: AdminNoteVersionHistoryFilter!): AdminNoteVersionHistoryConnection!
   noteVersion(versionId: Int64!): AdminNoteVersionDetail
+  noteVersionDiff(fromVersionId: Int64!, toVersionId: Int64!): NoteVersionDiff
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
   offer(id: Int64!): AdminOffer
   user(id: Int64!): AdminUser
@@ -1841,6 +1842,14 @@ type AdminNoteVersionDetail {
   version: Int!
   content: String!
   createdAt: Time!
+}
+
+type NoteVersionDiff {
+  unified: String!
+  word: String!
+  addedLines: Int!
+  removedLines: Int!
+  changedWords: Int!
 }
 
 type AdminFormSubmitsConnection

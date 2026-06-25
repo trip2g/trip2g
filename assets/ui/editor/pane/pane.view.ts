@@ -36,6 +36,37 @@ namespace $.$$ {
 		}
 	`)
 
+	const history_request = $trip2g_graphql_request(/* GraphQL */ `
+		query EditorNoteVersionsForDiff($filter: AdminNoteVersionHistoryFilter!) {
+			admin {
+				noteVersionHistory(filter: $filter) {
+					nodes {
+						versionId
+						version
+					}
+				}
+			}
+		}
+	`)
+
+	const EDITOR_CHANGES_QUERY = /* GraphQL */ `
+		subscription EditorNoteChanges($filter: NoteChangesFilter!) {
+			noteChanges(filter: $filter) {
+				changes {
+					__typename
+					... on NoteUpsertEvent {
+						path
+						pathId
+						versionId
+					}
+					... on NoteHideEvent {
+						path
+					}
+				}
+			}
+		}
+	`
+
 	export class $trip2g_editor_pane extends $.$trip2g_editor_pane {
 		@$mol_mem
 		override path(next?: string): string {
@@ -49,12 +80,27 @@ namespace $.$$ {
 			return $trip2g_settings.note_path()
 		}
 
+		// Per-path reload counter: incrementing it forces loaded_note_path to re-fetch.
 		@$mol_mem_key
-		loaded_note_path(path: string): { id: any; content: string } | null {
+		reload_counter(path: string, next?: number): number {
+			return next ?? 0
+		}
+
+		@$mol_mem_key
+		loaded_note_path(path: string): { id: any; content: string; versionId?: number } | null {
 			if (!path) return null
+			this.reload_counter(path) // reactive dependency
 			const res = content_request({ filter: { paths: [path] } })
 			const np = res.notePaths[0]
-			return np ? { id: np.id, content: np.content } : null
+			if (!np) return null
+			// Initialise baseline from the freshly loaded version (if available).
+			// Use the version history to get the latest versionId for this path.
+			const hist = history_request({ filter: { path, limit: 1 } })
+			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
+			if (latestVersionId) {
+				setTimeout(() => { this.baseline_version_id(path, latestVersionId) }, 0)
+			}
+			return { id: np.id, content: np.content }
 		}
 
 		@$mol_mem_key
@@ -64,6 +110,12 @@ namespace $.$$ {
 
 		note_path_id(): any {
 			return this.loaded_note_path(this.path())?.id ?? null
+		}
+
+		// Version-ID baseline per path: events with versionId <= baseline are self-echoes.
+		@$mol_mem_key
+		baseline_version_id(path: string, next?: number): number {
+			return next ?? 0
 		}
 
 		wikilink_at(text: string, offset: number): string | null {
@@ -143,7 +195,10 @@ namespace $.$$ {
 		}
 
 		override editor_body(): readonly $mol_view[] {
-			return this.path() ? [this.ContentTextarea()] : [this.Placeholder()]
+			const views: $mol_view[] = []
+			if (this.pending_external_update()) views.push(this.UpdateBanner())
+			views.push(this.path() ? this.ContentTextarea() : this.Placeholder())
+			return views
 		}
 
 		override has_content(): boolean {
@@ -186,6 +241,15 @@ namespace $.$$ {
 			if (res.pushNotes.__typename === 'ErrorPayload') {
 				throw new Error(res.pushNotes.message)
 			}
+			// After a successful save, advance the baseline to the latest known version
+			// so self-echo SSE events do not trigger the "updated elsewhere" banner.
+			for (const p of paths) {
+				const hist = history_request({ filter: { path: p, limit: 1 } })
+				const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
+				if (latestVersionId) {
+					this.baseline_version_id(p, latestVersionId)
+				}
+			}
 			this.changed_paths(this.changed_paths().filter(p => !paths.includes(p)))
 			for (const p of paths) this.change(p, null)
 		}
@@ -213,6 +277,7 @@ namespace $.$$ {
 			return {
 				versions: this.Versions(),
 				save: this.SaveList(),
+				diff: this.Diff(),
 			}
 		}
 
@@ -228,6 +293,112 @@ namespace $.$$ {
 			const w = this.$.$mol_dom_context as unknown as Window
 			if (w.parent && w.parent !== w) {
 				w.parent.postMessage('trip2g_editor_close', '*')
+			}
+			return null
+		}
+
+		@$mol_mem
+		subscription() {
+			const path = this.path()
+			if (!path) return null
+			// Use the shared cached host (same proven pattern as user/live): one stable
+			// stream per query+vars, so re-evaluating this getter does not abort it.
+			return $trip2g_graphql_raw_subscription(EDITOR_CHANGES_QUERY, {
+				filter: { includePatterns: ['**/*.md'] },
+			})
+		}
+
+		// Whether the current path has a pending external update waiting for
+		// the user's attention.
+		@$mol_mem
+		pending_external_update(next?: number | null): number | null {
+			return next !== undefined ? next : null
+		}
+
+		// Reactive watcher: reads SSE data and sets pending_external_update when
+		// the currently-open file is modified externally.
+		@$mol_mem
+		watcher_result(): null {
+			const sub = this.subscription()
+			if (!sub) return null
+
+			const err = sub.error()
+			if (err) console.log('editor subscription error', err)
+
+			const data = sub.data()
+			if (!data) return null
+
+			const path = this.path()
+			if (!path) return null
+
+			// Match incoming events by note path id (robust), like user/live does —
+			// the raw path string can differ from the editor's open-file path.
+			const currentPathId = this.note_path_id()
+			const changes: any[] = data.noteChanges?.changes ?? []
+			if (changes.length) console.log('editor noteChanges', changes, 'myPathId', currentPathId, 'baseline', this.baseline_version_id(path))
+			for (const ch of changes) {
+				if (ch.__typename !== 'NoteUpsertEvent') continue
+				if (String(ch.pathId) !== String(currentPathId)) continue
+				const versionId: number = ch.versionId
+				if (!versionId) continue
+				// Suppress self-echo: ignore events at or below the baseline version.
+				if (versionId <= this.baseline_version_id(path)) continue
+				// Defer state write to avoid synchronous mol memo mutation.
+				setTimeout(() => { this.pending_external_update(versionId) }, 0)
+			}
+
+			return null
+		}
+
+		override handle_show_diff(next?: Event): null {
+			if (next !== undefined) {
+				const path = this.path()
+				if (!path) return null
+				// Fetch the two most recent version IDs for this path.
+				const res = history_request({ filter: { path, limit: 2 } })
+				const nodes = res.admin.noteVersionHistory.nodes
+				// Need at least 2 versions to show a meaningful diff.
+				if (nodes.length < 2) return null
+				// nodes[0] is newest (highest version number), nodes[1] is previous
+				this.diff_from_version_id(nodes[1].versionId)
+				this.diff_to_version_id(nodes[0].versionId)
+				this.right_sidebar('diff')
+			}
+			return null
+		}
+
+		// Called when Versions panel triggers a diff via its show_diff? callback.
+		override handle_versions_show_diff(next?: Event | null): null {
+			if (next !== undefined) {
+				this.right_sidebar('diff')
+			}
+			return null
+		}
+
+		override handle_load_latest(next?: Event): null {
+			if (next !== undefined) {
+				const path = this.path()
+				if (!path) return null
+				const hasChanges = this.changed_paths().includes(path)
+				if (hasChanges) {
+					if (!confirm('You have unsaved changes. Load the latest version and discard them?')) {
+						return null
+					}
+					// Discard local changes for this path.
+					this.change(path, null)
+					this.changed_paths(this.changed_paths().filter(p => p !== path))
+				}
+				// Increment the reload counter to force loaded_note_path to re-fetch.
+				// loaded_note_path will update the baseline after fetching the new content.
+				this.reload_counter(path, this.reload_counter(path) + 1)
+				this.pending_external_update(null)
+			}
+			return null
+		}
+
+		override handle_dismiss(next?: Event): null {
+			if (next !== undefined) {
+				this.pending_external_update(null)
 			}
 			return null
 		}
