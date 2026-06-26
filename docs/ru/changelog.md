@@ -8,6 +8,22 @@
 
 ---
 
+## v0.7.1 (2026-06-26)
+
+### Инструмент превью layout-ов: `trip2g-preview` — замена `renderlayout.py` (`19483421`, `d0fe4179`)
+
+- **Что.** Новый standalone node-CLI `scripts/trip2g-preview.mjs` рендерит Jet-layout против заметки через `/_system/renderlayout` и добавляет режим `--watch`: пере-POST-ит при каждом сохранении, а открытая по `?live` страница перезагружается сама. Заменяет старый `scripts/renderlayout.py` (удалён) — без зависимости от Python.
+- **Зачем.** Ускоряет цикл вёрстки: правишь `_layouts/*.html` — сразу видишь результат, ловишь ошибки Jet в терминале. Работает против любого сервера — локального memcli (читает `data.json`) или удалённого/staging через `--api-url`/`--api-key`.
+- **Как.** `node scripts/trip2g-preview.mjs --watch --layout-file _layouts/article.html --note-path /about`, затем открыть напечатанный `?live` URL (с memcli сначала `memcli open`, чтобы браузер был залогинен). Гайд: [[ru/user/renderlayout]]; два локальных дизайн-цикла описаны в `docs/dev/local_design_iteration.md`.
+
+### memcli: изолированные инстансы через `--name` (`5f0542f8`, `353841e0`)
+
+- **Что.** `memcli up --name <id>` поднимает второй инстанс в своём контейнере `trip2g-memory-<id>`. Тот же `--name` передавайте в `down`/`status`/`logs` и задавайте отдельный `--port`. Без `--name` поведение по умолчанию (`trip2g-memory`) не меняется.
+- **Зачем.** Позволяет держать несколько локальных memcli-инстансов рядом (например, по одному на vault), не конфликтуя за единственное захардкоженное имя контейнера.
+- **Как.** `node cli/memcli/dist/memcli.js up --folder ./v2 --name v2 --port 24381`. Состояние — отдельное на каждый `--folder`. Гайд: [[ru/user/memcli]].
+
+---
+
 ## v0.7.0 (2026-06-23)
 
 ### Режим read replica (`a4423895`)

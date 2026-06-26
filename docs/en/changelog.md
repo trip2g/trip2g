@@ -8,6 +8,22 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.7.1 (2026-06-26)
+
+### Live layout preview tool: `trip2g-preview` — replaces `renderlayout.py` (`19483421`, `d0fe4179`)
+
+- **What.** A new standalone node CLI, `scripts/trip2g-preview.mjs`, renders a Jet layout against a note via `/_system/renderlayout` and adds a `--watch` mode: it re-POSTs on every save while a browser parked on the `?live` URL reloads itself. It replaces the old `scripts/renderlayout.py` (removed) — no Python dependency.
+- **Why.** Tightens the layout-developer loop: edit a `_layouts/*.html`, see the result live, catch Jet errors in the terminal. It targets any server — a local memcli (auto-reads `data.json`) or a remote/staging instance via `--api-url`/`--api-key`.
+- **How.** `node scripts/trip2g-preview.mjs --watch --layout-file _layouts/article.html --note-path /about`, then open the printed `?live` URL (with memcli, run `memcli open` first so the browser is signed in). Guide: [[en/user/renderlayout]]; the two local design loops are documented in `docs/dev/local_design_iteration.md`.
+
+### memcli: isolated instances with `--name` (`5f0542f8`, `353841e0`)
+
+- **What.** `memcli up --name <id>` boots a second instance in its own container `trip2g-memory-<id>`. Pass the same `--name` to `down`/`status`/`logs`, and give it a distinct `--port`. With no `--name` the default (`trip2g-memory`) is unchanged.
+- **Why.** Lets several local memcli instances run side by side (e.g. one per vault) instead of fighting over the single hardcoded container name.
+- **How.** `node cli/memcli/dist/memcli.js up --folder ./v2 --name v2 --port 24381`. State stays per `--folder`. Guide: [[en/user/memcli]].
+
+---
+
 ## v0.7.0 (2026-06-23)
 
 ### Read replica mode (`a4423895`)
