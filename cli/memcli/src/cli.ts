@@ -18,6 +18,7 @@
 import crypto from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { print } from 'graphql';
 import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql.ts';
@@ -27,6 +28,13 @@ import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql
 // ---------------------------------------------------------------------------
 
 const CONTAINER_NAME = 'trip2g-memory';
+
+export function containerName(flags: { name?: string | null }): string {
+  if (!flags || !flags.name) return CONTAINER_NAME;
+  const safe = flags.name.replace(/[^a-zA-Z0-9_.-]/g, '-');
+  return `${CONTAINER_NAME}-${safe}`;
+}
+
 const DEFAULT_PORT = 24081;
 const DEFAULT_IMAGE = 'ghcr.io/trip2g/trip2g:latest';
 const DEFAULT_EMAIL = 'memory@local';
@@ -51,6 +59,7 @@ export interface Flags {
   context: number;
   staleDays: number;
   id: string | null;
+  name: string | null;
 }
 
 export interface ServerEnv {
@@ -353,6 +362,7 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
+    name: null,
   };
 
   let cmd = 'up';
@@ -394,6 +404,8 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
       flags.staleDays = parseInt(argv[++i], 10);
     } else if (arg === '--id') {
       flags.id = argv[++i];
+    } else if (arg === '--name') {
+      flags.name = argv[++i];
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -630,13 +642,15 @@ export function buildDockerRunArgs(opts: {
   encryptionKey: string;
   stateDir: string;
   image: string;
+  containerName?: string;
 }): string[] {
   const { port, iport, stateDir, image } = opts;
+  const cName = opts.containerName ?? CONTAINER_NAME;
   const env = buildServerEnv(opts);
 
   const args: string[] = [
     '-d',
-    '--name', CONTAINER_NAME,
+    '--name', cName,
     // Loopback bind — only reachable from localhost
     '-p', `127.0.0.1:${port}:${port}`,
     '-p', `127.0.0.1:${iport}:${iport}`,
@@ -738,6 +752,15 @@ async function waitReady(url: string, timeoutMs: number, pollMs: number): Promis
     await new Promise<void>((r) => setTimeout(r, pollMs));
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
+}
+
+function isPortBusy(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once('error', () => resolve(true));
+    srv.once('listening', () => srv.close(() => resolve(false)));
+    srv.listen(port, '127.0.0.1');
+  });
 }
 
 /** Obtain a Bearer token via HAT flow. */
@@ -1036,26 +1059,26 @@ export async function runUp(flags: Flags): Promise<CommandResult> {
 
 export function runDown(flags: Flags): CommandResult {
   try {
-    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder));
+    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder, containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
 }
 
-export function runStatus(): CommandResult {
+export function runStatus(flags: Flags): CommandResult {
   try {
-    const text = captureLines(() => cmdStatus());
+    const text = captureLines(() => cmdStatus(containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
 }
 
-export function runLogs(): CommandResult {
+export function runLogs(flags: Flags): CommandResult {
   // For MCP mode: capture output via spawnSync with pipe instead of inherit
   try {
-    const result = spawnSync('docker', ['logs', CONTAINER_NAME], {
+    const result = spawnSync('docker', ['logs', containerName(flags)], {
       encoding: 'utf8',
     });
     if (result.error) throw result.error;
@@ -1588,6 +1611,7 @@ FLAGS (up)
   --no-hub             Skip writing the federation hub note (hub.md)
   --no-seed            Skip seeding OKF starter notes (index/log/AGENTS/SCHEMA)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+  --name <id>          Run an isolated instance named trip2g-memory-<id> (needs its own --port)
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -1620,6 +1644,7 @@ NOTES
 
 async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   const { folder, port, email, image } = flags;
+  const name = containerName(flags);
   if (!folder) {
     console.error('Error: --folder <vault> is required for `up`');
     process.exit(1);
@@ -1634,7 +1659,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
 
   const containerRunning = (() => {
     try {
-      const out = spawnSync('docker', ['ps', '-q', '--filter', `name=${CONTAINER_NAME}`], {
+      const out = spawnSync('docker', ['ps', '-q', '--filter', `name=^${name}$`], {
         encoding: 'utf8',
       });
       return (out.stdout || '').trim().length > 0;
@@ -1652,7 +1677,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   }
 
   if (containerRunning && watcherAlive && !dryRun) {
-    console.log(`trip2g-memory is already up. Web: ${publicUrl}`);
+    console.log(`${name} is already up. Web: ${publicUrl}`);
     return;
   }
 
@@ -1685,16 +1710,21 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
   }
 
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image });
+  if (!dryRun && !containerRunning && (await isPortBusy(port))) {
+    console.error(`Error: port ${port} is busy — pass --port for this instance (or stop what holds it).`);
+    process.exit(1);
+  }
+
+  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image, containerName: name });
 
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(' ')}`);
   } else if (!containerRunning) {
-    console.log(`Starting container ${CONTAINER_NAME} (image: ${image})...`);
+    console.log(`Starting container ${name} (image: ${image})...`);
     console.log('NOTE: image must include feat/filestorage local-storage backend.');
     spawnSync('docker', ['run', ...dockerArgs], { encoding: 'utf8' });
   } else {
-    console.log(`Container ${CONTAINER_NAME} already running, skipping docker run.`);
+    console.log(`Container ${name} already running, skipping docker run.`);
   }
 
   const readyzUrl = `http://localhost:${iport}/readyz`;
@@ -1811,26 +1841,26 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   console.log(`memory live — web: ${publicUrl}  read/write .md in ${vault}`);
 }
 
-function cmdDown(dryRun: boolean, folder?: string): void {
+function cmdDown(dryRun: boolean, folder: string | undefined, name: string): void {
   if (dryRun) {
-    console.log(`[dry-run] docker stop ${CONTAINER_NAME}`);
-    console.log(`[dry-run] docker rm ${CONTAINER_NAME}`);
+    console.log(`[dry-run] docker stop ${name}`);
+    console.log(`[dry-run] docker rm ${name}`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), '.trip2g-memory', 'watch.pid');
       console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
     }
   } else {
     try {
-      spawnSync('docker', ['stop', CONTAINER_NAME], { encoding: 'utf8' });
+      spawnSync('docker', ['stop', name], { encoding: 'utf8' });
     } catch {
       // ignore
     }
     try {
-      spawnSync('docker', ['rm', CONTAINER_NAME], { encoding: 'utf8' });
+      spawnSync('docker', ['rm', name], { encoding: 'utf8' });
     } catch {
       // ignore
     }
-    console.log(`Container ${CONTAINER_NAME} stopped and removed.`);
+    console.log(`Container ${name} stopped and removed.`);
 
     // Kill the detached watcher process if a pid file exists
     if (folder) {
@@ -1856,7 +1886,7 @@ function cmdDown(dryRun: boolean, folder?: string): void {
   }
 }
 
-function cmdStatus(): void {
+function cmdStatus(name: string): void {
   console.log('=== Container ===');
   const out = spawnSync(
     'docker',
@@ -1864,7 +1894,7 @@ function cmdStatus(): void {
       'ps',
       '-a',
       '--filter',
-      `name=${CONTAINER_NAME}`,
+      `name=^${name}$`,
       '--format',
       'table {{.Names}}\t{{.Status}}\t{{.Ports}}',
     ],
@@ -1873,8 +1903,8 @@ function cmdStatus(): void {
   console.log(out.stdout || '(no output)');
 }
 
-function cmdLogs(): void {
-  const result = spawnSync('docker', ['logs', CONTAINER_NAME], {
+function cmdLogs(name: string): void {
+  const result = spawnSync('docker', ['logs', name], {
     encoding: 'utf8',
     stdio: 'inherit',
   });
@@ -1997,6 +2027,7 @@ function defaultFlags(): Flags {
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
+    name: null,
   };
 }
 
@@ -2014,6 +2045,7 @@ async function dispatchMcpTool(
     if (typeof a.noHub === 'boolean') f.noHub = a.noHub;
     if (typeof a.noSeed === 'boolean') f.noSeed = a.noSeed;
     if (typeof a.hubUrl === 'string') f.hubUrl = a.hubUrl;
+    if (typeof a.name === 'string') f.name = a.name;
     return f;
   }
 
@@ -2026,10 +2058,10 @@ async function dispatchMcpTool(
       result = runDown(flagsFrom(args));
       break;
     case 'memory_status':
-      result = runStatus();
+      result = runStatus(flagsFrom(args));
       break;
     case 'memory_logs':
-      result = runLogs();
+      result = runLogs(flagsFrom(args));
       break;
     case 'memory_key':
       result = await runKey(flagsFrom(args));
@@ -2181,13 +2213,13 @@ if (_mainUrl === _argv1Url) {
             await cmdUp(flags, flags.dryRun);
             break;
           case 'down':
-            cmdDown(flags.dryRun, flags.folder);
+            cmdDown(flags.dryRun, flags.folder, containerName(flags));
             break;
           case 'status':
-            cmdStatus();
+            cmdStatus(containerName(flags));
             break;
           case 'logs':
-            cmdLogs();
+            cmdLogs(containerName(flags));
             break;
           case 'key':
             await cmdKey(flags, flags.dryRun);

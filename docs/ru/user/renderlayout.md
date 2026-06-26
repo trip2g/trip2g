@@ -192,24 +192,20 @@ curl -X POST https://yoursite.com/_system/renderlayout \
 
 ## CLI-инструмент
 
-В репозитории есть `scripts/renderlayout.py` — обёртка, которая автоматически читает API-ключ из `.obsidian/plugins/trip2g/data.json`:
+В репозитории есть `scripts/trip2g-preview.mjs` — обёртка, которая автоматически читает API-ключ из `.obsidian/plugins/trip2g/data.json`:
 
 ```bash
-# запускать из директории vault (где лежит .obsidian/)
-python3 ../scripts/renderlayout.py \
-  --layout-file _layouts/mesh/index.html \
-  --note-src "# Привет"
-
-# → http://localhost:8081/_system/renderlayout?preview_id=abc123
+# запускать из директории vault (где лежит .obsidian/), или передать --folder
+node scripts/trip2g-preview.mjs \
+  --layout-file _layouts/mesh/index.html --note-src "# Привет"
 
 # получить HTML сразу
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-src "{{ note.M().Debug() }}" --layout-path "/_debug.html" \
-  --note-path /my-note \
-  --fetch
+  --note-path /my-note --fetch
 ```
 
-Аргументы: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`.
+Аргументы: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`, `--watch`, `--open`, `--api-url`, `--api-key`, `--folder`.
 Предупреждения и ошибки — в stderr; код выхода 1 при сбое.
 
 Инструкция для агентов и советы по отладке шаблонов (включая функцию `debug()`) — в `docs/skills/check_templates.md`.
@@ -222,7 +218,7 @@ python3 ../scripts/renderlayout.py \
 Соглашения об именовании — в [[ru/user/bem]].
 
 ```bash
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-path "/_layouts/mesh/_preview.html" \
   --layout-src '{{ import "_blocks" }}{{ import "bar" }}{{ import "button" }}<style>{{ yield _style_mesh_bar() }}{{ yield _style_mesh_button() }}</style>{{ yield mesh_bar() }}' \
   --note-src "hello"
@@ -254,25 +250,11 @@ python3 ../scripts/renderlayout.py \
 
 ## Live превью с file watcher
 
-Установите [watchexec](https://github.com/watchexec/watchexec), затем запустите:
-
 ```bash
-watchexec -e html -- sh -c '
-  curl -s -X POST \
-    -H "X-API-Key: $API_KEY" \
-    -H "Content-Type: application/json" \
-    -d "{
-      \"layout\": {
-        \"path\": \"_layouts/article.html\",
-        \"src\":  $(cat _layouts/article.html | jq -Rs .)
-      },
-      \"note\": {\"path\": \"posts/hello.md\"}
-    }" \
-    https://yoursite.com/_system/renderlayout
-'
+node scripts/trip2g-preview.mjs --watch \
+  --layout-file _layouts/article.html --note-path posts/hello.md
+# откройте напечатанный ?live URL; он перезагружается при каждом сохранении
 ```
-
-Держите `https://yoursite.com/_system/renderlayout?live` открытым в браузере. Страница перезагружается мгновенно после получения POST — long-poll соединение уже ждёт на сервере.
 
 ---
 

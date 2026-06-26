@@ -87,7 +87,7 @@ lang_redirect: "[[en/user/jet-debugging]]"
 Пример — посмотреть frontmatter заметки:
 
 ```bash
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-src '{{ note.M().Debug() }}' \
   --layout-path '/_debug.html' \
   --note-path /my-post \

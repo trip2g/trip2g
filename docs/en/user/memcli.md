@@ -65,7 +65,17 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `--public-url <url>` | `http://localhost:<port>` | Override `PUBLIC_URL` |
 | `--no-hub` | — | Skip writing the federation hub note |
 | `--hub-url <url>` | `https://trip2g.com/_system/mcp` | Point the hub at a different MCP endpoint |
+| `--name <id>` | — | Run a second isolated instance `trip2g-memory-<id>`; pass the same `--name` to `down`/`status`/`logs`, and give it a distinct `--port` |
 | `--dry-run` | — | Print commands without executing |
+
+To run two instances side-by-side, give the second one a `--name` and a distinct `--port`. State stays per-`--folder`, so each instance keeps its own vault:
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./vault-blog --name blog --port 24181
+node cli/memcli/dist/memcli.js up --folder ./vault-work --name work --port 24281
+# stop by name:
+node cli/memcli/dist/memcli.js down --name blog
+```
 
 **Flags for `daily` / `log`:**
 
