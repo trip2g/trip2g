@@ -1,13 +1,12 @@
+/** Internal type. DO NOT USE DIRECTLY. */
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+/** Internal type. DO NOT USE DIRECTLY. */
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 namespace $ {
 
 
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -15,9 +14,9 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  Int64: { input: any; output: any; }
-  Time: { input: any; output: any; }
-  Upload: { input: any; output: any; }
+  Int64: { input: unknown; output: unknown; }
+  Time: { input: unknown; output: unknown; }
+  Upload: { input: unknown; output: unknown; }
 };
 
 export type ActiveOffers = {
@@ -4182,1379 +4181,2415 @@ export type WikilinkResolution = {
   url?: Maybe<Scalars['String']['output']>;
 };
 
+export type AddFederationSecretSubgraphInput = {
+  kid: string;
+  subgraphID: unknown;
+};
+
+export type AdminAuditLogsDateFilter = {
+  gte?: unknown;
+  lte?: unknown;
+};
+
+export type AdminAuditLogsFilterInput = {
+  createdAt?: AdminAuditLogsDateFilter | null | undefined;
+  limit?: unknown;
+  offset?: unknown;
+};
+
+export type AdminBoostyCredentialsFilterInput = {
+  state?: BoostyCredentialsStateEnum | null | undefined;
+};
+
+export type AdminCompleteTelegramAccountAuthInput = {
+  code: string;
+  password?: string | null | undefined;
+  phone: string;
+};
+
+export type AdminFormSubmitsDateFilter = {
+  gte?: unknown;
+  lte?: unknown;
+};
+
+export type AdminFormSubmitsFilterInput = {
+  createdAt?: AdminFormSubmitsDateFilter | null | undefined;
+  formId?: string | null | undefined;
+  limit?: number | null | undefined;
+  notePathId?: unknown;
+  offset?: number | null | undefined;
+  processed?: boolean | null | undefined;
+  status?: FormSubmitStatus | null | undefined;
+};
+
+export type AdminImportTelegramAccountChannelInput = {
+  accountId: unknown;
+  basePath: string;
+  channelId: unknown;
+  skipExists?: boolean | null | undefined;
+  withMedia?: boolean | null | undefined;
+};
+
+export type AdminLatestNoteViewsFilter = {
+  withWarnings?: boolean | null | undefined;
+};
+
+export type AdminNoteVersionHistoryFilter = {
+  limit?: number | null | undefined;
+  offset?: number | null | undefined;
+  path: string;
+};
+
+export type AdminPatreonCredentialsFilterInput = {
+  state?: PatreonCredentialsStateEnum | null | undefined;
+};
+
+export type AdminSetTelegramAccountChatPublishInstantTagsInput = {
+  accountId: unknown;
+  tagIds: Array<unknown>;
+  telegramChatId: string;
+};
+
+export type AdminSetTelegramAccountChatPublishTagsInput = {
+  accountId: unknown;
+  tagIds: Array<unknown>;
+  telegramChatId: string;
+};
+
+export type AdminSignOutTelegramAccountInput = {
+  id: unknown;
+};
+
+export type AdminStartTelegramAccountAuthInput = {
+  apiHash: string;
+  apiId: number;
+  phone: string;
+};
+
+export type AdminTelegramAccountAuthStateEnum =
+  | 'AUTHORIZED'
+  | 'ERROR'
+  | 'WAITING_FOR_CODE'
+  | 'WAITING_FOR_PASSWORD';
+
+export type AdminTelegramAccountDialogType =
+  | 'channel'
+  | 'chat'
+  | 'user';
+
+export type AdminTelegramPublishNotesFilter = {
+  includeOutdated?: boolean | null | undefined;
+  includeSent?: boolean | null | undefined;
+};
+
+export type AdminTgBotChatsFilterInput = {
+  botId?: unknown;
+  canInvite?: boolean | null | undefined;
+  includeRemoved?: boolean | null | undefined;
+};
+
+export type AdminUpdateTelegramAccountInput = {
+  displayName?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  id: unknown;
+};
+
+export type ApiKeyLogsFilterInput = {
+  apiKeyId?: unknown;
+};
+
+export type AuditLogLevelEnum =
+  | 'DEBUG'
+  | 'ERROR'
+  | 'INFO'
+  | 'UNKNOWN'
+  | 'WARNING';
+
+export type BanUserInput = {
+  reason: string;
+  userId: unknown;
+};
+
+export type BoostyCredentialsStateEnum =
+  | 'ACTIVE'
+  | 'DELETED';
+
+export type ChangeWebhookCreateInput = {
+  description?: string | null | undefined;
+  excludePatterns?: Array<string> | null | undefined;
+  includeContent?: boolean | null | undefined;
+  includePatterns: Array<string>;
+  instruction?: string | null | undefined;
+  maxDepth?: unknown;
+  maxRetries?: unknown;
+  onCreate?: boolean | null | undefined;
+  onRemove?: boolean | null | undefined;
+  onUpdate?: boolean | null | undefined;
+  passApiKey?: boolean | null | undefined;
+  readPatterns?: Array<string> | null | undefined;
+  secret?: string | null | undefined;
+  timeoutSeconds?: unknown;
+  url: string;
+  writePatterns?: Array<string> | null | undefined;
+};
+
+export type ChangeWebhookDeleteInput = {
+  id: unknown;
+};
+
+export type ChangeWebhookRegenerateSecretInput = {
+  id: unknown;
+};
+
+export type ChangeWebhookUpdateInput = {
+  description?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  excludePatterns?: Array<string> | null | undefined;
+  id: unknown;
+  includeContent?: boolean | null | undefined;
+  includePatterns?: Array<string> | null | undefined;
+  instruction?: string | null | undefined;
+  maxDepth?: unknown;
+  maxRetries?: unknown;
+  onCreate?: boolean | null | undefined;
+  onRemove?: boolean | null | undefined;
+  onUpdate?: boolean | null | undefined;
+  passApiKey?: boolean | null | undefined;
+  readPatterns?: Array<string> | null | undefined;
+  timeoutSeconds?: unknown;
+  url?: string | null | undefined;
+  writePatterns?: Array<string> | null | undefined;
+};
+
+export type ClearBackgroundQueueInput = {
+  id: string;
+};
+
+export type CreateAdminInput = {
+  userId: unknown;
+};
+
+export type CreateApiKeyInput = {
+  description: string;
+};
+
+export type CreateBoostyCredentialsInput = {
+  authData: string;
+  blogName: string;
+  deviceId: string;
+};
+
+export type CreateCronWebhookInput = {
+  cronSchedule: string;
+  description?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  instruction?: string | null | undefined;
+  maxDepth?: unknown;
+  maxRetries?: unknown;
+  passApiKey?: boolean | null | undefined;
+  readPatterns?: Array<string> | null | undefined;
+  secret?: string | null | undefined;
+  timeoutSeconds?: unknown;
+  url: string;
+  writePatterns?: Array<string> | null | undefined;
+};
+
+export type CreateEmailWaitListRequestInput = {
+  email: string;
+  pathId: unknown;
+};
+
+export type CreateFrontmatterPatchInput = {
+  description: string;
+  enabled: boolean;
+  excludePatterns?: Array<string> | null | undefined;
+  includePatterns: Array<string>;
+  jsonnet: string;
+  priority: number;
+};
+
+export type CreateGitHubOAuthCredentialsInput = {
+  clientId: string;
+  clientSecret: string;
+  name: string;
+};
+
+export type CreateGitTokenInput = {
+  canPull: boolean;
+  canPush: boolean;
+  description: string;
+};
+
+export type CreateGoogleOAuthCredentialsInput = {
+  clientId: string;
+  clientSecret: string;
+  name: string;
+};
+
+export type CreateHtmlInjectionInput = {
+  activeFrom?: unknown;
+  activeTo?: unknown;
+  content: string;
+  description: string;
+  placement: string;
+  position: number;
+};
+
+export type CreateInboundFederationSecretInput = {
+  description?: string | null | undefined;
+  kid: string;
+  secretHex?: string | null | undefined;
+};
+
+export type CreateNotFoundIgnoredPatternInput = {
+  pattern: string;
+};
+
+export type CreateOfferInput = {
+  endsAt?: unknown;
+  lifetime?: string | null | undefined;
+  priceUSD: number;
+  startsAt?: unknown;
+  subgraphIds: Array<unknown>;
+};
+
+export type CreateOutboundFederationSecretInput = {
+  description?: string | null | undefined;
+  kbURL: string;
+  kid: string;
+  secretHex: string;
+};
+
+export type CreatePatreonCredentialsInput = {
+  creatorAccessToken: string;
+};
+
+export type CreatePaymentLinkInput = {
+  email?: string | null | undefined;
+  offerId: string;
+  paymentType: PaymentType;
+  returnPath: string;
+};
+
+export type CreateRedirectInput = {
+  ignoreCase: boolean;
+  isRegex: boolean;
+  pattern: string;
+  target: string;
+};
+
+export type CreateReleaseInput = {
+  homeNoteVersionId?: unknown;
+  title: string;
+};
+
+export type CreateTgBotInput = {
+  description: string;
+  token: string;
+};
+
+export type CreateUserInput = {
+  email: string;
+};
+
+export type CreateUserSubgraphAccessInput = {
+  expiresAt?: unknown;
+  subgraphIds: Array<unknown>;
+  userId: unknown;
+};
+
+export type CreateUserTokenInput = {
+  expiresInDays?: number | null | undefined;
+  name: string;
+};
+
+export type CronJobExecutionStatus =
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'PENDING'
+  | 'RUNNING';
+
+export type DeleteBoostyCredentialsInput = {
+  id: unknown;
+};
+
+export type DeleteCronWebhookInput = {
+  id: unknown;
+};
+
+export type DeleteFrontmatterPatchInput = {
+  id: unknown;
+};
+
+export type DeleteGitHubOAuthCredentialsInput = {
+  id: unknown;
+};
+
+export type DeleteGoogleOAuthCredentialsInput = {
+  id: unknown;
+};
+
+export type DeleteHtmlInjectionInput = {
+  id: unknown;
+};
+
+export type DeleteNotFoundIgnoredPatternInput = {
+  id: unknown;
+};
+
+export type DeletePatreonCredentialsInput = {
+  id: unknown;
+};
+
+export type DeleteRedirectInput = {
+  id: unknown;
+};
+
+export type DisableApiKeyInput = {
+  id: unknown;
+};
+
+export type DisableGitTokenInput = {
+  id: unknown;
+};
+
+export type EnableApiKeyInput = {
+  id: unknown;
+};
+
+export type FormSubmitStatus =
+  | 'hidden'
+  | 'pending'
+  | 'visible';
+
+export type HealthCheckStatus =
+  | 'CRITICAL'
+  | 'OK'
+  | 'WARNING';
+
+export type MakeReleaseLiveInput = {
+  id: unknown;
+};
+
+export type NoteChangesFilter = {
+  /** Glob patterns for exclusion. Applied after includePatterns. */
+  excludePatterns?: Array<string> | null | undefined;
+  /**
+   * Glob patterns for inclusion (doublestar, same as changeWebhook).
+   * Required — explicitly state what to watch. Use ["**"] for everything.
+   */
+  includePatterns: Array<string>;
+};
+
+export type NoteInput = {
+  path?: string | null | undefined;
+  pathId?: unknown;
+  referer: string;
+};
+
+export type NotePathsFilter = {
+  /**
+   * LIKE pattern with % and _ wildcards supported.
+   * For example, to find all note paths starting with "myfolder/", use "myfolder/%".
+   */
+  like?: string | null | undefined;
+  /** Only return these specific note paths. Search and like will be ignored if paths is set. */
+  paths?: Array<string> | null | undefined;
+  /** Full-text search on note paths. like will be ignored if search is set. */
+  search?: string | null | undefined;
+};
+
+export type NoteVersionDiffFilter = {
+  fromVersionId: unknown;
+  toVersionId: unknown;
+};
+
+export type NoteWarningLevelEnum =
+  | 'CRITICAL'
+  | 'INFO'
+  | 'WARNING';
+
+export type OAuthUrlInput = {
+  /**
+   * If true, returns callbackUrl even if OAuth is not configured.
+   * Useful for admin UI to display the callback URL before configuration.
+   */
+  dry?: boolean | null | undefined;
+  /** URL to redirect to after authentication. */
+  redirectUrl: string;
+};
+
+export type PatreonCredentialsStateEnum =
+  | 'ACTIVE'
+  | 'DELETED';
+
+export type PaymentType =
+  | 'CRYPTO';
+
+export type PushNoteInput = {
+  content: string;
+  path: string;
+};
+
+export type PushNotesInput = {
+  skipCommit?: boolean | null | undefined;
+  updates: Array<PushNoteInput>;
+};
+
+export type RefreshBoostyDataInput = {
+  credentialsId: unknown;
+};
+
+export type RefreshPatreonDataInput = {
+  credentialsId: unknown;
+};
+
+export type RegenerateCronWebhookSecretInput = {
+  id: unknown;
+};
+
+export type RemoveFederationSecretSubgraphInput = {
+  kid: string;
+  subgraphID: unknown;
+};
+
+export type RequestEmailSignInCodeInput = {
+  captchaToken?: string | null | undefined;
+  email: string;
+};
+
+export type ResetNotFoundPathInput = {
+  id: unknown;
+};
+
+export type ResetTelegramPublishNoteInput = {
+  id: unknown;
+};
+
+export type ResolveWikilinksFilter = {
+  links: Array<string>;
+  notePathId: unknown;
+};
+
+export type RestoreBoostyCredentialsInput = {
+  id: unknown;
+};
+
+export type RestorePatreonCredentialsInput = {
+  id: unknown;
+};
+
+export type RevokeUserTokenInput = {
+  id: string | number;
+};
+
+export type Role =
+  | 'ADMIN'
+  | 'GUEST'
+  | 'USER';
+
+export type RunCronJobInput = {
+  id: unknown;
+};
+
+export type SearchInput = {
+  query: string;
+};
+
+export type SearchMatchOrigin =
+  | 'HYBRID'
+  | 'TEXT'
+  | 'VECTOR';
+
+export type SecretKeysFilter = {
+  idPrefix?: string | null | undefined;
+};
+
+export type SendTelegramPublishNoteNowInput = {
+  id: unknown;
+};
+
+export type SetActiveGitHubOAuthCredentialsInput = {
+  id: unknown;
+};
+
+export type SetActiveGoogleOAuthCredentialsInput = {
+  id: unknown;
+};
+
+export type SetApiKeyMcpAdminToolsInput = {
+  enabled: boolean;
+  id: unknown;
+};
+
+export type SetBoostyTierSubgraphsInput = {
+  subgraphIds: Array<unknown>;
+  tierId: unknown;
+};
+
+export type SetConfigBoolValueInput = {
+  id: string;
+  value: boolean;
+};
+
+export type SetConfigIntValueInput = {
+  id: string;
+  value: number;
+};
+
+export type SetConfigStringValueInput = {
+  id: string;
+  value: string;
+};
+
+export type SetPatreonTierSubgraphsInput = {
+  subgraphIds: Array<unknown>;
+  tierId: unknown;
+};
+
+export type SetSecretInput = {
+  key: string;
+  value: string;
+};
+
+export type SetTgChatPublishInstantTagsInput = {
+  chatId: unknown;
+  tagIds: Array<unknown>;
+};
+
+export type SetTgChatPublishTagsInput = {
+  chatId: unknown;
+  tagIds: Array<unknown>;
+};
+
+export type SetTgChatSubgraphInvitesInput = {
+  chatId: unknown;
+  subgraphIds: Array<unknown>;
+};
+
+export type SetTgChatSubgraphsInput = {
+  chatId: unknown;
+  subgraphIds: Array<unknown>;
+};
+
+export type SignInByEmailInput = {
+  code: string;
+  email: string;
+};
+
+export type StartBackgroundQueueInput = {
+  id: string;
+};
+
+export type StopBackgroundQueueInput = {
+  id: string;
+};
+
+export type ToggleFavoriteNoteInput = {
+  pathId: unknown;
+  value: boolean;
+};
+
+export type TriggerChangeWebhookInput = {
+  pathIds: Array<unknown>;
+  webhookId: unknown;
+};
+
+export type TriggerCronWebhookInput = {
+  cronWebhookId: unknown;
+};
+
+export type UnbanUserInput = {
+  userId: unknown;
+};
+
+export type UpdateCronJobInput = {
+  enabled: boolean;
+  expression: string;
+  id: unknown;
+};
+
+export type UpdateCronWebhookInput = {
+  cronSchedule?: string | null | undefined;
+  description?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  id: unknown;
+  instruction?: string | null | undefined;
+  maxDepth?: unknown;
+  maxRetries?: unknown;
+  passApiKey?: boolean | null | undefined;
+  readPatterns?: Array<string> | null | undefined;
+  timeoutSeconds?: unknown;
+  url?: string | null | undefined;
+  writePatterns?: Array<string> | null | undefined;
+};
+
+export type UpdateFrontmatterPatchInput = {
+  description: string;
+  enabled: boolean;
+  excludePatterns?: Array<string> | null | undefined;
+  id: unknown;
+  includePatterns: Array<string>;
+  jsonnet: string;
+  priority: number;
+};
+
+export type UpdateHtmlInjectionInput = {
+  activeFrom?: unknown;
+  activeTo?: unknown;
+  content: string;
+  description: string;
+  id: unknown;
+  placement: string;
+  position: number;
+};
+
+export type UpdateNotFoundIgnoredPatternInput = {
+  id: unknown;
+  pattern: string;
+};
+
+export type UpdateNoteGraphPositionInput = {
+  pathId: unknown;
+  x: number;
+  y: number;
+};
+
+export type UpdateNoteGraphPositionsInput = {
+  positions: Array<UpdateNoteGraphPositionInput>;
+};
+
+export type UpdateOfferInput = {
+  endsAt?: unknown;
+  id: unknown;
+  lifetime?: string | null | undefined;
+  priceUSD?: number | null | undefined;
+  startsAt?: unknown;
+  subgraphIds?: Array<unknown> | null | undefined;
+};
+
+export type UpdateRedirectInput = {
+  id: unknown;
+  ignoreCase: boolean;
+  isRegex: boolean;
+  pattern: string;
+  target: string;
+};
+
+export type UpdateSubgraphInput = {
+  color: string;
+  hidden: boolean;
+  id: unknown;
+  requireSignin: boolean;
+};
+
+export type UpdateTgBotInput = {
+  description?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  id: unknown;
+};
+
+export type UpdateUserInput = {
+  email?: string | null | undefined;
+  id: unknown;
+};
+
+export type UpdateUserSubgraphAccessInput = {
+  expiresAt?: unknown;
+  id: unknown;
+  subgraphId?: unknown;
+};
+
+export type ViewerOffersFilter = {
+  pageId?: unknown;
+};
+
 export type AdminsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allAdmins: { __typename?: 'AdminAdminsConnection', nodes: Array<{ __typename?: 'Admin', id: any, grantedAt: any, user: { __typename?: 'AdminUser', email?: string | null } }> } } };
+export type AdminsQuery = { admin: { allAdmins: { nodes: Array<{ id: unknown, grantedAt: unknown, user: { email: string | null } }> } } };
 
 export type AdminCreateAdminMutationVariables = Exact<{
   input: CreateAdminInput;
 }>;
 
 
-export type AdminCreateAdminMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateAdminPayload', admin: { __typename?: 'Admin', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateAdminMutation = { admin: { data:
+      | { __typename: 'CreateAdminPayload', admin: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type DisableApiKeyMutationVariables = Exact<{
   input: DisableApiKeyInput;
 }>;
 
 
-export type DisableApiKeyMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DisableApiKeyPayload', apiKey: { __typename?: 'AdminApiKey', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type DisableApiKeyMutation = { admin: { data:
+      | { __typename: 'DisableApiKeyPayload', apiKey: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type EnableApiKeyMutationVariables = Exact<{
   input: EnableApiKeyInput;
 }>;
 
 
-export type EnableApiKeyMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'EnableApiKeyPayload', apiKey: { __typename?: 'AdminApiKey', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type EnableApiKeyMutation = { admin: { data:
+      | { __typename: 'EnableApiKeyPayload', apiKey: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type SetApiKeyMcpAdminToolsMutationVariables = Exact<{
   input: SetApiKeyMcpAdminToolsInput;
 }>;
 
 
-export type SetApiKeyMcpAdminToolsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetApiKeyMcpAdminToolsPayload', apiKey: { __typename?: 'AdminApiKey', id: any } } } };
+export type SetApiKeyMcpAdminToolsMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetApiKeyMcpAdminToolsPayload', apiKey: { id: unknown } }
+     } };
 
 export type AdminListApiKeysQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListApiKeysQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allApiKeys: { __typename?: 'AdminApiKeysConnection', nodes: Array<{ __typename?: 'AdminApiKey', id: any, createdAt: any, description: string, disabledAt?: any | null, enableMcpAdminTools?: boolean | null, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null }, disabledBy?: { __typename?: 'AdminUser', id: any, email?: string | null } | null }> } } };
+export type AdminListApiKeysQuery = { admin: { allApiKeys: { nodes: Array<{ id: unknown, createdAt: unknown, description: string, disabledAt: unknown, enableMcpAdminTools: boolean | null, createdBy: { id: unknown, email: string | null }, disabledBy: { id: unknown, email: string | null } | null }> } } };
 
 export type AdminCreateApiKeyMutationVariables = Exact<{
   input: CreateApiKeyInput;
 }>;
 
 
-export type AdminCreateApiKeyMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateApiKeyPayload', value: string, apiKey: { __typename?: 'AdminApiKey', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateApiKeyMutation = { admin: { data:
+      | { __typename: 'CreateApiKeyPayload', value: string, apiKey: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminApiKeyShowQueryQueryVariables = Exact<{
   filter: ApiKeyLogsFilterInput;
 }>;
 
 
-export type AdminApiKeyShowQueryQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', apiKeyLogs: { __typename?: 'AdminApiKeyLogsConnection', nodes: Array<{ __typename?: 'AdminApiKeyLog', createdAt: any, actionName: string, ip: string }> } } };
+export type AdminApiKeyShowQueryQuery = { admin: { apiKeyLogs: { nodes: Array<{ createdAt: unknown, actionName: string, ip: string }> } } };
 
 export type AdminAuditLogsQueryVariables = Exact<{
   filter: AdminAuditLogsFilterInput;
 }>;
 
 
-export type AdminAuditLogsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', auditLogs: { __typename?: 'AdminAuditLogsConnection', nodes: Array<{ __typename?: 'AdminAuditLog', id: any, createdAt: any, level: AuditLogLevelEnum, message: string, params: string }> } } };
+export type AdminAuditLogsQuery = { admin: { auditLogs: { nodes: Array<{ id: unknown, createdAt: unknown, level: AuditLogLevelEnum, message: string, params: string }> } } };
 
 export type AdminClearBackgroundQueueMutationVariables = Exact<{
   input: ClearBackgroundQueueInput;
 }>;
 
 
-export type AdminClearBackgroundQueueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ClearBackgroundQueuePayload', deletedCount: any, queue: { __typename?: 'AdminBackgroundQueue', id: string, stopped: boolean } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminClearBackgroundQueueMutation = { admin: { payload:
+      | { __typename: 'ClearBackgroundQueuePayload', deletedCount: unknown, queue: { id: string, stopped: boolean } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminStartBackgroundQueueMutationVariables = Exact<{
   input: StartBackgroundQueueInput;
 }>;
 
 
-export type AdminStartBackgroundQueueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'StartBackgroundQueuePayload', queues: Array<{ __typename?: 'AdminBackgroundQueue', id: string, stopped: boolean }> } } };
+export type AdminStartBackgroundQueueMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'StartBackgroundQueuePayload', queues: Array<{ id: string, stopped: boolean }> }
+     } };
 
 export type AdminStopBackgroundQueueMutationVariables = Exact<{
   input: StopBackgroundQueueInput;
 }>;
 
 
-export type AdminStopBackgroundQueueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'StopBackgroundQueuePayload', queues: Array<{ __typename?: 'AdminBackgroundQueue', id: string, stopped: boolean }> } } };
+export type AdminStopBackgroundQueueMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'StopBackgroundQueuePayload', queues: Array<{ id: string, stopped: boolean }> }
+     } };
 
 export type AdminBackgroundQueuesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminBackgroundQueuesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allBackgroundQueues: { __typename?: 'AdminBackgroundQueuesConnection', nodes: Array<{ __typename?: 'AdminBackgroundQueue', id: string, pendingCount: any, retryCount: any, stopped: boolean }> } } };
+export type AdminBackgroundQueuesQuery = { admin: { allBackgroundQueues: { nodes: Array<{ id: string, pendingCount: unknown, retryCount: unknown, stopped: boolean }> } } };
 
 export type AdminBackgroundQueueQueryVariables = Exact<{
-  id: Scalars['String']['input'];
+  id: string;
 }>;
 
 
-export type AdminBackgroundQueueQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', backgroundQueue?: { __typename?: 'AdminBackgroundQueue', id: string, pendingCount: any, retryCount: any, stopped: boolean, jobs: Array<{ __typename?: 'AdminBackgroundJob', id: string, name: string, params: string, retryCount: any }> } | null } };
+export type AdminBackgroundQueueQuery = { admin: { backgroundQueue: { id: string, pendingCount: unknown, retryCount: unknown, stopped: boolean, jobs: Array<{ id: string, name: string, params: string, retryCount: unknown }> } | null } };
 
 export type AdminDeleteBoostyCredentialsMutationVariables = Exact<{
   input: DeleteBoostyCredentialsInput;
 }>;
 
 
-export type AdminDeleteBoostyCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'DeleteBoostyCredentialsPayload', boostyCredentials: { __typename?: 'AdminBoostyCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteBoostyCredentialsMutation = { admin: { payload:
+      | { __typename: 'DeleteBoostyCredentialsPayload', boostyCredentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type RefreshBoostyDataMutationVariables = Exact<{
   input: RefreshBoostyDataInput;
 }>;
 
 
-export type RefreshBoostyDataMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'RefreshBoostyDataPayload', success: boolean, credentials: { __typename?: 'AdminBoostyCredentials', id: any } } } };
+export type RefreshBoostyDataMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RefreshBoostyDataPayload', success: boolean, credentials: { id: unknown } }
+     } };
 
 export type AdminRestoreBoostyCredentialsMutationVariables = Exact<{
   input: RestoreBoostyCredentialsInput;
 }>;
 
 
-export type AdminRestoreBoostyCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'RestoreBoostyCredentialsPayload', boostyCredentials: { __typename?: 'AdminBoostyCredentials', id: any } } } };
+export type AdminRestoreBoostyCredentialsMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RestoreBoostyCredentialsPayload', boostyCredentials: { id: unknown } }
+     } };
 
 export type AdminBoostyCredentialsQueryVariables = Exact<{
-  filter?: InputMaybe<AdminBoostyCredentialsFilterInput>;
+  filter?: AdminBoostyCredentialsFilterInput | null | undefined;
 }>;
 
 
-export type AdminBoostyCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allBoostyCredentials: { __typename?: 'AdminBoostyCredentialsConnection', nodes: Array<{ __typename?: 'AdminBoostyCredentials', id: any, state: BoostyCredentialsStateEnum, deviceId: string, blogName: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminBoostyCredentialsQuery = { admin: { allBoostyCredentials: { nodes: Array<{ id: unknown, state: BoostyCredentialsStateEnum, deviceId: string, blogName: string, createdAt: unknown, createdBy: { id: unknown, email: string | null } }> } } };
 
 export type AdminCreateBoostyCredsMutationVariables = Exact<{
   input: CreateBoostyCredentialsInput;
 }>;
 
 
-export type AdminCreateBoostyCredsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateBoostyCredentialsPayload', boostyCredentials: { __typename?: 'AdminBoostyCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateBoostyCredsMutation = { admin: { payload:
+      | { __typename: 'CreateBoostyCredentialsPayload', boostyCredentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminBoostyCredentialsByIdQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminBoostyCredentialsByIdQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', boostyCredentials?: { __typename?: 'AdminBoostyCredentials', createdAt: any, deviceId: string, blogName: string, state: BoostyCredentialsStateEnum, createdBy: { __typename?: 'AdminUser', email?: string | null }, tiers: { __typename?: 'AdminBoostyTiersConnection', nodes: Array<{ __typename?: 'AdminBoostyTier', id: any, name: string, subgraphs: Array<{ __typename?: 'AdminSubgraph', id: any }> }> }, members: { __typename?: 'AdminBoostyMembersConnection', nodes: Array<{ __typename?: 'AdminBoostyMember', email: string, status: string }> } } | null } };
+export type AdminBoostyCredentialsByIdQuery = { admin: { boostyCredentials: { createdAt: unknown, deviceId: string, blogName: string, state: BoostyCredentialsStateEnum, createdBy: { email: string | null }, tiers: { nodes: Array<{ id: unknown, name: string, subgraphs: Array<{ id: unknown }> }> }, members: { nodes: Array<{ email: string, status: string }> } } | null } };
 
 export type AdminBoostycredentialsShowSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminBoostycredentialsShowSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminBoostycredentialsShowSubgraphsQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminBoostycredentialsShowSubgraphsSaveMutationVariables = Exact<{
   input: SetBoostyTierSubgraphsInput;
 }>;
 
 
-export type AdminBoostycredentialsShowSubgraphsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetBoostyTierSubgraphsPayload', success: boolean } } };
+export type AdminBoostycredentialsShowSubgraphsSaveMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetBoostyTierSubgraphsPayload', success: boolean }
+     } };
 
 export type AdminChangeWebhooksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminChangeWebhooksQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allChangeWebhooks: { __typename?: 'AdminChangeWebhooksConnection', nodes: Array<{ __typename?: 'AdminChangeWebhook', id: any, url: string, enabled: boolean, description: string, onCreate: boolean, onUpdate: boolean, onRemove: boolean, lastDeliveryAt?: any | null, lastDeliveryStatus?: string | null, createdAt: any }> } } };
+export type AdminChangeWebhooksQuery = { admin: { allChangeWebhooks: { nodes: Array<{ id: unknown, url: string, enabled: boolean, description: string, onCreate: boolean, onUpdate: boolean, onRemove: boolean, lastDeliveryAt: unknown, lastDeliveryStatus: string | null, createdAt: unknown }> } } };
 
 export type AdminChangeWebhookCreateMutationMutationVariables = Exact<{
   input: ChangeWebhookCreateInput;
 }>;
 
 
-export type AdminChangeWebhookCreateMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ChangeWebhookCreatePayload', secret: string, webhook: { __typename?: 'AdminChangeWebhook', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminChangeWebhookCreateMutationMutation = { admin: { payload:
+      | { __typename: 'ChangeWebhookCreatePayload', secret: string, webhook: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminShowChangeWebhookQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowChangeWebhookQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', changeWebhookDeliveries: { __typename?: 'AdminChangeWebhookDeliveriesConnection', nodes: Array<{ __typename?: 'AdminChangeWebhookDelivery', id: any, status: string, responseStatus?: any | null, attempt: any, durationMs?: any | null, createdAt: any, completedAt?: any | null }> } } };
+export type AdminShowChangeWebhookQuery = { admin: { changeWebhookDeliveries: { nodes: Array<{ id: unknown, status: string, responseStatus: unknown, attempt: unknown, durationMs: unknown, createdAt: unknown, completedAt: unknown }> } } };
 
 export type AdminGetChangeWebhookQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminGetChangeWebhookQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', changeWebhook?: { __typename?: 'AdminChangeWebhook', id: any, url: string, enabled: boolean, description: string, instruction: string, hasSecret: boolean, passApiKey: boolean, includeContent: boolean, maxDepth: any, timeoutSeconds: any, maxRetries: any, onCreate: boolean, onUpdate: boolean, onRemove: boolean, includePatterns: Array<string>, excludePatterns: Array<string>, readPatterns: Array<string>, writePatterns: Array<string>, createdAt: any, secretPrefix: string } | null } };
+export type AdminGetChangeWebhookQuery = { admin: { changeWebhook: { id: unknown, url: string, enabled: boolean, description: string, instruction: string, hasSecret: boolean, passApiKey: boolean, includeContent: boolean, maxDepth: unknown, timeoutSeconds: unknown, maxRetries: unknown, onCreate: boolean, onUpdate: boolean, onRemove: boolean, includePatterns: Array<string>, excludePatterns: Array<string>, readPatterns: Array<string>, writePatterns: Array<string>, createdAt: unknown, secretPrefix: string } | null } };
 
 export type AdminChangeWebhookDeleteMutationMutationVariables = Exact<{
   input: ChangeWebhookDeleteInput;
 }>;
 
 
-export type AdminChangeWebhookDeleteMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ChangeWebhookDeletePayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminChangeWebhookDeleteMutationMutation = { admin: { payload:
+      | { __typename: 'ChangeWebhookDeletePayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminChangeWebhookRegenerateSecretMutationMutationVariables = Exact<{
   input: ChangeWebhookRegenerateSecretInput;
 }>;
 
 
-export type AdminChangeWebhookRegenerateSecretMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ChangeWebhookRegenerateSecretPayload', secret: string } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminChangeWebhookRegenerateSecretMutationMutation = { admin: { payload:
+      | { __typename: 'ChangeWebhookRegenerateSecretPayload', secret: string }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AllNotePathsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AllNotePathsQuery = { __typename?: 'Query', notePaths: Array<{ __typename?: 'NotePath', id: any, value: string }> };
+export type AllNotePathsQuery = { notePaths: Array<{ id: unknown, value: string }> };
 
 export type TriggerChangeWebhookMutationVariables = Exact<{
   input: TriggerChangeWebhookInput;
 }>;
 
 
-export type TriggerChangeWebhookMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'TriggerChangeWebhookPayload', matchedCount: any, ignoredCount: any, deliveryId?: any | null } } };
+export type TriggerChangeWebhookMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'TriggerChangeWebhookPayload', matchedCount: unknown, ignoredCount: unknown, deliveryId: unknown }
+     } };
 
 export type AdminShowChangeWebhookForUpdateQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowChangeWebhookForUpdateQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', changeWebhook?: { __typename?: 'AdminChangeWebhook', id: any, url: string, enabled: boolean, description: string, instruction: string, includePatterns: Array<string>, excludePatterns: Array<string>, passApiKey: boolean, includeContent: boolean, maxDepth: any, timeoutSeconds: any, maxRetries: any, onCreate: boolean, onUpdate: boolean, onRemove: boolean, readPatterns: Array<string>, writePatterns: Array<string> } | null } };
+export type AdminShowChangeWebhookForUpdateQuery = { admin: { changeWebhook: { id: unknown, url: string, enabled: boolean, description: string, instruction: string, includePatterns: Array<string>, excludePatterns: Array<string>, passApiKey: boolean, includeContent: boolean, maxDepth: unknown, timeoutSeconds: unknown, maxRetries: unknown, onCreate: boolean, onUpdate: boolean, onRemove: boolean, readPatterns: Array<string>, writePatterns: Array<string> } | null } };
 
 export type AdminChangeWebhookUpdateMutationMutationVariables = Exact<{
   input: ChangeWebhookUpdateInput;
 }>;
 
 
-export type AdminChangeWebhookUpdateMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ChangeWebhookUpdatePayload', webhook: { __typename?: 'AdminChangeWebhook', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminChangeWebhookUpdateMutationMutation = { admin: { payload:
+      | { __typename: 'ChangeWebhookUpdatePayload', webhook: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminConfigValuesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminConfigValuesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', configValues: Array<{ __typename: 'AdminConfigBoolValue', id: string, description?: string | null, updatedAt?: any | null, boolValue: boolean, updatedBy?: { __typename?: 'AdminUser', email?: string | null } | null } | { __typename: 'AdminConfigIntValue', id: string, description?: string | null, updatedAt?: any | null, intValue: number, updatedBy?: { __typename?: 'AdminUser', email?: string | null } | null } | { __typename: 'AdminConfigStringValue', id: string, description?: string | null, updatedAt?: any | null, stringValue: string, updatedBy?: { __typename?: 'AdminUser', email?: string | null } | null }> } };
+export type AdminConfigValuesQuery = { admin: { configValues: Array<
+      | { __typename: 'AdminConfigBoolValue', id: string, description: string | null, updatedAt: unknown, boolValue: boolean, updatedBy: { email: string | null } | null }
+      | { __typename: 'AdminConfigIntValue', id: string, description: string | null, updatedAt: unknown, intValue: number, updatedBy: { email: string | null } | null }
+      | { __typename: 'AdminConfigStringValue', id: string, description: string | null, updatedAt: unknown, stringValue: string, updatedBy: { email: string | null } | null }
+    > } };
 
 export type AdminConfigValueQueryVariables = Exact<{
-  id: Scalars['String']['input'];
+  id: string;
 }>;
 
 
-export type AdminConfigValueQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', configValue?: { __typename: 'AdminConfigBoolValue', id: string, description?: string | null, updatedAt?: any | null, boolValue: boolean, boolHistory: Array<{ __typename?: 'AdminConfigBoolEntry', id: any, value: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } | { __typename: 'AdminConfigIntValue', id: string, description?: string | null, updatedAt?: any | null, intValue: number, intHistory: Array<{ __typename?: 'AdminConfigIntEntry', id: any, value: number, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } | { __typename: 'AdminConfigStringValue', id: string, description?: string | null, updatedAt?: any | null, stringValue: string, history: Array<{ __typename?: 'AdminConfigStringEntry', id: any, value: string, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } | null } };
+export type AdminConfigValueQuery = { admin: { configValue:
+      | { __typename: 'AdminConfigBoolValue', id: string, description: string | null, updatedAt: unknown, boolValue: boolean, boolHistory: Array<{ id: unknown, value: boolean, createdAt: unknown, createdBy: { email: string | null } }> }
+      | { __typename: 'AdminConfigIntValue', id: string, description: string | null, updatedAt: unknown, intValue: number, intHistory: Array<{ id: unknown, value: number, createdAt: unknown, createdBy: { email: string | null } }> }
+      | { __typename: 'AdminConfigStringValue', id: string, description: string | null, updatedAt: unknown, stringValue: string, history: Array<{ id: unknown, value: string, createdAt: unknown, createdBy: { email: string | null } }> }
+     | null } };
 
 export type AdminSetConfigStringValueMutationVariables = Exact<{
   input: SetConfigStringValueInput;
 }>;
 
 
-export type AdminSetConfigStringValueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', setConfigStringValue: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetConfigStringValueSuccess', configValue: { __typename?: 'AdminConfigStringValue', id: string, value: string, updatedAt?: any | null } } } };
+export type AdminSetConfigStringValueMutation = { admin: { setConfigStringValue:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetConfigStringValueSuccess', configValue: { id: string, value: string, updatedAt: unknown } }
+     } };
 
 export type AdminSetConfigBoolValueMutationVariables = Exact<{
   input: SetConfigBoolValueInput;
 }>;
 
 
-export type AdminSetConfigBoolValueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', setConfigBoolValue: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetConfigBoolValueSuccess', configValue: { __typename?: 'AdminConfigBoolValue', id: string, value: boolean, updatedAt?: any | null } } } };
+export type AdminSetConfigBoolValueMutation = { admin: { setConfigBoolValue:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetConfigBoolValueSuccess', configValue: { id: string, value: boolean, updatedAt: unknown } }
+     } };
 
 export type AdminSetConfigIntValueMutationVariables = Exact<{
   input: SetConfigIntValueInput;
 }>;
 
 
-export type AdminSetConfigIntValueMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', setConfigIntValue: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetConfigIntValueSuccess', configValue: { __typename?: 'AdminConfigIntValue', id: string, value: number, updatedAt?: any | null } } } };
+export type AdminSetConfigIntValueMutation = { admin: { setConfigIntValue:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetConfigIntValueSuccess', configValue: { id: string, value: number, updatedAt: unknown } }
+     } };
 
 export type AdminRunCronJobMutationVariables = Exact<{
   input: RunCronJobInput;
 }>;
 
 
-export type AdminRunCronJobMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', runCronJob: { __typename: 'ErrorPayload', message: string } | { __typename: 'RunCronJobPayload', execution: { __typename?: 'AdminCronJobExecution', id: any, job: { __typename?: 'AdminCronJob', id: any } } } } };
+export type AdminRunCronJobMutation = { admin: { runCronJob:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RunCronJobPayload', execution: { id: unknown, job: { id: unknown } } }
+     } };
 
 export type AdminAllCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminAllCronJobsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allCronJobs: { __typename?: 'AdminCronJobsConnection', nodes: Array<{ __typename?: 'AdminCronJob', id: any, name: string, enabled: boolean, expression: string, lastExecAt?: any | null }> } } };
+export type AdminAllCronJobsQuery = { admin: { allCronJobs: { nodes: Array<{ id: unknown, name: string, enabled: boolean, expression: string, lastExecAt: unknown }> } } };
 
 export type AdminCronJobExecutionsQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminCronJobExecutionsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, executions: Array<{ __typename?: 'AdminCronJobExecution', id: any, startedAt: any, finishedAt?: any | null, status: CronJobExecutionStatus, errorMessage?: string | null }> } | null } };
+export type AdminCronJobExecutionsQuery = { admin: { cronJob: { id: unknown, executions: Array<{ id: unknown, startedAt: unknown, finishedAt: unknown, status: CronJobExecutionStatus, errorMessage: string | null }> } | null } };
 
 export type AdminCronJobShowQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminCronJobShowQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, name: string, enabled: boolean, expression: string, lastExecAt?: any | null } | null } };
+export type AdminCronJobShowQuery = { admin: { cronJob: { id: unknown, name: string, enabled: boolean, expression: string, lastExecAt: unknown } | null } };
 
 export type AdminCronJobUpdateQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminCronJobUpdateQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, name: string, enabled: boolean, expression: string, lastExecAt?: any | null } | null } };
+export type AdminCronJobUpdateQuery = { admin: { cronJob: { id: unknown, name: string, enabled: boolean, expression: string, lastExecAt: unknown } | null } };
 
 export type AdminUpdateCronJobMutationVariables = Exact<{
   input: UpdateCronJobInput;
 }>;
 
 
-export type AdminUpdateCronJobMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', updateCronJob: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateCronJobPayload', cronJob: { __typename?: 'AdminCronJob', id: any, expression: string, enabled: boolean } } } };
+export type AdminUpdateCronJobMutation = { admin: { updateCronJob:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateCronJobPayload', cronJob: { id: unknown, expression: string, enabled: boolean } }
+     } };
 
 export type AdminCronWebhooksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminCronWebhooksQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allCronWebhooks: { __typename?: 'AdminCronWebhooksConnection', nodes: Array<{ __typename?: 'AdminCronWebhook', id: any, url: string, cronSchedule: string, enabled: boolean, description: string, nextRunAt?: any | null, lastDeliveryAt?: any | null, lastDeliveryStatus?: string | null, createdAt: any }> } } };
+export type AdminCronWebhooksQuery = { admin: { allCronWebhooks: { nodes: Array<{ id: unknown, url: string, cronSchedule: string, enabled: boolean, description: string, nextRunAt: unknown, lastDeliveryAt: unknown, lastDeliveryStatus: string | null, createdAt: unknown }> } } };
 
 export type AdminCreateCronWebhookMutationMutationVariables = Exact<{
   input: CreateCronWebhookInput;
 }>;
 
 
-export type AdminCreateCronWebhookMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateCronWebhookPayload', secret: string, cronWebhook: { __typename?: 'AdminCronWebhook', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateCronWebhookMutationMutation = { admin: { payload:
+      | { __typename: 'CreateCronWebhookPayload', secret: string, cronWebhook: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminCronWebhookDeliveriesQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminCronWebhookDeliveriesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronWebhookDeliveries: { __typename?: 'AdminCronWebhookDeliveriesConnection', nodes: Array<{ __typename?: 'AdminCronWebhookDelivery', id: any, status: string, responseStatus?: any | null, attempt: any, durationMs?: any | null, createdAt: any, completedAt?: any | null }> } } };
+export type AdminCronWebhookDeliveriesQuery = { admin: { cronWebhookDeliveries: { nodes: Array<{ id: unknown, status: string, responseStatus: unknown, attempt: unknown, durationMs: unknown, createdAt: unknown, completedAt: unknown }> } } };
 
 export type AdminGetCronWebhookQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminGetCronWebhookQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronWebhook?: { __typename?: 'AdminCronWebhook', id: any, url: string, cronSchedule: string, enabled: boolean, description: string, instruction: string, hasSecret: boolean, passApiKey: boolean, maxDepth: any, timeoutSeconds: any, maxRetries: any, readPatterns: Array<string>, writePatterns: Array<string>, nextRunAt?: any | null, createdAt: any, secretPrefix: string } | null } };
+export type AdminGetCronWebhookQuery = { admin: { cronWebhook: { id: unknown, url: string, cronSchedule: string, enabled: boolean, description: string, instruction: string, hasSecret: boolean, passApiKey: boolean, maxDepth: unknown, timeoutSeconds: unknown, maxRetries: unknown, readPatterns: Array<string>, writePatterns: Array<string>, nextRunAt: unknown, createdAt: unknown, secretPrefix: string } | null } };
 
 export type AdminDeleteCronWebhookMutationMutationVariables = Exact<{
   input: DeleteCronWebhookInput;
 }>;
 
 
-export type AdminDeleteCronWebhookMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'DeleteCronWebhookPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteCronWebhookMutationMutation = { admin: { payload:
+      | { __typename: 'DeleteCronWebhookPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminRegenerateCronWebhookSecretMutationMutationVariables = Exact<{
   input: RegenerateCronWebhookSecretInput;
 }>;
 
 
-export type AdminRegenerateCronWebhookSecretMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'RegenerateCronWebhookSecretPayload', secret: string } } };
+export type AdminRegenerateCronWebhookSecretMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RegenerateCronWebhookSecretPayload', secret: string }
+     } };
 
 export type AdminTriggerCronWebhookMutationMutationVariables = Exact<{
   input: TriggerCronWebhookInput;
 }>;
 
 
-export type AdminTriggerCronWebhookMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'TriggerCronWebhookPayload', deliveryId: any } } };
+export type AdminTriggerCronWebhookMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'TriggerCronWebhookPayload', deliveryId: unknown }
+     } };
 
 export type AdminShowCronWebhookForUpdateQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowCronWebhookForUpdateQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronWebhook?: { __typename?: 'AdminCronWebhook', id: any, url: string, cronSchedule: string, enabled: boolean, description: string, instruction: string, passApiKey: boolean, maxDepth: any, timeoutSeconds: any, maxRetries: any, readPatterns: Array<string>, writePatterns: Array<string> } | null } };
+export type AdminShowCronWebhookForUpdateQuery = { admin: { cronWebhook: { id: unknown, url: string, cronSchedule: string, enabled: boolean, description: string, instruction: string, passApiKey: boolean, maxDepth: unknown, timeoutSeconds: unknown, maxRetries: unknown, readPatterns: Array<string>, writePatterns: Array<string> } | null } };
 
 export type AdminUpdateCronWebhookMutationMutationVariables = Exact<{
   input: UpdateCronWebhookInput;
 }>;
 
 
-export type AdminUpdateCronWebhookMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateCronWebhookPayload', cronWebhook: { __typename?: 'AdminCronWebhook', id: any } } } };
+export type AdminUpdateCronWebhookMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateCronWebhookPayload', cronWebhook: { id: unknown } }
+     } };
 
 export type AdminBuildInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminBuildInfoQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', buildGitCommit: string } };
+export type AdminBuildInfoQuery = { admin: { buildGitCommit: string } };
 
 export type AdminRecentlyModifiedNotesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminRecentlyModifiedNotesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', recentlyModifiedNoteViews: Array<{ __typename?: 'NoteView', id: string, title: string, permalink: string }> } };
+export type AdminRecentlyModifiedNotesQuery = { admin: { recentlyModifiedNoteViews: Array<{ id: string, title: string, permalink: string }> } };
 
 export type AdminStorageUsageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminStorageUsageQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', storageUsage: { __typename?: 'AdminStorageUsage', db: { __typename?: 'AdminStorageEntry', current: number, limit: number }, assets: { __typename?: 'AdminStorageEntry', current: number, limit: number } } } };
+export type AdminStorageUsageQuery = { admin: { storageUsage: { db: { current: number, limit: number }, assets: { current: number, limit: number } } } };
 
 export type AdminRevokeFederationSecretMutationVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminRevokeFederationSecretMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'RevokeFederationSecretPayload', revokedId: any } } };
+export type AdminRevokeFederationSecretMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RevokeFederationSecretPayload', revokedId: unknown }
+     } };
 
 export type AdminListFederationSecretsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListFederationSecretsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', federationSecrets: Array<{ __typename?: 'AdminFederationSecret', id: any, kid: string, kbUrl?: string | null, description?: string | null, createdAt: any, createdBy: any, revokedAt?: any | null, subgraphCount: any }> } };
+export type AdminListFederationSecretsQuery = { admin: { federationSecrets: Array<{ id: unknown, kid: string, kbUrl: string | null, description: string | null, createdAt: unknown, createdBy: unknown, revokedAt: unknown, subgraphCount: unknown }> } };
 
 export type AdminCreateInboundFederationSecretMutationVariables = Exact<{
   input: CreateInboundFederationSecretInput;
 }>;
 
 
-export type AdminCreateInboundFederationSecretMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateInboundFederationSecretPayload', id: any, kid: string, secretHex: string } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateInboundFederationSecretMutation = { admin: { data:
+      | { __typename: 'CreateInboundFederationSecretPayload', id: unknown, kid: string, secretHex: string }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminCreateOutboundFederationSecretMutationVariables = Exact<{
   input: CreateOutboundFederationSecretInput;
 }>;
 
 
-export type AdminCreateOutboundFederationSecretMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateOutboundFederationSecretPayload', id: any, kid: string } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateOutboundFederationSecretMutation = { admin: { data:
+      | { __typename: 'CreateOutboundFederationSecretPayload', id: unknown, kid: string }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminAddFederationSecretSubgraphMutationVariables = Exact<{
   input: AddFederationSecretSubgraphInput;
 }>;
 
 
-export type AdminAddFederationSecretSubgraphMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'AddFederationSecretSubgraphPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminAddFederationSecretSubgraphMutation = { admin: { data:
+      | { __typename: 'AddFederationSecretSubgraphPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminRemoveFederationSecretSubgraphMutationVariables = Exact<{
   input: RemoveFederationSecretSubgraphInput;
 }>;
 
 
-export type AdminRemoveFederationSecretSubgraphMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'RemoveFederationSecretSubgraphPayload', success: boolean } } };
+export type AdminRemoveFederationSecretSubgraphMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RemoveFederationSecretSubgraphPayload', success: boolean }
+     } };
 
 export type AdminFormNotesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminFormNotesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', formNotes: Array<{ __typename?: 'AdminFormNote', id: string, path: string, pathId: any, submitCount: number, lastSubmitAt: any }> } };
+export type AdminFormNotesQuery = { admin: { formNotes: Array<{ id: string, path: string, pathId: unknown, submitCount: number, lastSubmitAt: unknown }> } };
 
 export type AdminFormSubmitsQueryVariables = Exact<{
-  filter?: InputMaybe<AdminFormSubmitsFilterInput>;
+  filter?: AdminFormSubmitsFilterInput | null | undefined;
 }>;
 
 
-export type AdminFormSubmitsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', formSubmits: { __typename?: 'AdminFormSubmitsConnection', totalCount: number, nodes: Array<{ __typename?: 'FormSubmit', id: number, noteVersionId: any, formId: string, ip: string, status: FormSubmitStatus, createdAt: any, fields: Array<{ __typename: 'AdminFormBoolValue', name: string, bv: boolean } | { __typename: 'AdminFormIntValue', name: string, iv: number } | { __typename: 'AdminFormStringValue', name: string, sv: string }> }> } } };
+export type AdminFormSubmitsQuery = { admin: { formSubmits: { totalCount: number, nodes: Array<{ id: number, noteVersionId: unknown, formId: string, ip: string, status: FormSubmitStatus, createdAt: unknown, fields: Array<
+          | { __typename: 'AdminFormBoolValue', name: string, bv: boolean }
+          | { __typename: 'AdminFormIntValue', name: string, iv: number }
+          | { __typename: 'AdminFormStringValue', name: string, sv: string }
+        > }> } } };
 
 export type DeleteFrontmatterPatchMutationVariables = Exact<{
   input: DeleteFrontmatterPatchInput;
 }>;
 
 
-export type DeleteFrontmatterPatchMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteFrontmatterPatchPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type DeleteFrontmatterPatchMutation = { admin: { data:
+      | { __typename: 'DeleteFrontmatterPatchPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminFrontmatterPatchesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminFrontmatterPatchesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allFrontmatterPatches: { __typename?: 'AdminFrontmatterPatchesConnection', nodes: Array<{ __typename?: 'AdminFrontmatterPatch', id: any, description: string, priority: number, enabled: boolean, includePatterns: Array<string>, excludePatterns: Array<string> }> } } };
+export type AdminFrontmatterPatchesQuery = { admin: { allFrontmatterPatches: { nodes: Array<{ id: unknown, description: string, priority: number, enabled: boolean, includePatterns: Array<string>, excludePatterns: Array<string> }> } } };
 
 export type AdminCreateFrontmatterPatchMutationMutationVariables = Exact<{
   input: CreateFrontmatterPatchInput;
 }>;
 
 
-export type AdminCreateFrontmatterPatchMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateFrontmatterPatchPayload', frontmatterPatch: { __typename?: 'AdminFrontmatterPatch', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateFrontmatterPatchMutationMutation = { admin: { data:
+      | { __typename: 'CreateFrontmatterPatchPayload', frontmatterPatch: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type FrontmatterPatchQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type FrontmatterPatchQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', frontmatterPatch?: { __typename?: 'AdminFrontmatterPatch', id: any, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, description: string, enabled: boolean, createdAt: any, updatedAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
+export type FrontmatterPatchQuery = { admin: { frontmatterPatch: { id: unknown, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, description: string, enabled: boolean, createdAt: unknown, updatedAt: unknown, createdBy: { id: unknown, email: string | null } } | null } };
 
 export type AdminUpdateDataFrontmatterPatchQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminUpdateDataFrontmatterPatchQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', frontmatterPatch?: { __typename?: 'AdminFrontmatterPatch', id: any, createdAt: any, description: string, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, enabled: boolean } | null } };
+export type AdminUpdateDataFrontmatterPatchQuery = { admin: { frontmatterPatch: { id: unknown, createdAt: unknown, description: string, includePatterns: Array<string>, excludePatterns: Array<string>, jsonnet: string, priority: number, enabled: boolean } | null } };
 
 export type AdminUpdateFrontmatterPatchMutationVariables = Exact<{
   input: UpdateFrontmatterPatchInput;
 }>;
 
 
-export type AdminUpdateFrontmatterPatchMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateFrontmatterPatchPayload', frontmatterPatch: { __typename?: 'AdminFrontmatterPatch', id: any } } } };
+export type AdminUpdateFrontmatterPatchMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateFrontmatterPatchPayload', frontmatterPatch: { id: unknown } }
+     } };
 
 export type DisableGitTokenMutationVariables = Exact<{
   input: DisableGitTokenInput;
 }>;
 
 
-export type DisableGitTokenMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DisableGitTokenPayload', gitToken: { __typename?: 'AdminGitToken', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type DisableGitTokenMutation = { admin: { data:
+      | { __typename: 'DisableGitTokenPayload', gitToken: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminGitTokensQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminGitTokensQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allGitTokens: { __typename?: 'AdminGitTokensConnection', nodes: Array<{ __typename?: 'AdminGitToken', id: any, createdAt: any, description: string, canPull: boolean, canPush: boolean, disabledAt?: any | null, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null }, disabledBy?: { __typename?: 'AdminUser', id: any, email?: string | null } | null }> } } };
+export type AdminGitTokensQuery = { admin: { allGitTokens: { nodes: Array<{ id: unknown, createdAt: unknown, description: string, canPull: boolean, canPush: boolean, disabledAt: unknown, createdBy: { id: unknown, email: string | null }, disabledBy: { id: unknown, email: string | null } | null }> } } };
 
 export type AdminCreateGitTokenMutationVariables = Exact<{
   input: CreateGitTokenInput;
 }>;
 
 
-export type AdminCreateGitTokenMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateGitTokenPayload', value: string, gitToken: { __typename?: 'AdminGitToken', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateGitTokenMutation = { admin: { data:
+      | { __typename: 'CreateGitTokenPayload', value: string, gitToken: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminHealthChecksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHealthChecksQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', healthChecks: Array<{ __typename?: 'HealchCheck', id: string, status: HealthCheckStatus, description: string }> } };
+export type AdminHealthChecksQuery = { admin: { healthChecks: Array<{ id: string, status: HealthCheckStatus, description: string }> } };
 
 export type AdminDeleteHtmlInjectionMutationVariables = Exact<{
   input: DeleteHtmlInjectionInput;
 }>;
 
 
-export type AdminDeleteHtmlInjectionMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteHtmlInjectionPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteHtmlInjectionMutation = { admin: { data:
+      | { __typename: 'DeleteHtmlInjectionPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminHtmlInjectionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminHtmlInjectionsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allHtmlInjections: { __typename?: 'AdminHtmlInjectionsConnection', nodes: Array<{ __typename?: 'AdminHtmlInjection', id: any, createdAt: any, activeFrom?: any | null, activeTo?: any | null, description: string, position: number, placement: string }> } } };
+export type AdminHtmlInjectionsQuery = { admin: { allHtmlInjections: { nodes: Array<{ id: unknown, createdAt: unknown, activeFrom: unknown, activeTo: unknown, description: string, position: number, placement: string }> } } };
 
 export type AdminCreateHtmlInjectionMutationMutationVariables = Exact<{
   input: CreateHtmlInjectionInput;
 }>;
 
 
-export type AdminCreateHtmlInjectionMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateHtmlInjectionPayload', htmlInjection: { __typename?: 'AdminHtmlInjection', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateHtmlInjectionMutationMutation = { admin: { data:
+      | { __typename: 'CreateHtmlInjectionPayload', htmlInjection: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminShowHtmlInjectionQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowHtmlInjectionQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', htmlInjection?: { __typename?: 'AdminHtmlInjection', id: any, createdAt: any, activeFrom?: any | null, activeTo?: any | null, description: string, position: number, placement: string, content: string } | null } };
+export type AdminShowHtmlInjectionQuery = { admin: { htmlInjection: { id: unknown, createdAt: unknown, activeFrom: unknown, activeTo: unknown, description: string, position: number, placement: string, content: string } | null } };
 
 export type AdminUpdateDataHtmlInjectionQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminUpdateDataHtmlInjectionQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', htmlInjection?: { __typename?: 'AdminHtmlInjection', id: any, createdAt: any, activeFrom?: any | null, activeTo?: any | null, description: string, position: number, placement: string, content: string } | null } };
+export type AdminUpdateDataHtmlInjectionQuery = { admin: { htmlInjection: { id: unknown, createdAt: unknown, activeFrom: unknown, activeTo: unknown, description: string, position: number, placement: string, content: string } | null } };
 
 export type AdminUpdateHtmlInjectionMutationVariables = Exact<{
   input: UpdateHtmlInjectionInput;
 }>;
 
 
-export type AdminUpdateHtmlInjectionMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateHtmlInjectionPayload', htmlInjection: { __typename?: 'AdminHtmlInjection', id: any } } } };
+export type AdminUpdateHtmlInjectionMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateHtmlInjectionPayload', htmlInjection: { id: unknown } }
+     } };
 
 export type AdminNoteAssetsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminNoteAssetsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allLatestNoteAssets: { __typename?: 'AdminLatestNoteAssetsConnection', nodes: Array<{ __typename?: 'AdminNoteAsset', id: any, absolutePath: string, fileName: string, size: any }> } } };
+export type AdminNoteAssetsQuery = { admin: { allLatestNoteAssets: { nodes: Array<{ id: unknown, absolutePath: string, fileName: string, size: unknown }> } } };
 
 export type AdminNoteAssetQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminNoteAssetQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteAsset?: { __typename?: 'AdminNoteAsset', id: any, absolutePath: string, fileName: string, size: any, createdAt: any, url: string } | null } };
+export type AdminNoteAssetQuery = { admin: { noteAsset: { id: unknown, absolutePath: string, fileName: string, size: unknown, createdAt: unknown, url: string } | null } };
 
 export type AdminListNoteViewsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListNoteViewsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allLatestNoteViews: { __typename?: 'AdminLatestNoteViewsConnection', nodes: Array<{ __typename?: 'NoteView', id: string, path: string, title: string, free: boolean, permalink: string, pathId: any }> } } };
+export type AdminListNoteViewsQuery = { admin: { allLatestNoteViews: { nodes: Array<{ id: string, path: string, title: string, free: boolean, permalink: string, pathId: unknown }> } } };
 
 export type AdminGraphQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminGraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', name: string, color?: string | null }> }, allLatestNoteViews: { __typename?: 'AdminLatestNoteViewsConnection', nodes: Array<{ __typename?: 'NoteView', id: string, subgraphNames: Array<string>, title: string, pathId: any, free: boolean, isHomePage: boolean, graphPosition?: { __typename?: 'Vector2', x: number, y: number } | null, inLinks: Array<{ __typename?: 'NoteView', title: string, pathId: any, id: string }> }> } } };
+export type AdminGraphQuery = { admin: { allSubgraphs: { nodes: Array<{ name: string, color: string | null }> }, allLatestNoteViews: { nodes: Array<{ id: string, subgraphNames: Array<string>, title: string, pathId: unknown, free: boolean, isHomePage: boolean, graphPosition: { x: number, y: number } | null, inLinks: Array<{ title: string, pathId: unknown, id: string }> }> } } };
 
 export type UpdateNoteGraphPositionsMutationVariables = Exact<{
   input: UpdateNoteGraphPositionsInput;
 }>;
 
 
-export type UpdateNoteGraphPositionsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateNoteGraphPositionsPayload', success: boolean } } };
+export type UpdateNoteGraphPositionsMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateNoteGraphPositionsPayload', success: boolean }
+     } };
 
 export type AdminSelectNoteViewQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSelectNoteViewQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allLatestNoteViews: { __typename?: 'AdminLatestNoteViewsConnection', nodes: Array<{ __typename?: 'NoteView', versionId: any, path: string, title: string }> } } };
+export type AdminSelectNoteViewQuery = { admin: { allLatestNoteViews: { nodes: Array<{ versionId: unknown, path: string, title: string }> } } };
 
 export type AdminNoteViewQueryVariables = Exact<{
-  id: Scalars['String']['input'];
+  id: string;
 }>;
 
 
-export type AdminNoteViewQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteView?: { __typename: 'NoteView', path: string, title: string, permalink: string, content: string } | null } };
+export type AdminNoteViewQuery = { admin: { noteView: { __typename: 'NoteView', path: string, title: string, permalink: string, content: string } | null } };
 
 export type AdminNoteWarningsQueryVariables = Exact<{
-  filter?: InputMaybe<AdminLatestNoteViewsFilter>;
+  filter?: AdminLatestNoteViewsFilter | null | undefined;
 }>;
 
 
-export type AdminNoteWarningsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allLatestNoteViews: { __typename?: 'AdminLatestNoteViewsConnection', nodes: Array<{ __typename?: 'NoteView', id: string, path: string, warnings: Array<{ __typename?: 'NoteWarning', level: NoteWarningLevelEnum, message: string }> }> } } };
+export type AdminNoteWarningsQuery = { admin: { allLatestNoteViews: { nodes: Array<{ id: string, path: string, warnings: Array<{ level: NoteWarningLevelEnum, message: string }> }> } } };
 
 export type AdminResetNotFoundPathMutationVariables = Exact<{
   input: ResetNotFoundPathInput;
 }>;
 
 
-export type AdminResetNotFoundPathMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'ResetNotFoundPathPayload', notFoundPath: { __typename?: 'AdminNotFoundPath', id: any } } } };
+export type AdminResetNotFoundPathMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'ResetNotFoundPathPayload', notFoundPath: { id: unknown } }
+     } };
 
 export type AdminNotFoundPathsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminNotFoundPathsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundPaths: { __typename?: 'AdminNotFoundPathsConnection', nodes: Array<{ __typename?: 'AdminNotFoundPath', id: any, path: string, totalHits: any, lastHitAt: any }> } } };
+export type AdminNotFoundPathsQuery = { admin: { allNotFoundPaths: { nodes: Array<{ id: unknown, path: string, totalHits: unknown, lastHitAt: unknown }> } } };
 
 export type AdminShowNotFoundPathQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminShowNotFoundPathQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundPaths: { __typename?: 'AdminNotFoundPathsConnection', nodes: Array<{ __typename?: 'AdminNotFoundPath', id: any, path: string, totalHits: any, lastHitAt: any }> } } };
+export type AdminShowNotFoundPathQuery = { admin: { allNotFoundPaths: { nodes: Array<{ id: unknown, path: string, totalHits: unknown, lastHitAt: unknown }> } } };
 
 export type AdminDeleteNotFoundIgnoredPatternMutationVariables = Exact<{
   input: DeleteNotFoundIgnoredPatternInput;
 }>;
 
 
-export type AdminDeleteNotFoundIgnoredPatternMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'DeleteNotFoundIgnoredPatternPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteNotFoundIgnoredPatternMutation = { admin: { payload:
+      | { __typename: 'DeleteNotFoundIgnoredPatternPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminNotFoundIgnoredPatternsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminNotFoundIgnoredPatternsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminNotFoundIgnoredPatternsQuery = { admin: { allNotFoundIgnoredPatterns: { nodes: Array<{ id: unknown, pattern: string, createdAt: unknown, createdBy: { id: unknown, email: string | null } }> } } };
 
 export type AdminCreateNotFoundIgnoredPatternMutationMutationVariables = Exact<{
   input: CreateNotFoundIgnoredPatternInput;
 }>;
 
 
-export type AdminCreateNotFoundIgnoredPatternMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateNotFoundIgnoredPatternPayload', notFoundIgnoredPattern: { __typename?: 'AdminNotFoundIgnoredPattern', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateNotFoundIgnoredPatternMutationMutation = { admin: { payload:
+      | { __typename: 'CreateNotFoundIgnoredPatternPayload', notFoundIgnoredPattern: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminShowNotFoundIgnoredPatternQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminShowNotFoundIgnoredPatternQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminShowNotFoundIgnoredPatternQuery = { admin: { allNotFoundIgnoredPatterns: { nodes: Array<{ id: unknown, pattern: string, createdAt: unknown, createdBy: { id: unknown, email: string | null } }> } } };
 
 export type AdminDeleteNotFoundIgnoredPatternMutationMutationVariables = Exact<{
   input: DeleteNotFoundIgnoredPatternInput;
 }>;
 
 
-export type AdminDeleteNotFoundIgnoredPatternMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteNotFoundIgnoredPatternPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteNotFoundIgnoredPatternMutationMutation = { admin: { data:
+      | { __typename: 'DeleteNotFoundIgnoredPatternPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminUpdateNotFoundIgnoredPatternMutationMutationVariables = Exact<{
   input: UpdateNotFoundIgnoredPatternInput;
 }>;
 
 
-export type AdminUpdateNotFoundIgnoredPatternMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateNotFoundIgnoredPatternPayload', notFoundIgnoredPattern: { __typename?: 'AdminNotFoundIgnoredPattern', id: any } } } };
+export type AdminUpdateNotFoundIgnoredPatternMutationMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateNotFoundIgnoredPatternPayload', notFoundIgnoredPattern: { id: unknown } }
+     } };
 
 export type AdminGitHubOAuthCredentialsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminGitHubOAuthCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allGitHubOAuthCredentials: { __typename?: 'AdminGitHubOAuthCredentialsConnection', nodes: Array<{ __typename?: 'AdminGitHubOAuthCredentials', id: any, name: string, clientId: string, active: boolean, createdAt: any }> } } };
+export type AdminGitHubOAuthCredentialsQuery = { admin: { allGitHubOAuthCredentials: { nodes: Array<{ id: unknown, name: string, clientId: string, active: boolean, createdAt: unknown }> } } };
 
 export type GitHubOAuthUrlsQueryVariables = Exact<{
   input: OAuthUrlInput;
 }>;
 
 
-export type GitHubOAuthUrlsQuery = { __typename?: 'Query', publicUrl: string, githubAuthUrl: { __typename?: 'OAuthUrlPayload', callbackUrl: string } };
+export type GitHubOAuthUrlsQuery = { publicUrl: string, githubAuthUrl: { callbackUrl: string } };
 
 export type AdminCreateGitHubOAuthCredentialsMutationVariables = Exact<{
   input: CreateGitHubOAuthCredentialsInput;
 }>;
 
 
-export type AdminCreateGitHubOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateGitHubOAuthCredentialsPayload', credentials: { __typename?: 'AdminGitHubOAuthCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateGitHubOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'CreateGitHubOAuthCredentialsPayload', credentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminDeleteGitHubOAuthCredentialsMutationVariables = Exact<{
   input: DeleteGitHubOAuthCredentialsInput;
 }>;
 
 
-export type AdminDeleteGitHubOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteGitHubOAuthCredentialsPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteGitHubOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'DeleteGitHubOAuthCredentialsPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminDeactivateGitHubOAuthMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminDeactivateGitHubOAuthMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeactivateGitHubOAuthPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeactivateGitHubOAuthMutation = { admin: { data:
+      | { __typename: 'DeactivateGitHubOAuthPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminGitHubOAuthCredentialsByIdQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type AdminGitHubOAuthCredentialsByIdQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', gitHubOAuthCredentials?: { __typename?: 'AdminGitHubOAuthCredentials', id: any, name: string, clientId: string, active: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
+export type AdminGitHubOAuthCredentialsByIdQuery = { admin: { gitHubOAuthCredentials: { id: unknown, name: string, clientId: string, active: boolean, createdAt: unknown, createdBy: { id: unknown, email: string | null } } | null } };
 
 export type AdminSetActiveGitHubOAuthCredentialsMutationVariables = Exact<{
   input: SetActiveGitHubOAuthCredentialsInput;
 }>;
 
 
-export type AdminSetActiveGitHubOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetActiveGitHubOAuthCredentialsPayload', credentials: { __typename?: 'AdminGitHubOAuthCredentials', id: any } } } };
+export type AdminSetActiveGitHubOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetActiveGitHubOAuthCredentialsPayload', credentials: { id: unknown } }
+     } };
 
 export type AdminGoogleOAuthCredentialsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminGoogleOAuthCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allGoogleOAuthCredentials: { __typename?: 'AdminGoogleOAuthCredentialsConnection', nodes: Array<{ __typename?: 'AdminGoogleOAuthCredentials', id: any, name: string, clientId: string, active: boolean, createdAt: any }> } } };
+export type AdminGoogleOAuthCredentialsQuery = { admin: { allGoogleOAuthCredentials: { nodes: Array<{ id: unknown, name: string, clientId: string, active: boolean, createdAt: unknown }> } } };
 
 export type GoogleOAuthUrlsQueryVariables = Exact<{
   input: OAuthUrlInput;
 }>;
 
 
-export type GoogleOAuthUrlsQuery = { __typename?: 'Query', publicUrl: string, googleAuthUrl: { __typename?: 'OAuthUrlPayload', callbackUrl: string } };
+export type GoogleOAuthUrlsQuery = { publicUrl: string, googleAuthUrl: { callbackUrl: string } };
 
 export type AdminCreateGoogleOAuthCredentialsMutationVariables = Exact<{
   input: CreateGoogleOAuthCredentialsInput;
 }>;
 
 
-export type AdminCreateGoogleOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateGoogleOAuthCredentialsPayload', credentials: { __typename?: 'AdminGoogleOAuthCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateGoogleOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'CreateGoogleOAuthCredentialsPayload', credentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminDeleteGoogleOAuthCredentialsMutationVariables = Exact<{
   input: DeleteGoogleOAuthCredentialsInput;
 }>;
 
 
-export type AdminDeleteGoogleOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeleteGoogleOAuthCredentialsPayload', deletedId: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteGoogleOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'DeleteGoogleOAuthCredentialsPayload', deletedId: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminDeactivateGoogleOAuthMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminDeactivateGoogleOAuthMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'DeactivateGoogleOAuthPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeactivateGoogleOAuthMutation = { admin: { data:
+      | { __typename: 'DeactivateGoogleOAuthPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminGoogleOAuthCredentialsByIdQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type AdminGoogleOAuthCredentialsByIdQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', googleOAuthCredentials?: { __typename?: 'AdminGoogleOAuthCredentials', id: any, name: string, clientId: string, active: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
+export type AdminGoogleOAuthCredentialsByIdQuery = { admin: { googleOAuthCredentials: { id: unknown, name: string, clientId: string, active: boolean, createdAt: unknown, createdBy: { id: unknown, email: string | null } } | null } };
 
 export type AdminSetActiveGoogleOAuthCredentialsMutationVariables = Exact<{
   input: SetActiveGoogleOAuthCredentialsInput;
 }>;
 
 
-export type AdminSetActiveGoogleOAuthCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetActiveGoogleOAuthCredentialsPayload', credentials: { __typename?: 'AdminGoogleOAuthCredentials', id: any } } } };
+export type AdminSetActiveGoogleOAuthCredentialsMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetActiveGoogleOAuthCredentialsPayload', credentials: { id: unknown } }
+     } };
 
 export type AdminOffersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminOffersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allOffers: { __typename?: 'AdminOffersConnection', nodes: Array<{ __typename?: 'AdminOffer', id: any, publicId: string, createdAt: any, lifetime?: string | null, priceUSD: number, startsAt?: any | null, endsAt?: any | null, subgraphs: Array<{ __typename?: 'AdminSubgraph', name: string }> }> } } };
+export type AdminOffersQuery = { admin: { allOffers: { nodes: Array<{ id: unknown, publicId: string, createdAt: unknown, lifetime: string | null, priceUSD: number, startsAt: unknown, endsAt: unknown, subgraphs: Array<{ name: string }> }> } } };
 
 export type AdminCreateOfferMutationMutationVariables = Exact<{
   input: CreateOfferInput;
 }>;
 
 
-export type AdminCreateOfferMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateOfferPayload', offer: { __typename?: 'AdminOffer', id: any, publicId: string } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateOfferMutationMutation = { admin: { payload:
+      | { __typename: 'CreateOfferPayload', offer: { id: unknown, publicId: string } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminShowOfferQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowOfferQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', offer?: { __typename?: 'AdminOffer', id: any, publicId: string, createdAt: any, lifetime?: string | null, priceUSD: number, startsAt?: any | null, endsAt?: any | null, subgraphIds: Array<any>, subgraphs: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } | null } };
+export type AdminShowOfferQuery = { admin: { offer: { id: unknown, publicId: string, createdAt: unknown, lifetime: string | null, priceUSD: number, startsAt: unknown, endsAt: unknown, subgraphIds: Array<unknown>, subgraphs: Array<{ id: unknown, name: string }> } | null } };
 
 export type AdminUpdateOfferMutationMutationVariables = Exact<{
   input: UpdateOfferInput;
 }>;
 
 
-export type AdminUpdateOfferMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateOfferPayload', offer: { __typename?: 'AdminOffer', id: any, publicId: string } } } };
+export type AdminUpdateOfferMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateOfferPayload', offer: { id: unknown, publicId: string } }
+     } };
 
 export type AdminDeletePatreonCredentialsMutationVariables = Exact<{
   input: DeletePatreonCredentialsInput;
 }>;
 
 
-export type AdminDeletePatreonCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'DeletePatreonCredentialsPayload', patreonCredentials: { __typename?: 'AdminPatreonCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeletePatreonCredentialsMutation = { admin: { payload:
+      | { __typename: 'DeletePatreonCredentialsPayload', patreonCredentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type RefreshPatreonDataMutationVariables = Exact<{
   input: RefreshPatreonDataInput;
 }>;
 
 
-export type RefreshPatreonDataMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'RefreshPatreonDataPayload', success: boolean } } };
+export type RefreshPatreonDataMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RefreshPatreonDataPayload', success: boolean }
+     } };
 
 export type AdminRestorePatreonCredentialsMutationVariables = Exact<{
   input: RestorePatreonCredentialsInput;
 }>;
 
 
-export type AdminRestorePatreonCredentialsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'RestorePatreonCredentialsPayload', patreonCredentials: { __typename?: 'AdminPatreonCredentials', id: any } } } };
+export type AdminRestorePatreonCredentialsMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'RestorePatreonCredentialsPayload', patreonCredentials: { id: unknown } }
+     } };
 
 export type AdminPatreonCredentialsQueryVariables = Exact<{
-  filter?: InputMaybe<AdminPatreonCredentialsFilterInput>;
+  filter?: AdminPatreonCredentialsFilterInput | null | undefined;
 }>;
 
 
-export type AdminPatreonCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allPatreonCredentials: { __typename?: 'AdminPatreonCredentialsConnection', nodes: Array<{ __typename?: 'AdminPatreonCredentials', id: any, state: PatreonCredentialsStateEnum, creatorAccessToken: string, createdAt: any, syncedAt?: any | null, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminPatreonCredentialsQuery = { admin: { allPatreonCredentials: { nodes: Array<{ id: unknown, state: PatreonCredentialsStateEnum, creatorAccessToken: string, createdAt: unknown, syncedAt: unknown, createdBy: { id: unknown, email: string | null } }> } } };
 
 export type AdminCreatePatreonCredsMutationVariables = Exact<{
   input: CreatePatreonCredentialsInput;
 }>;
 
 
-export type AdminCreatePatreonCredsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreatePatreonCredentialsPayload', patreonCredentials: { __typename?: 'AdminPatreonCredentials', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreatePatreonCredsMutation = { admin: { payload:
+      | { __typename: 'CreatePatreonCredentialsPayload', patreonCredentials: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminPatreonCredentialsByIdQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminPatreonCredentialsByIdQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', patreonCredentials?: { __typename?: 'AdminPatreonCredentials', createdAt: any, creatorAccessToken: string, state: PatreonCredentialsStateEnum, createdBy: { __typename?: 'AdminUser', email?: string | null }, tiers: { __typename?: 'AdminPatreonTiersConnection', nodes: Array<{ __typename?: 'AdminPatreonTier', id: any, missedAt?: any | null, title: string, amountCents: any, subgraphs: Array<{ __typename?: 'AdminSubgraph', id: any }> }> }, members: { __typename?: 'AdminPatreonMembersConnection', nodes: Array<{ __typename?: 'AdminPatreonMember', email: string, status: string, currentTier?: { __typename?: 'AdminPatreonTier', title: string } | null }> } } | null } };
+export type AdminPatreonCredentialsByIdQuery = { admin: { patreonCredentials: { createdAt: unknown, creatorAccessToken: string, state: PatreonCredentialsStateEnum, createdBy: { email: string | null }, tiers: { nodes: Array<{ id: unknown, missedAt: unknown, title: string, amountCents: unknown, subgraphs: Array<{ id: unknown }> }> }, members: { nodes: Array<{ email: string, status: string, currentTier: { title: string } | null }> } } | null } };
 
 export type AdminPatreoncredentialsShowSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminPatreoncredentialsShowSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminPatreoncredentialsShowSubgraphsQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminPatreoncredentialsShowSubgraphsSaveMutationVariables = Exact<{
   input: SetPatreonTierSubgraphsInput;
 }>;
 
 
-export type AdminPatreoncredentialsShowSubgraphsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetPatreonTierSubgraphsPayload', success: boolean } } };
+export type AdminPatreoncredentialsShowSubgraphsSaveMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetPatreonTierSubgraphsPayload', success: boolean }
+     } };
 
 export type AdminPurchasesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminPurchasesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allPurchases: { __typename?: 'AdminPurchasesConnection', nodes: Array<{ __typename?: 'AdminPurchase', id: string, createdAt: any, paymentProvider: string, status: string, successful: boolean, offerId: any, email: string }> } } };
+export type AdminPurchasesQuery = { admin: { allPurchases: { nodes: Array<{ id: string, createdAt: unknown, paymentProvider: string, status: string, successful: boolean, offerId: unknown, email: string }> } } };
 
 export type AdminRedirectsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminRedirectsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allRedirects: { __typename?: 'AdminRedirectsConnection', nodes: Array<{ __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminRedirectsQuery = { admin: { allRedirects: { nodes: Array<{ id: unknown, createdAt: unknown, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { id: unknown, email: string | null } }> } } };
 
 export type AdminCreateRedirectMutationMutationVariables = Exact<{
   input: CreateRedirectInput;
 }>;
 
 
-export type AdminCreateRedirectMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateRedirectPayload', redirect: { __typename?: 'AdminRedirect', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateRedirectMutationMutation = { admin: { payload:
+      | { __typename: 'CreateRedirectPayload', redirect: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminShowRedirectQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowRedirectQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', redirect?: { __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
+export type AdminShowRedirectQuery = { admin: { redirect: { id: unknown, createdAt: unknown, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { id: unknown, email: string | null } } | null } };
 
 export type AdminDeleteRedirectMutationMutationVariables = Exact<{
   input: DeleteRedirectInput;
 }>;
 
 
-export type AdminDeleteRedirectMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'DeleteRedirectPayload', id: any } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminDeleteRedirectMutationMutation = { admin: { payload:
+      | { __typename: 'DeleteRedirectPayload', id: unknown }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminUpdateRedirectMutationMutationVariables = Exact<{
   input: UpdateRedirectInput;
 }>;
 
 
-export type AdminUpdateRedirectMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateRedirectPayload', redirect: { __typename?: 'AdminRedirect', id: any } } } };
+export type AdminUpdateRedirectMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateRedirectPayload', redirect: { id: unknown } }
+     } };
 
 export type AdminMakeReleaseLiveMutationVariables = Exact<{
   input: MakeReleaseLiveInput;
 }>;
 
 
-export type AdminMakeReleaseLiveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'MakeReleaseLivePayload', release: { __typename?: 'AdminRelease', id: any } } } };
+export type AdminMakeReleaseLiveMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'MakeReleaseLivePayload', release: { id: unknown } }
+     } };
 
 export type AdminReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminReleasesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allReleases: { __typename?: 'AdminReleasesConnection', nodes: Array<{ __typename?: 'AdminRelease', id: any, createdAt: any, title: string, isLive: boolean, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } } };
+export type AdminReleasesQuery = { admin: { allReleases: { nodes: Array<{ id: unknown, createdAt: unknown, title: string, isLive: boolean, createdBy: { email: string | null } }> } } };
 
 export type AdminCreateReleaseMutationVariables = Exact<{
   input: CreateReleaseInput;
 }>;
 
 
-export type AdminCreateReleaseMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateReleasePayload', release: { __typename?: 'AdminRelease', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateReleaseMutation = { admin: { payload:
+      | { __typename: 'CreateReleasePayload', release: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminSecretKeysQueryVariables = Exact<{
-  filter?: InputMaybe<SecretKeysFilter>;
+  filter?: SecretKeysFilter | null | undefined;
 }>;
 
 
-export type AdminSecretKeysQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', secretKeys: Array<string> } };
+export type AdminSecretKeysQuery = { admin: { secretKeys: Array<string> } };
 
 export type AdminSetSecretMutationVariables = Exact<{
   input: SetSecretInput;
 }>;
 
 
-export type AdminSetSecretMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', setSecret: { __typename?: 'SetSecretPayload', key: string } } };
+export type AdminSetSecretMutation = { admin: { setSecret: { key: string } } };
 
 export type AdminDeleteSecretMutationVariables = Exact<{
-  id: Scalars['String']['input'];
+  id: string;
 }>;
 
 
-export type AdminDeleteSecretMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', deleteSecret: { __typename?: 'DeleteSecretPayload', id: string } } };
+export type AdminDeleteSecretMutation = { admin: { deleteSecret: { id: string } } };
 
 export type AdminListSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename: 'AdminSubgraph', id: any, name: string, color?: string | null, createdAt: any }> } } };
+export type AdminListSubgraphsQuery = { admin: { allSubgraphs: { nodes: Array<{ __typename: 'AdminSubgraph', id: unknown, name: string, color: string | null, createdAt: unknown }> } } };
 
 export type AdminSelectSubgraphListQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSelectSubgraphListQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminSelectSubgraphListQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminSelectSubgraphQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSelectSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminSelectSubgraphQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminShowSubgraphQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', subgraph?: { __typename?: 'AdminSubgraph', id: any, name: string, color?: string | null, hidden: boolean, requireSignin: boolean } | null } };
+export type AdminShowSubgraphQuery = { admin: { subgraph: { id: unknown, name: string, color: string | null, hidden: boolean, requireSignin: boolean } | null } };
 
 export type UpdateSubgraphMutationVariables = Exact<{
   input: UpdateSubgraphInput;
 }>;
 
 
-export type UpdateSubgraphMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateSubgraphPayload', subgraph: { __typename?: 'AdminSubgraph', id: any, color?: string | null } } } };
+export type UpdateSubgraphMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateSubgraphPayload', subgraph: { id: unknown, color: string | null } }
+     } };
 
 export type AdminTelegramAccountsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTelegramAccountsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramAccounts: { __typename?: 'AdminTelegramAccountsConnection', nodes: Array<{ __typename?: 'AdminTelegramAccount', id: any, phone: string, displayName: string, isPremium: boolean, enabled: boolean, createdAt: any, createdBy?: { __typename?: 'User', email?: string | null } | null }> } } };
+export type AdminTelegramAccountsQuery = { admin: { allTelegramAccounts: { nodes: Array<{ id: unknown, phone: string, displayName: string, isPremium: boolean, enabled: boolean, createdAt: unknown, createdBy: { email: string | null } | null }> } } };
 
 export type StartTelegramAccountAuthMutationVariables = Exact<{
   input: AdminStartTelegramAccountAuthInput;
 }>;
 
 
-export type StartTelegramAccountAuthMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'AdminStartTelegramAccountAuthPayload', authState: { __typename?: 'AdminTelegramAccountAuthState', phone: string, state: AdminTelegramAccountAuthStateEnum, passwordHint?: string | null } } | { __typename: 'ErrorPayload', message: string } } };
+export type StartTelegramAccountAuthMutation = { admin: { payload:
+      | { __typename: 'AdminStartTelegramAccountAuthPayload', authState: { phone: string, state: AdminTelegramAccountAuthStateEnum, passwordHint: string | null } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type CompleteTelegramAccountAuthMutationVariables = Exact<{
   input: AdminCompleteTelegramAccountAuthInput;
 }>;
 
 
-export type CompleteTelegramAccountAuthMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'AdminCompleteTelegramAccountAuthPayload', account: { __typename?: 'AdminTelegramAccount', id: any, phone: string, displayName: string, isPremium: boolean } } | { __typename: 'ErrorPayload', message: string } } };
+export type CompleteTelegramAccountAuthMutation = { admin: { payload:
+      | { __typename: 'AdminCompleteTelegramAccountAuthPayload', account: { id: unknown, phone: string, displayName: string, isPremium: boolean } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminTelegramAccountDialogsQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
+  id: unknown;
+  limit?: number | null | undefined;
 }>;
 
 
-export type AdminTelegramAccountDialogsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', telegramAccount?: { __typename?: 'AdminTelegramAccount', dialogs: Array<{ __typename?: 'AdminTelegramAccountDialog', id: any, username: string, title: string, type: AdminTelegramAccountDialogType, publishTags: Array<{ __typename?: 'AdminTelegramPublishTag', id: any }>, publishInstantTags: Array<{ __typename?: 'AdminTelegramPublishTag', id: any }> }> } | null } };
+export type AdminTelegramAccountDialogsQuery = { admin: { telegramAccount: { dialogs: Array<{ id: unknown, username: string, title: string, type: AdminTelegramAccountDialogType, publishTags: Array<{ id: unknown }>, publishInstantTags: Array<{ id: unknown }> }> } | null } };
 
 export type AdminImportTelegramAccountChannelMutationVariables = Exact<{
   input: AdminImportTelegramAccountChannelInput;
 }>;
 
 
-export type AdminImportTelegramAccountChannelMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'AdminImportTelegramAccountChannelPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminImportTelegramAccountChannelMutation = { admin: { payload:
+      | { __typename: 'AdminImportTelegramAccountChannelPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminTelegramAccountShowDialogsInstantTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTelegramAccountShowDialogsInstantTagsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishTags: { __typename?: 'AdminTelegramPublishTagsConnection', nodes: Array<{ __typename?: 'AdminTelegramPublishTag', id: any, label: string }> } } };
+export type AdminTelegramAccountShowDialogsInstantTagsQuery = { admin: { allTelegramPublishTags: { nodes: Array<{ id: unknown, label: string }> } } };
 
 export type AdminTelegramAccountShowDialogsInstantTagsSaveMutationVariables = Exact<{
   input: AdminSetTelegramAccountChatPublishInstantTagsInput;
 }>;
 
 
-export type AdminTelegramAccountShowDialogsInstantTagsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'AdminSetTelegramAccountChatPublishInstantTagsPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminTelegramAccountShowDialogsInstantTagsSaveMutation = { admin: { data:
+      | { __typename: 'AdminSetTelegramAccountChatPublishInstantTagsPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminTelegramAccountShowDialogsTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTelegramAccountShowDialogsTagsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishTags: { __typename?: 'AdminTelegramPublishTagsConnection', nodes: Array<{ __typename?: 'AdminTelegramPublishTag', id: any, label: string }> } } };
+export type AdminTelegramAccountShowDialogsTagsQuery = { admin: { allTelegramPublishTags: { nodes: Array<{ id: unknown, label: string }> } } };
 
 export type AdminTelegramAccountShowDialogsTagsSaveMutationVariables = Exact<{
   input: AdminSetTelegramAccountChatPublishTagsInput;
 }>;
 
 
-export type AdminTelegramAccountShowDialogsTagsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'AdminSetTelegramAccountChatPublishTagsPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminTelegramAccountShowDialogsTagsSaveMutation = { admin: { payload:
+      | { __typename: 'AdminSetTelegramAccountChatPublishTagsPayload', success: boolean }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminSignOutTelegramAccountMutationVariables = Exact<{
   input: AdminSignOutTelegramAccountInput;
 }>;
 
 
-export type AdminSignOutTelegramAccountMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'AdminSignOutTelegramAccountPayload', success: boolean } | { __typename?: 'ErrorPayload', message: string } } };
+export type AdminSignOutTelegramAccountMutation = { admin: { data:
+      | { __typename: 'AdminSignOutTelegramAccountPayload', success: boolean }
+      | { message: string }
+     } };
 
 export type AdminTelegramAccountUpdateQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminTelegramAccountUpdateQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', telegramAccount?: { __typename?: 'AdminTelegramAccount', id: any, phone: string, displayName: string, isPremium: boolean, enabled: boolean } | null } };
+export type AdminTelegramAccountUpdateQuery = { admin: { telegramAccount: { id: unknown, phone: string, displayName: string, isPremium: boolean, enabled: boolean } | null } };
 
 export type AdminUpdateTelegramAccountMutationMutationVariables = Exact<{
   input: AdminUpdateTelegramAccountInput;
 }>;
 
 
-export type AdminUpdateTelegramAccountMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'AdminUpdateTelegramAccountPayload', account: { __typename?: 'AdminTelegramAccount', id: any, enabled: boolean } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminUpdateTelegramAccountMutationMutation = { admin: { payload:
+      | { __typename: 'AdminUpdateTelegramAccountPayload', account: { id: unknown, enabled: boolean } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminResetTelegramPublishNoteMutationVariables = Exact<{
   input: ResetTelegramPublishNoteInput;
 }>;
 
 
-export type AdminResetTelegramPublishNoteMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'ResetTelegramPublishNotePayload', publishNote: { __typename?: 'AdminTelegramPublishNote', id: any } } } };
+export type AdminResetTelegramPublishNoteMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'ResetTelegramPublishNotePayload', publishNote: { id: unknown } }
+     } };
 
 export type AdminSendTelegramPublishNoteNowMutationVariables = Exact<{
   input: SendTelegramPublishNoteNowInput;
 }>;
 
 
-export type AdminSendTelegramPublishNoteNowMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'SendTelegramPublishNoteNowPayload', publishNote: { __typename?: 'AdminTelegramPublishNote', id: any } } } };
+export type AdminSendTelegramPublishNoteNowMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SendTelegramPublishNoteNowPayload', publishNote: { id: unknown } }
+     } };
 
 export type AdminTelegramPublishNoteCountQueryVariables = Exact<{
   filter: AdminTelegramPublishNotesFilter;
 }>;
 
 
-export type AdminTelegramPublishNoteCountQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishNotes: { __typename?: 'AdminTelegramPublishNotesConnection', count: any } } };
+export type AdminTelegramPublishNoteCountQuery = { admin: { allTelegramPublishNotes: { count: unknown } } };
 
 export type AdminTelegramPublishNotesQueryVariables = Exact<{
   filter: AdminTelegramPublishNotesFilter;
 }>;
 
 
-export type AdminTelegramPublishNotesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishNotes: { __typename?: 'AdminTelegramPublishNotesConnection', nodes: Array<{ __typename?: 'AdminTelegramPublishNote', id: any, publishAt: any, secondsUntilPublish: any, publishedAt?: any | null, status: string, errorCount: any, noteView: { __typename?: 'NoteView', title: string } }> } } };
+export type AdminTelegramPublishNotesQuery = { admin: { allTelegramPublishNotes: { nodes: Array<{ id: unknown, publishAt: unknown, secondsUntilPublish: unknown, publishedAt: unknown, status: string, errorCount: unknown, noteView: { title: string } }> } } };
 
 export type AdminTelegramPublishNoteQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminTelegramPublishNoteQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', telegramPublishNote?: { __typename?: 'AdminTelegramPublishNote', id: any, createdAt: any, publishAt: any, secondsUntilPublish: any, publishedAt?: any | null, status: string, lastError?: string | null, tags: Array<{ __typename?: 'AdminTelegramPublishTag', label: string }>, chats: Array<{ __typename?: 'AdminTgBotChat', chatTitle: string, chatType: string }>, noteView: { __typename?: 'NoteView', title: string }, post: { __typename?: 'TelegramPost', content: string, warnings: Array<string> } } | null } };
+export type AdminTelegramPublishNoteQuery = { admin: { telegramPublishNote: { id: unknown, createdAt: unknown, publishAt: unknown, secondsUntilPublish: unknown, publishedAt: unknown, status: string, lastError: string | null, tags: Array<{ label: string }>, chats: Array<{ chatTitle: string, chatType: string }>, noteView: { title: string }, post: { content: string, warnings: Array<string> } } | null } };
 
 export type AdminTgBotsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgBotsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTgBots: { __typename?: 'AdminTgBotsConnection', nodes: Array<{ __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } } };
+export type AdminTgBotsQuery = { admin: { allTgBots: { nodes: Array<{ id: unknown, name: string, description: string, enabled: boolean, createdAt: unknown, createdBy: { email: string | null } }> } } };
 
 export type AdminCreateTgBotMutationMutationVariables = Exact<{
   input: CreateTgBotInput;
 }>;
 
 
-export type AdminCreateTgBotMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'CreateTgBotPayload', tgBot: { __typename?: 'AdminTgBot', id: any, name: string } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateTgBotMutationMutation = { admin: { payload:
+      | { __typename: 'CreateTgBotPayload', tgBot: { id: unknown, name: string } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminTgBotChatsQueryVariables = Exact<{
   filter: AdminTgBotChatsFilterInput;
 }>;
 
 
-export type AdminTgBotChatsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBotChats: { __typename?: 'AdminTgBotChatsConnection', nodes: Array<{ __typename?: 'AdminTgBotChat', id: any, chatType: string, chatTitle: string, addedAt: any, removedAt?: any | null, memberCount: number, subgraphAccesses: Array<{ __typename?: 'AdminTgChatSubgraphAccess', id: any, subgraphId: any }> }> } } };
+export type AdminTgBotChatsQuery = { admin: { tgBotChats: { nodes: Array<{ id: unknown, chatType: string, chatTitle: string, addedAt: unknown, removedAt: unknown, memberCount: number, subgraphAccesses: Array<{ id: unknown, subgraphId: unknown }> }> } } };
 
 export type AdminTgbotShowChatsSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgbotShowChatsSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminTgbotShowChatsSubgraphsQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminTgbotsShowchatsSubgraphsSaveMutationVariables = Exact<{
   input: SetTgChatSubgraphsInput;
 }>;
 
 
-export type AdminTgbotsShowchatsSubgraphsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetTgChatSubgraphsPayload', success: boolean } } };
+export type AdminTgbotsShowchatsSubgraphsSaveMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetTgChatSubgraphsPayload', success: boolean }
+     } };
 
 export type AdminTgBotInviteChatsQueryVariables = Exact<{
   filter: AdminTgBotChatsFilterInput;
 }>;
 
 
-export type AdminTgBotInviteChatsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBotChats: { __typename?: 'AdminTgBotChatsConnection', nodes: Array<{ __typename?: 'AdminTgBotChat', id: any, chatType: string, chatTitle: string, addedAt: any, removedAt?: any | null, memberCount: number, subgraphInvites: Array<{ __typename?: 'AdminTgBotChatSubgraphInvite', id: string, subgraphId: any }> }> } } };
+export type AdminTgBotInviteChatsQuery = { admin: { tgBotChats: { nodes: Array<{ id: unknown, chatType: string, chatTitle: string, addedAt: unknown, removedAt: unknown, memberCount: number, subgraphInvites: Array<{ id: string, subgraphId: unknown }> }> } } };
 
 export type AdminTgbotShowInviteChatsSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgbotShowInviteChatsSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> } } };
+export type AdminTgbotShowInviteChatsSubgraphsQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> } } };
 
 export type AdminTgbotShowInviteChatsSubgraphsSaveMutationVariables = Exact<{
   input: SetTgChatSubgraphInvitesInput;
 }>;
 
 
-export type AdminTgbotShowInviteChatsSubgraphsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetTgChatSubgraphInvitesPayload', success: boolean } } };
+export type AdminTgbotShowInviteChatsSubgraphsSaveMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetTgChatSubgraphInvitesPayload', success: boolean }
+     } };
 
 export type AdminTgbotShowPublishInstantTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgbotShowPublishInstantTagsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishTags: { __typename?: 'AdminTelegramPublishTagsConnection', nodes: Array<{ __typename?: 'AdminTelegramPublishTag', id: any, label: string }> } } };
+export type AdminTgbotShowPublishInstantTagsQuery = { admin: { allTelegramPublishTags: { nodes: Array<{ id: unknown, label: string }> } } };
 
 export type AdminTgbotShowPublishInstantTagsSaveMutationVariables = Exact<{
   input: SetTgChatPublishInstantTagsInput;
 }>;
 
 
-export type AdminTgbotShowPublishInstantTagsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetTgChatPublishInstantTagsPayload', success: boolean } } };
+export type AdminTgbotShowPublishInstantTagsSaveMutation = { admin: { data:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetTgChatPublishInstantTagsPayload', success: boolean }
+     } };
 
 export type AdminTgBotPublishTagsQueryVariables = Exact<{
   filter: AdminTgBotChatsFilterInput;
 }>;
 
 
-export type AdminTgBotPublishTagsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBotChats: { __typename?: 'AdminTgBotChatsConnection', nodes: Array<{ __typename?: 'AdminTgBotChat', id: any, chatType: string, chatTitle: string, addedAt: any, removedAt?: any | null, memberCount: number, publishTags: Array<{ __typename?: 'AdminTelegramPublishTag', id: any }>, publishInstantTags: Array<{ __typename?: 'AdminTelegramPublishTag', id: any }> }> } } };
+export type AdminTgBotPublishTagsQuery = { admin: { tgBotChats: { nodes: Array<{ id: unknown, chatType: string, chatTitle: string, addedAt: unknown, removedAt: unknown, memberCount: number, publishTags: Array<{ id: unknown }>, publishInstantTags: Array<{ id: unknown }> }> } } };
 
 export type AdminTgbotShowPublishTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgbotShowPublishTagsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTelegramPublishTags: { __typename?: 'AdminTelegramPublishTagsConnection', nodes: Array<{ __typename?: 'AdminTelegramPublishTag', id: any, label: string }> } } };
+export type AdminTgbotShowPublishTagsQuery = { admin: { allTelegramPublishTags: { nodes: Array<{ id: unknown, label: string }> } } };
 
 export type AdminTgbotShowPublishTagsSaveMutationVariables = Exact<{
   input: SetTgChatPublishTagsInput;
 }>;
 
 
-export type AdminTgbotShowPublishTagsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'SetTgChatPublishTagsPayload', success: boolean } } };
+export type AdminTgbotShowPublishTagsSaveMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'SetTgChatPublishTagsPayload', success: boolean }
+     } };
 
 export type AdminShowTgBotQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminShowTgBotQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBot?: { __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } } | null } };
+export type AdminShowTgBotQuery = { admin: { tgBot: { id: unknown, name: string, description: string, enabled: boolean, createdAt: unknown, createdBy: { email: string | null } } | null } };
 
 export type AdminUpdateTgBotMutationMutationVariables = Exact<{
   input: UpdateTgBotInput;
 }>;
 
 
-export type AdminUpdateTgBotMutationMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateTgBotPayload', tgBot: { __typename?: 'AdminTgBot', id: any, description: string } } } };
+export type AdminUpdateTgBotMutationMutation = { admin: { payload:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateTgBotPayload', tgBot: { id: unknown, description: string } }
+     } };
 
 export type AdminListUserBansQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUserBansQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUserUserBans: { __typename?: 'AdminUserBansConnection', nodes: Array<{ __typename?: 'UserBan', createdAt: any, reason: string, id: any, user: { __typename: 'AdminUser', email?: string | null }, bannedBy?: { __typename?: 'Admin', user: { __typename?: 'AdminUser', email?: string | null } } | null }> } } };
+export type AdminListUserBansQuery = { admin: { allUserUserBans: { nodes: Array<{ createdAt: unknown, reason: string, id: unknown, user: { __typename: 'AdminUser', email: string | null }, bannedBy: { user: { email: string | null } } | null }> } } };
 
 export type AdminBanUserMutationVariables = Exact<{
   input: BanUserInput;
 }>;
 
 
-export type AdminBanUserMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', banUser: { __typename: 'BanUserPayload', user: { __typename: 'AdminUser', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminBanUserMutation = { admin: { banUser:
+      | { __typename: 'BanUserPayload', user: { __typename: 'AdminUser', id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminUnbanUserMutationVariables = Exact<{
   input: UnbanUserInput;
 }>;
 
 
-export type AdminUnbanUserMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'UnbanUserPayload', user: { __typename: 'AdminUser', id: any } } } };
+export type AdminUnbanUserMutation = { admin: { payload:
+      | { message: string }
+      | { user: { __typename: 'AdminUser', id: unknown } }
+     } };
 
 export type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'AdminUser', id: any, email?: string | null, createdAt: any, ban?: { __typename?: 'UserBan', reason: string } | null }> } } };
+export type AdminListUsersQuery = { admin: { allUsers: { nodes: Array<{ id: unknown, email: string | null, createdAt: unknown, ban: { reason: string } | null }> } } };
 
 export type AdminCreateUserMutationVariables = Exact<{
   input: CreateUserInput;
 }>;
 
 
-export type AdminCreateUserMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', createUser: { __typename: 'CreateUserPayload', user: { __typename?: 'AdminUser', id: any } } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateUserMutation = { admin: { createUser:
+      | { __typename: 'CreateUserPayload', user: { id: unknown } }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminSelectUserQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminSelectUserQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'AdminUser', id: any, email?: string | null }> } } };
+export type AdminSelectUserQuery = { admin: { allUsers: { nodes: Array<{ id: unknown, email: string | null }> } } };
 
 export type AdminUserShowQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminUserShowQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', user?: { __typename?: 'AdminUser', id: any, email?: string | null, createdAt: any, admin?: { __typename?: 'Admin', grantedAt: any } | null } | null } };
+export type AdminUserShowQuery = { admin: { user: { id: unknown, email: string | null, createdAt: unknown, admin: { grantedAt: unknown } | null } | null } };
 
 export type AdminUserEditQueryQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminUserEditQueryQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', user?: { __typename?: 'AdminUser', id: any, email?: string | null, createdAt: any } | null } };
+export type AdminUserEditQueryQuery = { admin: { user: { id: unknown, email: string | null, createdAt: unknown } | null } };
 
 export type AdminUpdateUserMutationVariables = Exact<{
   input: UpdateUserInput;
 }>;
 
 
-export type AdminUpdateUserMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', updateUser: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateUserPayload', user: { __typename?: 'AdminUser', id: any, email?: string | null } } } };
+export type AdminUpdateUserMutation = { admin: { updateUser:
+      | { __typename: 'ErrorPayload', message: string }
+      | { __typename: 'UpdateUserPayload', user: { id: unknown, email: string | null } }
+     } };
 
 export type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminListUserSubgraphAccessesQuery = { admin: { data: { nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: unknown, createdAt: unknown, expiresAt: unknown, subgraph: { name: string }, user: { id: unknown, email: string | null } }> } } };
 
 export type AdminCreateUserSubgraphAccessMutationVariables = Exact<{
   input: CreateUserSubgraphAccessInput;
 }>;
 
 
-export type AdminCreateUserSubgraphAccessMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateUserSubgraphAccessPayload', accesses: Array<{ __typename?: 'AdminUserSubgraphAccess', id: any }> } | { __typename: 'ErrorPayload', message: string } } };
+export type AdminCreateUserSubgraphAccessMutation = { admin: { data:
+      | { __typename: 'CreateUserSubgraphAccessPayload', accesses: Array<{ id: unknown }> }
+      | { __typename: 'ErrorPayload', message: string }
+     } };
 
 export type AdminUserSubgraphAccessQueryVariables = Exact<{
-  id: Scalars['Int64']['input'];
+  id: unknown;
 }>;
 
 
-export type AdminUserSubgraphAccessQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'AdminUserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null } | null } };
+export type AdminUserSubgraphAccessQuery = { admin: { allSubgraphs: { nodes: Array<{ id: unknown, name: string }> }, userSubgraphAccess: { userId: unknown, subgraphId: unknown, expiresAt: unknown } | null } };
 
 export type AdminUpdateUserSubgraphAccessMutationVariables = Exact<{
   input: UpdateUserSubgraphAccessInput;
 }>;
 
 
-export type AdminUpdateUserSubgraphAccessMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'UpdateUserSubgraphAccessPayload', userSubgraphAccess: { __typename: 'UserSubgraphAccess', expiresAt?: any | null } } } };
+export type AdminUpdateUserSubgraphAccessMutation = { admin: { payload:
+      | { message: string }
+      | { userSubgraphAccess: { __typename: 'UserSubgraphAccess', expiresAt: unknown } }
+     } };
 
 export type AdminWaitListEmailRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminWaitListEmailRequestsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allWaitListEmailRequests: { __typename?: 'AdminWaitListEmailRequestsConnection', nodes: Array<{ __typename?: 'AdminWaitListEmailRequest', email: string, createdAt: any, ip?: string | null, notePath: string }> } } };
+export type AdminWaitListEmailRequestsQuery = { admin: { allWaitListEmailRequests: { nodes: Array<{ email: string, createdAt: unknown, ip: string | null, notePath: string }> } } };
 
 export type AdminWaitListTgBotRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminWaitListTgBotRequestsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allWaitListTgBotRequests: { __typename?: 'AdminWaitListTgBotRequestsConnection', nodes: Array<{ __typename?: 'AdminWaitListTgBotRequest', chatId: any, createdAt: any, notePathId: any, notePath: string, botName: string }> } } };
+export type AdminWaitListTgBotRequestsQuery = { admin: { allWaitListTgBotRequests: { nodes: Array<{ chatId: unknown, createdAt: unknown, notePathId: unknown, notePath: string, botName: string }> } } };
 
 export type SignOutMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SignOutMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignOutPayload', viewer: { __typename?: 'Viewer', id: string } } };
+export type SignOutMutation = { data:
+    | { __typename: 'ErrorPayload', message: string }
+    | { __typename: 'SignOutPayload', viewer: { id: string } }
+   };
 
 export type RequestEmailSignInCodeMutationVariables = Exact<{
   input: RequestEmailSignInCodeInput;
 }>;
 
 
-export type RequestEmailSignInCodeMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'RequestCaptchaPayload', siteKey: string } | { __typename: 'RequestEmailSignInCodePayload', success: boolean } };
+export type RequestEmailSignInCodeMutation = { data:
+    | { __typename: 'ErrorPayload', message: string }
+    | { __typename: 'RequestCaptchaPayload', siteKey: string }
+    | { __typename: 'RequestEmailSignInCodePayload', success: boolean }
+   };
 
 export type SignInByEmailMutationVariables = Exact<{
   input: SignInByEmailInput;
 }>;
 
 
-export type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
+export type SignInByEmailMutation = { data:
+    | { __typename: 'ErrorPayload', message: string }
+    | { __typename: 'SignInPayload', token: string }
+   };
 
 export type OAuthUrlsQueryVariables = Exact<{
   input: OAuthUrlInput;
 }>;
 
 
-export type OAuthUrlsQuery = { __typename?: 'Query', googleAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, githubAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, oidcAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null } };
+export type OAuthUrlsQuery = { googleAuthUrl: { authUrl: string | null }, githubAuthUrl: { authUrl: string | null }, oidcAuthUrl: { authUrl: string | null } };
 
 export type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ViewerQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', id: string, role: Role, user?: { __typename?: 'User', email?: string | null } | null } };
+export type ViewerQuery = { viewer: { id: string, role: Role, user: { email: string | null } | null } };
 
 export type EditorNoteVersionDiffQueryVariables = Exact<{
   filter: NoteVersionDiffFilter;
 }>;
 
 
-export type EditorNoteVersionDiffQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersionDiff?: { __typename?: 'NoteVersionDiff', unified: string, word: string, addedLines: number, removedLines: number, changedWords: number } | null } };
+export type EditorNoteVersionDiffQuery = { admin: { noteVersionDiff: { unified: string, word: string, addedLines: number, removedLines: number, changedWords: number } | null } };
 
 export type EditorNotePathsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type EditorNotePathsQuery = { __typename?: 'Query', notePaths: Array<{ __typename?: 'NotePath', value: string }> };
+export type EditorNotePathsQuery = { notePaths: Array<{ value: string }> };
 
 export type EditorNoteContentQueryVariables = Exact<{
-  filter?: InputMaybe<NotePathsFilter>;
+  filter?: NotePathsFilter | null | undefined;
 }>;
 
 
-export type EditorNoteContentQuery = { __typename?: 'Query', notePaths: Array<{ __typename?: 'NotePath', id: any, value: string, content: string }> };
+export type EditorNoteContentQuery = { notePaths: Array<{ id: unknown, value: string, content: string }> };
 
 export type EditorPushNotesMutationVariables = Exact<{
   input: PushNotesInput;
 }>;
 
 
-export type EditorPushNotesMutation = { __typename?: 'Mutation', pushNotes: { __typename: 'ErrorPayload', message: string } | { __typename: 'PushNotesPayload', updated: Array<{ __typename?: 'PushedNote', path: string, url?: string | null }> } };
+export type EditorPushNotesMutation = { pushNotes:
+    | { __typename: 'ErrorPayload', message: string }
+    | { __typename: 'PushNotesPayload', updated: Array<{ path: string, url: string | null }> }
+   };
 
 export type ResolveWikilinksQueryVariables = Exact<{
   filter: ResolveWikilinksFilter;
 }>;
 
 
-export type ResolveWikilinksQuery = { __typename?: 'Query', resolveWikilinks: Array<{ __typename?: 'WikilinkResolution', link: string, path?: string | null, url?: string | null }> };
+export type ResolveWikilinksQuery = { resolveWikilinks: Array<{ link: string, path: string | null, url: string | null }> };
 
 export type EditorNoteVersionsForDiffQueryVariables = Exact<{
   filter: AdminNoteVersionHistoryFilter;
 }>;
 
 
-export type EditorNoteVersionsForDiffQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersionHistory: { __typename?: 'AdminNoteVersionHistoryConnection', nodes: Array<{ __typename?: 'AdminNoteVersionMeta', versionId: any, version: number }> } } };
+export type EditorNoteVersionsForDiffQuery = { admin: { noteVersionHistory: { nodes: Array<{ versionId: unknown, version: number }> } } };
 
 export type EditorNoteChangesSubscriptionVariables = Exact<{
   filter: NoteChangesFilter;
 }>;
 
 
-export type EditorNoteChangesSubscription = { __typename?: 'Subscription', noteChanges: { __typename?: 'NoteChangesSubscriptionPayload', changes: Array<{ __typename: 'NoteHideEvent', path: string } | { __typename: 'NoteUpsertEvent', path: string, pathId: any, versionId: any }> } };
+export type EditorNoteChangesSubscription = { noteChanges: { changes: Array<
+      | { __typename: 'NoteHideEvent', path: string }
+      | { __typename: 'NoteUpsertEvent', path: string, pathId: unknown, versionId: unknown }
+    > } };
 
 export type EditorNoteVersionsQueryVariables = Exact<{
   filter: AdminNoteVersionHistoryFilter;
 }>;
 
 
-export type EditorNoteVersionsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersionHistory: { __typename?: 'AdminNoteVersionHistoryConnection', nodes: Array<{ __typename?: 'AdminNoteVersionMeta', versionId: any, version: number, contentLength: number, createdAt: any }> } } };
+export type EditorNoteVersionsQuery = { admin: { noteVersionHistory: { nodes: Array<{ versionId: unknown, version: number, contentLength: number, createdAt: unknown }> } } };
 
 export type EditorNoteVersionQueryVariables = Exact<{
-  versionId: Scalars['Int64']['input'];
+  versionId: unknown;
 }>;
 
 
-export type EditorNoteVersionQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteVersion?: { __typename?: 'AdminNoteVersionDetail', versionId: any, content: string } | null } };
+export type EditorNoteVersionQuery = { admin: { noteVersion: { versionId: unknown, content: string } | null } };
 
 export type ReaderQueryQueryVariables = Exact<{
   input: NoteInput;
 }>;
 
 
-export type ReaderQueryQuery = { __typename?: 'Query', note?: { __typename?: 'PublicNote', title: string, html: string, pathId: any, toc: Array<{ __typename?: 'NoteTocItem', id: string, title: string, level: number }> } | null };
+export type ReaderQueryQuery = { note: { title: string, html: string, pathId: unknown, toc: Array<{ id: string, title: string, level: number }> } | null };
 
 export type CurrentTimeSubscriptionVariables = Exact<{
-  format?: InputMaybe<Scalars['String']['input']>;
+  format?: string | null | undefined;
 }>;
 
 
-export type CurrentTimeSubscription = { __typename?: 'Subscription', currentTime: string };
+export type CurrentTimeSubscription = { currentTime: string };
 
 export type FavoriteNotesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FavoriteNotesQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', favoriteNotes: Array<{ __typename?: 'PublicNote', pathId: any }> } | null } };
+export type FavoriteNotesQuery = { viewer: { user: { favoriteNotes: Array<{ pathId: unknown }> } | null } };
 
 export type ToggleFavoriteNoteMutationVariables = Exact<{
   input: ToggleFavoriteNoteInput;
 }>;
 
 
-export type ToggleFavoriteNoteMutation = { __typename?: 'Mutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'ToggleFavoriteNotePayload', favoriteNotes: Array<{ __typename?: 'PublicNote', pathId: any }> } };
+export type ToggleFavoriteNoteMutation = { payload:
+    | { __typename: 'ErrorPayload', message: string }
+    | { __typename: 'ToggleFavoriteNotePayload', favoriteNotes: Array<{ pathId: unknown }> }
+   };
 
 export type PaywallActivePurchaseQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PaywallActivePurchaseQueryQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', activePurchases: Array<{ __typename?: 'Purchase', id: string, status: string, successful: boolean }> } };
+export type PaywallActivePurchaseQueryQuery = { viewer: { activePurchases: Array<{ id: string, status: string, successful: boolean }> } };
 
 export type CreateEmailWaitListRequestMutationMutationVariables = Exact<{
   input: CreateEmailWaitListRequestInput;
 }>;
 
 
-export type CreateEmailWaitListRequestMutationMutation = { __typename?: 'Mutation', createEmailWaitListRequest: { __typename: 'CreateEmailWaitListRequestPayload', success: boolean } | { __typename: 'ErrorPayload', message: string } };
+export type CreateEmailWaitListRequestMutationMutation = { createEmailWaitListRequest:
+    | { __typename: 'CreateEmailWaitListRequestPayload', success: boolean }
+    | { __typename: 'ErrorPayload', message: string }
+   };
 
 export type PaywallQueryQueryVariables = Exact<{
   filter: ViewerOffersFilter;
 }>;
 
 
-export type PaywallQueryQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', offers?: { __typename: 'ActiveOffers', nodes: Array<{ __typename?: 'Offer', id: string, priceUSD: number, subgraphs: Array<{ __typename?: 'Subgraph', name: string }> }> } | { __typename: 'SubgraphWaitList', tgBotUrl?: string | null, emailAllowed: boolean } | null } };
+export type PaywallQueryQuery = { viewer: { offers:
+      | { __typename: 'ActiveOffers', nodes: Array<{ id: string, priceUSD: number, subgraphs: Array<{ name: string }> }> }
+      | { __typename: 'SubgraphWaitList', tgBotUrl: string | null, emailAllowed: boolean }
+     | null } };
 
 export type CreatePaymentLinkMutationVariables = Exact<{
   input: CreatePaymentLinkInput;
 }>;
 
 
-export type CreatePaymentLinkMutation = { __typename?: 'Mutation', data: { __typename: 'CreatePaymentLinkPayload', redirectUrl: string } | { __typename: 'ErrorPayload', message: string } };
+export type CreatePaymentLinkMutation = { data:
+    | { __typename: 'CreatePaymentLinkPayload', redirectUrl: string }
+    | { __typename: 'ErrorPayload', message: string }
+   };
 
 export type SiteSearchQueryVariables = Exact<{
   input: SearchInput;
 }>;
 
 
-export type SiteSearchQuery = { __typename?: 'Query', search: { __typename?: 'SearchConnection', nodes: Array<{ __typename?: 'SearchResult', highlightedTitle?: string | null, highlightedContent: Array<string>, score: number, matchOrigin: SearchMatchOrigin, id: string }> } };
+export type SiteSearchQuery = { search: { nodes: Array<{ highlightedTitle: string | null, highlightedContent: Array<string>, score: number, matchOrigin: SearchMatchOrigin, id: string }> } };
 
 export type UserSubscriptionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserSubscriptionsQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', subgraphAccesses: Array<{ __typename?: 'UserSubgraphAccess', id: string, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'Subgraph', name: string, homePath: string } }> } | null } };
+export type UserSubscriptionsQuery = { viewer: { user: { subgraphAccesses: Array<{ id: string, createdAt: unknown, expiresAt: unknown, subgraph: { name: string, homePath: string } }> } | null } };
 
 export type UserTokensListQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserTokensListQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', tokens: Array<{ __typename?: 'UserToken', id: string, name: string, tokenPrefix: string, scope: string, createdAt: any, lastUsedAt?: any | null, expiresAt?: any | null }> } | null } };
+export type UserTokensListQuery = { viewer: { user: { tokens: Array<{ id: string, name: string, tokenPrefix: string, scope: string, createdAt: unknown, lastUsedAt: unknown, expiresAt: unknown }> } | null } };
 
 export type CreateUserTokenMutationVariables = Exact<{
   input: CreateUserTokenInput;
 }>;
 
 
-export type CreateUserTokenMutation = { __typename?: 'Mutation', createUserToken: { __typename?: 'CreateUserTokenPayload', plaintextToken: string, token: { __typename?: 'UserToken', id: string, name: string, tokenPrefix: string, scope: string, createdAt: any, lastUsedAt?: any | null, expiresAt?: any | null } } | { __typename?: 'ErrorPayload', message: string } };
+export type CreateUserTokenMutation = { createUserToken:
+    | { plaintextToken: string, token: { id: string, name: string, tokenPrefix: string, scope: string, createdAt: unknown, lastUsedAt: unknown, expiresAt: unknown } }
+    | { message: string }
+   };
 
 export type RevokeUserTokenMutationVariables = Exact<{
   input: RevokeUserTokenInput;
 }>;
 
 
-export type RevokeUserTokenMutation = { __typename?: 'Mutation', revokeUserToken: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'RevokeUserTokenPayload', token: { __typename?: 'UserToken', id: string } } };
+export type RevokeUserTokenMutation = { revokeUserToken:
+    | { message: string }
+    | { token: { id: string } }
+   };
 
 // This file is auto-generated by graphqlmol.js
 
