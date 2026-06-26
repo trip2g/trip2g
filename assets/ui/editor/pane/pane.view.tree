@@ -48,23 +48,28 @@ $trip2g_editor_pane $mol_view
 	Placeholder $mol_view
 		sub /
 			<= placeholder_text @ \Choose file in the left panel
-	UpdateBanner $mol_view
+	UpdateBanner $mol_bar
 		sub /
+			<= BannerIcon $mol_icon_update
 			<= BannerText $mol_view
+				style *
+					flex \1
 				sub /
 					<= banner_text @ \This file was updated elsewhere
 			<= ShowDiffButton $mol_button_minor
+				hint @ \Show what changed
 				click? <=> handle_show_diff? null
 				sub /
 					<= show_diff_text @ \Show diff
-			<= LoadLatestButton $mol_button_minor
+			<= LoadLatestButton $mol_button_major
 				click? <=> handle_load_latest? null
 				sub /
 					<= load_latest_text @ \Load latest
 			<= DismissButton $mol_button_minor
+				hint @ \Dismiss
 				click? <=> handle_dismiss? null
 				sub /
-					<= dismiss_text @ \Dismiss
+					<= DismissIcon $mol_icon_close
 	Versions $trip2g_editor_versions
 		path <= path
 		content? <=> content?

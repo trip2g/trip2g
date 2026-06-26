@@ -5,5 +5,6 @@
 	"$trip2g_editor_pane_banner_text": "Этот файл был изменён в другом месте",
 	"$trip2g_editor_pane_show_diff_text": "Показать изменения",
 	"$trip2g_editor_pane_load_latest_text": "Загрузить последнюю версию",
-	"$trip2g_editor_pane_dismiss_text": "Закрыть"
+	"$trip2g_editor_pane_ShowDiffButton_hint": "Показать, что изменилось",
+	"$trip2g_editor_pane_DismissButton_hint": "Закрыть"
 }

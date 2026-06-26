@@ -26,5 +26,14 @@ namespace $ {
 			minWidth: 0,
 			minHeight: 0,
 		},
+
+		UpdateBanner: {
+			flex: { shrink: 0 },
+			alignItems: 'center',
+			gap: $mol_style_unit.rem(0.5),
+			padding: $mol_gap.space,
+			background: { color: $mol_theme.focus },
+			borderBottom: `1px solid ${$mol_theme.line}`,
+		},
 	})
 }
