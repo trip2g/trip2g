@@ -1,5 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { sha256Base64 } from './api'
 import { parseBoard, serializeBoard } from './format'
 import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline } from './ops'
 
@@ -23,6 +25,35 @@ kanban-plugin: basic
 {"kanban-plugin":"basic"}
 \`\`\`
 %%`
+
+// ── sha256Base64: must produce base64url (+ → -, / → _) ─────────────────────
+
+// Helper: reference base64url via Node's built-in crypto (server-side encoding).
+// Node's digest('base64url') strips padding; the server keeps it.
+// Mirror the same translation the fixed sha256Base64 applies so padding is preserved.
+function refHash(input: string): string {
+  return createHash('sha256').update(input).digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+}
+
+// These inputs have `+` or `/` in their standard base64 SHA-256 digest, so they
+// would fail against the old btoa-only implementation.
+const BASE64URL_INPUTS = [
+  '1',      // standard: a4ayc/80/OGda4BO/1o/V0etpOqiLx1JwB5S3beHW0s=  (has /)
+  'test',   // standard: n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=  (has + and /)
+  'hello',  // standard: LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=  (has +)
+  'a longer example string that exercises the full hash',
+]
+
+for (const input of BASE64URL_INPUTS) {
+  test(`sha256Base64 matches node base64url for ${JSON.stringify(input)}`, async () => {
+    const result = await sha256Base64(input)
+    assert.equal(result, refHash(input), `base64url mismatch for ${JSON.stringify(input)}`)
+    assert.ok(!result.includes('+'), `result must not contain + for ${JSON.stringify(input)}`)
+    assert.ok(!result.includes('/'), `result must not contain / for ${JSON.stringify(input)}`)
+  })
+}
 
 test('round-trip: serializeBoard(parseBoard(md)) === md', () => {
   assert.equal(serializeBoard(parseBoard(SAMPLE)), SAMPLE)
