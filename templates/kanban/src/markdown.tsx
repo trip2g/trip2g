@@ -3,7 +3,6 @@ import React from 'react'
 /** Render inline markdown: **bold**, `code`, [[wikilinks]]. Falls back to plain text. */
 export function renderMarkdown(
   text: string,
-  onWikiPreview?: (url: string, label: string) => void,
 ): React.ReactElement {
   const segments: React.ReactElement[] = []
   // Matches **bold**, `code`, [[Page]] or [[Page|alias]]
@@ -29,17 +28,7 @@ export function renderMarkdown(
       const target = pipeIdx !== -1 ? inner.slice(0, pipeIdx) : inner
       const label = pipeIdx !== -1 ? inner.slice(pipeIdx + 1) : inner
       segments.push(
-        <a
-          key={key++}
-          href={`/${target}`}
-          onClick={e => {
-            e.stopPropagation()
-            if (onWikiPreview && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-              e.preventDefault()
-              onWikiPreview(`/${target}`, label)
-            }
-          }}
-        >
+        <a key={key++} href={`/${target}`}>
           {label}
         </a>
       )
