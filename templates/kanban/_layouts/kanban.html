@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- Mount point for the React kanban app -->
+<div id="trip2g-kanban-root"></div>
+
+<!--
+  Data island strategy: Jet has no JSON or base64 filter, so we split the payload:
+
+  1. note.Permalink() goes into a <script type="application/json"> element.
+     Paths are URL-safe strings with no HTML-special characters.
+
+  2. note.ContentString() goes into a <textarea> (hidden). Jet HTML-escapes
+     its content by default; <textarea> is an "escapable raw text" element, so
+     the browser decodes HTML entities back to the original bytes. The result
+     is available as textarea.value — byte-identical to the original markdown.
+     The only unsafe sequence would be </textarea> inside the markdown, which
+     is impossible in standard obsidian-kanban notes.
+-->
+<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":true}</script>
+<textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
+
+<script>
+  (function () {
+    var meta = JSON.parse(document.getElementById('kanban-meta').textContent || '{}')
+    meta.content = document.getElementById('kanban-content').value
+    window.__trip2g_kanban = meta
+  })()
+</script>
+
+<!-- INTEGRATOR: replace __KANBAN_JS_URL__ with the asset() URL (see README) after
+     uploading dist/kanban.js as a vault asset, OR point to your dev server URL.
+     NOTE: never put Jet expression braces inside a comment here — Jet parses
+     comments too, so an example call would error the whole layout. -->
+<script src="__KANBAN_JS_URL__"></script>
+
+</body>
+</html>
