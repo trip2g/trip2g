@@ -24,10 +24,8 @@ namespace $.$$ {
 
 		@$mol_mem
 		override ids_tags() {
-			const q = this.query().trim().toLowerCase()
 			const map: Record<string, string[]> = {}
-			for (const path of this.paths()) {
-				if (q && !path.toLowerCase().includes(q)) continue
+			for (const path of $trip2g_editor_navigator_filter(this.paths(), this.query())) {
 				map[path] = [path]
 			}
 			return map
@@ -52,26 +50,17 @@ namespace $.$$ {
 
 		@$mol_mem
 		override ids(): string[] {
-			const prefix = this.path().join('/')
-			const ids_tags = this.ids_tags_map()
-			return Object.keys(ids_tags).filter(id =>
-				ids_tags[id].some((tag: string) => prefix === '' || tag.startsWith(prefix + '/')),
-			)
+			return $trip2g_editor_navigator_ids(this.ids_tags_map(), this.path().join('/'))
 		}
 
 		@$mol_mem
 		override tags(): string[] {
-			const prefix = this.path().join('/')
-			const ids_tags = this.ids_tags_map()
-			const folders = new Set<string>()
-			for (const id of this.ids()) {
-				for (const tag of ids_tags[id]) {
-					const rest = prefix ? tag.slice(prefix.length + 1) : tag
-					const slash = rest.indexOf('/')
-					if (slash >= 0) folders.add(rest.slice(0, slash))
-				}
-			}
-			return [...folders].sort($mol_compare_text())
+			return $trip2g_editor_navigator_subfolders(
+				this.ids(),
+				this.ids_tags_map(),
+				this.path().join('/'),
+				$mol_compare_text(),
+			)
 		}
 
 		@$mol_mem
