@@ -55,6 +55,23 @@ func TestNote_PermalinkEncoded(t *testing.T) {
 	require.Equal(t, "/hello_world", note2.PermalinkEncoded())
 }
 
+func TestIsKanban(t *testing.T) {
+	t.Run("kanban-plugin key present returns true", func(t *testing.T) {
+		nv := &model.NoteView{RawMeta: map[string]interface{}{"kanban-plugin": "basic"}}
+		require.True(t, NewNote(nv).IsKanban())
+	})
+
+	t.Run("kanban-plugin key absent returns false", func(t *testing.T) {
+		nv := &model.NoteView{RawMeta: map[string]interface{}{"title": "hello"}}
+		require.False(t, NewNote(nv).IsKanban())
+	})
+
+	t.Run("nil RawMeta returns false", func(t *testing.T) {
+		nv := &model.NoteView{}
+		require.False(t, NewNote(nv).IsKanban())
+	})
+}
+
 func TestNote_FormSpecJSON(t *testing.T) {
 	t.Run("no form frontmatter returns empty", func(t *testing.T) {
 		nv := &model.NoteView{VersionID: 42, RawMeta: map[string]interface{}{"title": "x"}}

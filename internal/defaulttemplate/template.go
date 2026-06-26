@@ -1,7 +1,9 @@
 package defaulttemplate
 
 import (
+	"bytes"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"trip2g/internal/db"
@@ -464,6 +466,30 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 		b, _ = json.Marshal(safeData)
 	}
 	return b
+}
+
+// KanbanDataJSON returns a JSON string for the <script id="kanban-data"> island,
+// or "" if the current note is not a kanban board.
+// The payload is: { "path": string, "versionId": number, "editable": bool, "markdown": string }
+func (ctx *Ctx) KanbanDataJSON() string {
+	if ctx.Note == nil || !ctx.Note.IsKanban() {
+		return ""
+	}
+	editable := ctx.UserToken != nil && ctx.UserToken.IsAdmin()
+	versionID, _ := strconv.ParseInt(ctx.Note.VersionID(), 10, 64)
+	payload := struct {
+		Path      string `json:"path"`
+		VersionID int64  `json:"versionId"`
+		Editable  bool   `json:"editable"`
+		Markdown  string `json:"markdown"`
+	}{ctx.Note.Path(), versionID, editable, ctx.Note.ContentString()}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(true)
+	if err := enc.Encode(payload); err != nil {
+		return ""
+	}
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 // matchAnyGlob returns true if any pattern matches the path.

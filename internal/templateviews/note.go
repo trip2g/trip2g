@@ -170,6 +170,12 @@ func (n *Note) HasCharts() bool {
 	return len(n.nv.Charts) > 0
 }
 
+// IsKanban reports whether the note has the `kanban-plugin` frontmatter key set.
+// Drives conditional loading of the kanban board bundle.
+func (n *Note) IsKanban() bool {
+	return n.nv.IsKanban()
+}
+
 // HasCodeLanguage reports whether the note contains a fenced code block with the
 // given language (case-insensitive). Drives conditional loading of per-language
 // widget scripts (e.g. mermaid).

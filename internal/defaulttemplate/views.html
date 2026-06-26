@@ -319,7 +319,14 @@ window.__trip2g_settings = {
   </div>
   {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
+{% if ctx.Note.IsKanban() %}
+  <div class="content__body">
+    <div mol_view_root="$trip2g_kanban">{%s= ctx.Note.HTMLString() %}</div>
+    <script id="kanban-data" type="application/json">{%z= []byte(ctx.KanbanDataJSON()) %}</script>
+  </div>
+{% else %}
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
+{% endif %}
 {% if specJSON := ctx.FormSpecJSON(); specJSON != nil %}
 <script id="form-spec" data-nvid="{%s= ctx.Note.VersionID() %}" type="application/json">{%z= specJSON %}</script>
 {% endif %}

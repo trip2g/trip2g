@@ -512,6 +512,9 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 		if note.HasAnyCodeBlock() {
 			jsURLs = append(jsURLs, env.AssetURL("/assets/codeblock.js"))
 		}
+		if note.IsKanban() {
+			jsURLs = append(jsURLs, env.AssetURL("/assets/ui/kanban/-/web.js"))
+		}
 	}
 
 	// Build HTML injections map.

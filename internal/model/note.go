@@ -1470,3 +1470,10 @@ func (n *NoteView) IsSystem() bool {
 	p := filepath.ToSlash(n.Path)
 	return len(p) > 0 && p[0] == '_' || strings.Contains(p, "/_")
 }
+
+// IsKanban returns true when the note has the `kanban-plugin` frontmatter key set
+// (any value). This is the marker used by the Obsidian Kanban plugin.
+func (n *NoteView) IsKanban() bool {
+	_, ok := n.RawMeta["kanban-plugin"]
+	return ok
+}
