@@ -330,6 +330,10 @@ func renderLayout(
 	vars["htmlInjectionsHead"] = reflect.ValueOf(headInjections)
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
 
+	// Build the default_template helper so layouts can embed user-space chrome.
+	// Usage in a custom layout: {{ default_template.user_space_scripts() }}
+	vars["default_template"] = reflect.ValueOf(buildUserSpaceJetMap(ctx, env, resp))
+
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
 		if resp.UserToken.IsAdmin() {
