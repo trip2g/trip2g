@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseBoard, serializeBoard, type KanbanBoard } from './format.js'
+import { parseBoard, serializeBoard } from './format.js'
 
 const FIXTURE = [
   '---', '', 'kanban-plugin: basic', '', '---', '',
@@ -50,6 +50,22 @@ describe('parseBoard', () => {
   it('non-kanban doc has empty lists', () => {
     const board = parseBoard('# Just a note\n\nText.')
     assert.deepEqual(board.lists, [])
+  })
+
+  it('CRLF line endings parse same cards as LF', () => {
+    const lf = parseBoard(FIXTURE)
+    const crlf = parseBoard(FIXTURE.replace(/\n/g, '\r\n'))
+    assert.deepEqual(crlf.lists.map(l => l.title), lf.lists.map(l => l.title))
+    assert.deepEqual(crlf.lists[0].cards, lf.lists[0].cards)
+    assert.deepEqual(crlf.lists[2].cards, lf.lists[2].cards)
+  })
+
+  it('[X] parses as checked; empty card body parses', () => {
+    const board = parseBoard('## Misc\n\n- [X] done\n- [ ] ')
+    assert.deepEqual(board.lists[0].cards, [
+      { text: 'done', checked: true },
+      { text: '', checked: false },
+    ])
   })
 })
 
