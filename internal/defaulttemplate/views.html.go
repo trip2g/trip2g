@@ -1161,7 +1161,15 @@ func SimilarWidget(ctx *Ctx) string {
 func StreamNoteContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:263
 	qw422016.N().S(`
-<main class="layout__main">
+<main class="layout__main`)
+//line views.html:264
+	if ctx.Note != nil && ctx.Note.M().GetBool("wide", false) {
+//line views.html:264
+		qw422016.N().S(` layout__main--wide`)
+//line views.html:264
+	}
+//line views.html:264
+	qw422016.N().S(`">
   `)
 //line views.html:265
 	for _, ref := range ctx.ContentRefs() {

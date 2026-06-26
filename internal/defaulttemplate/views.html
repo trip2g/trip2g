@@ -261,7 +261,7 @@ window.__trip2g_settings = {
 {% endfunc %}
 
 {% func NoteContent(ctx *Ctx) %}
-<main class="layout__main">
+<main class="layout__main{% if ctx.Note != nil && ctx.Note.M().GetBool("wide", false) %} layout__main--wide{% endif %}">
   {% for _, ref := range ctx.ContentRefs() %}
     {% switch ref.Kind %}
     {% case ContentRefSelfContent %}

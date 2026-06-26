@@ -400,6 +400,13 @@ body {
   margin-inline: auto;
 }
 
+// Opt-in full-width content for any note via `wide: true` frontmatter —
+// drops the 65ch reading cap so wide content (kanban boards, big mermaid
+// diagrams, large tables) uses the full main column.
+.layout__main--wide {
+  max-width: none;
+}
+
 // --- Widgets ---
 // Styled after picocss.com sidebar: bold category title + border-left list
 
