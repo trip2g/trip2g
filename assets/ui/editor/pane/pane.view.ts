@@ -50,6 +50,16 @@ namespace $.$$ {
 		}
 	`)
 
+	const version_content_request = $trip2g_graphql_request(/* GraphQL */ `
+		query EditorExternalVersion($versionId: Int64!) {
+			admin {
+				noteVersion(versionId: $versionId) {
+					content
+				}
+			}
+		}
+	`)
+
 	const EDITOR_CHANGES_QUERY = /* GraphQL */ `
 		subscription EditorNoteChanges($filter: NoteChangesFilter!) {
 			noteChanges(filter: $filter) {
@@ -394,8 +404,29 @@ namespace $.$$ {
 			return null
 		}
 
-		override handle_dismiss(next?: Event): null {
+		override handle_keep_mine(next?: Event): null {
 			if (next !== undefined) {
+				const path = this.path()
+				const versionId = this.pending_external_update()
+				if (path && versionId) this.baseline_version_id(path, versionId)
+				this.pending_external_update(null)
+			}
+			return null
+		}
+
+		// Keep both versions: drop git-style conflict markers (mine + the external
+		// version, fetched by its exact versionId) into the editor for manual merge.
+		override handle_keep_both(next?: Event): null {
+			if (next !== undefined) {
+				const path = this.path()
+				const versionId = this.pending_external_update()
+				if (!path || !versionId) return null
+				const res = version_content_request({ versionId })
+				const theirs = res.admin.noteVersion?.content ?? ''
+				const mine = this.content()
+				const merged = `<<<<<<< mine\n${mine}\n=======\n${theirs}\n>>>>>>> updated elsewhere\n`
+				this.content(merged)
+				this.baseline_version_id(path, versionId)
 				this.pending_external_update(null)
 			}
 			return null

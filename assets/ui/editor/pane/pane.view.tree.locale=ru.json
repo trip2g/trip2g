@@ -5,6 +5,9 @@
 	"$trip2g_editor_pane_banner_text": "Этот файл был изменён в другом месте",
 	"$trip2g_editor_pane_show_diff_text": "Показать изменения",
 	"$trip2g_editor_pane_load_latest_text": "Загрузить последнюю версию",
+	"$trip2g_editor_pane_keep_both_text": "Оставить оба",
+	"$trip2g_editor_pane_keep_mine_text": "Оставить моё",
 	"$trip2g_editor_pane_ShowDiffButton_hint": "Показать, что изменилось",
-	"$trip2g_editor_pane_DismissButton_hint": "Закрыть"
+	"$trip2g_editor_pane_KeepBothButton_hint": "Объединить обе версии с маркерами конфликта",
+	"$trip2g_editor_pane_KeepMineButton_hint": "Отклонить чужие изменения, оставить свои правки"
 }

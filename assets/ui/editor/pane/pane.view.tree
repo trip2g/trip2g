@@ -61,15 +61,20 @@ $trip2g_editor_pane $mol_view
 				click? <=> handle_show_diff? null
 				sub /
 					<= show_diff_text @ \Show diff
+			<= KeepBothButton $mol_button_minor
+				hint @ \Merge both versions with conflict markers
+				click? <=> handle_keep_both? null
+				sub /
+					<= keep_both_text @ \Keep both
+			<= KeepMineButton $mol_button_minor
+				hint @ \Discard the external change, keep your edits
+				click? <=> handle_keep_mine? null
+				sub /
+					<= keep_mine_text @ \Keep mine
 			<= LoadLatestButton $mol_button_major
 				click? <=> handle_load_latest? null
 				sub /
 					<= load_latest_text @ \Load latest
-			<= DismissButton $mol_button_minor
-				hint @ \Dismiss
-				click? <=> handle_dismiss? null
-				sub /
-					<= DismissIcon $mol_icon_close
 	Versions $trip2g_editor_versions
 		path <= path
 		content? <=> content?
