@@ -18,6 +18,7 @@
 import crypto from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { print } from 'graphql';
 import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql.ts';
@@ -641,13 +642,15 @@ export function buildDockerRunArgs(opts: {
   encryptionKey: string;
   stateDir: string;
   image: string;
+  containerName?: string;
 }): string[] {
   const { port, iport, stateDir, image } = opts;
+  const cName = opts.containerName ?? CONTAINER_NAME;
   const env = buildServerEnv(opts);
 
   const args: string[] = [
     '-d',
-    '--name', CONTAINER_NAME,
+    '--name', cName,
     // Loopback bind — only reachable from localhost
     '-p', `127.0.0.1:${port}:${port}`,
     '-p', `127.0.0.1:${iport}:${iport}`,
@@ -749,6 +752,15 @@ async function waitReady(url: string, timeoutMs: number, pollMs: number): Promis
     await new Promise<void>((r) => setTimeout(r, pollMs));
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
+}
+
+function isPortBusy(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once('error', () => resolve(true));
+    srv.once('listening', () => srv.close(() => resolve(false)));
+    srv.listen(port, '127.0.0.1');
+  });
 }
 
 /** Obtain a Bearer token via HAT flow. */
@@ -1631,6 +1643,7 @@ NOTES
 
 async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   const { folder, port, email, image } = flags;
+  const name = containerName(flags);
   if (!folder) {
     console.error('Error: --folder <vault> is required for `up`');
     process.exit(1);
@@ -1645,7 +1658,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
 
   const containerRunning = (() => {
     try {
-      const out = spawnSync('docker', ['ps', '-q', '--filter', `name=${CONTAINER_NAME}`], {
+      const out = spawnSync('docker', ['ps', '-q', '--filter', `name=^${name}$`], {
         encoding: 'utf8',
       });
       return (out.stdout || '').trim().length > 0;
@@ -1663,7 +1676,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   }
 
   if (containerRunning && watcherAlive && !dryRun) {
-    console.log(`trip2g-memory is already up. Web: ${publicUrl}`);
+    console.log(`${name} is already up. Web: ${publicUrl}`);
     return;
   }
 
@@ -1696,16 +1709,21 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
   }
 
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image });
+  if (!dryRun && !containerRunning && (await isPortBusy(port))) {
+    console.error(`Error: port ${port} is busy — pass --port for this instance (or stop what holds it).`);
+    process.exit(1);
+  }
+
+  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image, containerName: name });
 
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(' ')}`);
   } else if (!containerRunning) {
-    console.log(`Starting container ${CONTAINER_NAME} (image: ${image})...`);
+    console.log(`Starting container ${name} (image: ${image})...`);
     console.log('NOTE: image must include feat/filestorage local-storage backend.');
     spawnSync('docker', ['run', ...dockerArgs], { encoding: 'utf8' });
   } else {
-    console.log(`Container ${CONTAINER_NAME} already running, skipping docker run.`);
+    console.log(`Container ${name} already running, skipping docker run.`);
   }
 
   const readyzUrl = `http://localhost:${iport}/readyz`;
