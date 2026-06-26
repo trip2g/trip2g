@@ -140,6 +140,10 @@ right_sidebar:
 
 Each widget renders into a `<div class="widget">` with title and content.
 
+## Full-width content
+
+A note opts into full-width rendering with `wide: true` in its frontmatter. The page then **drops both sidebars** and the `65ch` reading cap, so the main column fills the whole container — useful for kanban boards, big mermaid diagrams, and wide tables. Backed by `Ctx.IsWide()` (`note.M().GetBool("wide", false)`), which forces the `layout--no-sidebars` class on the grid and adds `layout__main--wide` (`max-width: none`) on the main column.
+
 ## Magazine
 
 The magazine layout displays multiple notes in three tiers:

@@ -82,6 +82,16 @@ Example `_left_sidebar.md`:
 
 Use `###` (h3) headings for group labels in sidebars, not bold text. The sidebar UI renders `###` headings as proper section labels; bold text does not receive the same visual treatment.
 
+#### Full-width pages (`wide: true`)
+
+Add `wide: true` to a note's frontmatter to render it full-width: the page drops both sidebars and the narrow reading column, so wide content — kanban boards, big Mermaid diagrams, large tables — uses the whole page.
+
+```yaml
+---
+wide: true
+---
+```
+
 #### Glob sections (different headers for different site sections)
 
 When you need different headers or sidebars for different parts of your site, add glob fields to a note's frontmatter — and it will automatically apply to the matching pages.
