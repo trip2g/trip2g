@@ -37,11 +37,14 @@
   })()
 </script>
 
-<!-- INTEGRATOR: replace __KANBAN_JS_URL__ with the asset() URL (see README) after
-     uploading dist/kanban.js as a vault asset, OR point to your dev server URL.
-     NOTE: never put Jet expression braces inside a comment here — Jet parses
-     comments too, so an example call would error the whole layout. -->
-<script src="__KANBAN_JS_URL__"></script>
+<!-- The kanban bundle ships as a GitHub release asset and is loaded by the
+     browser. The obsidian sync uploads .md/.html (so this layout syncs), but not
+     .js, so the bundle is served from the release rather than your vault.
+     /releases/latest/download/ always resolves to the newest release, so this URL
+     never needs editing. For local development, point it at your own bundle server.
+     NOTE: never put Jet expression braces ({{ }}) inside a comment here — Jet
+     parses comments too, so an example call would error the whole layout. -->
+<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script>
 
 </body>
 </html>
