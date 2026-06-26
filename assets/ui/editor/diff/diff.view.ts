@@ -41,11 +41,7 @@ namespace $.$$ {
 			if (!d || !d.unified) return []
 			return d.unified.split('\n').map(line => {
 				const v = new $mol_view()
-				const cls = line.startsWith('+') && !line.startsWith('+++')
-					? 'diff-add'
-					: line.startsWith('-') && !line.startsWith('---')
-						? 'diff-del'
-						: ''
+				const cls = $trip2g_editor_diff_line_class(line)
 				v.attr = () => cls ? { class: cls } : {}
 				v.sub = () => [line || ' ']
 				return v
