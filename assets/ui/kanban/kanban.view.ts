@@ -79,6 +79,7 @@ namespace $.$$ {
 			const [l, c] = this.card_idx(id)
 			const current = this.board().lists[l]?.cards[c]?.checked ?? false
 			if (val !== undefined && val !== current) {
+				if (!this.editable()) return current
 				this.commit($trip2g_kanban_edit_card(this.board(), l, c, { checked: val }))
 			}
 			return this.board().lists[l]?.cards[c]?.checked ?? false
@@ -103,6 +104,7 @@ namespace $.$$ {
 
 		override card_receive(id: number, obj?: TransferData): void {
 			if (!obj) return
+			if (!this.editable()) return
 			this.commit($trip2g_kanban_move_card(this.board(), {
 				from: obj.from,
 				card: obj.card,
@@ -114,6 +116,7 @@ namespace $.$$ {
 		// --- add card ---
 
 		override add_card(id: number, event?: null): void {
+			if (!this.editable()) return
 			const text = window.prompt('Card text', '')
 			if (text !== null && text !== '') {
 				this.commit($trip2g_kanban_add_card(this.board(), id, text))

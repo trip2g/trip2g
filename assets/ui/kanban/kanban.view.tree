@@ -13,6 +13,7 @@ $trip2g_kanban $mol_view
 				<= Add_card* $mol_button_minor
 					title @ \Add card
 					click? <=> add_card*? null
+					enabled <= editable
 	Card* $mol_drag
 		transfer *
 			text/plain <= card_json* \
@@ -22,6 +23,7 @@ $trip2g_kanban $mol_view
 			sub /
 				<= Card_check* $mol_check_box
 					checked? <=> card_checked*? false
+					enabled <= editable
 				<= Card_text* $mol_string
 					value? <=> card_text*? \
 					enabled <= editable
