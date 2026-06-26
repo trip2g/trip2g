@@ -70,3 +70,4 @@ docs/.sync-state*.json
 docker-compose.whoami.yml
 .test-infra.json
 .worktrees/
+templates/kanban/node_modules/
