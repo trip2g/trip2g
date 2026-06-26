@@ -20,6 +20,7 @@ namespace $.$$ {
 					updated {
 						path
 						url
+						id
 					}
 				}
 			}
@@ -241,14 +242,12 @@ namespace $.$$ {
 			if (res.pushNotes.__typename === 'ErrorPayload') {
 				throw new Error(res.pushNotes.message)
 			}
-			// After a successful save, advance the baseline to the latest known version
-			// so self-echo SSE events do not trigger the "updated elsewhere" banner.
-			for (const p of paths) {
-				const hist = history_request({ filter: { path: p, limit: 1 } })
-				const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
-				if (latestVersionId) {
-					this.baseline_version_id(p, latestVersionId)
-				}
+			// Advance the baseline to the just-saved version id, taken directly from the
+			// mutation response (a re-fetch returns a stale cached version). This suppresses
+			// the self-echo SSE event so our own save is not shown as "updated elsewhere".
+			const updated = (res.pushNotes as any).updated as Array<{ path: string; id: number }> | undefined
+			for (const u of updated ?? []) {
+				if (u.id) this.baseline_version_id(u.path, Number(u.id))
 			}
 			this.changed_paths(this.changed_paths().filter(p => !paths.includes(p)))
 			for (const p of paths) this.change(p, null)
