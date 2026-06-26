@@ -96,3 +96,6 @@ obsidian-sync
 /assets/ui/-
 /assets/ui/admin/-
 /assets/ui/user/-
+
+# Scratch kanban test vault (memcli data; container-owned dirs break context load)
+/kanban-vault/
