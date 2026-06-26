@@ -17,8 +17,11 @@
 </head>
 <body>
 
-<!-- Standard trip2g user-space corner (sign-in / search) -->
-<div class="topright" mol_view_root="$trip2g_user_space"></div>
+<!-- Standard trip2g user-space corner (sign-in / search).
+     The mount is wrapped in a plain positioning container: $mol styles the
+     mol_view_root element itself, so the fixed positioning must live on a parent
+     it won't touch. -->
+<div class="topright"><div mol_view_root="$trip2g_user_space"></div></div>
 
 <!-- Mount point for the React kanban app -->
 <div id="trip2g-kanban-root"></div>
@@ -36,7 +39,7 @@
      The only unsafe sequence would be </textarea> inside the markdown, which
      is impossible in standard obsidian-kanban notes.
 -->
-<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":true}</script>
+<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":{{ default_template.is_admin() }}}</script>
 <textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
 
 <script>
