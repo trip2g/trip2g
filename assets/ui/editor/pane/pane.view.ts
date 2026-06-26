@@ -129,22 +129,11 @@ namespace $.$$ {
 			return next ?? 0
 		}
 
-		wikilink_at(text: string, offset: number): string | null {
-			const re = /\[\[([^\]]+)\]\]/g
-			let m: RegExpExecArray | null
-			while ((m = re.exec(text)) !== null) {
-				if (m.index <= offset && offset <= m.index + m[0].length) {
-					return m[1].split('|')[0].split('#')[0].trim()
-				}
-			}
-			return null
-		}
-
 		override handle_content_click(next?: MouseEvent | null): null {
 			if (next?.ctrlKey) {
 				const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
 				if (pos?.offsetNode?.nodeType === Node.TEXT_NODE) {
-					const link = this.wikilink_at(this.content(), pos.offset)
+					const link = $trip2g_editor_wikilink(this.content(), pos.offset)
 					if (link) {
 						const pathId = this.note_path_id()
 						if (pathId !== null) {
@@ -164,7 +153,7 @@ namespace $.$$ {
 				if (next.ctrlKey) {
 					const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
 					const link = pos?.offsetNode?.nodeType === Node.TEXT_NODE
-						? this.wikilink_at(this.content(), pos.offset)
+						? $trip2g_editor_wikilink(this.content(), pos.offset)
 						: null
 					ta.style.cursor = link ? 'pointer' : ''
 				} else {
