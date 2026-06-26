@@ -30,19 +30,13 @@ namespace $.$$ {
 			return this.$.$trip2g_user_live_reload_toggler.value( next )
 		}
 
-		follow_arg() {
-			return $trip2g_state_arg.bool_value( 'live_follow' )
-		}
-
 		follow_enabled( next?: boolean ) {
-			if( next !== undefined ) return this.$.$trip2g_user_live_follow_toggler.value( next )
-			return this.$.$trip2g_user_live_follow_toggler.value() || this.follow_arg()
+			return this.$.$trip2g_user_live_follow_toggler.value( next )
 		}
 
 		@ $mol_mem
 		subscription() {
 			if( !this.reload_enabled() && !this.follow_enabled() ) return null
-			if( this.follow_arg() ) this.$.$trip2g_user_live_follow_toggler.value( true )
 			return $trip2g_graphql_raw_subscription( QUERY, {
 				filter: { includePatterns: [ '**/*.md' ] }
 			} )
