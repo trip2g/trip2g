@@ -36,6 +36,7 @@ import {
   extractWikilinks,
   runDaily,
   runLog,
+  containerName,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -1225,4 +1226,28 @@ test('runLog: no broken-links warning when all links resolve', () => {
   } finally {
     fs.rmSync(vault, { recursive: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// containerName + parseArgs --name
+// ---------------------------------------------------------------------------
+
+test('containerName default unchanged', () => {
+  assert.equal(containerName({ name: null } as any), 'trip2g-memory');
+});
+
+test('containerName with --name', () => {
+  assert.equal(containerName({ name: 'blog' } as any), 'trip2g-memory-blog');
+});
+
+test('containerName sanitizes unsafe chars', () => {
+  assert.equal(containerName({ name: 'a/b c' } as any), 'trip2g-memory-a-b-c');
+});
+
+test('parseArgs reads --name', () => {
+  assert.equal(parseArgs(['up', '--name', 'blog']).flags.name, 'blog');
+});
+
+test('parseArgs default name is null', () => {
+  assert.equal(parseArgs(['up']).flags.name, null);
 });

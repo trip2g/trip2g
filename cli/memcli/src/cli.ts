@@ -27,6 +27,13 @@ import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql
 // ---------------------------------------------------------------------------
 
 const CONTAINER_NAME = 'trip2g-memory';
+
+export function containerName(flags: { name?: string | null }): string {
+  if (!flags || !flags.name) return CONTAINER_NAME;
+  const safe = flags.name.replace(/[^a-zA-Z0-9_.-]/g, '-');
+  return `${CONTAINER_NAME}-${safe}`;
+}
+
 const DEFAULT_PORT = 24081;
 const DEFAULT_IMAGE = 'ghcr.io/trip2g/trip2g:latest';
 const DEFAULT_EMAIL = 'memory@local';
@@ -51,6 +58,7 @@ export interface Flags {
   context: number;
   staleDays: number;
   id: string | null;
+  name: string | null;
 }
 
 export interface ServerEnv {
@@ -353,6 +361,7 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
+    name: null,
   };
 
   let cmd = 'up';
@@ -394,6 +403,8 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
       flags.staleDays = parseInt(argv[++i], 10);
     } else if (arg === '--id') {
       flags.id = argv[++i];
+    } else if (arg === '--name') {
+      flags.name = argv[++i];
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -1997,6 +2008,7 @@ function defaultFlags(): Flags {
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
+    name: null,
   };
 }
 
