@@ -387,6 +387,7 @@ namespace $.$$ {
 			if (next !== undefined) {
 				const path = this.path()
 				if (!path) return null
+				const versionId = this.pending_external_update()
 				const hasChanges = this.changed_paths().includes(path)
 				if (hasChanges) {
 					if (!confirm('You have unsaved changes. Load the latest version and discard them?')) {
@@ -397,8 +398,10 @@ namespace $.$$ {
 					this.changed_paths(this.changed_paths().filter(p => p !== path))
 				}
 				// Increment the reload counter to force loaded_note_path to re-fetch.
-				// loaded_note_path will update the baseline after fetching the new content.
 				this.reload_counter(path, this.reload_counter(path) + 1)
+				// Advance the baseline synchronously: the reload re-evaluates the watcher
+				// against the still-cached SSE event, which would otherwise re-raise the banner.
+				if (versionId) this.baseline_version_id(path, versionId)
 				this.pending_external_update(null)
 			}
 			return null
