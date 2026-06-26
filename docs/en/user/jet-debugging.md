@@ -88,7 +88,7 @@ You don't have to sync a file to the vault every time you add a debug call. Use 
 Quick example — check what frontmatter a note exposes:
 
 ```bash
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-src '{{ note.M().Debug() }}' \
   --layout-path '/_debug.html' \
   --note-path /my-post \

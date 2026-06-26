@@ -192,24 +192,20 @@ The `warnings.layout` array in the response will contain the Jet error. The AI a
 
 ## CLI tool
 
-The repo ships `scripts/renderlayout.py` — a wrapper that reads the API key automatically from `.obsidian/plugins/trip2g/data.json`:
+The repo ships `scripts/trip2g-preview.mjs` — a wrapper that reads the API key automatically from `.obsidian/plugins/trip2g/data.json`:
 
 ```bash
-# run from your vault directory (where .obsidian/ lives)
-python3 ../scripts/renderlayout.py \
-  --layout-file _layouts/mesh/index.html \
-  --note-src "# Hello"
-
-# → http://localhost:8081/_system/renderlayout?preview_id=abc123
+# from your vault directory (where .obsidian/ lives), or pass --folder
+node scripts/trip2g-preview.mjs \
+  --layout-file _layouts/mesh/index.html --note-src "# Hello"
 
 # fetch rendered HTML directly
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-src "{{ note.M().Debug() }}" --layout-path "/_debug.html" \
-  --note-path /my-note \
-  --fetch
+  --note-path /my-note --fetch
 ```
 
-Args: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`.
+Args: `--layout-path`, `--layout-file`, `--layout-src`, `--note-path`, `--note-file`, `--note-src`, `--fetch`, `--watch`, `--open`, `--api-url`, `--api-key`, `--folder`.
 Warnings and errors go to stderr; exit code 1 on failure.
 
 For agent-specific instructions and debugging tips (including the `debug()` template function), see `docs/skills/check_templates.md`.
@@ -222,7 +218,7 @@ To preview one component in isolation, explicitly import its file and yield the 
 See [[en/user/bem]] for BEM naming conventions and `@lid`/`@did`.
 
 ```bash
-python3 ../scripts/renderlayout.py \
+node scripts/trip2g-preview.mjs \
   --layout-path "/_layouts/mesh/_preview.html" \
   --layout-src '{{ import "_blocks" }}{{ import "bar" }}{{ import "button" }}<style>{{ yield _style_mesh_bar() }}{{ yield _style_mesh_button() }}</style>{{ yield mesh_bar() }}' \
   --note-src "hello"
@@ -274,25 +270,11 @@ The buffer holds the last 10 renders. Links expire when the server restarts or t
 
 ## Live preview with file watcher
 
-Install [watchexec](https://github.com/watchexec/watchexec), then run:
-
 ```bash
-watchexec -e html -- sh -c '
-  curl -s -X POST \
-    -H "X-API-Key: $API_KEY" \
-    -H "Content-Type: application/json" \
-    -d "{
-      \"layout\": {
-        \"path\": \"_layouts/article.html\",
-        \"src\":  $(cat _layouts/article.html | jq -Rs .)
-      },
-      \"note\": {\"path\": \"posts/hello.md\"}
-    }" \
-    https://yoursite.com/_system/renderlayout
-'
+node scripts/trip2g-preview.mjs --watch \
+  --layout-file _layouts/article.html --note-path posts/hello.md
+# open the printed ?live URL; it reloads on every save
 ```
-
-Keep `https://yoursite.com/_system/renderlayout?live` open in a browser. It reloads instantly when the POST lands — the long-poll connection is already waiting on the server.
 
 ---
 

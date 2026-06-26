@@ -48,7 +48,7 @@ So:
 
 ## Loop A — transient preview (`/_system/renderlayout`)
 
-Render any Jet template against a note without uploading anything. Full reference and the `scripts/renderlayout.py` CLI live in [renderlayout][renderlayout]; the short version:
+Render any Jet template against a note without uploading anything. Full reference and CLI live in [renderlayout][renderlayout]; the short version:
 
 ```bash
 # POST the template + a note → get a preview link + Jet warnings
@@ -68,13 +68,12 @@ Keep the live view open in a browser — it injects a long-poll script and reloa
 http://localhost:8081/_system/renderlayout?live
 ```
 
-Pair it with any file watcher so each save re-POSTs:
+Use `--watch` for a built-in loop that re-POSTs on every file save:
 
 ```bash
-watchexec -e html,html.json -- sh -c '
-  curl -s -X POST http://localhost:8081/_system/renderlayout \
-    -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
-    -d "{\"layout\":{\"path\":\"/_layouts/article.html\",\"src\":$(jq -Rs . < _layouts/article.html)},\"note\":{\"path\":\"posts/hello.md\"}}"'
+node scripts/trip2g-preview.mjs --watch \
+  --layout-file _layouts/article.html --note-path posts/hello.md
+# open the printed ?live URL; it reloads on every save
 ```
 
 Errors come back in `warnings.layout` as text (e.g. `runtime: … can't use NoSuchMethod as field name …`), so an agent can fix the template without opening a browser. Implementation: `internal/case/admin/renderpreview/endpoint.go` (POST, `?live`, `?longpolling`, `?preview_id`).
@@ -163,7 +162,7 @@ A tight design session usually mixes both:
 
 ## Related
 
-- [[renderlayout]] — the preview endpoint reference + `scripts/renderlayout.py` CLI
+- [[renderlayout]] — the preview endpoint reference + `scripts/trip2g-preview.mjs` CLI
 - [[json_layouts]] — `.html.json` block format that compiles to Jet
 - [[layouts]] — the `templateviews` API (`note`, `nvs`, `Meta`) available in templates
 - [[jet_ast_details]] — Jet v6 block/`yield_blocks` internals

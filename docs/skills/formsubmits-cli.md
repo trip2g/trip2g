@@ -5,7 +5,7 @@ description: Use when triaging or processing admin form submissions from the she
 
 # formsubmits CLI
 
-A thin CLI wrapper over the `admin.formSubmits` query and `markFormSubmitProcessed` mutation. Lives at `scripts/formsubmits.py`. Same auth model as `scripts/renderlayout.py`: walks up from cwd looking for `.obsidian/plugins/trip2g/data.json`, or reads `TRIP2G_API_KEY` / `TRIP2G_API_URL`.
+A thin CLI wrapper over the `admin.formSubmits` query and `markFormSubmitProcessed` mutation. Lives at `scripts/formsubmits.py`. Same auth model as `scripts/trip2g-preview.mjs`: walks up from cwd looking for `.obsidian/plugins/trip2g/data.json`, or reads `TRIP2G_API_KEY` / `TRIP2G_API_URL`.
 
 ## When to use
 
@@ -104,4 +104,4 @@ The API key must belong to an admin user — `admin.formSubmits` is admin-gated.
 
 - Plan: `.omc/plans/2026-05-22-form-submits-pagination.md` — the schema/resolver work this CLI exercises.
 - Code: `internal/graph/schema.resolvers.go` (resolver), `internal/graph/form_submits_filter.go` (filter builder), `queries.read.sql` (`ListFormSubmits`, `CountFormSubmits`).
-- Sibling CLI: `scripts/renderlayout.py` — same auth pattern, same one-file-script style.
+- Sibling CLI: `scripts/trip2g-preview.mjs` — same auth pattern, zero-dependency node ESM style.
