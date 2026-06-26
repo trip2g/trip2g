@@ -24,8 +24,9 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-import { parseBoard, serializeBoard, KanbanCard, KanbanList, KanbanBoard } from './format'
-import { saveNote } from './api'
+import { parseBoard, KanbanCard, KanbanList, KanbanBoard } from './format'
+import { cardLine, applyBoardToBaseline } from './ops'
+import { sha256Base64, updateNotes, patchChange, upsertChange, NoteChange } from './api'
 import { renderMarkdown } from './markdown'
 
 // ── augmented types (IDs for React / dnd-kit, stripped before serialising) ──
@@ -48,15 +49,11 @@ function augment(b: KanbanBoard): AugBoard {
   }
 }
 
-function strip(b: AugBoard): KanbanBoard {
-  return {
-    frontmatter: b.frontmatter,
-    settings: b.settings,
-    lists: b.lists.map(({ id: _id, ...l }) => ({
-      ...l,
-      cards: l.cards.map(({ id: _id2, ...c }) => c),
-    })),
-  }
+function stripLists(lists: AugList[]): KanbanList[] {
+  return lists.map(({ id: _id, ...l }) => ({
+    ...l,
+    cards: l.cards.map(({ id: _id2, ...c }) => c),
+  }))
 }
 
 /** Derive a display title from a file path. */
@@ -315,6 +312,13 @@ export default function Board({ path, content, editable }: BoardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewTitle, setPreviewTitle] = useState('')
 
+  // Baseline tracking — the last-saved markdown (source of truth for patches/upserts)
+  const baselineMdRef = useRef<string>(content)
+  // Latest board state for use inside async save callbacks
+  const boardRef = useRef<AugBoard>(board)
+  useEffect(() => { boardRef.current = board })
+
+  const pendingChangeRef = useRef<NoteChange | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
@@ -333,26 +337,84 @@ export default function Board({ path, content, editable }: BoardProps) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [previewUrl])
 
-  const debouncedSave = useCallback(
-    (next: AugBoard) => {
-      if (saveTimer.current) clearTimeout(saveTimer.current)
-      saveTimer.current = setTimeout(() => {
-        saveNote(path, serializeBoard(strip(next))).catch(err => {
-          const msg = err instanceof Error ? err.message : String(err)
-          setToast(msg)
-          setTimeout(() => setToast(null), 3500)
-        })
-      }, 500)
-    },
-    [path]
-  )
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3500)
+  }
 
-  function update(fn: (b: AugBoard) => AugBoard) {
-    setBoard(prev => {
-      const next = fn(prev)
-      debouncedSave(next)
-      return next
-    })
+  function revertBoard() {
+    setBoard(augment(parseBoard(baselineMdRef.current)))
+  }
+
+  // Flush the pending change to the server
+  const flushSave = useCallback(async () => {
+    const change = pendingChangeRef.current
+    if (!change) return
+    pendingChangeRef.current = null
+
+    const baselineMd = baselineMdRef.current
+
+    // Guard: if a patch's find string is no longer in the baseline (rapid consecutive
+    // edits to the same card within 500ms), fall back to a full surgical upsert.
+    let effectiveChange = change
+    if ('patch' in change && !baselineMd.includes(change.patch.find)) {
+      const lists = stripLists(boardRef.current.lists)
+      const newMd = applyBoardToBaseline(baselineMd, lists)
+      effectiveChange = upsertChange(path, newMd)
+    }
+
+    const hash = await sha256Base64(baselineMd)
+    const changeWithHash: NoteChange =
+      'patch' in effectiveChange
+        ? { patch: { ...effectiveChange.patch, expectedHash: hash } }
+        : { upsert: { ...effectiveChange.upsert, expectedHash: hash } }
+
+    const result = await updateNotes([changeWithHash])
+
+    if ('ok' in result) {
+      // Apply change to baselineMd locally
+      if ('patch' in effectiveChange) {
+        baselineMdRef.current = baselineMd.replace(effectiveChange.patch.find, effectiveChange.patch.replace)
+      } else {
+        baselineMdRef.current = effectiveChange.upsert.content
+      }
+      return
+    }
+
+    if ('hashMismatch' in result) {
+      showToast('Board changed elsewhere — reloading…')
+      setTimeout(() => location.reload(), 1500)
+      return
+    }
+
+    if ('patchNotFound' in result && 'patch' in effectiveChange) {
+      // Patch string not found on server — retry as upsert with current board state
+      const lists = stripLists(boardRef.current.lists)
+      const newMd = applyBoardToBaseline(baselineMd, lists)
+      const retryHash = hash  // hash was computed from baselineMd which hasn't changed
+      const retryResult = await updateNotes([upsertChange(path, newMd, retryHash)])
+      if ('ok' in retryResult) {
+        baselineMdRef.current = newMd
+        return
+      }
+      showToast('Save failed: ' + ('error' in retryResult ? retryResult.error : 'unknown'))
+      revertBoard()
+      return
+    }
+
+    showToast('Save failed: ' + ('error' in result ? result.error : 'unknown'))
+    revertBoard()
+  }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  function scheduleSave(change: NoteChange) {
+    pendingChangeRef.current = change
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      flushSave().catch(err => {
+        showToast(err instanceof Error ? err.message : String(err))
+        revertBoard()
+      })
+    }, 500)
   }
 
   // ── drag ──
@@ -369,17 +431,15 @@ export default function Board({ path, content, editable }: BoardProps) {
     const overId = String(over.id)
     if (activeId === overId) return
 
-    update(prev => {
+    setBoard(prev => {
       const srcListIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === activeId))
       if (srcListIdx === -1) return prev
       const srcCardIdx = prev.lists[srcListIdx].cards.findIndex(c => c.id === activeId)
 
-      // Determine destination list and card position
       const colIdx = prev.lists.findIndex(l => l.id === overId)
       let dstListIdx: number, dstCardIdx: number
 
       if (colIdx !== -1) {
-        // Dropped onto an empty column droppable
         dstListIdx = colIdx
         dstCardIdx = prev.lists[colIdx].cards.length
       } else {
@@ -391,16 +451,18 @@ export default function Board({ path, content, editable }: BoardProps) {
       const lists = prev.lists.map(l => ({ ...l, cards: [...l.cards] }))
 
       if (srcListIdx === dstListIdx) {
-        // Within the same column: use arrayMove for correct index handling
         lists[srcListIdx] = {
           ...lists[srcListIdx],
           cards: arrayMove(lists[srcListIdx].cards, srcCardIdx, dstCardIdx),
         }
       } else {
-        // Cross-column: splice out then splice in
         const [card] = lists[srcListIdx].cards.splice(srcCardIdx, 1)
         lists[dstListIdx].cards.splice(dstCardIdx, 0, card)
       }
+
+      // Move: always use surgical upsert (single unique patch isn't guaranteed)
+      const newMd = applyBoardToBaseline(baselineMdRef.current, stripLists(lists))
+      scheduleSave(upsertChange(path, newMd))
 
       return { ...prev, lists }
     })
@@ -409,37 +471,66 @@ export default function Board({ path, content, editable }: BoardProps) {
   // ── card ops ──
 
   function handleToggle(listIdx: number, cardIdx: number) {
-    update(prev => {
+    setBoard(prev => {
+      const card = prev.lists[listIdx].cards[cardIdx]
+      const oldLine = cardLine(card)
+      const newCard = { ...card, checked: !card.checked }
+      const newLine = cardLine(newCard)
+      scheduleSave(patchChange(path, oldLine, newLine))
+
       const lists = prev.lists.map((l, li) =>
         li !== listIdx
           ? l
-          : {
-              ...l,
-              cards: l.cards.map((c, ci) =>
-                ci !== cardIdx ? c : { ...c, checked: !c.checked }
-              ),
-            }
+          : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
       )
       return { ...prev, lists }
     })
   }
 
   function handleEdit(listIdx: number, cardIdx: number, text: string) {
-    update(prev => {
+    setBoard(prev => {
+      const card = prev.lists[listIdx].cards[cardIdx]
+      const oldLine = cardLine(card)
+      const newCard = { ...card, text }
+      const newLine = cardLine(newCard)
+      scheduleSave(patchChange(path, oldLine, newLine))
+
       const lists = prev.lists.map((l, li) =>
         li !== listIdx
           ? l
-          : {
-              ...l,
-              cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : { ...c, text })),
-            }
+          : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
       )
       return { ...prev, lists }
     })
   }
 
   function handleDelete(listIdx: number, cardIdx: number) {
-    update(prev => {
+    setBoard(prev => {
+      const card = prev.lists[listIdx].cards[cardIdx]
+      const line = cardLine(card)
+      const baseline = baselineMdRef.current
+
+      // Prefer removing "\nline" (card preceded by another line)
+      // Fall back to "line\n" for first card in section
+      // Fall back to surgical upsert if neither is unambiguous
+      let change: NoteChange
+      const findPrev = '\n' + line
+      const findNext = line + '\n'
+      if (baseline.split(findPrev).length === 2) {
+        // Exactly one occurrence with preceding newline
+        change = patchChange(path, findPrev, '')
+      } else if (baseline.split(findNext).length === 2) {
+        change = patchChange(path, findNext, '')
+      } else {
+        // Ambiguous or missing — use surgical upsert
+        const nextLists = prev.lists.map((l, li) =>
+          li !== listIdx ? l : { ...l, cards: l.cards.filter((_, ci) => ci !== cardIdx) }
+        )
+        const newMd = applyBoardToBaseline(baseline, stripLists(nextLists))
+        change = upsertChange(path, newMd)
+      }
+      scheduleSave(change)
+
       const lists = prev.lists.map((l, li) =>
         li !== listIdx ? l : { ...l, cards: l.cards.filter((_, ci) => ci !== cardIdx) }
       )
@@ -454,7 +545,27 @@ export default function Board({ path, content, editable }: BoardProps) {
     setAddingTo(null)
     setNewCardText('')
     if (!text) return
-    update(prev => {
+
+    setBoard(prev => {
+      const list = prev.lists[listIdx]
+      const newLine = cardLine({ text, checked: false })
+
+      let change: NoteChange
+      if (list.cards.length > 0) {
+        // Anchor patch on the last card line (unique in the note if possible)
+        const lastCard = list.cards[list.cards.length - 1]
+        const lastLine = cardLine(lastCard)
+        change = patchChange(path, lastLine, lastLine + '\n' + newLine)
+      } else {
+        // Empty column — surgical upsert
+        const nextLists = prev.lists.map((l, li) =>
+          li !== listIdx ? l : { ...l, cards: [...l.cards, { id: '', text, checked: false }] }
+        )
+        const newMd = applyBoardToBaseline(baselineMdRef.current, stripLists(nextLists))
+        change = upsertChange(path, newMd)
+      }
+      scheduleSave(change)
+
       const lists = prev.lists.map((l, li) =>
         li !== listIdx ? l : { ...l, cards: [...l.cards, { id: nextId(), text, checked: false }] }
       )
