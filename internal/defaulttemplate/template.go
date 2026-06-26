@@ -84,6 +84,14 @@ type Ctx struct {
 	LayoutSections []model.LayoutSectionEntry
 }
 
+// IsWide reports whether the note opted into full-width rendering via
+// `wide: true` frontmatter — drops the sidebars and the 65ch reading cap so
+// wide content (kanban boards, big mermaid diagrams, large tables) fills the
+// whole main column.
+func (ctx *Ctx) IsWide() bool {
+	return ctx.Note != nil && ctx.Note.M().GetBool("wide", false)
+}
+
 // AllTelegramLinks returns TelegramLinks from DB/frontmatter (Source 1+2)
 // merged with links resolved from frontmatter alternatives (Source 3).
 func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {

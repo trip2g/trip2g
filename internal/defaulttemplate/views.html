@@ -111,12 +111,13 @@ window.__trip2g_settings = {
 {% code
   headerRef := ctx.HeaderRef()
   footerRef := ctx.FooterRef()
+  wide := ctx.IsWide()
   leftWidgets := ctx.SidebarWidgets("left")
   rightWidgets := ctx.SidebarWidgets("right")
-  hasLeft := len(leftWidgets) > 0
-  hasRight := len(rightWidgets) > 0
+  hasLeft := !wide && len(leftWidgets) > 0
+  hasRight := !wide && len(rightWidgets) > 0
   layoutClass := "layout"
-  if !hasLeft && !hasRight {
+  if wide || (!hasLeft && !hasRight) {
     layoutClass = "layout layout--no-sidebars"
   } else if !hasLeft {
     layoutClass = "layout layout--no-left"
@@ -129,7 +130,7 @@ window.__trip2g_settings = {
 {% if headerRef.Kind != ContentRefNone %}
   {% code headerNote = ctx.resolveNoteRef(headerRef) %}
 {% endif %}
-{% code hasNavLinks := headerNote != nil && headerNote.FirstListHTML() != "" %}
+{% code hasNavLinks := !wide && headerNote != nil && headerNote.FirstListHTML() != "" %}
 
 {% if headerNote != nil %}
   {%= SiteHeader(ctx, headerNote, hasLeft || hasNavLinks, hasRight) %}
@@ -261,7 +262,7 @@ window.__trip2g_settings = {
 {% endfunc %}
 
 {% func NoteContent(ctx *Ctx) %}
-<main class="layout__main{% if ctx.Note != nil && ctx.Note.M().GetBool("wide", false) %} layout__main--wide{% endif %}">
+<main class="layout__main{% if ctx.IsWide() %} layout__main--wide{% endif %}">
   {% for _, ref := range ctx.ContentRefs() %}
     {% switch ref.Kind %}
     {% case ContentRefSelfContent %}
