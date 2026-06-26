@@ -92,9 +92,10 @@ interface CardProps {
   onToggle: () => void
   onEdit: (text: string) => void
   onDelete: () => void
+  onWikiPreview?: (url: string, label: string) => void
 }
 
-function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps) {
+function SortableCard({ card, editable, onToggle, onEdit, onDelete, onWikiPreview }: CardProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.text)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -178,7 +179,7 @@ function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps)
           role={editable ? 'button' : undefined}
           title={editable ? 'Double-click to edit' : undefined}
         >
-          {renderMarkdown(card.text)}
+          {renderMarkdown(card.text, onWikiPreview)}
         </span>
       )}
 
@@ -213,6 +214,7 @@ interface ColumnProps {
   onToggle: (cardIdx: number) => void
   onEdit: (cardIdx: number, text: string) => void
   onDelete: (cardIdx: number) => void
+  onWikiPreview?: (url: string, label: string) => void
 }
 
 function DroppableColumn({
@@ -228,6 +230,7 @@ function DroppableColumn({
   onToggle,
   onEdit,
   onDelete,
+  onWikiPreview,
 }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: list.id })
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -264,6 +267,7 @@ function DroppableColumn({
               onToggle={() => onToggle(cardIdx)}
               onEdit={text => onEdit(cardIdx, text)}
               onDelete={() => onDelete(cardIdx)}
+              onWikiPreview={onWikiPreview}
             />
           ))}
         </div>
@@ -308,10 +312,26 @@ export default function Board({ path, content, editable }: BoardProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [addingTo, setAddingTo] = useState<number | null>(null)
   const [newCardText, setNewCardText] = useState('')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewTitle, setPreviewTitle] = useState('')
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
+
+  const handleWikiPreview = useCallback((url: string, label: string) => {
+    setPreviewUrl(url)
+    setPreviewTitle(label)
+  }, [])
+
+  useEffect(() => {
+    if (!previewUrl) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPreviewUrl(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [previewUrl])
 
   const debouncedSave = useCallback(
     (next: AugBoard) => {
@@ -497,6 +517,7 @@ export default function Board({ path, content, editable }: BoardProps) {
                 onToggle={cardIdx => handleToggle(listIdx, cardIdx)}
                 onEdit={(cardIdx, text) => handleEdit(listIdx, cardIdx, text)}
                 onDelete={cardIdx => handleDelete(listIdx, cardIdx)}
+                onWikiPreview={handleWikiPreview}
               />
             ))}
           </div>
@@ -504,6 +525,51 @@ export default function Board({ path, content, editable }: BoardProps) {
       </main>
 
       {toast && <div className="kanban-toast" role="alert">{toast}</div>}
+
+      {/* ── wiki preview drawer ── */}
+      <div
+        className={`kanban-preview-backdrop${previewUrl ? ' is-open' : ''}`}
+        onClick={() => setPreviewUrl(null)}
+        aria-hidden="true"
+      />
+      <div
+        className={`kanban-preview-drawer${previewUrl ? ' is-open' : ''}`}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Page preview"
+      >
+        <div className="kanban-preview-header">
+          <span className="kanban-preview-title">{previewTitle}</span>
+          <div className="kanban-preview-actions">
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kanban-preview-open"
+              >
+                Open ↗
+              </a>
+            )}
+            <button
+              className="kanban-preview-close"
+              onClick={() => setPreviewUrl(null)}
+              aria-label="Close preview"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div className="kanban-preview-body">
+          {previewUrl && (
+            <iframe
+              key={previewUrl}
+              src={previewUrl}
+              title={previewTitle || 'Page preview'}
+            />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
