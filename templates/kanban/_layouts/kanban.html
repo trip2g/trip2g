@@ -6,9 +6,19 @@
   <title>{{ note.Title() }}</title>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
+    .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
   </style>
+
+  <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
+       the user-space bundle scripts so the login widget below can boot. Requires a
+       trip2g build that provides the default_template helper; on older builds this
+       call errors the layout, so keep it only once core ships it. -->
+  {{ default_template.user_space_scripts() }}
 </head>
 <body>
+
+<!-- Standard trip2g user-space corner (sign-in / search) -->
+<div class="topright" mol_view_root="$trip2g_user_space"></div>
 
 <!-- Mount point for the React kanban app -->
 <div id="trip2g-kanban-root"></div>
