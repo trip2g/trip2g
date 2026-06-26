@@ -25,6 +25,7 @@ type userSpaceHelper struct {
 	localeHashes    map[string]string
 	uiLang          string
 	devMode         bool
+	isAdmin         bool
 	title           string
 	note            *templateviews.Note
 	settingsEmitted bool
@@ -37,6 +38,7 @@ func newUserSpaceHelper(
 	localeHashes map[string]string,
 	uiLang string,
 	devMode bool,
+	isAdmin bool,
 	title string,
 	note *templateviews.Note,
 ) *userSpaceHelper {
@@ -51,6 +53,7 @@ func newUserSpaceHelper(
 		localeHashes: localeHashes,
 		uiLang:       uiLang,
 		devMode:      devMode,
+		isAdmin:      isAdmin,
 		title:        title,
 		note:         note,
 	}
@@ -129,12 +132,19 @@ func (h *userSpaceHelper) scripts() string {
 	return sb.String()
 }
 
+// admin returns true when the current viewer is the site owner/admin.
+// Jet calls this via reflection for {{ default_template.is_admin() }}.
+func (h *userSpaceHelper) admin() bool {
+	return h.isAdmin
+}
+
 // jetMap returns the map stored in vars["default_template"].
-// Jet resolves default_template.user_space_scripts via map key lookup and
-// calls the stored func() string via reflect.Value.Call.
+// Jet resolves members via map key lookup and calls stored funcs via
+// reflect.Value.Call.
 func (h *userSpaceHelper) jetMap() map[string]interface{} {
 	return map[string]interface{}{
 		"user_space_scripts": h.scripts,
+		"is_admin":           h.admin,
 	}
 }
 
@@ -166,6 +176,6 @@ func buildUserSpaceJetMap(
 		string(ctx.Request.Header.Peek("Accept-Language")),
 	)
 
-	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.Title, resp.NoteView)
+	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
 	return h.jetMap()
 }

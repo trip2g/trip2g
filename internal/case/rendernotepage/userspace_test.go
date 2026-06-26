@@ -35,6 +35,7 @@ func TestUserSpaceHelper_SettingsFields(t *testing.T) {
 		map[string]string{"en": "abc123", "ru": "def456"},
 		"en",
 		false,
+		false,
 		"My Title",
 		sampleNote(),
 	)
@@ -69,7 +70,7 @@ func TestUserSpaceHelper_SettingsFields(t *testing.T) {
 
 // TestUserSpaceHelper_DevModeTrue verifies is_dev_mode renders "true" when set.
 func TestUserSpaceHelper_DevModeTrue(t *testing.T) {
-	h := newUserSpaceHelper(nil, nil, "ru", true, "Title", nil)
+	h := newUserSpaceHelper(nil, nil, "ru", true, false, "Title", nil)
 	out := h.scripts()
 	require.Contains(t, out, "is_dev_mode: true")
 }
@@ -79,7 +80,7 @@ func TestUserSpaceHelper_DevModeTrue(t *testing.T) {
 func TestUserSpaceHelper_Idempotent(t *testing.T) {
 	h := newUserSpaceHelper(
 		[]string{"/assets/bundle.js"},
-		nil, "en", false, "Title", nil,
+		nil, "en", false, false, "Title", nil,
 	)
 
 	first := h.scripts()
@@ -102,7 +103,7 @@ func TestUserSpaceHelper_Idempotent(t *testing.T) {
 // TestUserSpaceHelper_NoNoteFields verifies that note_lang/note_path etc. are
 // absent when the helper is built without a note.
 func TestUserSpaceHelper_NoNoteFields(t *testing.T) {
-	h := newUserSpaceHelper(nil, nil, "en", false, "Title", nil)
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", nil)
 	out := h.scripts()
 	require.NotContains(t, out, "note_lang")
 	require.NotContains(t, out, "note_path")
@@ -115,7 +116,7 @@ func TestUserSpaceHelper_NoNoteFields(t *testing.T) {
 func TestUserSpaceHelper_RawOutput(t *testing.T) {
 	h := newUserSpaceHelper(
 		[]string{"/assets/bundle.js"},
-		nil, "en", false, "Title", nil,
+		nil, "en", false, false, "Title", nil,
 	)
 	out := h.scripts()
 	require.NotContains(t, out, "&lt;")
@@ -159,6 +160,7 @@ func TestJetBinding_UserSpaceScripts(t *testing.T) {
 		map[string]string{"en": "hash1"},
 		"ru",
 		true,
+		false,
 		"Jet Test",
 		sampleNote(),
 	)
@@ -216,7 +218,7 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 
 	h := newUserSpaceHelper(
 		[]string{"/assets/bundle.js"},
-		nil, "en", false, "Title", nil,
+		nil, "en", false, false, "Title", nil,
 	)
 
 	vars := make(jet.VarMap)
@@ -235,4 +237,50 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	// Script tags appear twice (once per call).
 	scriptCount := strings.Count(out, `<script src="/assets/bundle.js" defer></script>`)
 	require.Equal(t, 2, scriptCount, "bundle script tag should appear once per call")
+}
+
+// TestJetBinding_IsAdmin_True verifies {{ default_template.is_admin() }} renders
+// "true" (Go bool true printed by Jet's fastprinter) when isAdmin=true.
+func TestJetBinding_IsAdmin_True(t *testing.T) {
+	const tmplKey = "/admin-check.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `{{ default_template.is_admin() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
+	vars := make(jet.VarMap)
+	vars["default_template"] = reflect.ValueOf(h.jetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "true", buf.String())
+}
+
+// TestJetBinding_IsAdmin_False verifies {{ default_template.is_admin() }} renders
+// "false" for a non-admin viewer.
+func TestJetBinding_IsAdmin_False(t *testing.T) {
+	const tmplKey = "/admin-check-false.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `{{ default_template.is_admin() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", nil)
+	vars := make(jet.VarMap)
+	vars["default_template"] = reflect.ValueOf(h.jetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "false", buf.String())
 }
