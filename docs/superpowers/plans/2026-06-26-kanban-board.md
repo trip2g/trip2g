@@ -97,6 +97,8 @@ git commit -m "feat(kanban): scaffold $trip2g_kanban MAM package"
 
 The board model. Frontmatter and the settings block are kept as **opaque raw strings** (carried through verbatim); only the lanes are structured. Correctness bar = **model round-trip stability** (`parse(serialize(b))` deep-equals `b`) plus a **canonical snapshot** validated against a real plugin export.
 
+> **Test runner (applies to all TS tasks below):** this project has **no vitest/jest** — it ships `tsx` (devDep) and runs on Node v24. Write the pure-module tests with Node's built-in runner: `import { describe, it } from 'node:test'` + `import assert from 'node:assert/strict'` (translate the illustrative `expect(...).toEqual/toBe/toContain` below to `assert.deepEqual/assert.equal/assert.ok(...includes...)`). Run a single file with `npx tsx --test assets/ui/kanban/format.test.ts`. The `$mol` *view* is tested via `$mol_test` per project convention; the pure `format.ts`/`ops.ts` are plain ES modules tested with `node:test`. This runner substitution is **pre-approved** — do not add a new test framework.
+
 **Files:**
 - Create: `assets/ui/kanban/format.ts`
 - Test: `assets/ui/kanban/format.test.ts`
