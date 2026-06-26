@@ -68,6 +68,8 @@ Keep the live view open in a browser — it injects a long-poll script and reloa
 http://localhost:8081/_system/renderlayout?live
 ```
 
+> **Auth:** the `?live` page needs an admin session or API key. With memcli you don't log in by hand — run `memcli open` once and it opens the browser already signed in via HAT; then `?live` works. Against any other server, sign in as admin first. (The `?longpolling` endpoint the script polls needs no auth.)
+
 Use `--watch` for a built-in loop that re-POSTs on every file save:
 
 ```bash
