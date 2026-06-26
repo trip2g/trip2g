@@ -1611,6 +1611,7 @@ FLAGS (up)
   --no-hub             Skip writing the federation hub note (hub.md)
   --no-seed            Skip seeding OKF starter notes (index/log/AGENTS/SCHEMA)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+  --name <id>          Run an isolated instance named trip2g-memory-<id> (needs its own --port)
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)

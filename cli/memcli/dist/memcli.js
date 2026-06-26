@@ -6,7 +6,11 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -25,29 +29,29 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../node_modules/graphql/version.js
+// node_modules/graphql/version.js
 var require_version = __commonJS({
-  "../../node_modules/graphql/version.js"(exports) {
+  "node_modules/graphql/version.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     exports.versionInfo = exports.version = void 0;
-    var version = "16.10.0";
+    var version = "16.14.2";
     exports.version = version;
     var versionInfo = Object.freeze({
       major: 16,
-      minor: 10,
-      patch: 0,
+      minor: 14,
+      patch: 2,
       preReleaseTag: null
     });
     exports.versionInfo = versionInfo;
   }
 });
 
-// ../../node_modules/graphql/jsutils/devAssert.js
+// node_modules/graphql/jsutils/devAssert.js
 var require_devAssert = __commonJS({
-  "../../node_modules/graphql/jsutils/devAssert.js"(exports) {
+  "node_modules/graphql/jsutils/devAssert.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -62,9 +66,9 @@ var require_devAssert = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/isPromise.js
+// node_modules/graphql/jsutils/isPromise.js
 var require_isPromise = __commonJS({
-  "../../node_modules/graphql/jsutils/isPromise.js"(exports) {
+  "node_modules/graphql/jsutils/isPromise.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -76,9 +80,9 @@ var require_isPromise = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/isObjectLike.js
+// node_modules/graphql/jsutils/isObjectLike.js
 var require_isObjectLike = __commonJS({
-  "../../node_modules/graphql/jsutils/isObjectLike.js"(exports) {
+  "node_modules/graphql/jsutils/isObjectLike.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -90,9 +94,9 @@ var require_isObjectLike = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/invariant.js
+// node_modules/graphql/jsutils/invariant.js
 var require_invariant = __commonJS({
-  "../../node_modules/graphql/jsutils/invariant.js"(exports) {
+  "node_modules/graphql/jsutils/invariant.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -109,9 +113,9 @@ var require_invariant = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/location.js
+// node_modules/graphql/language/location.js
 var require_location = __commonJS({
-  "../../node_modules/graphql/language/location.js"(exports) {
+  "node_modules/graphql/language/location.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -138,9 +142,9 @@ var require_location = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/printLocation.js
+// node_modules/graphql/language/printLocation.js
 var require_printLocation = __commonJS({
-  "../../node_modules/graphql/language/printLocation.js"(exports) {
+  "node_modules/graphql/language/printLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -196,9 +200,9 @@ var require_printLocation = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/GraphQLError.js
+// node_modules/graphql/error/GraphQLError.js
 var require_GraphQLError = __commonJS({
-  "../../node_modules/graphql/error/GraphQLError.js"(exports) {
+  "node_modules/graphql/error/GraphQLError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -240,9 +244,7 @@ var require_GraphQLError = __commonJS({
        *
        * Enumerable, and appears in the result of JSON.stringify().
        */
-      /**
-       * An array of GraphQL AST Nodes corresponding to this error.
-       */
+      /** An array of GraphQL AST Nodes corresponding to this error. */
       /**
        * The source GraphQL document for the first location of this error.
        *
@@ -253,13 +255,89 @@ var require_GraphQLError = __commonJS({
        * An array of character offsets within the source GraphQL document
        * which correspond to this error.
        */
+      /** Original error that caused this GraphQLError, if one exists. */
+      /** Extension fields to add to the formatted error. */
       /**
-       * The original error thrown from a field resolver during execution.
+       * Creates a GraphQLError instance.
+       * @param message - Human-readable error message.
+       * @param options - Error metadata such as source locations, response path, original error, and extensions.
+       * This positional-arguments constructor overload is deprecated. Use the
+       * `GraphQLError(message, options)` overload instead.
+       * @example
+       * ```ts
+       * // Create an error from AST nodes and response metadata.
+       * import { parse } from 'graphql/language';
+       * import { GraphQLError } from 'graphql/error';
+       *
+       * const document = parse('{ greeting }');
+       * const fieldNode = document.definitions[0].selectionSet.selections[0];
+       * const error = new GraphQLError('Cannot query this field.', {
+       *   nodes: fieldNode,
+       *   path: ['greeting'],
+       *   extensions: { code: 'FORBIDDEN' },
+       * });
+       *
+       * error.message; // => 'Cannot query this field.'
+       * error.locations; // => [{ line: 1, column: 3 }]
+       * error.path; // => ['greeting']
+       * error.extensions; // => { code: 'FORBIDDEN' }
+       * ```
+       * @example
+       * ```ts
+       * // This variant derives locations from source positions and preserves the original error.
+       * import { Source } from 'graphql/language';
+       * import { GraphQLError } from 'graphql/error';
+       *
+       * const source = new Source('{ greeting }');
+       * const originalError = new Error('Database unavailable.');
+       * const error = new GraphQLError('Resolver failed.', {
+       *   source,
+       *   positions: [2],
+       *   path: ['greeting'],
+       *   originalError,
+       * });
+       *
+       * error.locations; // => [{ line: 1, column: 3 }]
+       * error.path; // => ['greeting']
+       * error.originalError; // => originalError
+       * ```
        */
       /**
-       * Extension fields to add to the formatted error.
-       */
-      /**
+       * Creates a GraphQLError instance using the legacy positional constructor.
+       * This deprecated overload will be removed in v17. Prefer the
+       * `GraphQLErrorOptions` object overload, which keeps optional error metadata
+       * in a single options bag.
+       * @param message - Human-readable error message.
+       * @param nodes - AST node or nodes associated with this error.
+       * @param source - Source document used to derive error locations.
+       * @param positions - Character offsets in the source document associated with
+       * this error.
+       * @param path - Response path where this error occurred during execution.
+       * @param originalError - Original error that caused this GraphQLError, if one
+       * exists.
+       * @param extensions - Extension fields to include in the formatted error.
+       * @example
+       * ```ts
+       * import { Source } from 'graphql/language';
+       * import { GraphQLError } from 'graphql/error';
+       *
+       * const source = new Source('{ greeting }');
+       * const originalError = new Error('Database unavailable.');
+       * const error = new GraphQLError(
+       *   'Resolver failed.',
+       *   undefined,
+       *   source,
+       *   [2],
+       *   ['greeting'],
+       *   originalError,
+       *   { code: 'INTERNAL' },
+       * );
+       *
+       * error.locations; // => [{ line: 1, column: 3 }]
+       * error.path; // => ['greeting']
+       * error.originalError; // => originalError
+       * error.extensions; // => { code: 'INTERNAL' }
+       * ```
        * @deprecated Please use the `GraphQLErrorOptions` constructor overload instead.
        */
       constructor(message, ...rawArgs) {
@@ -321,9 +399,29 @@ var require_GraphQLError = __commonJS({
           });
         }
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLError";
       }
+      /**
+       * Returns this error as a human-readable message with source locations.
+       * @returns The formatted error string.
+       * @example
+       * ```ts
+       * import { Source } from 'graphql/language';
+       * import { GraphQLError } from 'graphql/error';
+       *
+       * const error = new GraphQLError('Cannot query field "name".', {
+       *   source: new Source('{ name }'),
+       *   positions: [2],
+       * });
+       *
+       * error.toString(); // => 'Cannot query field "name".\n\nGraphQL request:1:3\n1 | { name }\n  |   ^'
+       * ```
+       */
       toString() {
         let output = this.message;
         if (this.nodes) {
@@ -339,6 +437,21 @@ var require_GraphQLError = __commonJS({
         }
         return output;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLError } from 'graphql/error';
+       *
+       * const error = new GraphQLError('Resolver failed.', {
+       *   path: ['viewer', 'name'],
+       *   extensions: { code: 'INTERNAL' },
+       * });
+       *
+       * error.toJSON(); // => { message: 'Resolver failed.', path: ['viewer', 'name'], extensions: { code: 'INTERNAL' } }
+       * ```
+       */
       toJSON() {
         const formattedError = {
           message: this.message
@@ -368,9 +481,9 @@ var require_GraphQLError = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/syntaxError.js
+// node_modules/graphql/error/syntaxError.js
 var require_syntaxError = __commonJS({
-  "../../node_modules/graphql/error/syntaxError.js"(exports) {
+  "node_modules/graphql/error/syntaxError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -386,9 +499,9 @@ var require_syntaxError = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/ast.js
+// node_modules/graphql/language/ast.js
 var require_ast = __commonJS({
-  "../../node_modules/graphql/language/ast.js"(exports) {
+  "node_modules/graphql/language/ast.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -396,20 +509,29 @@ var require_ast = __commonJS({
     exports.Token = exports.QueryDocumentKeys = exports.OperationTypeNode = exports.Location = void 0;
     exports.isNode = isNode;
     var Location = class {
+      /** The character offset at which this Node begins. */
+      /** The character offset at which this Node ends. */
+      /** The Token at which this Node begins. */
+      /** The Token at which this Node ends. */
+      /** The Source document the AST represents. */
       /**
-       * The character offset at which this Node begins.
-       */
-      /**
-       * The character offset at which this Node ends.
-       */
-      /**
-       * The Token at which this Node begins.
-       */
-      /**
-       * The Token at which this Node ends.
-       */
-      /**
-       * The Source document the AST represents.
+       * Creates a Location instance.
+       * @param startToken - The start token.
+       * @param endToken - The end token.
+       * @param source - Source document used to derive error locations.
+       * @example
+       * ```ts
+       * import { Location, Source, Token, TokenKind } from 'graphql/language';
+       *
+       * const source = new Source('{ hello }');
+       * const startToken = new Token(TokenKind.BRACE_L, 0, 1, 1, 1);
+       * const endToken = new Token(TokenKind.BRACE_R, 8, 9, 1, 9);
+       * const location = new Location(startToken, endToken, source);
+       *
+       * location.start; // => 0
+       * location.end; // => 9
+       * location.source.body; // => '{ hello }'
+       * ```
        */
       constructor(startToken, endToken, source) {
         this.start = startToken.start;
@@ -418,9 +540,26 @@ var require_ast = __commonJS({
         this.endToken = endToken;
         this.source = source;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "Location";
       }
+      /**
+       * Returns a JSON representation of this location.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       *
+       * const document = parse('{ hello }');
+       * const location = document.loc?.toJSON();
+       *
+       * location; // => { start: 0, end: 9 }
+       * ```
+       */
       toJSON() {
         return {
           start: this.start,
@@ -430,21 +569,11 @@ var require_ast = __commonJS({
     };
     exports.Location = Location;
     var Token = class {
-      /**
-       * The kind of Token.
-       */
-      /**
-       * The character offset at which this Node begins.
-       */
-      /**
-       * The character offset at which this Node ends.
-       */
-      /**
-       * The 1-indexed line number on which this Token appears.
-       */
-      /**
-       * The 1-indexed column number at which this Token begins.
-       */
+      /** The kind of Token. */
+      /** The character offset at which this Node begins. */
+      /** The character offset at which this Node ends. */
+      /** The 1-indexed line number on which this Token appears. */
+      /** The 1-indexed column number at which this Token begins. */
       /**
        * For non-punctuation tokens, represents the interpreted value of the token.
        *
@@ -456,6 +585,26 @@ var require_ast = __commonJS({
        * including ignored tokens. <SOF> is always the first node and <EOF>
        * the last.
        */
+      /** Next token in the token stream, including ignored tokens. */
+      /**
+       * Creates a Token instance.
+       * @param kind - Token kind produced by lexical analysis.
+       * @param start - Character offset where this token begins.
+       * @param end - Character offset where this token ends.
+       * @param line - One-indexed line number where this token begins.
+       * @param column - One-indexed column number where this token begins.
+       * @param value - Interpreted value for non-punctuation tokens.
+       * @example
+       * ```ts
+       * import { Token, TokenKind } from 'graphql/language';
+       *
+       * const token = new Token(TokenKind.NAME, 2, 7, 1, 3, 'hello');
+       *
+       * token.kind; // => TokenKind.NAME
+       * token.value; // => 'hello'
+       * token.toJSON(); // => { kind: 'Name', value: 'hello', line: 1, column: 3 }
+       * ```
+       */
       constructor(kind, start, end, line, column, value) {
         this.kind = kind;
         this.start = start;
@@ -466,9 +615,26 @@ var require_ast = __commonJS({
         this.prev = null;
         this.next = null;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "Token";
       }
+      /**
+       * Returns a JSON representation of this token.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { Lexer, Source } from 'graphql/language';
+       *
+       * const lexer = new Lexer(new Source('{ hello }'));
+       * const token = lexer.advance().toJSON();
+       *
+       * token; // => { kind: '{', value: undefined, line: 1, column: 1 }
+       * ```
+       */
       toJSON() {
         return {
           kind: this.kind,
@@ -483,12 +649,19 @@ var require_ast = __commonJS({
       Name: [],
       Document: ["definitions"],
       OperationDefinition: [
+        "description",
         "name",
         "variableDefinitions",
         "directives",
         "selectionSet"
       ],
-      VariableDefinition: ["variable", "type", "defaultValue", "directives"],
+      VariableDefinition: [
+        "description",
+        "variable",
+        "type",
+        "defaultValue",
+        "directives"
+      ],
       Variable: ["name"],
       SelectionSet: ["selections"],
       Field: ["alias", "name", "arguments", "directives", "selectionSet"],
@@ -496,6 +669,7 @@ var require_ast = __commonJS({
       FragmentSpread: ["name", "directives"],
       InlineFragment: ["typeCondition", "directives", "selectionSet"],
       FragmentDefinition: [
+        "description",
         "name",
         // Note: fragment variable definitions are deprecated and will removed in v17.0.0
         "variableDefinitions",
@@ -545,14 +719,26 @@ var require_ast = __commonJS({
       EnumTypeDefinition: ["description", "name", "directives", "values"],
       EnumValueDefinition: ["description", "name", "directives"],
       InputObjectTypeDefinition: ["description", "name", "directives", "fields"],
-      DirectiveDefinition: ["description", "name", "arguments", "locations"],
+      DirectiveDefinition: [
+        "description",
+        "name",
+        "arguments",
+        "directives",
+        "locations"
+      ],
       SchemaExtension: ["directives", "operationTypes"],
+      DirectiveExtension: ["name", "directives"],
       ScalarTypeExtension: ["name", "directives"],
       ObjectTypeExtension: ["name", "interfaces", "directives", "fields"],
       InterfaceTypeExtension: ["name", "interfaces", "directives", "fields"],
       UnionTypeExtension: ["name", "directives", "types"],
       EnumTypeExtension: ["name", "directives", "values"],
-      InputObjectTypeExtension: ["name", "directives", "fields"]
+      InputObjectTypeExtension: ["name", "directives", "fields"],
+      TypeCoordinate: ["name"],
+      MemberCoordinate: ["name", "memberName"],
+      ArgumentCoordinate: ["name", "fieldName", "argumentName"],
+      DirectiveCoordinate: ["name"],
+      DirectiveArgumentCoordinate: ["name", "argumentName"]
     };
     exports.QueryDocumentKeys = QueryDocumentKeys;
     var kindValues = new Set(Object.keys(QueryDocumentKeys));
@@ -570,9 +756,9 @@ var require_ast = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/directiveLocation.js
+// node_modules/graphql/language/directiveLocation.js
 var require_directiveLocation = __commonJS({
-  "../../node_modules/graphql/language/directiveLocation.js"(exports) {
+  "node_modules/graphql/language/directiveLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -600,13 +786,14 @@ var require_directiveLocation = __commonJS({
       DirectiveLocation2["ENUM_VALUE"] = "ENUM_VALUE";
       DirectiveLocation2["INPUT_OBJECT"] = "INPUT_OBJECT";
       DirectiveLocation2["INPUT_FIELD_DEFINITION"] = "INPUT_FIELD_DEFINITION";
+      DirectiveLocation2["DIRECTIVE_DEFINITION"] = "DIRECTIVE_DEFINITION";
     })(DirectiveLocation || (exports.DirectiveLocation = DirectiveLocation = {}));
   }
 });
 
-// ../../node_modules/graphql/language/kinds.js
+// node_modules/graphql/language/kinds.js
 var require_kinds = __commonJS({
-  "../../node_modules/graphql/language/kinds.js"(exports) {
+  "node_modules/graphql/language/kinds.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -652,19 +839,25 @@ var require_kinds = __commonJS({
       Kind2["INPUT_OBJECT_TYPE_DEFINITION"] = "InputObjectTypeDefinition";
       Kind2["DIRECTIVE_DEFINITION"] = "DirectiveDefinition";
       Kind2["SCHEMA_EXTENSION"] = "SchemaExtension";
+      Kind2["DIRECTIVE_EXTENSION"] = "DirectiveExtension";
       Kind2["SCALAR_TYPE_EXTENSION"] = "ScalarTypeExtension";
       Kind2["OBJECT_TYPE_EXTENSION"] = "ObjectTypeExtension";
       Kind2["INTERFACE_TYPE_EXTENSION"] = "InterfaceTypeExtension";
       Kind2["UNION_TYPE_EXTENSION"] = "UnionTypeExtension";
       Kind2["ENUM_TYPE_EXTENSION"] = "EnumTypeExtension";
       Kind2["INPUT_OBJECT_TYPE_EXTENSION"] = "InputObjectTypeExtension";
+      Kind2["TYPE_COORDINATE"] = "TypeCoordinate";
+      Kind2["MEMBER_COORDINATE"] = "MemberCoordinate";
+      Kind2["ARGUMENT_COORDINATE"] = "ArgumentCoordinate";
+      Kind2["DIRECTIVE_COORDINATE"] = "DirectiveCoordinate";
+      Kind2["DIRECTIVE_ARGUMENT_COORDINATE"] = "DirectiveArgumentCoordinate";
     })(Kind || (exports.Kind = Kind = {}));
   }
 });
 
-// ../../node_modules/graphql/language/characterClasses.js
+// node_modules/graphql/language/characterClasses.js
 var require_characterClasses = __commonJS({
-  "../../node_modules/graphql/language/characterClasses.js"(exports) {
+  "node_modules/graphql/language/characterClasses.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -693,9 +886,9 @@ var require_characterClasses = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/blockString.js
+// node_modules/graphql/language/blockString.js
 var require_blockString = __commonJS({
-  "../../node_modules/graphql/language/blockString.js"(exports) {
+  "node_modules/graphql/language/blockString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -815,9 +1008,9 @@ var require_blockString = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/tokenKind.js
+// node_modules/graphql/language/tokenKind.js
 var require_tokenKind = __commonJS({
-  "../../node_modules/graphql/language/tokenKind.js"(exports) {
+  "node_modules/graphql/language/tokenKind.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -833,6 +1026,7 @@ var require_tokenKind = __commonJS({
       TokenKind2["AMP"] = "&";
       TokenKind2["PAREN_L"] = "(";
       TokenKind2["PAREN_R"] = ")";
+      TokenKind2["DOT"] = ".";
       TokenKind2["SPREAD"] = "...";
       TokenKind2["COLON"] = ":";
       TokenKind2["EQUALS"] = "=";
@@ -852,32 +1046,43 @@ var require_tokenKind = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/lexer.js
+// node_modules/graphql/language/lexer.js
 var require_lexer = __commonJS({
-  "../../node_modules/graphql/language/lexer.js"(exports) {
+  "node_modules/graphql/language/lexer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     exports.Lexer = void 0;
+    exports.createToken = createToken;
     exports.isPunctuatorTokenKind = isPunctuatorTokenKind;
+    exports.printCodePointAt = printCodePointAt;
+    exports.readName = readName;
     var _syntaxError = require_syntaxError();
     var _ast = require_ast();
     var _blockString = require_blockString();
     var _characterClasses = require_characterClasses();
     var _tokenKind = require_tokenKind();
     var Lexer = class {
+      /** Source document used to derive error locations. */
+      /** Most recent non-ignored token returned by the lexer. */
+      /** Current non-ignored token at the lexer cursor. */
+      /** The (1-indexed) line containing the current token. */
+      /** Character offset where the current line starts. */
       /**
-       * The previously focused non-ignored token.
-       */
-      /**
-       * The currently focused non-ignored token.
-       */
-      /**
-       * The (1-indexed) line containing the current token.
-       */
-      /**
-       * The character offset at which the current line begins.
+       * Creates a Lexer instance.
+       * @param source - Source document used to derive error locations.
+       * @example
+       * ```ts
+       * import { Lexer, Source, TokenKind } from 'graphql/language';
+       *
+       * const lexer = new Lexer(new Source('{ hello }'));
+       *
+       * lexer.token.kind; // => TokenKind.SOF
+       * lexer.advance().kind; // => TokenKind.BRACE_L
+       * lexer.advance().value; // => 'hello'
+       * lexer.advance().kind; // => TokenKind.BRACE_R
+       * ```
        */
       constructor(source) {
         const startOfFileToken = new _ast.Token(
@@ -893,11 +1098,26 @@ var require_lexer = __commonJS({
         this.line = 1;
         this.lineStart = 0;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "Lexer";
       }
       /**
        * Advances the token stream to the next non-ignored token.
+       * @returns The next non-ignored token.
+       * @example
+       * ```ts
+       * import { Lexer, Source } from 'graphql/language';
+       *
+       * const lexer = new Lexer(new Source('{ hello }'));
+       * const token = lexer.advance();
+       *
+       * token.kind; // => '{'
+       * lexer.token; // => token
+       * ```
        */
       advance() {
         this.lastToken = this.token;
@@ -907,6 +1127,17 @@ var require_lexer = __commonJS({
       /**
        * Looks ahead and returns the next non-ignored token, but does not change
        * the state of Lexer.
+       * @returns The next non-ignored token without advancing the lexer.
+       * @example
+       * ```ts
+       * import { Lexer, Source } from 'graphql/language';
+       *
+       * const lexer = new Lexer(new Source('{ hello }'));
+       * const token = lexer.lookahead();
+       *
+       * token.kind; // => '{'
+       * lexer.token.kind; // => '<SOF>'
+       * ```
        */
       lookahead() {
         let token = this.token;
@@ -927,7 +1158,7 @@ var require_lexer = __commonJS({
     };
     exports.Lexer = Lexer;
     function isPunctuatorTokenKind(kind) {
-      return kind === _tokenKind.TokenKind.BANG || kind === _tokenKind.TokenKind.DOLLAR || kind === _tokenKind.TokenKind.AMP || kind === _tokenKind.TokenKind.PAREN_L || kind === _tokenKind.TokenKind.PAREN_R || kind === _tokenKind.TokenKind.SPREAD || kind === _tokenKind.TokenKind.COLON || kind === _tokenKind.TokenKind.EQUALS || kind === _tokenKind.TokenKind.AT || kind === _tokenKind.TokenKind.BRACKET_L || kind === _tokenKind.TokenKind.BRACKET_R || kind === _tokenKind.TokenKind.BRACE_L || kind === _tokenKind.TokenKind.PIPE || kind === _tokenKind.TokenKind.BRACE_R;
+      return kind === _tokenKind.TokenKind.BANG || kind === _tokenKind.TokenKind.DOLLAR || kind === _tokenKind.TokenKind.AMP || kind === _tokenKind.TokenKind.PAREN_L || kind === _tokenKind.TokenKind.PAREN_R || kind === _tokenKind.TokenKind.DOT || kind === _tokenKind.TokenKind.SPREAD || kind === _tokenKind.TokenKind.COLON || kind === _tokenKind.TokenKind.EQUALS || kind === _tokenKind.TokenKind.AT || kind === _tokenKind.TokenKind.BRACKET_L || kind === _tokenKind.TokenKind.BRACKET_R || kind === _tokenKind.TokenKind.BRACE_L || kind === _tokenKind.TokenKind.PIPE || kind === _tokenKind.TokenKind.BRACE_R;
     }
     function isUnicodeScalarValue(code) {
       return code >= 0 && code <= 55295 || code >= 57344 && code <= 1114111;
@@ -1490,9 +1721,140 @@ var require_lexer = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/inspect.js
+// node_modules/graphql/language/schemaCoordinateLexer.js
+var require_schemaCoordinateLexer = __commonJS({
+  "node_modules/graphql/language/schemaCoordinateLexer.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.SchemaCoordinateLexer = void 0;
+    var _syntaxError = require_syntaxError();
+    var _ast = require_ast();
+    var _characterClasses = require_characterClasses();
+    var _lexer = require_lexer();
+    var _tokenKind = require_tokenKind();
+    var SchemaCoordinateLexer = class {
+      /** The previously focused non-ignored token. */
+      /** The currently focused non-ignored token. */
+      /**
+       * The (1-indexed) line containing the current token.
+       * Since a schema coordinate may not contain newline, this value is always 1.
+       */
+      line = 1;
+      /**
+       * The character offset at which the current line begins.
+       * Since a schema coordinate may not contain newline, this value is always 0.
+       */
+      lineStart = 0;
+      constructor(source) {
+        const startOfFileToken = new _ast.Token(
+          _tokenKind.TokenKind.SOF,
+          0,
+          0,
+          0,
+          0
+        );
+        this.source = source;
+        this.lastToken = startOfFileToken;
+        this.token = startOfFileToken;
+      }
+      get [Symbol.toStringTag]() {
+        return "SchemaCoordinateLexer";
+      }
+      /**
+       * Advances the token stream to the next non-ignored token.
+       *
+       * @internal
+       */
+      advance() {
+        this.lastToken = this.token;
+        const token = this.token = this.lookahead();
+        return token;
+      }
+      /**
+       * Looks ahead and returns the next non-ignored token, but does not change
+       * the current Lexer token.
+       *
+       * @internal
+       */
+      lookahead() {
+        let token = this.token;
+        if (token.kind !== _tokenKind.TokenKind.EOF) {
+          const nextToken = readNextToken(this, token.end);
+          token.next = nextToken;
+          nextToken.prev = token;
+          token = nextToken;
+        }
+        return token;
+      }
+    };
+    exports.SchemaCoordinateLexer = SchemaCoordinateLexer;
+    function readNextToken(lexer, start) {
+      const body = lexer.source.body;
+      const bodyLength = body.length;
+      const position = start;
+      if (position < bodyLength) {
+        const code = body.charCodeAt(position);
+        switch (code) {
+          case 46:
+            return (0, _lexer.createToken)(
+              lexer,
+              _tokenKind.TokenKind.DOT,
+              position,
+              position + 1
+            );
+          case 40:
+            return (0, _lexer.createToken)(
+              lexer,
+              _tokenKind.TokenKind.PAREN_L,
+              position,
+              position + 1
+            );
+          case 41:
+            return (0, _lexer.createToken)(
+              lexer,
+              _tokenKind.TokenKind.PAREN_R,
+              position,
+              position + 1
+            );
+          case 58:
+            return (0, _lexer.createToken)(
+              lexer,
+              _tokenKind.TokenKind.COLON,
+              position,
+              position + 1
+            );
+          case 64:
+            return (0, _lexer.createToken)(
+              lexer,
+              _tokenKind.TokenKind.AT,
+              position,
+              position + 1
+            );
+        }
+        if ((0, _characterClasses.isNameStart)(code)) {
+          return (0, _lexer.readName)(lexer, position);
+        }
+        throw (0, _syntaxError.syntaxError)(
+          lexer.source,
+          position,
+          `Invalid character: ${(0, _lexer.printCodePointAt)(lexer, position)}.`
+        );
+      }
+      return (0, _lexer.createToken)(
+        lexer,
+        _tokenKind.TokenKind.EOF,
+        bodyLength,
+        bodyLength
+      );
+    }
+  }
+});
+
+// node_modules/graphql/jsutils/inspect.js
 var require_inspect = __commonJS({
-  "../../node_modules/graphql/jsutils/inspect.js"(exports) {
+  "node_modules/graphql/jsutils/inspect.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1582,9 +1944,9 @@ var require_inspect = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/instanceOf.js
+// node_modules/graphql/jsutils/instanceOf.js
 var require_instanceOf = __commonJS({
-  "../../node_modules/graphql/jsutils/instanceOf.js"(exports) {
+  "node_modules/graphql/jsutils/instanceOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1632,9 +1994,9 @@ spurious results.`);
   }
 });
 
-// ../../node_modules/graphql/language/source.js
+// node_modules/graphql/language/source.js
 var require_source = __commonJS({
-  "../../node_modules/graphql/language/source.js"(exports) {
+  "node_modules/graphql/language/source.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1645,6 +2007,29 @@ var require_source = __commonJS({
     var _inspect = require_inspect();
     var _instanceOf = require_instanceOf();
     var Source = class {
+      /** The GraphQL source text. */
+      /** Name used in diagnostics for this source, such as a file path or request name. */
+      /** One-indexed line and column where this source begins. */
+      /**
+       * Creates a Source instance.
+       * @param body - The GraphQL source text.
+       * @param name - Name used in diagnostics for this source.
+       * @param locationOffset - One-indexed line and column where this source begins.
+       * @example
+       * ```ts
+       * import { Source } from 'graphql/language';
+       *
+       * const source = new Source(
+       *   'type Query { greeting: String }',
+       *   'schema.graphql',
+       *   { line: 10, column: 1 },
+       * );
+       *
+       * source.body; // => 'type Query { greeting: String }'
+       * source.name; // => 'schema.graphql'
+       * source.locationOffset; // => { line: 10, column: 1 }
+       * ```
+       */
       constructor(body, name = "GraphQL request", locationOffset = {
         line: 1,
         column: 1
@@ -1665,6 +2050,10 @@ var require_source = __commonJS({
           "column in locationOffset is 1-indexed and must be positive."
         );
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "Source";
       }
@@ -1676,9 +2065,9 @@ var require_source = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/parser.js
+// node_modules/graphql/language/parser.js
 var require_parser = __commonJS({
-  "../../node_modules/graphql/language/parser.js"(exports) {
+  "node_modules/graphql/language/parser.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1686,6 +2075,7 @@ var require_parser = __commonJS({
     exports.Parser = void 0;
     exports.parse = parse;
     exports.parseConstValue = parseConstValue;
+    exports.parseSchemaCoordinate = parseSchemaCoordinate;
     exports.parseType = parseType;
     exports.parseValue = parseValue;
     var _syntaxError = require_syntaxError();
@@ -1693,6 +2083,7 @@ var require_parser = __commonJS({
     var _directiveLocation = require_directiveLocation();
     var _kinds = require_kinds();
     var _lexer = require_lexer();
+    var _schemaCoordinateLexer = require_schemaCoordinateLexer();
     var _source = require_source();
     var _tokenKind = require_tokenKind();
     function parse(source, options) {
@@ -1725,11 +2116,27 @@ var require_parser = __commonJS({
       parser.expectToken(_tokenKind.TokenKind.EOF);
       return type;
     }
+    function parseSchemaCoordinate(source) {
+      const sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
+      const lexer = new _schemaCoordinateLexer.SchemaCoordinateLexer(sourceObj);
+      const parser = new Parser(source, {
+        lexer
+      });
+      parser.expectToken(_tokenKind.TokenKind.SOF);
+      const coordinate = parser.parseSchemaCoordinate();
+      parser.expectToken(_tokenKind.TokenKind.EOF);
+      return coordinate;
+    }
     var Parser = class {
       constructor(source, options = {}) {
-        const sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
-        this._lexer = new _lexer.Lexer(sourceObj);
-        this._options = options;
+        const { lexer, ..._options } = options;
+        if (lexer) {
+          this._lexer = lexer;
+        } else {
+          const sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
+          this._lexer = new _lexer.Lexer(sourceObj);
+        }
+        this._options = _options;
         this._tokenCounter = 0;
       }
       get tokenCount() {
@@ -1737,6 +2144,8 @@ var require_parser = __commonJS({
       }
       /**
        * Converts a name lex token into a name parse node.
+       *
+       * @internal
        */
       parseName() {
         const token = this.expectToken(_tokenKind.TokenKind.NAME);
@@ -1748,6 +2157,8 @@ var require_parser = __commonJS({
       // Implements the parsing rules in the Document section.
       /**
        * Document : Definition+
+       *
+       * @internal
        */
       parseDocument() {
         return this.node(this._lexer.token, {
@@ -1781,6 +2192,8 @@ var require_parser = __commonJS({
        *   - UnionTypeDefinition
        *   - EnumTypeDefinition
        *   - InputObjectTypeDefinition
+       *
+       * @internal
        */
       parseDefinition() {
         if (this.peek(_tokenKind.TokenKind.BRACE_L)) {
@@ -1788,6 +2201,13 @@ var require_parser = __commonJS({
         }
         const hasDescription = this.peekDescription();
         const keywordToken = hasDescription ? this._lexer.lookahead() : this._lexer.token;
+        if (hasDescription && keywordToken.kind === _tokenKind.TokenKind.BRACE_L) {
+          throw (0, _syntaxError.syntaxError)(
+            this._lexer.source,
+            this._lexer.token.start,
+            "Unexpected description, descriptions are not supported on shorthand queries."
+          );
+        }
         if (keywordToken.kind === _tokenKind.TokenKind.NAME) {
           switch (keywordToken.value) {
             case "schema":
@@ -1807,13 +2227,6 @@ var require_parser = __commonJS({
             case "directive":
               return this.parseDirectiveDefinition();
           }
-          if (hasDescription) {
-            throw (0, _syntaxError.syntaxError)(
-              this._lexer.source,
-              this._lexer.token.start,
-              "Unexpected description, descriptions are supported only on type definitions."
-            );
-          }
           switch (keywordToken.value) {
             case "query":
             case "mutation":
@@ -1821,6 +2234,15 @@ var require_parser = __commonJS({
               return this.parseOperationDefinition();
             case "fragment":
               return this.parseFragmentDefinition();
+          }
+          if (hasDescription) {
+            throw (0, _syntaxError.syntaxError)(
+              this._lexer.source,
+              this._lexer.token.start,
+              "Unexpected description, only GraphQL definitions support descriptions."
+            );
+          }
+          switch (keywordToken.value) {
             case "extend":
               return this.parseTypeSystemExtension();
           }
@@ -1832,6 +2254,8 @@ var require_parser = __commonJS({
        * OperationDefinition :
        *  - SelectionSet
        *  - OperationType Name? VariableDefinitions? Directives? SelectionSet
+       *
+       * @internal
        */
       parseOperationDefinition() {
         const start = this._lexer.token;
@@ -1839,12 +2263,14 @@ var require_parser = __commonJS({
           return this.node(start, {
             kind: _kinds.Kind.OPERATION_DEFINITION,
             operation: _ast.OperationTypeNode.QUERY,
+            description: void 0,
             name: void 0,
             variableDefinitions: [],
             directives: [],
             selectionSet: this.parseSelectionSet()
           });
         }
+        const description = this.parseDescription();
         const operation = this.parseOperationType();
         let name;
         if (this.peek(_tokenKind.TokenKind.NAME)) {
@@ -1853,6 +2279,7 @@ var require_parser = __commonJS({
         return this.node(start, {
           kind: _kinds.Kind.OPERATION_DEFINITION,
           operation,
+          description,
           name,
           variableDefinitions: this.parseVariableDefinitions(),
           directives: this.parseDirectives(false),
@@ -1861,6 +2288,8 @@ var require_parser = __commonJS({
       }
       /**
        * OperationType : one of query mutation subscription
+       *
+       * @internal
        */
       parseOperationType() {
         const operationToken = this.expectToken(_tokenKind.TokenKind.NAME);
@@ -1876,6 +2305,8 @@ var require_parser = __commonJS({
       }
       /**
        * VariableDefinitions : ( VariableDefinition+ )
+       *
+       * @internal
        */
       parseVariableDefinitions() {
         return this.optionalMany(
@@ -1886,10 +2317,13 @@ var require_parser = __commonJS({
       }
       /**
        * VariableDefinition : Variable : Type DefaultValue? Directives[Const]?
+       *
+       * @internal
        */
       parseVariableDefinition() {
         return this.node(this._lexer.token, {
           kind: _kinds.Kind.VARIABLE_DEFINITION,
+          description: this.parseDescription(),
           variable: this.parseVariable(),
           type: (this.expectToken(_tokenKind.TokenKind.COLON), this.parseTypeReference()),
           defaultValue: this.expectOptionalToken(_tokenKind.TokenKind.EQUALS) ? this.parseConstValueLiteral() : void 0,
@@ -1898,6 +2332,8 @@ var require_parser = __commonJS({
       }
       /**
        * Variable : $ Name
+       *
+       * @internal
        */
       parseVariable() {
         const start = this._lexer.token;
@@ -1911,6 +2347,8 @@ var require_parser = __commonJS({
        * ```
        * SelectionSet : { Selection+ }
        * ```
+       *
+       * @internal
        */
       parseSelectionSet() {
         return this.node(this._lexer.token, {
@@ -1927,6 +2365,8 @@ var require_parser = __commonJS({
        *   - Field
        *   - FragmentSpread
        *   - InlineFragment
+       *
+       * @internal
        */
       parseSelection() {
         return this.peek(_tokenKind.TokenKind.SPREAD) ? this.parseFragment() : this.parseField();
@@ -1935,6 +2375,8 @@ var require_parser = __commonJS({
        * Field : Alias? Name Arguments? Directives? SelectionSet?
        *
        * Alias : Name :
+       *
+       * @internal
        */
       parseField() {
         const start = this._lexer.token;
@@ -1958,6 +2400,8 @@ var require_parser = __commonJS({
       }
       /**
        * Arguments[Const] : ( Argument[?Const]+ )
+       *
+       * @internal
        */
       parseArguments(isConst) {
         const item = isConst ? this.parseConstArgument : this.parseArgument;
@@ -1969,6 +2413,8 @@ var require_parser = __commonJS({
       }
       /**
        * Argument[Const] : Name : Value[?Const]
+       *
+       * @internal
        */
       parseArgument(isConst = false) {
         const start = this._lexer.token;
@@ -1990,6 +2436,8 @@ var require_parser = __commonJS({
        * FragmentSpread : ... FragmentName Directives?
        *
        * InlineFragment : ... TypeCondition? Directives? SelectionSet
+       *
+       * @internal
        */
       parseFragment() {
         const start = this._lexer.token;
@@ -2014,13 +2462,17 @@ var require_parser = __commonJS({
        *   - fragment FragmentName on TypeCondition Directives? SelectionSet
        *
        * TypeCondition : NamedType
+       *
+       * @internal
        */
       parseFragmentDefinition() {
         const start = this._lexer.token;
+        const description = this.parseDescription();
         this.expectKeyword("fragment");
         if (this._options.allowLegacyFragmentVariables === true) {
           return this.node(start, {
             kind: _kinds.Kind.FRAGMENT_DEFINITION,
+            description,
             name: this.parseFragmentName(),
             variableDefinitions: this.parseVariableDefinitions(),
             typeCondition: (this.expectKeyword("on"), this.parseNamedType()),
@@ -2030,6 +2482,7 @@ var require_parser = __commonJS({
         }
         return this.node(start, {
           kind: _kinds.Kind.FRAGMENT_DEFINITION,
+          description,
           name: this.parseFragmentName(),
           typeCondition: (this.expectKeyword("on"), this.parseNamedType()),
           directives: this.parseDirectives(false),
@@ -2038,6 +2491,8 @@ var require_parser = __commonJS({
       }
       /**
        * FragmentName : Name but not `on`
+       *
+       * @internal
        */
       parseFragmentName() {
         if (this._lexer.token.value === "on") {
@@ -2063,6 +2518,8 @@ var require_parser = __commonJS({
        * NullValue : `null`
        *
        * EnumValue : Name but not `true`, `false` or `null`
+       *
+       * @internal
        */
       parseValueLiteral(isConst) {
         const token = this._lexer.token;
@@ -2144,6 +2601,8 @@ var require_parser = __commonJS({
        * ListValue[Const] :
        *   - [ ]
        *   - [ Value[?Const]+ ]
+       *
+       * @internal
        */
       parseList(isConst) {
         const item = () => this.parseValueLiteral(isConst);
@@ -2162,6 +2621,8 @@ var require_parser = __commonJS({
        *   - { }
        *   - { ObjectField[?Const]+ }
        * ```
+       *
+       * @internal
        */
       parseObject(isConst) {
         const item = () => this.parseObjectField(isConst);
@@ -2176,6 +2637,8 @@ var require_parser = __commonJS({
       }
       /**
        * ObjectField[Const] : Name : Value[?Const]
+       *
+       * @internal
        */
       parseObjectField(isConst) {
         const start = this._lexer.token;
@@ -2190,6 +2653,8 @@ var require_parser = __commonJS({
       // Implements the parsing rules in the Directives section.
       /**
        * Directives[Const] : Directive[?Const]+
+       *
+       * @internal
        */
       parseDirectives(isConst) {
         const directives = [];
@@ -2205,6 +2670,8 @@ var require_parser = __commonJS({
        * ```
        * Directive[Const] : @ Name Arguments[?Const]?
        * ```
+       *
+       * @internal
        */
       parseDirective(isConst) {
         const start = this._lexer.token;
@@ -2221,6 +2688,8 @@ var require_parser = __commonJS({
        *   - NamedType
        *   - ListType
        *   - NonNullType
+       *
+       * @internal
        */
       parseTypeReference() {
         const start = this._lexer.token;
@@ -2245,6 +2714,8 @@ var require_parser = __commonJS({
       }
       /**
        * NamedType : Name
+       *
+       * @internal
        */
       parseNamedType() {
         return this.node(this._lexer.token, {
@@ -2258,6 +2729,8 @@ var require_parser = __commonJS({
       }
       /**
        * Description : StringValue
+       *
+       * @internal
        */
       parseDescription() {
         if (this.peekDescription()) {
@@ -2268,6 +2741,8 @@ var require_parser = __commonJS({
        * ```
        * SchemaDefinition : Description? schema Directives[Const]? { OperationTypeDefinition+ }
        * ```
+       *
+       * @internal
        */
       parseSchemaDefinition() {
         const start = this._lexer.token;
@@ -2288,6 +2763,8 @@ var require_parser = __commonJS({
       }
       /**
        * OperationTypeDefinition : OperationType : NamedType
+       *
+       * @internal
        */
       parseOperationTypeDefinition() {
         const start = this._lexer.token;
@@ -2302,6 +2779,8 @@ var require_parser = __commonJS({
       }
       /**
        * ScalarTypeDefinition : Description? scalar Name Directives[Const]?
+       *
+       * @internal
        */
       parseScalarTypeDefinition() {
         const start = this._lexer.token;
@@ -2320,6 +2799,8 @@ var require_parser = __commonJS({
        * ObjectTypeDefinition :
        *   Description?
        *   type Name ImplementsInterfaces? Directives[Const]? FieldsDefinition?
+       *
+       * @internal
        */
       parseObjectTypeDefinition() {
         const start = this._lexer.token;
@@ -2342,6 +2823,8 @@ var require_parser = __commonJS({
        * ImplementsInterfaces :
        *   - implements `&`? NamedType
        *   - ImplementsInterfaces & NamedType
+       *
+       * @internal
        */
       parseImplementsInterfaces() {
         return this.expectOptionalKeyword("implements") ? this.delimitedMany(_tokenKind.TokenKind.AMP, this.parseNamedType) : [];
@@ -2350,6 +2833,8 @@ var require_parser = __commonJS({
        * ```
        * FieldsDefinition : { FieldDefinition+ }
        * ```
+       *
+       * @internal
        */
       parseFieldsDefinition() {
         return this.optionalMany(
@@ -2361,6 +2846,8 @@ var require_parser = __commonJS({
       /**
        * FieldDefinition :
        *   - Description? Name ArgumentsDefinition? : Type Directives[Const]?
+       *
+       * @internal
        */
       parseFieldDefinition() {
         const start = this._lexer.token;
@@ -2381,6 +2868,8 @@ var require_parser = __commonJS({
       }
       /**
        * ArgumentsDefinition : ( InputValueDefinition+ )
+       *
+       * @internal
        */
       parseArgumentDefs() {
         return this.optionalMany(
@@ -2392,6 +2881,8 @@ var require_parser = __commonJS({
       /**
        * InputValueDefinition :
        *   - Description? Name : Type DefaultValue? Directives[Const]?
+       *
+       * @internal
        */
       parseInputValueDef() {
         const start = this._lexer.token;
@@ -2416,6 +2907,8 @@ var require_parser = __commonJS({
       /**
        * InterfaceTypeDefinition :
        *   - Description? interface Name Directives[Const]? FieldsDefinition?
+       *
+       * @internal
        */
       parseInterfaceTypeDefinition() {
         const start = this._lexer.token;
@@ -2437,6 +2930,8 @@ var require_parser = __commonJS({
       /**
        * UnionTypeDefinition :
        *   - Description? union Name Directives[Const]? UnionMemberTypes?
+       *
+       * @internal
        */
       parseUnionTypeDefinition() {
         const start = this._lexer.token;
@@ -2457,6 +2952,8 @@ var require_parser = __commonJS({
        * UnionMemberTypes :
        *   - = `|`? NamedType
        *   - UnionMemberTypes | NamedType
+       *
+       * @internal
        */
       parseUnionMemberTypes() {
         return this.expectOptionalToken(_tokenKind.TokenKind.EQUALS) ? this.delimitedMany(_tokenKind.TokenKind.PIPE, this.parseNamedType) : [];
@@ -2464,6 +2961,8 @@ var require_parser = __commonJS({
       /**
        * EnumTypeDefinition :
        *   - Description? enum Name Directives[Const]? EnumValuesDefinition?
+       *
+       * @internal
        */
       parseEnumTypeDefinition() {
         const start = this._lexer.token;
@@ -2484,6 +2983,8 @@ var require_parser = __commonJS({
        * ```
        * EnumValuesDefinition : { EnumValueDefinition+ }
        * ```
+       *
+       * @internal
        */
       parseEnumValuesDefinition() {
         return this.optionalMany(
@@ -2494,6 +2995,8 @@ var require_parser = __commonJS({
       }
       /**
        * EnumValueDefinition : Description? EnumValue Directives[Const]?
+       *
+       * @internal
        */
       parseEnumValueDefinition() {
         const start = this._lexer.token;
@@ -2509,6 +3012,8 @@ var require_parser = __commonJS({
       }
       /**
        * EnumValue : Name but not `true`, `false` or `null`
+       *
+       * @internal
        */
       parseEnumValueName() {
         if (this._lexer.token.value === "true" || this._lexer.token.value === "false" || this._lexer.token.value === "null") {
@@ -2525,6 +3030,8 @@ var require_parser = __commonJS({
       /**
        * InputObjectTypeDefinition :
        *   - Description? input Name Directives[Const]? InputFieldsDefinition?
+       *
+       * @internal
        */
       parseInputObjectTypeDefinition() {
         const start = this._lexer.token;
@@ -2545,6 +3052,8 @@ var require_parser = __commonJS({
        * ```
        * InputFieldsDefinition : { InputValueDefinition+ }
        * ```
+       *
+       * @internal
        */
       parseInputFieldsDefinition() {
         return this.optionalMany(
@@ -2565,6 +3074,9 @@ var require_parser = __commonJS({
        *   - UnionTypeExtension
        *   - EnumTypeExtension
        *   - InputObjectTypeDefinition
+       *   - DirectiveDefinitionExtension
+       *
+       * @internal
        */
       parseTypeSystemExtension() {
         const keywordToken = this._lexer.lookahead();
@@ -2584,6 +3096,11 @@ var require_parser = __commonJS({
               return this.parseEnumTypeExtension();
             case "input":
               return this.parseInputObjectTypeExtension();
+            case "directive":
+              if (this._options.experimentalDirectivesOnDirectiveDefinitions) {
+                return this.parseDirectiveDefinitionExtension();
+              }
+              break;
           }
         }
         throw this.unexpected(keywordToken);
@@ -2594,6 +3111,8 @@ var require_parser = __commonJS({
        *  - extend schema Directives[Const]? { OperationTypeDefinition+ }
        *  - extend schema Directives[Const]
        * ```
+       *
+       * @internal
        */
       parseSchemaExtension() {
         const start = this._lexer.token;
@@ -2617,6 +3136,8 @@ var require_parser = __commonJS({
       /**
        * ScalarTypeExtension :
        *   - extend scalar Name Directives[Const]
+       *
+       * @internal
        */
       parseScalarTypeExtension() {
         const start = this._lexer.token;
@@ -2638,6 +3159,8 @@ var require_parser = __commonJS({
        *  - extend type Name ImplementsInterfaces? Directives[Const]? FieldsDefinition
        *  - extend type Name ImplementsInterfaces? Directives[Const]
        *  - extend type Name ImplementsInterfaces
+       *
+       * @internal
        */
       parseObjectTypeExtension() {
         const start = this._lexer.token;
@@ -2663,6 +3186,8 @@ var require_parser = __commonJS({
        *  - extend interface Name ImplementsInterfaces? Directives[Const]? FieldsDefinition
        *  - extend interface Name ImplementsInterfaces? Directives[Const]
        *  - extend interface Name ImplementsInterfaces
+       *
+       * @internal
        */
       parseInterfaceTypeExtension() {
         const start = this._lexer.token;
@@ -2687,6 +3212,8 @@ var require_parser = __commonJS({
        * UnionTypeExtension :
        *   - extend union Name Directives[Const]? UnionMemberTypes
        *   - extend union Name Directives[Const]
+       *
+       * @internal
        */
       parseUnionTypeExtension() {
         const start = this._lexer.token;
@@ -2709,6 +3236,8 @@ var require_parser = __commonJS({
        * EnumTypeExtension :
        *   - extend enum Name Directives[Const]? EnumValuesDefinition
        *   - extend enum Name Directives[Const]
+       *
+       * @internal
        */
       parseEnumTypeExtension() {
         const start = this._lexer.token;
@@ -2731,6 +3260,8 @@ var require_parser = __commonJS({
        * InputObjectTypeExtension :
        *   - extend input Name Directives[Const]? InputFieldsDefinition
        *   - extend input Name Directives[Const]
+       *
+       * @internal
        */
       parseInputObjectTypeExtension() {
         const start = this._lexer.token;
@@ -2749,11 +3280,29 @@ var require_parser = __commonJS({
           fields
         });
       }
+      parseDirectiveDefinitionExtension() {
+        const start = this._lexer.token;
+        this.expectKeyword("extend");
+        this.expectKeyword("directive");
+        this.expectToken(_tokenKind.TokenKind.AT);
+        const name = this.parseName();
+        const directives = this.parseConstDirectives();
+        if (directives.length === 0) {
+          throw this.unexpected();
+        }
+        return this.node(start, {
+          kind: _kinds.Kind.DIRECTIVE_EXTENSION,
+          name,
+          directives
+        });
+      }
       /**
        * ```
        * DirectiveDefinition :
        *   - Description? directive @ Name ArgumentsDefinition? `repeatable`? on DirectiveLocations
        * ```
+       *
+       * @internal
        */
       parseDirectiveDefinition() {
         const start = this._lexer.token;
@@ -2762,6 +3311,7 @@ var require_parser = __commonJS({
         this.expectToken(_tokenKind.TokenKind.AT);
         const name = this.parseName();
         const args = this.parseArgumentDefs();
+        const directives = this._options.experimentalDirectivesOnDirectiveDefinitions ? this.parseConstDirectives() : [];
         const repeatable = this.expectOptionalKeyword("repeatable");
         this.expectKeyword("on");
         const locations = this.parseDirectiveLocations();
@@ -2770,6 +3320,7 @@ var require_parser = __commonJS({
           description,
           name,
           arguments: args,
+          directives,
           repeatable,
           locations
         });
@@ -2778,6 +3329,8 @@ var require_parser = __commonJS({
        * DirectiveLocations :
        *   - `|`? DirectiveLocation
        *   - DirectiveLocations | DirectiveLocation
+       *
+       * @internal
        */
       parseDirectiveLocations() {
         return this.delimitedMany(
@@ -2811,6 +3364,7 @@ var require_parser = __commonJS({
        *   `ENUM_VALUE`
        *   `INPUT_OBJECT`
        *   `INPUT_FIELD_DEFINITION`
+       *   `DIRECTIVE_DEFINITION`
        */
       parseDirectiveLocation() {
         const start = this._lexer.token;
@@ -2823,11 +3377,81 @@ var require_parser = __commonJS({
         }
         throw this.unexpected(start);
       }
+      // Schema Coordinates
+      /**
+       * SchemaCoordinate :
+       *   - Name
+       *   - Name . Name
+       *   - Name . Name ( Name : )
+       *   - \@ Name
+       *   - \@ Name ( Name : )
+       * @returns Parsed schema coordinate AST.
+       * @example
+       * ```ts
+       * import { Parser, Source } from 'graphql/language';
+       *
+       * const typeCoordinate = new Parser(new Source('User.name')).parseSchemaCoordinate();
+       * const directiveCoordinate = new Parser(new Source('@include(if:)')).parseSchemaCoordinate();
+       *
+       * typeCoordinate.name.value; // => 'User'
+       * typeCoordinate.memberName?.value; // => 'name'
+       * directiveCoordinate.name.value; // => 'deprecated'
+       * directiveCoordinate.argumentName?.value; // => 'reason'
+       * ```
+       */
+      parseSchemaCoordinate() {
+        const start = this._lexer.token;
+        const ofDirective = this.expectOptionalToken(_tokenKind.TokenKind.AT);
+        const name = this.parseName();
+        let memberName;
+        if (!ofDirective && this.expectOptionalToken(_tokenKind.TokenKind.DOT)) {
+          memberName = this.parseName();
+        }
+        let argumentName;
+        if ((ofDirective || memberName) && this.expectOptionalToken(_tokenKind.TokenKind.PAREN_L)) {
+          argumentName = this.parseName();
+          this.expectToken(_tokenKind.TokenKind.COLON);
+          this.expectToken(_tokenKind.TokenKind.PAREN_R);
+        }
+        if (ofDirective) {
+          if (argumentName) {
+            return this.node(start, {
+              kind: _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE,
+              name,
+              argumentName
+            });
+          }
+          return this.node(start, {
+            kind: _kinds.Kind.DIRECTIVE_COORDINATE,
+            name
+          });
+        } else if (memberName) {
+          if (argumentName) {
+            return this.node(start, {
+              kind: _kinds.Kind.ARGUMENT_COORDINATE,
+              name,
+              fieldName: memberName,
+              argumentName
+            });
+          }
+          return this.node(start, {
+            kind: _kinds.Kind.MEMBER_COORDINATE,
+            name,
+            memberName
+          });
+        }
+        return this.node(start, {
+          kind: _kinds.Kind.TYPE_COORDINATE,
+          name
+        });
+      }
       // Core parsing utility functions
       /**
        * Returns a node that, if configured to do so, sets a "loc" field as a
        * location object, used to identify the place in the source that created a
        * given parsed object.
+       *
+       * @internal
        */
       node(startToken, node) {
         if (this._options.noLocation !== true) {
@@ -2841,6 +3465,8 @@ var require_parser = __commonJS({
       }
       /**
        * Determines if the next token is of a given kind
+       *
+       * @internal
        */
       peek(kind) {
         return this._lexer.token.kind === kind;
@@ -2848,6 +3474,8 @@ var require_parser = __commonJS({
       /**
        * If the next token is of the given kind, return that token after advancing the lexer.
        * Otherwise, do not change the parser state and throw an error.
+       *
+       * @internal
        */
       expectToken(kind) {
         const token = this._lexer.token;
@@ -2864,6 +3492,8 @@ var require_parser = __commonJS({
       /**
        * If the next token is of the given kind, return "true" after advancing the lexer.
        * Otherwise, do not change the parser state and return "false".
+       *
+       * @internal
        */
       expectOptionalToken(kind) {
         const token = this._lexer.token;
@@ -2876,6 +3506,8 @@ var require_parser = __commonJS({
       /**
        * If the next token is a given keyword, advance the lexer.
        * Otherwise, do not change the parser state and throw an error.
+       *
+       * @internal
        */
       expectKeyword(value) {
         const token = this._lexer.token;
@@ -2892,6 +3524,8 @@ var require_parser = __commonJS({
       /**
        * If the next token is a given keyword, return "true" after advancing the lexer.
        * Otherwise, do not change the parser state and return "false".
+       *
+       * @internal
        */
       expectOptionalKeyword(value) {
         const token = this._lexer.token;
@@ -2903,6 +3537,8 @@ var require_parser = __commonJS({
       }
       /**
        * Helper function for creating an error when an unexpected lexed token is encountered.
+       *
+       * @internal
        */
       unexpected(atToken) {
         const token = atToken !== null && atToken !== void 0 ? atToken : this._lexer.token;
@@ -2916,6 +3552,8 @@ var require_parser = __commonJS({
        * Returns a possibly empty list of parse nodes, determined by the parseFn.
        * This list begins with a lex token of openKind and ends with a lex token of closeKind.
        * Advances the parser to the next lex token after the closing token.
+       *
+       * @internal
        */
       any(openKind, parseFn, closeKind) {
         this.expectToken(openKind);
@@ -2930,6 +3568,8 @@ var require_parser = __commonJS({
        * It can be empty only if open token is missing otherwise it will always return non-empty list
        * that begins with a lex token of openKind and ends with a lex token of closeKind.
        * Advances the parser to the next lex token after the closing token.
+       *
+       * @internal
        */
       optionalMany(openKind, parseFn, closeKind) {
         if (this.expectOptionalToken(openKind)) {
@@ -2945,6 +3585,8 @@ var require_parser = __commonJS({
        * Returns a non-empty list of parse nodes, determined by the parseFn.
        * This list begins with a lex token of openKind and ends with a lex token of closeKind.
        * Advances the parser to the next lex token after the closing token.
+       *
+       * @internal
        */
       many(openKind, parseFn, closeKind) {
         this.expectToken(openKind);
@@ -2958,6 +3600,8 @@ var require_parser = __commonJS({
        * Returns a non-empty list of parse nodes, determined by the parseFn.
        * This list may begin with a lex token of delimiterKind followed by items separated by lex tokens of tokenKind.
        * Advances the parser to the next lex token after last item in the list.
+       *
+       * @internal
        */
       delimitedMany(delimiterKind, parseFn) {
         this.expectOptionalToken(delimiterKind);
@@ -2993,9 +3637,9 @@ var require_parser = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/didYouMean.js
+// node_modules/graphql/jsutils/didYouMean.js
 var require_didYouMean = __commonJS({
-  "../../node_modules/graphql/jsutils/didYouMean.js"(exports) {
+  "node_modules/graphql/jsutils/didYouMean.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3024,9 +3668,9 @@ var require_didYouMean = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/identityFunc.js
+// node_modules/graphql/jsutils/identityFunc.js
 var require_identityFunc = __commonJS({
-  "../../node_modules/graphql/jsutils/identityFunc.js"(exports) {
+  "node_modules/graphql/jsutils/identityFunc.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3038,9 +3682,9 @@ var require_identityFunc = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/keyMap.js
+// node_modules/graphql/jsutils/keyMap.js
 var require_keyMap = __commonJS({
-  "../../node_modules/graphql/jsutils/keyMap.js"(exports) {
+  "node_modules/graphql/jsutils/keyMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3056,9 +3700,9 @@ var require_keyMap = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/keyValMap.js
+// node_modules/graphql/jsutils/keyValMap.js
 var require_keyValMap = __commonJS({
-  "../../node_modules/graphql/jsutils/keyValMap.js"(exports) {
+  "node_modules/graphql/jsutils/keyValMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3074,9 +3718,9 @@ var require_keyValMap = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/mapValue.js
+// node_modules/graphql/jsutils/mapValue.js
 var require_mapValue = __commonJS({
-  "../../node_modules/graphql/jsutils/mapValue.js"(exports) {
+  "node_modules/graphql/jsutils/mapValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3092,9 +3736,9 @@ var require_mapValue = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/naturalCompare.js
+// node_modules/graphql/jsutils/naturalCompare.js
 var require_naturalCompare = __commonJS({
-  "../../node_modules/graphql/jsutils/naturalCompare.js"(exports) {
+  "node_modules/graphql/jsutils/naturalCompare.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3146,9 +3790,9 @@ var require_naturalCompare = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/suggestionList.js
+// node_modules/graphql/jsutils/suggestionList.js
 var require_suggestionList = __commonJS({
-  "../../node_modules/graphql/jsutils/suggestionList.js"(exports) {
+  "node_modules/graphql/jsutils/suggestionList.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3247,9 +3891,9 @@ var require_suggestionList = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/toObjMap.js
+// node_modules/graphql/jsutils/toObjMap.js
 var require_toObjMap = __commonJS({
-  "../../node_modules/graphql/jsutils/toObjMap.js"(exports) {
+  "node_modules/graphql/jsutils/toObjMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3271,9 +3915,9 @@ var require_toObjMap = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/printString.js
+// node_modules/graphql/language/printString.js
 var require_printString = __commonJS({
-  "../../node_modules/graphql/language/printString.js"(exports) {
+  "node_modules/graphql/language/printString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3456,9 +4100,9 @@ var require_printString = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/visitor.js
+// node_modules/graphql/language/visitor.js
 var require_visitor = __commonJS({
-  "../../node_modules/graphql/language/visitor.js"(exports) {
+  "node_modules/graphql/language/visitor.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3511,10 +4155,7 @@ var require_visitor = __commonJS({
                 }
               }
             } else {
-              node = Object.defineProperties(
-                {},
-                Object.getOwnPropertyDescriptors(node)
-              );
+              node = { ...node };
               for (const [editKey, editValue] of edits) {
                 node[editKey] = editValue;
               }
@@ -3667,9 +4308,9 @@ var require_visitor = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/printer.js
+// node_modules/graphql/language/printer.js
 var require_printer = __commonJS({
-  "../../node_modules/graphql/language/printer.js"(exports) {
+  "node_modules/graphql/language/printer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3695,8 +4336,8 @@ var require_printer = __commonJS({
       },
       OperationDefinition: {
         leave(node) {
-          const varDefs = wrap("(", join(node.variableDefinitions, ", "), ")");
-          const prefix = join(
+          const varDefs = hasMultilineItems(node.variableDefinitions) ? wrap("(\n", join(node.variableDefinitions, "\n"), "\n)") : wrap("(", join(node.variableDefinitions, ", "), ")");
+          const prefix = wrap("", node.description, "\n") + join(
             [
               node.operation,
               join([node.name, varDefs]),
@@ -3708,7 +4349,7 @@ var require_printer = __commonJS({
         }
       },
       VariableDefinition: {
-        leave: ({ variable, type, defaultValue, directives }) => variable + ": " + type + wrap(" = ", defaultValue) + wrap(" ", join(directives, " "))
+        leave: ({ variable, type, defaultValue, directives, description }) => wrap("", description, "\n") + variable + ": " + type + wrap(" = ", defaultValue) + wrap(" ", join(directives, " "))
       },
       SelectionSet: {
         leave: ({ selections }) => block(selections)
@@ -3742,10 +4383,16 @@ var require_printer = __commonJS({
         )
       },
       FragmentDefinition: {
-        leave: ({ name, typeCondition, variableDefinitions, directives, selectionSet }) => (
-          // or removed in the future.
-          `fragment ${name}${wrap("(", join(variableDefinitions, ", "), ")")} on ${typeCondition} ${wrap("", join(directives, " "), " ")}` + selectionSet
-        )
+        leave: ({
+          name,
+          typeCondition,
+          variableDefinitions,
+          directives,
+          selectionSet,
+          description
+        }) => wrap("", description, "\n") + // Note: fragment variable definitions are experimental and may be changed
+        // or removed in the future.
+        `fragment ${name}${wrap("(", join(variableDefinitions, ", "), ")")} on ${typeCondition} ${wrap("", join(directives, " "), " ")}` + selectionSet
       },
       // Value
       IntValue: {
@@ -3848,7 +4495,14 @@ var require_printer = __commonJS({
         leave: ({ description, name, directives, fields }) => wrap("", description, "\n") + join(["input", name, join(directives, " "), block(fields)], " ")
       },
       DirectiveDefinition: {
-        leave: ({ description, name, arguments: args, repeatable, locations }) => wrap("", description, "\n") + "directive @" + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + (repeatable ? " repeatable" : "") + " on " + join(locations, " | ")
+        leave: ({
+          description,
+          name,
+          arguments: args,
+          directives,
+          repeatable,
+          locations
+        }) => wrap("", description, "\n") + "directive @" + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + wrap(" ", join(directives, " ")) + (repeatable ? " repeatable" : "") + " on " + join(locations, " | ")
       },
       SchemaExtension: {
         leave: ({ directives, operationTypes }) => join(
@@ -3899,6 +4553,25 @@ var require_printer = __commonJS({
       },
       InputObjectTypeExtension: {
         leave: ({ name, directives, fields }) => join(["extend input", name, join(directives, " "), block(fields)], " ")
+      },
+      DirectiveExtension: {
+        leave: ({ name, directives }) => join(["extend directive @" + name, join(directives, " ")], " ")
+      },
+      // Schema Coordinates
+      TypeCoordinate: {
+        leave: ({ name }) => name
+      },
+      MemberCoordinate: {
+        leave: ({ name, memberName }) => join([name, wrap(".", memberName)])
+      },
+      ArgumentCoordinate: {
+        leave: ({ name, fieldName, argumentName }) => join([name, wrap(".", fieldName), wrap("(", argumentName, ":)")])
+      },
+      DirectiveCoordinate: {
+        leave: ({ name }) => join(["@", name])
+      },
+      DirectiveArgumentCoordinate: {
+        leave: ({ name, argumentName }) => join(["@", name, wrap("(", argumentName, ":)")])
       }
     };
     function join(maybeArray, separator = "") {
@@ -3921,9 +4594,9 @@ var require_printer = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/valueFromASTUntyped.js
+// node_modules/graphql/utilities/valueFromASTUntyped.js
 var require_valueFromASTUntyped = __commonJS({
-  "../../node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
+  "node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3960,9 +4633,9 @@ var require_valueFromASTUntyped = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/assertName.js
+// node_modules/graphql/type/assertName.js
 var require_assertName = __commonJS({
-  "../../node_modules/graphql/type/assertName.js"(exports) {
+  "node_modules/graphql/type/assertName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4005,9 +4678,9 @@ var require_assertName = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/definition.js
+// node_modules/graphql/type/definition.js
 var require_definition = __commonJS({
-  "../../node_modules/graphql/type/definition.js"(exports) {
+  "node_modules/graphql/type/definition.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4228,6 +4901,20 @@ var require_definition = __commonJS({
       return type;
     }
     var GraphQLList = class {
+      /** The type wrapped by this list or non-null type. */
+      /**
+       * Creates a GraphQLList instance.
+       * @param ofType - The type to wrap.
+       * @example
+       * ```ts
+       * import { GraphQLList, GraphQLString } from 'graphql/type';
+       *
+       * const stringList = new GraphQLList(GraphQLString);
+       *
+       * stringList.ofType; // => GraphQLString
+       * String(stringList); // => '[String]'
+       * ```
+       */
       constructor(ofType) {
         isType(ofType) || (0, _devAssert.devAssert)(
           false,
@@ -4235,18 +4922,63 @@ var require_definition = __commonJS({
         );
         this.ofType = ofType;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLList";
       }
+      /**
+       * Returns this wrapping type as a GraphQL type-reference string.
+       * @returns The GraphQL type-reference string.
+       * @example
+       * ```ts
+       * import { GraphQLList, GraphQLNonNull, GraphQLString } from 'graphql/type';
+       *
+       * const stringList = new GraphQLList(GraphQLString);
+       * const requiredStringList = new GraphQLList(new GraphQLNonNull(GraphQLString));
+       *
+       * stringList.toString(); // => '[String]'
+       * requiredStringList.toString(); // => '[String!]'
+       * ```
+       */
       toString() {
         return "[" + String(this.ofType) + "]";
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLList, GraphQLString } from 'graphql/type';
+       *
+       * const stringList = new GraphQLList(GraphQLString);
+       *
+       * stringList.toJSON(); // => '[String]'
+       * JSON.stringify({ type: stringList }); // => '{"type":"[String]"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
     };
     exports.GraphQLList = GraphQLList;
     var GraphQLNonNull = class {
+      /** The type wrapped by this list or non-null type. */
+      /**
+       * Creates a GraphQLNonNull instance.
+       * @param ofType - The type to wrap.
+       * @example
+       * ```ts
+       * import { GraphQLNonNull, GraphQLString } from 'graphql/type';
+       *
+       * const requiredString = new GraphQLNonNull(GraphQLString);
+       *
+       * requiredString.ofType; // => GraphQLString
+       * String(requiredString); // => 'String!'
+       * ```
+       */
       constructor(ofType) {
         isNullableType(ofType) || (0, _devAssert.devAssert)(
           false,
@@ -4256,12 +4988,45 @@ var require_definition = __commonJS({
         );
         this.ofType = ofType;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLNonNull";
       }
+      /**
+       * Returns this wrapping type as a GraphQL type-reference string.
+       * @returns The GraphQL type-reference string.
+       * @example
+       * ```ts
+       * import { GraphQLList, GraphQLNonNull, GraphQLString } from 'graphql/type';
+       *
+       * const requiredString = new GraphQLNonNull(GraphQLString);
+       * const requiredStringList = new GraphQLNonNull(
+       *   new GraphQLList(GraphQLString),
+       * );
+       *
+       * requiredString.toString(); // => 'String!'
+       * requiredStringList.toString(); // => '[String]!'
+       * ```
+       */
       toString() {
         return String(this.ofType) + "!";
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLNonNull, GraphQLString } from 'graphql/type';
+       *
+       * const requiredString = new GraphQLNonNull(GraphQLString);
+       *
+       * requiredString.toJSON(); // => 'String!'
+       * JSON.stringify({ type: requiredString }); // => '{"type":"String!"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -4321,6 +5086,68 @@ var require_definition = __commonJS({
       return typeof thunk === "function" ? thunk() : thunk;
     }
     var GraphQLScalarType = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** URL identifying the behavior specified for this custom scalar. */
+      /** Function that converts internal values to externally visible scalar values. */
+      /** Function that converts variable input into this scalar's internal value. */
+      /** Function that converts AST input literals into this scalar's internal value. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLScalarType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { Kind, parse } from 'graphql/language';
+       * import { GraphQLScalarType } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   "Odd integer values."
+       *   scalar Odd @specifiedBy(url: "https://example.com/odd")
+       *
+       *   extend scalar Odd @specifiedBy(url: "https://example.com/odd-v2")
+       * `);
+       *
+       * const Odd = new GraphQLScalarType({
+       *   name: 'Odd',
+       *   description: 'Odd integer values.',
+       *   specifiedByURL: 'https://example.com/odd',
+       *   serialize: (value) => {
+       *     if (typeof value !== 'number' || value % 2 === 0) {
+       *       throw new TypeError('Odd can only serialize odd numbers.');
+       *     }
+       *     return value;
+       *   },
+       *   parseValue: (value) => {
+       *     if (typeof value !== 'number' || value % 2 === 0) {
+       *       throw new TypeError('Odd can only parse odd numbers.');
+       *     }
+       *     return value;
+       *   },
+       *   parseLiteral: (ast) => {
+       *     if (ast.kind !== Kind.INT) {
+       *       throw new TypeError('Odd can only parse integer literals.');
+       *     }
+       *     const value = Number(ast.value);
+       *     if (value % 2 === 0) {
+       *       throw new TypeError('Odd can only parse odd integer literals.');
+       *     }
+       *     return value;
+       *   },
+       *   extensions: { numeric: true },
+       *   astNode: document.definitions[0],
+       *   extensionASTNodes: [ document.definitions[1] ],
+       * });
+       *
+       * Odd.description; // => 'Odd integer values.'
+       * Odd.specifiedByURL; // => 'https://example.com/odd'
+       * Odd.serialize(3); // => 3
+       * Odd.parseValue(5); // => 5
+       * Odd.extensions; // => { numeric: true }
+       * ```
+       */
       constructor(config) {
         var _config$parseValue, _config$serialize, _config$parseLiteral, _config$extensionASTN;
         const parseValue = (_config$parseValue = config.parseValue) !== null && _config$parseValue !== void 0 ? _config$parseValue : _identityFunc.identityFunc;
@@ -4350,9 +5177,34 @@ var require_definition = __commonJS({
           );
         }
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLScalarType";
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { GraphQLScalarType } from 'graphql/type';
+       *
+       * const Url = new GraphQLScalarType({
+       *   name: 'Url',
+       *   description: 'An absolute URL string.',
+       *   specifiedByURL: 'https://url.spec.whatwg.org/',
+       * });
+       *
+       * const config = Url.toConfig();
+       * const UrlCopy = new GraphQLScalarType(config);
+       *
+       * config.name; // => 'Url'
+       * config.specifiedByURL; // => 'https://url.spec.whatwg.org/'
+       * UrlCopy.name; // => Url.name
+       * ```
+       */
       toConfig() {
         return {
           name: this.name,
@@ -4366,15 +5218,147 @@ var require_definition = __commonJS({
           extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this scalar type.
+       * @returns The schema coordinate for this scalar type.
+       * @example
+       * ```ts
+       * import { GraphQLScalarType } from 'graphql/type';
+       *
+       * const DateTime = new GraphQLScalarType({ name: 'DateTime' });
+       *
+       * DateTime.toString(); // => 'DateTime'
+       * String(DateTime); // => 'DateTime'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLScalarType } from 'graphql/type';
+       *
+       * const DateTime = new GraphQLScalarType({ name: 'DateTime' });
+       *
+       * DateTime.toJSON(); // => 'DateTime'
+       * JSON.stringify({ type: DateTime }); // => '{"type":"DateTime"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
     };
     exports.GraphQLScalarType = GraphQLScalarType;
     var GraphQLObjectType = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Predicate used to determine whether a runtime value belongs to this object type. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLObjectType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * // Configure an object type with interfaces, fields, arguments, and metadata.
+       * import { parse } from 'graphql/language';
+       * import {
+       *   GraphQLID,
+       *   GraphQLInterfaceType,
+       *   GraphQLNonNull,
+       *   GraphQLObjectType,
+       *   GraphQLString,
+       * } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   type User implements Node {
+       *     id: ID!
+       *     name(format: String = "short"): String
+       *   }
+       *
+       *   extend type User {
+       *     displayName: String
+       *   }
+       * `);
+       * const definition = document.definitions[0];
+       * const nameField = definition.fields[1];
+       * const formatArg = nameField.arguments[0];
+       *
+       * const Node = new GraphQLInterfaceType({
+       *   name: 'Node',
+       *   fields: {
+       *     id: { type: new GraphQLNonNull(GraphQLID) },
+       *   },
+       * });
+       *
+       * const User = new GraphQLObjectType({
+       *   name: 'User',
+       *   description: 'A registered user.',
+       *   interfaces: [Node],
+       *   fields: {
+       *     id: { type: new GraphQLNonNull(GraphQLID) },
+       *     name: {
+       *       description: 'The formatted user name.',
+       *       type: GraphQLString,
+       *       args: {
+       *         format: {
+       *           description: 'Controls the name format.',
+       *           type: GraphQLString,
+       *           defaultValue: 'short',
+       *           deprecationReason: 'Use locale instead.',
+       *           extensions: { public: true },
+       *           astNode: formatArg,
+       *         },
+       *       },
+       *       resolve: (user, { format }) => {
+       *         return format === 'long' ? user.fullName : user.name;
+       *       },
+       *       deprecationReason: 'Use displayName.',
+       *       extensions: { cacheSeconds: 60 },
+       *       astNode: nameField,
+       *     },
+       *   },
+       *   isTypeOf: (value) => {
+       *     return typeof value === 'object' && value != null && 'id' in value;
+       *   },
+       *   extensions: { entity: 'User' },
+       *   astNode: definition,
+       *   extensionASTNodes: [ document.definitions[1] ],
+       * });
+       *
+       * User.name; // => 'User'
+       * User.getInterfaces(); // => [Node]
+       * Object.keys(User.getFields()); // => ['id', 'name']
+       * User.getFields().name.args[0].defaultValue; // => 'short'
+       * User.extensions; // => { entity: 'User' }
+       * ```
+       * @example
+       * ```ts
+       * // This variant configures a subscription field with subscribe and resolve functions.
+       * import { GraphQLObjectType, GraphQLString } from 'graphql/type';
+       *
+       * const Subscription = new GraphQLObjectType({
+       *   name: 'Subscription',
+       *   fields: {
+       *     greeting: {
+       *       type: GraphQLString,
+       *       subscribe: async function* () {
+       *         yield { greeting: 'Hello!' };
+       *       },
+       *       resolve: (event) => {
+       *         return event.greeting;
+       *       },
+       *     },
+       *   },
+       * });
+       *
+       * typeof Subscription.getFields().greeting.subscribe; // => 'function'
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN2;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4390,21 +5374,99 @@ var require_definition = __commonJS({
           `${this.name} must provide "isTypeOf" as a function, but got: ${(0, _inspect.inspect)(config.isTypeOf)}.`
         );
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLObjectType";
       }
+      /**
+       * Returns the fields defined by this type.
+       * @returns The fields keyed by field name.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   type User {
+       *     id: ID!
+       *     name: String
+       *   }
+       *
+       *   type Query {
+       *     viewer: User
+       *   }
+       * `);
+       *
+       * const User = assertObjectType(schema.getType('User'));
+       * const fields = User.getFields();
+       *
+       * Object.keys(fields); // => ['id', 'name']
+       * String(fields.id.type); // => 'ID!'
+       * ```
+       */
       getFields() {
         if (typeof this._fields === "function") {
           this._fields = this._fields();
         }
         return this._fields;
       }
+      /**
+       * Returns the interfaces implemented by this type.
+       * @returns The implemented interfaces.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   type User implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   type Query {
+       *     viewer: User
+       *   }
+       * `);
+       *
+       * const User = assertObjectType(schema.getType('User'));
+       *
+       * User.getInterfaces().map((type) => type.name); // => ['Node']
+       * ```
+       */
       getInterfaces() {
         if (typeof this._interfaces === "function") {
           this._interfaces = this._interfaces();
         }
         return this._interfaces;
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { GraphQLObjectType, GraphQLString } from 'graphql/type';
+       *
+       * const User = new GraphQLObjectType({
+       *   name: 'User',
+       *   fields: {
+       *     name: { type: GraphQLString },
+       *   },
+       * });
+       *
+       * const config = User.toConfig();
+       * const UserCopy = new GraphQLObjectType(config);
+       *
+       * config.fields.name.type; // => GraphQLString
+       * UserCopy.getFields().name.type; // => GraphQLString
+       * ```
+       */
       toConfig() {
         return {
           name: this.name,
@@ -4417,9 +5479,48 @@ var require_definition = __commonJS({
           extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this object type.
+       * @returns The schema coordinate for this object type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   type User {
+       *     name: String
+       *   }
+       *
+       *   type Query {
+       *     viewer: User
+       *   }
+       * `);
+       *
+       * const User = assertObjectType(schema.getType('User'));
+       *
+       * User.toString(); // => 'User'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLObjectType, GraphQLString } from 'graphql/type';
+       *
+       * const User = new GraphQLObjectType({
+       *   name: 'User',
+       *   fields: { name: { type: GraphQLString } },
+       * });
+       *
+       * User.toJSON(); // => 'User'
+       * JSON.stringify({ type: User }); // => '{"type":"User"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -4514,6 +5615,64 @@ var require_definition = __commonJS({
       return isNonNullType(arg.type) && arg.defaultValue === void 0;
     }
     var GraphQLInterfaceType = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Function that resolves the concrete object type for this abstract type. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLInterfaceType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { GraphQLID, GraphQLInterfaceType, GraphQLNonNull } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   interface Resource implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   extend interface Resource {
+       *     url: String
+       *   }
+       * `);
+       *
+       * const Node = new GraphQLInterfaceType({
+       *   name: 'Node',
+       *   fields: {
+       *     id: { type: new GraphQLNonNull(GraphQLID) },
+       *   },
+       * });
+       *
+       * const Resource = new GraphQLInterfaceType({
+       *   name: 'Resource',
+       *   description: 'An addressable resource.',
+       *   interfaces: [Node],
+       *   fields: {
+       *     id: { type: new GraphQLNonNull(GraphQLID) },
+       *   },
+       *   resolveType: (value) => {
+       *     return typeof value === 'object' && value != null && 'url' in value
+       *       ? 'WebPage'
+       *       : null;
+       *   },
+       *   extensions: { abstract: true },
+       *   astNode: document.definitions[1],
+       *   extensionASTNodes: [ document.definitions[2] ],
+       * });
+       *
+       * Resource.name; // => 'Resource'
+       * Resource.getInterfaces(); // => [Node]
+       * Object.keys(Resource.getFields()); // => ['id']
+       * Resource.extensions; // => { abstract: true }
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN3;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4529,21 +5688,108 @@ var require_definition = __commonJS({
           `${this.name} must provide "resolveType" as a function, but got: ${(0, _inspect.inspect)(config.resolveType)}.`
         );
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLInterfaceType";
       }
+      /**
+       * Returns the fields defined by this type.
+       * @returns The fields keyed by field name.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   type User implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   type Query {
+       *     node: Node
+       *   }
+       * `);
+       *
+       * const Node = assertInterfaceType(schema.getType('Node'));
+       * const fields = Node.getFields();
+       *
+       * Object.keys(fields); // => ['id']
+       * String(fields.id.type); // => 'ID!'
+       * ```
+       */
       getFields() {
         if (typeof this._fields === "function") {
           this._fields = this._fields();
         }
         return this._fields;
       }
+      /**
+       * Returns the interfaces implemented by this type.
+       * @returns The implemented interfaces.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Resource {
+       *     url: String!
+       *   }
+       *
+       *   interface Image implements Resource {
+       *     url: String!
+       *     width: Int
+       *   }
+       *
+       *   type Photo implements Resource & Image {
+       *     url: String!
+       *     width: Int
+       *   }
+       *
+       *   type Query {
+       *     image: Image
+       *   }
+       * `);
+       *
+       * const Image = assertInterfaceType(schema.getType('Image'));
+       *
+       * Image.getInterfaces().map((type) => type.name); // => ['Resource']
+       * ```
+       */
       getInterfaces() {
         if (typeof this._interfaces === "function") {
           this._interfaces = this._interfaces();
         }
         return this._interfaces;
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { GraphQLID, GraphQLInterfaceType, GraphQLNonNull } from 'graphql/type';
+       *
+       * const Node = new GraphQLInterfaceType({
+       *   name: 'Node',
+       *   fields: {
+       *     id: { type: new GraphQLNonNull(GraphQLID) },
+       *   },
+       * });
+       *
+       * const config = Node.toConfig();
+       * const NodeCopy = new GraphQLInterfaceType(config);
+       *
+       * String(config.fields.id.type); // => 'ID!'
+       * String(NodeCopy.getFields().id.type); // => 'ID!'
+       * ```
+       */
       toConfig() {
         return {
           name: this.name,
@@ -4556,15 +5802,106 @@ var require_definition = __commonJS({
           extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this interface type.
+       * @returns The schema coordinate for this interface type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   type User implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   type Query {
+       *     node: Node
+       *   }
+       * `);
+       *
+       * const Node = assertInterfaceType(schema.getType('Node'));
+       *
+       * Node.toString(); // => 'Node'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLInterfaceType, GraphQLString } from 'graphql/type';
+       *
+       * const Named = new GraphQLInterfaceType({
+       *   name: 'Named',
+       *   fields: { name: { type: GraphQLString } },
+       * });
+       *
+       * Named.toJSON(); // => 'Named'
+       * JSON.stringify({ type: Named }); // => '{"type":"Named"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
     };
     exports.GraphQLInterfaceType = GraphQLInterfaceType;
     var GraphQLUnionType = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Function that resolves the concrete object type for this abstract type. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLUnionType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { GraphQLObjectType, GraphQLString, GraphQLUnionType } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   union Media = Photo | Video
+       *
+       *   extend union Media = Audio
+       * `);
+       *
+       * const Photo = new GraphQLObjectType({
+       *   name: 'Photo',
+       *   fields: { url: { type: GraphQLString } },
+       * });
+       * const Video = new GraphQLObjectType({
+       *   name: 'Video',
+       *   fields: { url: { type: GraphQLString } },
+       * });
+       *
+       * const Media = new GraphQLUnionType({
+       *   name: 'Media',
+       *   description: 'Media that can appear in a search result.',
+       *   types: [Photo, Video],
+       *   resolveType: (value) => {
+       *     return typeof value === 'object' && value != null && 'duration' in value
+       *       ? 'Video'
+       *       : 'Photo';
+       *   },
+       *   extensions: { searchable: true },
+       *   astNode: document.definitions[0],
+       *   extensionASTNodes: [ document.definitions[1] ],
+       * });
+       *
+       * Media.description; // => 'Media that can appear in a search result.'
+       * Media.getTypes().map((type) => type.name); // => ['Photo', 'Video']
+       * Media.extensions; // => { searchable: true }
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN4;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4579,15 +5916,74 @@ var require_definition = __commonJS({
           `${this.name} must provide "resolveType" as a function, but got: ${(0, _inspect.inspect)(config.resolveType)}.`
         );
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLUnionType";
       }
+      /**
+       * Returns the object types included in this union.
+       * @returns The union member object types.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertUnionType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   type Photo {
+       *     url: String!
+       *   }
+       *
+       *   type Video {
+       *     url: String!
+       *   }
+       *
+       *   union Media = Photo | Video
+       *
+       *   type Query {
+       *     media: [Media]
+       *   }
+       * `);
+       *
+       * const Media = assertUnionType(schema.getType('Media'));
+       *
+       * Media.getTypes().map((type) => type.name); // => ['Photo', 'Video']
+       * ```
+       */
       getTypes() {
         if (typeof this._types === "function") {
           this._types = this._types();
         }
         return this._types;
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { GraphQLObjectType, GraphQLString, GraphQLUnionType } from 'graphql/type';
+       *
+       * const Photo = new GraphQLObjectType({
+       *   name: 'Photo',
+       *   fields: { url: { type: GraphQLString } },
+       * });
+       * const Video = new GraphQLObjectType({
+       *   name: 'Video',
+       *   fields: { url: { type: GraphQLString } },
+       * });
+       * const Media = new GraphQLUnionType({
+       *   name: 'Media',
+       *   types: [Photo, Video],
+       * });
+       *
+       * const config = Media.toConfig();
+       * const MediaCopy = new GraphQLUnionType(config);
+       *
+       * MediaCopy.getTypes().map((type) => type.name); // => ['Photo', 'Video']
+       * ```
+       */
       toConfig() {
         return {
           name: this.name,
@@ -4599,9 +5995,54 @@ var require_definition = __commonJS({
           extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this union type.
+       * @returns The schema coordinate for this union type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertUnionType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   type Photo {
+       *     url: String!
+       *   }
+       *
+       *   union SearchResult = Photo
+       *
+       *   type Query {
+       *     search: [SearchResult]
+       *   }
+       * `);
+       *
+       * const SearchResult = assertUnionType(schema.getType('SearchResult'));
+       *
+       * SearchResult.toString(); // => 'SearchResult'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLObjectType, GraphQLString, GraphQLUnionType } from 'graphql/type';
+       *
+       * const Photo = new GraphQLObjectType({
+       *   name: 'Photo',
+       *   fields: { url: { type: GraphQLString } },
+       * });
+       * const SearchResult = new GraphQLUnionType({
+       *   name: 'SearchResult',
+       *   types: [Photo],
+       * });
+       *
+       * SearchResult.toJSON(); // => 'SearchResult'
+       * JSON.stringify({ type: SearchResult }); // => '{"type":"SearchResult"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -4617,6 +6058,61 @@ var require_definition = __commonJS({
     }
     var GraphQLEnumType = class {
       /* <T> */
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLEnumType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   enum Episode {
+       *     NEW_HOPE
+       *     EMPIRE
+       *     JEDI
+       *   }
+       *
+       *   extend enum Episode {
+       *     FORCE_AWAKENS
+       *   }
+       * `);
+       * const definition = document.definitions[0];
+       *
+       * const Episode = new GraphQLEnumType({
+       *   name: 'Episode',
+       *   description: 'A Star Wars film episode.',
+       *   values: {
+       *     NEW_HOPE: {
+       *       value: 4,
+       *       description: 'Released in 1977.',
+       *       extensions: { trilogy: 'original' },
+       *       astNode: definition.values[0],
+       *     },
+       *     EMPIRE: { value: 5, astNode: definition.values[1] },
+       *     JEDI: {
+       *       value: 6,
+       *       deprecationReason: 'Use RETURN_OF_THE_JEDI.',
+       *       astNode: definition.values[2],
+       *     },
+       *   },
+       *   extensions: { catalog: 'films' },
+       *   astNode: definition,
+       *   extensionASTNodes: [ document.definitions[1] ],
+       * });
+       *
+       * Episode.description; // => 'A Star Wars film episode.'
+       * Episode.serialize(5); // => 'EMPIRE'
+       * Episode.parseValue('JEDI'); // => 6
+       * Episode.getValue('JEDI').deprecationReason; // => 'Use RETURN_OF_THE_JEDI.'
+       * Episode.extensions; // => { catalog: 'films' }
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN5;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4628,15 +6124,70 @@ var require_definition = __commonJS({
         this._valueLookup = null;
         this._nameLookup = null;
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLEnumType";
       }
+      /**
+       * Returns the values defined by this enum type.
+       * @returns Enum value definitions in schema order.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertEnumType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   enum Episode {
+       *     NEW_HOPE
+       *     EMPIRE
+       *     JEDI
+       *   }
+       *
+       *   type Query {
+       *     episode: Episode
+       *   }
+       * `);
+       *
+       * const Episode = assertEnumType(schema.getType('Episode'));
+       *
+       * Episode.getValues().map((value) => value.name); // => ['NEW_HOPE', 'EMPIRE', 'JEDI']
+       * ```
+       */
       getValues() {
         if (typeof this._values === "function") {
           this._values = defineEnumValues(this.name, this._values());
         }
         return this._values;
       }
+      /**
+       * Returns the enum value definition for a value name.
+       * @param name - The GraphQL name to look up.
+       * @returns The matching enum value definition, if it exists.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertEnumType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   enum Episode {
+       *     NEW_HOPE
+       *     EMPIRE
+       *   }
+       *
+       *   type Query {
+       *     episode: Episode
+       *   }
+       * `);
+       *
+       * const Episode = assertEnumType(schema.getType('Episode'));
+       *
+       * Episode.getValue('EMPIRE')?.name; // => 'EMPIRE'
+       * Episode.getValue('JEDI'); // => undefined
+       * ```
+       */
       getValue(name) {
         if (this._nameLookup === null) {
           this._nameLookup = (0, _keyMap.keyMap)(
@@ -4646,6 +6197,27 @@ var require_definition = __commonJS({
         }
         return this._nameLookup[name];
       }
+      /**
+       * Serializes a runtime enum value as a GraphQL enum name.
+       * @param outputValue - Runtime enum value to serialize.
+       * @returns The GraphQL enum name for the runtime value.
+       * @example
+       * ```ts
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const RGB = new GraphQLEnumType({
+       *   name: 'RGB',
+       *   values: {
+       *     RED: { value: 0 },
+       *     GREEN: { value: 1 },
+       *     BLUE: { value: 2 },
+       *   },
+       * });
+       *
+       * RGB.serialize(1); // => 'GREEN'
+       * RGB.serialize(3); // throws an error
+       * ```
+       */
       serialize(outputValue) {
         if (this._valueLookup === null) {
           this._valueLookup = new Map(
@@ -4662,6 +6234,28 @@ var require_definition = __commonJS({
         }
         return enumValue.name;
       }
+      /**
+       * Parses a GraphQL enum name from variable input.
+       * @param inputValue - Runtime input value to parse.
+       * @returns The internal enum value represented by the input name.
+       * @example
+       * ```ts
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const RGB = new GraphQLEnumType({
+       *   name: 'RGB',
+       *   values: {
+       *     RED: { value: 0 },
+       *     GREEN: { value: 1 },
+       *     BLUE: { value: 2 },
+       *   },
+       * });
+       *
+       * RGB.parseValue('BLUE'); // => 2
+       * RGB.parseValue('PURPLE'); // throws an error
+       * RGB.parseValue(2); // throws an error
+       * ```
+       */
       parseValue(inputValue) {
         if (typeof inputValue !== "string") {
           const valueStr = (0, _inspect.inspect)(inputValue);
@@ -4677,6 +6271,29 @@ var require_definition = __commonJS({
         }
         return enumValue.value;
       }
+      /**
+       * Parses a GraphQL enum name from an AST value literal.
+       * @param valueNode - AST value literal to parse.
+       * @param _variables - Runtime variable values; ignored because enum literals cannot contain variables.
+       * @returns The internal enum value represented by the literal.
+       * @example
+       * ```ts
+       * import { parseValue } from 'graphql/language';
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const RGB = new GraphQLEnumType({
+       *   name: 'RGB',
+       *   values: {
+       *     RED: { value: 0 },
+       *     GREEN: { value: 1 },
+       *     BLUE: { value: 2 },
+       *   },
+       * });
+       *
+       * RGB.parseLiteral(parseValue('RED')); // => 0
+       * RGB.parseLiteral(parseValue('"RED"')); // throws an error
+       * ```
+       */
       parseLiteral(valueNode, _variables) {
         if (valueNode.kind !== _kinds.Kind.ENUM) {
           const valueStr = (0, _printer.print)(valueNode);
@@ -4699,6 +6316,29 @@ var require_definition = __commonJS({
         }
         return enumValue.value;
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const RGB = new GraphQLEnumType({
+       *   name: 'RGB',
+       *   values: {
+       *     RED: { value: 0 },
+       *     GREEN: { value: 1 },
+       *     BLUE: { value: 2 },
+       *   },
+       * });
+       *
+       * const config = RGB.toConfig();
+       * const RGBCopy = new GraphQLEnumType(config);
+       *
+       * config.values.GREEN.value; // => 1
+       * RGBCopy.serialize(2); // => 'BLUE'
+       * ```
+       */
       toConfig() {
         const values = (0, _keyValMap.keyValMap)(
           this.getValues(),
@@ -4720,9 +6360,50 @@ var require_definition = __commonJS({
           extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this enum type.
+       * @returns The schema coordinate for this enum type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertEnumType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   enum Episode {
+       *     NEW_HOPE
+       *   }
+       *
+       *   type Query {
+       *     episode: Episode
+       *   }
+       * `);
+       *
+       * const Episode = assertEnumType(schema.getType('Episode'));
+       *
+       * Episode.toString(); // => 'Episode'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLEnumType } from 'graphql/type';
+       *
+       * const Episode = new GraphQLEnumType({
+       *   name: 'Episode',
+       *   values: {
+       *     NEW_HOPE: {},
+       *   },
+       * });
+       *
+       * Episode.toJSON(); // => 'Episode'
+       * JSON.stringify({ type: Episode }); // => '{"type":"Episode"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -4759,6 +6440,80 @@ var require_definition = __commonJS({
       });
     }
     var GraphQLInputObjectType = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /** Whether this input object uses the experimental OneOf input object semantics. */
+      /**
+       * Creates a GraphQLInputObjectType instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import {
+       *   GraphQLID,
+       *   GraphQLInputObjectType,
+       *   GraphQLInt,
+       *   GraphQLNonNull,
+       *   GraphQLString,
+       * } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   input ReviewInput {
+       *     stars: Int!
+       *     commentary: String
+       *   }
+       *
+       *   extend input ReviewInput {
+       *     body: String
+       *   }
+       * `);
+       * const definition = document.definitions[0];
+       *
+       * const ReviewInput = new GraphQLInputObjectType({
+       *   name: 'ReviewInput',
+       *   description: 'Input collected when reviewing a product.',
+       *   fields: {
+       *     stars: {
+       *       description: 'Star rating from one to five.',
+       *       type: new GraphQLNonNull(GraphQLInt),
+       *       extensions: { min: 1, max: 5 },
+       *       astNode: definition.fields[0],
+       *     },
+       *     commentary: {
+       *       type: GraphQLString,
+       *       defaultValue: '',
+       *       deprecationReason: 'Use body.',
+       *       astNode: definition.fields[1],
+       *     },
+       *   },
+       *   extensions: { form: 'review' },
+       *   astNode: definition,
+       *   extensionASTNodes: [ document.definitions[1] ],
+       *   isOneOf: false,
+       * });
+       * const SearchBy = new GraphQLInputObjectType({
+       *   name: 'SearchBy',
+       *   fields: {
+       *     id: { type: GraphQLID },
+       *     slug: { type: GraphQLString },
+       *   },
+       *   isOneOf: true,
+       * });
+       *
+       * const fields = ReviewInput.getFields();
+       *
+       * ReviewInput.description; // => 'Input collected when reviewing a product.'
+       * String(fields.stars.type); // => 'Int!'
+       * fields.stars.extensions; // => { min: 1, max: 5 }
+       * fields.commentary.defaultValue; // => ''
+       * fields.commentary.deprecationReason; // => 'Use body.'
+       * ReviewInput.isOneOf; // => false
+       * SearchBy.isOneOf; // => true
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN6, _config$isOneOf;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4769,15 +6524,70 @@ var require_definition = __commonJS({
         this.isOneOf = (_config$isOneOf = config.isOneOf) !== null && _config$isOneOf !== void 0 ? _config$isOneOf : false;
         this._fields = defineInputFieldMap.bind(void 0, config);
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLInputObjectType";
       }
+      /**
+       * Returns the fields defined by this type.
+       * @returns The fields keyed by field name.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInputObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   input ReviewInput {
+       *     stars: Int!
+       *     commentary: String = ""
+       *   }
+       *
+       *   type Query {
+       *     reviews(filter: ReviewInput): [String]
+       *   }
+       * `);
+       *
+       * const ReviewInput = assertInputObjectType(schema.getType('ReviewInput'));
+       * const fields = ReviewInput.getFields();
+       *
+       * Object.keys(fields); // => ['stars', 'commentary']
+       * fields.commentary.defaultValue; // => ''
+       * ```
+       */
       getFields() {
         if (typeof this._fields === "function") {
           this._fields = this._fields();
         }
         return this._fields;
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import {
+       *   GraphQLInputObjectType,
+       *   GraphQLInt,
+       *   GraphQLNonNull,
+       * } from 'graphql/type';
+       *
+       * const ReviewInput = new GraphQLInputObjectType({
+       *   name: 'ReviewInput',
+       *   fields: {
+       *     stars: { type: new GraphQLNonNull(GraphQLInt) },
+       *   },
+       * });
+       *
+       * const config = ReviewInput.toConfig();
+       * const ReviewInputCopy = new GraphQLInputObjectType(config);
+       *
+       * String(config.fields.stars.type); // => 'Int!'
+       * String(ReviewInputCopy.getFields().stars.type); // => 'Int!'
+       * ```
+       */
       toConfig() {
         const fields = (0, _mapValue.mapValue)(this.getFields(), (field) => ({
           description: field.description,
@@ -4797,9 +6607,50 @@ var require_definition = __commonJS({
           isOneOf: this.isOneOf
         };
       }
+      /**
+       * Returns the schema coordinate identifying this input object type.
+       * @returns The schema coordinate for this input object type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInputObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   input ReviewInput {
+       *     stars: Int!
+       *   }
+       *
+       *   type Query {
+       *     reviews(filter: ReviewInput): [String]
+       *   }
+       * `);
+       *
+       * const ReviewInput = assertInputObjectType(schema.getType('ReviewInput'));
+       *
+       * ReviewInput.toString(); // => 'ReviewInput'
+       * ```
+       */
       toString() {
         return this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { GraphQLInputObjectType, GraphQLString } from 'graphql/type';
+       *
+       * const ReviewInput = new GraphQLInputObjectType({
+       *   name: 'ReviewInput',
+       *   fields: {
+       *     commentary: { type: GraphQLString },
+       *   },
+       * });
+       *
+       * ReviewInput.toJSON(); // => 'ReviewInput'
+       * JSON.stringify({ type: ReviewInput }); // => '{"type":"ReviewInput"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -4833,9 +6684,9 @@ var require_definition = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/typeComparators.js
+// node_modules/graphql/utilities/typeComparators.js
 var require_typeComparators = __commonJS({
-  "../../node_modules/graphql/utilities/typeComparators.js"(exports) {
+  "node_modules/graphql/utilities/typeComparators.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4898,9 +6749,9 @@ var require_typeComparators = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/scalars.js
+// node_modules/graphql/type/scalars.js
 var require_scalars = __commonJS({
-  "../../node_modules/graphql/type/scalars.js"(exports) {
+  "node_modules/graphql/type/scalars.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5179,9 +7030,9 @@ var require_scalars = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/directives.js
+// node_modules/graphql/type/directives.js
 var require_directives = __commonJS({
-  "../../node_modules/graphql/type/directives.js"(exports) {
+  "node_modules/graphql/type/directives.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5212,14 +7063,76 @@ var require_directives = __commonJS({
       return directive;
     }
     var GraphQLDirective = class {
+      /** The GraphQL name for this schema element. */
+      /** Human-readable description for this schema element, if provided. */
+      /** Locations where this directive may be applied. */
+      /** Arguments accepted by this field or directive. */
+      /** Whether this directive may appear more than once at the same location. */
+      /** Reason this element is deprecated, if one was provided. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Creates a GraphQLDirective instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * import { DirectiveLocation, parse } from 'graphql/language';
+       * import {
+       *   GraphQLBoolean,
+       *   GraphQLDirective,
+       *   GraphQLInt,
+       *   GraphQLNonNull,
+       * } from 'graphql/type';
+       *
+       * const document = parse(`
+       *   directive @cacheControl(maxAge: Int) repeatable on FIELD_DEFINITION
+       *   extend directive @cacheControl(maxAge: Int) on FIELD_DEFINITION
+       * `);
+       * const definition = document.definitions[0];
+       *
+       * const cacheControl = new GraphQLDirective({
+       *   name: 'cacheControl',
+       *   description: 'Controls HTTP cache hints for a field.',
+       *   locations: [DirectiveLocation.FIELD_DEFINITION],
+       *   args: {
+       *     inheritMaxAge: {
+       *       description: 'Inherit the parent cache hint.',
+       *       type: new GraphQLNonNull(GraphQLBoolean),
+       *       defaultValue: false,
+       *       deprecationReason: 'Use maxAge instead.',
+       *       extensions: { scope: 'cache' },
+       *     },
+       *     maxAge: {
+       *       type: GraphQLInt,
+       *       astNode: definition.arguments[0],
+       *     },
+       *   },
+       *   isRepeatable: true,
+       *   deprecationReason: 'Use @cache instead.',
+       *   extensions: { scope: 'cache' },
+       *   astNode: definition,
+       *   extensionASTNodes: [ document.definitions[1] ],
+       * });
+       *
+       * cacheControl.name; // => 'cacheControl'
+       * cacheControl.description; // => 'Controls HTTP cache hints for a field.'
+       * cacheControl.args[0].name; // => 'inheritMaxAge'
+       * cacheControl.args[0].defaultValue; // => false
+       * cacheControl.isRepeatable; // => true
+       * cacheControl.extensions; // => { scope: 'cache' }
+       * ```
+       */
       constructor(config) {
-        var _config$isRepeatable, _config$args;
+        var _config$isRepeatable, _config$extensionASTN, _config$args;
         this.name = (0, _assertName.assertName)(config.name);
         this.description = config.description;
         this.locations = config.locations;
         this.isRepeatable = (_config$isRepeatable = config.isRepeatable) !== null && _config$isRepeatable !== void 0 ? _config$isRepeatable : false;
+        this.deprecationReason = config.deprecationReason;
         this.extensions = (0, _toObjMap.toObjMap)(config.extensions);
         this.astNode = config.astNode;
+        this.extensionASTNodes = (_config$extensionASTN = config.extensionASTNodes) !== null && _config$extensionASTN !== void 0 ? _config$extensionASTN : [];
         Array.isArray(config.locations) || (0, _devAssert.devAssert)(
           false,
           `@${config.name} locations must be an Array.`
@@ -5231,9 +7144,36 @@ var require_directives = __commonJS({
         );
         this.args = (0, _definition.defineArguments)(args);
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLDirective";
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { DirectiveLocation } from 'graphql/language';
+       * import { GraphQLDirective, GraphQLString } from 'graphql/type';
+       *
+       * const tag = new GraphQLDirective({
+       *   name: 'tag',
+       *   locations: [DirectiveLocation.FIELD_DEFINITION],
+       *   args: {
+       *     name: { type: GraphQLString },
+       *   },
+       * });
+       *
+       * const config = tag.toConfig();
+       * const tagCopy = new GraphQLDirective(config);
+       *
+       * config.args.name.type; // => GraphQLString
+       * tagCopy.args[0].name; // => 'name'
+       * ```
+       */
       toConfig() {
         return {
           name: this.name,
@@ -5241,13 +7181,48 @@ var require_directives = __commonJS({
           locations: this.locations,
           args: (0, _definition.argsToArgsConfig)(this.args),
           isRepeatable: this.isRepeatable,
+          deprecationReason: this.deprecationReason,
           extensions: this.extensions,
-          astNode: this.astNode
+          astNode: this.astNode,
+          extensionASTNodes: this.extensionASTNodes
         };
       }
+      /**
+       * Returns the schema coordinate identifying this directive.
+       * @returns The directive schema coordinate.
+       * @example
+       * ```ts
+       * import { DirectiveLocation } from 'graphql/language';
+       * import { GraphQLDirective } from 'graphql/type';
+       *
+       * const tag = new GraphQLDirective({
+       *   name: 'tag',
+       *   locations: [DirectiveLocation.FIELD_DEFINITION],
+       * });
+       *
+       * tag.toString(); // => '@tag'
+       * ```
+       */
       toString() {
         return "@" + this.name;
       }
+      /**
+       * Returns the JSON representation used when this object is serialized.
+       * @returns The JSON-serializable representation.
+       * @example
+       * ```ts
+       * import { DirectiveLocation } from 'graphql/language';
+       * import { GraphQLDirective } from 'graphql/type';
+       *
+       * const tag = new GraphQLDirective({
+       *   name: 'tag',
+       *   locations: [DirectiveLocation.FIELD_DEFINITION],
+       * });
+       *
+       * tag.toJSON(); // => '@tag'
+       * JSON.stringify({ directive: tag }); // => '{"directive":"@tag"}'
+       * ```
+       */
       toJSON() {
         return this.toString();
       }
@@ -5294,7 +7269,8 @@ var require_directives = __commonJS({
         _directiveLocation.DirectiveLocation.FIELD_DEFINITION,
         _directiveLocation.DirectiveLocation.ARGUMENT_DEFINITION,
         _directiveLocation.DirectiveLocation.INPUT_FIELD_DEFINITION,
-        _directiveLocation.DirectiveLocation.ENUM_VALUE
+        _directiveLocation.DirectiveLocation.ENUM_VALUE,
+        _directiveLocation.DirectiveLocation.DIRECTIVE_DEFINITION
       ],
       args: {
         reason: {
@@ -5338,9 +7314,9 @@ var require_directives = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/isIterableObject.js
+// node_modules/graphql/jsutils/isIterableObject.js
 var require_isIterableObject = __commonJS({
-  "../../node_modules/graphql/jsutils/isIterableObject.js"(exports) {
+  "node_modules/graphql/jsutils/isIterableObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5352,9 +7328,9 @@ var require_isIterableObject = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/astFromValue.js
+// node_modules/graphql/utilities/astFromValue.js
 var require_astFromValue = __commonJS({
-  "../../node_modules/graphql/utilities/astFromValue.js"(exports) {
+  "node_modules/graphql/utilities/astFromValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5475,9 +7451,9 @@ var require_astFromValue = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/introspection.js
+// node_modules/graphql/type/introspection.js
 var require_introspection = __commonJS({
-  "../../node_modules/graphql/type/introspection.js"(exports) {
+  "node_modules/graphql/type/introspection.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5530,7 +7506,13 @@ var require_introspection = __commonJS({
               new _definition.GraphQLNonNull(__Directive)
             )
           ),
-          resolve: (schema) => schema.getDirectives()
+          args: {
+            includeDeprecated: {
+              type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
+              defaultValue: false
+            }
+          },
+          resolve: (schema, { includeDeprecated }) => includeDeprecated ? schema.getDirectives() : schema.getDirectives().filter((directive) => directive.deprecationReason == null)
         }
       })
     });
@@ -5574,6 +7556,14 @@ var require_introspection = __commonJS({
           resolve(field, { includeDeprecated }) {
             return includeDeprecated ? field.args : field.args.filter((arg) => arg.deprecationReason == null);
           }
+        },
+        isDeprecated: {
+          type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
+          resolve: (directive) => directive.deprecationReason != null
+        },
+        deprecationReason: {
+          type: _scalars.GraphQLString,
+          resolve: (directive) => directive.deprecationReason
         }
       })
     });
@@ -5657,6 +7647,10 @@ var require_introspection = __commonJS({
         INPUT_FIELD_DEFINITION: {
           value: _directiveLocation.DirectiveLocation.INPUT_FIELD_DEFINITION,
           description: "Location adjacent to an input object field definition."
+        },
+        DIRECTIVE_DEFINITION: {
+          value: _directiveLocation.DirectiveLocation.DIRECTIVE_DEFINITION,
+          description: "Location adjacent to a directive definition."
         }
       }
     });
@@ -6008,9 +8002,9 @@ var require_introspection = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/schema.js
+// node_modules/graphql/type/schema.js
 var require_schema = __commonJS({
-  "../../node_modules/graphql/type/schema.js"(exports) {
+  "node_modules/graphql/type/schema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6039,7 +8033,107 @@ var require_schema = __commonJS({
       return schema;
     }
     var GraphQLSchema = class {
-      // Used as a cache for validateSchema().
+      /** Human-readable description for this schema element, if provided. */
+      /** Custom extension fields reserved for users. */
+      /** AST node from which this schema element was built, if available. */
+      /** AST extension nodes applied to this schema element. */
+      /**
+       * Cached schema validation errors, if validation has already run.
+       * @internal
+       */
+      /**
+       * Creates a GraphQLSchema instance.
+       * @param config - Configuration describing this object.
+       * @example
+       * ```ts
+       * // Create a schema with the required query root.
+       * import {
+       *   GraphQLObjectType,
+       *   GraphQLSchema,
+       *   GraphQLString,
+       * } from 'graphql/type';
+       *
+       * const Query = new GraphQLObjectType({
+       *   name: 'Query',
+       *   fields: {
+       *     greeting: {
+       *       type: GraphQLString,
+       *       resolve: () => 'Hello',
+       *     },
+       *   },
+       * });
+       *
+       * const schema = new GraphQLSchema({
+       *   description: 'The application schema.',
+       *   query: Query,
+       * });
+       *
+       * schema.getQueryType(); // => Query
+       * schema.description; // => 'The application schema.'
+       * ```
+       * @example
+       * ```ts
+       * // This variant configures every schema option, including directives and extensions.
+       * import { DirectiveLocation, parse } from 'graphql/language';
+       * import {
+       *   GraphQLBoolean,
+       *   GraphQLDirective,
+       *   GraphQLObjectType,
+       *   GraphQLSchema,
+       *   GraphQLString,
+       * } from 'graphql/type';
+       *
+       * const Query = new GraphQLObjectType({
+       *   name: 'Query',
+       *   fields: { greeting: { type: GraphQLString } },
+       * });
+       * const Mutation = new GraphQLObjectType({
+       *   name: 'Mutation',
+       *   fields: { setGreeting: { type: GraphQLString } },
+       * });
+       * const Subscription = new GraphQLObjectType({
+       *   name: 'Subscription',
+       *   fields: { greetingChanged: { type: GraphQLString } },
+       * });
+       * const AuditEvent = new GraphQLObjectType({
+       *   name: 'AuditEvent',
+       *   fields: { message: { type: GraphQLString } },
+       * });
+       * const authDirective = new GraphQLDirective({
+       *   name: 'auth',
+       *   locations: [DirectiveLocation.FIELD_DEFINITION],
+       *   args: { required: { type: GraphQLBoolean } },
+       * });
+       * const schemaDocument = parse(`
+       *   schema {
+       *     query: Query
+       *     mutation: Mutation
+       *     subscription: Subscription
+       *   }
+       *
+       *   extend schema @auth
+       * `);
+       *
+       * const schema = new GraphQLSchema({
+       *   description: 'Operations exposed by the application.',
+       *   query: Query,
+       *   mutation: Mutation,
+       *   subscription: Subscription,
+       *   types: [AuditEvent],
+       *   directives: [authDirective],
+       *   extensions: { owner: 'platform' },
+       *   astNode: schemaDocument.definitions[0],
+       *   extensionASTNodes: [ schemaDocument.definitions[1] ],
+       *   assumeValid: true,
+       * });
+       *
+       * schema.getMutationType(); // => Mutation
+       * schema.getSubscriptionType(); // => Subscription
+       * schema.getType('AuditEvent'); // => AuditEvent
+       * schema.getDirective('auth'); // => authDirective
+       * schema.extensions; // => { owner: 'platform' }
+       * ```
+       */
       constructor(config) {
         var _config$extensionASTN, _config$directives;
         this.__validationErrors = config.assumeValid === true ? [] : void 0;
@@ -6133,18 +8227,102 @@ var require_schema = __commonJS({
           }
         }
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "GraphQLSchema";
       }
+      /**
+       * Returns the root object type for query operations.
+       * @returns The query root type, if this schema defines one.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       *
+       * schema.getQueryType()?.name; // => 'Query'
+       * ```
+       */
       getQueryType() {
         return this._queryType;
       }
+      /**
+       * Returns the root object type for mutation operations.
+       * @returns The mutation root type, if this schema defines one.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       *
+       *   type Mutation {
+       *     setGreeting(value: String!): String
+       *   }
+       * `);
+       *
+       * schema.getMutationType()?.name; // => 'Mutation'
+       * ```
+       */
       getMutationType() {
         return this._mutationType;
       }
+      /**
+       * Returns the root object type for subscription operations.
+       * @returns The subscription root type, if this schema defines one.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       *
+       *   type Subscription {
+       *     greetings: String
+       *   }
+       * `);
+       *
+       * schema.getSubscriptionType()?.name; // => 'Subscription'
+       * ```
+       */
       getSubscriptionType() {
         return this._subscriptionType;
       }
+      /**
+       * Returns the root object type for the requested operation kind.
+       * @param operation - Operation kind to resolve.
+       * @returns The root object type for the operation kind, if this schema defines one.
+       * @example
+       * ```ts
+       * import { OperationTypeNode } from 'graphql/language';
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       *
+       *   type Mutation {
+       *     setGreeting(value: String!): String
+       *   }
+       * `);
+       *
+       * schema.getRootType(OperationTypeNode.QUERY)?.name; // => 'Query'
+       * schema.getRootType(OperationTypeNode.MUTATION)?.name; // => 'Mutation'
+       * schema.getRootType(OperationTypeNode.SUBSCRIPTION); // => undefined
+       * ```
+       */
       getRootType(operation) {
         switch (operation) {
           case _ast.OperationTypeNode.QUERY:
@@ -6155,15 +8333,134 @@ var require_schema = __commonJS({
             return this.getSubscriptionType();
         }
       }
+      /**
+       * Returns all named types known to this schema.
+       * @returns A map of schema types keyed by type name.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type User {
+       *     name: String
+       *   }
+       *
+       *   type Query {
+       *     viewer: User
+       *   }
+       * `);
+       *
+       * const typeMap = schema.getTypeMap();
+       *
+       * typeMap.User.name; // => 'User'
+       * typeMap.Query.name; // => 'Query'
+       * typeMap.String.name; // => 'String'
+       * ```
+       */
       getTypeMap() {
         return this._typeMap;
       }
+      /**
+       * Returns the named type with the provided name.
+       * @param name - The GraphQL name to look up.
+       * @returns The named schema type, if one exists.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type User {
+       *     name: String
+       *   }
+       *
+       *   type Query {
+       *     viewer: User
+       *   }
+       * `);
+       *
+       * schema.getType('User')?.toString(); // => 'User'
+       * schema.getType('Missing'); // => undefined
+       * ```
+       */
       getType(name) {
         return this.getTypeMap()[name];
       }
+      /**
+       * Returns object types that may be returned for an abstract type.
+       * @param abstractType - Interface or union type to inspect.
+       * @returns Object types that may satisfy the abstract type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType, assertUnionType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   type User implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   type Organization implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   union SearchResult = User | Organization
+       *
+       *   type Query {
+       *     node: Node
+       *     search: [SearchResult]
+       *   }
+       * `);
+       *
+       * const Node = assertInterfaceType(schema.getType('Node'));
+       * const SearchResult = assertUnionType(schema.getType('SearchResult'));
+       *
+       * schema.getPossibleTypes(Node).map((type) => type.name); // => ['User', 'Organization']
+       * schema.getPossibleTypes(SearchResult).map((type) => type.name); // => ['User', 'Organization']
+       * ```
+       */
       getPossibleTypes(abstractType) {
         return (0, _definition.isUnionType)(abstractType) ? abstractType.getTypes() : this.getImplementations(abstractType).objects;
       }
+      /**
+       * Returns objects and interfaces that implement an interface type.
+       * @param interfaceType - Interface type to inspect.
+       * @returns Object and interface implementations of the interface.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Resource {
+       *     url: String!
+       *   }
+       *
+       *   interface Image implements Resource {
+       *     url: String!
+       *     width: Int
+       *   }
+       *
+       *   type Photo implements Resource & Image {
+       *     url: String!
+       *     width: Int
+       *   }
+       *
+       *   type Query {
+       *     resource: Resource
+       *   }
+       * `);
+       *
+       * const Resource = assertInterfaceType(schema.getType('Resource'));
+       * const implementations = schema.getImplementations(Resource);
+       *
+       * implementations.interfaces.map((type) => type.name); // => ['Image']
+       * implementations.objects.map((type) => type.name); // => ['Photo']
+       * ```
+       */
       getImplementations(interfaceType) {
         const implementations = this._implementationsMap[interfaceType.name];
         return implementations !== null && implementations !== void 0 ? implementations : {
@@ -6171,6 +8468,43 @@ var require_schema = __commonJS({
           interfaces: []
         };
       }
+      /**
+       * Returns whether one type is a possible runtime subtype of an abstract type.
+       * @param abstractType - Interface or union type to inspect.
+       * @param maybeSubType - Object or interface type to test as a possible subtype.
+       * @returns True when the subtype may satisfy the abstract type.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { assertInterfaceType, assertObjectType } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   interface Node {
+       *     id: ID!
+       *   }
+       *
+       *   type User implements Node {
+       *     id: ID!
+       *   }
+       *
+       *   type Review {
+       *     body: String
+       *   }
+       *
+       *   type Query {
+       *     node: Node
+       *     review: Review
+       *   }
+       * `);
+       *
+       * const Node = assertInterfaceType(schema.getType('Node'));
+       * const User = assertObjectType(schema.getType('User'));
+       * const Review = assertObjectType(schema.getType('Review'));
+       *
+       * schema.isSubType(Node, User); // => true
+       * schema.isSubType(Node, Review); // => false
+       * ```
+       */
       isSubType(abstractType, maybeSubType) {
         let map = this._subTypeMap[abstractType.name];
         if (map === void 0) {
@@ -6192,12 +8526,74 @@ var require_schema = __commonJS({
         }
         return map[maybeSubType.name] !== void 0;
       }
+      /**
+       * Returns directives available in this schema.
+       * @returns Directives available in this schema.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   directive @upper on FIELD_DEFINITION
+       *
+       *   type Query {
+       *     greeting: String @upper
+       *   }
+       * `);
+       *
+       * schema.getDirectives().map((directive) => directive.name); // => ['include', 'skip', 'deprecated', 'specifiedBy', 'oneOf', 'upper']
+       * ```
+       */
       getDirectives() {
         return this._directives;
       }
+      /**
+       * Returns the current directive definition.
+       * @param name - The GraphQL name to look up.
+       * @returns The current directive definition, if known.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   directive @upper on FIELD_DEFINITION
+       *
+       *   type Query {
+       *     greeting: String @upper
+       *   }
+       * `);
+       *
+       * schema.getDirective('upper')?.name; // => 'upper'
+       * schema.getDirective('missing'); // => undefined
+       * ```
+       */
       getDirective(name) {
         return this.getDirectives().find((directive) => directive.name === name);
       }
+      /**
+       * Returns a normalized configuration object for this object.
+       *
+       * The returned config preserves the original `assumeValid` flag so the schema
+       * can be recreated with the same validation behavior.
+       * @returns A configuration object that can be used to recreate this object.
+       * @example
+       * ```ts
+       * import { buildSchema } from 'graphql/utilities';
+       * import { GraphQLSchema } from 'graphql/type';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       *
+       * const config = schema.toConfig();
+       * const schemaCopy = new GraphQLSchema(config);
+       *
+       * config.query?.name; // => 'Query'
+       * schemaCopy.getQueryType()?.name; // => 'Query'
+       * ```
+       */
       toConfig() {
         return {
           description: this.description,
@@ -6243,9 +8639,9 @@ var require_schema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/validate.js
+// node_modules/graphql/type/validate.js
 var require_validate = __commonJS({
-  "../../node_modules/graphql/type/validate.js"(exports) {
+  "node_modules/graphql/type/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6715,9 +9111,9 @@ var require_validate = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/typeFromAST.js
+// node_modules/graphql/utilities/typeFromAST.js
 var require_typeFromAST = __commonJS({
-  "../../node_modules/graphql/utilities/typeFromAST.js"(exports) {
+  "node_modules/graphql/utilities/typeFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6742,9 +9138,9 @@ var require_typeFromAST = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/TypeInfo.js
+// node_modules/graphql/utilities/TypeInfo.js
 var require_TypeInfo = __commonJS({
-  "../../node_modules/graphql/utilities/TypeInfo.js"(exports) {
+  "node_modules/graphql/utilities/TypeInfo.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6758,6 +9154,74 @@ var require_TypeInfo = __commonJS({
     var _introspection = require_introspection();
     var _typeFromAST = require_typeFromAST();
     var TypeInfo = class {
+      /**
+       * Creates a TypeInfo instance.
+       * @param schema - Schema used for type lookups.
+       * @param initialType - Optional type to use at the start of traversal.
+       * @param getFieldDefFn - Optional field definition lookup override.
+       * @example
+       * ```ts
+       * // Track field types during a visitWithTypeInfo traversal.
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema } from 'graphql/utilities';
+       * import { TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * const seenTypes = [];
+       *
+       * visit(
+       *   parse('{ greeting }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: () => {
+       *       seenTypes.push(String(typeInfo.getType()));
+       *     },
+       *   }),
+       * );
+       *
+       * seenTypes; // => ['String']
+       * ```
+       * @example
+       * ```ts
+       * // This variant starts from an initial type and supplies a field definition resolver.
+       * import { Kind } from 'graphql/language';
+       * import { GraphQLString } from 'graphql/type';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema, schema.getQueryType(), () => ({
+       *   name: 'virtualGreeting',
+       *   description: undefined,
+       *   type: GraphQLString,
+       *   args: [],
+       *   resolve: undefined,
+       *   subscribe: undefined,
+       *   deprecationReason: undefined,
+       *   extensions: Object.create(null),
+       *   astNode: undefined,
+       * }));
+       *
+       * typeInfo.enter({
+       *   kind: Kind.SELECTION_SET,
+       *   selections: [],
+       * });
+       * typeInfo.enter({
+       *   kind: Kind.FIELD,
+       *   name: { kind: Kind.NAME, value: 'ignored' },
+       * });
+       *
+       * typeInfo.getFieldDef()?.name; // => 'virtualGreeting'
+       * String(typeInfo.getType()); // => 'String'
+       * ```
+       */
       constructor(schema, initialType, getFieldDefFn) {
         this._schema = schema;
         this._typeStack = [];
@@ -6781,48 +9245,355 @@ var require_TypeInfo = __commonJS({
           }
         }
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "TypeInfo";
       }
+      /**
+       * Returns the current output type at this point in traversal.
+       * @returns The current output type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     viewer: User
+       *   }
+       *
+       *   type User {
+       *     name: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * const fieldTypes = {};
+       *
+       * visit(
+       *   parse('{ viewer { name } }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: (node) => {
+       *       fieldTypes[node.name.value] = String(typeInfo.getType());
+       *     },
+       *   }),
+       * );
+       *
+       * fieldTypes; // => { viewer: 'User', name: 'String' }
+       * ```
+       */
       getType() {
         if (this._typeStack.length > 0) {
           return this._typeStack[this._typeStack.length - 1];
         }
       }
+      /**
+       * Returns the current parent composite type.
+       * @returns The current parent composite type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     viewer: User
+       *   }
+       *
+       *   type User {
+       *     name: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * const parentTypes = {};
+       *
+       * visit(
+       *   parse('{ viewer { name } }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: (node) => {
+       *       parentTypes[node.name.value] = String(typeInfo.getParentType());
+       *     },
+       *   }),
+       * );
+       *
+       * parentTypes; // => { viewer: 'Query', name: 'User' }
+       * ```
+       */
       getParentType() {
         if (this._parentTypeStack.length > 0) {
           return this._parentTypeStack[this._parentTypeStack.length - 1];
         }
       }
+      /**
+       * Returns the current input type at this point in traversal.
+       * @returns The current input type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     reviews(stars: Int!, sort: Sort = NEWEST): [String]
+       *   }
+       *
+       *   enum Sort {
+       *     NEWEST
+       *     OLDEST
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * const inputTypes = {};
+       *
+       * visit(
+       *   parse('{ reviews(stars: 5, sort: OLDEST) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Argument: (node) => {
+       *       inputTypes[node.name.value] = String(typeInfo.getInputType());
+       *     },
+       *   }),
+       * );
+       *
+       * inputTypes; // => { stars: 'Int!', sort: 'Sort' }
+       * ```
+       */
       getInputType() {
         if (this._inputTypeStack.length > 0) {
           return this._inputTypeStack[this._inputTypeStack.length - 1];
         }
       }
+      /**
+       * Returns the parent input type for the current input position.
+       * @returns The parent input type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   input ReviewFilter {
+       *     stars: Int!
+       *   }
+       *
+       *   type Query {
+       *     reviews(filter: ReviewFilter): [String]
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * const parentInputTypes = {};
+       *
+       * visit(
+       *   parse('{ reviews(filter: { stars: 5 }) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     ObjectField: (node) => {
+       *       parentInputTypes[node.name.value] = String(typeInfo.getParentInputType());
+       *     },
+       *   }),
+       * );
+       *
+       * parentInputTypes; // => { stars: 'ReviewFilter' }
+       * ```
+       */
       getParentInputType() {
         if (this._inputTypeStack.length > 1) {
           return this._inputTypeStack[this._inputTypeStack.length - 2];
         }
       }
+      /**
+       * Returns the current field definition.
+       * @returns The current field definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * let fieldName;
+       *
+       * visit(
+       *   parse('{ greeting }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: () => {
+       *       fieldName = typeInfo.getFieldDef()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * fieldName; // => 'greeting'
+       * ```
+       */
       getFieldDef() {
         if (this._fieldDefStack.length > 0) {
           return this._fieldDefStack[this._fieldDefStack.length - 1];
         }
       }
+      /**
+       * Returns the default value for the current input position.
+       * @returns The current default value, if one is available.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     reviews(limit: Int = 10): [String]
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * let defaultLimit;
+       *
+       * visit(
+       *   parse('{ reviews(limit: 5) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Argument: () => {
+       *       defaultLimit = typeInfo.getDefaultValue();
+       *     },
+       *   }),
+       * );
+       *
+       * defaultLimit; // => 10
+       * ```
+       */
       getDefaultValue() {
         if (this._defaultValueStack.length > 0) {
           return this._defaultValueStack[this._defaultValueStack.length - 1];
         }
       }
+      /**
+       * Returns the current directive definition.
+       * @returns The current directive definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * let directiveName;
+       *
+       * visit(
+       *   parse('{ greeting @include(if: true) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Directive: () => {
+       *       directiveName = typeInfo.getDirective()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * directiveName; // => 'include'
+       * ```
+       */
       getDirective() {
         return this._directive;
       }
+      /**
+       * Returns the current argument definition.
+       * @returns The current argument definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     reviews(limit: Int = 10): [String]
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * let argumentName;
+       *
+       * visit(
+       *   parse('{ reviews(limit: 5) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     Argument: () => {
+       *       argumentName = typeInfo.getArgument()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * argumentName; // => 'limit'
+       * ```
+       */
       getArgument() {
         return this._argument;
       }
+      /**
+       * Returns the current enum value definition.
+       * @returns The current enum value definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   enum Sort {
+       *     NEWEST
+       *     OLDEST
+       *   }
+       *
+       *   type Query {
+       *     reviews(sort: Sort = NEWEST): [String]
+       *   }
+       * `);
+       * const typeInfo = new TypeInfo(schema);
+       * let enumValueName;
+       *
+       * visit(
+       *   parse('{ reviews(sort: OLDEST) }'),
+       *   visitWithTypeInfo(typeInfo, {
+       *     EnumValue: () => {
+       *       enumValueName = typeInfo.getEnumValue()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * enumValueName; // => 'OLDEST'
+       * ```
+       */
       getEnumValue() {
         return this._enumValue;
       }
+      /**
+       * Updates this TypeInfo instance for an entered AST node.
+       * @param node - AST node being entered.
+       * @returns Nothing.
+       * @example
+       * ```ts
+       * import { Kind, parse } from 'graphql/language';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const operation = document.definitions[0];
+       * const selectionSet = operation.selectionSet;
+       * const field = selectionSet.selections[0];
+       * const typeInfo = new TypeInfo(schema);
+       *
+       * typeInfo.enter(operation);
+       * typeInfo.enter(selectionSet);
+       * typeInfo.enter(field);
+       *
+       * field.kind; // => Kind.FIELD
+       * typeInfo.getParentType()?.name; // => 'Query'
+       * String(typeInfo.getType()); // => 'String'
+       * ```
+       */
       enter(node) {
         const schema = this._schema;
         switch (node.kind) {
@@ -6934,6 +9705,35 @@ var require_TypeInfo = __commonJS({
           default:
         }
       }
+      /**
+       * Updates this TypeInfo instance for a left AST node.
+       * @param node - AST node being entered.
+       * @returns Nothing.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const operation = document.definitions[0];
+       * const selectionSet = operation.selectionSet;
+       * const field = selectionSet.selections[0];
+       * const typeInfo = new TypeInfo(schema);
+       *
+       * typeInfo.enter(operation);
+       * typeInfo.enter(selectionSet);
+       * typeInfo.enter(field);
+       * String(typeInfo.getType()); // => 'String'
+       *
+       * typeInfo.leave(field);
+       * typeInfo.getType(); // => undefined
+       * ```
+       */
       leave(node) {
         switch (node.kind) {
           case _kinds.Kind.SELECTION_SET:
@@ -7019,9 +9819,9 @@ var require_TypeInfo = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/predicates.js
+// node_modules/graphql/language/predicates.js
 var require_predicates = __commonJS({
-  "../../node_modules/graphql/language/predicates.js"(exports) {
+  "node_modules/graphql/language/predicates.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7029,6 +9829,7 @@ var require_predicates = __commonJS({
     exports.isConstValueNode = isConstValueNode;
     exports.isDefinitionNode = isDefinitionNode;
     exports.isExecutableDefinitionNode = isExecutableDefinitionNode;
+    exports.isSchemaCoordinateNode = isSchemaCoordinateNode;
     exports.isSelectionNode = isSelectionNode;
     exports.isTypeDefinitionNode = isTypeDefinitionNode;
     exports.isTypeExtensionNode = isTypeExtensionNode;
@@ -7062,17 +9863,20 @@ var require_predicates = __commonJS({
       return node.kind === _kinds.Kind.SCALAR_TYPE_DEFINITION || node.kind === _kinds.Kind.OBJECT_TYPE_DEFINITION || node.kind === _kinds.Kind.INTERFACE_TYPE_DEFINITION || node.kind === _kinds.Kind.UNION_TYPE_DEFINITION || node.kind === _kinds.Kind.ENUM_TYPE_DEFINITION || node.kind === _kinds.Kind.INPUT_OBJECT_TYPE_DEFINITION;
     }
     function isTypeSystemExtensionNode(node) {
-      return node.kind === _kinds.Kind.SCHEMA_EXTENSION || isTypeExtensionNode(node);
+      return node.kind === _kinds.Kind.SCHEMA_EXTENSION || node.kind === _kinds.Kind.DIRECTIVE_EXTENSION || isTypeExtensionNode(node);
     }
     function isTypeExtensionNode(node) {
       return node.kind === _kinds.Kind.SCALAR_TYPE_EXTENSION || node.kind === _kinds.Kind.OBJECT_TYPE_EXTENSION || node.kind === _kinds.Kind.INTERFACE_TYPE_EXTENSION || node.kind === _kinds.Kind.UNION_TYPE_EXTENSION || node.kind === _kinds.Kind.ENUM_TYPE_EXTENSION || node.kind === _kinds.Kind.INPUT_OBJECT_TYPE_EXTENSION;
     }
+    function isSchemaCoordinateNode(node) {
+      return node.kind === _kinds.Kind.TYPE_COORDINATE || node.kind === _kinds.Kind.MEMBER_COORDINATE || node.kind === _kinds.Kind.ARGUMENT_COORDINATE || node.kind === _kinds.Kind.DIRECTIVE_COORDINATE || node.kind === _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE;
+    }
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
+// node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
 var require_ExecutableDefinitionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7104,9 +9908,9 @@ var require_ExecutableDefinitionsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
+// node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
 var require_FieldsOnCorrectTypeRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
+  "node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7193,9 +9997,9 @@ var require_FieldsOnCorrectTypeRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
+// node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
 var require_FragmentsOnCompositeTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7249,9 +10053,9 @@ var require_FragmentsOnCompositeTypesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
+// node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
 var require_KnownArgumentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7335,9 +10139,9 @@ var require_KnownArgumentNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownDirectivesRule.js
+// node_modules/graphql/validation/rules/KnownDirectivesRule.js
 var require_KnownDirectivesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7435,6 +10239,9 @@ var require_KnownDirectivesRule = __commonJS({
           "kind" in parentNode || (0, _invariant.invariant)(false);
           return parentNode.kind === _kinds.Kind.INPUT_OBJECT_TYPE_DEFINITION ? _directiveLocation.DirectiveLocation.INPUT_FIELD_DEFINITION : _directiveLocation.DirectiveLocation.ARGUMENT_DEFINITION;
         }
+        case _kinds.Kind.DIRECTIVE_DEFINITION:
+        case _kinds.Kind.DIRECTIVE_EXTENSION:
+          return _directiveLocation.DirectiveLocation.DIRECTIVE_DEFINITION;
         // Not reachable, all possible types have been considered.
         /* c8 ignore next */
         default:
@@ -7457,9 +10264,9 @@ var require_KnownDirectivesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
+// node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
 var require_KnownFragmentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7487,9 +10294,9 @@ var require_KnownFragmentNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js
+// node_modules/graphql/validation/rules/KnownTypeNamesRule.js
 var require_KnownTypeNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7550,9 +10357,9 @@ var require_KnownTypeNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
+// node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
 var require_LoneAnonymousOperationRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
+  "node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7585,9 +10392,9 @@ var require_LoneAnonymousOperationRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
+// node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
 var require_LoneSchemaDefinitionRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
+  "node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7629,9 +10436,9 @@ var require_LoneSchemaDefinitionRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
+// node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
 var require_MaxIntrospectionDepthRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
+  "node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7695,9 +10502,9 @@ var require_MaxIntrospectionDepthRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
+// node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
 var require_NoFragmentCyclesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7755,9 +10562,9 @@ var require_NoFragmentCyclesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
+// node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
 var require_NoUndefinedVariablesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7796,9 +10603,9 @@ var require_NoUndefinedVariablesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
+// node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
 var require_NoUnusedFragmentsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7847,9 +10654,9 @@ var require_NoUnusedFragmentsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
+// node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
 var require_NoUnusedVariablesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7892,9 +10699,9 @@ var require_NoUnusedVariablesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/sortValueNode.js
+// node_modules/graphql/utilities/sortValueNode.js
 var require_sortValueNode = __commonJS({
-  "../../node_modules/graphql/utilities/sortValueNode.js"(exports) {
+  "node_modules/graphql/utilities/sortValueNode.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7929,9 +10736,9 @@ var require_sortValueNode = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
+// node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
 var require_OverlappingFieldsCanBeMergedRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
+  "node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8458,9 +11265,9 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
+// node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
 var require_PossibleFragmentSpreadsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8531,9 +11338,9 @@ var require_PossibleFragmentSpreadsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
+// node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
 var require_PossibleTypeExtensionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8663,9 +11470,9 @@ var require_PossibleTypeExtensionsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
+// node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
 var require_ProvidedRequiredArgumentsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8769,9 +11576,9 @@ var require_ProvidedRequiredArgumentsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ScalarLeafsRule.js
+// node_modules/graphql/validation/rules/ScalarLeafsRule.js
 var require_ScalarLeafsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8829,9 +11636,9 @@ var require_ScalarLeafsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/printPathArray.js
+// node_modules/graphql/jsutils/printPathArray.js
 var require_printPathArray = __commonJS({
-  "../../node_modules/graphql/jsutils/printPathArray.js"(exports) {
+  "node_modules/graphql/jsutils/printPathArray.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8845,9 +11652,9 @@ var require_printPathArray = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/Path.js
+// node_modules/graphql/jsutils/Path.js
 var require_Path = __commonJS({
-  "../../node_modules/graphql/jsutils/Path.js"(exports) {
+  "node_modules/graphql/jsutils/Path.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8873,9 +11680,9 @@ var require_Path = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/coerceInputValue.js
+// node_modules/graphql/utilities/coerceInputValue.js
 var require_coerceInputValue = __commonJS({
-  "../../node_modules/graphql/utilities/coerceInputValue.js"(exports) {
+  "node_modules/graphql/utilities/coerceInputValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8932,7 +11739,7 @@ var require_coerceInputValue = __commonJS({
         return [coerceInputValueImpl(inputValue, itemType, onError, path2)];
       }
       if ((0, _definition.isInputObjectType)(type)) {
-        if (!(0, _isObjectLike.isObjectLike)(inputValue)) {
+        if (!(0, _isObjectLike.isObjectLike)(inputValue) || Array.isArray(inputValue)) {
           onError(
             (0, _Path.pathToArray)(path2),
             inputValue,
@@ -8942,7 +11749,7 @@ var require_coerceInputValue = __commonJS({
           );
           return;
         }
-        const coercedValue = {};
+        const coercedValue = /* @__PURE__ */ Object.create(null);
         const fieldDefs = type.getFields();
         for (const field of Object.values(fieldDefs)) {
           const fieldValue = inputValue[field.name];
@@ -9004,7 +11811,7 @@ var require_coerceInputValue = __commonJS({
             );
           }
         }
-        return coercedValue;
+        return { ...coercedValue };
       }
       if ((0, _definition.isLeafType)(type)) {
         let parseResult;
@@ -9044,9 +11851,9 @@ var require_coerceInputValue = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/valueFromAST.js
+// node_modules/graphql/utilities/valueFromAST.js
 var require_valueFromAST = __commonJS({
-  "../../node_modules/graphql/utilities/valueFromAST.js"(exports) {
+  "node_modules/graphql/utilities/valueFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9063,7 +11870,7 @@ var require_valueFromAST = __commonJS({
       }
       if (valueNode.kind === _kinds.Kind.VARIABLE) {
         const variableName = valueNode.name.value;
-        if (variables == null || variables[variableName] === void 0) {
+        if (variables == null || variables[variableName] === void 0 || !hasOwnProperty(variables, variableName)) {
           return;
         }
         const variableValue = variables[variableName];
@@ -9161,14 +11968,17 @@ var require_valueFromAST = __commonJS({
       );
     }
     function isMissingVariable(valueNode, variables) {
-      return valueNode.kind === _kinds.Kind.VARIABLE && (variables == null || variables[valueNode.name.value] === void 0);
+      return valueNode.kind === _kinds.Kind.VARIABLE && (variables == null || variables[valueNode.name.value] === void 0 || !hasOwnProperty(variables, valueNode.name.value));
+    }
+    function hasOwnProperty(obj, prop) {
+      return Object.prototype.hasOwnProperty.call(obj, prop);
     }
   }
 });
 
-// ../../node_modules/graphql/execution/values.js
+// node_modules/graphql/execution/values.js
 var require_values = __commonJS({
-  "../../node_modules/graphql/execution/values.js"(exports) {
+  "node_modules/graphql/execution/values.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9216,7 +12026,7 @@ var require_values = __commonJS({
       };
     }
     function coerceVariableValues(schema, varDefNodes, inputs, onError) {
-      const coercedValues = {};
+      const coercedValues = /* @__PURE__ */ Object.create(null);
       for (const varDefNode of varDefNodes) {
         const varName = varDefNode.variable.name.value;
         const varType = (0, _typeFromAST.typeFromAST)(schema, varDefNode.type);
@@ -9283,11 +12093,11 @@ var require_values = __commonJS({
           }
         );
       }
-      return coercedValues;
+      return { ...coercedValues };
     }
     function getArgumentValues(def, node, variableValues) {
       var _node$arguments;
-      const coercedValues = {};
+      const coercedValues = /* @__PURE__ */ Object.create(null);
       const argumentNodes = (_node$arguments = node.arguments) !== null && _node$arguments !== void 0 ? _node$arguments : [];
       const argNodeMap = (0, _keyMap.keyMap)(
         argumentNodes,
@@ -9360,7 +12170,7 @@ var require_values = __commonJS({
         }
         coercedValues[name] = coercedValue;
       }
-      return coercedValues;
+      return { ...coercedValues };
     }
     function getDirectiveValues(directiveDef, node, variableValues) {
       var _node$directives;
@@ -9377,9 +12187,9 @@ var require_values = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/execution/collectFields.js
+// node_modules/graphql/execution/collectFields.js
 var require_collectFields = __commonJS({
-  "../../node_modules/graphql/execution/collectFields.js"(exports) {
+  "node_modules/graphql/execution/collectFields.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9519,9 +12329,9 @@ var require_collectFields = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
+// node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
 var require_SingleFieldSubscriptionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
+  "node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9588,9 +12398,9 @@ var require_SingleFieldSubscriptionsRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/groupBy.js
+// node_modules/graphql/jsutils/groupBy.js
 var require_groupBy = __commonJS({
-  "../../node_modules/graphql/jsutils/groupBy.js"(exports) {
+  "node_modules/graphql/jsutils/groupBy.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9612,9 +12422,9 @@ var require_groupBy = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
+// node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
 var require_UniqueArgumentDefinitionNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9669,9 +12479,9 @@ var require_UniqueArgumentDefinitionNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
+// node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
 var require_UniqueArgumentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9708,9 +12518,9 @@ var require_UniqueArgumentNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
+// node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
 var require_UniqueDirectiveNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9753,9 +12563,9 @@ var require_UniqueDirectiveNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
+// node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
 var require_UniqueDirectivesPerLocationRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9780,6 +12590,7 @@ var require_UniqueDirectivesPerLocationRule = __commonJS({
       }
       const schemaDirectives = /* @__PURE__ */ Object.create(null);
       const typeDirectivesMap = /* @__PURE__ */ Object.create(null);
+      const directiveDirectivesMap = /* @__PURE__ */ Object.create(null);
       return {
         // Many different AST nodes may contain directives. Rather than listing
         // them all, just listen for entering any node, and check to see if it
@@ -9796,6 +12607,12 @@ var require_UniqueDirectivesPerLocationRule = __commonJS({
             seenDirectives = typeDirectivesMap[typeName];
             if (seenDirectives === void 0) {
               typeDirectivesMap[typeName] = seenDirectives = /* @__PURE__ */ Object.create(null);
+            }
+          } else if (node.kind === _kinds.Kind.DIRECTIVE_DEFINITION || node.kind === _kinds.Kind.DIRECTIVE_EXTENSION) {
+            const directiveName = node.name.value;
+            seenDirectives = directiveDirectivesMap[directiveName];
+            if (seenDirectives === void 0) {
+              directiveDirectivesMap[directiveName] = seenDirectives = /* @__PURE__ */ Object.create(null);
             }
           } else {
             seenDirectives = /* @__PURE__ */ Object.create(null);
@@ -9823,9 +12640,9 @@ var require_UniqueDirectivesPerLocationRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
+// node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
 var require_UniqueEnumValueNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9880,9 +12697,9 @@ var require_UniqueEnumValueNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
+// node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
 var require_UniqueFieldDefinitionNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9946,9 +12763,9 @@ var require_UniqueFieldDefinitionNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
+// node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
 var require_UniqueFragmentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9980,9 +12797,9 @@ var require_UniqueFragmentNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
+// node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
 var require_UniqueInputFieldNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10025,9 +12842,9 @@ var require_UniqueInputFieldNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
+// node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
 var require_UniqueOperationNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10064,9 +12881,9 @@ var require_UniqueOperationNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
+// node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
 var require_UniqueOperationTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10119,9 +12936,9 @@ var require_UniqueOperationTypesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
+// node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
 var require_UniqueTypeNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10170,9 +12987,9 @@ var require_UniqueTypeNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
+// node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
 var require_UniqueVariableNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10207,9 +13024,9 @@ var require_UniqueVariableNamesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
+// node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
 var require_ValuesOfCorrectTypeRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
+  "node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10224,16 +13041,7 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
     var _printer = require_printer();
     var _definition = require_definition();
     function ValuesOfCorrectTypeRule(context) {
-      let variableDefinitions = {};
       return {
-        OperationDefinition: {
-          enter() {
-            variableDefinitions = {};
-          }
-        },
-        VariableDefinition(definition) {
-          variableDefinitions[definition.variable.name.value] = definition;
-        },
         ListValue(node) {
           const type = (0, _definition.getNullableType)(
             context.getParentInputType()
@@ -10268,13 +13076,7 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
             }
           }
           if (type.isOneOf) {
-            validateOneOfInputObject(
-              context,
-              node,
-              type,
-              fieldNodeMap,
-              variableDefinitions
-            );
+            validateOneOfInputObject(context, node, type, fieldNodeMap);
           }
         },
         ObjectField(node) {
@@ -10315,6 +13117,11 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
         EnumValue: (node) => isValidValueNode(context, node),
         IntValue: (node) => isValidValueNode(context, node),
         FloatValue: (node) => isValidValueNode(context, node),
+        // Descriptions are string values that would not validate according
+        // to the below logic, but since (per the specification) descriptions must
+        // not affect validation, they are ignored entirely when visiting the AST
+        // and do not require special handling.
+        // See https://spec.graphql.org/draft/#sec-Descriptions
         StringValue: (node) => isValidValueNode(context, node),
         BooleanValue: (node) => isValidValueNode(context, node)
       };
@@ -10377,7 +13184,7 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
         }
       }
     }
-    function validateOneOfInputObject(context, node, type, fieldNodeMap, variableDefinitions) {
+    function validateOneOfInputObject(context, node, type, fieldNodeMap) {
       var _fieldNodeMap$keys$;
       const keys = Object.keys(fieldNodeMap);
       const isNotExactlyOneField = keys.length !== 1;
@@ -10394,7 +13201,6 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
       }
       const value = (_fieldNodeMap$keys$ = fieldNodeMap[keys[0]]) === null || _fieldNodeMap$keys$ === void 0 ? void 0 : _fieldNodeMap$keys$.value;
       const isNullLiteral = !value || value.kind === _kinds.Kind.NULL;
-      const isVariable = (value === null || value === void 0 ? void 0 : value.kind) === _kinds.Kind.VARIABLE;
       if (isNullLiteral) {
         context.reportError(
           new _GraphQLError.GraphQLError(
@@ -10404,30 +13210,14 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
             }
           )
         );
-        return;
-      }
-      if (isVariable) {
-        const variableName = value.name.value;
-        const definition = variableDefinitions[variableName];
-        const isNullableVariable = definition.type.kind !== _kinds.Kind.NON_NULL_TYPE;
-        if (isNullableVariable) {
-          context.reportError(
-            new _GraphQLError.GraphQLError(
-              `Variable "${variableName}" must be non-nullable to be used for OneOf Input Object "${type.name}".`,
-              {
-                nodes: [node]
-              }
-            )
-          );
-        }
       }
     }
   }
 });
 
-// ../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
+// node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
 var require_VariablesAreInputTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
+  "node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10462,9 +13252,9 @@ var require_VariablesAreInputTypesRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
+// node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
 var require_VariablesInAllowedPositionRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
+  "node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10485,7 +13275,7 @@ var require_VariablesInAllowedPositionRule = __commonJS({
           },
           leave(operation) {
             const usages = context.getRecursiveVariableUsages(operation);
-            for (const { node, type, defaultValue } of usages) {
+            for (const { node, type, defaultValue, parentType } of usages) {
               const varName = node.name.value;
               const varDef = varDefMap[varName];
               if (varDef && type) {
@@ -10503,6 +13293,16 @@ var require_VariablesInAllowedPositionRule = __commonJS({
                   context.reportError(
                     new _GraphQLError.GraphQLError(
                       `Variable "$${varName}" of type "${varTypeStr}" used in position expecting type "${typeStr}".`,
+                      {
+                        nodes: [varDef, node]
+                      }
+                    )
+                  );
+                }
+                if ((0, _definition.isInputObjectType)(parentType) && parentType.isOneOf && (0, _definition.isNullableType)(varType)) {
+                  context.reportError(
+                    new _GraphQLError.GraphQLError(
+                      `Variable "$${varName}" is of type "${varType}" but must be non-nullable to be used for OneOf Input Object "${parentType}".`,
                       {
                         nodes: [varDef, node]
                       }
@@ -10537,9 +13337,9 @@ var require_VariablesInAllowedPositionRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/specifiedRules.js
+// node_modules/graphql/validation/specifiedRules.js
 var require_specifiedRules = __commonJS({
-  "../../node_modules/graphql/validation/specifiedRules.js"(exports) {
+  "node_modules/graphql/validation/specifiedRules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10635,9 +13435,9 @@ var require_specifiedRules = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/ValidationContext.js
+// node_modules/graphql/validation/ValidationContext.js
 var require_ValidationContext = __commonJS({
-  "../../node_modules/graphql/validation/ValidationContext.js"(exports) {
+  "node_modules/graphql/validation/ValidationContext.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10737,6 +13537,39 @@ var require_ValidationContext = __commonJS({
     };
     exports.SDLValidationContext = SDLValidationContext;
     var ValidationContext = class extends ASTValidationContext {
+      /**
+       * Creates a ValidationContext instance.
+       * @param schema - Schema used to validate the document.
+       * @param ast - Document AST being validated.
+       * @param typeInfo - TypeInfo instance used to track traversal state.
+       * @param onError - Callback invoked for each validation error.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { GraphQLError } from 'graphql/error';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const errors = [];
+       * const context = new ValidationContext(
+       *   schema,
+       *   document,
+       *   new TypeInfo(schema),
+       *   (error) => errors.push(error),
+       * );
+       *
+       * context.reportError(new GraphQLError('Example validation error.'));
+       *
+       * context.getSchema(); // => schema
+       * errors[0].message; // => 'Example validation error.'
+       * ```
+       */
       constructor(schema, ast, typeInfo, onError) {
         super(ast, onError);
         this._schema = schema;
@@ -10744,12 +13577,70 @@ var require_ValidationContext = __commonJS({
         this._variableUsages = /* @__PURE__ */ new Map();
         this._recursiveVariableUsages = /* @__PURE__ */ new Map();
       }
+      /**
+       * Returns the value used by `Object.prototype.toString`.
+       * @returns The built-in string tag for this object.
+       */
       get [Symbol.toStringTag]() {
         return "ValidationContext";
       }
+      /**
+       * Returns the schema being used by this validation context.
+       * @returns The schema being validated against.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const context = new ValidationContext(
+       *   schema,
+       *   parse('{ greeting }'),
+       *   new TypeInfo(schema),
+       *   () => {},
+       * );
+       *
+       * context.getSchema().getQueryType()?.name; // => 'Query'
+       * ```
+       */
       getSchema() {
         return this._schema;
       }
+      /**
+       * Returns variable usages found directly within this node.
+       * @param node - The AST node to inspect or visit.
+       * @returns Variable usages found directly within this node.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting(name: String): String
+       *   }
+       * `);
+       * const document = parse('query ($name: String) { greeting(name: $name) }');
+       * const operation = document.definitions[0];
+       * const context = new ValidationContext(
+       *   schema,
+       *   document,
+       *   new TypeInfo(schema),
+       *   () => {},
+       * );
+       *
+       * const usages = context.getVariableUsages(operation);
+       *
+       * usages[0].node.name.value; // => 'name'
+       * String(usages[0].type); // => 'String'
+       * ```
+       */
       getVariableUsages(node) {
         let usages = this._variableUsages.get(node);
         if (!usages) {
@@ -10763,7 +13654,8 @@ var require_ValidationContext = __commonJS({
                 newUsages.push({
                   node: variable,
                   type: typeInfo.getInputType(),
-                  defaultValue: typeInfo.getDefaultValue()
+                  defaultValue: typeInfo.getDefaultValue(),
+                  parentType: typeInfo.getParentInputType()
                 });
               }
             })
@@ -10773,6 +13665,49 @@ var require_ValidationContext = __commonJS({
         }
         return usages;
       }
+      /**
+       * Returns variable usages for an operation, including variables used by referenced fragments.
+       * @param operation - Operation definition to inspect.
+       * @returns Variable usages reachable from the operation.
+       * @example
+       * ```ts
+       * import { parse } from 'graphql/language';
+       * import { buildSchema, TypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     viewer: User
+       *   }
+       *
+       *   type User {
+       *     name(prefix: String): String
+       *   }
+       * `);
+       * const document = parse(`
+       *   query ($prefix: String) {
+       *     viewer {
+       *       ...UserName
+       *     }
+       *   }
+       *
+       *   fragment UserName on User {
+       *     name(prefix: $prefix)
+       *   }
+       * `);
+       * const operation = document.definitions[0];
+       * const context = new ValidationContext(
+       *   schema,
+       *   document,
+       *   new TypeInfo(schema),
+       *   () => {},
+       * );
+       *
+       * const usages = context.getRecursiveVariableUsages(operation);
+       *
+       * usages.map((usage) => usage.node.name.value); // => ['prefix']
+       * ```
+       */
       getRecursiveVariableUsages(operation) {
         let usages = this._recursiveVariableUsages.get(operation);
         if (!usages) {
@@ -10784,27 +13719,284 @@ var require_ValidationContext = __commonJS({
         }
         return usages;
       }
+      /**
+       * Returns the current output type at this point in traversal.
+       * @returns The current output type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let typeName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: () => {
+       *       typeName = String(context.getType());
+       *     },
+       *   }),
+       * );
+       *
+       * typeName; // => 'String'
+       * ```
+       */
       getType() {
         return this._typeInfo.getType();
       }
+      /**
+       * Returns the current parent composite type.
+       * @returns The current parent composite type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let parentTypeName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: () => {
+       *       parentTypeName = context.getParentType()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * parentTypeName; // => 'Query'
+       * ```
+       */
       getParentType() {
         return this._typeInfo.getParentType();
       }
+      /**
+       * Returns the current input type at this point in traversal.
+       * @returns The current input type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     reviews(limit: Int): [String]
+       *   }
+       * `);
+       * const document = parse('{ reviews(limit: 5) }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let inputTypeName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Argument: () => {
+       *       inputTypeName = String(context.getInputType());
+       *     },
+       *   }),
+       * );
+       *
+       * inputTypeName; // => 'Int'
+       * ```
+       */
       getInputType() {
         return this._typeInfo.getInputType();
       }
+      /**
+       * Returns the parent input type for the current input position.
+       * @returns The parent input type, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   input ReviewFilter {
+       *     stars: Int
+       *   }
+       *
+       *   type Query {
+       *     reviews(filter: ReviewFilter): [String]
+       *   }
+       * `);
+       * const document = parse('{ reviews(filter: { stars: 5 }) }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let parentInputTypeName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     ObjectField: () => {
+       *       parentInputTypeName = String(context.getParentInputType());
+       *     },
+       *   }),
+       * );
+       *
+       * parentInputTypeName; // => 'ReviewFilter'
+       * ```
+       */
       getParentInputType() {
         return this._typeInfo.getParentInputType();
       }
+      /**
+       * Returns the current field definition.
+       * @returns The current field definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let fieldName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Field: () => {
+       *       fieldName = context.getFieldDef()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * fieldName; // => 'greeting'
+       * ```
+       */
       getFieldDef() {
         return this._typeInfo.getFieldDef();
       }
+      /**
+       * Returns the current directive definition.
+       * @returns The current directive definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     greeting: String
+       *   }
+       * `);
+       * const document = parse('{ greeting @include(if: true) }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let directiveName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Directive: () => {
+       *       directiveName = context.getDirective()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * directiveName; // => 'include'
+       * ```
+       */
       getDirective() {
         return this._typeInfo.getDirective();
       }
+      /**
+       * Returns the current argument definition.
+       * @returns The current argument definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   type Query {
+       *     reviews(limit: Int): [String]
+       *   }
+       * `);
+       * const document = parse('{ reviews(limit: 5) }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let argumentName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     Argument: () => {
+       *       argumentName = context.getArgument()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * argumentName; // => 'limit'
+       * ```
+       */
       getArgument() {
         return this._typeInfo.getArgument();
       }
+      /**
+       * Returns the current enum value definition.
+       * @returns The current enum value definition, if known.
+       * @example
+       * ```ts
+       * import { parse, visit } from 'graphql/language';
+       * import { buildSchema, TypeInfo, visitWithTypeInfo } from 'graphql/utilities';
+       * import { ValidationContext } from 'graphql/validation';
+       *
+       * const schema = buildSchema(`
+       *   enum Sort {
+       *     NEWEST
+       *     OLDEST
+       *   }
+       *
+       *   type Query {
+       *     reviews(sort: Sort): [String]
+       *   }
+       * `);
+       * const document = parse('{ reviews(sort: OLDEST) }');
+       * const typeInfo = new TypeInfo(schema);
+       * const context = new ValidationContext(schema, document, typeInfo, () => {});
+       * let enumValueName;
+       *
+       * visit(
+       *   document,
+       *   visitWithTypeInfo(typeInfo, {
+       *     EnumValue: () => {
+       *       enumValueName = context.getEnumValue()?.name;
+       *     },
+       *   }),
+       * );
+       *
+       * enumValueName; // => 'OLDEST'
+       * ```
+       */
       getEnumValue() {
         return this._typeInfo.getEnumValue();
       }
@@ -10813,9 +14005,9 @@ var require_ValidationContext = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/validate.js
+// node_modules/graphql/validation/validate.js
 var require_validate2 = __commonJS({
-  "../../node_modules/graphql/validation/validate.js"(exports) {
+  "node_modules/graphql/validation/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10825,12 +14017,18 @@ var require_validate2 = __commonJS({
     exports.validate = validate;
     exports.validateSDL = validateSDL;
     var _devAssert = require_devAssert();
+    var _mapValue = require_mapValue();
     var _GraphQLError = require_GraphQLError();
+    var _ast = require_ast();
     var _visitor = require_visitor();
     var _validate = require_validate();
     var _TypeInfo = require_TypeInfo();
     var _specifiedRules = require_specifiedRules();
     var _ValidationContext = require_ValidationContext();
+    var QueryDocumentKeysToValidate = (0, _mapValue.mapValue)(
+      _ast.QueryDocumentKeys,
+      (keys) => keys.filter((key) => key !== "description")
+    );
     function validate(schema, documentAST, rules = _specifiedRules.specifiedRules, options, typeInfo = new _TypeInfo.TypeInfo(schema)) {
       var _options$maxErrors;
       const maxErrors = (_options$maxErrors = options === null || options === void 0 ? void 0 : options.maxErrors) !== null && _options$maxErrors !== void 0 ? _options$maxErrors : 100;
@@ -10860,7 +14058,8 @@ var require_validate2 = __commonJS({
       try {
         (0, _visitor.visit)(
           documentAST,
-          (0, _TypeInfo.visitWithTypeInfo)(typeInfo, visitor)
+          (0, _TypeInfo.visitWithTypeInfo)(typeInfo, visitor),
+          QueryDocumentKeysToValidate
         );
       } catch (e) {
         if (e !== abortObj) {
@@ -10897,9 +14096,9 @@ var require_validate2 = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/memoize3.js
+// node_modules/graphql/jsutils/memoize3.js
 var require_memoize3 = __commonJS({
-  "../../node_modules/graphql/jsutils/memoize3.js"(exports) {
+  "node_modules/graphql/jsutils/memoize3.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10932,9 +14131,9 @@ var require_memoize3 = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/promiseForObject.js
+// node_modules/graphql/jsutils/promiseForObject.js
 var require_promiseForObject = __commonJS({
-  "../../node_modules/graphql/jsutils/promiseForObject.js"(exports) {
+  "node_modules/graphql/jsutils/promiseForObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10952,9 +14151,9 @@ var require_promiseForObject = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/promiseReduce.js
+// node_modules/graphql/jsutils/promiseReduce.js
 var require_promiseReduce = __commonJS({
-  "../../node_modules/graphql/jsutils/promiseReduce.js"(exports) {
+  "node_modules/graphql/jsutils/promiseReduce.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10971,9 +14170,9 @@ var require_promiseReduce = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/toError.js
+// node_modules/graphql/jsutils/toError.js
 var require_toError = __commonJS({
-  "../../node_modules/graphql/jsutils/toError.js"(exports) {
+  "node_modules/graphql/jsutils/toError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10993,9 +14192,9 @@ var require_toError = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/locatedError.js
+// node_modules/graphql/error/locatedError.js
 var require_locatedError = __commonJS({
-  "../../node_modules/graphql/error/locatedError.js"(exports) {
+  "node_modules/graphql/error/locatedError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11023,9 +14222,9 @@ var require_locatedError = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/execution/execute.js
+// node_modules/graphql/execution/execute.js
 var require_execute = __commonJS({
-  "../../node_modules/graphql/execution/execute.js"(exports) {
+  "node_modules/graphql/execution/execute.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11065,6 +14264,32 @@ var require_execute = __commonJS({
         fieldNodes
       )
     );
+    var CollectedErrors = class {
+      constructor() {
+        this._errorPositions = /* @__PURE__ */ new Set();
+        this._errors = [];
+      }
+      get errors() {
+        return this._errors;
+      }
+      add(error, path2) {
+        if (this._hasNulledPosition(path2)) {
+          return;
+        }
+        this._errorPositions.add(path2);
+        this._errors.push(error);
+      }
+      _hasNulledPosition(startPath) {
+        let path2 = startPath;
+        while (path2 !== void 0) {
+          if (this._errorPositions.has(path2)) {
+            return true;
+          }
+          path2 = path2.prev;
+        }
+        return this._errorPositions.has(void 0);
+      }
+    };
     function execute(args) {
       arguments.length < 2 || (0, _devAssert.devAssert)(
         false,
@@ -11083,17 +14308,17 @@ var require_execute = __commonJS({
         const result = executeOperation(exeContext, operation, rootValue);
         if ((0, _isPromise.isPromise)(result)) {
           return result.then(
-            (data) => buildResponse(data, exeContext.errors),
+            (data) => buildResponse(data, exeContext.collectedErrors.errors),
             (error) => {
-              exeContext.errors.push(error);
-              return buildResponse(null, exeContext.errors);
+              exeContext.collectedErrors.add(error, void 0);
+              return buildResponse(null, exeContext.collectedErrors.errors);
             }
           );
         }
-        return buildResponse(result, exeContext.errors);
+        return buildResponse(result, exeContext.collectedErrors.errors);
       } catch (error) {
-        exeContext.errors.push(error);
-        return buildResponse(null, exeContext.errors);
+        exeContext.collectedErrors.add(error, void 0);
+        return buildResponse(null, exeContext.collectedErrors.errors);
       }
     }
     function executeSync(args) {
@@ -11120,7 +14345,7 @@ var require_execute = __commonJS({
       );
     }
     function buildExecutionContext(args) {
-      var _definition$name, _operation$variableDe;
+      var _definition$name, _operation$variableDe, _options$maxCoercionE;
       const {
         schema,
         document,
@@ -11130,7 +14355,8 @@ var require_execute = __commonJS({
         operationName,
         fieldResolver,
         typeResolver,
-        subscribeFieldResolver
+        subscribeFieldResolver,
+        options
       } = args;
       let operation;
       const fragments = /* @__PURE__ */ Object.create(null);
@@ -11172,7 +14398,7 @@ var require_execute = __commonJS({
         variableDefinitions,
         rawVariableValues !== null && rawVariableValues !== void 0 ? rawVariableValues : {},
         {
-          maxErrors: 50
+          maxErrors: (_options$maxCoercionE = options === null || options === void 0 ? void 0 : options.maxCoercionErrors) !== null && _options$maxCoercionE !== void 0 ? _options$maxCoercionE : 50
         }
       );
       if (coercedVariableValues.errors) {
@@ -11188,7 +14414,7 @@ var require_execute = __commonJS({
         fieldResolver: fieldResolver !== null && fieldResolver !== void 0 ? fieldResolver : defaultFieldResolver,
         typeResolver: typeResolver !== null && typeResolver !== void 0 ? typeResolver : defaultTypeResolver,
         subscribeFieldResolver: subscribeFieldResolver !== null && subscribeFieldResolver !== void 0 ? subscribeFieldResolver : defaultFieldResolver,
-        errors: []
+        collectedErrors: new CollectedErrors()
       };
     }
     function executeOperation(exeContext, operation, rootValue) {
@@ -11329,7 +14555,7 @@ var require_execute = __commonJS({
               fieldNodes,
               (0, _Path.pathToArray)(path2)
             );
-            return handleFieldError(error, returnType, exeContext);
+            return handleFieldError(error, returnType, path2, exeContext);
           });
         }
         return completed;
@@ -11339,7 +14565,7 @@ var require_execute = __commonJS({
           fieldNodes,
           (0, _Path.pathToArray)(path2)
         );
-        return handleFieldError(error, returnType, exeContext);
+        return handleFieldError(error, returnType, path2, exeContext);
       }
     }
     function buildResolveInfo(exeContext, fieldDef, fieldNodes, parentType, path2) {
@@ -11356,11 +14582,11 @@ var require_execute = __commonJS({
         variableValues: exeContext.variableValues
       };
     }
-    function handleFieldError(error, returnType, exeContext) {
+    function handleFieldError(error, returnType, path2, exeContext) {
       if ((0, _definition.isNonNullType)(returnType)) {
         throw error;
       }
-      exeContext.errors.push(error);
+      exeContext.collectedErrors.add(error, path2);
       return null;
     }
     function completeValue(exeContext, returnType, fieldNodes, info, path2, result) {
@@ -11465,7 +14691,7 @@ var require_execute = __commonJS({
                 fieldNodes,
                 (0, _Path.pathToArray)(itemPath)
               );
-              return handleFieldError(error, itemType, exeContext);
+              return handleFieldError(error, itemType, itemPath, exeContext);
             });
           }
           return completedItem;
@@ -11475,7 +14701,7 @@ var require_execute = __commonJS({
             fieldNodes,
             (0, _Path.pathToArray)(itemPath)
           );
-          return handleFieldError(error, itemType, exeContext);
+          return handleFieldError(error, itemType, itemPath, exeContext);
         }
       });
       return containsPromise ? Promise.all(completedResults) : completedResults;
@@ -11620,6 +14846,10 @@ var require_execute = __commonJS({
           if ((0, _isPromise.isPromise)(isTypeOfResult)) {
             promisedIsTypeOfResults[i] = isTypeOfResult;
           } else if (isTypeOfResult) {
+            if (promisedIsTypeOfResults.length) {
+              Promise.allSettled(promisedIsTypeOfResults).catch(() => {
+              });
+            }
             return type.name;
           }
         }
@@ -11659,9 +14889,9 @@ var require_execute = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/graphql.js
+// node_modules/graphql/graphql.js
 var require_graphql = __commonJS({
-  "../../node_modules/graphql/graphql.js"(exports) {
+  "node_modules/graphql/graphql.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11733,9 +14963,9 @@ var require_graphql = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/type/index.js
+// node_modules/graphql/type/index.js
 var require_type = __commonJS({
-  "../../node_modules/graphql/type/index.js"(exports) {
+  "node_modules/graphql/type/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12284,9 +15514,9 @@ var require_type = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/index.js
+// node_modules/graphql/language/index.js
 var require_language = __commonJS({
-  "../../node_modules/graphql/language/index.js"(exports) {
+  "node_modules/graphql/language/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12381,6 +15611,12 @@ var require_language = __commonJS({
         return _predicates.isExecutableDefinitionNode;
       }
     });
+    Object.defineProperty(exports, "isSchemaCoordinateNode", {
+      enumerable: true,
+      get: function() {
+        return _predicates.isSchemaCoordinateNode;
+      }
+    });
     Object.defineProperty(exports, "isSelectionNode", {
       enumerable: true,
       get: function() {
@@ -12433,6 +15669,12 @@ var require_language = __commonJS({
       enumerable: true,
       get: function() {
         return _parser.parseConstValue;
+      }
+    });
+    Object.defineProperty(exports, "parseSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _parser.parseSchemaCoordinate;
       }
     });
     Object.defineProperty(exports, "parseType", {
@@ -12492,9 +15734,9 @@ var require_language = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/isAsyncIterable.js
+// node_modules/graphql/jsutils/isAsyncIterable.js
 var require_isAsyncIterable = __commonJS({
-  "../../node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
+  "node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12506,9 +15748,9 @@ var require_isAsyncIterable = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/execution/mapAsyncIterator.js
+// node_modules/graphql/execution/mapAsyncIterator.js
 var require_mapAsyncIterator = __commonJS({
-  "../../node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
+  "node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12559,9 +15801,9 @@ var require_mapAsyncIterator = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/execution/subscribe.js
+// node_modules/graphql/execution/subscribe.js
 var require_subscribe = __commonJS({
-  "../../node_modules/graphql/execution/subscribe.js"(exports) {
+  "node_modules/graphql/execution/subscribe.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12698,9 +15940,9 @@ var require_subscribe = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/execution/index.js
+// node_modules/graphql/execution/index.js
 var require_execution = __commonJS({
-  "../../node_modules/graphql/execution/index.js"(exports) {
+  "node_modules/graphql/execution/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12772,9 +16014,9 @@ var require_execution = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
+// node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
 var require_NoDeprecatedCustomRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
+  "node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12872,9 +16114,9 @@ var require_NoDeprecatedCustomRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
+// node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
 var require_NoSchemaIntrospectionCustomRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
+  "node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12903,9 +16145,9 @@ var require_NoSchemaIntrospectionCustomRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/index.js
+// node_modules/graphql/validation/index.js
 var require_validation = __commonJS({
-  "../../node_modules/graphql/validation/index.js"(exports) {
+  "node_modules/graphql/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13199,9 +16441,9 @@ var require_validation = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/index.js
+// node_modules/graphql/error/index.js
 var require_error = __commonJS({
-  "../../node_modules/graphql/error/index.js"(exports) {
+  "node_modules/graphql/error/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13242,9 +16484,9 @@ var require_error = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/getIntrospectionQuery.js
+// node_modules/graphql/utilities/getIntrospectionQuery.js
 var require_getIntrospectionQuery = __commonJS({
-  "../../node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
+  "node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13257,7 +16499,9 @@ var require_getIntrospectionQuery = __commonJS({
         directiveIsRepeatable: false,
         schemaDescription: false,
         inputValueDeprecation: false,
+        experimentalDirectiveDeprecation: false,
         oneOf: false,
+        typeDepth: 9,
         ...options
       };
       const descriptions = optionsWithDefault.descriptions ? "description" : "";
@@ -13267,7 +16511,25 @@ var require_getIntrospectionQuery = __commonJS({
       function inputDeprecation(str) {
         return optionsWithDefault.inputValueDeprecation ? str : "";
       }
+      function experimentalDirectiveDeprecation(str) {
+        return optionsWithDefault.experimentalDirectiveDeprecation ? str : "";
+      }
       const oneOf = optionsWithDefault.oneOf ? "isOneOf" : "";
+      function ofType(level, indent) {
+        if (level <= 0) {
+          return "";
+        }
+        if (level > 100) {
+          throw new Error(
+            "Please set typeDepth to a reasonable value between 0 and 100; the default is 9."
+          );
+        }
+        return `
+${indent}ofType {
+${indent}  name
+${indent}  kind${ofType(level - 1, indent + "  ")}
+${indent}}`;
+      }
       return `
     query IntrospectionQuery {
       __schema {
@@ -13278,10 +16540,14 @@ var require_getIntrospectionQuery = __commonJS({
         types {
           ...FullType
         }
-        directives {
+        directives${experimentalDirectiveDeprecation(
+        "(includeDeprecated: true)"
+      )} {
           name
           ${descriptions}
           ${directiveIsRepeatable}
+          ${experimentalDirectiveDeprecation("isDeprecated")}
+          ${experimentalDirectiveDeprecation("deprecationReason")}
           locations
           args${inputDeprecation("(includeDeprecated: true)")} {
             ...InputValue
@@ -13336,52 +16602,16 @@ var require_getIntrospectionQuery = __commonJS({
 
     fragment TypeRef on __Type {
       kind
-      name
-      ofType {
-        kind
-        name
-        ofType {
-          kind
-          name
-          ofType {
-            kind
-            name
-            ofType {
-              kind
-              name
-              ofType {
-                kind
-                name
-                ofType {
-                  kind
-                  name
-                  ofType {
-                    kind
-                    name
-                    ofType {
-                      kind
-                      name
-                      ofType {
-                        kind
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      name${ofType(optionsWithDefault.typeDepth, "      ")}
     }
   `;
     }
   }
 });
 
-// ../../node_modules/graphql/utilities/getOperationAST.js
+// node_modules/graphql/utilities/getOperationAST.js
 var require_getOperationAST = __commonJS({
-  "../../node_modules/graphql/utilities/getOperationAST.js"(exports) {
+  "node_modules/graphql/utilities/getOperationAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13408,9 +16638,9 @@ var require_getOperationAST = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/getOperationRootType.js
+// node_modules/graphql/utilities/getOperationRootType.js
 var require_getOperationRootType = __commonJS({
-  "../../node_modules/graphql/utilities/getOperationRootType.js"(exports) {
+  "node_modules/graphql/utilities/getOperationRootType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13464,9 +16694,9 @@ var require_getOperationRootType = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/introspectionFromSchema.js
+// node_modules/graphql/utilities/introspectionFromSchema.js
 var require_introspectionFromSchema = __commonJS({
-  "../../node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
+  "node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13482,6 +16712,7 @@ var require_introspectionFromSchema = __commonJS({
         directiveIsRepeatable: true,
         schemaDescription: true,
         inputValueDeprecation: true,
+        experimentalDirectiveDeprecation: true,
         oneOf: true,
         ...options
       };
@@ -13498,9 +16729,9 @@ var require_introspectionFromSchema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/buildClientSchema.js
+// node_modules/graphql/utilities/buildClientSchema.js
 var require_buildClientSchema = __commonJS({
-  "../../node_modules/graphql/utilities/buildClientSchema.js"(exports) {
+  "node_modules/graphql/utilities/buildClientSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13780,6 +17011,7 @@ var require_buildClientSchema = __commonJS({
           name: directiveIntrospection.name,
           description: directiveIntrospection.description,
           isRepeatable: directiveIntrospection.isRepeatable,
+          deprecationReason: directiveIntrospection.deprecationReason,
           locations: directiveIntrospection.locations.slice(),
           args: buildInputValueDefMap(directiveIntrospection.args)
         });
@@ -13788,9 +17020,9 @@ var require_buildClientSchema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/extendSchema.js
+// node_modules/graphql/utilities/extendSchema.js
 var require_extendSchema = __commonJS({
-  "../../node_modules/graphql/utilities/extendSchema.js"(exports) {
+  "node_modules/graphql/utilities/extendSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13826,6 +17058,7 @@ var require_extendSchema = __commonJS({
       var _schemaDef, _schemaDef$descriptio, _schemaDef2, _options$assumeValid;
       const typeDefs = [];
       const typeExtensionsMap = /* @__PURE__ */ Object.create(null);
+      const directiveExtensionsMap = /* @__PURE__ */ Object.create(null);
       const directiveDefs = [];
       let schemaDef;
       const schemaExtensions = [];
@@ -13842,9 +17075,13 @@ var require_extendSchema = __commonJS({
           typeExtensionsMap[extendedTypeName] = existingTypeExtensions ? existingTypeExtensions.concat([def]) : [def];
         } else if (def.kind === _kinds.Kind.DIRECTIVE_DEFINITION) {
           directiveDefs.push(def);
+        } else if (def.kind === _kinds.Kind.DIRECTIVE_EXTENSION) {
+          const extendedDirectiveName = def.name.value;
+          const existingDirectiveExtensions = directiveExtensionsMap[extendedDirectiveName];
+          directiveExtensionsMap[extendedDirectiveName] = existingDirectiveExtensions ? existingDirectiveExtensions.concat([def]) : [def];
         }
       }
-      if (Object.keys(typeExtensionsMap).length === 0 && typeDefs.length === 0 && directiveDefs.length === 0 && schemaExtensions.length === 0 && schemaDef == null) {
+      if (Object.keys(typeExtensionsMap).length === 0 && typeDefs.length === 0 && Object.keys(directiveExtensionsMap).length === 0 && directiveDefs.length === 0 && schemaExtensions.length === 0 && schemaDef == null) {
         return schemaConfig;
       }
       const typeMap = /* @__PURE__ */ Object.create(null);
@@ -13856,6 +17093,10 @@ var require_extendSchema = __commonJS({
         const name = typeNode.name.value;
         typeMap[name] = (_stdTypeMap$name = stdTypeMap[name]) !== null && _stdTypeMap$name !== void 0 ? _stdTypeMap$name : buildType(typeNode);
       }
+      const directiveMap = /* @__PURE__ */ Object.create(null);
+      for (const existingDirective of schemaConfig.directives) {
+        directiveMap[existingDirective.name] = extendDirective(existingDirective);
+      }
       const operationTypes = {
         // Get the extended root operation types.
         query: schemaConfig.query && replaceNamedType(schemaConfig.query),
@@ -13865,12 +17106,13 @@ var require_extendSchema = __commonJS({
         ...schemaDef && getOperationTypes([schemaDef]),
         ...getOperationTypes(schemaExtensions)
       };
+      const directives = Object.values(directiveMap);
       return {
         description: (_schemaDef = schemaDef) === null || _schemaDef === void 0 ? void 0 : (_schemaDef$descriptio = _schemaDef.description) === null || _schemaDef$descriptio === void 0 ? void 0 : _schemaDef$descriptio.value,
         ...operationTypes,
         types: Object.values(typeMap),
         directives: [
-          ...schemaConfig.directives.map(replaceDirective),
+          ...directives.map(replaceDirective),
           ...directiveDefs.map(buildDirective)
         ],
         extensions: /* @__PURE__ */ Object.create(null),
@@ -14036,6 +17278,17 @@ var require_extendSchema = __commonJS({
         }
         return opTypes;
       }
+      function extendDirective(directive) {
+        var _directiveExtensionsM, _config$deprecationRe;
+        const config = directive.toConfig();
+        const extensions = (_directiveExtensionsM = directiveExtensionsMap[config.name]) !== null && _directiveExtensionsM !== void 0 ? _directiveExtensionsM : [];
+        const deprecationReason = (_config$deprecationRe = config.deprecationReason) !== null && _config$deprecationRe !== void 0 ? _config$deprecationRe : extensions.map((ext) => getDeprecationReason(ext)).find((reason) => reason != null);
+        return new _directives.GraphQLDirective({
+          ...config,
+          deprecationReason,
+          extensionASTNodes: config.extensionASTNodes.concat(extensions)
+        });
+      }
       function getNamedType(node) {
         var _stdTypeMap$name2;
         const name = node.name.value;
@@ -14055,7 +17308,9 @@ var require_extendSchema = __commonJS({
         return getNamedType(node);
       }
       function buildDirective(node) {
-        var _node$description;
+        var _directiveExtensionsM2, _getDeprecationReason, _node$description;
+        const extensions = (_directiveExtensionsM2 = directiveExtensionsMap[node.name.value]) !== null && _directiveExtensionsM2 !== void 0 ? _directiveExtensionsM2 : [];
+        const deprecationReason = (_getDeprecationReason = getDeprecationReason(node)) !== null && _getDeprecationReason !== void 0 ? _getDeprecationReason : extensions.map((ext) => getDeprecationReason(ext)).find((reason) => reason != null);
         return new _directives.GraphQLDirective({
           name: node.name.value,
           description: (_node$description = node.description) === null || _node$description === void 0 ? void 0 : _node$description.value,
@@ -14063,7 +17318,9 @@ var require_extendSchema = __commonJS({
           locations: node.locations.map(({ value }) => value),
           isRepeatable: node.repeatable,
           args: buildArgumentMap(node.arguments),
-          astNode: node
+          deprecationReason,
+          astNode: node,
+          extensionASTNodes: extensions
         });
       }
       function buildFieldMap(nodes) {
@@ -14279,9 +17536,9 @@ var require_extendSchema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/buildASTSchema.js
+// node_modules/graphql/utilities/buildASTSchema.js
 var require_buildASTSchema = __commonJS({
-  "../../node_modules/graphql/utilities/buildASTSchema.js"(exports) {
+  "node_modules/graphql/utilities/buildASTSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14345,7 +17602,8 @@ var require_buildASTSchema = __commonJS({
     function buildSchema(source, options) {
       const document = (0, _parser.parse)(source, {
         noLocation: options === null || options === void 0 ? void 0 : options.noLocation,
-        allowLegacyFragmentVariables: options === null || options === void 0 ? void 0 : options.allowLegacyFragmentVariables
+        allowLegacyFragmentVariables: options === null || options === void 0 ? void 0 : options.allowLegacyFragmentVariables,
+        experimentalDirectivesOnDirectiveDefinitions: options === null || options === void 0 ? void 0 : options.experimentalDirectivesOnDirectiveDefinitions
       });
       return buildASTSchema(document, {
         assumeValidSDL: options === null || options === void 0 ? void 0 : options.assumeValidSDL,
@@ -14355,9 +17613,9 @@ var require_buildASTSchema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/lexicographicSortSchema.js
+// node_modules/graphql/utilities/lexicographicSortSchema.js
 var require_lexicographicSortSchema = __commonJS({
-  "../../node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
+  "node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14494,9 +17752,9 @@ var require_lexicographicSortSchema = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/printSchema.js
+// node_modules/graphql/utilities/printSchema.js
 var require_printSchema = __commonJS({
-  "../../node_modules/graphql/utilities/printSchema.js"(exports) {
+  "node_modules/graphql/utilities/printSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14662,7 +17920,7 @@ ${operationTypes.join("\n")}
       return argDecl + printDeprecated(arg.deprecationReason);
     }
     function printDirective(directive) {
-      return printDescription(directive) + "directive @" + directive.name + printArgs(directive.args) + (directive.isRepeatable ? " repeatable" : "") + " on " + directive.locations.join(" | ");
+      return printDescription(directive) + "directive @" + directive.name + printArgs(directive.args) + printDeprecated(directive.deprecationReason) + (directive.isRepeatable ? " repeatable" : "") + " on " + directive.locations.join(" | ");
     }
     function printDeprecated(reason) {
       if (reason == null) {
@@ -14703,9 +17961,9 @@ ${operationTypes.join("\n")}
   }
 });
 
-// ../../node_modules/graphql/utilities/concatAST.js
+// node_modules/graphql/utilities/concatAST.js
 var require_concatAST = __commonJS({
-  "../../node_modules/graphql/utilities/concatAST.js"(exports) {
+  "node_modules/graphql/utilities/concatAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14725,9 +17983,9 @@ var require_concatAST = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/separateOperations.js
+// node_modules/graphql/utilities/separateOperations.js
 var require_separateOperations = __commonJS({
-  "../../node_modules/graphql/utilities/separateOperations.js"(exports) {
+  "node_modules/graphql/utilities/separateOperations.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14790,9 +18048,9 @@ var require_separateOperations = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/stripIgnoredCharacters.js
+// node_modules/graphql/utilities/stripIgnoredCharacters.js
 var require_stripIgnoredCharacters = __commonJS({
-  "../../node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
+  "node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14834,9 +18092,9 @@ var require_stripIgnoredCharacters = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/assertValidName.js
+// node_modules/graphql/utilities/assertValidName.js
 var require_assertValidName = __commonJS({
-  "../../node_modules/graphql/utilities/assertValidName.js"(exports) {
+  "node_modules/graphql/utilities/assertValidName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14869,9 +18127,9 @@ var require_assertValidName = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/findBreakingChanges.js
+// node_modules/graphql/utilities/findBreakingChanges.js
 var require_findBreakingChanges = __commonJS({
-  "../../node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
+  "node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -15283,9 +18541,186 @@ var require_findBreakingChanges = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/index.js
+// node_modules/graphql/utilities/resolveSchemaCoordinate.js
+var require_resolveSchemaCoordinate = __commonJS({
+  "node_modules/graphql/utilities/resolveSchemaCoordinate.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.resolveASTSchemaCoordinate = resolveASTSchemaCoordinate;
+    exports.resolveSchemaCoordinate = resolveSchemaCoordinate;
+    var _inspect = require_inspect();
+    var _kinds = require_kinds();
+    var _parser = require_parser();
+    var _definition = require_definition();
+    function resolveSchemaCoordinate(schema, schemaCoordinate) {
+      return resolveASTSchemaCoordinate(
+        schema,
+        (0, _parser.parseSchemaCoordinate)(schemaCoordinate)
+      );
+    }
+    function resolveTypeCoordinate(schema, schemaCoordinate) {
+      const typeName = schemaCoordinate.name.value;
+      const type = schema.getType(typeName);
+      if (type == null) {
+        return;
+      }
+      return {
+        kind: "NamedType",
+        type
+      };
+    }
+    function resolveMemberCoordinate(schema, schemaCoordinate) {
+      const typeName = schemaCoordinate.name.value;
+      const type = schema.getType(typeName);
+      if (!type) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            typeName
+          )} to be defined as a type in the schema.`
+        );
+      }
+      if (!(0, _definition.isEnumType)(type) && !(0, _definition.isInputObjectType)(type) && !(0, _definition.isObjectType)(type) && !(0, _definition.isInterfaceType)(type)) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            typeName
+          )} to be an Enum, Input Object, Object or Interface type.`
+        );
+      }
+      if ((0, _definition.isEnumType)(type)) {
+        const enumValueName = schemaCoordinate.memberName.value;
+        const enumValue = type.getValue(enumValueName);
+        if (enumValue == null) {
+          return;
+        }
+        return {
+          kind: "EnumValue",
+          type,
+          enumValue
+        };
+      }
+      if ((0, _definition.isInputObjectType)(type)) {
+        const inputFieldName = schemaCoordinate.memberName.value;
+        const inputField = type.getFields()[inputFieldName];
+        if (inputField == null) {
+          return;
+        }
+        return {
+          kind: "InputField",
+          type,
+          inputField
+        };
+      }
+      const fieldName = schemaCoordinate.memberName.value;
+      const field = type.getFields()[fieldName];
+      if (field == null) {
+        return;
+      }
+      return {
+        kind: "Field",
+        type,
+        field
+      };
+    }
+    function resolveArgumentCoordinate(schema, schemaCoordinate) {
+      const typeName = schemaCoordinate.name.value;
+      const type = schema.getType(typeName);
+      if (type == null) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            typeName
+          )} to be defined as a type in the schema.`
+        );
+      }
+      if (!(0, _definition.isObjectType)(type) && !(0, _definition.isInterfaceType)(type)) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            typeName
+          )} to be an object type or interface type.`
+        );
+      }
+      const fieldName = schemaCoordinate.fieldName.value;
+      const field = type.getFields()[fieldName];
+      if (field == null) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            fieldName
+          )} to exist as a field of type ${(0, _inspect.inspect)(
+            typeName
+          )} in the schema.`
+        );
+      }
+      const fieldArgumentName = schemaCoordinate.argumentName.value;
+      const fieldArgument = field.args.find(
+        (arg) => arg.name === fieldArgumentName
+      );
+      if (fieldArgument == null) {
+        return;
+      }
+      return {
+        kind: "FieldArgument",
+        type,
+        field,
+        fieldArgument
+      };
+    }
+    function resolveDirectiveCoordinate(schema, schemaCoordinate) {
+      const directiveName = schemaCoordinate.name.value;
+      const directive = schema.getDirective(directiveName);
+      if (!directive) {
+        return;
+      }
+      return {
+        kind: "Directive",
+        directive
+      };
+    }
+    function resolveDirectiveArgumentCoordinate(schema, schemaCoordinate) {
+      const directiveName = schemaCoordinate.name.value;
+      const directive = schema.getDirective(directiveName);
+      if (!directive) {
+        throw new Error(
+          `Expected ${(0, _inspect.inspect)(
+            directiveName
+          )} to be defined as a directive in the schema.`
+        );
+      }
+      const {
+        argumentName: { value: directiveArgumentName }
+      } = schemaCoordinate;
+      const directiveArgument = directive.args.find(
+        (arg) => arg.name === directiveArgumentName
+      );
+      if (!directiveArgument) {
+        return;
+      }
+      return {
+        kind: "DirectiveArgument",
+        directive,
+        directiveArgument
+      };
+    }
+    function resolveASTSchemaCoordinate(schema, schemaCoordinate) {
+      switch (schemaCoordinate.kind) {
+        case _kinds.Kind.TYPE_COORDINATE:
+          return resolveTypeCoordinate(schema, schemaCoordinate);
+        case _kinds.Kind.MEMBER_COORDINATE:
+          return resolveMemberCoordinate(schema, schemaCoordinate);
+        case _kinds.Kind.ARGUMENT_COORDINATE:
+          return resolveArgumentCoordinate(schema, schemaCoordinate);
+        case _kinds.Kind.DIRECTIVE_COORDINATE:
+          return resolveDirectiveCoordinate(schema, schemaCoordinate);
+        case _kinds.Kind.DIRECTIVE_ARGUMENT_COORDINATE:
+          return resolveDirectiveArgumentCoordinate(schema, schemaCoordinate);
+      }
+    }
+  }
+});
+
+// node_modules/graphql/utilities/index.js
 var require_utilities = __commonJS({
-  "../../node_modules/graphql/utilities/index.js"(exports) {
+  "node_modules/graphql/utilities/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -15440,6 +18875,18 @@ var require_utilities = __commonJS({
         return _printSchema.printType;
       }
     });
+    Object.defineProperty(exports, "resolveASTSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _resolveSchemaCoordinate.resolveASTSchemaCoordinate;
+      }
+    });
+    Object.defineProperty(exports, "resolveSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _resolveSchemaCoordinate.resolveSchemaCoordinate;
+      }
+    });
     Object.defineProperty(exports, "separateOperations", {
       enumerable: true,
       get: function() {
@@ -15497,12 +18944,13 @@ var require_utilities = __commonJS({
     var _typeComparators = require_typeComparators();
     var _assertValidName = require_assertValidName();
     var _findBreakingChanges = require_findBreakingChanges();
+    var _resolveSchemaCoordinate = require_resolveSchemaCoordinate();
   }
 });
 
-// ../../node_modules/graphql/index.js
+// node_modules/graphql/index.js
 var require_graphql2 = __commonJS({
-  "../../node_modules/graphql/index.js"(exports) {
+  "node_modules/graphql/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -16485,6 +19933,12 @@ var require_graphql2 = __commonJS({
         return _index.isSchema;
       }
     });
+    Object.defineProperty(exports, "isSchemaCoordinateNode", {
+      enumerable: true,
+      get: function() {
+        return _index2.isSchemaCoordinateNode;
+      }
+    });
     Object.defineProperty(exports, "isSelectionNode", {
       enumerable: true,
       get: function() {
@@ -16593,6 +20047,12 @@ var require_graphql2 = __commonJS({
         return _index2.parseConstValue;
       }
     });
+    Object.defineProperty(exports, "parseSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _index2.parseSchemaCoordinate;
+      }
+    });
     Object.defineProperty(exports, "parseType", {
       enumerable: true,
       get: function() {
@@ -16653,6 +20113,12 @@ var require_graphql2 = __commonJS({
         return _index4.recommendedRules;
       }
     });
+    Object.defineProperty(exports, "resolveASTSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _index6.resolveASTSchemaCoordinate;
+      }
+    });
     Object.defineProperty(exports, "resolveObjMapThunk", {
       enumerable: true,
       get: function() {
@@ -16663,6 +20129,12 @@ var require_graphql2 = __commonJS({
       enumerable: true,
       get: function() {
         return _index.resolveReadonlyArrayThunk;
+      }
+    });
+    Object.defineProperty(exports, "resolveSchemaCoordinate", {
+      enumerable: true,
+      get: function() {
+        return _index6.resolveSchemaCoordinate;
       }
     });
     Object.defineProperty(exports, "responsePathAsArray", {
@@ -16789,6 +20261,7 @@ var import_graphql = __toESM(require_graphql2(), 1);
 import crypto from "node:crypto";
 import { spawnSync, spawn } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 
 // src/generated/graphql.ts
@@ -16797,6 +20270,11 @@ var DisableApiKeyDocument = { "kind": "Document", "definitions": [{ "kind": "Ope
 
 // src/cli.ts
 var CONTAINER_NAME = "trip2g-memory";
+function containerName(flags) {
+  if (!flags || !flags.name) return CONTAINER_NAME;
+  const safe = flags.name.replace(/[^a-zA-Z0-9_.-]/g, "-");
+  return `${CONTAINER_NAME}-${safe}`;
+}
 var DEFAULT_PORT = 24081;
 var DEFAULT_IMAGE = "ghcr.io/trip2g/trip2g:latest";
 var DEFAULT_EMAIL = "memory@local";
@@ -16981,7 +20459,8 @@ function parseArgs(argv) {
     hubUrl: DEFAULT_HUB_URL,
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
-    id: null
+    id: null,
+    name: null
   };
   let cmd = "up";
   let i = 0;
@@ -17020,6 +20499,8 @@ function parseArgs(argv) {
       flags.staleDays = parseInt(argv[++i], 10);
     } else if (arg === "--id") {
       flags.id = argv[++i];
+    } else if (arg === "--name") {
+      flags.name = argv[++i];
     } else if (!arg.startsWith("-")) {
       positional.push(arg);
     }
@@ -17180,11 +20661,12 @@ function buildServerEnv(opts) {
 }
 function buildDockerRunArgs(opts) {
   const { port, iport, stateDir, image } = opts;
+  const cName = opts.containerName ?? CONTAINER_NAME;
   const env = buildServerEnv(opts);
   const args = [
     "-d",
     "--name",
-    CONTAINER_NAME,
+    cName,
     // Loopback bind — only reachable from localhost
     "-p",
     `127.0.0.1:${port}:${port}`,
@@ -17259,6 +20741,14 @@ async function waitReady(url, timeoutMs, pollMs) {
     await new Promise((r) => setTimeout(r, pollMs));
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
+}
+function isPortBusy(port) {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once("error", () => resolve(true));
+    srv.once("listening", () => srv.close(() => resolve(false)));
+    srv.listen(port, "127.0.0.1");
+  });
 }
 async function hatAuth(publicUrl, secret, email) {
   const jwt = signHatJwt(secret, email);
@@ -17489,23 +20979,23 @@ async function runUp(flags) {
 }
 function runDown(flags) {
   try {
-    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder));
+    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder, containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
-function runStatus() {
+function runStatus(flags) {
   try {
-    const text = captureLines(() => cmdStatus());
+    const text = captureLines(() => cmdStatus(containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
-function runLogs() {
+function runLogs(flags) {
   try {
-    const result = spawnSync("docker", ["logs", CONTAINER_NAME], {
+    const result = spawnSync("docker", ["logs", containerName(flags)], {
       encoding: "utf8"
     });
     if (result.error) throw result.error;
@@ -17873,6 +21363,7 @@ FLAGS (up)
   --no-hub             Skip writing the federation hub note (hub.md)
   --no-seed            Skip seeding OKF starter notes (index/log/AGENTS/SCHEMA)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
+  --name <id>          Run an isolated instance named trip2g-memory-<id> (needs its own --port)
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -17904,6 +21395,7 @@ NOTES
 }
 async function cmdUp(flags, dryRun) {
   const { folder, port, email, image } = flags;
+  const name = containerName(flags);
   if (!folder) {
     console.error("Error: --folder <vault> is required for `up`");
     process.exit(1);
@@ -17916,7 +21408,7 @@ async function cmdUp(flags, dryRun) {
   const publicUrl = flags.publicUrl || `http://localhost:${port}`;
   const containerRunning = (() => {
     try {
-      const out = spawnSync("docker", ["ps", "-q", "--filter", `name=${CONTAINER_NAME}`], {
+      const out = spawnSync("docker", ["ps", "-q", "--filter", `name=^${name}$`], {
         encoding: "utf8"
       });
       return (out.stdout || "").trim().length > 0;
@@ -17932,7 +21424,7 @@ async function cmdUp(flags, dryRun) {
     }
   }
   if (containerRunning && watcherAlive && !dryRun) {
-    console.log(`trip2g-memory is already up. Web: ${publicUrl}`);
+    console.log(`${name} is already up. Web: ${publicUrl}`);
     return;
   }
   if (!dryRun) {
@@ -17961,15 +21453,19 @@ async function cmdUp(flags, dryRun) {
   } else if (dryRun && needsWrite) {
     console.log("[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to", envFile);
   }
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image });
+  if (!dryRun && !containerRunning && await isPortBusy(port)) {
+    console.error(`Error: port ${port} is busy \u2014 pass --port for this instance (or stop what holds it).`);
+    process.exit(1);
+  }
+  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image, containerName: name });
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(" ")}`);
   } else if (!containerRunning) {
-    console.log(`Starting container ${CONTAINER_NAME} (image: ${image})...`);
+    console.log(`Starting container ${name} (image: ${image})...`);
     console.log("NOTE: image must include feat/filestorage local-storage backend.");
     spawnSync("docker", ["run", ...dockerArgs], { encoding: "utf8" });
   } else {
-    console.log(`Container ${CONTAINER_NAME} already running, skipping docker run.`);
+    console.log(`Container ${name} already running, skipping docker run.`);
   }
   const readyzUrl = `http://localhost:${iport}/readyz`;
   if (dryRun) {
@@ -18075,24 +21571,24 @@ async function cmdUp(flags, dryRun) {
   console.log("");
   console.log(`memory live \u2014 web: ${publicUrl}  read/write .md in ${vault}`);
 }
-function cmdDown(dryRun, folder) {
+function cmdDown(dryRun, folder, name) {
   if (dryRun) {
-    console.log(`[dry-run] docker stop ${CONTAINER_NAME}`);
-    console.log(`[dry-run] docker rm ${CONTAINER_NAME}`);
+    console.log(`[dry-run] docker stop ${name}`);
+    console.log(`[dry-run] docker rm ${name}`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
       console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
     }
   } else {
     try {
-      spawnSync("docker", ["stop", CONTAINER_NAME], { encoding: "utf8" });
+      spawnSync("docker", ["stop", name], { encoding: "utf8" });
     } catch {
     }
     try {
-      spawnSync("docker", ["rm", CONTAINER_NAME], { encoding: "utf8" });
+      spawnSync("docker", ["rm", name], { encoding: "utf8" });
     } catch {
     }
-    console.log(`Container ${CONTAINER_NAME} stopped and removed.`);
+    console.log(`Container ${name} stopped and removed.`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
       if (fs.existsSync(pidFile)) {
@@ -18113,7 +21609,7 @@ function cmdDown(dryRun, folder) {
     }
   }
 }
-function cmdStatus() {
+function cmdStatus(name) {
   console.log("=== Container ===");
   const out = spawnSync(
     "docker",
@@ -18121,7 +21617,7 @@ function cmdStatus() {
       "ps",
       "-a",
       "--filter",
-      `name=${CONTAINER_NAME}`,
+      `name=^${name}$`,
       "--format",
       "table {{.Names}}	{{.Status}}	{{.Ports}}"
     ],
@@ -18129,8 +21625,8 @@ function cmdStatus() {
   );
   console.log(out.stdout || "(no output)");
 }
-function cmdLogs() {
-  const result = spawnSync("docker", ["logs", CONTAINER_NAME], {
+function cmdLogs(name) {
+  const result = spawnSync("docker", ["logs", name], {
     encoding: "utf8",
     stdio: "inherit"
   });
@@ -18218,7 +21714,8 @@ function defaultFlags() {
     hubUrl: DEFAULT_HUB_URL,
     context: 15,
     staleDays: DEFAULT_STALE_DAYS,
-    id: null
+    id: null,
+    name: null
   };
 }
 async function dispatchMcpTool(name, args) {
@@ -18232,6 +21729,7 @@ async function dispatchMcpTool(name, args) {
     if (typeof a.noHub === "boolean") f.noHub = a.noHub;
     if (typeof a.noSeed === "boolean") f.noSeed = a.noSeed;
     if (typeof a.hubUrl === "string") f.hubUrl = a.hubUrl;
+    if (typeof a.name === "string") f.name = a.name;
     return f;
   }
   let result;
@@ -18243,10 +21741,10 @@ async function dispatchMcpTool(name, args) {
       result = runDown(flagsFrom(args));
       break;
     case "memory_status":
-      result = runStatus();
+      result = runStatus(flagsFrom(args));
       break;
     case "memory_logs":
-      result = runLogs();
+      result = runLogs(flagsFrom(args));
       break;
     case "memory_key":
       result = await runKey(flagsFrom(args));
@@ -18372,13 +21870,13 @@ if (_mainUrl === _argv1Url) {
             await cmdUp(flags, flags.dryRun);
             break;
           case "down":
-            cmdDown(flags.dryRun, flags.folder);
+            cmdDown(flags.dryRun, flags.folder, containerName(flags));
             break;
           case "status":
-            cmdStatus();
+            cmdStatus(containerName(flags));
             break;
           case "logs":
-            cmdLogs();
+            cmdLogs(containerName(flags));
             break;
           case "key":
             await cmdKey(flags, flags.dryRun);
@@ -18429,6 +21927,7 @@ export {
   buildSchemaNote,
   buildServerEnv,
   buildToolList,
+  containerName,
   ensureDailyIndex,
   extractWikilinks,
   findBrokenLinks,
