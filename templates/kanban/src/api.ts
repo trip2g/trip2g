@@ -13,7 +13,10 @@ const UPDATE_MUTATION = `
 export async function sha256Base64(str: string): Promise<string> {
   const encoded = new TextEncoder().encode(str)
   const hashBuf = await crypto.subtle.digest('SHA-256', encoded)
+  // Server stores hashes as base64url (+ → -, / → _); padding is kept.
   return btoa(String.fromCharCode(...new Uint8Array(hashBuf)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
 }
 
 export interface PatchInput {
