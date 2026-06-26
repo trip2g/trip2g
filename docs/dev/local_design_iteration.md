@@ -150,7 +150,7 @@ node obsidian-sync/dist/trip2g-sync.mjs --watch \
 
 Same loop: save a `_layouts/*.html`, the watcher pushes it, the real page updates.
 
-> Single-instance note: `memcli up` always names its container `trip2g-memory` (hardcoded). To run a second isolated instance alongside it, drive `docker run` + `trip2g-sync --watch` yourself with a different name and port, or just reuse the running one.
+> Multiple instances: by default `memcli up` names its container `trip2g-memory`. To run a second isolated instance alongside it, pass `--name <id>` (container becomes `trip2g-memory-<id>`) plus a distinct `--port` — give the same `--name` to `down`/`status`/`logs`. State stays per `--folder`.
 
 ---
 
