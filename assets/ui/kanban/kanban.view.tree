@@ -1,0 +1,27 @@
+$trip2g_kanban $mol_view
+	sub <= columns /$mol_view
+	editable false
+	Column* $mol_drop
+		adopt?transfer <=> card_adopt?transfer null
+		receive?obj <=> card_receive*?obj null
+		Sub <= Column_body* $mol_view
+			sub /
+				<= Column_title* $mol_view
+					sub / <= column_title* \
+				<= Card_list* $mol_list
+					rows <= card_rows* /$mol_view
+				<= Add_card* $mol_button_minor
+					title @ \Add card
+					click? <=> add_card*? null
+	Card* $mol_drag
+		transfer *
+			text/plain <= card_json* \
+			text/html \
+			text/uri-list \
+		Sub <= Card_body* $mol_view
+			sub /
+				<= Card_check* $mol_check_box
+					checked? <=> card_checked*? false
+				<= Card_text* $mol_string
+					value? <=> card_text*? \
+					enabled <= editable
