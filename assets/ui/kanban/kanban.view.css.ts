@@ -14,7 +14,7 @@ namespace $ {
 
 		Column_body: {
 			flexDirection: 'column',
-			background: 'var(--pico-card-background-color)',
+			backgroundColor: 'var(--pico-card-background-color)',
 			borderRadius: '0.5rem',
 			padding: '0.75rem',
 			gap: '0.5rem',
@@ -33,7 +33,7 @@ namespace $ {
 			flexDirection: 'row',
 			alignItems: 'flex-start',
 			gap: '0.5rem',
-			background: 'var(--pico-background-color)',
+			backgroundColor: 'var(--pico-background-color)',
 			borderLeft: '1px solid var(--pico-muted-border-color)',
 			borderRight: '1px solid var(--pico-muted-border-color)',
 			borderTop: '1px solid var(--pico-muted-border-color)',
@@ -45,7 +45,7 @@ namespace $ {
 
 		Card_text: {
 			flex: { grow: 1 },
-			background: 'transparent',
+			background: 'none',
 		},
 	} )
 }
