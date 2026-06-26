@@ -85,13 +85,43 @@ namespace $.$$ {
 			return this.board().lists[l]?.cards[c]?.checked ?? false
 		}
 
+		// In-progress draft per card: null means no active edit (use board value).
+		@$mol_mem_key
+		card_text_draft(id: string, next?: string | null): string | null {
+			if (next !== undefined) return next
+			return null
+		}
+
 		override card_text(id: string, val?: string): string {
 			const [l, c] = this.card_idx(id)
-			const current = this.board().lists[l]?.cards[c]?.text ?? ''
-			if (val !== undefined && val !== current) {
-				this.commit($trip2g_kanban_edit_card(this.board(), l, c, { text: val }))
+			// Always read board so it stays a tracked dependency — ensures
+			// that board changes (SSE updates, commits) invalidate this memo.
+			const boardText = this.board().lists[l]?.cards[c]?.text ?? ''
+			if (val !== undefined) {
+				if (this.editable()) {
+					this.card_text_draft(id, val)
+				}
+				return val
 			}
-			return this.board().lists[l]?.cards[c]?.text ?? ''
+			const draft = this.card_text_draft(id)
+			return draft !== null ? draft : boardText
+		}
+
+		// Commit the draft when the text field loses focus.
+		// Called via the DOM `focusout` event wired in kanban.view.tree.
+		// Runs inside $mol_wire_async so reactive setters are safe to call.
+		card_text_focusout(id: string, _event?: Event): void {
+			const [l, c] = this.card_idx(id)
+			const draft = this.card_text_draft(id)
+			if (draft === null) return
+			const board = this.board()
+			const card = board.lists[l]?.cards[c]
+			if (!card || draft === card.text) {
+				this.card_text_draft(id, null)
+				return
+			}
+			this.commit($trip2g_kanban_edit_card(board, l, c, { text: draft }))
+			this.card_text_draft(id, null)
 		}
 
 		// --- drag / drop ---

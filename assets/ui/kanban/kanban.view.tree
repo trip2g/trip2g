@@ -27,3 +27,6 @@ $trip2g_kanban $mol_view
 				<= Card_text* $mol_string
 					value? <=> card_text*? \
 					enabled <= editable
+					event *
+						^
+						focusout? <=> card_text_focusout*? null
