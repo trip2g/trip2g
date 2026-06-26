@@ -1059,26 +1059,26 @@ export async function runUp(flags: Flags): Promise<CommandResult> {
 
 export function runDown(flags: Flags): CommandResult {
   try {
-    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder));
+    const text = captureLines(() => cmdDown(flags.dryRun, flags.folder, containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
 }
 
-export function runStatus(): CommandResult {
+export function runStatus(flags: Flags): CommandResult {
   try {
-    const text = captureLines(() => cmdStatus());
+    const text = captureLines(() => cmdStatus(containerName(flags)));
     return { text, isError: false };
   } catch (err) {
     return { text: `Error: ${(err as Error).message}`, isError: true };
   }
 }
 
-export function runLogs(): CommandResult {
+export function runLogs(flags: Flags): CommandResult {
   // For MCP mode: capture output via spawnSync with pipe instead of inherit
   try {
-    const result = spawnSync('docker', ['logs', CONTAINER_NAME], {
+    const result = spawnSync('docker', ['logs', containerName(flags)], {
       encoding: 'utf8',
     });
     if (result.error) throw result.error;
@@ -1840,26 +1840,26 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   console.log(`memory live — web: ${publicUrl}  read/write .md in ${vault}`);
 }
 
-function cmdDown(dryRun: boolean, folder?: string): void {
+function cmdDown(dryRun: boolean, folder: string | undefined, name: string): void {
   if (dryRun) {
-    console.log(`[dry-run] docker stop ${CONTAINER_NAME}`);
-    console.log(`[dry-run] docker rm ${CONTAINER_NAME}`);
+    console.log(`[dry-run] docker stop ${name}`);
+    console.log(`[dry-run] docker rm ${name}`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), '.trip2g-memory', 'watch.pid');
       console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
     }
   } else {
     try {
-      spawnSync('docker', ['stop', CONTAINER_NAME], { encoding: 'utf8' });
+      spawnSync('docker', ['stop', name], { encoding: 'utf8' });
     } catch {
       // ignore
     }
     try {
-      spawnSync('docker', ['rm', CONTAINER_NAME], { encoding: 'utf8' });
+      spawnSync('docker', ['rm', name], { encoding: 'utf8' });
     } catch {
       // ignore
     }
-    console.log(`Container ${CONTAINER_NAME} stopped and removed.`);
+    console.log(`Container ${name} stopped and removed.`);
 
     // Kill the detached watcher process if a pid file exists
     if (folder) {
@@ -1885,7 +1885,7 @@ function cmdDown(dryRun: boolean, folder?: string): void {
   }
 }
 
-function cmdStatus(): void {
+function cmdStatus(name: string): void {
   console.log('=== Container ===');
   const out = spawnSync(
     'docker',
@@ -1893,7 +1893,7 @@ function cmdStatus(): void {
       'ps',
       '-a',
       '--filter',
-      `name=${CONTAINER_NAME}`,
+      `name=^${name}$`,
       '--format',
       'table {{.Names}}\t{{.Status}}\t{{.Ports}}',
     ],
@@ -1902,8 +1902,8 @@ function cmdStatus(): void {
   console.log(out.stdout || '(no output)');
 }
 
-function cmdLogs(): void {
-  const result = spawnSync('docker', ['logs', CONTAINER_NAME], {
+function cmdLogs(name: string): void {
+  const result = spawnSync('docker', ['logs', name], {
     encoding: 'utf8',
     stdio: 'inherit',
   });
@@ -2044,6 +2044,7 @@ async function dispatchMcpTool(
     if (typeof a.noHub === 'boolean') f.noHub = a.noHub;
     if (typeof a.noSeed === 'boolean') f.noSeed = a.noSeed;
     if (typeof a.hubUrl === 'string') f.hubUrl = a.hubUrl;
+    if (typeof a.name === 'string') f.name = a.name;
     return f;
   }
 
@@ -2056,10 +2057,10 @@ async function dispatchMcpTool(
       result = runDown(flagsFrom(args));
       break;
     case 'memory_status':
-      result = runStatus();
+      result = runStatus(flagsFrom(args));
       break;
     case 'memory_logs':
-      result = runLogs();
+      result = runLogs(flagsFrom(args));
       break;
     case 'memory_key':
       result = await runKey(flagsFrom(args));
@@ -2211,13 +2212,13 @@ if (_mainUrl === _argv1Url) {
             await cmdUp(flags, flags.dryRun);
             break;
           case 'down':
-            cmdDown(flags.dryRun, flags.folder);
+            cmdDown(flags.dryRun, flags.folder, containerName(flags));
             break;
           case 'status':
-            cmdStatus();
+            cmdStatus(containerName(flags));
             break;
           case 'logs':
-            cmdLogs();
+            cmdLogs(containerName(flags));
             break;
           case 'key':
             await cmdKey(flags, flags.dryRun);
