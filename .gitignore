@@ -70,3 +70,5 @@ docs/.sync-state*.json
 docker-compose.whoami.yml
 .test-infra.json
 .worktrees/
+
+/kanban-vault/
