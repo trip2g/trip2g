@@ -1,4 +1,4 @@
-import type { KanbanBoard, KanbanCard } from './format'
+import type { KanbanBoard, KanbanCard, KanbanList } from './format'
 
 export interface MoveCardArgs {
   /** source list index */
@@ -55,4 +55,88 @@ export function toggleCard(b: KanbanBoard, listIndex: number, cardIndex: number)
   return editCard(b, listIndex, cardIndex, {
     checked: !b.lists[listIndex].cards[cardIndex].checked,
   })
+}
+
+/** The exact markdown line for a card: `- [x] text` or `- [ ] text`. */
+export function cardLine(card: { checked: boolean; text: string }): string {
+  return `- [${card.checked ? 'x' : ' '}] ${card.text}`
+}
+
+const CARD_RE = /^- \[([ xX])\] /
+
+/**
+ * Apply `lists` (current board state) surgically to `baselineMd`.
+ * Only card lines (`- [ ] …` / `- [x] …`) in each column section are replaced.
+ * All other content — frontmatter, blank lines, headings, sub-bullets, blockquotes,
+ * the settings block, anything format.ts does not model — is preserved verbatim.
+ */
+export function applyBoardToBaseline(baselineMd: string, lists: KanbanList[]): string {
+  // Split off settings block first (same regex as parseBoard)
+  const SETTINGS_RE = /\n*^%% kanban:settings[\s\S]*$/m
+  const sm = baselineMd.match(SETTINGS_RE)
+  let body = baselineMd
+  let settingsSuffix = ''
+  if (sm && sm.index !== undefined) {
+    settingsSuffix = baselineMd.slice(sm.index)
+    body = baselineMd.slice(0, sm.index)
+  }
+
+  // Find where column sections start
+  const firstLaneOffset = body.search(/^## /m)
+  if (firstLaneOffset === -1) return baselineMd  // no columns — nothing to do
+  const frontmatter = body.slice(0, firstLaneOffset)
+  const bodyFromFirstLane = body.slice(firstLaneOffset)
+
+  // Split into per-column chunks (each starts with ## Heading)
+  const chunks = bodyFromFirstLane.split(/(?=^## )/m)
+  const resultChunks: string[] = [frontmatter]
+
+  for (const chunk of chunks) {
+    if (!chunk.startsWith('## ')) {
+      resultChunks.push(chunk)
+      continue
+    }
+
+    const headingLine = chunk.split('\n')[0]
+    const title = headingLine.slice(3).trimEnd()
+    const listIdx = lists.findIndex(l => l.title === title)
+
+    if (listIdx === -1) {
+      // Unknown column — keep verbatim
+      resultChunks.push(chunk)
+      continue
+    }
+
+    const newCards = lists[listIdx].cards.map(c => cardLine(c))
+    const chunkLines = chunk.split('\n')
+    const outputLines: string[] = []
+    let cardsInserted = false
+
+    for (const line of chunkLines) {
+      if (CARD_RE.test(line)) {
+        if (!cardsInserted) {
+          outputLines.push(...newCards)
+          cardsInserted = true
+        }
+        // Skip old card line (already replaced above)
+        continue
+      }
+      outputLines.push(line)
+    }
+
+    // Column had no card lines in baseline but now has cards (e.g. move into empty col)
+    if (!cardsInserted && newCards.length > 0) {
+      // Insert after the heading line + one trailing blank (canonical gap after ## heading)
+      let insertIdx = 1
+      if (outputLines[insertIdx] === '') insertIdx++
+      outputLines.splice(insertIdx, 0, ...newCards)
+      // Remove one trailing blank to keep inter-column whitespace consistent
+      const lastIdx = outputLines.length - 1
+      if (outputLines[lastIdx] === '') outputLines.splice(lastIdx, 1)
+    }
+
+    resultChunks.push(outputLines.join('\n'))
+  }
+
+  return resultChunks.join('') + settingsSuffix
 }

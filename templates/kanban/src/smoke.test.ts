@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parseBoard, serializeBoard } from './format'
-import { moveCard, addCard, editCard, deleteCard, toggleCard } from './ops'
+import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline } from './ops'
 
 const SAMPLE = `---
 kanban-plugin: basic
@@ -116,4 +116,105 @@ test('serialize after moveCard produces valid parseable markdown', () => {
   assert.equal(reparsed.lists[0].cards.length, 1)
   assert.equal(reparsed.lists[1].cards.length, 2)
   assert.equal(reparsed.lists[1].cards[0].text, 'Task 1')
+})
+
+// ── Surgical edit tests (unmodeled content preservation) ─────────────────────
+
+// A baseline that contains lines format.ts does not model:
+// a blockquote and a sub-bullet interspersed among cards.
+const BASELINE_WITH_UNMODELED = `---
+kanban-plugin: basic
+---
+
+## To Do
+
+- [ ] Task 1
+> a blockquote that the parser ignores
+- [ ] Task 2
+
+## In Progress
+
+- [x] Done task
+  - sub-bullet under Done task
+
+
+%% kanban:settings
+\`\`\`
+{"kanban-plugin":"basic"}
+\`\`\`
+%%`
+
+test('patch toggle preserves unmodeled blockquote', () => {
+  // The surgical patch for a toggle is: find = oldLine, replace = newLine
+  const card = { checked: false, text: 'Task 1' }
+  const oldLine = cardLine(card)
+  const newLine = cardLine({ ...card, checked: true })
+
+  assert.equal(oldLine, '- [ ] Task 1')
+  assert.equal(newLine, '- [x] Task 1')
+
+  // Applying the find/replace to baseline must preserve the blockquote
+  const result = BASELINE_WITH_UNMODELED.replace(oldLine, newLine)
+  assert.ok(result.includes('> a blockquote that the parser ignores'), 'blockquote preserved after toggle patch')
+  assert.ok(result.includes('- [x] Task 1'), 'card is now checked')
+  assert.ok(result.includes('- [ ] Task 2'), 'other card untouched')
+  // Make sure we only replaced the right line
+  assert.ok(!result.includes('- [ ] Task 1'), 'old unchecked Task 1 gone')
+})
+
+test('applyBoardToBaseline (upsert-surgical move) preserves unmodeled content', () => {
+  // Move Task 1 from To Do to In Progress (at index 0)
+  const lists = [
+    { title: 'To Do', complete: false, cards: [{ text: 'Task 2', checked: false }] },
+    {
+      title: 'In Progress',
+      complete: false,
+      cards: [
+        { text: 'Task 1', checked: false },
+        { text: 'Done task', checked: true },
+      ],
+    },
+  ]
+
+  const newMd = applyBoardToBaseline(BASELINE_WITH_UNMODELED, lists)
+
+  // Unmodeled lines must survive
+  assert.ok(newMd.includes('> a blockquote that the parser ignores'), 'blockquote preserved after move upsert')
+  assert.ok(newMd.includes('  - sub-bullet under Done task'), 'sub-bullet preserved after move upsert')
+  assert.ok(newMd.includes('%% kanban:settings'), 'settings block preserved')
+
+  // Card arrangement must reflect the move
+  const todoSection = newMd.split('## In Progress')[0]
+  const progressSection = newMd.split('## In Progress')[1]
+  assert.ok(!todoSection.includes('- [ ] Task 1'), 'Task 1 no longer in To Do')
+  assert.ok(todoSection.includes('- [ ] Task 2'), 'Task 2 still in To Do')
+  assert.ok(progressSection.includes('- [ ] Task 1'), 'Task 1 now in In Progress')
+  assert.ok(progressSection.includes('- [x] Done task'), 'Done task still in In Progress')
+})
+
+test('applyBoardToBaseline move to empty column preserves content', () => {
+  const baselineWithEmptyCol = `---
+kanban-plugin: basic
+---
+
+## Backlog
+
+- [ ] Ticket A
+> important note
+
+## Done
+
+
+`
+
+  const lists = [
+    { title: 'Backlog', complete: false, cards: [] },
+    { title: 'Done', complete: false, cards: [{ text: 'Ticket A', checked: false }] },
+  ]
+
+  const newMd = applyBoardToBaseline(baselineWithEmptyCol, lists)
+
+  assert.ok(newMd.includes('> important note'), 'unmodeled line preserved when moving out of col')
+  assert.ok(!newMd.split('## Done')[0].includes('- [ ] Ticket A'), 'Ticket A no longer in Backlog section')
+  assert.ok(newMd.split('## Done')[1].includes('- [ ] Ticket A'), 'Ticket A appears in Done section')
 })
