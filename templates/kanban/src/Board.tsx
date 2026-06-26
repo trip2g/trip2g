@@ -59,6 +59,29 @@ function strip(b: AugBoard): KanbanBoard {
   }
 }
 
+/** Derive a display title from a file path. */
+function titleFromPath(path: string): string {
+  const segment = path.split('/').pop() ?? path
+  const name = segment.replace(/\.[^.]+$/, '')
+  return name
+    .replace(/[-_]/g, ' ')
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+// ── GridIcon ──────────────────────────────────────────────────────────────────
+
+function GridIcon() {
+  return (
+    <div className="kanban-header-icon" aria-hidden="true">
+      {Array.from({ length: 9 }).map((_, i) => (
+        <span key={i} />
+      ))}
+    </div>
+  )
+}
+
 // ── SortableCard ─────────────────────────────────────────────────────────────
 
 interface CardProps {
@@ -166,6 +189,7 @@ function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps)
           onPointerDown={e => e.stopPropagation()}
           title="Delete card"
           tabIndex={-1}
+          aria-label="Delete card"
         >
           ×
         </button>
@@ -205,7 +229,7 @@ function DroppableColumn({
   onEdit,
   onDelete,
 }: ColumnProps) {
-  const { setNodeRef } = useDroppable({ id: list.id })
+  const { setNodeRef, isOver } = useDroppable({ id: list.id })
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -214,11 +238,16 @@ function DroppableColumn({
     }
   }, [addingTo, listIdx])
 
-  const headerClass = `kanban-column-header${list.complete ? ' is-complete' : ''}`
+  const colClass = ['kanban-column', isOver ? 'is-over' : ''].filter(Boolean).join(' ')
 
   return (
-    <div className="kanban-column">
-      <div className={headerClass}>{list.title}</div>
+    <div className={colClass}>
+      <div className="kanban-column-header">
+        <span className={`kanban-column-title${list.complete ? ' is-complete' : ''}`}>
+          {list.title}
+        </span>
+        <span className="kanban-column-count">{list.cards.length}</span>
+      </div>
 
       <SortableContext
         items={list.cards.map(c => c.id)}
@@ -418,35 +447,63 @@ export default function Board({ path, content, editable }: BoardProps) {
     setNewCardText('')
   }
 
-  return (
-    <>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="kanban-board">
-          {board.lists.map((list, listIdx) => (
-            <DroppableColumn
-              key={list.id}
-              list={list}
-              listIdx={listIdx}
-              editable={editable}
-              addingTo={addingTo}
-              newCardText={newCardText}
-              onNewCardTextChange={setNewCardText}
-              onStartAdd={setAddingTo}
-              onCommitAdd={handleCommitAdd}
-              onCancelAdd={handleCancelAdd}
-              onToggle={cardIdx => handleToggle(listIdx, cardIdx)}
-              onEdit={(cardIdx, text) => handleEdit(listIdx, cardIdx, text)}
-              onDelete={cardIdx => handleDelete(listIdx, cardIdx)}
-            />
-          ))}
-        </div>
-      </DndContext>
+  const title = titleFromPath(path)
+  const totalCards = board.lists.reduce((n, l) => n + l.cards.length, 0)
 
-      {toast && <div className="kanban-toast">{toast}</div>}
-    </>
+  return (
+    <div className="kanban-app">
+      {/* ── header ── */}
+      <header className="kanban-header" role="banner">
+        <div className="kanban-header-inner">
+          <div className="kanban-header-left">
+            <GridIcon />
+            <span className="kanban-header-title">{title}</span>
+            <span className="kanban-header-sep" aria-hidden="true">/</span>
+            <span className="kanban-header-sub">
+              {board.lists.length} {board.lists.length === 1 ? 'column' : 'columns'} · {totalCards} {totalCards === 1 ? 'card' : 'cards'}
+            </span>
+          </div>
+          <div className="kanban-header-right">
+            {editable && (
+              <span className="kanban-header-tag">
+                <span className="kanban-header-tag-dot" aria-hidden="true" />
+                Editable
+              </span>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ── board ── */}
+      <main className="kanban-main" role="main">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="kanban-board">
+            {board.lists.map((list, listIdx) => (
+              <DroppableColumn
+                key={list.id}
+                list={list}
+                listIdx={listIdx}
+                editable={editable}
+                addingTo={addingTo}
+                newCardText={newCardText}
+                onNewCardTextChange={setNewCardText}
+                onStartAdd={setAddingTo}
+                onCommitAdd={handleCommitAdd}
+                onCancelAdd={handleCancelAdd}
+                onToggle={cardIdx => handleToggle(listIdx, cardIdx)}
+                onEdit={(cardIdx, text) => handleEdit(listIdx, cardIdx, text)}
+                onDelete={cardIdx => handleDelete(listIdx, cardIdx)}
+              />
+            ))}
+          </div>
+        </DndContext>
+      </main>
+
+      {toast && <div className="kanban-toast" role="alert">{toast}</div>}
+    </div>
   )
 }
