@@ -26,7 +26,8 @@ RUN npm start trip2g && \
     npm start trip2g/user && \
     npm start trip2g/space && \
     npm start trip2g/forms && \
-    npm start trip2g/admin
+    npm start trip2g/admin && \
+    npm start trip2g/kanban
 
 # Build server binary
 FROM golang:1.26 AS builder
