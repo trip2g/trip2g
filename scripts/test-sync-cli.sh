@@ -60,6 +60,12 @@ VAULT1="$TMP_DIR/testvault1"
 SYNC_UPDATES_DIR="$TMP_DIR/sync-updates"
 SYNC_STEP=0
 
+# Per-endpoint sync-state filename. Mirrors stateFileNameForApiUrl() in
+# obsidian-sync/src/sync/cli/env.ts: strip scheme + path, keep host:port, then
+# sanitize [^a-zA-Z0-9.-] -> '_'.
+# e.g. http://localhost:20081/graphql -> .sync-state.localhost_20081.json
+STATE_FILE=".sync-state.$(printf '%s' "$ENDPOINT" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#[^a-zA-Z0-9.-]#_#g').json"
+
 # Colors
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -250,7 +256,7 @@ setup() {
     # Copy docs/demo to testvault0
     log_info "Copying docs/demo → tmp/testvault0"
     cp -r "$PROJECT_ROOT/docs/demo" "$VAULT0"
-    rm -f "$VAULT0/.sync-state.json"
+    rm -f "$VAULT0/$STATE_FILE"
 
     # Create empty testvault1
     log_info "Creating empty tmp/testvault1"
@@ -272,7 +278,7 @@ test_initial_sync_vault0() {
     log_section "Test: Initial sync of vault0"
 
     sync_vault "$VAULT0"
-    assert_file_exists "$VAULT0/.sync-state.json" "Sync state created for vault0"
+    assert_file_exists "$VAULT0/$STATE_FILE" "Sync state created for vault0"
 }
 
 test_empty_vault_pulls_all() {
@@ -280,7 +286,7 @@ test_empty_vault_pulls_all() {
 
     sync_vault "$VAULT1"
 
-    assert_file_exists "$VAULT1/.sync-state.json" "Sync state created for vault1"
+    assert_file_exists "$VAULT1/$STATE_FILE" "Sync state created for vault1"
     assert_file_exists "$VAULT1/index.md" "Index file pulled to vault1"
     assert_dirs_equal "$VAULT0" "$VAULT1" "Both vaults have identical content"
 }
@@ -499,7 +505,7 @@ test_syncstate_reset_as_conflict() {
     sync_vault_quiet "$VAULT1" "--conflict-resolution=remote"
 
     # Remove syncstate
-    rm -f "$VAULT1/.sync-state.json"
+    rm -f "$VAULT1/$STATE_FILE"
 
     # Modify a file
     cat > "$VAULT1/from_vault1.md" << 'EOF'
@@ -513,7 +519,7 @@ EOF
     log_info "Syncing after syncstate deletion - conflicts expected"
     sync_vault "$VAULT1" "--conflict-resolution=local"
 
-    assert_file_exists "$VAULT1/.sync-state.json" "Sync state recreated"
+    assert_file_exists "$VAULT1/$STATE_FILE" "Sync state recreated"
 }
 
 test_asset_upload() {

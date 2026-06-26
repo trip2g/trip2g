@@ -84,6 +84,10 @@
     "url": "http://localhost:20081/broken_layout_test"
   },
   {
+    "path": "callouts.md",
+    "url": "http://localhost:20081/callouts"
+  },
+  {
     "path": "canvas_link_test.md",
     "url": "http://localhost:20081/canvas_link_test"
   },
@@ -290,6 +294,10 @@
   {
     "path": "multidomain/root.md",
     "url": "http://customdomain.test/"
+  },
+  {
+    "path": "obsidian-comments.md",
+    "url": "http://localhost:20081/obsidian_comments"
   },
   {
     "path": "page-with-header-footer.md",
