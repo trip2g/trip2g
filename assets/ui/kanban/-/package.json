@@ -1,0 +1,7 @@
+{
+  "name": "trip2g_kanban",
+  "version": "0.0.1",
+  "exports": { "import": "./web.mjs", "default": "./web.js" },
+  "main": "./web.js",
+  "keywords": ["$trip2g_kanban", "$trip2g", "$mol_view", "$mol_drag", "$mol_drop"]
+}
