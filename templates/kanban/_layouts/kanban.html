@@ -42,7 +42,7 @@
      The only unsafe sequence would be </textarea> inside the markdown, which
      is impossible in standard obsidian-kanban notes.
 -->
-<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":{{ default_template.is_admin() }}}</script>
+<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":{{ current_user.is_admin() }}}</script>
 <textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
 
 <script>
