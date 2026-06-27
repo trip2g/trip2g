@@ -418,6 +418,7 @@ type NoteVersion struct {
 	CreatedAt         time.Time `json:"created_at"`
 	CreatedByUserID   *int64    `json:"created_by_user_id"`
 	CreatedByApiKeyID *int64    `json:"created_by_api_key_id"`
+	CreatedByClient   *string   `json:"created_by_client"`
 }
 
 type NoteVersionAsset struct {

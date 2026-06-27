@@ -20,6 +20,7 @@ select * from note_versions
 select
   nv.created_by_user_id,
   nv.created_by_api_key_id,
+  nv.created_by_client,
   nv.created_at,
   u.email       as user_email,
   k.description as api_key_description

@@ -20,15 +20,16 @@ import (
 )
 
 // actorEnv is a real-DB insertnote.Env whose NoteVersionActor returns a
-// configurable acting user / api key, so tests can assert the recorded actor.
+// configurable acting user / api key / client, so tests can assert the recorded actor.
 type actorEnv struct {
 	*db.WriteQueries
 	userID   *int64
 	apiKeyID *int64
+	client   *string
 }
 
-func (e *actorEnv) NoteVersionActor(_ context.Context) (*int64, *int64) {
-	return e.userID, e.apiKeyID
+func (e *actorEnv) NoteVersionActor(_ context.Context) model.NoteActor {
+	return model.NoteActor{UserID: e.userID, APIKeyID: e.apiKeyID, Client: e.client}
 }
 
 func setupActorDB(t *testing.T) *sql.DB {
@@ -90,6 +91,7 @@ func TestInsertNoteRecordsUserActor(t *testing.T) {
 	require.NotNil(t, editor.UserEmail)
 	require.Equal(t, "editor@example.com", *editor.UserEmail)
 	require.Nil(t, editor.ApiKeyDescription)
+	require.Nil(t, editor.CreatedByClient)
 	require.False(t, editor.CreatedAt.IsZero())
 }
 
@@ -133,6 +135,7 @@ func TestInsertNoteRecordsAPIKeyActor(t *testing.T) {
 	require.NotNil(t, editor.ApiKeyDescription)
 	require.Equal(t, "Obsidian Sync Key", *editor.ApiKeyDescription)
 	require.Nil(t, editor.UserEmail)
+	require.Nil(t, editor.CreatedByClient)
 	require.False(t, editor.CreatedAt.IsZero())
 }
 
@@ -152,9 +155,40 @@ func TestInsertNoteRecordsNoActorAsNull(t *testing.T) {
 	version := latestVersion(t, rq, pathID)
 	require.Nil(t, version.CreatedByUserID)
 	require.Nil(t, version.CreatedByApiKeyID)
+	require.Nil(t, version.CreatedByClient)
 
 	editor, err := rq.NoteVersionEditor(ctx, version.ID)
 	require.NoError(t, err)
+	require.Nil(t, editor.UserEmail)
+	require.Nil(t, editor.ApiKeyDescription)
+	require.Nil(t, editor.CreatedByClient)
+}
+
+func TestInsertNoteRecordsClientHeader(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn := setupActorDB(t)
+	wq := db.NewWriteQueries(conn)
+	rq := db.New(conn)
+
+	clientVal := "obsidian-plugin/4.2.1"
+	env := &actorEnv{WriteQueries: wq, client: &clientVal}
+
+	pathID, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "client-note.md", Content: "from client"})
+	require.NoError(t, err)
+
+	version := latestVersion(t, rq, pathID)
+	require.NotNil(t, version.CreatedByClient)
+	require.Equal(t, clientVal, *version.CreatedByClient)
+	require.Nil(t, version.CreatedByUserID)
+	require.Nil(t, version.CreatedByApiKeyID)
+
+	// Read accessor: NoteVersionEditor returns created_by_client.
+	editor, err := rq.NoteVersionEditor(ctx, version.ID)
+	require.NoError(t, err)
+	require.NotNil(t, editor.CreatedByClient)
+	require.Equal(t, clientVal, *editor.CreatedByClient)
 	require.Nil(t, editor.UserEmail)
 	require.Nil(t, editor.ApiKeyDescription)
 }

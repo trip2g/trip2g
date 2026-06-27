@@ -30,6 +30,7 @@ type Note struct {
 type NoteEditor struct {
 	UserEmail         string    // email of the user who pushed (empty if none)
 	APIKeyDescription string    // description of the API key that pushed (empty if none)
+	Client            string    // value of X-trip2g-client header at push time (empty if absent)
 	CreatedAt         time.Time // when the version was committed
 }
 

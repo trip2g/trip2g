@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement insertnote.Env.
@@ -29,7 +30,7 @@ var _ insertnote.Env = &EnvMock{}
 //			InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
 //				panic("mock out the InsertNoteVersion method")
 //			},
-//			NoteVersionActorFunc: func(ctx context.Context) (*int64, *int64) {
+//			NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
 //				panic("mock out the NoteVersionActor method")
 //			},
 //			UnhideNotePathFunc: func(ctx context.Context, value string) error {
@@ -52,7 +53,7 @@ type EnvMock struct {
 	InsertNoteVersionFunc func(ctx context.Context, arg db.InsertNoteVersionParams) error
 
 	// NoteVersionActorFunc mocks the NoteVersionActor method.
-	NoteVersionActorFunc func(ctx context.Context) (*int64, *int64)
+	NoteVersionActorFunc func(ctx context.Context) model.NoteActor
 
 	// UnhideNotePathFunc mocks the UnhideNotePath method.
 	UnhideNotePathFunc func(ctx context.Context, value string) error
@@ -209,7 +210,7 @@ func (mock *EnvMock) InsertNoteVersionCalls() []struct {
 }
 
 // NoteVersionActor calls NoteVersionActorFunc.
-func (mock *EnvMock) NoteVersionActor(ctx context.Context) (*int64, *int64) {
+func (mock *EnvMock) NoteVersionActor(ctx context.Context) model.NoteActor {
 	if mock.NoteVersionActorFunc == nil {
 		panic("EnvMock.NoteVersionActorFunc: method is nil but Env.NoteVersionActor was just called")
 	}

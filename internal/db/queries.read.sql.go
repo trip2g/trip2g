@@ -687,7 +687,7 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 }
 
 const allNoteVersions = `-- name: AllNoteVersions :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id from note_versions order by path_id, version
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions order by path_id, version
 `
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
@@ -707,6 +707,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 			&i.CreatedAt,
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
+			&i.CreatedByClient,
 		); err != nil {
 			return nil, err
 		}
@@ -722,7 +723,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 }
 
 const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id from note_versions
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions
  where path_id = ?
  order by version desc
 `
@@ -744,6 +745,7 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 			&i.CreatedAt,
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
+			&i.CreatedByClient,
 		); err != nil {
 			return nil, err
 		}
@@ -6832,6 +6834,7 @@ const noteVersionEditor = `-- name: NoteVersionEditor :one
 select
   nv.created_by_user_id,
   nv.created_by_api_key_id,
+  nv.created_by_client,
   nv.created_at,
   u.email       as user_email,
   k.description as api_key_description
@@ -6844,6 +6847,7 @@ where nv.id = ?
 type NoteVersionEditorRow struct {
 	CreatedByUserID   *int64    `json:"created_by_user_id"`
 	CreatedByApiKeyID *int64    `json:"created_by_api_key_id"`
+	CreatedByClient   *string   `json:"created_by_client"`
 	CreatedAt         time.Time `json:"created_at"`
 	UserEmail         *string   `json:"user_email"`
 	ApiKeyDescription *string   `json:"api_key_description"`
@@ -6857,6 +6861,7 @@ func (q *Queries) NoteVersionEditor(ctx context.Context, id int64) (NoteVersionE
 	err := row.Scan(
 		&i.CreatedByUserID,
 		&i.CreatedByApiKeyID,
+		&i.CreatedByClient,
 		&i.CreatedAt,
 		&i.UserEmail,
 		&i.ApiKeyDescription,

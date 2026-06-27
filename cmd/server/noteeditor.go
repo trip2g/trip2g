@@ -30,6 +30,9 @@ func (a *app) NoteVersionEditor(ctx context.Context, versionID int64) (*template
 	if row.ApiKeyDescription != nil {
 		editor.APIKeyDescription = *row.ApiKeyDescription
 	}
+	if row.CreatedByClient != nil {
+		editor.Client = *row.CreatedByClient
+	}
 
 	return editor, nil
 }

@@ -19,6 +19,7 @@ func TestNoteLastEditedByReturnsResolvedEditor(t *testing.T) {
 	want := &NoteEditor{
 		UserEmail:         "editor@example.com",
 		APIKeyDescription: "",
+		Client:            "obsidian-plugin/4.2.1",
 		CreatedAt:         when,
 	}
 
@@ -35,7 +36,28 @@ func TestNoteLastEditedByReturnsResolvedEditor(t *testing.T) {
 	if got.APIKeyDescription != "" {
 		t.Errorf("APIKeyDescription = %q, want empty", got.APIKeyDescription)
 	}
+	if got.Client != "obsidian-plugin/4.2.1" {
+		t.Errorf("Client = %q, want %q", got.Client, "obsidian-plugin/4.2.1")
+	}
 	if !got.CreatedAt.Equal(when) {
 		t.Errorf("CreatedAt = %v, want %v", got.CreatedAt, when)
+	}
+}
+
+func TestNoteLastEditedByClientEmpty(t *testing.T) {
+	want := &NoteEditor{
+		UserEmail: "editor@example.com",
+		Client:    "", // absent header
+	}
+
+	note := NewNote(&model.NoteView{Path: "b.md"})
+	note.SetLastEditedByResolver(func() *NoteEditor { return want })
+
+	got := note.LastEditedBy()
+	if got == nil {
+		t.Fatal("expected resolved editor, got nil")
+	}
+	if got.Client != "" {
+		t.Errorf("Client = %q, want empty for absent header", got.Client)
 	}
 }

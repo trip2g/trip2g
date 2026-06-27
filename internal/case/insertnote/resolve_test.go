@@ -87,8 +87,8 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 			versionCreated = true
 			return nil
 		},
-		NoteVersionActorFunc: func(ctx context.Context) (*int64, *int64) {
-			return nil, nil
+		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
+			return model.NoteActor{}
 		},
 	}
 
@@ -133,8 +133,8 @@ func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
 			versionCreated = true
 			return nil
 		},
-		NoteVersionActorFunc: func(ctx context.Context) (*int64, *int64) {
-			return nil, nil
+		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
+			return model.NoteActor{}
 		},
 	}
 

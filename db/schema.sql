@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS "note_versions" (
   path_id integer not null,
   version integer not null,
   content text not null,
-  created_at datetime not null default current_timestamp, created_by_user_id integer references users(id) on delete set null, created_by_api_key_id integer references api_keys(id) on delete set null,
+  created_at datetime not null default current_timestamp, created_by_user_id integer references users(id) on delete set null, created_by_api_key_id integer references api_keys(id) on delete set null, created_by_client text,
   unique(path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );

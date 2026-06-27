@@ -52,6 +52,7 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 		req.Path = path
 		req.TokenManager = a.tokenManager
 		req.PersonalTokenResolver = a.personalTokenResolver
+		req.Client = strings.TrimSpace(string(ctx.Request.Header.Peek("X-trip2g-client")))
 		req.StoreInContext() // appreq.FromCtx(ctx)
 		defer appreq.Release(req)
 

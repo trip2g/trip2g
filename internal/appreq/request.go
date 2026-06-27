@@ -59,6 +59,12 @@ type Request struct {
 	// Used to record who pushed a note version (created_by_api_key_id).
 	ApiKeyID *int64
 
+	// Client is the trimmed value of the X-trip2g-client request header, set
+	// when the request is built from the fasthttp context. Empty string when
+	// the header is absent. Used to record which client pushed a note version
+	// (created_by_client).
+	Client string
+
 	// FederatedSubgraphs carries the inbound federation identity's AllowedSubgraphs
 	// when the token Role is usertoken.RoleFederated. nil for non-federated requests.
 	FederatedSubgraphs []string
@@ -79,6 +85,7 @@ func (c *Request) Reset() {
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
 	c.ApiKeyID = nil
+	c.Client = ""
 	c.FederatedSubgraphs = nil
 	c.federatedScoped = false
 }
@@ -311,6 +318,7 @@ func (c *Request) Snapshot() *Request {
 		WebhookWritePatterns:  writePatterns,
 		SkipWebhooks:          c.SkipWebhooks,
 		ApiKeyID:              apiKeyID,
+		Client:                c.Client,
 		FederatedSubgraphs:    federatedSubgraphs,
 		federatedScoped:       c.federatedScoped,
 	}
