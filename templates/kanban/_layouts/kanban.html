@@ -7,6 +7,9 @@
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
+    /* The fixed sign-in corner lives top-right; reserve room so the board's own
+       header status badge doesn't slide under it. */
+    .kanban-header-right { margin-right: 184px !important; }
   </style>
 
   <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
