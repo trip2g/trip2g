@@ -10,7 +10,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## v0.7.1 (2026-06-26)
 
-### Full-width pages (`wide: true`)
+### Wide pages (`wide: true`)
 
 - **What.** Any note can now render full-width by adding `wide: true` to its frontmatter — the page drops both sidebars and the narrow reading column so the content fills the whole main area.
 - **Why.** Wide content — kanban boards, big Mermaid diagrams, large tables — was cramped in the default 65ch reading column.
