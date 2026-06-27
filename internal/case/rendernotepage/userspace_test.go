@@ -239,13 +239,13 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	require.Equal(t, 2, scriptCount, "bundle script tag should appear once per call")
 }
 
-// TestJetBinding_IsAdmin_True verifies {{ default_template.is_admin() }} renders
+// TestJetBinding_IsAdmin_True verifies {{ current_user.is_admin() }} renders
 // "true" (Go bool true printed by Jet's fastprinter) when isAdmin=true.
 func TestJetBinding_IsAdmin_True(t *testing.T) {
 	const tmplKey = "/admin-check.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ default_template.is_admin() }}`,
+			tmplKey: `{{ current_user.is_admin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -254,7 +254,7 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -262,13 +262,13 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 	require.Equal(t, "true", buf.String())
 }
 
-// TestJetBinding_IsAdmin_False verifies {{ default_template.is_admin() }} renders
+// TestJetBinding_IsAdmin_False verifies {{ current_user.is_admin() }} renders
 // "false" for a non-admin viewer.
 func TestJetBinding_IsAdmin_False(t *testing.T) {
 	const tmplKey = "/admin-check-false.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ default_template.is_admin() }}`,
+			tmplKey: `{{ current_user.is_admin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -277,7 +277,7 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)

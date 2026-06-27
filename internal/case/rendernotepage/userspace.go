@@ -133,32 +133,39 @@ func (h *userSpaceHelper) scripts() string {
 }
 
 // admin returns true when the current viewer is the site owner/admin.
-// Jet calls this via reflection for {{ default_template.is_admin() }}.
+// Jet calls this via reflection for {{ current_user.is_admin() }}.
 func (h *userSpaceHelper) admin() bool {
 	return h.isAdmin
 }
 
 // jetMap returns the map stored in vars["default_template"].
-// Jet resolves members via map key lookup and calls stored funcs via
-// reflect.Value.Call.
+// Contains only template-chrome helpers (script injection).
 func (h *userSpaceHelper) jetMap() map[string]interface{} {
 	return map[string]interface{}{
 		"user_space_scripts": h.scripts,
-		"is_admin":           h.admin,
 	}
 }
 
-// buildUserSpaceJetMap constructs the default_template var map for renderLayout.
+// currentUserJetMap returns the map stored in vars["current_user"].
+// Layouts call {{ current_user.is_admin() }} to gate edit affordances.
+func (h *userSpaceHelper) currentUserJetMap() map[string]interface{} {
+	return map[string]interface{}{
+		"is_admin": h.admin,
+	}
+}
+
+// buildUserSpaceHelper constructs the helper for renderLayout.
 // It sources data the same way buildDefaultTemplateCtx does:
 //   - jsURLs and localeHashes from renderlayout.Env
 //   - uiLang via langdetect using cookie + Accept-Language header
 //   - devMode from renderlayout.Env
 //   - title and note from the resolve response
-func buildUserSpaceJetMap(
+//   - isAdmin from resp.UserToken.IsAdmin() (nil-safe)
+func buildUserSpaceHelper(
 	ctx *fasthttp.RequestCtx,
 	env Env,
 	resp *Response,
-) map[string]interface{} {
+) *userSpaceHelper {
 	var (
 		jsURLs       []string
 		localeHashes map[string]string
@@ -176,6 +183,5 @@ func buildUserSpaceJetMap(
 		string(ctx.Request.Header.Peek("Accept-Language")),
 	)
 
-	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
-	return h.jetMap()
+	return newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
 }
