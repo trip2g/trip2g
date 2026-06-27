@@ -197,6 +197,29 @@ func (n *Note) LastEditedBy() *NoteEditor {
 	return n.lastEditedBy()
 }
 
+// LastEditedByLabel returns a short human label for who pushed the note's
+// current version: the editor's email, or failing that the API key description,
+// with " · via <client>" appended when the push carried an X-trip2g-client
+// header. Returns "" when there is no editor.
+//
+// SECURITY: admin/editor-only data. Callers MUST gate rendering on
+// current_user.is_admin() and never expose it on public pages.
+func (n *Note) LastEditedByLabel() string {
+	editor := n.LastEditedBy()
+	if editor == nil {
+		return ""
+	}
+
+	label := editor.UserEmail
+	if label == "" {
+		label = editor.APIKeyDescription
+	}
+	if editor.Client != "" {
+		label += " · via " + editor.Client
+	}
+	return label
+}
+
 // HasCharts reports whether the note contains any datachart blocks. Drives
 // conditional loading of the chart widget script.
 func (n *Note) HasCharts() bool {

@@ -57,6 +57,9 @@ type Env interface {
 	// AssetURL returns the cache-busting URL for an embedded asset path, used to
 	// build conditional per-note widget script tags (chart.js, mermaid.js).
 	AssetURL(path string) string
+	// NoteVersionEditor loads who pushed the given note version, used to attach
+	// the admin-only "last edited by" lazy resolver onto the template note.
+	NoteVersionEditor(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error)
 }
 
 type Request struct {

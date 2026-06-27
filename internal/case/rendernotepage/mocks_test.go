@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
 )
 
 // Ensure, that EnvMock does implement rendernotepage.Env.
@@ -67,6 +68,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
+//			},
+//			NoteVersionEditorFunc: func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error) {
+//				panic("mock out the NoteVersionEditor method")
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
@@ -134,6 +138,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// NoteVersionEditorFunc mocks the NoteVersionEditor method.
+	NoteVersionEditorFunc func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error)
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -229,6 +236,13 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// NoteVersionEditor holds details about calls to the NoteVersionEditor method.
+		NoteVersionEditor []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// VersionID is the versionID argument value.
+			VersionID int64
+		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -274,6 +288,7 @@ type EnvMock struct {
 	lockListActiveUserSubgraphs             sync.RWMutex
 	lockLiveNoteViews                       sync.RWMutex
 	lockLogger                              sync.RWMutex
+	lockNoteVersionEditor                   sync.RWMutex
 	lockPublicURL                           sync.RWMutex
 	lockRecordUserNoteView                  sync.RWMutex
 	lockSiteConfig                          sync.RWMutex
@@ -756,6 +771,42 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// NoteVersionEditor calls NoteVersionEditorFunc.
+func (mock *EnvMock) NoteVersionEditor(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error) {
+	if mock.NoteVersionEditorFunc == nil {
+		panic("EnvMock.NoteVersionEditorFunc: method is nil but Env.NoteVersionEditor was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		VersionID int64
+	}{
+		Ctx:       ctx,
+		VersionID: versionID,
+	}
+	mock.lockNoteVersionEditor.Lock()
+	mock.calls.NoteVersionEditor = append(mock.calls.NoteVersionEditor, callInfo)
+	mock.lockNoteVersionEditor.Unlock()
+	return mock.NoteVersionEditorFunc(ctx, versionID)
+}
+
+// NoteVersionEditorCalls gets all the calls that were made to NoteVersionEditor.
+// Check the length with:
+//
+//	len(mockedEnv.NoteVersionEditorCalls())
+func (mock *EnvMock) NoteVersionEditorCalls() []struct {
+	Ctx       context.Context
+	VersionID int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		VersionID int64
+	}
+	mock.lockNoteVersionEditor.RLock()
+	calls = mock.calls.NoteVersionEditor
+	mock.lockNoteVersionEditor.RUnlock()
 	return calls
 }
 

@@ -44,6 +44,59 @@ func TestNoteLastEditedByReturnsResolvedEditor(t *testing.T) {
 	}
 }
 
+func TestNoteLastEditedByLabel(t *testing.T) {
+	tests := []struct {
+		name   string
+		editor *NoteEditor // nil means no resolver attached
+		want   string
+	}{
+		{
+			name:   "no editor",
+			editor: nil,
+			want:   "",
+		},
+		{
+			name:   "user email only",
+			editor: &NoteEditor{UserEmail: "editor@example.com"},
+			want:   "editor@example.com",
+		},
+		{
+			name:   "user email with client",
+			editor: &NoteEditor{UserEmail: "editor@example.com", Client: "obsidian-plugin/4.2.1"},
+			want:   "editor@example.com · via obsidian-plugin/4.2.1",
+		},
+		{
+			name:   "api key description fallback",
+			editor: &NoteEditor{APIKeyDescription: "ci-bot key"},
+			want:   "ci-bot key",
+		},
+		{
+			name:   "api key description with client",
+			editor: &NoteEditor{APIKeyDescription: "ci-bot key", Client: "obsidian-plugin/4.2.1"},
+			want:   "ci-bot key · via obsidian-plugin/4.2.1",
+		},
+		{
+			name:   "empty editor",
+			editor: &NoteEditor{},
+			want:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			note := NewNote(&model.NoteView{Path: "a.md"})
+			if tt.editor != nil {
+				editor := tt.editor
+				note.SetLastEditedByResolver(func() *NoteEditor { return editor })
+			}
+
+			if got := note.LastEditedByLabel(); got != tt.want {
+				t.Errorf("LastEditedByLabel() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNoteLastEditedByClientEmpty(t *testing.T) {
 	want := &NoteEditor{
 		UserEmail: "editor@example.com",

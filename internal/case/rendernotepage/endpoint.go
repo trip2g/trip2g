@@ -337,6 +337,10 @@ func renderLayout(
 	vars["default_template"] = reflect.ValueOf(usHelper.jetMap())
 	vars["current_user"] = reflect.ValueOf(usHelper.currentUserJetMap())
 
+	// Attach the admin-only "last edited by" resolver so layouts can render the
+	// version author (gated on current_user.is_admin()).
+	injectLastEditedByResolver(env, resp)
+
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
 		if resp.UserToken.IsAdmin() {
@@ -347,6 +351,31 @@ func renderLayout(
 	}
 
 	return true, nil
+}
+
+// injectLastEditedByResolver wires the admin-only "who pushed this version"
+// resolver onto the template note. The resolver is lazy: the read query only
+// runs when a layout actually calls note.LastEditedBy(), so it is safe to attach
+// unconditionally.
+//
+// SECURITY: admin/editor-only data. Layouts MUST gate display on
+// current_user.is_admin() and never render it on public pages.
+func injectLastEditedByResolver(env Env, resp *Response) {
+	if resp == nil || resp.NoteView == nil || resp.Note == nil {
+		return
+	}
+	versionID := resp.Note.VersionID
+	if versionID <= 0 {
+		return
+	}
+	resp.NoteView.SetLastEditedByResolver(func() *templateviews.NoteEditor {
+		editor, err := env.NoteVersionEditor(context.Background(), versionID)
+		if err != nil {
+			env.Logger().Error("failed to resolve note version editor", "version_id", versionID, "error", err)
+			return nil
+		}
+		return editor
+	})
 }
 
 // buildHrefLangs builds the list of hreflang alternate links for a note.
@@ -482,6 +511,10 @@ func findRouteForHost(routes []model.ParsedRoute, host, requestPath string) *mod
 func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly requires many optional fields
 	req *appreq.Request, layoutParams renderlayout.Params, resp *Response, env Env,
 ) *defaulttemplate.Ctx {
+	// Attach the admin-only "last edited by" resolver so the default template can
+	// render the version author for normal notes (gated on admin in the template).
+	injectLastEditedByResolver(env, resp)
+
 	// Fetch JS/CSS URLs and dev mode from the renderlayout.Env interface.
 	rlEnv, ok := req.Env.(renderlayout.Env)
 
