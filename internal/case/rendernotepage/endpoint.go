@@ -330,6 +330,13 @@ func renderLayout(
 	vars["htmlInjectionsHead"] = reflect.ValueOf(headInjections)
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
 
+	// Build the shared helper and expose two Jet namespaces:
+	//   default_template — template chrome: {{ default_template.user_space_scripts() }}
+	//   current_user     — viewer role:     {{ current_user.is_admin() }}
+	usHelper := buildUserSpaceHelper(ctx, env, resp)
+	vars["default_template"] = reflect.ValueOf(usHelper.jetMap())
+	vars["current_user"] = reflect.ValueOf(usHelper.currentUserJetMap())
+
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
 		if resp.UserToken.IsAdmin() {
