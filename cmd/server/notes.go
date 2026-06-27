@@ -108,6 +108,32 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) (int64, error)
 	return insertnote.Resolve(ctx, a, note)
 }
 
+// NoteVersionActor resolves who is pushing the current note version from the
+// request context: the acting user id (web/site session, or the API key owner
+// for admin-actor calls) and the authenticating API key id (obsidian-sync
+// pushes). Either is nil when not applicable, recording an "unknown editor".
+func (a *app) NoteVersionActor(ctx context.Context) (createdByUserID *int64, createdByApiKeyID *int64) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, nil
+	}
+
+	if token, tokenErr := req.UserToken(); tokenErr == nil && token != nil && token.ID != 0 {
+		uid := int64(token.ID)
+		createdByUserID = &uid
+	} else if req.AdminActorUserID != 0 {
+		uid := int64(req.AdminActorUserID)
+		createdByUserID = &uid
+	}
+
+	if req.ApiKeyID != nil {
+		keyID := *req.ApiKeyID
+		createdByApiKeyID = &keyID
+	}
+
+	return createdByUserID, createdByApiKeyID
+}
+
 func (a *app) InsertUncommittedPath(ctx context.Context, notePathID int64) error {
 	return a.WriteQueries.InsertUncommittedPath(ctx, notePathID)
 }

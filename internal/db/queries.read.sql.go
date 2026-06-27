@@ -687,7 +687,7 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 }
 
 const allNoteVersions = `-- name: AllNoteVersions :many
-select id, path_id, version, content, created_at from note_versions order by path_id, version
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id from note_versions order by path_id, version
 `
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
@@ -705,6 +705,8 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 			&i.Version,
 			&i.Content,
 			&i.CreatedAt,
+			&i.CreatedByUserID,
+			&i.CreatedByApiKeyID,
 		); err != nil {
 			return nil, err
 		}
@@ -720,7 +722,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 }
 
 const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
-select id, path_id, version, content, created_at from note_versions
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id from note_versions
  where path_id = ?
  order by version desc
 `
@@ -740,6 +742,8 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 			&i.Version,
 			&i.Content,
 			&i.CreatedAt,
+			&i.CreatedByUserID,
+			&i.CreatedByApiKeyID,
 		); err != nil {
 			return nil, err
 		}
@@ -6820,6 +6824,42 @@ func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByI
 		&i.Version,
 		&i.Content,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const noteVersionEditor = `-- name: NoteVersionEditor :one
+select
+  nv.created_by_user_id,
+  nv.created_by_api_key_id,
+  nv.created_at,
+  u.email       as user_email,
+  k.description as api_key_description
+from note_versions nv
+left join users u on u.id = nv.created_by_user_id
+left join api_keys k on k.id = nv.created_by_api_key_id
+where nv.id = ?
+`
+
+type NoteVersionEditorRow struct {
+	CreatedByUserID   *int64    `json:"created_by_user_id"`
+	CreatedByApiKeyID *int64    `json:"created_by_api_key_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UserEmail         *string   `json:"user_email"`
+	ApiKeyDescription *string   `json:"api_key_description"`
+}
+
+// Returns who pushed a given note version: the user (email) and/or the api key
+// (description) recorded at commit time. Admin/editor-only data, gate display.
+func (q *Queries) NoteVersionEditor(ctx context.Context, id int64) (NoteVersionEditorRow, error) {
+	row := q.db.QueryRowContext(ctx, noteVersionEditor, id)
+	var i NoteVersionEditorRow
+	err := row.Scan(
+		&i.CreatedByUserID,
+		&i.CreatedByApiKeyID,
+		&i.CreatedAt,
+		&i.UserEmail,
+		&i.ApiKeyDescription,
 	)
 	return i, err
 }

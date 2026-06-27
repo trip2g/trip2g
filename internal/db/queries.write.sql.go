@@ -1589,18 +1589,26 @@ func (q *WriteQueries) InsertNotePath(ctx context.Context, arg InsertNotePathPar
 }
 
 const insertNoteVersion = `-- name: InsertNoteVersion :exec
-insert into note_versions (path_id, version, content)
-values (?, ?, ?)
+insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id)
+values (?, ?, ?, ?, ?)
 `
 
 type InsertNoteVersionParams struct {
-	PathID  int64  `json:"path_id"`
-	Version int64  `json:"version"`
-	Content string `json:"content"`
+	PathID            int64  `json:"path_id"`
+	Version           int64  `json:"version"`
+	Content           string `json:"content"`
+	CreatedByUserID   *int64 `json:"created_by_user_id"`
+	CreatedByApiKeyID *int64 `json:"created_by_api_key_id"`
 }
 
 func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
-	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
+	_, err := q.db.ExecContext(ctx, insertNoteVersion,
+		arg.PathID,
+		arg.Version,
+		arg.Content,
+		arg.CreatedByUserID,
+		arg.CreatedByApiKeyID,
+	)
 	return err
 }
 

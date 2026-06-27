@@ -14,6 +14,20 @@ select * from note_versions
  where path_id = ?
  order by version desc;
 
+-- name: NoteVersionEditor :one
+-- Returns who pushed a given note version: the user (email) and/or the api key
+-- (description) recorded at commit time. Admin/editor-only data, gate display.
+select
+  nv.created_by_user_id,
+  nv.created_by_api_key_id,
+  nv.created_at,
+  u.email       as user_email,
+  k.description as api_key_description
+from note_versions nv
+left join users u on u.id = nv.created_by_user_id
+left join api_keys k on k.id = nv.created_by_api_key_id
+where nv.id = ?;
+
 -- name: AllLatestNotes :many
 select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p

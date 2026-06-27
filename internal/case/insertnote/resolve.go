@@ -21,6 +21,9 @@ type Env interface {
 	IncrementNoteVersionCount(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error)
 	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) error
 	UnhideNotePath(ctx context.Context, value string) error
+	// NoteVersionActor returns who is pushing this version: the acting user id
+	// and/or the authenticating API key id. Either may be nil (unknown editor).
+	NoteVersionActor(ctx context.Context) (createdByUserID *int64, createdByApiKeyID *int64)
 }
 
 func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
@@ -84,10 +87,14 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 		return 0, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
+	createdByUserID, createdByApiKeyID := env.NoteVersionActor(ctx)
+
 	noteVersion := db.InsertNoteVersionParams{
-		PathID:  notePath.ID,
-		Version: version,
-		Content: arg.Content,
+		PathID:            notePath.ID,
+		Version:           version,
+		Content:           arg.Content,
+		CreatedByUserID:   createdByUserID,
+		CreatedByApiKeyID: createdByApiKeyID,
 	}
 
 	err = env.InsertNoteVersion(ctx, noteVersion)

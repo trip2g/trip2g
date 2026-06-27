@@ -111,6 +111,11 @@ func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string,
 
 	req.SkipWebhooks = apiKey.SkipWebhooks
 
+	// Record the authenticating key so downstream writes (e.g. note version
+	// inserts) can attribute the actor to this API key.
+	keyID := apiKey.ID
+	req.ApiKeyID = &keyID
+
 	return &apiKey, nil
 }
 

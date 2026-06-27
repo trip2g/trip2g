@@ -53,6 +53,12 @@ type Request struct {
 	// authenticating MCP API key. Zero when the actor is unknown.
 	AdminActorUserID int
 
+	// ApiKeyID is the id of the API key that authenticated this request, set by
+	// checkapikey for real (DB-backed) keys. nil when the request was not
+	// api-key-authed (user session, admin bypass, or virtual webhook token).
+	// Used to record who pushed a note version (created_by_api_key_id).
+	ApiKeyID *int64
+
 	// FederatedSubgraphs carries the inbound federation identity's AllowedSubgraphs
 	// when the token Role is usertoken.RoleFederated. nil for non-federated requests.
 	FederatedSubgraphs []string
@@ -72,6 +78,7 @@ func (c *Request) Reset() {
 	c.WebhookWritePatterns = nil
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
+	c.ApiKeyID = nil
 	c.FederatedSubgraphs = nil
 	c.federatedScoped = false
 }
@@ -285,6 +292,12 @@ func (c *Request) Snapshot() *Request {
 		copy(federatedSubgraphs, c.FederatedSubgraphs)
 	}
 
+	var apiKeyID *int64
+	if c.ApiKeyID != nil {
+		v := *c.ApiKeyID
+		apiKeyID = &v
+	}
+
 	return &Request{
 		Env:                   c.Env,
 		Req:                   snapshotFCtx,
@@ -297,6 +310,7 @@ func (c *Request) Snapshot() *Request {
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
 		SkipWebhooks:          c.SkipWebhooks,
+		ApiKeyID:              apiKeyID,
 		FederatedSubgraphs:    federatedSubgraphs,
 		federatedScoped:       c.federatedScoped,
 	}
