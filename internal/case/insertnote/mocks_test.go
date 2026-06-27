@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement insertnote.Env.
@@ -29,6 +30,9 @@ var _ insertnote.Env = &EnvMock{}
 //			InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
 //				panic("mock out the InsertNoteVersion method")
 //			},
+//			NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
+//				panic("mock out the NoteVersionActor method")
+//			},
 //			UnhideNotePathFunc: func(ctx context.Context, value string) error {
 //				panic("mock out the UnhideNotePath method")
 //			},
@@ -47,6 +51,9 @@ type EnvMock struct {
 
 	// InsertNoteVersionFunc mocks the InsertNoteVersion method.
 	InsertNoteVersionFunc func(ctx context.Context, arg db.InsertNoteVersionParams) error
+
+	// NoteVersionActorFunc mocks the NoteVersionActor method.
+	NoteVersionActorFunc func(ctx context.Context) model.NoteActor
 
 	// UnhideNotePathFunc mocks the UnhideNotePath method.
 	UnhideNotePathFunc func(ctx context.Context, value string) error
@@ -74,6 +81,11 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertNoteVersionParams
 		}
+		// NoteVersionActor holds details about calls to the NoteVersionActor method.
+		NoteVersionActor []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// UnhideNotePath holds details about calls to the UnhideNotePath method.
 		UnhideNotePath []struct {
 			// Ctx is the ctx argument value.
@@ -85,6 +97,7 @@ type EnvMock struct {
 	lockIncrementNoteVersionCount sync.RWMutex
 	lockInsertNotePath            sync.RWMutex
 	lockInsertNoteVersion         sync.RWMutex
+	lockNoteVersionActor          sync.RWMutex
 	lockUnhideNotePath            sync.RWMutex
 }
 
@@ -193,6 +206,38 @@ func (mock *EnvMock) InsertNoteVersionCalls() []struct {
 	mock.lockInsertNoteVersion.RLock()
 	calls = mock.calls.InsertNoteVersion
 	mock.lockInsertNoteVersion.RUnlock()
+	return calls
+}
+
+// NoteVersionActor calls NoteVersionActorFunc.
+func (mock *EnvMock) NoteVersionActor(ctx context.Context) model.NoteActor {
+	if mock.NoteVersionActorFunc == nil {
+		panic("EnvMock.NoteVersionActorFunc: method is nil but Env.NoteVersionActor was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockNoteVersionActor.Lock()
+	mock.calls.NoteVersionActor = append(mock.calls.NoteVersionActor, callInfo)
+	mock.lockNoteVersionActor.Unlock()
+	return mock.NoteVersionActorFunc(ctx)
+}
+
+// NoteVersionActorCalls gets all the calls that were made to NoteVersionActor.
+// Check the length with:
+//
+//	len(mockedEnv.NoteVersionActorCalls())
+func (mock *EnvMock) NoteVersionActorCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockNoteVersionActor.RLock()
+	calls = mock.calls.NoteVersionActor
+	mock.lockNoteVersionActor.RUnlock()
 	return calls
 }
 

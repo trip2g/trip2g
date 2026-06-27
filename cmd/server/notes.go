@@ -108,6 +108,40 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) (int64, error)
 	return insertnote.Resolve(ctx, a, note)
 }
 
+// NoteVersionActor resolves who is pushing the current note version from the
+// request context: the acting user id (web/site session, or the API key owner
+// for admin-actor calls), the authenticating API key id (obsidian-sync pushes),
+// and the client identifier from the X-trip2g-client request header. Any field
+// is nil when not applicable, recording an "unknown editor" for that field.
+func (a *app) NoteVersionActor(ctx context.Context) model.NoteActor {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return model.NoteActor{}
+	}
+
+	var actor model.NoteActor
+
+	if token, tokenErr := req.UserToken(); tokenErr == nil && token != nil && token.ID != 0 {
+		uid := int64(token.ID)
+		actor.UserID = &uid
+	} else if req.AdminActorUserID != 0 {
+		uid := int64(req.AdminActorUserID)
+		actor.UserID = &uid
+	}
+
+	if req.ApiKeyID != nil {
+		keyID := *req.ApiKeyID
+		actor.APIKeyID = &keyID
+	}
+
+	if req.Client != "" {
+		c := req.Client
+		actor.Client = &c
+	}
+
+	return actor
+}
+
 func (a *app) InsertUncommittedPath(ctx context.Context, notePathID int64) error {
 	return a.WriteQueries.InsertUncommittedPath(ctx, notePathID)
 }

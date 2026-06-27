@@ -87,6 +87,9 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 			versionCreated = true
 			return nil
 		},
+		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
+			return model.NoteActor{}
+		},
 	}
 
 	note := model.RawNote{
@@ -129,6 +132,9 @@ func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
 		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
 			versionCreated = true
 			return nil
+		},
+		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
+			return model.NoteActor{}
 		},
 	}
 

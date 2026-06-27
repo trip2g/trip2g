@@ -16,8 +16,22 @@ import (
 // Note wraps model.NoteView for template usage.
 // Provides a stable API that decouples templates from internal model changes.
 type Note struct {
-	nv         *model.NoteView
-	domainHost string
+	nv           *model.NoteView
+	domainHost   string
+	lastEditedBy func() *NoteEditor
+}
+
+// NoteEditor identifies who pushed a note's current version: the signed-in user
+// (web/site edits) and/or the API key (obsidian-sync pushes), plus when.
+// Either identity may be empty when unknown.
+//
+// SECURITY: admin/editor-only data. Callers MUST gate display to admins/editors
+// and never render it on public pages.
+type NoteEditor struct {
+	UserEmail         string    // email of the user who pushed (empty if none)
+	APIKeyDescription string    // description of the API key that pushed (empty if none)
+	Client            string    // value of X-trip2g-client header at push time (empty if absent)
+	CreatedAt         time.Time // when the version was committed
 }
 
 // NewNote creates a new template Note wrapper.
@@ -162,6 +176,25 @@ func (n *Note) M() *Meta {
 // Unwrap returns the underlying NoteView (for internal use).
 func (n *Note) Unwrap() *model.NoteView {
 	return n.nv
+}
+
+// SetLastEditedByResolver attaches a lazy resolver that loads who pushed the
+// note's current version (backed by the NoteVersionEditor read query). Used by
+// admin/editor render paths; left unset on public renders.
+func (n *Note) SetLastEditedByResolver(resolve func() *NoteEditor) {
+	n.lastEditedBy = resolve
+}
+
+// LastEditedBy returns who pushed the note's current version, or nil when
+// unknown or no resolver is attached. The resolver runs on first access.
+//
+// SECURITY: admin/editor-only data. Callers MUST gate display to
+// admins/editors and never render it on public pages.
+func (n *Note) LastEditedBy() *NoteEditor {
+	if n.lastEditedBy == nil {
+		return nil
+	}
+	return n.lastEditedBy()
 }
 
 // HasCharts reports whether the note contains any datachart blocks. Drives
