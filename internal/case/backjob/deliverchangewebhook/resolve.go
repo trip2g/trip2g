@@ -23,6 +23,7 @@ import (
 
 type Env interface {
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
+	MarkWebhookDeliveryRunning(ctx context.Context, id int64) error
 	UpdateWebhookDeliveryResult(ctx context.Context, arg db.UpdateWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
@@ -58,6 +59,12 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	wh, err := env.WebhookByID(ctx, params.WebhookID)
 	if err != nil {
 		return fmt.Errorf("failed to load webhook %d: %w", params.WebhookID, err)
+	}
+
+	if params.Attempt <= 1 {
+		if mErr := env.MarkWebhookDeliveryRunning(ctx, params.DeliveryID); mErr != nil {
+			log.Error("failed to mark delivery running", "delivery_id", params.DeliveryID, "error", mErr)
+		}
 	}
 
 	p, _ := model.ChangeWebhookSecretPrefix(wh.ID)

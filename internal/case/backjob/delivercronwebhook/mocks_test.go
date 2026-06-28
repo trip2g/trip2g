@@ -41,6 +41,9 @@ var _ delivercronwebhook.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			MarkCronWebhookDeliveryRunningFunc: func(ctx context.Context, id int64) error {
+//				panic("mock out the MarkCronWebhookDeliveryRunning method")
+//			},
 //			ShortAPITokenSecretFunc: func() string {
 //				panic("mock out the ShortAPITokenSecret method")
 //			},
@@ -74,6 +77,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// MarkCronWebhookDeliveryRunningFunc mocks the MarkCronWebhookDeliveryRunning method.
+	MarkCronWebhookDeliveryRunningFunc func(ctx context.Context, id int64) error
 
 	// ShortAPITokenSecretFunc mocks the ShortAPITokenSecret method.
 	ShortAPITokenSecretFunc func() string
@@ -124,6 +130,13 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// MarkCronWebhookDeliveryRunning holds details about calls to the MarkCronWebhookDeliveryRunning method.
+		MarkCronWebhookDeliveryRunning []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// ShortAPITokenSecret holds details about calls to the ShortAPITokenSecret method.
 		ShortAPITokenSecret []struct {
 		}
@@ -144,6 +157,7 @@ type EnvMock struct {
 	lockInsertNote                      sync.RWMutex
 	lockInsertWebhookDeliveryLog        sync.RWMutex
 	lockLogger                          sync.RWMutex
+	lockMarkCronWebhookDeliveryRunning  sync.RWMutex
 	lockShortAPITokenSecret             sync.RWMutex
 	lockUpdateCronWebhookDeliveryResult sync.RWMutex
 	lockWebhookHTTPClient               sync.RWMutex
@@ -353,6 +367,42 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// MarkCronWebhookDeliveryRunning calls MarkCronWebhookDeliveryRunningFunc.
+func (mock *EnvMock) MarkCronWebhookDeliveryRunning(ctx context.Context, id int64) error {
+	if mock.MarkCronWebhookDeliveryRunningFunc == nil {
+		panic("EnvMock.MarkCronWebhookDeliveryRunningFunc: method is nil but Env.MarkCronWebhookDeliveryRunning was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockMarkCronWebhookDeliveryRunning.Lock()
+	mock.calls.MarkCronWebhookDeliveryRunning = append(mock.calls.MarkCronWebhookDeliveryRunning, callInfo)
+	mock.lockMarkCronWebhookDeliveryRunning.Unlock()
+	return mock.MarkCronWebhookDeliveryRunningFunc(ctx, id)
+}
+
+// MarkCronWebhookDeliveryRunningCalls gets all the calls that were made to MarkCronWebhookDeliveryRunning.
+// Check the length with:
+//
+//	len(mockedEnv.MarkCronWebhookDeliveryRunningCalls())
+func (mock *EnvMock) MarkCronWebhookDeliveryRunningCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockMarkCronWebhookDeliveryRunning.RLock()
+	calls = mock.calls.MarkCronWebhookDeliveryRunning
+	mock.lockMarkCronWebhookDeliveryRunning.RUnlock()
 	return calls
 }
 

@@ -34,6 +34,9 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 				ReadPatterns:   "[]",
 			}, nil
 		},
+		MarkWebhookDeliveryRunningFunc: func(_ context.Context, _ int64) error {
+			return nil
+		},
 		GetSecretValuesFunc: func(_ context.Context, _ string) (map[string]string, error) {
 			return secretValues, nil
 		},
@@ -234,6 +237,25 @@ func TestResolve_AttachNotes_Materialized(t *testing.T) {
 	require.Equal(t, "Sprint", payload.AttachedNotes[0]["title"])
 	require.Contains(t, payload.AttachedNotes[0], "content")
 	require.Contains(t, payload.AttachedNotes[0], "meta")
+}
+
+func TestResolve_MarksRunningAtPickup(t *testing.T) {
+	var markedID int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.MarkWebhookDeliveryRunningFunc = func(_ context.Context, id int64) error {
+		markedID = id
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 555, Attempt: 1})
+	require.NoError(t, err)
+	require.EqualValues(t, 555, markedID)
 }
 
 func TestResolve_TransformJsonnet_AppliedAndSigned(t *testing.T) {

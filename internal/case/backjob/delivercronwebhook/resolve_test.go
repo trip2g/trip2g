@@ -31,6 +31,9 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 				ReadPatterns:   "[]",
 			}, nil
 		},
+		MarkCronWebhookDeliveryRunningFunc: func(_ context.Context, _ int64) error {
+			return nil
+		},
 		GetSecretValuesFunc: func(_ context.Context, _ string) (map[string]string, error) {
 			return secretValues, nil
 		},

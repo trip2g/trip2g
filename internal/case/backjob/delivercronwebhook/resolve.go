@@ -41,6 +41,7 @@ var ResponseSchema = json.RawMessage(`{
 
 type Env interface {
 	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
+	MarkCronWebhookDeliveryRunning(ctx context.Context, id int64) error
 	UpdateCronWebhookDeliveryResult(ctx context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
@@ -72,6 +73,12 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	wh, err := env.CronWebhookByID(ctx, params.CronWebhookID)
 	if err != nil {
 		return fmt.Errorf("failed to load cron webhook %d: %w", params.CronWebhookID, err)
+	}
+
+	if params.Attempt <= 1 {
+		if mErr := env.MarkCronWebhookDeliveryRunning(ctx, params.DeliveryID); mErr != nil {
+			log.Error("failed to mark cron delivery running", "delivery_id", params.DeliveryID, "error", mErr)
+		}
 	}
 
 	p, _ := model.CronWebhookSecretPrefix(params.CronWebhookID)
