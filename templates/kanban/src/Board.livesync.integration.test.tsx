@@ -339,4 +339,83 @@ describe('Board live sync', () => {
     expect(final).toContain('## Backlog')
     expect(final).not.toContain('## In Progress') // the deleted column is gone
   })
+
+  test('in-flight-flush window: a remote add during the network round-trip is adopted (no later clobber)', async () => {
+    // HIGH residual: dirty can be true via inFlightRef alone (pendingRef nulled at
+    // flushSave start), so handleRemoteChange's `if (pending)` adopt is skipped during
+    // the network window. The adopt must therefore also run in flushSave's hashMismatch
+    // retry success, or a later eager structural op clobbers the remote column.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Both the dirty re-fetch and flushSave's hashMismatch re-read return the remote board.
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 999 })
+
+    // First POST hangs (in flight) so a remote event can land during its window; it then
+    // resolves to a (spurious-looking) hashMismatch. Later POSTs succeed.
+    let resolveFirstUpdate!: (v: Awaited<ReturnType<typeof updateNotes>>) => void
+    mockUpdate
+      .mockImplementationOnce(() => new Promise(res => { resolveFirstUpdate = res }))
+      .mockResolvedValue({ ok: true })
+
+    // Step 1: rename To Do → Backlog (structural). Debounce → flushSave starts the POST.
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+
+    // Step 2: remote adds Remote DURING the in-flight POST (dirty via inFlightRef, no
+    // pending → handleRemoteChange's own adopt is skipped; board still lacks Remote).
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+    expect(screen.queryByText('Remote')).toBeNull()
+
+    // Step 3: the POST returns a hashMismatch → flushSave rebases, retries, commits the
+    // merged board, and now adopts it. The board gains Remote (invariant restored).
+    await act(async () => {
+      resolveFirstUpdate({ hashMismatch: true, path: PATH, actualHash: 'SERVER' })
+      await new Promise(r => setTimeout(r, 0))
+    })
+    await waitFor(() => expect(screen.getByText('Remote')).toBeTruthy(), { timeout: 2000 })
+
+    // Step 4: a later CLEAN eager structural op (rename In Progress) — the pre-fix bug
+    // serialised a board missing Remote and silently dropped it.
+    await user.dblClick(screen.getByText('In Progress'))
+    const input2 = screen.getByDisplayValue('In Progress')
+    await user.clear(input2)
+    await user.type(input2, 'Doing{Enter}')
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(3), { timeout: 2000 })
+    const final = upsertOf(changeAt(2))
+    expect(final).toContain('## Remote')   // remote column STILL survives
+    expect(final).toContain('## Backlog')
+    expect(final).toContain('## Doing')
+  })
+
+  test('id-stable adopt: a remote column-add does not remount unchanged cards (open editor survives)', async () => {
+    // MEDIUM: augment minted fresh ids on every adopt → every card/column remounted →
+    // an open card editor lost its uncommitted draft + focus. augmentStable reuses ids
+    // for value-identical items so unchanged subtrees (and the editor) don't remount.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Open the editor on Task 1 and type an uncommitted draft (no save scheduled).
+    await user.dblClick(screen.getByText('Task 1'))
+    const ta = screen.getByDisplayValue('Task 1')
+    await user.clear(ta)
+    await user.type(ta, 'Task 1 DRAFT')
+    expect(screen.getByDisplayValue('Task 1 DRAFT')).toBeTruthy()
+
+    // A clean remote adopt that only ADDS a column — Task 1 itself is unchanged.
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 999 })
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+
+    // The remote column is adopted …
+    expect(screen.getByText('Remote')).toBeTruthy()
+    // … and the unchanged Task 1 card did NOT remount: its open editor + uncommitted
+    // draft survived (its id was reused, so React kept the component instance).
+    expect(screen.getByDisplayValue('Task 1 DRAFT')).toBeTruthy()
+  })
 })

@@ -201,6 +201,15 @@ function columnsEqual(a: KanbanList, b: KanbanList): boolean {
   return true
 }
 
+/** Deep-equal two column lists (order-sensitive). Used to guard board adopts. */
+export function listsEqual(a: KanbanList[], b: KanbanList[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (!columnsEqual(a[i], b[i])) return false
+  }
+  return true
+}
+
 function hasDuplicateTitles(lists: KanbanList[]): boolean {
   return new Set(lists.map(l => l.title)).size !== lists.length
 }
