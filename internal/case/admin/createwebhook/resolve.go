@@ -10,6 +10,7 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
 )
@@ -21,6 +22,23 @@ type Env interface {
 
 type Input = model.ChangeWebhookCreateInput
 type Payload = model.ChangeWebhookCreateOrErrorPayload
+
+// validateTransformJsonnet rejects a transform that cannot even evaluate.
+func validateTransformJsonnet(src *string) *model.ErrorPayload {
+	if src == nil || *src == "" {
+		return nil
+	}
+	if err := jsonneteval.Validate(*src, map[string]string{
+		"change":         "[]",
+		"attached_notes": "[]",
+		"meta":           "{}",
+	}); err != nil {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "invalid jsonnet: " + err.Error()},
+		}}
+	}
+	return nil
+}
 
 func validateConcurrencyMode(mode string) *model.ErrorPayload {
 	switch mode {
@@ -63,6 +81,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	errPayload := validateInput(&input)
 	if errPayload != nil {
 		return errPayload, nil
+	}
+
+	if ep := validateTransformJsonnet(input.TransformJsonnet); ep != nil {
+		return ep, nil
 	}
 
 	token, err := env.CurrentAdminUserToken(ctx)

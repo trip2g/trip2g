@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
@@ -49,6 +50,23 @@ func marshalOptionalJSON(patterns []string) (*string, error) {
 	return ptr.To(string(j)), nil
 }
 
+// validateTransformJsonnet rejects a transform that cannot even evaluate.
+func validateTransformJsonnet(src *string) *model.ErrorPayload {
+	if src == nil || *src == "" {
+		return nil
+	}
+	if err := jsonneteval.Validate(*src, map[string]string{
+		"change":         "[]",
+		"attached_notes": "[]",
+		"meta":           "{}",
+	}); err != nil {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "invalid jsonnet: " + err.Error()},
+		}}
+	}
+	return nil
+}
+
 func validateConcurrencyMode(mode string) *model.ErrorPayload {
 	switch mode {
 	case "allow_overlap", "skip", "queue_one":
@@ -69,6 +87,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	boundsErr := validateBounds(input)
 	if boundsErr != nil {
 		return boundsErr, nil
+	}
+
+	if ep := validateTransformJsonnet(input.TransformJsonnet); ep != nil {
+		return ep, nil
 	}
 
 	if input.ConcurrencyMode != nil {

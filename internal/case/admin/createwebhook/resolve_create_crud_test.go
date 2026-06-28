@@ -57,3 +57,21 @@ func TestResolve_RejectsBadConcurrencyMode(t *testing.T) {
 	require.Equal(t, "concurrencyMode", ep.ByFields[0].Name)
 	require.Nil(t, env.inserted, "must not insert on invalid concurrency_mode")
 }
+
+func TestResolve_InvalidTransformJsonnet_ReturnsErrorPayload(t *testing.T) {
+	env := &mockEnv{}
+	bad := "}{ not jsonnet"
+	in := model.ChangeWebhookCreateInput{
+		URL:              "https://example.com/hook",
+		IncludePatterns:  []string{"**"},
+		TransformJsonnet: &bad,
+	}
+	payload, err := createwebhook.Resolve(context.Background(), env, in)
+	require.NoError(t, err) // validation error -> (ErrorPayload, nil)
+
+	ep, ok := payload.(*model.ErrorPayload)
+	require.True(t, ok, "expected *model.ErrorPayload, got %T", payload)
+	require.NotEmpty(t, ep.ByFields)
+	require.Equal(t, "transformJsonnet", ep.ByFields[0].Name)
+	require.Nil(t, env.inserted, "must not insert on invalid transform_jsonnet")
+}
