@@ -1225,18 +1225,25 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 
 const insertCronWebhookDeliveryIfClear = `-- name: InsertCronWebhookDeliveryIfClear :one
 insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
-select ?, 1, 'pending'
-where not exists (
-  select 1 from cron_webhook_deliveries
-  where cron_webhook_id = ?1
-    and status in ('pending','running'))
+select ?1, 1, 'pending'
+where ?2 is not null
+  and not exists (
+    select 1 from cron_webhook_deliveries
+    where cron_webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
 returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
 `
 
-// skip mode: insert only if no in-flight (pending/running) delivery exists for this cron webhook.
-// Stale 'running' rows are evicted by ExpireStaleCronWebhookDeliveries before the next attempt.
-func (q *WriteQueries) InsertCronWebhookDeliveryIfClear(ctx context.Context, cronWebhookID int64) (CronWebhookDelivery, error) {
-	row := q.db.QueryRowContext(ctx, insertCronWebhookDeliveryIfClear, cronWebhookID)
+type InsertCronWebhookDeliveryIfClearParams struct {
+	CronWebhookID int64       `json:"cron_webhook_id"`
+	StaleWindow   interface{} `json:"stale_window"`
+}
+
+// skip mode: insert only if no in-flight (pending/running) delivery exists for
+// this cron webhook within the stale window (heartbeat/started/created coalesced).
+func (q *WriteQueries) InsertCronWebhookDeliveryIfClear(ctx context.Context, arg InsertCronWebhookDeliveryIfClearParams) (CronWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertCronWebhookDeliveryIfClear, arg.CronWebhookID, arg.StaleWindow)
 	var i CronWebhookDelivery
 	err := row.Scan(
 		&i.ID,
@@ -2645,18 +2652,25 @@ func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebh
 
 const insertWebhookDeliveryIfClear = `-- name: InsertWebhookDeliveryIfClear :one
 insert into change_webhook_deliveries (webhook_id, attempt, status)
-select ?, 1, 'pending'
-where not exists (
-  select 1 from change_webhook_deliveries
-  where webhook_id = ?1
-    and status in ('pending','running'))
+select ?1, 1, 'pending'
+where ?2 is not null
+  and not exists (
+    select 1 from change_webhook_deliveries
+    where webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
 returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
 `
 
-// skip mode: insert only if no in-flight (pending/running) delivery exists for this webhook.
-// Stale 'running' rows are evicted by ExpireStaleWebhookDeliveries before the next attempt.
-func (q *WriteQueries) InsertWebhookDeliveryIfClear(ctx context.Context, webhookID int64) (ChangeWebhookDelivery, error) {
-	row := q.db.QueryRowContext(ctx, insertWebhookDeliveryIfClear, webhookID)
+type InsertWebhookDeliveryIfClearParams struct {
+	WebhookID   int64       `json:"webhook_id"`
+	StaleWindow interface{} `json:"stale_window"`
+}
+
+// skip mode: insert only if no in-flight (pending/running) delivery exists for
+// this webhook within the stale window (heartbeat/started/created coalesced).
+func (q *WriteQueries) InsertWebhookDeliveryIfClear(ctx context.Context, arg InsertWebhookDeliveryIfClearParams) (ChangeWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertWebhookDeliveryIfClear, arg.WebhookID, arg.StaleWindow)
 	var i ChangeWebhookDelivery
 	err := row.Scan(
 		&i.ID,

@@ -980,14 +980,16 @@ values (?, ?)
 returning *;
 
 -- name: InsertWebhookDeliveryIfClear :one
--- skip mode: insert only if no in-flight (pending/running) delivery exists for this webhook.
--- Stale 'running' rows are evicted by ExpireStaleWebhookDeliveries before the next attempt.
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for
+-- this webhook within the stale window (heartbeat/started/created coalesced).
 insert into change_webhook_deliveries (webhook_id, attempt, status)
-select ?, 1, 'pending'
-where not exists (
-  select 1 from change_webhook_deliveries
-  where webhook_id = ?1
-    and status in ('pending','running'))
+select sqlc.arg(webhook_id), 1, 'pending'
+where sqlc.arg(stale_window) is not null
+  and not exists (
+    select 1 from change_webhook_deliveries
+    where webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
 returning *;
 
 -- name: InsertWebhookDeliveryIfNoPending :one
@@ -1068,14 +1070,16 @@ values (?, ?)
 returning *;
 
 -- name: InsertCronWebhookDeliveryIfClear :one
--- skip mode: insert only if no in-flight (pending/running) delivery exists for this cron webhook.
--- Stale 'running' rows are evicted by ExpireStaleCronWebhookDeliveries before the next attempt.
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for
+-- this cron webhook within the stale window (heartbeat/started/created coalesced).
 insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
-select ?, 1, 'pending'
-where not exists (
-  select 1 from cron_webhook_deliveries
-  where cron_webhook_id = ?1
-    and status in ('pending','running'))
+select sqlc.arg(cron_webhook_id), 1, 'pending'
+where sqlc.arg(stale_window) is not null
+  and not exists (
+    select 1 from cron_webhook_deliveries
+    where cron_webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
 returning *;
 
 -- name: InsertCronWebhookDeliveryIfNoPending :one
