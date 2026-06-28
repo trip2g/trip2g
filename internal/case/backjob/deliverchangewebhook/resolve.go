@@ -10,6 +10,7 @@ import (
 	"time"
 	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/db"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
@@ -102,6 +103,19 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal webhook payload: %w", err)
+	}
+
+	// Apply outbound transform (if configured) strictly between marshal and
+	// sign, so both the HMAC and the logged request_body cover the result.
+	if wh.TransformJsonnet != "" {
+		out, terr := jsonneteval.EvalJSON(wh.TransformJsonnet, transformExtVars(payloadBytes))
+		if terr != nil {
+			// Never send a half-built request.
+			handleDeliveryError(ctx, env, params,
+				webhookutil.DeliveryResult{Err: fmt.Errorf("transform_jsonnet: %w", terr)}, wh)
+			return nil
+		}
+		payloadBytes = out
 	}
 
 	// Sign payload with HMAC.
@@ -268,6 +282,33 @@ func handleDeliveryError(
 	if updateErr != nil {
 		env.Logger().Error("failed to update delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
 	}
+}
+
+// transformExtVars exposes the change/attached-notes/meta of the outbound
+// payload to the jsonnet transform. The api_token and secrets are intentionally
+// NEVER exposed (they must not reach the transform or the logged request_body).
+func transformExtVars(payloadBytes []byte) map[string]string {
+	var p map[string]json.RawMessage
+	if err := json.Unmarshal(payloadBytes, &p); err != nil {
+		return map[string]string{}
+	}
+
+	ev := make(map[string]string, 3)
+	if v, ok := p["changes"]; ok {
+		ev["change"] = string(v)
+	}
+	if v, ok := p["attached_notes"]; ok {
+		ev["attached_notes"] = string(v)
+	}
+	if v, ok := p["meta"]; ok {
+		ev["meta"] = string(v)
+	}
+	return ev
+}
+
+// TransformExtVarsForTest exposes transformExtVars to the external test package.
+func TransformExtVarsForTest(payloadBytes []byte) map[string]string {
+	return transformExtVars(payloadBytes)
 }
 
 // applyAgentChanges parses and applies agent response changes.

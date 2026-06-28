@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
@@ -177,4 +178,58 @@ func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &payload))
 	_, hasSecrets := payload["secrets"]
 	require.False(t, hasSecrets, "secrets field should be omitted when no secrets exist")
+}
+
+func TestTransformExtVars_RedactsSecrets(t *testing.T) {
+	payload := []byte(`{"changes":[{"path":"a.md"}],"attached_notes":[{"path":"b.md"}],` +
+		`"api_token":"SECRET-TOKEN","secrets":{"k":"v"}}`)
+	ev := deliverchangewebhook.TransformExtVarsForTest(payload)
+
+	require.Contains(t, ev, "change")
+	require.Contains(t, ev, "attached_notes")
+	require.NotContains(t, ev, "api_token")
+	require.NotContains(t, ev, "secrets")
+	for _, v := range ev {
+		require.NotContains(t, v, "SECRET-TOKEN")
+	}
+}
+
+func TestResolve_TransformJsonnet_AppliedAndSigned(t *testing.T) {
+	var body []byte
+	var gotSig string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		gotSig = r.Header.Get("X-Webhook-Signature")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:               id,
+			Url:              srv.URL,
+			Secret:           "hook-secret",
+			TimeoutSeconds:   10,
+			WritePatterns:    "[]",
+			ReadPatterns:     "[]",
+			TransformJsonnet: `{ marker: "transformed", n: std.length(std.parseJson(std.extVar("change"))) }`,
+		}, nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{
+			WebhookID:  1,
+			DeliveryID: 100,
+			Attempt:    1,
+			Changes:    []handlenotewebhooks.ChangeInfo{{Path: "a.md", Event: "update"}},
+		})
+	require.NoError(t, err)
+
+	var out map[string]any
+	require.NoError(t, json.Unmarshal(body, &out))
+	require.Equal(t, "transformed", out["marker"])
+	require.EqualValues(t, 1, out["n"])
+	// HMAC must cover the TRANSFORMED bytes the server actually received.
+	require.Equal(t, webhookutil.SignHMAC(body, "hook-secret"), gotSig)
 }
