@@ -207,35 +207,45 @@ describe('Board data loss (two-browser reproduction)', () => {
     ).toBeNull()
   })
 
-  test('(b) SELF-ECHO SUPPRESSION: after B\'s own save, a genuine remote change at the latest version is wrongly suppressed', async () => {
-    // commitBaseline advances baselineVersionIdRef to fetchLatestVersionId() — the LATEST
-    // stored version, NOT specifically B's own save. Under concurrent same-board editing
-    // that latest version is the OTHER browser's save. A subsequent genuine NoteUpsertEvent
-    // at that version then satisfies `change.versionId <= baselineVersionIdRef` and is
-    // suppressed as a "self echo" — so the other browser's change never propagates.
+  test('(b) SELF-ECHO CONTRACT (#46/#47): the self-echo baseline advances to OUR OWN save version, not "latest stored", so a higher peer version is NOT suppressed', async () => {
+    // Regression guard for the #46/#47 fix. PRE-fix, commitBaseline advanced
+    // baselineVersionIdRef to fetchLatestVersionId() — the LATEST stored version, which
+    // under concurrent same-board editing is the OTHER browser's save. A genuine remote
+    // event at that version then satisfied `versionId <= baseline` and was suppressed as a
+    // self-echo. POST-fix, updateNotes returns OUR OWN save's versionId and commitBaseline
+    // advances to THAT, so a strictly-higher peer version is never falsely suppressed.
+    //
+    // This must exercise the versionId-CARRYING path: with no own versionId, commitBaseline
+    // takes the fetchLatestVersionId fallback and DISCARDS the result, so baselineVersionIdRef
+    // would stay 0 and the gate would pass trivially — the test would no longer prove the
+    // contract. We therefore give B's own save its own versionId (1000) and make the peer
+    // version (1005) strictly higher: pre-fix the baseline would have jumped to the latest
+    // stored 1005 and suppressed the peer; post-fix it sits at our own 1000 and the peer is
+    // adopted.
     const user = userEvent.setup()
     renderBoard(SAMPLE)
     await waitFor(() => expect(sub.onChange).not.toBeNull())
 
-    // B's own save commits; the latest stored version read back is 1005 — actually A's
-    // concurrent save, which B never reconciled to. baselineVersionIdRef → 1005.
+    // B's own save returns ITS OWN versionId (1000). The latest stored version is 1005 —
+    // actually A's concurrent save, which B never reconciled to; pre-fix the buggy
+    // fetchLatestVersionId path would have adopted 1005 as B's self-echo baseline.
+    mockUpdate.mockResolvedValue({ ok: true, versionId: 1000 })
     mockVersionId.mockResolvedValue(1005)
 
-    // B toggles Task 1 → debounced save → flush OK → commitBaseline sets baseline to 1005.
+    // B toggles Task 1 → debounced save → flush OK → commitBaseline sets baseline to 1000.
     await user.click(screen.getAllByRole('checkbox')[0])
     await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
     await act(async () => { await new Promise(r => setTimeout(r, 25)) })
 
-    // A's GENUINE remote change (a new "Remote" column) arrives at version 1005.
+    // A's GENUINE remote change (a new "Remote" column) arrives at version 1005 (> 1000).
     mockFetch.mockResolvedValue({ content: FRESH, versionId: 1005 })
     await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 1005 })
 
-    // DESIRED (FAILS today): B re-fetches and adopts A's "Remote" column. ACTUAL: the
-    // event is suppressed (1005 <= 1005), fetchNoteContent is never called, and the
-    // board never shows "Remote".
+    // Post-fix: 1005 > our own baseline of 1000 → NOT suppressed → B re-fetches and adopts
+    // A's "Remote" column. (Pre-fix the baseline was 1005, so 1005 <= 1005 suppressed it.)
     expect(
       mockFetch,
-      'genuine remote change was SUPPRESSED as a self-echo (versionId <= baseline)',
+      'genuine remote change must NOT be suppressed as a self-echo (versionId > own baseline)',
     ).toHaveBeenCalled()
     await waitFor(() => expect(screen.getByText('Remote')).toBeTruthy(), { timeout: 1000 })
   })
