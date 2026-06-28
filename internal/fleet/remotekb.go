@@ -31,8 +31,14 @@ const searchScopedQuery = `query Search($q: String!) {
   search(input: {query: $q}) { nodes { document { ... on PublicNote { path } } } }
 }`
 
-const noteContentScopedQuery = `query NoteContent($path: String!) {
-  note(input: {path: $path, referer: ""}) { content: html }
+// noteContentScopedQuery fetches raw markdown via notePaths, not the note()
+// query which returns rendered HTML. Using notePaths ensures the returned
+// string is the same raw markdown that Write/Patch operate on, so a
+// find-string derived from Read round-trips correctly through Patch.
+// notePaths is scope-enforced by filterNotePathsByScope (F1 fix), so
+// read_patterns are respected — an out-of-scope path returns an empty list.
+const noteContentScopedQuery = `query NoteContent($filter: NotePathsFilter!) {
+  notePaths(filter: $filter) { content }
 }`
 
 const updateNotesMutation = `mutation Update($input: UpdateNotesInput!) {
@@ -75,22 +81,25 @@ func (k *remoteKB) Read(ctx context.Context, path string) (string, error) {
 	if body, ok := k.overlay[path]; ok {
 		return body, nil
 	}
-	raw, err := k.client.GraphQLScoped(ctx, k.token, noteContentScopedQuery, map[string]any{"path": path})
+	vars := map[string]any{
+		"filter": map[string]any{"paths": []string{path}},
+	}
+	raw, err := k.client.GraphQLScoped(ctx, k.token, noteContentScopedQuery, vars)
 	if err != nil {
 		return "", err
 	}
 	var data struct {
-		Note *struct {
+		NotePaths []struct {
 			Content string `json:"content"`
-		} `json:"note"`
+		} `json:"notePaths"`
 	}
 	if uerr := json.Unmarshal(raw, &data); uerr != nil {
 		return "", uerr
 	}
-	if data.Note == nil {
+	if len(data.NotePaths) == 0 {
 		return "", fmt.Errorf("note not found: %s", path)
 	}
-	return data.Note.Content, nil
+	return data.NotePaths[0].Content, nil
 }
 
 func (k *remoteKB) Write(ctx context.Context, path, content string) error {

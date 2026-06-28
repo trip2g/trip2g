@@ -23,15 +23,43 @@ func TestRemoteKB_ReadOverlayHitNoClientCall(t *testing.T) {
 }
 
 func TestRemoteKB_ReadFallsBackToScopedNote(t *testing.T) {
-	// note(path:) returns NoteView content via a content field; assert it routes.
-	client := &ClientMock{GraphQLScopedFunc: func(_ context.Context, _ string, q string, _ map[string]any) (json.RawMessage, error) {
-		require.Contains(t, q, "note(")
-		return json.RawMessage(`{"note":{"content":"fetched body"}}`), nil
+	// Read must use notePaths (raw markdown) not note{html} (rendered HTML).
+	// Regression for F4: the old query aliased html as "content", so Read returned
+	// rendered HTML — a Patch find-string derived from an ad-hoc Read would never
+	// match the stored markdown.
+	client := &ClientMock{GraphQLScopedFunc: func(_ context.Context, _ string, q string, vars map[string]any) (json.RawMessage, error) {
+		// Must use notePaths, not the HTML-returning note() query.
+		require.Contains(t, q, "notePaths")
+		require.NotContains(t, q, "html")
+		// Variable must carry the path as a filter list.
+		filter, ok := vars["filter"].(map[string]any)
+		require.True(t, ok, "vars must contain a filter map")
+		paths, ok := filter["paths"].([]string)
+		require.True(t, ok, "filter must contain a paths []string")
+		require.Equal(t, []string{"boards/other.md"}, paths)
+		// Response mirrors notePaths: [{content: "..."}] with raw markdown.
+		return json.RawMessage(`{"notePaths":[{"content":"# Sprint\n@status:todo task A"}]}`), nil
 	}}
 	kb := newRemoteKB(client, "tok", nil)
 	got, err := kb.Read(context.Background(), "boards/other.md")
 	require.NoError(t, err)
-	require.Equal(t, "fetched body", got)
+	// The returned string must be raw markdown, not rendered HTML.
+	// A find-string present in markdown must survive a round-trip.
+	require.Equal(t, "# Sprint\n@status:todo task A", got)
+	require.Contains(t, got, "@status:todo", "find-string must be present in raw markdown body")
+	require.NotContains(t, got, "<h1>", "Read must not return rendered HTML")
+}
+
+func TestRemoteKB_ReadNotFoundReturnsError(t *testing.T) {
+	// notePaths returns an empty list when the path is out of scope or missing.
+	client := &ClientMock{GraphQLScopedFunc: func(_ context.Context, _ string, q string, _ map[string]any) (json.RawMessage, error) {
+		require.Contains(t, q, "notePaths")
+		return json.RawMessage(`{"notePaths":[]}`), nil
+	}}
+	kb := newRemoteKB(client, "tok", nil)
+	_, err := kb.Read(context.Background(), "private/secret.md")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "note not found")
 }
 
 func TestRemoteKB_PatchIssuesUpdateNotesPatchVariant(t *testing.T) {
