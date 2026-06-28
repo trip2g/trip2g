@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,6 +55,9 @@
     var meta = JSON.parse(document.getElementById('kanban-meta').textContent || '{}')
     meta.content = document.getElementById('kanban-content').value
     window.__trip2g_kanban = meta
+    // Reflect the site language on <html> for a11y/SEO. user_space_scripts() set
+    // window.__trip2g_settings.ui_lang from the trip2g_lang cookie / Accept-Language.
+    try { var l = (window.__trip2g_settings && window.__trip2g_settings.ui_lang) || ''; if (l) document.documentElement.lang = l } catch (e) {}
   })()
 </script>
 
