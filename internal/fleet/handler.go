@@ -24,6 +24,9 @@ type attachedNote struct {
 	Content string `json:"content"`
 }
 
+// maxBodyBytes caps the delivery payload size to guard against DoS.
+const maxBodyBytes = 10 * 1024 * 1024 // 10 MiB
+
 // ServeDelivery handles POST /deliver/<urlKey>.
 func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 	key := strings.TrimPrefix(r.URL.Path, "/deliver/")
@@ -32,6 +35,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unknown delivery key", http.StatusNotFound)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "read body", http.StatusBadRequest)
@@ -65,7 +69,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		KB:            newRemoteKB(f.client, payload.APIToken, overlay),
 	})
 	if runErr != nil {
-		writeJSON(w, http.StatusOK, webhookutil.AgentResponse{Status: "error", Message: runErr.Error()})
+		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: runErr.Error()})
 		return
 	}
 

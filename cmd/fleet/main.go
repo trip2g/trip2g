@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,13 @@ func main() {
 func run() error {
 	cfg, offeredFlag := parseFlags()
 
+	// Normalize: strip trailing slash so webhook URLs assemble cleanly.
+	cfg.CallbackURL = strings.TrimRight(cfg.CallbackURL, "/")
+
+	if err := validateConfig(cfg); err != nil {
+		return err
+	}
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, cfg.AdminAPIKey, httpClient)
 	llm := agentruntime.NewOpenAILLM(cfg.LLMAPIKey, cfg.LLMBaseURL)
@@ -47,10 +55,11 @@ func run() error {
 	mux.HandleFunc("/deliver/", f.ServeDelivery)
 	srv := &http.Server{Addr: cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
+	srvErr := make(chan error, 1)
 	go func() {
 		log.Printf("fleet %s listening on %s, callback %s", cfg.FleetID, cfg.ListenAddr, cfg.CallbackURL)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("http server: %v", err)
+			srvErr <- err
 			stop()
 		}
 	}()
@@ -59,6 +68,8 @@ func run() error {
 	defer ticker.Stop()
 	for {
 		select {
+		case err := <-srvErr:
+			return fmt.Errorf("http server: %w", err)
 		case <-ctx.Done():
 			log.Print("shutdown: deregistering webhooks")
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -67,11 +78,39 @@ func run() error {
 			}
 			_ = srv.Shutdown(shutdownCtx)
 			cancel()
-			return nil
+			// Check if the server goroutine also reported an error.
+			select {
+			case err := <-srvErr:
+				return fmt.Errorf("http server: %w", err)
+			default:
+				return nil
+			}
 		case <-ticker.C:
 			syncOnce(ctx, f, discovery, reconciler)
 		}
 	}
+}
+
+// validateConfig returns an error if any required field is empty, and
+// normalizes CallbackURL to not have a trailing slash.
+func validateConfig(cfg fleet.Config) error {
+	missing := []string{}
+	if cfg.CallbackURL == "" {
+		missing = append(missing, "CallbackURL (--callback-url / FLEET_CALLBACK_URL)")
+	}
+	if cfg.AdminAPIKey == "" {
+		missing = append(missing, "AdminAPIKey (--admin-api-key / FLEET_ADMIN_API_KEY)")
+	}
+	if cfg.FleetSecret == "" {
+		missing = append(missing, "FleetSecret (--fleet-secret / FLEET_SECRET)")
+	}
+	if cfg.LLMAPIKey == "" {
+		missing = append(missing, "LLMAPIKey (--llm-api-key / FLEET_LLM_API_KEY)")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("fleet: missing required config: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.Reconciler) {

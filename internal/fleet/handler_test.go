@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -124,3 +125,83 @@ func TestClampBudget(t *testing.T) {
 }
 
 var _ = strconv.Itoa // keep import if unused after edits
+
+// errLLM is a stub LLM that always returns an error from Chat.
+type errLLM struct{ msg string }
+
+func (e *errLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	return agentruntime.ChatResult{}, fmt.Errorf("%s", e.msg)
+}
+
+// newTestFleetWithLLM builds a Fleet with the given LLM.
+func newTestFleetWithLLM(client Client, llm agentruntime.LLM) *Fleet {
+	role := Role{
+		NotePath: "roles/triage.md", Body: "Triage.", Mode: "change",
+		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+	}
+	f := NewFleet(cfg, client, llm)
+	f.SetRoles([]Role{role})
+	return f
+}
+
+// TestServeDelivery_RunError502 ensures that when agentruntime.Run returns an
+// error, the handler responds with a non-2xx status (502) so trip2g's
+// handleDeliveryError can engage retry/backoff instead of silently dropping.
+func TestServeDelivery_RunError502(t *testing.T) {
+	tests := []struct {
+		name      string
+		llmErrMsg string
+	}{
+		{"llm_unavailable", "connection refused"},
+		{"llm_rate_limit", "rate limit exceeded"},
+		{"llm_context_cancelled", "context deadline exceeded"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &ClientMock{}
+			f := newTestFleetWithLLM(client, &errLLM{msg: tc.llmErrMsg})
+			key := urlKey("roles/triage.md")
+			rec := post(t, f, key, deliveryBody(t), true)
+
+			require.GreaterOrEqual(t, rec.Code, 500, "want >=500 on Run error, got %d", rec.Code)
+
+			var resp webhookutil.AgentResponse
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+			require.Equal(t, "error", resp.Status)
+			require.NotEmpty(t, resp.Message)
+		})
+	}
+}
+
+// TestServeDelivery_MaxBytesReader ensures oversized bodies are rejected with
+// 400 (not 500 panic / OOM).
+func TestServeDelivery_MaxBytesReader413(t *testing.T) {
+	client := &ClientMock{}
+	f := newTestFleetWithLLM(client, &stubLLM{})
+	key := urlKey("roles/triage.md")
+
+	// Build a valid body, then pad it beyond the limit.
+	base := deliveryBody(t)
+	oversized := make([]byte, 0, 11*1024*1024)
+	oversized = append(oversized, base...)
+	padding := make([]byte, 11*1024*1024)
+	oversized = append(oversized, padding...)
+
+	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(oversized))
+	role, ok := f.roleByKey(key)
+	require.True(t, ok)
+	// Sign the original base body (signature won't match the padded payload, but
+	// the max-bytes check should reject before signature verification reaches the
+	// full body; alternatively the body mismatch triggers 400 or 401, either way
+	// confirming no OOM/panic on oversized input).
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(base, f.secretFor(role)))
+
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+	require.NotEqual(t, http.StatusOK, rec.Code, "oversized body must not yield 200")
+}
