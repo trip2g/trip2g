@@ -49,6 +49,17 @@ func marshalOptionalJSON(patterns []string) (*string, error) {
 	return ptr.To(string(j)), nil
 }
 
+func validateConcurrencyMode(mode string) *model.ErrorPayload {
+	switch mode {
+	case "allow_overlap", "skip", "queue_one":
+		return nil
+	default:
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
+		}}
+	}
+}
+
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
@@ -60,20 +71,28 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return boundsErr, nil
 	}
 
+	if input.ConcurrencyMode != nil {
+		if cErr := validateConcurrencyMode(*input.ConcurrencyMode); cErr != nil {
+			return cErr, nil
+		}
+	}
+
 	params := db.UpdateWebhookParams{
-		ID:             input.ID,
-		Url:            input.URL,
-		Instruction:    input.Instruction,
-		MaxDepth:       input.MaxDepth,
-		PassApiKey:     input.PassAPIKey,
-		IncludeContent: input.IncludeContent,
-		TimeoutSeconds: input.TimeoutSeconds,
-		MaxRetries:     input.MaxRetries,
-		Enabled:        input.Enabled,
-		Description:    input.Description,
-		OnCreate:       input.OnCreate,
-		OnUpdate:       input.OnUpdate,
-		OnRemove:       input.OnRemove,
+		ID:               input.ID,
+		Url:              input.URL,
+		Instruction:      input.Instruction,
+		MaxDepth:         input.MaxDepth,
+		PassApiKey:       input.PassAPIKey,
+		IncludeContent:   input.IncludeContent,
+		TimeoutSeconds:   input.TimeoutSeconds,
+		MaxRetries:       input.MaxRetries,
+		Enabled:          input.Enabled,
+		Description:      input.Description,
+		OnCreate:         input.OnCreate,
+		OnUpdate:         input.OnUpdate,
+		OnRemove:         input.OnRemove,
+		TransformJsonnet: input.TransformJsonnet,
+		ConcurrencyMode:  input.ConcurrencyMode,
 	}
 
 	// Marshal JSON arrays only if provided.
@@ -92,6 +111,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	params.WritePatterns, err = marshalOptionalJSON(input.WritePatterns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
+	}
+	params.AttachNotes, err = marshalOptionalJSON(input.AttachNotes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal attach_notes: %w", err)
 	}
 
 	webhook, err := env.UpdateWebhook(ctx, params)

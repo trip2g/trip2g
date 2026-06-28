@@ -70,6 +70,17 @@ func marshalOptionalJSON(patterns []string) (*string, error) {
 	return ptr.To(string(j)), nil
 }
 
+func validateConcurrencyMode(mode string) *model.ErrorPayload {
+	switch mode {
+	case "allow_overlap", "skip", "queue_one":
+		return nil
+	default:
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
+		}}
+	}
+}
+
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
@@ -86,17 +97,25 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return boundsErr, nil
 	}
 
+	if input.ConcurrencyMode != nil {
+		if cErr := validateConcurrencyMode(*input.ConcurrencyMode); cErr != nil {
+			return cErr, nil
+		}
+	}
+
 	params := db.UpdateCronWebhookParams{
-		ID:             input.ID,
-		Url:            input.URL,
-		CronSchedule:   input.CronSchedule,
-		Instruction:    input.Instruction,
-		PassApiKey:     input.PassAPIKey,
-		TimeoutSeconds: input.TimeoutSeconds,
-		MaxDepth:       input.MaxDepth,
-		MaxRetries:     input.MaxRetries,
-		Enabled:        input.Enabled,
-		Description:    input.Description,
+		ID:               input.ID,
+		Url:              input.URL,
+		CronSchedule:     input.CronSchedule,
+		Instruction:      input.Instruction,
+		PassApiKey:       input.PassAPIKey,
+		TimeoutSeconds:   input.TimeoutSeconds,
+		MaxDepth:         input.MaxDepth,
+		MaxRetries:       input.MaxRetries,
+		Enabled:          input.Enabled,
+		Description:      input.Description,
+		TransformJsonnet: input.TransformJsonnet,
+		ConcurrencyMode:  input.ConcurrencyMode,
 	}
 
 	// Marshal JSON arrays only if provided.
@@ -107,6 +126,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	params.WritePatterns, err = marshalOptionalJSON(input.WritePatterns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
+	}
+	params.AttachNotes, err = marshalOptionalJSON(input.AttachNotes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal attach_notes: %w", err)
 	}
 
 	webhook, err := env.UpdateCronWebhook(ctx, params)
