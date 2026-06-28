@@ -109,11 +109,11 @@ func (k *remoteKB) Patch(ctx context.Context, path, find, replace string) error 
 // that any discriminant variant populates exactly the fields it selects.
 type updateNotesResult struct {
 	Typename   string   `json:"__typename"`
-	Paths      []string `json:"paths"`     // UpdateNotesSuccessPayload
-	Path       string   `json:"path"`      // UpdateNotesPatchNotFoundPayload / UpdateNotesHashMismatchPayload
-	Find       string   `json:"find"`      // UpdateNotesPatchNotFoundPayload
+	Paths      []string `json:"paths"`      // UpdateNotesSuccessPayload
+	Path       string   `json:"path"`       // UpdateNotesPatchNotFoundPayload / UpdateNotesHashMismatchPayload
+	Find       string   `json:"find"`       // UpdateNotesPatchNotFoundPayload
 	ActualHash string   `json:"actualHash"` // UpdateNotesHashMismatchPayload
-	Message    string   `json:"message"`   // ErrorPayload
+	Message    string   `json:"message"`    // ErrorPayload
 }
 
 func (k *remoteKB) update(ctx context.Context, changes []map[string]any) error {
