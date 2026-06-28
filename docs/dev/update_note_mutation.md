@@ -403,3 +403,69 @@ where np.value = ? and np.hidden_at is null;
 4. **Автокоммит?** — Да. `updateNote` — атомарная операция на одну заметку. Нет смысла в отдельном commitNotes. Для batch-операций остаётся pushNotes + commitNotes.
 
 4. **Совместимость с agent response?** — Обратно совместимо. Старый формат (`content` без `find`) работает как раньше. Новый формат (`find` + `replace`) — дополнение.
+
+---
+
+## Create-only mode (`updateNotes` upsert with `expectedHash: ""`)
+
+**TL;DR:** An `updateNotes` upsert with `expectedHash: ""` creates the note **iff it does not already exist**; if a note is already there it returns `UpdateNotesHashMismatchPayload` and does **not** overwrite it. This is the race-proof "create new file, fail if it exists" primitive.
+
+### Why it works
+
+`expectedHash` on an upsert is an optimistic-concurrency guard: the server hashes the current content and only writes when the hash matches. For an **absent** note there is no content, so the server's computed `actualHash` defaults to the empty string `""`. Passing `expectedHash: ""` therefore asserts *"I expect this note to be absent"*:
+
+- **absent** → `actualHash` is `""` → matches → the note is created.
+- **already exists** → an existing note (even one with empty body) always hashes to a non-empty value → mismatch → `UpdateNotesHashMismatchPayload` (carrying the existing `actualHash`), nothing overwritten.
+
+This is enforced in `internal/case/updatenotes/resolve.go` and pinned by `TestResolve_UpsertCreateOnly` in `resolve_test.go`.
+
+### Three ways to call upsert
+
+| `expectedHash` | Mode | Semantics |
+|----------------|------|-----------|
+| omitted / `null` | blind upsert | create or overwrite unconditionally — no concurrency check |
+| `""` (empty string) | **create-only** | create iff absent; existing note → `HashMismatch` (fail-if-exists) |
+| a real content hash | optimistic update | overwrite iff current content still hashes to this value, else `HashMismatch` |
+
+### GraphQL example
+
+```graphql
+mutation CreateNote($input: UpdateNotesInput!) {
+  updateNotes(input: $input) {
+    __typename
+    ... on UpdateNotesSuccessPayload {
+      paths
+    }
+    ... on UpdateNotesHashMismatchPayload {
+      path
+      actualHash
+    }
+    ... on ErrorPayload {
+      message
+    }
+  }
+}
+```
+
+```json
+{
+  "input": {
+    "changes": [
+      {
+        "upsert": {
+          "path": "notes/idea.md",
+          "content": "# idea\n",
+          "expectedHash": ""
+        }
+      }
+    ]
+  }
+}
+```
+
+- `notes/idea.md` absent → `UpdateNotesSuccessPayload { paths: ["notes/idea.md"] }`.
+- `notes/idea.md` already exists → `UpdateNotesHashMismatchPayload { path: "notes/idea.md", actualHash: "<existing>" }` — surface an "already exists" message to the user; the note is untouched.
+
+### Usage
+
+The web editor's "new file" flow uses this as the authoritative guard against creating over an existing note (e.g. one created concurrently via Obsidian sync). A client-side path check stays as a fast UX pre-reject, but `expectedHash: ""` is the race-proof server-side guarantee behind it. See `assets/ui/editor/pane/pane.view.ts` (`handle_create_file`).
