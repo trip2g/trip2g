@@ -487,6 +487,131 @@ body {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.10);
 }
 
+/* ── column drag handle ──────────────────────────────────────────────────── */
+
+.kanban-column-drag {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: hsl(var(--muted-foreground) / 0.55);
+  cursor: grab;
+  border-radius: 4px;
+  touch-action: none;
+  transition: color 0.12s, background 0.12s;
+}
+
+.kanban-column-drag:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+}
+
+.kanban-column-drag:active {
+  cursor: grabbing;
+}
+
+.kanban-column.is-dragging {
+  opacity: 0.5;
+}
+
+/* ── column rename input ─────────────────────────────────────────────────── */
+
+.kanban-column-rename {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  border: 1.5px solid hsl(var(--ring));
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12);
+}
+
+/* ── column delete button ────────────────────────────────────────────────── */
+
+.kanban-column-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+
+.kanban-column-header:hover .kanban-column-delete {
+  opacity: 1;
+}
+
+.kanban-column-delete:hover {
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.08);
+}
+
+/* ── add-list affordance ─────────────────────────────────────────────────── */
+
+.kanban-add-list {
+  flex-shrink: 0;
+  width: var(--col-width);
+}
+
+.kanban-add-list-btn {
+  width: 100%;
+  text-align: left;
+  background: hsl(var(--muted) / 0.5);
+  border: 1px dashed hsl(var(--border));
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.kanban-add-list-btn:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--ring) / 0.35);
+}
+
+.kanban-add-list-input {
+  width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  border: 1.5px solid hsl(var(--ring));
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.10);
+}
+
 /* ── toast ───────────────────────────────────────────────────────────────── */
 
 .kanban-toast {

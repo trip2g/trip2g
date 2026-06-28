@@ -1,4 +1,5 @@
 import type { KanbanBoard, KanbanCard, KanbanList } from './format'
+import { parseBoard, serializeBoard } from './format'
 
 export interface MoveCardArgs {
   /** source list index */
@@ -55,6 +56,32 @@ export function toggleCard(b: KanbanBoard, listIndex: number, cardIndex: number)
   return editCard(b, listIndex, cardIndex, {
     checked: !b.lists[listIndex].cards[cardIndex].checked,
   })
+}
+
+// ── list (column) reducers ────────────────────────────────────────────────
+
+/** Append a new empty list (column). */
+export function addList(b: KanbanBoard, title: string): KanbanBoard {
+  return { ...b, lists: [...b.lists, { title, complete: false, cards: [] }] }
+}
+
+/** Rename a list. */
+export function renameList(b: KanbanBoard, listIndex: number, title: string): KanbanBoard {
+  const lists = b.lists.map((l, i) => (i === listIndex ? { ...l, title } : l))
+  return { ...b, lists }
+}
+
+/** Remove a list and all its cards. */
+export function deleteList(b: KanbanBoard, listIndex: number): KanbanBoard {
+  return { ...b, lists: b.lists.filter((_, i) => i !== listIndex) }
+}
+
+/** Reorder lists: move the list at `from` to `to`. */
+export function moveList(b: KanbanBoard, from: number, to: number): KanbanBoard {
+  const lists = b.lists.map(l => ({ ...l, cards: [...l.cards] }))
+  const [removed] = lists.splice(from, 1)
+  lists.splice(to, 0, removed)
+  return { ...b, lists }
 }
 
 /** The exact markdown line for a card: `- [x] text` or `- [ ] text`. */
@@ -139,4 +166,25 @@ export function applyBoardToBaseline(baselineMd: string, lists: KanbanList[]): s
   }
 
   return resultChunks.join('') + settingsSuffix
+}
+
+/**
+ * Re-serialize the columns region for a structural change (add/rename/delete/move
+ * a column) and splice it into `baselineMd`. The surgical per-card patch
+ * (`applyBoardToBaseline`) matches columns by heading and only rewrites card
+ * lines, so it cannot express heading-structure changes; structural ops re-emit
+ * the whole columns region instead.
+ *
+ * The frontmatter (everything before the first `## ` heading) and the trailing
+ * `%% kanban:settings %%` block are taken verbatim from `baselineMd` — so prior
+ * card-op patches, frontmatter, and the settings block all survive byte-for-byte.
+ *
+ * Caveat: an obsidian-kanban `***`-separated archive is not modeled by parseBoard
+ * (its bare cards are absorbed into the last column and the `***` separator is
+ * dropped), so the separator line is not re-emitted here — the same limitation as
+ * a plain `serializeBoard`. Frontmatter and settings are always preserved.
+ */
+export function applyStructuralChange(baselineMd: string, lists: KanbanList[]): string {
+  const base = parseBoard(baselineMd)
+  return serializeBoard({ frontmatter: base.frontmatter, lists, settings: base.settings })
 }
