@@ -2,10 +2,12 @@ package deliverchangewebhook_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/handlenotewebhooks"
@@ -83,6 +85,43 @@ func TestResolve_SecretsInjectedInPayload(t *testing.T) {
 	require.True(t, ok, "expected secrets field in payload")
 	require.Equal(t, "tok-abc", secrets["auth_token"])
 	require.Equal(t, "key-xyz", secrets["api_key"])
+}
+
+func tokenLifetimeSeconds(t *testing.T, jwtStr string) int64 {
+	t.Helper()
+	parts := strings.Split(jwtStr, ".")
+	require.Len(t, parts, 3)
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	require.NoError(t, err)
+	var claims struct {
+		Exp int64 `json:"exp"`
+		Iat int64 `json:"iat"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &claims))
+	return claims.Exp - claims.Iat
+}
+
+func TestResolve_TokenTTLHasNoSixtyMinuteFloor(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{ID: id, Url: srv.URL, TimeoutSeconds: 10, PassApiKey: true, ReadPatterns: "[]", WritePatterns: "[]"}, nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env, handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 100, Attempt: 1})
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(body, &payload))
+	tok, _ := payload["api_token"].(string)
+	require.NotEmpty(t, tok)
+	require.Less(t, tokenLifetimeSeconds(t, tok), int64(300), "60-min floor must be gone; TTL ~= timeout + margin")
 }
 
 func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {

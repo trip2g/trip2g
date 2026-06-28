@@ -43,6 +43,10 @@ type changeWebhookPayload struct {
 	PreviousError string                          `json:"previous_error,omitempty"`
 }
 
+// tokenTTLMargin is the small grace window added to the delivery timeout for
+// the scoped write-back token. Replaces the former 60-minute floor.
+const tokenTTLMargin = 30 * time.Second
+
 func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChangeWebhookParams) error {
 	log := env.Logger()
 
@@ -80,10 +84,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 			readPatterns = []string{"**"}
 		}
 
-		ttl := time.Duration(wh.TimeoutSeconds) * time.Second
-		if ttl < 60*time.Minute {
-			ttl = 60 * time.Minute
-		}
+		ttl := time.Duration(wh.TimeoutSeconds)*time.Second + tokenTTLMargin
 
 		token, signErr := shortapitoken.Sign(shortapitoken.Data{
 			Depth:         params.Depth + 1,
