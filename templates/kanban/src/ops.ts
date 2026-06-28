@@ -218,16 +218,96 @@ function byTitle(lists: KanbanList[]): Map<string, KanbanList> {
   return new Map(lists.map(l => [l.title, l]))
 }
 
+/** Order-sensitive equality of two card lists. */
+function cardListEqual(a: KanbanCard[], b: KanbanCard[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].text !== b[i].text || a[i].checked !== b[i].checked) return false
+  }
+  return true
+}
+
+function cardEqualAt(a: KanbanCard[], ai: number, b: KanbanCard[], bi: number): boolean {
+  return a[ai].text === b[bi].text && a[ai].checked === b[bi].checked
+}
+
+/**
+ * Three-way merge of a single column's cards against their common `base`, via a
+ * common-prefix/suffix reduction (cards carry no stable id, so positional alignment
+ * to base is the only sound key). A card added on one side survives; a region edited
+ * on only one side survives; a base card edited differently on BOTH sides is a real
+ * conflict → null. When both sides only ADD cards into the same (possibly empty)
+ * region, both sets are kept (a remote add that repeats a local add by text is dropped).
+ */
+function mergeCards(
+  base: KanbanCard[],
+  local: KanbanCard[],
+  remote: KanbanCard[],
+): KanbanCard[] | null {
+  let p = 0
+  while (
+    p < local.length && p < remote.length && p < base.length &&
+    cardEqualAt(local, p, base, p) && cardEqualAt(remote, p, base, p)
+  ) p++
+
+  let s = 0
+  while (
+    s < local.length - p && s < remote.length - p && s < base.length - p &&
+    cardEqualAt(local, local.length - 1 - s, base, base.length - 1 - s) &&
+    cardEqualAt(remote, remote.length - 1 - s, base, base.length - 1 - s)
+  ) s++
+
+  const baseMid = base.slice(p, base.length - s)
+  const localMid = local.slice(p, local.length - s)
+  const remoteMid = remote.slice(p, remote.length - s)
+
+  let mergedMid: KanbanCard[]
+  if (cardListEqual(localMid, baseMid)) {
+    mergedMid = remoteMid                       // only remote changed this region
+  } else if (cardListEqual(remoteMid, baseMid)) {
+    mergedMid = localMid                        // only local changed this region
+  } else if (baseMid.length === 0) {
+    // Both sides only ADDED cards into the same region — keep both, de-duping any
+    // remote add that repeats a local add (by text).
+    const localTexts = new Set(localMid.map(c => c.text))
+    mergedMid = [...localMid, ...remoteMid.filter(c => !localTexts.has(c.text))]
+  } else {
+    return null                                 // both edited the same base cards → conflict
+  }
+
+  return [...local.slice(0, p), ...mergedMid, ...remote.slice(remote.length - s)]
+}
+
+/**
+ * Merge a single column changed on BOTH sides relative to `base`: a card-level 3-way
+ * merge of its cards plus a reconcile of its `complete` flag. Returns null when the
+ * cards genuinely conflict (the same base card edited differently on each side) or the
+ * complete flag was toggled differently on each side.
+ */
+function mergeChangedColumn(b: KanbanList, l: KanbanList, r: KanbanList): KanbanList | null {
+  const localCompleteChanged = l.complete !== b.complete
+  const remoteCompleteChanged = r.complete !== b.complete
+  if (localCompleteChanged && remoteCompleteChanged && l.complete !== r.complete) return null
+  const complete = localCompleteChanged ? l.complete : remoteCompleteChanged ? r.complete : b.complete
+
+  const cards = mergeCards(b.cards, l.cards, r.cards)
+  if (!cards) return null
+  return { title: l.title, complete, cards }
+}
+
 /**
  * Three-way merge of the columns of `local` and `remote` against their common
  * `base`, keyed by column title (the natural markdown key — columns are `## Title`).
  *
  * Per column: changed only locally → keep local; only remotely → keep remote;
  * added on one side → keep it; deleted on one side while untouched on the other →
- * honour the deletion. A column changed (or added) incompatibly on BOTH sides, or
- * any duplicate-title ambiguity, returns `null` — the caller must then fall back to
- * a non-destructive reload (never a silent overwrite). No surviving column on either
- * side is dropped silently.
+ * honour the deletion. A column changed on BOTH sides drops one level down to a
+ * card-level 3-way merge (`mergeChangedColumn`): cards added on each side both
+ * survive; only the SAME base card edited differently on both sides is a true
+ * conflict. A genuine card conflict, an incompatible add on both sides, or any
+ * duplicate-title ambiguity returns `null` — the caller must then fall back to a
+ * non-destructive reload (never a silent overwrite). No surviving card or column on
+ * either side is dropped silently.
  *
  * The result order follows the local column order (the latest user intent for
  * renames/moves), with each surviving remote-only column spliced in after its
@@ -261,7 +341,11 @@ export function mergeColumns(
         if (!localChanged) { kept.set(title, r); continue }   // only remote (or neither)
         if (!remoteChanged) { kept.set(title, l); continue }  // only local
         if (columnsEqual(l, r)) { kept.set(title, l); continue } // same edit on both
-        return null                                            // both changed differently
+        // Both touched this column: drop to a card-level 3-way merge so independent
+        // card adds on each side both survive; only a real same-card conflict is null.
+        const mergedCol = mergeChangedColumn(b, l, r)
+        if (mergedCol) { kept.set(title, mergedCol); continue }
+        return null                                            // genuine card conflict
       }
       // Added on both sides under the same title.
       if (columnsEqual(l, r)) { kept.set(title, l); continue }

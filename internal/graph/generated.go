@@ -32290,6 +32290,64 @@ func (ec *executionContext) fieldContext_NoteWarning_message(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteWriteResult_path(ctx context.Context, field graphql.CollectedField, obj *model.NoteWriteResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteWriteResult_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteWriteResult_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteWriteResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteWriteResult_versionId(ctx context.Context, field graphql.CollectedField, obj *model.NoteWriteResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteWriteResult_versionId,
+		func(ctx context.Context) (any, error) {
+			return obj.VersionID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteWriteResult_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteWriteResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OAuthUrlPayload_authUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthURLPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38142,6 +38200,41 @@ func (ec *executionContext) fieldContext_UpdateNotesSuccessPayload_paths(_ conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotesSuccessPayload_updated(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotesSuccessPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UpdateNotesSuccessPayload_updated,
+		func(ctx context.Context) (any, error) {
+			return obj.Updated, nil
+		},
+		nil,
+		ec.marshalNNoteWriteResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteWriteResultᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotesSuccessPayload_updated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotesSuccessPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_NoteWriteResult_path(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteWriteResult_versionId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteWriteResult", field.Name)
 		},
 	}
 	return fc, nil
@@ -70459,6 +70552,50 @@ func (ec *executionContext) _NoteWarning(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var noteWriteResultImplementors = []string{"NoteWriteResult"}
+
+func (ec *executionContext) _NoteWriteResult(ctx context.Context, sel ast.SelectionSet, obj *model.NoteWriteResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteWriteResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteWriteResult")
+		case "path":
+			out.Values[i] = ec._NoteWriteResult_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "versionId":
+			out.Values[i] = ec._NoteWriteResult_versionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var oAuthUrlPayloadImplementors = []string{"OAuthUrlPayload"}
 
 func (ec *executionContext) _OAuthUrlPayload(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthURLPayload) graphql.Marshaler {
@@ -74466,6 +74603,11 @@ func (ec *executionContext) _UpdateNotesSuccessPayload(ctx context.Context, sel 
 			out.Values[i] = graphql.MarshalString("UpdateNotesSuccessPayload")
 		case "paths":
 			out.Values[i] = ec._UpdateNotesSuccessPayload_paths(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updated":
+			out.Values[i] = ec._UpdateNotesSuccessPayload_updated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -81331,6 +81473,54 @@ func (ec *executionContext) unmarshalNNoteWarningLevelEnum2trip2gᚋinternalᚋg
 
 func (ec *executionContext) marshalNNoteWarningLevelEnum2trip2gᚋinternalᚋgraphᚋmodelᚐNoteWarningLevelEnum(ctx context.Context, sel ast.SelectionSet, v model.NoteWarningLevelEnum) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNNoteWriteResult2trip2gᚋinternalᚋgraphᚋmodelᚐNoteWriteResult(ctx context.Context, sel ast.SelectionSet, v model.NoteWriteResult) graphql.Marshaler {
+	return ec._NoteWriteResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteWriteResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteWriteResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteWriteResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteWriteResult2trip2gᚋinternalᚋgraphᚋmodelᚐNoteWriteResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNOAuthUrlInput2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLInput(ctx context.Context, v any) (model.OAuthURLInput, error) {

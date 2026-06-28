@@ -2,7 +2,7 @@ const UPDATE_MUTATION = `
   mutation($i: UpdateNotesInput!) {
     updateNotes(input: $i) {
       __typename
-      ... on UpdateNotesSuccessPayload { paths }
+      ... on UpdateNotesSuccessPayload { paths updated { path versionId } }
       ... on UpdateNotesHashMismatchPayload { path actualHash }
       ... on UpdateNotesPatchNotFoundPayload { path find }
       ... on ErrorPayload { message }
@@ -51,7 +51,7 @@ export interface UpsertInput {
 export type NoteChange = { patch: PatchInput } | { upsert: UpsertInput }
 
 export type UpdateNotesResult =
-  | { ok: true }
+  | { ok: true; versionId?: number }
   | { hashMismatch: true; path: string; actualHash: string }
   | { patchNotFound: true; path: string; find: string }
   | { error: string }
@@ -83,6 +83,7 @@ function withHash(change: NoteChange, hash: string): NoteChange {
 type GqlResult = {
   __typename: string
   paths?: string[]
+  updated?: { path: string; versionId: number | string }[]
   path?: string
   actualHash?: string
   find?: string
@@ -148,8 +149,16 @@ export async function updateNotes(
   if (!result) return { error: 'No data returned from updateNotes' }
 
   switch (result.__typename) {
-    case 'UpdateNotesSuccessPayload':
-      return { ok: true }
+    case 'UpdateNotesSuccessPayload': {
+      // The board saves its own single note; surface that save's new version id so the
+      // caller can advance the self-echo baseline to OUR version (not "latest stored",
+      // which under concurrent editing is a peer's version — the live-sync data loss).
+      const updated = result.updated ?? []
+      const versionId = updated.length > 0
+        ? Math.max(...updated.map(u => Number(u.versionId)))
+        : undefined
+      return versionId !== undefined ? { ok: true, versionId } : { ok: true }
+    }
     case 'UpdateNotesHashMismatchPayload':
       return { hashMismatch: true, path: result.path!, actualHash: result.actualHash! }
     case 'UpdateNotesPatchNotFoundPayload':

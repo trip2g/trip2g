@@ -3340,7 +3340,7 @@ func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.Not
 				if !ok {
 					return
 				}
-				items := r.buildNoteChangeItems(batch)
+				items := r.buildNoteChangeItems(ctx, batch)
 				if len(items) == 0 {
 					continue
 				}

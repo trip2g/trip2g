@@ -122,18 +122,37 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	// Hide-only batches still reload NoteViews so the hidden paths stop
 	// resolving on the public site (rendernotepage reads the in-memory cache),
 	// but skip HandleLatestNotesAfterSave since no content was saved.
+	var updated []model.NoteWriteResult
 	if len(pathIDs) > 0 {
-		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
-			return nil, fmt.Errorf("updatenotes: prepare latest notes: %w", err)
+		reloaded, prepErr := env.PrepareLatestNotes(ctx, false)
+		if prepErr != nil {
+			return nil, fmt.Errorf("updatenotes: prepare latest notes: %w", prepErr)
 		}
-		if err := env.HandleLatestNotesAfterSave(ctx, pathIDs); err != nil {
-			return nil, fmt.Errorf("updatenotes: handle latest notes after save: %w", err)
+		if handleErr := env.HandleLatestNotesAfterSave(ctx, pathIDs); handleErr != nil {
+			return nil, fmt.Errorf("updatenotes: handle latest notes after save: %w", handleErr)
 		}
+		// Surface each saved note's new version id (mirrors pushNotes' updated[].id) so a
+		// client can advance its self-echo baseline to its OWN save's version.
+		updated = collectUpdated(reloaded, pathIDs)
 	} else if hid {
 		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
 			return nil, fmt.Errorf("updatenotes: prepare latest notes after hide: %w", err)
 		}
 	}
 
-	return model.UpdateNotesSuccessPayload{Paths: paths}, nil
+	return model.UpdateNotesSuccessPayload{Paths: paths, Updated: updated}, nil
+}
+
+// collectUpdated maps each saved path id to its new version id from the reloaded
+// NoteViews. Notes not found (e.g. hidden) are skipped.
+func collectUpdated(nvs *appmodel.NoteViews, pathIDs []int64) []model.NoteWriteResult {
+	updated := make([]model.NoteWriteResult, 0, len(pathIDs))
+	for _, id := range pathIDs {
+		nv := nvs.GetByPathID(id)
+		if nv == nil {
+			continue
+		}
+		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: nv.VersionID})
+	}
+	return updated
 }

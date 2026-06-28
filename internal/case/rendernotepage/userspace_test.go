@@ -295,7 +295,7 @@ func (stubPartialRenderer) Introduce() model.NoteViewSection          { return m
 func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
 func (stubPartialRenderer) FirstList() *model.NoteViewList            { return nil }
 func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (stubPartialRenderer) FirstImageURL() string                    { return "" }
+func (stubPartialRenderer) FirstImageURL() string                     { return "" }
 
 // chromeHelper builds a userSpaceHelper whose Notes resolve _header/_footer so
 // that Header()/Footer()/Styles() produce the standard chrome HTML.
@@ -341,9 +341,9 @@ func TestJetBinding_DefaultTemplateChrome_CamelCase(t *testing.T) {
 	require.NoError(t, err)
 	out := buf.String()
 
-	require.Contains(t, out, "window.__trip2g_settings")    // UserSpaceScripts()
-	require.Contains(t, out, `<header class="site-header">`) // Header()
-	require.Contains(t, out, `<footer class="site-footer">`) // Footer()
+	require.Contains(t, out, "window.__trip2g_settings")                                            // UserSpaceScripts()
+	require.Contains(t, out, `<header class="site-header">`)                                        // Header()
+	require.Contains(t, out, `<footer class="site-footer">`)                                        // Footer()
 	require.Contains(t, out, `<link rel="stylesheet" href="/assets/defaulttemplate.css?h=abc123">`) // Styles()
 
 	// Chrome HTML is written raw, not entity-escaped.
@@ -373,4 +373,3 @@ func TestJetBinding_IsAdmin_CamelCase(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "true", buf.String())
 }
-
