@@ -2,7 +2,6 @@ package fleet
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -33,11 +32,7 @@ func TestHTTPClient_AdminLaneHeadersAndPath(t *testing.T) {
 	require.Contains(t, gotBody, `"query":"query{ok}"`)
 	require.Contains(t, gotBody, `"variables":{"x":1}`)
 
-	var env struct {
-		Data json.RawMessage `json:"data"`
-	}
-	require.NoError(t, json.Unmarshal(raw, &env))
-	require.JSONEq(t, `{"ok":true}`, string(env.Data))
+	require.JSONEq(t, `{"ok":true}`, string(raw))
 }
 
 func TestHTTPClient_ScopedLaneBearer(t *testing.T) {

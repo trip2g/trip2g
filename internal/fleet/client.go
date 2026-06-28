@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -62,21 +61,17 @@ func (c *httpClient) do(ctx context.Context, path string, headers map[string]str
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read graphql response (HTTP %d): %w", resp.StatusCode, err)
-	}
-
 	var env struct {
+		Data   json.RawMessage `json:"data"`
 		Errors []struct {
 			Message string `json:"message"`
 		} `json:"errors"`
 	}
-	if err := json.Unmarshal(raw, &env); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
 		return nil, fmt.Errorf("decode graphql response (HTTP %d): %w", resp.StatusCode, err)
 	}
 	if len(env.Errors) > 0 {
 		return nil, fmt.Errorf("graphql error: %s", env.Errors[0].Message)
 	}
-	return json.RawMessage(raw), nil
+	return env.Data, nil
 }
