@@ -52,6 +52,7 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 		EnqueueDeliverChangeWebhookFunc: func(_ context.Context, _ handlenotewebhooks.DeliverChangeWebhookParams) error {
 			return nil
 		},
+		LatestNoteViewsFunc:     func() *model.NoteViews { return nil },
 		ShortAPITokenSecretFunc: func() string { return "test-secret" },
 		WebhookHTTPClientFunc:   func() *fasthttp.Client { return &fasthttp.Client{} },
 		LoggerFunc:              func() logger.Logger { return &logger.DummyLogger{} },
@@ -192,6 +193,47 @@ func TestTransformExtVars_RedactsSecrets(t *testing.T) {
 	for _, v := range ev {
 		require.NotContains(t, v, "SECRET-TOKEN")
 	}
+}
+
+func TestResolve_AttachNotes_Materialized(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.RegisterNote(&model.NoteView{
+		Path:    "boards/sprint.md",
+		Title:   "Sprint",
+		Content: []byte("# Sprint\n- card"),
+		Tags:    []string{"kanban"},
+	})
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID: id, Url: srv.URL, TimeoutSeconds: 10,
+			WritePatterns: "[]", ReadPatterns: "[]",
+			AttachNotes: `["boards/**","!inbox/**"]`,
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 1, Attempt: 1})
+	require.NoError(t, err)
+
+	var payload struct {
+		AttachedNotes []map[string]any `json:"attached_notes"`
+	}
+	require.NoError(t, json.Unmarshal(body, &payload))
+	require.Len(t, payload.AttachedNotes, 1)
+	require.Equal(t, "boards/sprint.md", payload.AttachedNotes[0]["path"])
+	require.Equal(t, "Sprint", payload.AttachedNotes[0]["title"])
+	require.Contains(t, payload.AttachedNotes[0], "content")
+	require.Contains(t, payload.AttachedNotes[0], "meta")
 }
 
 func TestResolve_TransformJsonnet_AppliedAndSigned(t *testing.T) {
