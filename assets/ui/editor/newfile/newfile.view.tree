@@ -1,0 +1,21 @@
+$trip2g_editor_newfile $mol_page
+	value? \
+	error \
+	create? null
+	title @ \New file
+	body /
+		<= Field $mol_string
+			hint @ \folder/note.md
+			value? <=> value?
+			submit? <=> create?
+		<= Hint $mol_view
+			sub /
+				<= hint_text @ \A .md extension is added automatically
+		<= Error $mol_view
+			sub /
+				<= error
+	foot /
+		<= CreateButton $mol_button_major
+			click? <=> create?
+			sub /
+				<= create_label @ \Create

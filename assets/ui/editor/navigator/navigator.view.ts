@@ -13,7 +13,7 @@ namespace $.$$ {
 
 	export class $trip2g_editor_navigator extends $.$trip2g_editor_navigator {
 		@$mol_mem
-		paths(): string[] {
+		override paths(): string[] {
 			const res = paths_request()
 			return res.notePaths.map(p => p.value)
 		}

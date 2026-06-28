@@ -171,6 +171,99 @@ func TestResolve_UpsertWithWrongHash(t *testing.T) {
 	require.Equal(t, actualHash, payload.ActualHash)
 }
 
+// TestResolve_UpsertCreateOnly pins the create-only sentinel: expectedHash == ""
+// means "expect the note absent". An absent note hashes to "" → match → create;
+// any existing note hashes non-empty → HashMismatch (never overwritten), even when
+// its content is empty.
+func TestResolve_UpsertCreateOnly(t *testing.T) {
+	emptyHash := ""
+
+	tests := []struct {
+		name string
+		// existing is the note already present at "note.md"; nil means absent.
+		existing *struct {
+			content string
+			pathID  int64
+		}
+		wantCreated bool
+	}{
+		{
+			name:        "absent note is created",
+			existing:    nil,
+			wantCreated: true,
+		},
+		{
+			name: "existing note is not overwritten",
+			existing: &struct {
+				content string
+				pathID  int64
+			}{content: "existing content", pathID: 1},
+			wantCreated: false,
+		},
+		{
+			name: "existing note with empty content still mismatches",
+			existing: &struct {
+				content string
+				pathID  int64
+			}{content: "", pathID: 2},
+			wantCreated: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			var nvs *appmodel.NoteViews
+			if tt.existing != nil {
+				nvs = makeNVSWithNote("note.md", tt.existing.content, tt.existing.pathID)
+			} else {
+				nvs = appmodel.NewNoteViews()
+			}
+
+			var insertedNote appmodel.RawNote
+			env := &mockEnv{
+				latestNoteViews: func() *appmodel.NoteViews { return nvs },
+				insertNote: func(_ context.Context, note appmodel.RawNote) (int64, error) {
+					if !tt.wantCreated {
+						t.Fatal("InsertNote must not be called when an existing note blocks the create")
+					}
+					insertedNote = note
+					return 100, nil
+				},
+				prepareLatestNotes:         noopPrepare,
+				handleLatestNotesAfterSave: noopHandle,
+			}
+
+			input := model.UpdateNotesInput{
+				Changes: []model.NoteChangeInput{
+					{Upsert: &model.NoteChangeUpsertInput{Path: "note.md", Content: "# New\n", ExpectedHash: &emptyHash}},
+				},
+			}
+
+			result, err := updatenotes.Resolve(ctx, env, input)
+			require.NoError(t, err)
+
+			if tt.wantCreated {
+				payload, ok := result.(model.UpdateNotesSuccessPayload)
+				require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
+				require.Equal(t, []string{"note.md"}, payload.Paths)
+				require.Equal(t, "note.md", insertedNote.Path)
+				require.Equal(t, "# New\n", insertedNote.Content)
+				return
+			}
+
+			payload, ok := result.(model.UpdateNotesHashMismatchPayload)
+			require.True(t, ok, "expected UpdateNotesHashMismatchPayload, got %T", result)
+			require.Equal(t, "note.md", payload.Path)
+			// An existing note always hashes non-empty, so the actualHash carried back
+			// is never "" — proving the create was correctly rejected.
+			require.NotEmpty(t, payload.ActualHash)
+			require.Equal(t, hashContent(tt.existing.content), payload.ActualHash)
+		})
+	}
+}
+
 func TestResolve_PatchFound(t *testing.T) {
 	ctx := context.Background()
 	existingContent := "hello world"

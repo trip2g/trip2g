@@ -1,6 +1,7 @@
 $trip2g_editor_navigator $mol_list
 	path? \
 	query? \
+	paths /string
 	ids_tags *
 	rows /
 		<= Search $mol_string
