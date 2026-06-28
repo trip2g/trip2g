@@ -34,12 +34,13 @@ vi.mock('./api', async (importActual) => {
 })
 
 import Board from './Board'
-import { sha256Base64, updateNotes, fetchNoteContent } from './api'
+import { sha256Base64, updateNotes, fetchNoteContent, fetchLatestVersionId } from './api'
 import type { NoteChange } from './api'
 
 const mockHash = vi.mocked(sha256Base64)
 const mockUpdate = vi.mocked(updateNotes)
 const mockFetch = vi.mocked(fetchNoteContent)
+const mockVersionId = vi.mocked(fetchLatestVersionId)
 
 const SAMPLE = `---
 kanban-plugin: basic
@@ -417,5 +418,58 @@ describe('Board live sync', () => {
     // … and the unchanged Task 1 card did NOT remount: its open editor + uncommitted
     // draft survived (its id was reused, so React kept the component instance).
     expect(screen.getByDisplayValue('Task 1 DRAFT')).toBeTruthy()
+  })
+
+  test('OK-path race: a remote add during the commitBaseline await is healed by flushSave finally', async () => {
+    // Narrow residual: a flush can exit via the OK path, whose commitBaseline awaits
+    // fetchLatestVersionId. A remote event during THAT await advances baselineMdRef with
+    // no adopt on any per-exit path. The finally heal reconciles the board regardless of
+    // exit path, so a later eager structural op can't clobber the remote column.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Server state after Alice's rename lands AND Bob adds Remote: [Backlog, In Progress, Remote].
+    const FRESH2 = SAMPLE
+      .replace('## To Do', '## Backlog')
+      .replace('%% kanban:settings', '## Remote\n\n- [ ] Remote card\n\n\n%% kanban:settings')
+    mockFetch.mockResolvedValue({ content: FRESH2, versionId: 1001 })
+
+    // Alice's POST succeeds (OK path), but make commitBaseline's fetchLatestVersionId hang
+    // so Bob's event lands DURING the commitBaseline await (inFlightRef still true).
+    let resolveVid!: (v: number | null) => void
+    mockVersionId.mockImplementationOnce(() => new Promise(res => { resolveVid = res }))
+
+    // Step 1: rename To Do → Backlog → flush → POST OK → commitBaseline awaits the vid.
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+
+    // Step 2: Bob adds Remote DURING the commitBaseline await (dirty via inFlightRef,
+    // pending null → handleRemoteChange's adopt skipped; baselineMdRef → FRESH2).
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 1001 })
+    expect(screen.queryByText('Remote')).toBeNull()
+
+    // Step 3: the vid resolves → flushSave returns via OK → finally adopts FRESH2.
+    await act(async () => {
+      resolveVid(1001)
+      await new Promise(r => setTimeout(r, 0))
+    })
+    await waitFor(() => expect(screen.getByText('Remote')).toBeTruthy(), { timeout: 2000 })
+
+    // Step 4: a later eager rename — Remote must survive (pre-fix: board lacked R → clobber).
+    await user.dblClick(screen.getByText('In Progress'))
+    const input2 = screen.getByDisplayValue('In Progress')
+    await user.clear(input2)
+    await user.type(input2, 'Doing{Enter}')
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(2), { timeout: 2000 })
+    const final = upsertOf(changeAt(1))
+    expect(final).toContain('## Remote')   // remote column STILL survives
+    expect(final).toContain('## Backlog')
+    expect(final).toContain('## Doing')
   })
 })
