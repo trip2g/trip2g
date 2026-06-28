@@ -15,6 +15,8 @@ interface KanbanData {
   path: string
   content: string
   editable: boolean
+  // Server-escaped display name of the last editor (admin-only; absent otherwise).
+  lastEditedBy?: string
 }
 
 function getData(): KanbanData {
@@ -36,6 +38,11 @@ if (!mountEl) throw new Error('trip2g-kanban: #trip2g-kanban-root not found')
 
 createRoot(mountEl).render(
   <React.StrictMode>
-    <Board path={data.path} content={data.content} editable={data.editable} />
+    <Board
+      path={data.path}
+      content={data.content}
+      editable={data.editable}
+      lastEditedBy={data.lastEditedBy}
+    />
   </React.StrictMode>
 )
