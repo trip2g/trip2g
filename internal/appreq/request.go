@@ -270,6 +270,26 @@ func NewContext(parent context.Context, req *Request) context.Context {
 	return context.WithValue(parent, ctxKey, req)
 }
 
+// WebhookWritePatterns returns the write-scope globs stamped on the request
+// by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
+func WebhookWritePatterns(ctx context.Context) []string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return nil
+	}
+	return req.WebhookWritePatterns
+}
+
+// WebhookReadPatterns returns the read-scope globs stamped on the request
+// by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
+func WebhookReadPatterns(ctx context.Context) []string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return nil
+	}
+	return req.WebhookReadPatterns
+}
+
 // Snapshot returns an independent deep copy of c suitable for use beyond the
 // request lifetime. The snapshot's Req field is a fresh fasthttp.RequestCtx
 // with headers, cookies, query args, and remote address copied from the

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -435,4 +436,48 @@ func TestResolve_MixedBatch(t *testing.T) {
 	require.Contains(t, payload.Paths, "old.md")
 	require.Equal(t, 2, insertCallCount)
 	require.Equal(t, 1, hideCallCount)
+}
+
+func TestResolve_WriteDeniedOutOfPattern(t *testing.T) {
+	req := &appreq.Request{WebhookWritePatterns: []string{"boards/**"}}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	env := &mockEnv{
+		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		// insertNote intentionally nil — must NOT be reached.
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "secrets/private.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok)
+	require.Contains(t, ep.Message, "write denied for path: secrets/private.md")
+}
+
+func TestResolve_WriteAllowedInPattern(t *testing.T) {
+	req := &appreq.Request{WebhookWritePatterns: []string{"boards/**"}}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		insertNote:                 func(_ context.Context, _ appmodel.RawNote) (int64, error) { called = true; return 1, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "boards/sprint.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
+	require.True(t, called)
 }

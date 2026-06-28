@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"strings"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/webhookutil"
 )
 
 type Env interface {
@@ -26,6 +28,13 @@ func hashContent(content []byte) string {
 	h := sha256.New()
 	h.Write(content)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+}
+
+func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
+	if wp := appreq.WebhookWritePatterns(ctx); len(wp) > 0 && !webhookutil.MatchesAny(path, wp) {
+		return &model.ErrorPayload{Message: "write denied for path: " + path}
+	}
+	return nil
 }
 
 //nolint:gocognit // per-change branches share state with the outer loop; extraction would require threading paths/pathIDs and a multi-return payload sentinel through helpers.
@@ -44,6 +53,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
+			if denied := webhookWriteDenied(ctx, upsert.Path); denied != nil {
+				return denied, nil
+			}
 			if upsert.ExpectedHash != nil {
 				nv := nvs.PathMap[upsert.Path]
 				var actualHash string
@@ -65,6 +77,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
+			if denied := webhookWriteDenied(ctx, patch.Path); denied != nil {
+				return denied, nil
+			}
 			nv := nvs.PathMap[patch.Path]
 			if nv == nil {
 				return &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
@@ -98,6 +113,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
+			if denied := webhookWriteDenied(ctx, hide.Path); denied != nil {
+				return denied, nil
+			}
 			err := env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
 				Value:    hide.Path,
