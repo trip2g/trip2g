@@ -26,4 +26,7 @@ type KB interface {
 	Read(ctx context.Context, path string) (string, error)
 	// Write upserts the document at path with the given content.
 	Write(ctx context.Context, path string, content string) error
+	// Patch applies a single find→replace edit to the document at path,
+	// preserving unmodeled content around the match.
+	Patch(ctx context.Context, path, find, replace string) error
 }

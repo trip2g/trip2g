@@ -97,6 +97,20 @@ func (f *FileKB) Write(_ context.Context, path string, content string) error {
 	return os.WriteFile(abs, []byte(content), 0o644) //nolint:gosec // vault content is not a secret store.
 }
 
+// Patch reads the file, replaces the first occurrence of find with replace, and
+// writes it back. It errors if find is not present so the model learns the patch
+// missed rather than silently no-op'ing.
+func (f *FileKB) Patch(ctx context.Context, path, find, replace string) error {
+	content, err := f.Read(ctx, path)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(content, find) {
+		return fmt.Errorf("patch find not found in %s", path)
+	}
+	return f.Write(ctx, path, strings.Replace(content, find, replace, 1))
+}
+
 func snippet(s string) string {
 	const max = 240
 	s = strings.TrimSpace(s)

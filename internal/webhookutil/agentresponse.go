@@ -21,10 +21,20 @@ type AgentChange struct {
 	Path         string  `json:"path"`
 	Content      string  `json:"content"`
 	ExpectedHash *string `json:"expected_hash,omitempty"`
+	Find         string  `json:"find,omitempty"`
+	Replace      string  `json:"replace,omitempty"`
+	Kind         string  `json:"kind,omitempty"` // "" | "upsert" | "patch"
 }
 
-// Validate validates required fields of an AgentChange.
+// Validate validates required fields of an AgentChange. Patch changes require
+// Find (not Content); upsert/legacy changes require Content.
 func (c AgentChange) Validate() error {
+	if c.Kind == "patch" {
+		return ozzo.ValidateStruct(&c,
+			ozzo.Field(&c.Path, ozzo.Required),
+			ozzo.Field(&c.Find, ozzo.Required),
+		)
+	}
 	return ozzo.ValidateStruct(&c,
 		ozzo.Field(&c.Path, ozzo.Required),
 		ozzo.Field(&c.Content, ozzo.Required),

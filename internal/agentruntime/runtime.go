@@ -22,6 +22,7 @@ const (
 	toolSearch    = "search"
 	toolReadNote  = "read_note"
 	toolWriteNote = "write_note"
+	toolPatchNote = "patch_note"
 	toolFinish    = "finish"
 )
 
@@ -68,6 +69,7 @@ Tools:
 - search(query): find documents within your read scope.
 - read_note(path): read a document's content (read scope only).
 - write_note(path, content): create or replace a document (write scope only).
+- patch_note(path, find, replace): surgically edit a document (write scope only).
 - finish(answer): end the run with your final answer/summary.
 
 Rules:
@@ -218,6 +220,31 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall)
 		})
 		return "ok: wrote " + args.Path
 
+	case toolPatchNote:
+		var args struct {
+			Path    string `json:"path"`
+			Find    string `json:"find"`
+			Replace string `json:"replace"`
+		}
+		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
+			return "error: invalid arguments: " + err.Error()
+		}
+		err := scoped.Patch(ctx, args.Path, args.Find, args.Replace)
+		if errors.Is(err, ErrWriteDenied) {
+			res.Denials = append(res.Denials, "patch "+args.Path)
+			return "error: " + ErrWriteDenied.Error()
+		}
+		if err != nil {
+			return "error: " + err.Error()
+		}
+		res.Changes = append(res.Changes, webhookutil.AgentChange{
+			Path:    args.Path,
+			Find:    args.Find,
+			Replace: args.Replace,
+			Kind:    "patch",
+		})
+		return "ok: patched " + args.Path
+
 	default:
 		return "error: unknown tool " + call.Name
 	}
@@ -274,6 +301,19 @@ func toolDefs() []ToolDef {
 					"content": map[string]any{"type": "string"},
 				},
 				"required": []string{"path", "content"},
+			},
+		},
+		{
+			Name:        toolPatchNote,
+			Description: "Apply a surgical find→replace edit to a document (write scope only). Preserves surrounding content.",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"path":    map[string]any{"type": "string"},
+					"find":    map[string]any{"type": "string"},
+					"replace": map[string]any{"type": "string"},
+				},
+				"required": []string{"path", "find", "replace"},
 			},
 		},
 		{

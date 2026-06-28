@@ -74,3 +74,12 @@ func (s *ScopedKB) Write(ctx context.Context, path string, content string) error
 	}
 	return s.kb.Write(ctx, path, content)
 }
+
+// Patch applies a find/replace to the document at path, or returns
+// ErrWriteDenied if out of write scope.
+func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error {
+	if !s.CanWrite(path) {
+		return ErrWriteDenied
+	}
+	return s.kb.Patch(ctx, path, find, replace)
+}

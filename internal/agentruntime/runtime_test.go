@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // memKB is an in-memory KB for deterministic, offline tests.
@@ -41,6 +43,18 @@ func (m *memKB) Read(_ context.Context, path string) (string, error) {
 
 func (m *memKB) Write(_ context.Context, path string, content string) error {
 	m.docs[path] = content
+	return nil
+}
+
+func (m *memKB) Patch(_ context.Context, path, find, replace string) error {
+	content, ok := m.docs[path]
+	if !ok {
+		return errNotFound
+	}
+	if !strings.Contains(content, find) {
+		return &kbError{"patch find not found"}
+	}
+	m.docs[path] = strings.Replace(content, find, replace, 1)
 	return nil
 }
 
@@ -168,6 +182,60 @@ func TestRun_WriteRoleStaysInWriteScope(t *testing.T) {
 	if len(res.Denials) != 1 {
 		t.Fatalf("expected 1 write denial, got %v", res.Denials)
 	}
+}
+
+// (d) Patch role: the model surgically patches an in-scope note via patch_note,
+// then finishes. Asserts the find/replace landed and the change is Kind="patch".
+func TestRun_PatchNoteStaysInWriteScope(t *testing.T) {
+	kb := newMemKB(map[string]string{
+		"boards/sprint.md": "- Fix login bug @status:todo\n",
+	})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolPatchNote, map[string]any{
+				"path": "boards/sprint.md", "find": "@status:todo", "replace": "@status:doing",
+			})}, PromptTokens: 10, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "moved"})}, PromptTokens: 10, CompletionTokens: 5},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "Move the card.",
+		ReadPatterns:  []string{"boards/**"},
+		WritePatterns: []string{"boards/**"},
+		Model:         "test-model",
+		MaxTokens:     10000,
+		MaxSteps:      10,
+		LLM:           llm,
+		KB:            kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Equal(t, "- Fix login bug @status:doing\n", kb.docs["boards/sprint.md"])
+	require.Len(t, res.Changes, 1)
+	require.Equal(t, "patch", res.Changes[0].Kind)
+	require.Equal(t, "@status:todo", res.Changes[0].Find)
+	require.Equal(t, "@status:doing", res.Changes[0].Replace)
+}
+
+// (e) Patch out of write scope is denied and recorded, content untouched.
+func TestRun_PatchNoteDeniedOutOfScope(t *testing.T) {
+	kb := newMemKB(map[string]string{"other/x.md": "@status:todo"})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolPatchNote, map[string]any{
+				"path": "other/x.md", "find": "@status:todo", "replace": "@status:doing",
+			})}, PromptTokens: 10, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "blocked"})}, PromptTokens: 10, CompletionTokens: 5},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "x", ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		Model: "m", MaxTokens: 10000, MaxSteps: 10, LLM: llm, KB: kb,
+	})
+	require.NoError(t, err)
+	require.Len(t, res.Changes, 0)
+	require.Equal(t, "@status:todo", kb.docs["other/x.md"])
+	require.Equal(t, []string{"patch other/x.md"}, res.Denials)
 }
 
 // (c) Hard-cap: the model loops forever (always a tool call). A low MaxTokens

@@ -78,3 +78,21 @@ func TestParseAgentResponse_ParsesSpend(t *testing.T) {
 	require.Equal(t, 1234, resp.TokensUsed)
 	require.Equal(t, 5, resp.Steps)
 }
+
+func TestParseAgentResponse_PatchChangeNoContentOK(t *testing.T) {
+	body := []byte(`{"changes":[{"path":"boards/sprint.md","find":"todo","replace":"doing","kind":"patch"}]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Changes, 1)
+	require.Equal(t, "patch", resp.Changes[0].Kind)
+	require.Equal(t, "todo", resp.Changes[0].Find)
+	require.Equal(t, "doing", resp.Changes[0].Replace)
+}
+
+func TestParseAgentResponse_PatchChangeMissingFind(t *testing.T) {
+	body := []byte(`{"changes":[{"path":"boards/sprint.md","kind":"patch"}]}`)
+	_, err := ParseAgentResponse(body)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid change")
+}
