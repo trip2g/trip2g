@@ -8,9 +8,12 @@ import (
 )
 
 type Env interface {
-	ExpireStaleWebhookDeliveries(ctx context.Context, staleWindow string) error
-	ExpireStaleCronWebhookDeliveries(ctx context.Context, staleWindow string) error
-	AgentDeliveryCooldownSeconds() int
+	// ExpireStaleWebhookDeliveries finalizes orphaned 'running'/'pending' change webhook
+	// deliveries whose per-webhook liveness window (timeout_seconds + margin) has lapsed.
+	ExpireStaleWebhookDeliveries(ctx context.Context) error
+	// ExpireStaleCronWebhookDeliveries finalizes orphaned 'running'/'pending' cron webhook
+	// deliveries whose per-webhook liveness window (timeout_seconds + margin) has lapsed.
+	ExpireStaleCronWebhookDeliveries(ctx context.Context) error
 	Logger() logger.Logger
 }
 
@@ -19,15 +22,15 @@ type Result struct {
 	Expired bool
 }
 
-// Resolve finalizes orphaned 'running' webhook deliveries (change + cron) whose
-// liveness window has lapsed, marking them 'failed'.
+// Resolve finalizes orphaned 'running'/'pending' webhook deliveries (change + cron)
+// whose liveness window has lapsed, marking them 'failed'.
+// Staleness is determined per-webhook using each webhook's timeout_seconds (+ a
+// 30-second margin) so long-running agent deliveries are not reaped prematurely.
 func Resolve(ctx context.Context, env Env) (*Result, error) {
-	staleWindow := fmt.Sprintf("-%d seconds", env.AgentDeliveryCooldownSeconds())
-
-	if err := env.ExpireStaleWebhookDeliveries(ctx, staleWindow); err != nil {
+	if err := env.ExpireStaleWebhookDeliveries(ctx); err != nil {
 		return nil, fmt.Errorf("failed to expire stale change webhook deliveries: %w", err)
 	}
-	if err := env.ExpireStaleCronWebhookDeliveries(ctx, staleWindow); err != nil {
+	if err := env.ExpireStaleCronWebhookDeliveries(ctx); err != nil {
 		return nil, fmt.Errorf("failed to expire stale cron webhook deliveries: %w", err)
 	}
 

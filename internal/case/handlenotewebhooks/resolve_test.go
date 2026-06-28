@@ -709,6 +709,58 @@ func TestAttachGateSatisfied(t *testing.T) {
 	}
 }
 
+// TestResolve_SkipMode_UsesWebhookTimeoutForStaleWindow is a regression test for F7:
+// the stale window passed to InsertWebhookDeliveryIfClear must be derived from the
+// per-webhook timeout_seconds (+ margin), not the global AgentDeliveryCooldownSeconds.
+func TestResolve_SkipMode_UsesWebhookTimeoutForStaleWindow(t *testing.T) {
+	tests := []struct {
+		name           string
+		timeoutSeconds int64
+		wantWindow     string
+	}{
+		{
+			name:           "timeout=300 → window includes 300+margin",
+			timeoutSeconds: 300,
+			wantWindow:     "-330 seconds", // 300 + 30s margin
+		},
+		{
+			name:           "timeout=3600 → window includes 3600+margin (not global 60s)",
+			timeoutSeconds: 3600,
+			wantWindow:     "-3630 seconds",
+		},
+		{
+			name:           "timeout=60 (same as old global default) → still applies margin",
+			timeoutSeconds: 60,
+			wantWindow:     "-90 seconds",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newMockEnv()
+			env.addNote("notes/a.md", 1, 10, "A", "")
+			env.setWebhooks([]db.ChangeWebhook{{
+				ID:              1,
+				TimeoutSeconds:  tt.timeoutSeconds,
+				IncludePatterns: `["**"]`,
+				ExcludePatterns: `[]`,
+				OnUpdate:        true,
+				MaxDepth:        5,
+				ConcurrencyMode: "skip",
+			}})
+			env.ifClearOK = true
+
+			err := handlenotewebhooks.Resolve(context.Background(), env,
+				[]handlenotewebhooks.NoteChange{{PathID: 1, Event: "update"}}, 0)
+			require.NoError(t, err)
+
+			// The stale window must reflect the webhook's own timeout, not the global cooldown.
+			require.Equal(t, tt.wantWindow, env.lastIfClearWindow,
+				"stale window must be based on webhook timeout_seconds+margin, not global cooldown")
+			require.Len(t, env.getEnqueued(), 1)
+		})
+	}
+}
+
 func TestResolve_ConcurrencySkip_OnlyInsertsWhenClear(t *testing.T) {
 	env := newMockEnv()
 	env.addNote("boards/sprint.md", 1, 10, "Sprint", "x")

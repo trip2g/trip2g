@@ -1007,11 +1007,20 @@ set status = 'running', started_at = datetime('now')
 where id = ? and status = 'pending';
 
 -- name: ExpireStaleWebhookDeliveries :exec
--- janitor: finalize orphaned 'running' rows past the stale window to 'failed'.
+-- janitor: finalize orphaned 'running'/'pending' deliveries whose liveness window
+-- (per-webhook timeout_seconds + 30s margin) has lapsed, marking them 'failed'.
+-- Using the webhook's own timeout prevents premature reaping of long-running agents.
+-- 'pending' rows are also expired so queue_one orphans cannot block forever.
 update change_webhook_deliveries
 set status = 'failed', completed_at = datetime('now')
-where status = 'running'
-  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', sqlc.arg(stale_window));
+where status in ('running', 'pending')
+  and exists (
+    select 1 from change_webhooks w
+    where w.id = change_webhook_deliveries.webhook_id
+      and datetime(coalesce(change_webhook_deliveries.heartbeat_at,
+                            change_webhook_deliveries.started_at,
+                            change_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'));
 
 -- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
@@ -1096,10 +1105,19 @@ set status = 'running', started_at = datetime('now')
 where id = ? and status = 'pending';
 
 -- name: ExpireStaleCronWebhookDeliveries :exec
+-- janitor: finalize orphaned 'running'/'pending' cron deliveries using per-webhook
+-- timeout_seconds + 30s margin, preventing premature reaping of long-running agents.
+-- 'pending' rows are also expired so queue_one orphans cannot block forever.
 update cron_webhook_deliveries
 set status = 'failed', completed_at = datetime('now')
-where status = 'running'
-  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', sqlc.arg(stale_window));
+where status in ('running', 'pending')
+  and exists (
+    select 1 from cron_webhooks w
+    where w.id = cron_webhook_deliveries.cron_webhook_id
+      and datetime(coalesce(cron_webhook_deliveries.heartbeat_at,
+                            cron_webhook_deliveries.started_at,
+                            cron_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'));
 
 -- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries

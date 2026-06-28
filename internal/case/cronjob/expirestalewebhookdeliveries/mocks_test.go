@@ -20,13 +20,10 @@ var _ expirestalewebhookdeliveries.Env = &EnvMock{}
 //
 //		// make and configure a mocked expirestalewebhookdeliveries.Env
 //		mockedEnv := &EnvMock{
-//			AgentDeliveryCooldownSecondsFunc: func() int {
-//				panic("mock out the AgentDeliveryCooldownSeconds method")
-//			},
-//			ExpireStaleCronWebhookDeliveriesFunc: func(ctx context.Context, staleWindow string) error {
+//			ExpireStaleCronWebhookDeliveriesFunc: func(ctx context.Context) error {
 //				panic("mock out the ExpireStaleCronWebhookDeliveries method")
 //			},
-//			ExpireStaleWebhookDeliveriesFunc: func(ctx context.Context, staleWindow string) error {
+//			ExpireStaleWebhookDeliveriesFunc: func(ctx context.Context) error {
 //				panic("mock out the ExpireStaleWebhookDeliveries method")
 //			},
 //			LoggerFunc: func() logger.Logger {
@@ -39,90 +36,50 @@ var _ expirestalewebhookdeliveries.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// AgentDeliveryCooldownSecondsFunc mocks the AgentDeliveryCooldownSeconds method.
-	AgentDeliveryCooldownSecondsFunc func() int
-
 	// ExpireStaleCronWebhookDeliveriesFunc mocks the ExpireStaleCronWebhookDeliveries method.
-	ExpireStaleCronWebhookDeliveriesFunc func(ctx context.Context, staleWindow string) error
+	ExpireStaleCronWebhookDeliveriesFunc func(ctx context.Context) error
 
 	// ExpireStaleWebhookDeliveriesFunc mocks the ExpireStaleWebhookDeliveries method.
-	ExpireStaleWebhookDeliveriesFunc func(ctx context.Context, staleWindow string) error
+	ExpireStaleWebhookDeliveriesFunc func(ctx context.Context) error
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// AgentDeliveryCooldownSeconds holds details about calls to the AgentDeliveryCooldownSeconds method.
-		AgentDeliveryCooldownSeconds []struct {
-		}
 		// ExpireStaleCronWebhookDeliveries holds details about calls to the ExpireStaleCronWebhookDeliveries method.
 		ExpireStaleCronWebhookDeliveries []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StaleWindow is the staleWindow argument value.
-			StaleWindow string
 		}
 		// ExpireStaleWebhookDeliveries holds details about calls to the ExpireStaleWebhookDeliveries method.
 		ExpireStaleWebhookDeliveries []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StaleWindow is the staleWindow argument value.
-			StaleWindow string
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
 	}
-	lockAgentDeliveryCooldownSeconds     sync.RWMutex
 	lockExpireStaleCronWebhookDeliveries sync.RWMutex
 	lockExpireStaleWebhookDeliveries     sync.RWMutex
 	lockLogger                           sync.RWMutex
 }
 
-// AgentDeliveryCooldownSeconds calls AgentDeliveryCooldownSecondsFunc.
-func (mock *EnvMock) AgentDeliveryCooldownSeconds() int {
-	if mock.AgentDeliveryCooldownSecondsFunc == nil {
-		panic("EnvMock.AgentDeliveryCooldownSecondsFunc: method is nil but Env.AgentDeliveryCooldownSeconds was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockAgentDeliveryCooldownSeconds.Lock()
-	mock.calls.AgentDeliveryCooldownSeconds = append(mock.calls.AgentDeliveryCooldownSeconds, callInfo)
-	mock.lockAgentDeliveryCooldownSeconds.Unlock()
-	return mock.AgentDeliveryCooldownSecondsFunc()
-}
-
-// AgentDeliveryCooldownSecondsCalls gets all the calls that were made to AgentDeliveryCooldownSeconds.
-// Check the length with:
-//
-//	len(mockedEnv.AgentDeliveryCooldownSecondsCalls())
-func (mock *EnvMock) AgentDeliveryCooldownSecondsCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockAgentDeliveryCooldownSeconds.RLock()
-	calls = mock.calls.AgentDeliveryCooldownSeconds
-	mock.lockAgentDeliveryCooldownSeconds.RUnlock()
-	return calls
-}
-
 // ExpireStaleCronWebhookDeliveries calls ExpireStaleCronWebhookDeliveriesFunc.
-func (mock *EnvMock) ExpireStaleCronWebhookDeliveries(ctx context.Context, staleWindow string) error {
+func (mock *EnvMock) ExpireStaleCronWebhookDeliveries(ctx context.Context) error {
 	if mock.ExpireStaleCronWebhookDeliveriesFunc == nil {
 		panic("EnvMock.ExpireStaleCronWebhookDeliveriesFunc: method is nil but Env.ExpireStaleCronWebhookDeliveries was just called")
 	}
 	callInfo := struct {
-		Ctx         context.Context
-		StaleWindow string
+		Ctx context.Context
 	}{
-		Ctx:         ctx,
-		StaleWindow: staleWindow,
+		Ctx: ctx,
 	}
 	mock.lockExpireStaleCronWebhookDeliveries.Lock()
 	mock.calls.ExpireStaleCronWebhookDeliveries = append(mock.calls.ExpireStaleCronWebhookDeliveries, callInfo)
 	mock.lockExpireStaleCronWebhookDeliveries.Unlock()
-	return mock.ExpireStaleCronWebhookDeliveriesFunc(ctx, staleWindow)
+	return mock.ExpireStaleCronWebhookDeliveriesFunc(ctx)
 }
 
 // ExpireStaleCronWebhookDeliveriesCalls gets all the calls that were made to ExpireStaleCronWebhookDeliveries.
@@ -130,12 +87,10 @@ func (mock *EnvMock) ExpireStaleCronWebhookDeliveries(ctx context.Context, stale
 //
 //	len(mockedEnv.ExpireStaleCronWebhookDeliveriesCalls())
 func (mock *EnvMock) ExpireStaleCronWebhookDeliveriesCalls() []struct {
-	Ctx         context.Context
-	StaleWindow string
+	Ctx context.Context
 } {
 	var calls []struct {
-		Ctx         context.Context
-		StaleWindow string
+		Ctx context.Context
 	}
 	mock.lockExpireStaleCronWebhookDeliveries.RLock()
 	calls = mock.calls.ExpireStaleCronWebhookDeliveries
@@ -144,21 +99,19 @@ func (mock *EnvMock) ExpireStaleCronWebhookDeliveriesCalls() []struct {
 }
 
 // ExpireStaleWebhookDeliveries calls ExpireStaleWebhookDeliveriesFunc.
-func (mock *EnvMock) ExpireStaleWebhookDeliveries(ctx context.Context, staleWindow string) error {
+func (mock *EnvMock) ExpireStaleWebhookDeliveries(ctx context.Context) error {
 	if mock.ExpireStaleWebhookDeliveriesFunc == nil {
 		panic("EnvMock.ExpireStaleWebhookDeliveriesFunc: method is nil but Env.ExpireStaleWebhookDeliveries was just called")
 	}
 	callInfo := struct {
-		Ctx         context.Context
-		StaleWindow string
+		Ctx context.Context
 	}{
-		Ctx:         ctx,
-		StaleWindow: staleWindow,
+		Ctx: ctx,
 	}
 	mock.lockExpireStaleWebhookDeliveries.Lock()
 	mock.calls.ExpireStaleWebhookDeliveries = append(mock.calls.ExpireStaleWebhookDeliveries, callInfo)
 	mock.lockExpireStaleWebhookDeliveries.Unlock()
-	return mock.ExpireStaleWebhookDeliveriesFunc(ctx, staleWindow)
+	return mock.ExpireStaleWebhookDeliveriesFunc(ctx)
 }
 
 // ExpireStaleWebhookDeliveriesCalls gets all the calls that were made to ExpireStaleWebhookDeliveries.
@@ -166,12 +119,10 @@ func (mock *EnvMock) ExpireStaleWebhookDeliveries(ctx context.Context, staleWind
 //
 //	len(mockedEnv.ExpireStaleWebhookDeliveriesCalls())
 func (mock *EnvMock) ExpireStaleWebhookDeliveriesCalls() []struct {
-	Ctx         context.Context
-	StaleWindow string
+	Ctx context.Context
 } {
 	var calls []struct {
-		Ctx         context.Context
-		StaleWindow string
+		Ctx context.Context
 	}
 	mock.lockExpireStaleWebhookDeliveries.RLock()
 	calls = mock.calls.ExpireStaleWebhookDeliveries

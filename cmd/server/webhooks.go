@@ -125,20 +125,16 @@ func (a *app) EnqueueDeliverCronWebhook(ctx context.Context, params delivercronw
 	return a.DeliverCronWebhookJob.EnqueueDeliverCronWebhook(ctx, params)
 }
 
-// AgentDeliveryCooldownSeconds returns the stale-lock window (in seconds)
-// for skip/queue_one webhook concurrency modes.
-func (a *app) AgentDeliveryCooldownSeconds() int {
-	return a.config.AgentDeliveryCooldownSeconds
+// ExpireStaleWebhookDeliveries marks orphaned 'running'/'pending' change webhook
+// deliveries as 'failed' once their per-webhook liveness window (timeout_seconds
+// + 30-second margin) has lapsed.
+func (a *app) ExpireStaleWebhookDeliveries(ctx context.Context) error {
+	return a.WriteQueries.ExpireStaleWebhookDeliveries(ctx)
 }
 
-// ExpireStaleWebhookDeliveries marks orphaned 'running' change webhook
-// deliveries as 'failed' when their heartbeat_at is older than staleWindow.
-func (a *app) ExpireStaleWebhookDeliveries(ctx context.Context, staleWindow string) error {
-	return a.WriteQueries.ExpireStaleWebhookDeliveries(ctx, staleWindow)
-}
-
-// ExpireStaleCronWebhookDeliveries marks orphaned 'running' cron webhook
-// deliveries as 'failed' when their heartbeat_at is older than staleWindow.
-func (a *app) ExpireStaleCronWebhookDeliveries(ctx context.Context, staleWindow string) error {
-	return a.WriteQueries.ExpireStaleCronWebhookDeliveries(ctx, staleWindow)
+// ExpireStaleCronWebhookDeliveries marks orphaned 'running'/'pending' cron webhook
+// deliveries as 'failed' once their per-webhook liveness window (timeout_seconds
+// + 30-second margin) has lapsed.
+func (a *app) ExpireStaleCronWebhookDeliveries(ctx context.Context) error {
+	return a.WriteQueries.ExpireStaleCronWebhookDeliveries(ctx)
 }

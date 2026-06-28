@@ -27,8 +27,9 @@ type mockEnv struct {
 	enqueueDeliveryErr error
 	nextDeliveryID     int64
 
-	ifClearOK     bool
-	ifNoPendingOK bool
+	ifClearOK         bool
+	ifNoPendingOK     bool
+	lastIfClearWindow string // captures StaleWindow passed to InsertWebhookDeliveryIfClear
 }
 
 func newMockEnv() *mockEnv {
@@ -77,6 +78,9 @@ func (m *mockEnv) InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhoo
 func (m *mockEnv) InsertWebhookDeliveryIfClear(ctx context.Context, arg db.InsertWebhookDeliveryIfClearParams) (db.ChangeWebhookDelivery, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if sw, ok := arg.StaleWindow.(string); ok {
+		m.lastIfClearWindow = sw
+	}
 	if !m.ifClearOK {
 		return db.ChangeWebhookDelivery{}, sql.ErrNoRows
 	}
@@ -95,8 +99,6 @@ func (m *mockEnv) InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookI
 	m.nextDeliveryID++
 	return db.ChangeWebhookDelivery{ID: id, WebhookID: webhookID, Status: "pending"}, nil
 }
-
-func (m *mockEnv) AgentDeliveryCooldownSeconds() int { return 60 }
 
 func (m *mockEnv) LatestNoteViews() *model.NoteViews {
 	m.mu.Lock()

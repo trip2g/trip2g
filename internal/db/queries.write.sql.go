@@ -760,25 +760,43 @@ func (q *WriteQueries) EnableApiKey(ctx context.Context, id int64) (ApiKey, erro
 const expireStaleCronWebhookDeliveries = `-- name: ExpireStaleCronWebhookDeliveries :exec
 update cron_webhook_deliveries
 set status = 'failed', completed_at = datetime('now')
-where status = 'running'
-  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', ?1)
+where status in ('running', 'pending')
+  and exists (
+    select 1 from cron_webhooks w
+    where w.id = cron_webhook_deliveries.cron_webhook_id
+      and datetime(coalesce(cron_webhook_deliveries.heartbeat_at,
+                            cron_webhook_deliveries.started_at,
+                            cron_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'))
 `
 
-func (q *WriteQueries) ExpireStaleCronWebhookDeliveries(ctx context.Context, staleWindow interface{}) error {
-	_, err := q.db.ExecContext(ctx, expireStaleCronWebhookDeliveries, staleWindow)
+// janitor: finalize orphaned 'running'/'pending' cron deliveries using per-webhook
+// timeout_seconds + 30s margin, preventing premature reaping of long-running agents.
+// 'pending' rows are also expired so queue_one orphans cannot block forever.
+func (q *WriteQueries) ExpireStaleCronWebhookDeliveries(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, expireStaleCronWebhookDeliveries)
 	return err
 }
 
 const expireStaleWebhookDeliveries = `-- name: ExpireStaleWebhookDeliveries :exec
 update change_webhook_deliveries
 set status = 'failed', completed_at = datetime('now')
-where status = 'running'
-  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', ?1)
+where status in ('running', 'pending')
+  and exists (
+    select 1 from change_webhooks w
+    where w.id = change_webhook_deliveries.webhook_id
+      and datetime(coalesce(change_webhook_deliveries.heartbeat_at,
+                            change_webhook_deliveries.started_at,
+                            change_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'))
 `
 
-// janitor: finalize orphaned 'running' rows past the stale window to 'failed'.
-func (q *WriteQueries) ExpireStaleWebhookDeliveries(ctx context.Context, staleWindow interface{}) error {
-	_, err := q.db.ExecContext(ctx, expireStaleWebhookDeliveries, staleWindow)
+// janitor: finalize orphaned 'running'/'pending' deliveries whose liveness window
+// (per-webhook timeout_seconds + 30s margin) has lapsed, marking them 'failed'.
+// Using the webhook's own timeout prevents premature reaping of long-running agents.
+// 'pending' rows are also expired so queue_one orphans cannot block forever.
+func (q *WriteQueries) ExpireStaleWebhookDeliveries(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, expireStaleWebhookDeliveries)
 	return err
 }
 

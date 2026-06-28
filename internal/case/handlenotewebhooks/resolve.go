@@ -40,12 +40,16 @@ type DeliverChangeWebhookParams struct {
 	PreviousError string       `json:"previous_error,omitempty"`
 }
 
+// webhookStaleMarginSeconds is added on top of a webhook's timeout_seconds when
+// computing whether an existing delivery is still legitimately in-flight.
+// This small grace period absorbs clock skew and DB write latency.
+const webhookStaleMarginSeconds = int64(30)
+
 type Env interface {
 	ListEnabledWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhookDeliveryParams) (db.ChangeWebhookDelivery, error)
 	InsertWebhookDeliveryIfClear(ctx context.Context, arg db.InsertWebhookDeliveryIfClearParams) (db.ChangeWebhookDelivery, error)
 	InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (db.ChangeWebhookDelivery, error)
-	AgentDeliveryCooldownSeconds() int
 	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverChangeWebhook(ctx context.Context, params DeliverChangeWebhookParams) error
 	Logger() logger.Logger
@@ -220,7 +224,9 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 		})
 
 		// Create delivery record, respecting the webhook's concurrency_mode.
-		staleWindow := fmt.Sprintf("-%d seconds", env.AgentDeliveryCooldownSeconds())
+		// For skip mode the stale window is derived from the webhook's own timeout_seconds
+		// (+ a small margin), so a long-running delivery is not treated as stale prematurely.
+		staleWindow := fmt.Sprintf("-%d seconds", wh.TimeoutSeconds+webhookStaleMarginSeconds)
 
 		var delivery db.ChangeWebhookDelivery
 		var insertErr error
