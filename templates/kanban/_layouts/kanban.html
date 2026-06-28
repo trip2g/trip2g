@@ -41,22 +41,27 @@
 <!--
   Data island strategy: Jet has no JSON or base64 filter, so we split the payload:
 
-  1. note.Permalink() goes into a <script type="application/json"> element.
-     Paths are URL-safe strings with no HTML-special characters.
+  1. The editable flag (a plain boolean) goes into a <script type="application/json">
+     element — no string interpolation, so nothing can break out of the JSON.
 
-  2. note.ContentString() goes into a <textarea> (hidden). Jet HTML-escapes
-     its content by default; <textarea> is an "escapable raw text" element, so
-     the browser decodes HTML entities back to the original bytes. The result
-     is available as textarea.value — byte-identical to the original markdown.
-     The only unsafe sequence would be </textarea> inside the markdown, which
-     is impossible in standard obsidian-kanban notes.
+  2. note.Path() and note.ContentString() each go into their own hidden element
+     whose Jet output is HTML-ESCAPED by default (no unsafe filter). The browser
+     decodes the entities back to the original bytes, read via textContent / .value.
+     This is the same safe channel the admin byline uses: a path or markdown with
+     special characters (an HTML close-tag, angle brackets, ampersands, or quotes)
+     is escaped on the way in and cannot break out — interpolating the path through
+     the unsafe filter inside the JSON script (as before) could.
+     Do NOT write Jet expression braces in this comment — Jet parses comments too.
 -->
-<script type="application/json" id="kanban-meta">{"path":"{{ note.Path() | unsafe }}","editable":{{ current_user.is_admin() }}}</script>
+<script type="application/json" id="kanban-meta">{"editable":{{ current_user.is_admin() }}}</script>
+<span id="kanban-path" hidden>{{ note.Path() }}</span>
 <textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
 
 <script>
   (function () {
     var meta = JSON.parse(document.getElementById('kanban-meta').textContent || '{}')
+    // Path comes from the escaped hidden span (same channel as content + the byline).
+    meta.path = document.getElementById('kanban-path')?.textContent || ''
     meta.content = document.getElementById('kanban-content').value
     // Admin-only: the last-editor display name, server-escaped into a hidden span.
     meta.lastEditedBy = document.getElementById('kanban-edited-by')?.textContent || ''
