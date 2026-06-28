@@ -37,6 +37,10 @@ import {
   runDaily,
   runLog,
   containerName,
+  buildKanbanBoard,
+  installKanban,
+  KANBAN_SENTINEL,
+  KANBAN_RELEASE_URL,
 } from './cli.ts';
 
 // ---------------------------------------------------------------------------
@@ -1250,4 +1254,198 @@ test('parseArgs reads --name', () => {
 
 test('parseArgs default name is null', () => {
   assert.equal(parseArgs(['up']).flags.name, null);
+});
+
+// ---------------------------------------------------------------------------
+// --kanban / --kanban-bundle flag parsing
+// ---------------------------------------------------------------------------
+
+test('parseArgs: --kanban sets flags.kanban=true', () => {
+  const { flags } = parseArgs(['up', '--folder', '/tmp/v', '--kanban']);
+  assert.equal(flags.kanban, true);
+});
+
+test('parseArgs: kanban default is false', () => {
+  const { flags } = parseArgs(['up']);
+  assert.equal(flags.kanban, false);
+});
+
+test('parseArgs: --kanban-bundle sets flags.kanbanBundle', () => {
+  const { flags } = parseArgs(['up', '--kanban', '--kanban-bundle', 'http://localhost:8770/kanban.js']);
+  assert.equal(flags.kanbanBundle, 'http://localhost:8770/kanban.js');
+});
+
+test('parseArgs: kanbanBundle default is null', () => {
+  const { flags } = parseArgs(['up']);
+  assert.equal(flags.kanbanBundle, null);
+});
+
+test('parseArgs: --kanban and --kanban-bundle together', () => {
+  const { flags } = parseArgs(['up', '--folder', '/tmp/v', '--kanban', '--kanban-bundle', 'http://localhost:8770/kanban.js']);
+  assert.equal(flags.kanban, true);
+  assert.equal(flags.kanbanBundle, 'http://localhost:8770/kanban.js');
+});
+
+// ---------------------------------------------------------------------------
+// buildKanbanBoard
+// ---------------------------------------------------------------------------
+
+test('buildKanbanBoard: includes required frontmatter fields', () => {
+  const board = buildKanbanBoard();
+  assert.ok(board.includes('kanban-plugin: basic'), 'must have kanban-plugin: basic');
+  assert.ok(board.includes('layout: kanban'), 'must have layout: kanban');
+  assert.ok(board.includes('free: true'), 'must have free: true');
+});
+
+test('buildKanbanBoard: has three columns', () => {
+  const board = buildKanbanBoard();
+  assert.ok(board.includes('## Backlog'), 'must have Backlog column');
+  assert.ok(board.includes('## Doing'), 'must have Doing column');
+  assert.ok(board.includes('## Done'), 'must have Done column');
+});
+
+test('buildKanbanBoard: has sample task items', () => {
+  const board = buildKanbanBoard();
+  assert.ok(board.includes('- [ ]'), 'must have at least one checklist item');
+});
+
+// ---------------------------------------------------------------------------
+// installKanban
+// ---------------------------------------------------------------------------
+
+function makeMockFetch(html: string): typeof fetch {
+  return async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: async () => html,
+    } as unknown as Response;
+  };
+}
+
+test('installKanban: writes layout file with sentinel', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    const mockHtml = '<html><script src="https://cdn.example.com/kanban.js"></script></html>';
+    await installKanban(vault, null, false, false, makeMockFetch(mockHtml));
+
+    const layoutFile = path.join(vault, '_layouts', 'kanban.html');
+    assert.ok(fs.existsSync(layoutFile), 'layout file must be written');
+    const content = fs.readFileSync(layoutFile, 'utf8');
+    assert.ok(content.startsWith(KANBAN_SENTINEL), 'layout must start with sentinel');
+    assert.ok(content.includes('<html>'), 'layout must include fetched HTML body');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: fetches from KANBAN_RELEASE_URL', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  const seenUrls: string[] = [];
+  try {
+    const mockFetch: typeof fetch = async (url: string | URL | Request): Promise<Response> => {
+      seenUrls.push(String(url));
+      return { ok: true, status: 200, statusText: 'OK', text: async () => '<html></html>' } as unknown as Response;
+    };
+    await installKanban(vault, null, false, false, mockFetch);
+    assert.ok(seenUrls.includes(KANBAN_RELEASE_URL), `expected fetch of ${KANBAN_RELEASE_URL}, got: ${seenUrls.join(', ')}`);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: writes sample board by default', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    await installKanban(vault, null, false, false, makeMockFetch('<html></html>'));
+    const boardFile = path.join(vault, 'kanban.md');
+    assert.ok(fs.existsSync(boardFile), 'sample board must be written');
+    const content = fs.readFileSync(boardFile, 'utf8');
+    assert.ok(content.includes('kanban-plugin: basic'));
+    assert.ok(content.includes('## Backlog'));
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: --no-seed skips sample board', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    await installKanban(vault, null, true, false, makeMockFetch('<html></html>'));
+    const boardFile = path.join(vault, 'kanban.md');
+    assert.ok(!fs.existsSync(boardFile), 'sample board must NOT be written with noSeed=true');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: --kanban-bundle rewrites script src', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    const mockHtml = '<html><script src="https://cdn.example.com/kanban.js"></script></html>';
+    const bundleUrl = 'http://localhost:8770/kanban.js';
+    await installKanban(vault, bundleUrl, false, false, makeMockFetch(mockHtml));
+    const layoutFile = path.join(vault, '_layouts', 'kanban.html');
+    const content = fs.readFileSync(layoutFile, 'utf8');
+    assert.ok(content.includes(`<script src="${bundleUrl}">`), 'bundle src must be rewritten');
+    assert.ok(!content.includes('cdn.example.com'), 'original cdn src must be replaced');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: skips layout when file exists without sentinel', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    const layoutsDir = path.join(vault, '_layouts');
+    fs.mkdirSync(layoutsDir, { recursive: true });
+    const layoutFile = path.join(layoutsDir, 'kanban.html');
+    const foreign = '<html><!-- custom layout --></html>';
+    fs.writeFileSync(layoutFile, foreign, 'utf8');
+
+    let fetchCalled = false;
+    const mockFetch: typeof fetch = async (): Promise<Response> => {
+      fetchCalled = true;
+      return { ok: true, status: 200, statusText: 'OK', text: async () => '<html></html>' } as unknown as Response;
+    };
+
+    await installKanban(vault, null, false, false, mockFetch);
+    assert.ok(!fetchCalled, 'fetch must NOT be called when foreign layout exists');
+    // Foreign file must be untouched
+    assert.equal(fs.readFileSync(layoutFile, 'utf8'), foreign);
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: idempotent — skips board if kanban.md already exists', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    const boardFile = path.join(vault, 'kanban.md');
+    fs.writeFileSync(boardFile, '# existing board\n', 'utf8');
+
+    await installKanban(vault, null, false, false, makeMockFetch('<html></html>'));
+    // Board file must not be overwritten
+    assert.equal(fs.readFileSync(boardFile, 'utf8'), '# existing board\n');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
+});
+
+test('installKanban: dry-run writes nothing', async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), 'memcli-kanban-'));
+  try {
+    let fetchCalled = false;
+    const mockFetch: typeof fetch = async (): Promise<Response> => {
+      fetchCalled = true;
+      return { ok: true, status: 200, statusText: 'OK', text: async () => '<html></html>' } as unknown as Response;
+    };
+    await installKanban(vault, null, false, true, mockFetch);
+    assert.ok(!fetchCalled, 'fetch must not be called in dry-run');
+    assert.ok(!fs.existsSync(path.join(vault, '_layouts', 'kanban.html')), 'layout must not be written in dry-run');
+    assert.ok(!fs.existsSync(path.join(vault, 'kanban.md')), 'board must not be written in dry-run');
+  } finally {
+    fs.rmSync(vault, { recursive: true });
+  }
 });

@@ -60,6 +60,8 @@ export interface Flags {
   staleDays: number;
   id: string | null;
   name: string | null;
+  kanban: boolean;
+  kanbanBundle: string | null;
 }
 
 export interface ServerEnv {
@@ -339,6 +341,126 @@ type: header
 `.trimStart();
 }
 
+// ---------------------------------------------------------------------------
+// Kanban template helpers (exported for testing)
+// ---------------------------------------------------------------------------
+
+/** Sentinel written as the first line of the installed kanban layout so we can
+ *  recognise it on re-runs and avoid clobbering layouts we did not install. */
+export const KANBAN_SENTINEL = '<!-- memcli:kanban-template -->';
+
+/** Canonical release URL for the kanban layout HTML. */
+export const KANBAN_RELEASE_URL =
+  'https://github.com/trip2g/kanban_template/releases/latest/download/kanban.html';
+
+/**
+ * Build the sample kanban board note content.
+ * Frontmatter: kanban-plugin + layout + free so the board is publicly readable.
+ */
+export function buildKanbanBoard(): string {
+  return `---
+kanban-plugin: basic
+layout: kanban
+free: true
+---
+
+## Backlog
+
+- [ ] Read the trip2g docs
+- [ ] Plan your first workflow
+
+## Doing
+
+- [ ] Try memcli daily "first thought"
+
+## Done
+
+- [ ] Install the kanban template
+`.trimStart();
+}
+
+/**
+ * Fetch + install the kanban layout and (optionally) seed the sample board.
+ *
+ * Idempotency rules:
+ * - Layout: write only if the file is absent OR carries KANBAN_SENTINEL (ours).
+ *   If it exists without the sentinel, log a skip so we never clobber a custom file.
+ * - Board:  write only if absent (respects --no-seed).
+ *
+ * @param vault        Resolved vault directory path.
+ * @param kanbanBundle Optional override URL for the bundle <script src>.
+ * @param noSeed       If true, skip writing the sample board.
+ * @param dryRun       If true, log what would happen without writing anything.
+ * @param fetchFn      Injected fetch (allows mocking in tests).
+ */
+export async function installKanban(
+  vault: string,
+  kanbanBundle: string | null,
+  noSeed: boolean,
+  dryRun: boolean,
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
+  const layoutsDir = path.join(vault, '_layouts');
+  const layoutFile = path.join(layoutsDir, 'kanban.html');
+  const boardFile = path.join(vault, 'kanban.md');
+
+  // --- Layout ---
+  const existingLayout = fs.existsSync(layoutFile)
+    ? fs.readFileSync(layoutFile, 'utf8')
+    : null;
+
+  const isOurs = existingLayout !== null && existingLayout.startsWith(KANBAN_SENTINEL);
+  const shouldWriteLayout = existingLayout === null || isOurs;
+
+  if (shouldWriteLayout) {
+    if (dryRun) {
+      console.log(`[dry-run] would fetch ${KANBAN_RELEASE_URL} → ${layoutFile}`);
+      if (kanbanBundle) {
+        console.log(`[dry-run] would rewrite bundle <script src> to ${kanbanBundle}`);
+      }
+    } else if (existingLayout === null) {
+      // Fetch from GitHub releases
+      const res = await fetchFn(KANBAN_RELEASE_URL);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch kanban template: ${res.status} ${res.statusText}`);
+      }
+      let html = KANBAN_SENTINEL + '\n' + (await res.text());
+      if (kanbanBundle) {
+        html = html.replace(/<script src="[^"]*kanban\.js"[^>]*>/g, `<script src="${kanbanBundle}">`);
+      }
+      fs.mkdirSync(layoutsDir, { recursive: true });
+      fs.writeFileSync(layoutFile, html, 'utf8');
+      console.log(`Installed kanban template → ${layoutFile}`);
+    } else {
+      // File exists and is ours — patch bundle src if requested, otherwise skip
+      if (kanbanBundle) {
+        const updated = existingLayout.replace(
+          /<script src="[^"]*kanban\.js"[^>]*>/g,
+          `<script src="${kanbanBundle}">`,
+        );
+        fs.writeFileSync(layoutFile, updated, 'utf8');
+        console.log(`Updated kanban bundle src → ${kanbanBundle} in ${layoutFile}`);
+      } else {
+        console.log(`kanban template already installed at ${layoutFile}, skipping.`);
+      }
+    }
+  } else {
+    console.log(`${layoutFile} exists (not ours — skipping to avoid clobber).`);
+  }
+
+  // --- Sample board ---
+  if (!noSeed) {
+    if (dryRun) {
+      console.log(`[dry-run] would write kanban board ${boardFile}`);
+    } else if (fs.existsSync(boardFile)) {
+      console.log(`kanban board already present at ${boardFile}, skipping.`);
+    } else {
+      fs.writeFileSync(boardFile, buildKanbanBoard(), 'utf8');
+      console.log(`Wrote sample kanban board → ${boardFile}`);
+    }
+  }
+}
+
 /**
  * Parse process.argv (or a provided array) into { cmd, flags, positional }.
  * Subcommands: up (default), down, status, logs, key, daily, log, mcp.
@@ -363,6 +485,8 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
     name: null,
+    kanban: false,
+    kanbanBundle: null,
   };
 
   let cmd = 'up';
@@ -406,6 +530,10 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
       flags.id = argv[++i];
     } else if (arg === '--name') {
       flags.name = argv[++i];
+    } else if (arg === '--kanban') {
+      flags.kanban = true;
+    } else if (arg === '--kanban-bundle') {
+      flags.kanbanBundle = argv[++i];
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -468,6 +596,8 @@ export function buildToolList(): ToolDef[] {
           noSeed: { type: 'boolean', description: 'Skip seeding the OKF starter notes (index.md/log.md/AGENTS.md/SCHEMA.md)' },
           hubUrl: { type: 'string', description: 'Override hub MCP endpoint URL' },
           publicUrl: { type: 'string', description: 'Override PUBLIC_URL for the server' },
+          kanban: { type: 'boolean', description: 'Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board' },
+          kanbanBundle: { type: 'string', description: 'Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)' },
         },
         required: [],
       },
@@ -1612,6 +1742,9 @@ FLAGS (up)
   --no-seed            Skip seeding OKF starter notes (index/log/AGENTS/SCHEMA)
   --hub-url <url>      Override hub MCP endpoint (default: ${DEFAULT_HUB_URL})
   --name <id>          Run an isolated instance named trip2g-memory-<id> (needs its own --port)
+  --kanban             Install the trip2g kanban template into <vault>/_layouts/kanban.html
+                       and seed a sample kanban.md board (skipped with --no-seed)
+  --kanban-bundle <url>  Override the kanban.js bundle <script src> (local-dev, e.g. http://localhost:8770/kanban.js)
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -1810,6 +1943,11 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
         console.log(`Wrote seed note ${seedPath}`);
       }
     }
+  }
+
+  // Kanban template install (--kanban flag)
+  if (flags.kanban) {
+    await installKanban(vault, flags.kanbanBundle, flags.noSeed, dryRun);
   }
 
   const repo = repoRoot();
@@ -2028,6 +2166,8 @@ function defaultFlags(): Flags {
     staleDays: DEFAULT_STALE_DAYS,
     id: null,
     name: null,
+    kanban: false,
+    kanbanBundle: null,
   };
 }
 
@@ -2046,6 +2186,8 @@ async function dispatchMcpTool(
     if (typeof a.noSeed === 'boolean') f.noSeed = a.noSeed;
     if (typeof a.hubUrl === 'string') f.hubUrl = a.hubUrl;
     if (typeof a.name === 'string') f.name = a.name;
+    if (typeof a.kanban === 'boolean') f.kanban = a.kanban;
+    if (typeof a.kanbanBundle === 'string') f.kanbanBundle = a.kanbanBundle;
     return f;
   }
 
