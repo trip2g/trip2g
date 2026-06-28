@@ -238,8 +238,10 @@ function cardEqualAt(a: KanbanCard[], ai: number, b: KanbanCard[], bi: number): 
  * on only one side survives; a base card edited differently on BOTH sides is a real
  * conflict → null. When both sides only ADD cards into the same (possibly empty)
  * region, both sets are kept (a remote add that repeats a local add by text is dropped).
+ *
+ * Exported for direct unit testing of the positional card merge.
  */
-function mergeCards(
+export function mergeCards(
   base: KanbanCard[],
   local: KanbanCard[],
   remote: KanbanCard[],
@@ -283,8 +285,10 @@ function mergeCards(
  * merge of its cards plus a reconcile of its `complete` flag. Returns null when the
  * cards genuinely conflict (the same base card edited differently on each side) or the
  * complete flag was toggled differently on each side.
+ *
+ * Exported for direct unit testing of the card-level column merge.
  */
-function mergeChangedColumn(b: KanbanList, l: KanbanList, r: KanbanList): KanbanList | null {
+export function mergeChangedColumn(b: KanbanList, l: KanbanList, r: KanbanList): KanbanList | null {
   const localCompleteChanged = l.complete !== b.complete
   const remoteCompleteChanged = r.complete !== b.complete
   if (localCompleteChanged && remoteCompleteChanged && l.complete !== r.complete) return null

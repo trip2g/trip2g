@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { sha256Base64 } from './api'
 import { parseBoard, serializeBoard } from './format'
-import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline, addList, renameList, deleteList, moveList, applyStructuralChange, mergeColumns } from './ops'
-import type { KanbanList } from './format'
+import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline, addList, renameList, deleteList, moveList, applyStructuralChange, mergeColumns, mergeCards, mergeChangedColumn } from './ops'
+import type { KanbanCard, KanbanList } from './format'
 
 const SAMPLE = `---
 kanban-plugin: basic
@@ -375,4 +375,82 @@ test('mergeColumns: local delete vs remote edit of same column → conflict (nul
   const local = [col('A', ['x'])]                 // deleted B
   const remote = [col('A', ['x']), col('B', ['y', 'y2'])] // remote edited B
   assert.equal(mergeColumns(base, local, remote), null)
+})
+
+// ── mergeCards / mergeChangedColumn: direct positional card-level 3-way merge ──
+// These exercise the card merge in isolation — the exact cases the PR #46 reviewer
+// traced by hand. Every assertion pins the full resulting card list, so any silent
+// drop or duplicate fails the test.
+
+const cards = (texts: string[]): KanbanCard[] => texts.map(text => ({ text, checked: false }))
+const cardTexts = (cs: KanbanCard[] | null) => (cs ? cs.map(c => c.text) : null)
+
+test('mergeCards: local moves a card within the column, remote untouched → move kept', () => {
+  // base a,b,c → local moves a to the end
+  const merged = mergeCards(cards(['a', 'b', 'c']), cards(['b', 'c', 'a']), cards(['a', 'b', 'c']))
+  assert.deepEqual(cardTexts(merged), ['b', 'c', 'a'])
+})
+
+test('mergeCards: local deletes a card, remote untouched → delete kept (no resurrection)', () => {
+  const merged = mergeCards(cards(['a', 'b', 'c']), cards(['a', 'c']), cards(['a', 'b', 'c']))
+  assert.deepEqual(cardTexts(merged), ['a', 'c'])
+})
+
+test('mergeCards: local reorders (swap), remote untouched → reorder kept', () => {
+  const merged = mergeCards(cards(['a', 'b']), cards(['b', 'a']), cards(['a', 'b']))
+  assert.deepEqual(cardTexts(merged), ['b', 'a'])
+})
+
+test('mergeCards: duplicate card text preserved when a local add keeps both originals', () => {
+  const merged = mergeCards(cards(['dup', 'dup']), cards(['dup', 'dup', 'new']), cards(['dup', 'dup']))
+  assert.deepEqual(cardTexts(merged), ['dup', 'dup', 'new'], 'both duplicates and the new card survive')
+})
+
+test('mergeCards: deleting one of two identical cards leaves exactly one', () => {
+  const merged = mergeCards(cards(['dup', 'dup']), cards(['dup']), cards(['dup', 'dup']))
+  assert.deepEqual(cardTexts(merged), ['dup'], 'exactly one duplicate remains — no over-delete, no resurrection')
+})
+
+test('mergeCards: both sides add distinct cards into the same region → both survive', () => {
+  const merged = mergeCards(cards(['c']), cards(['c', 'A']), cards(['c', 'B']))
+  assert.deepEqual(cardTexts(merged), ['c', 'A', 'B'])
+})
+
+test('mergeCards: both sides add the same-text card → deduped to one', () => {
+  const merged = mergeCards(cards(['c']), cards(['c', 'A']), cards(['c', 'A']))
+  assert.deepEqual(cardTexts(merged), ['c', 'A'], 'identical add on both sides is not duplicated')
+})
+
+test('mergeCards: both add into an empty column → both kept, local-first order', () => {
+  const merged = mergeCards(cards([]), cards(['X']), cards(['Y']))
+  assert.deepEqual(cardTexts(merged), ['X', 'Y'])
+})
+
+test('mergeCards: position-shift conflict (remote delete shifts across a local edit) → null', () => {
+  // local edits b→B; remote deletes a, shifting every index. The positional
+  // prefix/suffix reduction cannot isolate the two changes → genuine conflict.
+  const merged = mergeCards(cards(['a', 'b', 'c']), cards(['a', 'B', 'c']), cards(['b', 'c']))
+  assert.equal(merged, null)
+})
+
+test('mergeCards: same base card edited differently on each side → null', () => {
+  const merged = mergeCards(cards(['x']), cards(['x LOCAL']), cards(['x REMOTE']))
+  assert.equal(merged, null)
+})
+
+test('mergeChangedColumn: local toggles complete, remote adds a card → both survive', () => {
+  const base: KanbanList = { title: 'A', complete: false, cards: cards(['a']) }
+  const local: KanbanList = { title: 'A', complete: true, cards: cards(['a']) }
+  const remote: KanbanList = { title: 'A', complete: false, cards: cards(['a', 'b']) }
+  const merged = mergeChangedColumn(base, local, remote)
+  assert.ok(merged)
+  assert.equal(merged!.complete, true, 'local complete-toggle preserved')
+  assert.deepEqual(cardTexts(merged!.cards), ['a', 'b'], 'remote card-add preserved')
+})
+
+test('mergeChangedColumn: conflicting card edits on each side → null', () => {
+  const base: KanbanList = { title: 'A', complete: false, cards: cards(['x']) }
+  const local: KanbanList = { title: 'A', complete: false, cards: cards(['x LOCAL']) }
+  const remote: KanbanList = { title: 'A', complete: false, cards: cards(['x REMOTE']) }
+  assert.equal(mergeChangedColumn(base, local, remote), null)
 })
