@@ -75,3 +75,48 @@ func TestResolve_InvalidTransformJsonnet_ReturnsErrorPayload(t *testing.T) {
 	require.Equal(t, "transformJsonnet", ep.ByFields[0].Name)
 	require.Nil(t, env.inserted, "must not insert on invalid transform_jsonnet")
 }
+
+// F9(a): http:// URL with pass_api_key must be rejected at create time.
+func TestResolve_RejectsHTTPWithPassAPIKey(t *testing.T) {
+	env := &mockEnv{}
+	out, err := createwebhook.Resolve(context.Background(), env, model.ChangeWebhookCreateInput{
+		URL:             "http://example.com/hook",
+		IncludePatterns: []string{"**"},
+		PassAPIKey:      ptr.To(true),
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload for http+passAPIKey, got %T", out)
+	require.Equal(t, "url", ep.ByFields[0].Name)
+	require.Nil(t, env.inserted, "must not insert when URL is insecure")
+}
+
+// F9(a): https:// URL with pass_api_key must be accepted.
+func TestResolve_AcceptsHTTPSWithPassAPIKey(t *testing.T) {
+	env := &mockEnv{}
+	out, err := createwebhook.Resolve(context.Background(), env, model.ChangeWebhookCreateInput{
+		URL:             "https://example.com/hook",
+		IncludePatterns: []string{"**"},
+		PassAPIKey:      ptr.To(true),
+	})
+	require.NoError(t, err)
+	_, isErr := out.(*model.ErrorPayload)
+	require.False(t, isErr, "https+passAPIKey must be accepted")
+	require.NotNil(t, env.inserted)
+}
+
+// F9(b): transform_jsonnet + pass_api_key must be rejected at create time.
+func TestResolve_RejectsTransformWithPassAPIKey(t *testing.T) {
+	env := &mockEnv{}
+	out, err := createwebhook.Resolve(context.Background(), env, model.ChangeWebhookCreateInput{
+		URL:              "https://example.com/hook",
+		IncludePatterns:  []string{"**"},
+		PassAPIKey:       ptr.To(true),
+		TransformJsonnet: ptr.To(`{ x: 1 }`),
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload for transform+passAPIKey, got %T", out)
+	require.Equal(t, "transformJsonnet", ep.ByFields[0].Name)
+	require.Nil(t, env.inserted, "must not insert when transform+passAPIKey conflict")
+}

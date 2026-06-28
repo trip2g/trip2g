@@ -55,3 +55,33 @@ func TestResolve_RejectsBadConcurrencyMode(t *testing.T) {
 	require.Equal(t, "concurrencyMode", ep.ByFields[0].Name)
 	require.Nil(t, env.updated, "must not update on invalid concurrency_mode")
 }
+
+// F9(a): updating URL to http:// while enabling pass_api_key must be rejected.
+func TestResolve_RejectsHTTPWithPassAPIKey(t *testing.T) {
+	env := &mockEnv{}
+	out, err := updatewebhook.Resolve(context.Background(), env, model.ChangeWebhookUpdateInput{
+		ID:         7,
+		URL:        ptr.To("http://example.com/hook"),
+		PassAPIKey: ptr.To(true),
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload for http+passAPIKey update, got %T", out)
+	require.Equal(t, "url", ep.ByFields[0].Name)
+	require.Nil(t, env.updated, "must not update when URL is insecure with pass_api_key")
+}
+
+// F9(b): enabling transform_jsonnet + pass_api_key in same update must be rejected.
+func TestResolve_RejectsTransformWithPassAPIKey(t *testing.T) {
+	env := &mockEnv{}
+	out, err := updatewebhook.Resolve(context.Background(), env, model.ChangeWebhookUpdateInput{
+		ID:               7,
+		TransformJsonnet: ptr.To(`{ x: 1 }`),
+		PassAPIKey:       ptr.To(true),
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload for transform+passAPIKey update, got %T", out)
+	require.Equal(t, "transformJsonnet", ep.ByFields[0].Name)
+	require.Nil(t, env.updated, "must not update when transform+passAPIKey conflict")
+}

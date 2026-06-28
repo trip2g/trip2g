@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
+	"trip2g/internal/webhookutil"
 )
 
 type Env interface {
@@ -117,6 +118,23 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	if ep := validateTransformJsonnet(input.TransformJsonnet); ep != nil {
 		return ep, nil
+	}
+
+	// F9(a): if URL is being set to http while pass_api_key is enabled in the same
+	// request, reject — the scoped token must not travel over cleartext.
+	if input.URL != nil && input.PassAPIKey != nil && *input.PassAPIKey {
+		if msg := webhookutil.RequireHTTPS(*input.URL); msg != "" {
+			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
+		}
+	}
+
+	// F9(b): transform_jsonnet output replaces the entire body, silently dropping
+	// the injected api_token. Reject the combination when both are set in this update.
+	if input.TransformJsonnet != nil && *input.TransformJsonnet != "" &&
+		input.PassAPIKey != nil && *input.PassAPIKey {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "transform_jsonnet cannot be combined with pass_api_key"},
+		}}, nil
 	}
 
 	if input.ConcurrencyMode != nil {

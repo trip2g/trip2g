@@ -298,6 +298,51 @@ func TestResolve_TransformJsonnet_AppliedAndSigned(t *testing.T) {
 	require.Equal(t, webhookutil.SignHMAC(body, "hook-secret"), gotSig)
 }
 
+// F9(d): when transform_jsonnet is active, the logged request_body must equal the
+// actual transformed bytes sent to the endpoint (not the pre-transform struct).
+func TestResolve_TransformJsonnet_LoggedBodyEqualsTransformedBytes(t *testing.T) {
+	var httpBody []byte
+	var loggedBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httpBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:               id,
+			Url:              srv.URL,
+			Secret:           "hook-secret",
+			TimeoutSeconds:   10,
+			WritePatterns:    "[]",
+			ReadPatterns:     "[]",
+			TransformJsonnet: `{ marker: "logged", n: std.length(std.parseJson(std.extVar("change"))) }`,
+		}, nil
+	}
+	env.InsertWebhookDeliveryLogFunc = func(_ context.Context, p db.InsertWebhookDeliveryLogParams) error {
+		if p.RequestBody != nil {
+			loggedBody = *p.RequestBody
+		}
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{
+			WebhookID:  1,
+			DeliveryID: 200,
+			Attempt:    1,
+			Changes:    []handlenotewebhooks.ChangeInfo{{Path: "a.md", Event: "update"}},
+		})
+	require.NoError(t, err)
+	require.NotEmpty(t, httpBody, "HTTP body must be non-empty")
+	require.NotEmpty(t, loggedBody, "logged body must be non-empty")
+	// The logged body must equal the bytes that were actually sent to the endpoint.
+	require.Equal(t, string(httpBody), loggedBody,
+		"logged request_body must match transformed bytes sent to endpoint")
+}
+
 func TestResolve_PersistsSpend(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

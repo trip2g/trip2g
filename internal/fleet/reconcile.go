@@ -127,14 +127,38 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 		"description":      markerFor(r.cfg.FleetID, role),
 		"secret":           deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, specVer(role)),
 	}
-	_, err := r.client.GraphQLAdmin(ctx, createChangeWebhookMutation, map[string]any{"input": input})
-	return err
+	raw, err := r.client.GraphQLAdmin(ctx, createChangeWebhookMutation, map[string]any{"input": input})
+	if err != nil {
+		return err
+	}
+	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
+	var resp struct {
+		ChangeWebhookCreate struct {
+			Message string `json:"message"`
+		} `json:"changeWebhookCreate"`
+	}
+	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.ChangeWebhookCreate.Message != "" {
+		return fmt.Errorf("changeWebhookCreate: %s", resp.ChangeWebhookCreate.Message)
+	}
+	return nil
 }
 
 func (r *Reconciler) delete(ctx context.Context, id int64) error {
-	_, err := r.client.GraphQLAdmin(ctx, deleteChangeWebhookMutation,
+	raw, err := r.client.GraphQLAdmin(ctx, deleteChangeWebhookMutation,
 		map[string]any{"input": map[string]any{"id": id}})
-	return err
+	if err != nil {
+		return err
+	}
+	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
+	var resp struct {
+		ChangeWebhookDelete struct {
+			Message string `json:"message"`
+		} `json:"changeWebhookDelete"`
+	}
+	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.ChangeWebhookDelete.Message != "" {
+		return fmt.Errorf("changeWebhookDelete: %s", resp.ChangeWebhookDelete.Message)
+	}
+	return nil
 }
 
 // markerFor is the reconcile dedup key stored in the webhook description.

@@ -107,3 +107,42 @@ func TestDeregister_DeletesAllOwned(t *testing.T) {
 	require.NoError(t, newReconciler(client).Deregister(context.Background()))
 	require.Equal(t, []int64{7}, deletedIDs)
 }
+
+// F9(c): create() returning an ErrorPayload must surface as an error, not be silently swallowed.
+func TestReconcile_Create_ErrorPayload_SurfacesAsError(t *testing.T) {
+	client := &ClientMock{
+		GraphQLAdminFunc: func(_ context.Context, q string, _ map[string]any) (json.RawMessage, error) {
+			if strings.Contains(q, "allChangeWebhooks") {
+				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[]}}`), nil
+			}
+			if strings.Contains(q, "changeWebhookCreate") {
+				// Server returns an ErrorPayload instead of a ChangeWebhookCreatePayload.
+				return json.RawMessage(`{"changeWebhookCreate":{"message":"url is required"}}`), nil
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1}
+	err := newReconciler(client).Reconcile(context.Background(), []Role{role})
+	require.Error(t, err, "ErrorPayload from changeWebhookCreate must propagate as an error")
+	require.Contains(t, err.Error(), "url is required")
+}
+
+// F9(c): delete() returning an ErrorPayload must surface as an error, not be silently swallowed.
+func TestReconcile_Delete_ErrorPayload_SurfacesAsError(t *testing.T) {
+	client := &ClientMock{
+		GraphQLAdminFunc: func(_ context.Context, q string, _ map[string]any) (json.RawMessage, error) {
+			if strings.Contains(q, "allChangeWebhooks") {
+				// Existing stale webhook not in desired set → will be deleted.
+				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":42,"description":"fleet:f1:roles/old.md#deadbeef"}]}}`), nil
+			}
+			if strings.Contains(q, "changeWebhookDelete") {
+				return json.RawMessage(`{"changeWebhookDelete":{"message":"not found"}}`), nil
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	err := newReconciler(client).Reconcile(context.Background(), nil) // no desired → delete stale
+	require.Error(t, err, "ErrorPayload from changeWebhookDelete must propagate as an error")
+	require.Contains(t, err.Error(), "not found")
+}

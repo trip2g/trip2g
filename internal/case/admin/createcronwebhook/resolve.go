@@ -100,6 +100,22 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return ep, nil
 	}
 
+	// F9(a): require https when the api_token will be sent in the body.
+	if input.PassAPIKey != nil && *input.PassAPIKey {
+		if msg := webhookutil.RequireHTTPS(input.URL); msg != "" {
+			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
+		}
+	}
+
+	// F9(b): transform_jsonnet output replaces the entire body, silently dropping
+	// the injected api_token. Reject the combination at creation time.
+	if input.TransformJsonnet != nil && *input.TransformJsonnet != "" &&
+		input.PassAPIKey != nil && *input.PassAPIKey {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "transform_jsonnet cannot be combined with pass_api_key"},
+		}}, nil
+	}
+
 	// Validate cron expression.
 	nextRunAt, err := parseCronSchedule(input.CronSchedule)
 	if err != nil {
