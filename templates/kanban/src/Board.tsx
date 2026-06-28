@@ -678,10 +678,14 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
   // re-fetch await:
   //   • clean  (no queued save, no debounce timer, no in-flight save) — nothing local
   //     to lose, so adopt the remote board wholesale and show a subtle toast.
-  //   • dirty  — keep the in-progress edit (do NOT setBoard); advance the baseline to
-  //     the remote version and rebase the queued change onto it, so the next flush
-  //     merges remote + local losslessly via the existing rebase closure. If the save
-  //     already flushed during the await, its own hashMismatch path converges instead.
+  //   • dirty  — advance the baseline to the remote version, rebase the queued change
+  //     onto it (column-keyed 3-way merge → remote + local both survive), AND adopt
+  //     that merged result into the visible board so boardRef stays in sync with
+  //     baselineMdRef. Keeping them in sync is load-bearing: a later EAGER structural
+  //     op re-serialises boardRef against baselineMdRef, so a board that hadn't adopted
+  //     the remote's new column would silently overwrite it (its hash would match the
+  //     server, so the merge never runs). If the save already flushed during the await,
+  //     its own hashMismatch path converges instead.
   const handleRemoteChange = useCallback(async (change: NoteChangeItem) => {
     if (change.type === 'hide') {
       // The board note was hidden/deleted server-side: stop editing and tear down the
@@ -717,10 +721,9 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
       return
     }
 
-    // Dirty: keep the in-progress edit (do NOT setBoard) and rebase the queued change
-    // onto the fresh remote baseline (column-keyed 3-way merge → remote + local both
-    // survive). A flush that landed during the await leaves pendingRef null — its own
-    // hashMismatch retry converges instead.
+    // Dirty: rebase the queued change onto the fresh remote baseline (3-way merge →
+    // remote + local both survive). A flush that landed during the await leaves
+    // pendingRef null — its own hashMismatch retry converges instead.
     const pending = pendingRef.current
     if (pending) {
       const rebased = pending.rebase(fresh.content)
@@ -734,6 +737,11 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
         return
       }
       pendingRef.current = { change: rebased.change, rebase: pending.rebase }
+      // Adopt the merged result (local edits + the remote's new/renamed/moved columns)
+      // into the visible board, so boardRef matches baselineMdRef. Without this, a
+      // subsequent eager structural op would serialise a stale board and silently drop
+      // the remote columns the user wasn't actively editing.
+      setBoardFromMarkdown(applyChangeToBaseline(rebased.change, fresh.content))
     }
   }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
 

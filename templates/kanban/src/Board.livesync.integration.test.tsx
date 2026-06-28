@@ -91,6 +91,11 @@ function changeAt(callIndex: number): NoteChange {
   return call[0][0]
 }
 
+function upsertOf(change: NoteChange): string {
+  if (!('upsert' in change)) throw new Error('expected an upsert change, got a patch')
+  return change.upsert.content
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   sub.onChange = null
@@ -118,10 +123,10 @@ describe('Board live sync', () => {
     // Remote bump arrives mid-edit (higher versionId than our baseline of 0).
     await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
 
-    // Dirty path must NOT replace the board: the local toggle is kept and the remote
-    // column is not shown until the next clean reconcile.
+    // Dirty path keeps the local toggle AND adopts the remote column, so the visible
+    // board stays in sync with the baseline (otherwise a later eager op clobbers it).
     expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).checked).toBe(true)
-    expect(screen.queryByText('Remote')).toBeNull()
+    expect(screen.getByText('Remote')).toBeTruthy()
 
     // The debounced save flushes, carrying the local toggle, rebased onto FRESH.
     await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
@@ -233,10 +238,10 @@ describe('Board live sync', () => {
       await new Promise(r => setTimeout(r, 0))
     })
 
-    // Dirty was re-sampled AFTER the await → the edit is NOT wiped …
+    // Dirty was re-sampled AFTER the await → the edit is NOT wiped (toggle kept) …
     expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).checked).toBe(true)
-    // … and the remote board is not adopted over the in-flight edit.
-    expect(screen.queryByText('Remote')).toBeNull()
+    // … and the remote column is adopted alongside the kept edit (board in sync).
+    expect(screen.getByText('Remote')).toBeTruthy()
 
     // The debounced save flushes the toggle, hashed onto the FRESH remote baseline
     // (no clobber of the remote column).
@@ -260,5 +265,78 @@ describe('Board live sync', () => {
     // Editing affordances are gone.
     expect(screen.queryByText('Editable')).toBeNull()
     expect(screen.queryByRole('button', { name: '+ Add list' })).toBeNull()
+  })
+
+  test('dirty-adopt then a later eager RENAME preserves the remote-added column (no silent clobber)', async () => {
+    // Surviving HIGH: after a dirty-adopt the board must adopt the remote column, else
+    // a CLEAN eager structural op re-serialises a stale board and silently drops it
+    // (its hash matches the server, so the merge never runs).
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Remote adds "Remote"; the dirty re-fetch returns it.
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 999 })
+
+    // Step 1: local structural rename To Do → Backlog (debouncing).
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+
+    // Step 2: remote bump mid-edit → dirty-adopt (board adopts Remote + keeps rename).
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+
+    // Step 3: the debounced merged save flushes; let commitBaseline settle.
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    expect(upsertOf(changeAt(0))).toContain('## Remote')
+    await act(async () => { await new Promise(r => setTimeout(r, 25)) })
+
+    // The board itself adopted the remote column (stale-UI fixed).
+    expect(screen.getByText('Remote')).toBeTruthy()
+    expect(screen.getByText('Backlog')).toBeTruthy()
+
+    // Step 4: a SECOND eager structural op (rename In Progress) — NO further remote
+    // event. The pre-fix bug serialised a board missing Remote → dropped it silently.
+    await user.dblClick(screen.getByText('In Progress'))
+    const input2 = screen.getByDisplayValue('In Progress')
+    await user.clear(input2)
+    await user.type(input2, 'Doing{Enter}')
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(2), { timeout: 2000 })
+    const final = upsertOf(changeAt(1))
+    expect(final).toContain('## Remote')    // remote column STILL survives
+    expect(final).toContain('## Backlog')   // first rename survives
+    expect(final).toContain('## Doing')     // second rename applied
+  })
+
+  test('dirty-adopt then a later eager DELETE of a different column preserves the remote-added column', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 999 })
+
+    // Local rename To Do → Backlog (debouncing) then remote adds Remote → dirty-adopt.
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    await act(async () => { await new Promise(r => setTimeout(r, 25)) })
+    expect(screen.getByText('Remote')).toBeTruthy()
+
+    // Eager DELETE of a DIFFERENT column (In Progress, index 1) — Remote must survive.
+    const delButtons = screen.getAllByLabelText('Delete column')
+    await user.click(delButtons[1])
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(2), { timeout: 2000 })
+    const final = upsertOf(changeAt(1))
+    expect(final).toContain('## Remote')          // remote column survives the delete
+    expect(final).toContain('## Backlog')
+    expect(final).not.toContain('## In Progress') // the deleted column is gone
   })
 })
