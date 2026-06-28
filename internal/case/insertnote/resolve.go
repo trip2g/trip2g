@@ -91,12 +91,14 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 	actor := env.NoteVersionActor(ctx)
 
 	noteVersion := db.InsertNoteVersionParams{
-		PathID:            notePath.ID,
-		Version:           version,
-		Content:           arg.Content,
-		CreatedByUserID:   actor.UserID,
-		CreatedByApiKeyID: actor.APIKeyID,
-		CreatedByClient:   actor.Client,
+		PathID:                notePath.ID,
+		Version:               version,
+		Content:               arg.Content,
+		CreatedByUserID:       actor.UserID,
+		CreatedByApiKeyID:     actor.APIKeyID,
+		CreatedByClient:       actor.Client,
+		CreatedByDeliveryKind: actor.DeliveryKind,
+		CreatedByDeliveryID:   actor.DeliveryID,
 	}
 
 	err = env.InsertNoteVersion(ctx, noteVersion)

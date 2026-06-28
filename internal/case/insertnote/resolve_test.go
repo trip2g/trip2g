@@ -105,6 +105,42 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 	require.True(t, versionCreated, "New version should be created when content changed")
 }
 
+// TestResolve_RecordsDeliveryAttribution verifies that delivery attribution
+// (kind + id) from NoteActor is persisted in InsertNoteVersionParams.
+func TestResolve_RecordsDeliveryAttribution(t *testing.T) {
+	ctx := context.Background()
+
+	var got db.InsertNoteVersionParams
+	kind := "change"
+	var id int64 = 77
+
+	env := &EnvMock{
+		InsertNotePathFunc: func(_ context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error) {
+			return db.InsertNotePathRow{ID: 1, VersionCount: 0}, nil
+		},
+		UnhideNotePathFunc: func(_ context.Context, _ string) error {
+			return nil
+		},
+		IncrementNoteVersionCountFunc: func(_ context.Context, _ db.IncrementNoteVersionCountParams) (int64, error) {
+			return 1, nil
+		},
+		InsertNoteVersionFunc: func(_ context.Context, arg db.InsertNoteVersionParams) error {
+			got = arg
+			return nil
+		},
+		NoteVersionActorFunc: func(_ context.Context) model.NoteActor {
+			return model.NoteActor{DeliveryKind: &kind, DeliveryID: &id}
+		},
+	}
+
+	_, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "boards/sprint.md", Content: "x"})
+	require.NoError(t, err)
+	require.NotNil(t, got.CreatedByDeliveryKind)
+	require.Equal(t, "change", *got.CreatedByDeliveryKind)
+	require.NotNil(t, got.CreatedByDeliveryID)
+	require.EqualValues(t, 77, *got.CreatedByDeliveryID)
+}
+
 // TestNewNoteUnhideAndVersionCreated verifies that both UnhideNotePath and
 // version creation happen for a brand new note.
 func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
