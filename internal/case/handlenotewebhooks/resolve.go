@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -108,6 +109,41 @@ func matchChange(ch NoteChange, wh db.ChangeWebhook, nvs *model.NoteViews, inclu
 	return &info
 }
 
+// attachGateSatisfied reports whether the webhook's attach_notes preconditions
+// hold against the current note set. A plain glob requires >=1 matching note;
+// a "!glob" requires 0 matching notes. Empty attach is always satisfied.
+func attachGateSatisfied(attach []string, nvs *model.NoteViews) bool {
+	for _, pat := range attach {
+		if strings.HasPrefix(pat, "!") {
+			if anyNoteMatches(strings.TrimPrefix(pat, "!"), nvs) {
+				return false // required-absent glob matched something
+			}
+			continue
+		}
+		if !anyNoteMatches(pat, nvs) {
+			return false // required-present glob matched nothing
+		}
+	}
+	return true
+}
+
+func anyNoteMatches(glob string, nvs *model.NoteViews) bool {
+	if nvs == nil {
+		return false
+	}
+	for path := range nvs.PathMap {
+		if webhookutil.MatchesAny(path, []string{glob}) {
+			return true
+		}
+	}
+	return false
+}
+
+// AttachGateSatisfiedForTest exposes attachGateSatisfied to the test package.
+func AttachGateSatisfiedForTest(attach []string, nvs *model.NoteViews) bool {
+	return attachGateSatisfied(attach, nvs)
+}
+
 // Resolve processes changed notes against enabled webhooks.
 // It filters by depth, event type, and glob patterns, then creates
 // delivery records and enqueues background jobs for matching webhooks.
@@ -157,6 +193,21 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 		}
 
 		if len(matched) == 0 {
+			continue
+		}
+
+		// attach_notes presence gate: skip if the role's required context is
+		// absent (plain glob) or a forbidden note is present ("!glob").
+		var attach []string
+		if wh.AttachNotes != "" {
+			var attachErr error
+			attach, attachErr = webhookutil.ParseJSONStringArray(wh.AttachNotes)
+			if attachErr != nil {
+				env.Logger().Error("failed to parse attach_notes", "webhook_id", wh.ID, "error", attachErr)
+				continue
+			}
+		}
+		if !attachGateSatisfied(attach, nvs) {
 			continue
 		}
 

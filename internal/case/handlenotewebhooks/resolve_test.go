@@ -685,6 +685,30 @@ func TestMatchChange(t *testing.T) {
 	}
 }
 
+func TestAttachGateSatisfied(t *testing.T) {
+	nvs := model.NewNoteViews()
+	nvs.RegisterNote(&model.NoteView{Path: "boards/sprint.md", PathID: 1})
+	nvs.RegisterNote(&model.NoteView{Path: "roles/triage.md", PathID: 2})
+
+	tests := []struct {
+		name   string
+		attach []string
+		want   bool
+	}{
+		{"empty attach = always satisfied", nil, true},
+		{"plain glob with a match", []string{"boards/**"}, true},
+		{"plain glob with no match", []string{"index/**"}, false},
+		{"require-absent satisfied (no match)", []string{"!inbox/**"}, true},
+		{"require-absent violated (has match)", []string{"!boards/**"}, false},
+		{"mixed: present AND absent both hold", []string{"boards/**", "!inbox/**"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, handlenotewebhooks.AttachGateSatisfiedForTest(tt.attach, nvs))
+		})
+	}
+}
+
 // createNoteView creates a NoteViews with a single note.
 func createNoteView(path string, title string, content string) *model.NoteViews {
 	nvs := model.NewNoteViews()
