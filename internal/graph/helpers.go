@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+	"trip2g/internal/webhookutil"
 )
 
 func resolveOne[T any, K any](
@@ -56,6 +57,44 @@ func checkAdmin(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// filterNotePathsByScope removes any db.NotePath whose Value (filesystem path)
+// does not match the read_patterns stamped on the request. When no patterns are
+// set (unscoped admin/personal-token request) the slice is returned unchanged.
+//
+// db.NotePath.Value is the filesystem path (e.g. "boards/sprint.md"), so the
+// same glob namespace is used by both read and write scope checks.
+func filterNotePathsByScope(ctx context.Context, paths []db.NotePath) []db.NotePath {
+	rp := appreq.WebhookReadPatterns(ctx)
+	if len(rp) == 0 {
+		return paths
+	}
+	out := paths[:0:0] // nil-safe empty slice sharing no backing array
+	for _, p := range paths {
+		if webhookutil.MatchesAny(p.Value, rp) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// resolveFsPathFromPermalink looks up the filesystem path of a note given its
+// permalink (URL path). Returns "" when the view is not found.
+//
+// Extracted from the Note resolver to make the fsPath lookup independently
+// testable. The scope check in the Note resolver uses the filesystem path so
+// that read_patterns globs ("boards/**") match the same namespace as
+// write_patterns — the NoteViews.Map is keyed by Permalink, but the value's
+// Path field carries the filesystem path.
+func resolveFsPathFromPermalink(views *model.NoteViews, permalink string) string {
+	if views == nil || permalink == "" {
+		return ""
+	}
+	if nv, ok := views.Map[permalink]; ok {
+		return nv.Path
+	}
+	return ""
 }
 
 func (r *queryResolver) convertSearchResultsToNotePath(ctx context.Context, nodes []model.SearchResult) ([]db.NotePath, error) {

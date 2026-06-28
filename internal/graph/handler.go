@@ -98,7 +98,7 @@ func NewHandler(env Env) *handler.Server {
 	return srv
 }
 
-func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env Env) {
+func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env operationsEnv) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		env.Logger().Warn("failed to get app request from context", "error", err)
@@ -111,10 +111,21 @@ func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, 
 	}
 }
 
+// operationsEnv is the narrow subset of Env that makeAroundOperations requires.
+// Defining it as a separate interface makes the function independently testable
+// without a full Env mock.
+type operationsEnv interface {
+	IsDevMode() bool
+	ShortAPITokenSecret() string
+	Logger() logger.Logger
+	AcquireTxEnvInRequest(ctx context.Context, label string) error
+	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
+}
+
 func makeAroundOperations(
 	log logger.Logger,
 	skipTxMutations map[string]struct{},
-	env Env,
+	env operationsEnv,
 	graphqlErr func(err error) graphql.ResponseHandler,
 ) graphql.OperationMiddleware {
 	devMode := env.IsDevMode()

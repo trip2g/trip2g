@@ -1,0 +1,156 @@
+package graph
+
+// Tests for read_pattern scope enforcement helpers:
+//
+//   filterNotePathsByScope  — guards NotePaths resolver (ByValues/Like/AllVisible branches)
+//   resolveFsPathFromPermalink — guards Note resolver fsPath lookup (scope uses filesystem
+//                                path, not permalink/URL)
+//
+// F1 regression: notePaths ByValues/Like/AllVisible branches had ZERO read_pattern
+// enforcement. A scoped shortapitoken could list any filesystem path via those
+// branches. The fix wraps each branch in filterNotePathsByScope.
+//
+// F1 regression (Note resolver): the read-pattern check was matching against the
+// URL permalink instead of the filesystem path. The fix uses NoteView.Path (the
+// filesystem path) so that read & write patterns share one namespace.
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasthttp"
+
+	"trip2g/internal/appreq"
+	"trip2g/internal/db"
+	appmodel "trip2g/internal/model"
+)
+
+// scopedCtx returns a plain context with an appreq stamped with the given
+// read_patterns. Used to test helpers that call appreq.WebhookReadPatterns(ctx).
+func scopedCtx(readPatterns []string) context.Context {
+	fctx := &fasthttp.RequestCtx{}
+	fctx.Request.SetRequestURI("http://example.com/graphql")
+	req := &appreq.Request{
+		Req:                 fctx,
+		WebhookReadPatterns: readPatterns,
+	}
+	req.StoreInContext()
+	return fctx
+}
+
+// -- filterNotePathsByScope --
+
+func TestFilterNotePathsByScope_ScopedToken_FiltersOutOfScope(t *testing.T) {
+	// A scoped token with read_patterns:["boards/**"] must hide paths outside
+	// that glob. This is the core NotePaths F1 regression.
+	paths := []db.NotePath{
+		{ID: 1, Value: "boards/sprint.md"},
+		{ID: 2, Value: "docs/readme.md"},    // out of scope
+		{ID: 3, Value: "boards/retro.md"},
+		{ID: 4, Value: "private/secret.md"}, // out of scope
+	}
+
+	ctx := scopedCtx([]string{"boards/**"})
+
+	got := filterNotePathsByScope(ctx, paths)
+
+	require.Len(t, got, 2)
+	require.Equal(t, "boards/sprint.md", got[0].Value)
+	require.Equal(t, "boards/retro.md", got[1].Value)
+}
+
+func TestFilterNotePathsByScope_ScopedToken_AllInScope(t *testing.T) {
+	paths := []db.NotePath{
+		{ID: 1, Value: "boards/sprint.md"},
+		{ID: 2, Value: "boards/retro.md"},
+	}
+
+	ctx := scopedCtx([]string{"boards/**"})
+	got := filterNotePathsByScope(ctx, paths)
+	require.Equal(t, paths, got)
+}
+
+func TestFilterNotePathsByScope_ScopedToken_EmptyInput(t *testing.T) {
+	ctx := scopedCtx([]string{"boards/**"})
+	got := filterNotePathsByScope(ctx, nil)
+	require.Empty(t, got)
+}
+
+func TestFilterNotePathsByScope_UnscopedRequest_PassthroughAll(t *testing.T) {
+	// Admin / personal-token requests have no read_patterns — all paths pass.
+	paths := []db.NotePath{
+		{ID: 1, Value: "boards/sprint.md"},
+		{ID: 2, Value: "private/secret.md"},
+	}
+
+	ctx := scopedCtx(nil) // no read patterns = unscoped
+	got := filterNotePathsByScope(ctx, paths)
+	require.Equal(t, paths, got, "unscoped request must not filter any paths")
+}
+
+func TestFilterNotePathsByScope_MultiplePatterns(t *testing.T) {
+	paths := []db.NotePath{
+		{ID: 1, Value: "boards/sprint.md"},
+		{ID: 2, Value: "docs/guide.md"},
+		{ID: 3, Value: "private/secret.md"}, // out of scope
+	}
+
+	ctx := scopedCtx([]string{"boards/**", "docs/**"})
+	got := filterNotePathsByScope(ctx, paths)
+	require.Len(t, got, 2)
+	values := []string{got[0].Value, got[1].Value}
+	require.Contains(t, values, "boards/sprint.md")
+	require.Contains(t, values, "docs/guide.md")
+}
+
+// -- resolveFsPathFromPermalink --
+
+// TestResolveFsPathFromPermalink_UsesFsPathNotPermalink is the key regression
+// for the Note resolver. Before the fix, the scope check used nv.Permalink
+// (the URL path) instead of nv.Path (the filesystem path). A note with
+// Permalink="/boards/sprint" and Path="boards/sprint.md" would fail a
+// "boards/**" read-pattern match against the permalink.
+//
+// After the fix, resolveFsPathFromPermalink returns nv.Path so that the scope
+// check uses the filesystem namespace — the same as write_patterns.
+func TestResolveFsPathFromPermalink_UsesFsPathNotPermalink(t *testing.T) {
+	// Simulate a note whose URL and filesystem paths differ in extension.
+	// Before the fix: matching "/boards/sprint" against "boards/**" → false (miss)
+	// After the fix: matching "boards/sprint.md" against "boards/**" → true (hit)
+	views := &appmodel.NoteViews{
+		Map: map[string]*appmodel.NoteView{
+			"/boards/sprint": {
+				Path:      "boards/sprint.md",   // filesystem path
+				Permalink: "/boards/sprint",     // URL path
+			},
+		},
+	}
+
+	got := resolveFsPathFromPermalink(views, "/boards/sprint")
+	require.Equal(t, "boards/sprint.md", got,
+		"must return filesystem Path, not Permalink, for read_pattern matching")
+}
+
+func TestResolveFsPathFromPermalink_MissingView_ReturnsEmpty(t *testing.T) {
+	views := &appmodel.NoteViews{
+		Map: map[string]*appmodel.NoteView{},
+	}
+	got := resolveFsPathFromPermalink(views, "/boards/sprint")
+	require.Equal(t, "", got)
+}
+
+func TestResolveFsPathFromPermalink_NilViews_ReturnsEmpty(t *testing.T) {
+	got := resolveFsPathFromPermalink(nil, "/boards/sprint")
+	require.Equal(t, "", got)
+}
+
+func TestResolveFsPathFromPermalink_EmptyPermalink_ReturnsEmpty(t *testing.T) {
+	views := &appmodel.NoteViews{
+		Map: map[string]*appmodel.NoteView{
+			"/boards/sprint": {Path: "boards/sprint.md"},
+		},
+	}
+	got := resolveFsPathFromPermalink(views, "")
+	require.Equal(t, "", got)
+}

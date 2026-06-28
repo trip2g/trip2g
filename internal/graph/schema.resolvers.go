@@ -3142,14 +3142,11 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 	}
 
 	// When the caller supplies input.Path (a URL), resolve the filesystem path
-	// for the read-pattern check by looking up the note view by its permalink.
+	// for the read-pattern check. resolveFsPathFromPermalink looks up the note
+	// in NoteViews.Map (keyed by Permalink) and returns NoteView.Path (the
+	// filesystem path), ensuring scope globs match the same namespace as writes.
 	if fsPath == "" && path != "" {
-		latestViews := r.env(ctx).LatestNoteViews()
-		if latestViews != nil {
-			if nv, ok := latestViews.Map[path]; ok {
-				fsPath = nv.Path
-			}
-		}
+		fsPath = resolveFsPathFromPermalink(r.env(ctx).LatestNoteViews(), path)
 	}
 
 	// Enforce read_patterns using the filesystem path so scope globs (e.g.
@@ -3200,7 +3197,11 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	}
 
 	if filter != nil && len(filter.Paths) > 0 {
-		return r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
+		paths, fetchErr := r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		return filterNotePathsByScope(ctx, paths), nil
 	}
 
 	if filter != nil && filter.Search != nil {
@@ -3209,6 +3210,8 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 			return nil, searchErr
 		}
 
+		// Search already filters by read_patterns (sitesearch.Resolve enforces
+		// scope); convertSearchResultsToNotePath only wraps the results.
 		return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
 	}
 
@@ -3220,10 +3223,18 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 			return nil, errors.New("too many wildcard characters in pattern")
 		}
 
-		return r.env(ctx).ListNotePathsLike(ctx, pattern)
+		paths, fetchErr := r.env(ctx).ListNotePathsLike(ctx, pattern)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		return filterNotePathsByScope(ctx, paths), nil
 	}
 
-	return r.env(ctx).AllVisibleNotePaths(ctx)
+	paths, fetchErr := r.env(ctx).AllVisibleNotePaths(ctx)
+	if fetchErr != nil {
+		return nil, fetchErr
+	}
+	return filterNotePathsByScope(ctx, paths), nil
 }
 
 // ResolveWikilinks is the resolver for the resolveWikilinks field.
