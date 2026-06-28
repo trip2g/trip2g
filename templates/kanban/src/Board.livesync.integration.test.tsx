@@ -472,4 +472,48 @@ describe('Board live sync', () => {
     expect(final).toContain('## Backlog')
     expect(final).toContain('## Doing')
   })
+
+  test('no flicker: a 2nd edit queued during a save does not blink off, while a concurrent remote column heals in', async () => {
+    // Cosmetic regression of the finally heal: it adopted RAW baselineMdRef, which lacks
+    // a still-pending 2nd edit, so that edit reverted in the UI for ~500ms. The heal now
+    // applies pendingRef on top, so the 2nd edit never blinks while the remote column is
+    // still pulled in.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Server after Alice's Task 1 toggle commits AND Bob adds Remote (Task 2 still ✗).
+    const FRESH3 = SAMPLE
+      .replace('- [ ] Task 1', '- [x] Task 1')
+      .replace('%% kanban:settings', '## Remote\n\n- [ ] Remote card\n\n\n%% kanban:settings')
+    mockFetch.mockResolvedValue({ content: FRESH3, versionId: 1001 })
+
+    // Hold commitBaseline's fetchLatestVersionId open so the 2nd toggle + remote land
+    // during the 1st save's in-flight window.
+    let resolveVid!: (v: number | null) => void
+    mockVersionId.mockImplementationOnce(() => new Promise(res => { resolveVid = res }))
+
+    // Step 1: toggle Task 1 → flush POST OK → commitBaseline awaits the held vid.
+    await user.click(screen.getAllByRole('checkbox')[0])
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    await act(async () => { await new Promise(r => setTimeout(r, 0)) })
+
+    // Step 2: toggle Task 2 DURING the in-flight window → pendingRef set, Task 2 now ✓.
+    await user.click(screen.getAllByRole('checkbox')[1])
+    expect((screen.getAllByRole('checkbox')[1] as HTMLInputElement).checked).toBe(true)
+
+    // Step 3: a remote column lands during the same window (dirty via inFlightRef+pending).
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 1001 })
+
+    // Step 4: release the 1st save → its finally heals. The heal applies the still-pending
+    // Task 2 toggle, so it must NOT blink off, and the remote column is pulled in.
+    await act(async () => {
+      resolveVid(1001)
+      await new Promise(r => setTimeout(r, 0))
+    })
+    // Task 2 stayed checked across the heal (no flicker) — pre-fix it reverted to ✗ here …
+    expect((screen.getAllByRole('checkbox')[1] as HTMLInputElement).checked).toBe(true)
+    // … and the concurrently-added remote column was healed in.
+    expect(screen.getByText('Remote')).toBeTruthy()
+  })
 })
