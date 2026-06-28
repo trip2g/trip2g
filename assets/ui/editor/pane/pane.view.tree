@@ -2,6 +2,8 @@ $trip2g_editor_pane $mol_view
 	path? \
 	content? \
 	right_sidebar? \
+	newfile_value? \
+	newfile_error? \
 	diff_from_version_id? 0
 	diff_to_version_id? 0
 	close null
@@ -10,6 +12,11 @@ $trip2g_editor_pane $mol_view
 		<= Navigation $mol_page
 			title @ \Files
 			tools /
+				<= NewFileButton $mol_button_minor
+					hint @ \New file
+					click? <=> handle_newfile_click? null
+					sub /
+						<= NewFileIcon $mol_icon_plus
 				<= CloseButton $mol_button_minor
 					click <= close null
 					sub /
@@ -87,3 +94,9 @@ $trip2g_editor_pane $mol_view
 	SaveList $trip2g_editor_savelist
 		files <= changed_paths /string
 		submit? <=> save_confirm? null
+	NewFile $trip2g_editor_newfile
+		value? <=> newfile_value?
+		error <= newfile_error
+		create? <=> handle_create_file? null
+	newfile_msg_empty @ \Enter a file name
+	newfile_msg_exists @ \A file with this name already exists

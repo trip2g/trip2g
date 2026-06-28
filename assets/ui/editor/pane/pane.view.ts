@@ -276,7 +276,43 @@ namespace $.$$ {
 				versions: this.Versions(),
 				save: this.SaveList(),
 				diff: this.Diff(),
+				newfile: this.NewFile(),
 			}
+		}
+
+		override handle_newfile_click() {
+			this.newfile_error('')
+			this.toggle_right_sidebar('newfile')
+		}
+
+		// Create a brand-new note: validate the entered name, upsert it via pushNotes
+		// (a create is an upsert of a path that does not exist yet), then open it.
+		override handle_create_file(next?: Event): null {
+			if (next === undefined) return null
+			const res = $trip2g_editor_newfile_normalize(this.newfile_value(), this.Navigator().paths())
+			if (!res.ok) {
+				this.newfile_error(res.error === 'exists' ? this.newfile_msg_exists() : this.newfile_msg_empty())
+				return null
+			}
+			const content = $trip2g_editor_newfile_initial_content(res.path)
+			const result = save_mutate({ input: { updates: [{ path: res.path, content }] } })
+			if (result.pushNotes.__typename === 'ErrorPayload') {
+				this.newfile_error(result.pushNotes.message)
+				return null
+			}
+			// Advance the baseline to the just-created version id so the self-echo SSE
+			// event is not surfaced as "updated elsewhere".
+			const updated = (result.pushNotes as any).updated as Array<{ path: string; id: number }> | undefined
+			for (const u of updated ?? []) {
+				if (u.id) this.baseline_version_id(u.path, Number(u.id))
+			}
+			this.newfile_value('')
+			this.newfile_error('')
+			this.right_sidebar('')
+			// Open the new note: select it and force a fresh load.
+			this.path(res.path)
+			this.reload_counter(res.path, this.reload_counter(res.path) + 1)
+			return null
 		}
 
 		override handle_versions_click() {

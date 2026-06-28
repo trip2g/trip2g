@@ -1,5 +1,8 @@
 {
 	"$trip2g_editor_pane_Navigation_title": "Файлы",
+	"$trip2g_editor_pane_NewFileButton_hint": "Новый файл",
+	"$trip2g_editor_pane_newfile_msg_empty": "Введите имя файла",
+	"$trip2g_editor_pane_newfile_msg_exists": "Файл с таким именем уже существует",
 	"$trip2g_editor_pane_save_text": "Сохранить {0} файлов",
 	"$trip2g_editor_pane_placeholder_text": "Выберите файл в левой панели",
 	"$trip2g_editor_pane_banner_text": "Этот файл был изменён в другом месте",
