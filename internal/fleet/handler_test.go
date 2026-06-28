@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -178,30 +179,41 @@ func TestServeDelivery_RunError502(t *testing.T) {
 	}
 }
 
-// TestServeDelivery_MaxBytesReader ensures oversized bodies are rejected with
-// 400 (not 500 panic / OOM).
+// TestServeDelivery_MaxBytesReader413 is a true regression test for the
+// MaxBytesReader DoS guard.
+//
+// The body is a valid, correctly-signed JSON payload whose size exceeds
+// maxBodyBytes. With MaxBytesReader in place io.ReadAll stops at the limit
+// and the handler returns 400. Without it the body is fully read, HMAC
+// verifies, JSON parses, the agent runs, and the response is 200 — so
+// removing MaxBytesReader makes this test fail.
 func TestServeDelivery_MaxBytesReader413(t *testing.T) {
-	client := &ClientMock{}
+	client := &ClientMock{
+		GraphQLScopedFunc: func(_ context.Context, _, _ string, _ map[string]any) (json.RawMessage, error) {
+			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
+		},
+	}
 	f := newTestFleetWithLLM(client, &stubLLM{})
 	key := urlKey("roles/triage.md")
 
-	// Build a valid body, then pad it beyond the limit.
-	base := deliveryBody(t)
-	oversized := make([]byte, 0, 11*1024*1024)
-	oversized = append(oversized, base...)
-	padding := make([]byte, 11*1024*1024)
-	oversized = append(oversized, padding...)
+	// Construct a valid JSON body that is larger than maxBodyBytes. The
+	// instruction field carries a long string so json.Unmarshal would succeed
+	// and the agent would run (returning 200) if MaxBytesReader were absent.
+	big := strings.Repeat("a", maxBodyBytes) // JSON body ~= maxBodyBytes + 50 bytes
+	oversized, err := json.Marshal(map[string]any{
+		"depth":       0,
+		"instruction": big,
+		"api_token":   "scoped-token",
+	})
+	require.NoError(t, err)
 
 	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(oversized))
 	role, ok := f.roleByKey(key)
 	require.True(t, ok)
-	// Sign the original base body (signature won't match the padded payload, but
-	// the max-bytes check should reject before signature verification reaches the
-	// full body; alternatively the body mismatch triggers 400 or 401, either way
-	// confirming no OOM/panic on oversized input).
-	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(base, f.secretFor(role)))
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(oversized, f.secretFor(role)))
 
 	rec := httptest.NewRecorder()
 	f.ServeDelivery(rec, req)
-	require.NotEqual(t, http.StatusOK, rec.Code, "oversized body must not yield 200")
+	require.Equal(t, http.StatusBadRequest, rec.Code,
+		"oversized body must be rejected by MaxBytesReader before the agent runs")
 }

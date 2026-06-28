@@ -30,7 +30,7 @@ func run() error {
 	cfg, offeredFlag := parseFlags()
 
 	// Normalize: strip trailing slash so webhook URLs assemble cleanly.
-	cfg.CallbackURL = strings.TrimRight(cfg.CallbackURL, "/")
+	cfg.CallbackURL = normalizeCallbackURL(cfg.CallbackURL)
 
 	if err := validateConfig(cfg); err != nil {
 		return err
@@ -91,8 +91,12 @@ func run() error {
 	}
 }
 
-// validateConfig returns an error if any required field is empty, and
-// normalizes CallbackURL to not have a trailing slash.
+// normalizeCallbackURL strips trailing slashes so webhook URLs assemble cleanly.
+func normalizeCallbackURL(u string) string {
+	return strings.TrimRight(u, "/")
+}
+
+// validateConfig returns an error if any required field is empty.
 func validateConfig(cfg fleet.Config) error {
 	missing := []string{}
 	if cfg.CallbackURL == "" {

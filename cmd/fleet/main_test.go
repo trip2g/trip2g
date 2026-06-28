@@ -70,9 +70,8 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 	}
 }
 
-// TestTrailingSlashNormalization verifies that run() strips trailing slashes
-// from CallbackURL before using it. We test the normalization logic directly
-// since run() requires a live network.
+// TestTrailingSlashNormalization verifies that normalizeCallbackURL (called by
+// run() before validateConfig) strips trailing slashes from CallbackURL.
 func TestTrailingSlashNormalization(t *testing.T) {
 	tests := []struct {
 		input string
@@ -84,7 +83,7 @@ func TestTrailingSlashNormalization(t *testing.T) {
 		{"http://localhost:9090/", "http://localhost:9090"},
 	}
 	for _, tc := range tests {
-		got := strings.TrimRight(tc.input, "/")
+		got := normalizeCallbackURL(tc.input)
 		require.Equal(t, tc.want, got, "input: %s", tc.input)
 	}
 }
