@@ -148,6 +148,7 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/webhookutil"
 )
 
 // ID is the resolver for the id field.
@@ -3131,6 +3132,10 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 				break
 			}
 		}
+	}
+
+	if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 && !webhookutil.MatchesAny(path, rp) {
+		return nil, nil
 	}
 
 	request := rendernotepage.Request{

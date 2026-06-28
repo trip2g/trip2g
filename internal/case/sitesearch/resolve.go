@@ -7,12 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/features"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/openai"
 	"trip2g/internal/reranker"
 	"trip2g/internal/usertoken"
+	"trip2g/internal/webhookutil"
 
 	appmodel "trip2g/internal/model"
 )
@@ -88,6 +90,10 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
+			if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 && !webhookutil.MatchesAny(res.NoteView.Path, rp) {
+				continue
+			}
+
 			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
 				continue
 			}
