@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
+    /* The fixed sign-in corner lives top-right; reserve room so the board's own
+       header status badge doesn't slide under it. */
+    .kanban-header-right { margin-right: 184px !important; }
+    .kanban-byline { position: fixed; bottom: 10px; right: 14px; z-index: 50; font-size: 12px; color: #6b7280; background: rgba(255,255,255,.82); padding: 4px 10px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  </style>
+
+  <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
+       the user-space bundle scripts so the login widget below can boot. -->
+  {{ defaultTemplate.UserSpaceScripts() }}
+</head>
+<body>
+
+<!-- Standard trip2g user-space corner (sign-in / search).
+     The mount is wrapped in a plain positioning container: $mol styles the
+     mol_view_root element itself, so the fixed positioning must live on a parent
+     it won't touch. -->
+<div class="topright"><div mol_view_root="$trip2g_user_space"></div></div>
+
+<!-- Admin-only byline carrier: who last pushed this board. The board is one note,
+     so this is the whole-board last editor (not per-card). Gated on
+     currentUser.IsAdmin(). The display name is server-ESCAPED into a hidden span
+     (like #kanban-content) rather than inlined into JSON via |unsafe, because a
+     name may contain HTML/JSON-special characters. The bundle reads its textContent
+     and renders the localized "Last edited by" prefix in React (no English flash). -->
+{{ if currentUser.IsAdmin() && note.LastEditedByLabel() != "" }}<span id="kanban-edited-by" hidden>{{ note.LastEditedByLabel() }}</span>{{ end }}
+
+<!-- Mount point for the React kanban app -->
+<div id="trip2g-kanban-root"></div>
+
+<!--
+  Data island strategy: Jet has no JSON or base64 filter, so we split the payload:
+
+  1. The editable flag (a plain boolean) goes into a <script type="application/json">
+     element — no string interpolation, so nothing can break out of the JSON.
+
+  2. note.Path() and note.ContentString() each go into their own hidden element
+     whose Jet output is HTML-ESCAPED by default (no unsafe filter). The browser
+     decodes the entities back to the original bytes, read via textContent / .value.
+     This is the same safe channel the admin byline uses: a path or markdown with
+     special characters (an HTML close-tag, angle brackets, ampersands, or quotes)
+     is escaped on the way in and cannot break out — interpolating the path through
+     the unsafe filter inside the JSON script (as before) could.
+     Do NOT write Jet expression braces in this comment — Jet parses comments too.
+-->
+<script type="application/json" id="kanban-meta">{"editable":{{ currentUser.IsAdmin() }}}</script>
+<span id="kanban-path" hidden>{{ note.Path() }}</span>
+<textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
+
+<script>
+  (function () {
+    var meta = JSON.parse(document.getElementById('kanban-meta').textContent || '{}')
+    // Path comes from the escaped hidden span (same channel as content + the byline).
+    meta.path = document.getElementById('kanban-path')?.textContent || ''
+    meta.content = document.getElementById('kanban-content').value
+    // Admin-only: the last-editor display name, server-escaped into a hidden span.
+    meta.lastEditedBy = document.getElementById('kanban-edited-by')?.textContent || ''
+    window.__trip2g_kanban = meta
+    // Reflect the site language on <html> for a11y/SEO. UserSpaceScripts() set
+    // window.__trip2g_settings.ui_lang from the trip2g_lang cookie / Accept-Language.
+    try { var l = (window.__trip2g_settings && window.__trip2g_settings.ui_lang) || ''; if (l) document.documentElement.lang = l } catch (e) {}
+  })()
+</script>
+
+<!-- The kanban bundle ships as a GitHub release asset and is loaded by the
+     browser. The obsidian sync uploads .md/.html (so this layout syncs), but not
+     .js, so the bundle is served from the release rather than your vault.
+     /releases/latest/download/ always resolves to the newest release, so this URL
+     never needs editing. For local development, point it at your own bundle server.
+     Do NOT write Jet expression braces inside this comment — Jet parses comments
+     too, so even an example would error the whole layout. -->
+<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script>
+
+</body>
+</html>

@@ -331,14 +331,16 @@ func renderLayout(
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
 
 	// Build the shared helper and expose two Jet namespaces:
-	//   default_template — template chrome: {{ default_template.user_space_scripts() }}
-	//   current_user     — viewer role:     {{ current_user.is_admin() }}
+	//   defaultTemplate — template chrome: {{ defaultTemplate.UserSpaceScripts() }}
+	//   currentUser     — viewer role:     {{ currentUser.IsAdmin() }}
 	usHelper := buildUserSpaceHelper(ctx, env, resp)
-	vars["default_template"] = reflect.ValueOf(usHelper.jetMap())
-	vars["current_user"] = reflect.ValueOf(usHelper.currentUserJetMap())
+	defaultTemplateNS := reflect.ValueOf(usHelper.jetMap())
+	currentUserNS := reflect.ValueOf(usHelper.currentUserJetMap())
+	vars["defaultTemplate"] = defaultTemplateNS
+	vars["currentUser"] = currentUserNS
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
-	// version author (gated on current_user.is_admin()).
+	// version author (gated on currentUser.IsAdmin()).
 	injectLastEditedByResolver(env, resp)
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
@@ -359,7 +361,7 @@ func renderLayout(
 // unconditionally.
 //
 // SECURITY: admin/editor-only data. Layouts MUST gate display on
-// current_user.is_admin() and never render it on public pages.
+// currentUser.IsAdmin() and never render it on public pages.
 func injectLastEditedByResolver(env Env, resp *Response) {
 	if resp == nil || resp.NoteView == nil || resp.Note == nil {
 		return
