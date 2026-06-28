@@ -25,7 +25,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { parseBoard, KanbanCard, KanbanList, KanbanBoard } from './format'
-import { cardLine, applyBoardToBaseline, applyStructuralChange } from './ops'
+import { cardLine, applyBoardToBaseline, applyStructuralChange, mergeColumns } from './ops'
 import {
   sha256Base64,
   updateNotes,
@@ -81,10 +81,17 @@ function stripLists(lists: AugList[]): KanbanList[] {
 /** How a pending change should be rebased if the server baseline shifts under it. */
 type RebaseKind = 'structural' | 'surgical'
 
+/**
+ * The outcome of rebasing a pending change onto a fresh remote baseline: either a
+ * concrete change to send, or a `conflict` the caller resolves with a non-destructive
+ * reload (both sides touched the same column incompatibly — never a silent overwrite).
+ */
+type RebaseResult = { change: NoteChange } | { conflict: true }
+
 /** A queued save: the change to send plus how to re-derive it against a fresh baseline. */
 interface PendingSave {
   change: NoteChange
-  rebase: (freshBaseline: string) => NoteChange
+  rebase: (freshBaseline: string) => RebaseResult
 }
 
 /** Attach the expected hash (of the baseline the change is built on) and send it. */
@@ -467,6 +474,8 @@ export interface BoardProps {
 export default function Board({ path, content, editable, lastEditedBy }: BoardProps) {
   const [board, setBoard] = useState<AugBoard>(() => augment(parseBoard(content)))
   const [toast, setToast] = useState<string | null>(null)
+  // Set when the board note is hidden/deleted server-side — disables editing.
+  const [boardHidden, setBoardHidden] = useState(false)
   const [addingTo, setAddingTo] = useState<number | null>(null)
   const [newCardText, setNewCardText] = useState('')
   const [addingList, setAddingList] = useState(false)
@@ -496,8 +505,14 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
   // Latest stored version id this board has reconciled to. Live noteChanges events
   // at or below it are our own save echoes and are ignored.
   const baselineVersionIdRef = useRef<number>(0)
+  // The live-subscription AbortController, so a hide event can tear it down directly.
+  const subCtrlRef = useRef<AbortController | null>(null)
+  // Guards the one-time "live updates disconnected" toast.
+  const liveDisconnectedRef = useRef(false)
 
-  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
+  useEffect(() => () => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null }
+  }, [])
 
   function showToast(msg: string) {
     setToast(msg)
@@ -556,9 +571,16 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
         const fresh = await fetchNoteContent(path)
         if ('content' in fresh) {
           const rebased = pending.rebase(fresh.content)
-          const retry = await sendChange(rebased, fresh.content)
+          if ('conflict' in rebased) {
+            // Both sides changed the same column incompatibly — reload onto the
+            // remote truth instead of silently overwriting it.
+            showToast(t(lang, 'boardConflictReloading'))
+            setTimeout(() => location.reload(), 1500)
+            return
+          }
+          const retry = await sendChange(rebased.change, fresh.content)
           if ('ok' in retry) {
-            await commitBaseline(applyChangeToBaseline(rebased, fresh.content))
+            await commitBaseline(applyChangeToBaseline(rebased.change, fresh.content))
             return
           }
         }
@@ -592,19 +614,49 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
   // Queue a save. `kind` records how to rebase the change if the server baseline
   // shifts under us (hashMismatch). The rebase reads the latest board at flush time.
   function scheduleSave(change: NoteChange, kind: RebaseKind) {
-    const rebase = (freshBaseline: string): NoteChange => {
-      const lists = stripLists(boardRef.current.lists)
-      if (kind === 'structural') {
-        return upsertChange(path, applyStructuralChange(freshBaseline, lists))
+    // The baseline this edit was built on, captured now: baselineMdRef advances when
+    // a remote change is adopted, so the merge base must not be read lazily at flush.
+    const baseAtEdit = baselineMdRef.current
+    const rebase = (freshBaseline: string): RebaseResult => {
+      // surgical fast path: re-apply the exact card patch if its anchor still exists
+      // on the fresh remote baseline — lossless (the server keeps every other byte,
+      // including any card/column the remote added).
+      if (kind === 'surgical' && 'patch' in change && freshBaseline.includes(change.patch.find)) {
+        return { change }
       }
-      // surgical: re-apply the exact card patch if its anchor still exists (least
-      // destructive), otherwise re-emit the card lines onto the fresh baseline.
-      if ('patch' in change && freshBaseline.includes(change.patch.find)) return change
-      return upsertChange(path, applyBoardToBaseline(freshBaseline, lists))
+      // Otherwise the local board diverged structurally (or the patch anchor is gone):
+      // column-keyed 3-way merge of our local edit and the remote against their shared
+      // base, so neither the local edit nor the remote's column changes are dropped.
+      // A genuine column conflict surfaces as a non-destructive reload.
+      const remoteLists = parseBoard(freshBaseline).lists
+      const merged = mergeColumns(
+        parseBoard(baseAtEdit).lists,
+        stripLists(boardRef.current.lists),
+        remoteLists,
+      )
+      if (!merged) return { conflict: true }
+      // If the merge left the column structure (titles + order) identical to the
+      // remote, write the cards surgically so unmodeled content (blockquotes,
+      // sub-bullets, archives) survives; otherwise re-serialise the columns region.
+      const sameStructure =
+        merged.length === remoteLists.length &&
+        merged.every((l, i) => l.title === remoteLists[i].title)
+      const newMd = sameStructure
+        ? applyBoardToBaseline(freshBaseline, merged)
+        : applyStructuralChange(freshBaseline, merged)
+      return { change: upsertChange(path, newMd) }
     }
     pendingRef.current = { change, rebase }
-    if (saveTimer.current) clearTimeout(saveTimer.current)
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
     saveTimer.current = setTimeout(() => {
+      // Null the timer ref BEFORE flushing so the dirty check no longer counts a
+      // pending debounce the instant this fires (flushSave owns pendingRef/inFlightRef
+      // from here). Without this the ref stayed non-null for the board's whole life,
+      // wedging the board permanently "dirty".
+      saveTimer.current = null
       flushSave().catch(err => {
         showToast(err instanceof Error ? err.message : String(err))
         revertBoard()
@@ -632,7 +684,13 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
   //     already flushed during the await, its own hashMismatch path converges instead.
   const handleRemoteChange = useCallback(async (change: NoteChangeItem) => {
     if (change.type === 'hide') {
-      if (change.path === path) showToast(t(lang, 'boardDeleted'))
+      // The board note was hidden/deleted server-side: stop editing and tear down the
+      // live subscription (nothing to reconnect to), in addition to the toast.
+      if (change.path === path) {
+        setBoardHidden(true)
+        subCtrlRef.current?.abort()
+        showToast(t(lang, 'boardDeleted'))
+      }
       return
     }
     // NoteUpsertEvent — this board only.
@@ -640,12 +698,16 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
     // Suppress our own save echoes (and anything already reconciled).
     if (change.versionId <= baselineVersionIdRef.current) return
 
-    const dirty =
-      pendingRef.current !== null || saveTimer.current !== null || inFlightRef.current
-
     const fresh = await fetchNoteContent(path)
     if (!('content' in fresh)) return
 
+    // Sample dirtiness AFTER the await (TOCTOU): an edit may have fired during the
+    // fetch. Reading pendingRef/saveTimer/inFlightRef now — not before the await —
+    // means a mid-fetch edit is never wiped by the clean adopt path below.
+    const dirty =
+      pendingRef.current !== null || saveTimer.current !== null || inFlightRef.current
+
+    // Advance both baselines together to the remote version.
     baselineMdRef.current = fresh.content
     if (fresh.versionId != null) baselineVersionIdRef.current = fresh.versionId
 
@@ -655,18 +717,39 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
       return
     }
 
-    // Rebase the queued change onto the fresh remote baseline (the rebase closure
-    // re-derives it from the current board, merging remote + local). A flush that
-    // landed during the await leaves pendingRef null — its hashMismatch retry converges.
+    // Dirty: keep the in-progress edit (do NOT setBoard) and rebase the queued change
+    // onto the fresh remote baseline (column-keyed 3-way merge → remote + local both
+    // survive). A flush that landed during the await leaves pendingRef null — its own
+    // hashMismatch retry converges instead.
     const pending = pendingRef.current
     if (pending) {
-      pendingRef.current = { change: pending.rebase(fresh.content), rebase: pending.rebase }
+      const rebased = pending.rebase(fresh.content)
+      if ('conflict' in rebased) {
+        // Both sides changed the same column incompatibly: drop the queued save and
+        // reload onto the remote truth (warned — never a silent overwrite).
+        pendingRef.current = null
+        if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null }
+        showToast(t(lang, 'boardConflictReloading'))
+        setTimeout(() => location.reload(), 1500)
+        return
+      }
+      pendingRef.current = { change: rebased.change, rebase: pending.rebase }
     }
   }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const ctrl = new AbortController()
-    subscribeNoteChanges(path, change => { handleRemoteChange(change) }, ctrl.signal)
+    subCtrlRef.current = ctrl
+    subscribeNoteChanges(
+      path,
+      change => { handleRemoteChange(change) },
+      ctrl.signal,
+      () => {
+        if (liveDisconnectedRef.current) return
+        liveDisconnectedRef.current = true
+        showToast(t(lang, 'liveDisconnected'))
+      },
+    )
     return () => ctrl.abort()
   }, [path, handleRemoteChange])
 
@@ -865,6 +948,24 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
 
   const title = titleFromPath(path)
   const totalCards = board.lists.reduce((n, l) => n + l.cards.length, 0)
+  // Editing is gated off once the note is hidden/deleted server-side.
+  const canEdit = editable && !boardHidden
+
+  // A note can carry `layout: kanban` yet not be a board: no `## ` columns and no
+  // `kanban-plugin` marker. Render a friendly explainer rather than a silent empty
+  // board. A legitimately-empty board (marker present, zero columns) still renders.
+  const hasKanbanMarker =
+    board.frontmatter.includes('kanban-plugin') || board.settings.includes('kanban-plugin')
+  if (board.lists.length === 0 && !hasKanbanMarker) {
+    return (
+      <div className="kanban-app">
+        <div className="kanban-empty-state" role="status">
+          <h2 className="kanban-empty-state-title">{t(lang, 'notABoardTitle')}</h2>
+          <p className="kanban-empty-state-body">{t(lang, 'notABoardBody')}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="kanban-app">
@@ -880,7 +981,7 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
             </span>
           </div>
           <div className="kanban-header-right">
-            {editable && (
+            {canEdit && (
               <span className="kanban-header-tag">
                 <span className="kanban-header-tag-dot" aria-hidden="true" />
                 {t(lang, 'editable')}
@@ -907,7 +1008,7 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
                   key={list.id}
                   list={list}
                   listIdx={listIdx}
-                  editable={editable}
+                  editable={canEdit}
                   addingTo={addingTo}
                   newCardText={newCardText}
                   onNewCardTextChange={setNewCardText}
@@ -923,7 +1024,7 @@ export default function Board({ path, content, editable, lastEditedBy }: BoardPr
               ))}
             </SortableContext>
 
-            {editable && (
+            {canEdit && (
               <div className="kanban-add-list">
                 {addingList ? (
                   <input

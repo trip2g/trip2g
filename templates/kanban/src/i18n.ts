@@ -17,8 +17,12 @@ interface LangStrings {
   doubleClickRename: string
   editable: string
   boardChangedReloading: string
+  boardConflictReloading: string
   boardUpdated: string
   boardDeleted: string
+  liveDisconnected: string
+  notABoardTitle: string
+  notABoardBody: string
   lastEditedBy: string
   saveFailed: string
   // Plural keys — call t(lang, key, { count }) to get the right form.
@@ -41,8 +45,12 @@ const STRINGS: Record<Lang, LangStrings> = {
     doubleClickRename: 'Double-click to rename',
     editable: 'Editable',
     boardChangedReloading: 'Board changed elsewhere — reloading…',
+    boardConflictReloading: 'Edit conflict with a change elsewhere — reloading…',
     boardUpdated: 'Board updated',
     boardDeleted: 'Board deleted',
+    liveDisconnected: 'Live updates disconnected',
+    notABoardTitle: 'Not a Kanban board',
+    notABoardBody: 'This note has "layout: kanban" but no columns. Add "## Column" headings to create columns, or remove "layout: kanban" from the frontmatter.',
     lastEditedBy: 'Last edited by',
     saveFailed: 'Save failed: ',
     columns: { one: 'column', other: 'columns' },
@@ -64,8 +72,12 @@ const STRINGS: Record<Lang, LangStrings> = {
     doubleClickRename: 'Двойной клик для переименования',
     editable: 'Редактируется',
     boardChangedReloading: 'Доска изменена в другом месте — перезагрузка…',
+    boardConflictReloading: 'Конфликт правок с изменением в другом месте — перезагрузка…',
     boardUpdated: 'Доска обновлена',
     boardDeleted: 'Доска удалена',
+    liveDisconnected: 'Живые обновления отключены',
+    notABoardTitle: 'Это не Kanban-доска',
+    notABoardBody: 'В этой заметке указан «layout: kanban», но нет колонок. Добавьте заголовки «## Колонка», чтобы создать колонки, или удалите «layout: kanban» из метаданных.',
     lastEditedBy: 'Последняя правка:',
     saveFailed: 'Ошибка сохранения: ',
     // Russian plural: one (1, 21, 31…), few (2–4, 22–24…), many (0, 5–20, 25–30…).

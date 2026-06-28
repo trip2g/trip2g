@@ -188,3 +188,109 @@ export function applyStructuralChange(baselineMd: string, lists: KanbanList[]): 
   const base = parseBoard(baselineMd)
   return serializeBoard({ frontmatter: base.frontmatter, lists, settings: base.settings })
 }
+
+// ── column-keyed 3-way merge ───────────────────────────────────────────────
+
+/** Deep-equal two columns (title, complete flag, and every card). */
+function columnsEqual(a: KanbanList, b: KanbanList): boolean {
+  if (a.title !== b.title || a.complete !== b.complete) return false
+  if (a.cards.length !== b.cards.length) return false
+  for (let i = 0; i < a.cards.length; i++) {
+    if (a.cards[i].text !== b.cards[i].text || a.cards[i].checked !== b.cards[i].checked) return false
+  }
+  return true
+}
+
+function hasDuplicateTitles(lists: KanbanList[]): boolean {
+  return new Set(lists.map(l => l.title)).size !== lists.length
+}
+
+function byTitle(lists: KanbanList[]): Map<string, KanbanList> {
+  return new Map(lists.map(l => [l.title, l]))
+}
+
+/**
+ * Three-way merge of the columns of `local` and `remote` against their common
+ * `base`, keyed by column title (the natural markdown key — columns are `## Title`).
+ *
+ * Per column: changed only locally → keep local; only remotely → keep remote;
+ * added on one side → keep it; deleted on one side while untouched on the other →
+ * honour the deletion. A column changed (or added) incompatibly on BOTH sides, or
+ * any duplicate-title ambiguity, returns `null` — the caller must then fall back to
+ * a non-destructive reload (never a silent overwrite). No surviving column on either
+ * side is dropped silently.
+ *
+ * The result order follows the local column order (the latest user intent for
+ * renames/moves), with each surviving remote-only column spliced in after its
+ * nearest preceding remote neighbour that is already placed.
+ */
+export function mergeColumns(
+  base: KanbanList[],
+  local: KanbanList[],
+  remote: KanbanList[],
+): KanbanList[] | null {
+  if (hasDuplicateTitles(base) || hasDuplicateTitles(local) || hasDuplicateTitles(remote)) {
+    return null
+  }
+
+  const baseMap = byTitle(base)
+  const localMap = byTitle(local)
+  const remoteMap = byTitle(remote)
+
+  // Resolve the fate of every column title seen on any side.
+  const kept = new Map<string, KanbanList>()
+  const titles = new Set<string>([...baseMap.keys(), ...localMap.keys(), ...remoteMap.keys()])
+  for (const title of titles) {
+    const b = baseMap.get(title)
+    const l = localMap.get(title)
+    const r = remoteMap.get(title)
+
+    if (l && r) {
+      if (b) {
+        const localChanged = !columnsEqual(l, b)
+        const remoteChanged = !columnsEqual(r, b)
+        if (!localChanged) { kept.set(title, r); continue }   // only remote (or neither)
+        if (!remoteChanged) { kept.set(title, l); continue }  // only local
+        if (columnsEqual(l, r)) { kept.set(title, l); continue } // same edit on both
+        return null                                            // both changed differently
+      }
+      // Added on both sides under the same title.
+      if (columnsEqual(l, r)) { kept.set(title, l); continue }
+      return null
+    }
+
+    if (l && !r) {
+      if (!b) { kept.set(title, l); continue }   // local-added → keep
+      if (columnsEqual(l, b)) continue           // remote deleted, local untouched → drop
+      return null                                // remote deleted, local modified → conflict
+    }
+
+    if (!l && r) {
+      if (!b) { kept.set(title, r); continue }   // remote-added → keep
+      if (columnsEqual(r, b)) continue           // local deleted, remote untouched → drop
+      return null                                // local deleted, remote modified → conflict
+    }
+    // !l && !r → present only in base → deleted on both → drop
+  }
+
+  // Order: local order is the spine; remote-only additions are spliced in by their
+  // remote neighbours.
+  const result: KanbanList[] = []
+  for (const l of local) {
+    const col = kept.get(l.title)
+    if (col) { result.push(col); kept.delete(l.title) }
+  }
+  for (let i = 0; i < remote.length; i++) {
+    const title = remote[i].title
+    const col = kept.get(title)
+    if (!col) continue
+    kept.delete(title)
+    let insertAt = result.length
+    for (let j = i - 1; j >= 0; j--) {
+      const prevIdx = result.findIndex(c => c.title === remote[j].title)
+      if (prevIdx !== -1) { insertAt = prevIdx + 1; break }
+    }
+    result.splice(insertAt, 0, col)
+  }
+  return result
+}

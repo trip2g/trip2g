@@ -612,6 +612,34 @@ body {
   box-shadow: 0 0 0 3px hsl(var(--ring) / 0.10);
 }
 
+/* ── not-a-board empty state ─────────────────────────────────────────────── */
+
+.kanban-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: hsl(var(--muted-foreground));
+}
+
+.kanban-empty-state-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  color: hsl(var(--foreground));
+}
+
+.kanban-empty-state-body {
+  margin: 0;
+  max-width: 480px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
 /* ── toast ───────────────────────────────────────────────────────────────── */
 
 .kanban-toast {

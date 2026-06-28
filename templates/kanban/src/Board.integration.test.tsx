@@ -204,3 +204,22 @@ describe('Board save wiring', () => {
     expect(retried).toContain('## To Do')
   })
 })
+
+describe('Board not-a-board state', () => {
+  test('renders a friendly explainer when a layout:kanban note has no columns and no marker', () => {
+    const NOT_A_BOARD = `---\nlayout: kanban\n---\n\nJust a note with no columns.\n`
+    render(<Board path={PATH} content={NOT_A_BOARD} editable={true} />)
+    expect(screen.getByText('Not a Kanban board')).toBeTruthy()
+    // No board chrome (no add-list button).
+    expect(screen.queryByRole('button', { name: '+ Add list' })).toBeNull()
+  })
+
+  test('a legitimately-empty board WITH the kanban-plugin marker still renders as a board', () => {
+    const EMPTY_BOARD = `---\nkanban-plugin: basic\nlayout: kanban\n---\n\n%% kanban:settings\n\`\`\`\n{"kanban-plugin":"basic"}\n\`\`\`\n%%`
+    render(<Board path={PATH} content={EMPTY_BOARD} editable={true} />)
+    // Not the friendly state …
+    expect(screen.queryByText('Not a Kanban board')).toBeNull()
+    // … the editable board chrome renders instead.
+    expect(screen.getByRole('button', { name: '+ Add list' })).toBeTruthy()
+  })
+})

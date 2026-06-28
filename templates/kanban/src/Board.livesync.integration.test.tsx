@@ -150,4 +150,115 @@ describe('Board live sync', () => {
     // Adopt is a local reconcile, not a save.
     expect(mockUpdate).not.toHaveBeenCalled()
   })
+
+  test('saveTimer reset: after a completed save a remote bump is still adopted (board not wedged dirty)', async () => {
+    // Regression for the saveTimer-leak CRITICAL: the debounce ref was never nulled,
+    // so after the FIRST save the board looked permanently "dirty" and remote changes
+    // were silently swallowed (clean-adopt path went dead).
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // A local toggle that debounces and saves successfully.
+    const checkbox = screen.getAllByRole('checkbox')[0]
+    await user.click(checkbox)
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    // Let the flush (and its commitBaseline round-trip) fully settle → board is CLEAN.
+    await act(async () => { await new Promise(r => setTimeout(r, 25)) })
+
+    // A remote editor adds a column (versionId above our just-saved baseline of 1000).
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 1001 })
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 1001 })
+
+    // Board adopts the remote board — the path the leak killed.
+    await waitFor(() => expect(screen.getByText('Remote')).toBeTruthy())
+    expect(screen.getByText('Board updated')).toBeTruthy()
+  })
+
+  test('dirty STRUCTURAL rebase: local column rename + remote column add → both survive', async () => {
+    // FIX 2: the structural rebase used to re-emit only local columns, dropping any
+    // column the remote added/renamed/moved. A column-keyed 3-way merge keeps both.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Remote editor added a "Remote" column; the re-fetch returns that fresh content.
+    mockFetch.mockResolvedValue({ content: FRESH, versionId: 999 })
+
+    // Local structural edit: rename "To Do" → "Backlog" (debouncing, not yet flushed).
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+
+    // Remote bump arrives mid-edit.
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+
+    // The debounced structural save flushes carrying BOTH the local rename and the
+    // remote column (3-way merge), hashed against the FRESH remote baseline.
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    const change = changeAt(0)
+    if (!('upsert' in change)) throw new Error('expected a merged upsert (structural rebase)')
+    expect(change.upsert.content).toContain('## Backlog')    // local rename survived
+    expect(change.upsert.content).toContain('## Remote')      // remote column survived
+    expect(change.upsert.content).not.toContain('## To Do')   // renamed away
+    expect(mockHash).toHaveBeenCalledWith(FRESH)              // merged onto the remote baseline
+  })
+
+  test('TOCTOU: an edit fired during the re-fetch await is not lost and does not clobber remote', async () => {
+    // FIX 3: dirtiness was sampled BEFORE the re-fetch await; an edit landing during
+    // the fetch was missed → wiped, and its pending change clobbered the remote.
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Make the re-fetch hang so we can inject an edit DURING the await.
+    let resolveFetch!: (v: { content: string; versionId: number }) => void
+    mockFetch.mockImplementation(() => new Promise(res => { resolveFetch = res }))
+
+    // Remote bump arrives; the handler starts and suspends on fetchNoteContent.
+    await act(async () => {
+      sub.onChange!({ type: 'upsert', path: PATH, pathId: 1, versionId: 999 })
+      await Promise.resolve()
+    })
+
+    // EDIT during the await: toggle Task 1 (sets pendingRef + the debounce timer).
+    const checkbox = screen.getAllByRole('checkbox')[0]
+    await user.click(checkbox)
+    expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).checked).toBe(true)
+
+    // The re-fetch now resolves with the remote column added.
+    await act(async () => {
+      resolveFetch({ content: FRESH, versionId: 999 })
+      await new Promise(r => setTimeout(r, 0))
+    })
+
+    // Dirty was re-sampled AFTER the await → the edit is NOT wiped …
+    expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).checked).toBe(true)
+    // … and the remote board is not adopted over the in-flight edit.
+    expect(screen.queryByText('Remote')).toBeNull()
+
+    // The debounced save flushes the toggle, hashed onto the FRESH remote baseline
+    // (no clobber of the remote column).
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    const change = changeAt(0)
+    if (!('patch' in change)) throw new Error('expected a surgical patch (edit kept)')
+    expect(change.patch.find).toBe('- [ ] Task 1')
+    expect(change.patch.replace).toBe('- [x] Task 1')
+    expect(mockHash).toHaveBeenCalledWith(FRESH)
+  })
+
+  test('NoteHideEvent for this board disables editing and toasts', async () => {
+    // FIX 5b: a hide of the current path must disable editing (not just toast).
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+    expect(screen.getByText('Editable')).toBeTruthy()
+
+    await fireRemote({ type: 'hide', path: PATH })
+
+    expect(screen.getByText('Board deleted')).toBeTruthy()
+    // Editing affordances are gone.
+    expect(screen.queryByText('Editable')).toBeNull()
+    expect(screen.queryByRole('button', { name: '+ Add list' })).toBeNull()
+  })
 })

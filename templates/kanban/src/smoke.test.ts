@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { sha256Base64 } from './api'
 import { parseBoard, serializeBoard } from './format'
-import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline, addList, renameList, deleteList, moveList, applyStructuralChange } from './ops'
+import { moveCard, addCard, editCard, deleteCard, toggleCard, cardLine, applyBoardToBaseline, addList, renameList, deleteList, moveList, applyStructuralChange, mergeColumns } from './ops'
+import type { KanbanList } from './format'
 
 const SAMPLE = `---
 kanban-plugin: basic
@@ -317,4 +318,61 @@ test('applyStructuralChange splices columns while preserving frontmatter + setti
   assert.ok(md.includes('%% kanban:settings'), 'settings block preserved')
   const round = parseBoard(md)
   assert.deepEqual(round.lists.map(l => l.title), ['To Do', 'In Progress', 'Review'])
+})
+
+// ── mergeColumns: column-keyed 3-way merge (live-sync rebase) ─────────────────
+
+const col = (title: string, cards: string[] = [], complete = false): KanbanList => ({
+  title,
+  complete,
+  cards: cards.map(text => ({ text, checked: false })),
+})
+const titles = (lists: KanbanList[] | null) => (lists ? lists.map(l => l.title) : null)
+
+test('mergeColumns: local rename + remote column add → both survive', () => {
+  const base = [col('To Do', ['Task 1']), col('In Progress', ['Done'])]
+  const local = [col('Backlog', ['Task 1']), col('In Progress', ['Done'])]       // renamed To Do→Backlog
+  const remote = [col('To Do', ['Task 1']), col('In Progress', ['Done']), col('Remote', ['R'])] // added Remote
+  const merged = mergeColumns(base, local, remote)
+  assert.deepEqual(titles(merged), ['Backlog', 'In Progress', 'Remote'])
+})
+
+test('mergeColumns: only-local card edit kept; only-remote column kept', () => {
+  const base = [col('A', ['x']), col('B', ['y'])]
+  const local = [col('A', ['x EDITED']), col('B', ['y'])]              // edited A's card
+  const remote = [col('A', ['x']), col('B', ['y']), col('C', ['z'])]   // added C
+  const merged = mergeColumns(base, local, remote)
+  assert.deepEqual(titles(merged), ['A', 'B', 'C'])
+  assert.equal(merged![0].cards[0].text, 'x EDITED', 'local card edit preserved')
+  assert.equal(merged![2].cards[0].text, 'z', 'remote-added column preserved')
+})
+
+test('mergeColumns: only-remote card add to an untouched column is kept', () => {
+  const base = [col('A', ['x']), col('B', ['y'])]
+  const local = [col('A', ['x']), col('B', ['y']), col('New', [])]     // local added empty column
+  const remote = [col('A', ['x', 'x2']), col('B', ['y'])]             // remote added a card to A
+  const merged = mergeColumns(base, local, remote)
+  assert.deepEqual(titles(merged), ['A', 'B', 'New'])
+  assert.deepEqual(merged![0].cards.map(c => c.text), ['x', 'x2'], 'remote card-add to A preserved')
+})
+
+test('mergeColumns: both edit the same column differently → conflict (null)', () => {
+  const base = [col('A', ['x'])]
+  const local = [col('A', ['x LOCAL'])]
+  const remote = [col('A', ['x REMOTE'])]
+  assert.equal(mergeColumns(base, local, remote), null)
+})
+
+test('mergeColumns: local delete honoured when remote untouched', () => {
+  const base = [col('A', ['x']), col('B', ['y'])]
+  const local = [col('A', ['x'])]                 // deleted B
+  const remote = [col('A', ['x']), col('B', ['y'])]
+  assert.deepEqual(titles(mergeColumns(base, local, remote)), ['A'])
+})
+
+test('mergeColumns: local delete vs remote edit of same column → conflict (null)', () => {
+  const base = [col('A', ['x']), col('B', ['y'])]
+  const local = [col('A', ['x'])]                 // deleted B
+  const remote = [col('A', ['x']), col('B', ['y', 'y2'])] // remote edited B
+  assert.equal(mergeColumns(base, local, remote), null)
 })

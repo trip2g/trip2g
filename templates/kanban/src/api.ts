@@ -332,25 +332,53 @@ async function connectNoteChanges(
   }
 }
 
+/** Sleep for `ms`, resolving early if `signal` aborts (so unmount cancels at once). */
+function sleepOrAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>(resolve => {
+    if (signal?.aborted) { resolve(); return }
+    const id = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort() { clearTimeout(id); resolve() }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/** Consecutive transport failures before we surface a "disconnected" state once. */
+const DISCONNECT_THRESHOLD = 3
+
 /**
  * Subscribe to live changes for `path` over the core noteChanges SSE stream.
  * Auth is the admin cookie (credentials:'include') — no API key needed, since the
  * board only renders editable for admins. Reconnects with a fixed backoff until
- * `signal` aborts. Each change is normalised and handed to `onChange`.
+ * `signal` aborts (the backoff is raced against the abort so unmount cancels it
+ * immediately). Each change is normalised and handed to `onChange`. After
+ * `DISCONNECT_THRESHOLD` consecutive transport failures, `onDisconnected` is invoked
+ * once so the UI can surface a "live updates disconnected" state.
  */
 export async function subscribeNoteChanges(
   path: string,
   onChange: (change: NoteChangeItem) => void,
   signal?: AbortSignal,
+  onDisconnected?: () => void,
 ): Promise<void> {
   const variables = { filter: { includePatterns: [path] } }
+  let failures = 0
+  let notified = false
   while (!signal?.aborted) {
     try {
       await connectNoteChanges(NOTE_CHANGES_SUBSCRIPTION, variables, onChange, signal)
+      failures = 0  // a clean completion (server `complete` / stream end) is not a failure
     } catch {
       if (signal?.aborted) return
+      failures++
+      if (failures >= DISCONNECT_THRESHOLD && !notified) {
+        notified = true
+        onDisconnected?.()
+      }
     }
     if (signal?.aborted) return
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await sleepOrAbort(3000, signal)
   }
 }
