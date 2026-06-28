@@ -45,6 +45,11 @@ type Request struct {
 	WebhookReadPatterns  []string
 	WebhookWritePatterns []string
 
+	// Webhook delivery identity (from the scoped shortapitoken). Used to
+	// attribute note versions written by a fleet back to the delivery.
+	WebhookDeliveryKind string
+	WebhookDeliveryID   int64
+
 	// SkipWebhooks indicates this API key should not trigger webhooks.
 	SkipWebhooks bool
 
@@ -82,6 +87,8 @@ func (c *Request) Reset() {
 	c.WebhookDepth = 0
 	c.WebhookReadPatterns = nil
 	c.WebhookWritePatterns = nil
+	c.WebhookDeliveryKind = ""
+	c.WebhookDeliveryID = 0
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
 	c.ApiKeyID = nil
@@ -290,6 +297,25 @@ func WebhookReadPatterns(ctx context.Context) []string {
 	return req.WebhookReadPatterns
 }
 
+// WebhookDeliveryKind returns the delivery kind ("change"/"cron") for a
+// scoped-token request, or "" if none.
+func WebhookDeliveryKind(ctx context.Context) string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return ""
+	}
+	return req.WebhookDeliveryKind
+}
+
+// WebhookDeliveryID returns the delivery id for a scoped-token request, or 0.
+func WebhookDeliveryID(ctx context.Context) int64 {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return 0
+	}
+	return req.WebhookDeliveryID
+}
+
 // Snapshot returns an independent deep copy of c suitable for use beyond the
 // request lifetime. The snapshot's Req field is a fresh fasthttp.RequestCtx
 // with headers, cookies, query args, and remote address copied from the
@@ -336,6 +362,8 @@ func (c *Request) Snapshot() *Request {
 		WebhookDepth:          c.WebhookDepth,
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
+		WebhookDeliveryKind:   c.WebhookDeliveryKind,
+		WebhookDeliveryID:     c.WebhookDeliveryID,
 		SkipWebhooks:          c.SkipWebhooks,
 		ApiKeyID:              apiKeyID,
 		Client:                c.Client,

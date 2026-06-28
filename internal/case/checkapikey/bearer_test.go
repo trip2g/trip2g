@@ -186,6 +186,37 @@ func TestResolvePrefersAPIKeyOverBearer(t *testing.T) {
 	require.Empty(t, req.WebhookWritePatterns)
 }
 
+func TestResolveWithDeliveryIdentity(t *testing.T) {
+	const testSecret = "test-secret-key-for-jwt"
+
+	tokenData := shortapitoken.Data{
+		Depth:         1,
+		ReadPatterns:  []string{"boards/**"},
+		WritePatterns: []string{"boards/**"},
+		DeliveryKind:  "change",
+		DeliveryID:    99,
+	}
+	token, err := shortapitoken.Sign(tokenData, testSecret, time.Hour)
+	require.NoError(t, err)
+
+	env := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return nil, nil
+		},
+		ShortAPITokenSecretFunc: func() string {
+			return testSecret
+		},
+	}
+
+	ctx, req := setupRequestContextWithBearer(token)
+
+	_, err = checkapikey.Resolve(ctx, env, "test-action")
+	require.NoError(t, err)
+
+	require.Equal(t, "change", req.WebhookDeliveryKind)
+	require.EqualValues(t, 99, req.WebhookDeliveryID)
+}
+
 func TestResolveInvalidBearerToken(t *testing.T) {
 	reqCtx := &fasthttp.RequestCtx{}
 	reqCtx.Request.Header.Set("Authorization", "Bearer invalid-token-xyz")
