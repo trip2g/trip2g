@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
@@ -103,4 +104,37 @@ func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &payload))
 	_, hasSecrets := payload["secrets"]
 	require.False(t, hasSecrets, "secrets field should be omitted when no secrets exist")
+}
+
+func TestResolve_CronTransformJsonnet_AppliedAndSigned(t *testing.T) {
+	var body []byte
+	var gotSig string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		gotSig = r.Header.Get("X-Webhook-Signature")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil) // reuse the package's existing baseEnv helper
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:               id,
+			Url:              srv.URL,
+			Secret:           "cron-secret",
+			TimeoutSeconds:   10,
+			WritePatterns:    "[]",
+			ReadPatterns:     "[]",
+			TransformJsonnet: `{ marker: "cron-transformed" }`,
+		}, nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 7, Attempt: 1})
+	require.NoError(t, err)
+
+	var out map[string]any
+	require.NoError(t, json.Unmarshal(body, &out))
+	require.Equal(t, "cron-transformed", out["marker"])
+	require.Equal(t, webhookutil.SignHMAC(body, "cron-secret"), gotSig)
 }

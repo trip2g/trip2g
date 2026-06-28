@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
@@ -118,6 +119,18 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal cron webhook payload: %w", err)
+	}
+
+	// Apply outbound transform (if configured) strictly between marshal and
+	// sign, so both the HMAC and the logged request_body cover the result.
+	if wh.TransformJsonnet != "" {
+		out, terr := jsonneteval.EvalJSON(wh.TransformJsonnet, transformExtVars(payloadBytes))
+		if terr != nil {
+			handleCronDeliveryError(ctx, env, params,
+				webhookutil.DeliveryResult{Err: fmt.Errorf("transform_jsonnet: %w", terr)}, wh)
+			return nil
+		}
+		payloadBytes = out
 	}
 
 	// Sign payload with HMAC.
@@ -274,6 +287,26 @@ func handleCronDeliveryError(ctx context.Context, env Env, params DeliverCronPar
 	if updateErr != nil {
 		env.Logger().Error("failed to update cron delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
 	}
+}
+
+// transformExtVars exposes non-secret payload fields to the jsonnet transform.
+// api_token and secrets are never exposed.
+func transformExtVars(payloadBytes []byte) map[string]string {
+	var p map[string]json.RawMessage
+	if err := json.Unmarshal(payloadBytes, &p); err != nil {
+		return map[string]string{}
+	}
+	ev := make(map[string]string, 3)
+	for _, k := range []string{"changes", "attached_notes", "meta"} {
+		if v, ok := p[k]; ok {
+			key := k
+			if k == "changes" {
+				key = "change"
+			}
+			ev[key] = string(v)
+		}
+	}
+	return ev
 }
 
 // applyCronAgentChanges parses and applies agent response changes.
