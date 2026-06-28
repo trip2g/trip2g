@@ -687,7 +687,7 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 }
 
 const allNoteVersions = `-- name: AllNoteVersions :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions order by path_id, version
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id from note_versions order by path_id, version
 `
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
@@ -708,6 +708,8 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
 			&i.CreatedByClient,
+			&i.CreatedByDeliveryKind,
+			&i.CreatedByDeliveryID,
 		); err != nil {
 			return nil, err
 		}
@@ -723,7 +725,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 }
 
 const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id from note_versions
  where path_id = ?
  order by version desc
 `
@@ -746,6 +748,8 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
 			&i.CreatedByClient,
+			&i.CreatedByDeliveryKind,
+			&i.CreatedByDeliveryID,
 		); err != nil {
 			return nil, err
 		}
@@ -1358,7 +1362,7 @@ func (q *Queries) CronJobByName(ctx context.Context, name string) (CronJob, erro
 }
 
 const cronWebhookByID = `-- name: CronWebhookByID :one
-select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where id = ? and disabled_at is null
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from cron_webhooks where id = ? and disabled_at is null
 `
 
 func (q *Queries) CronWebhookByID(ctx context.Context, id int64) (CronWebhook, error) {
@@ -1384,6 +1388,9 @@ func (q *Queries) CronWebhookByID(ctx context.Context, id int64) (CronWebhook, e
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -4436,7 +4443,7 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 }
 
 const listCronWebhookDeliveries = `-- name: ListCronWebhookDeliveries :many
-select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at from cron_webhook_deliveries
+select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps from cron_webhook_deliveries
 where cron_webhook_id = ?
 order by created_at desc
 limit ?
@@ -4465,6 +4472,10 @@ func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWeb
 			&i.DurationMs,
 			&i.CreatedAt,
 			&i.CompletedAt,
+			&i.StartedAt,
+			&i.HeartbeatAt,
+			&i.TokensUsed,
+			&i.Steps,
 		); err != nil {
 			return nil, err
 		}
@@ -4481,7 +4492,7 @@ func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWeb
 
 const listCronWebhooks = `-- name: ListCronWebhooks :many
 
-select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where disabled_at is null order by created_at
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from cron_webhooks where disabled_at is null order by created_at
 `
 
 // ============================================
@@ -4516,6 +4527,9 @@ func (q *Queries) ListCronWebhooks(ctx context.Context) ([]CronWebhook, error) {
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+			&i.TransformJsonnet,
+			&i.AttachNotes,
+			&i.ConcurrencyMode,
 		); err != nil {
 			return nil, err
 		}
@@ -4531,7 +4545,7 @@ func (q *Queries) ListCronWebhooks(ctx context.Context) ([]CronWebhook, error) {
 }
 
 const listCronWebhooksDueForExecution = `-- name: ListCronWebhooksDueForExecution :many
-select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from cron_webhooks
 where enabled = true
   and disabled_at is null
   and next_run_at <= datetime('now')
@@ -4566,6 +4580,9 @@ func (q *Queries) ListCronWebhooksDueForExecution(ctx context.Context) ([]CronWe
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+			&i.TransformJsonnet,
+			&i.AttachNotes,
+			&i.ConcurrencyMode,
 		); err != nil {
 			return nil, err
 		}
@@ -4639,7 +4656,7 @@ func (q *Queries) ListDistinctChatIDsFromSentMessages(ctx context.Context) ([]in
 }
 
 const listEnabledCronWebhooks = `-- name: ListEnabledCronWebhooks :many
-select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from cron_webhooks where enabled = true and disabled_at is null
+select id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from cron_webhooks where enabled = true and disabled_at is null
 `
 
 func (q *Queries) ListEnabledCronWebhooks(ctx context.Context) ([]CronWebhook, error) {
@@ -4671,6 +4688,9 @@ func (q *Queries) ListEnabledCronWebhooks(ctx context.Context) ([]CronWebhook, e
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+			&i.TransformJsonnet,
+			&i.AttachNotes,
+			&i.ConcurrencyMode,
 		); err != nil {
 			return nil, err
 		}
@@ -4812,7 +4832,7 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 }
 
 const listEnabledWebhooks = `-- name: ListEnabledWebhooks :many
-select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where enabled = true and disabled_at is null
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from change_webhooks where enabled = true and disabled_at is null
 `
 
 func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, error) {
@@ -4848,6 +4868,9 @@ func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, err
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+			&i.TransformJsonnet,
+			&i.AttachNotes,
+			&i.ConcurrencyMode,
 		); err != nil {
 			return nil, err
 		}
@@ -6488,7 +6511,7 @@ func (q *Queries) ListUserTokensByUserID(ctx context.Context, userID int64) ([]U
 }
 
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
-select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at from change_webhook_deliveries
+select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps from change_webhook_deliveries
 where webhook_id = ?
 order by created_at desc
 limit ?
@@ -6517,6 +6540,10 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 			&i.DurationMs,
 			&i.CreatedAt,
 			&i.CompletedAt,
+			&i.StartedAt,
+			&i.HeartbeatAt,
+			&i.TokensUsed,
+			&i.Steps,
 		); err != nil {
 			return nil, err
 		}
@@ -6533,7 +6560,7 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 
 const listWebhooks = `-- name: ListWebhooks :many
 
-select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where disabled_at is null order by created_at
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from change_webhooks where disabled_at is null order by created_at
 `
 
 // ============================================
@@ -6572,6 +6599,9 @@ func (q *Queries) ListWebhooks(ctx context.Context) ([]ChangeWebhook, error) {
 			&i.UpdatedAt,
 			&i.DisabledAt,
 			&i.DisabledBy,
+			&i.TransformJsonnet,
+			&i.AttachNotes,
+			&i.ConcurrencyMode,
 		); err != nil {
 			return nil, err
 		}
@@ -7897,7 +7927,7 @@ func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodePara
 }
 
 const webhookByID = `-- name: WebhookByID :one
-select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by from change_webhooks where id = ? and disabled_at is null
+select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from change_webhooks where id = ? and disabled_at is null
 `
 
 func (q *Queries) WebhookByID(ctx context.Context, id int64) (ChangeWebhook, error) {
@@ -7927,6 +7957,9 @@ func (q *Queries) WebhookByID(ctx context.Context, id int64) (ChangeWebhook, err
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }

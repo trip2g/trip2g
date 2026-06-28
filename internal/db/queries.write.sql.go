@@ -1095,7 +1095,7 @@ const insertCronWebhook = `-- name: InsertCronWebhook :one
 
 insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type InsertCronWebhookParams struct {
@@ -1154,6 +1154,9 @@ func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebh
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -1161,7 +1164,7 @@ func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebh
 const insertCronWebhookDelivery = `-- name: InsertCronWebhookDelivery :one
 insert into cron_webhook_deliveries (cron_webhook_id, attempt)
 values (?, ?)
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
 `
 
 type InsertCronWebhookDeliveryParams struct {
@@ -1181,6 +1184,10 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 		&i.DurationMs,
 		&i.CreatedAt,
 		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
 	)
 	return i, err
 }
@@ -2429,7 +2436,7 @@ const insertWebhook = `-- name: InsertWebhook :one
 
 insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type InsertWebhookParams struct {
@@ -2500,6 +2507,9 @@ func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParam
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -2507,7 +2517,7 @@ func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParam
 const insertWebhookDelivery = `-- name: InsertWebhookDelivery :one
 insert into change_webhook_deliveries (webhook_id, attempt)
 values (?, ?)
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
 `
 
 type InsertWebhookDeliveryParams struct {
@@ -2527,6 +2537,10 @@ func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebh
 		&i.DurationMs,
 		&i.CreatedAt,
 		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
 	)
 	return i, err
 }
@@ -2707,7 +2721,7 @@ const regenerateCronWebhookSecret = `-- name: RegenerateCronWebhookSecret :one
 update cron_webhooks
 set secret = ?, updated_at = datetime('now')
 where id = ? and disabled_at is null
-returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type RegenerateCronWebhookSecretParams struct {
@@ -2738,6 +2752,9 @@ func (q *WriteQueries) RegenerateCronWebhookSecret(ctx context.Context, arg Rege
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -2746,7 +2763,7 @@ const regenerateWebhookSecret = `-- name: RegenerateWebhookSecret :one
 update change_webhooks
 set secret = ?, updated_at = datetime('now')
 where id = ? and disabled_at is null
-returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type RegenerateWebhookSecretParams struct {
@@ -2781,6 +2798,9 @@ func (q *WriteQueries) RegenerateWebhookSecret(ctx context.Context, arg Regenera
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -3333,7 +3353,7 @@ set url = coalesce(?1, url),
     description = coalesce(?11, description),
     updated_at = datetime('now')
 where id = ?12 and disabled_at is null
-returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type UpdateCronWebhookParams struct {
@@ -3387,6 +3407,9 @@ func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebh
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
@@ -4069,7 +4092,7 @@ set url = coalesce(?1, url),
     write_patterns = coalesce(?16, write_patterns),
     updated_at = datetime('now')
 where id = ?17 and disabled_at is null
-returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by
+returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type UpdateWebhookParams struct {
@@ -4137,6 +4160,9 @@ func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParam
 		&i.UpdatedAt,
 		&i.DisabledAt,
 		&i.DisabledBy,
+		&i.TransformJsonnet,
+		&i.AttachNotes,
+		&i.ConcurrencyMode,
 	)
 	return i, err
 }
