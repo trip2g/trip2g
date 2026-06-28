@@ -14,10 +14,8 @@
   </style>
 
   <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
-       the user-space bundle scripts so the login widget below can boot. Requires a
-       trip2g build that provides the default_template helper; on older builds this
-       call errors the layout, so keep it only once core ships it. -->
-  {{ default_template.user_space_scripts() }}
+       the user-space bundle scripts so the login widget below can boot. -->
+  {{ defaultTemplate.UserSpaceScripts() }}
 </head>
 <body>
 
@@ -29,11 +27,11 @@
 
 <!-- Admin-only byline carrier: who last pushed this board. The board is one note,
      so this is the whole-board last editor (not per-card). Gated on
-     current_user.is_admin. The display name is server-ESCAPED into a hidden span
+     currentUser.IsAdmin(). The display name is server-ESCAPED into a hidden span
      (like #kanban-content) rather than inlined into JSON via |unsafe, because a
      name may contain HTML/JSON-special characters. The bundle reads its textContent
      and renders the localized "Last edited by" prefix in React (no English flash). -->
-{{ if current_user.is_admin() && note.LastEditedByLabel() != "" }}<span id="kanban-edited-by" hidden>{{ note.LastEditedByLabel() }}</span>{{ end }}
+{{ if currentUser.IsAdmin() && note.LastEditedByLabel() != "" }}<span id="kanban-edited-by" hidden>{{ note.LastEditedByLabel() }}</span>{{ end }}
 
 <!-- Mount point for the React kanban app -->
 <div id="trip2g-kanban-root"></div>
@@ -53,7 +51,7 @@
      the unsafe filter inside the JSON script (as before) could.
      Do NOT write Jet expression braces in this comment — Jet parses comments too.
 -->
-<script type="application/json" id="kanban-meta">{"editable":{{ current_user.is_admin() }}}</script>
+<script type="application/json" id="kanban-meta">{"editable":{{ currentUser.IsAdmin() }}}</script>
 <span id="kanban-path" hidden>{{ note.Path() }}</span>
 <textarea id="kanban-content" style="display:none;visibility:hidden">{{ note.ContentString() }}</textarea>
 
@@ -66,7 +64,7 @@
     // Admin-only: the last-editor display name, server-escaped into a hidden span.
     meta.lastEditedBy = document.getElementById('kanban-edited-by')?.textContent || ''
     window.__trip2g_kanban = meta
-    // Reflect the site language on <html> for a11y/SEO. user_space_scripts() set
+    // Reflect the site language on <html> for a11y/SEO. UserSpaceScripts() set
     // window.__trip2g_settings.ui_lang from the trip2g_lang cookie / Accept-Language.
     try { var l = (window.__trip2g_settings && window.__trip2g_settings.ui_lang) || ''; if (l) document.documentElement.lang = l } catch (e) {}
   })()

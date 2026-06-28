@@ -140,13 +140,13 @@ func (l *testStringLoader) Exists(path string) bool {
 }
 
 // TestJetBinding_UserSpaceScripts verifies that the dotted Jet call
-// {{ default_template.user_space_scripts() }} resolves and renders correctly,
+// {{ defaultTemplate.UserSpaceScripts() }} resolves and renders correctly,
 // and that the output is NOT HTML-escaped (WithSafeWriter(nil) behaviour).
 func TestJetBinding_UserSpaceScripts(t *testing.T) {
 	const tmplKey = "/test.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ default_template.user_space_scripts() }}`,
+			tmplKey: `{{ defaultTemplate.UserSpaceScripts() }}`,
 		},
 	}
 
@@ -166,7 +166,7 @@ func TestJetBinding_UserSpaceScripts(t *testing.T) {
 	)
 
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -207,8 +207,8 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
 		ID:   "/two-calls",
 		Path: "_layouts/two-calls.html",
-		// Call user_space_scripts twice in the same render.
-		Content: `{{ default_template.user_space_scripts() }}MIDDLE{{ default_template.user_space_scripts() }}`,
+		// Call UserSpaceScripts twice in the same render.
+		Content: `{{ defaultTemplate.UserSpaceScripts() }}MIDDLE{{ defaultTemplate.UserSpaceScripts() }}`,
 	}}
 
 	env := &loaderTestEnv{log: &logger.TestLogger{}}
@@ -222,7 +222,7 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	)
 
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
 
 	var buf bytes.Buffer
 	err = layouts.Map["/two-calls"].View.Execute(&buf, vars, nil)
@@ -239,13 +239,13 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	require.Equal(t, 2, scriptCount, "bundle script tag should appear once per call")
 }
 
-// TestJetBinding_IsAdmin_True verifies {{ current_user.is_admin() }} renders
+// TestJetBinding_IsAdmin_True verifies {{ currentUser.IsAdmin() }} renders
 // "true" (Go bool true printed by Jet's fastprinter) when isAdmin=true.
 func TestJetBinding_IsAdmin_True(t *testing.T) {
 	const tmplKey = "/admin-check.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ current_user.is_admin() }}`,
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -254,7 +254,7 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -262,13 +262,13 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 	require.Equal(t, "true", buf.String())
 }
 
-// TestJetBinding_IsAdmin_False verifies {{ current_user.is_admin() }} renders
+// TestJetBinding_IsAdmin_False verifies {{ currentUser.IsAdmin() }} renders
 // "false" for a non-admin viewer.
 func TestJetBinding_IsAdmin_False(t *testing.T) {
 	const tmplKey = "/admin-check-false.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ current_user.is_admin() }}`,
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -277,7 +277,7 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -374,31 +374,3 @@ func TestJetBinding_IsAdmin_CamelCase(t *testing.T) {
 	require.Equal(t, "true", buf.String())
 }
 
-// TestJetBinding_DeprecatedAliasesStillResolve verifies the old snake_case
-// names kept as aliases still resolve — the released kanban template calls
-// default_template.user_space_scripts() and current_user.is_admin().
-func TestJetBinding_DeprecatedAliasesStillResolve(t *testing.T) {
-	const tmplKey = "/aliases.html"
-	loader := &testStringLoader{
-		templates: map[string]string{
-			tmplKey: `[s]{{ default_template.user_space_scripts() }}[a]{{ current_user.is_admin() }}`,
-		},
-	}
-	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
-	tmpl, err := views.GetTemplate(tmplKey)
-	require.NoError(t, err)
-
-	h := newUserSpaceHelper([]string{"/assets/bundle.js"}, nil, "en", false, true, "Title", sampleNote())
-	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
-	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
-
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, vars, nil)
-	require.NoError(t, err)
-	out := buf.String()
-
-	require.Contains(t, out, "window.__trip2g_settings")                       // user_space_scripts()
-	require.Contains(t, out, `<script src="/assets/bundle.js" defer></script>`)
-	require.Contains(t, out, "[a]true")                                        // is_admin()
-}

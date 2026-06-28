@@ -20,7 +20,7 @@ import (
 //
 // Idempotent: the settings JSON block is emitted only on the FIRST call to
 // scripts(); any subsequent call emits only the <script src defer> tags.
-// This lets a layout safely call {{ default_template.user_space_scripts() }}
+// This lets a layout safely call {{ defaultTemplate.UserSpaceScripts() }}
 // once in <head> without duplicating the inline settings object.
 type userSpaceHelper struct {
 	jsURLs          []string
@@ -67,7 +67,7 @@ func newUserSpaceHelper(
 // scripts returns the raw HTML string to inject.
 //
 // Jet calls this via reflection when the template uses
-// {{ default_template.user_space_scripts() }}.  Because the Jet set used by
+// {{ defaultTemplate.UserSpaceScripts() }}.  Because the Jet set used by
 // custom layouts is created with jet.WithSafeWriter(nil), the returned string
 // is written directly to the response without HTML-escaping.
 func (h *userSpaceHelper) scripts() string {
@@ -180,26 +180,22 @@ func (h *userSpaceHelper) styles() string {
 	return sb.String()
 }
 
-// jetMap returns the map stored in vars["defaultTemplate"] (and its deprecated
-// vars["default_template"] alias). Holds template-chrome helpers: script
-// injection plus the standard header/footer/styles.
+// jetMap returns the map stored in vars["defaultTemplate"]. Holds
+// template-chrome helpers: script injection plus the standard header/footer/styles.
 func (h *userSpaceHelper) jetMap() map[string]interface{} {
 	return map[string]interface{}{
-		"UserSpaceScripts":   h.scripts,
-		"user_space_scripts": h.scripts, // deprecated alias
-		"Header":             h.header,
-		"Footer":             h.footer,
-		"Styles":             h.styles,
+		"UserSpaceScripts": h.scripts,
+		"Header":           h.header,
+		"Footer":           h.footer,
+		"Styles":           h.styles,
 	}
 }
 
-// currentUserJetMap returns the map stored in vars["currentUser"] (and its
-// deprecated vars["current_user"] alias). Layouts call IsAdmin() to gate edit
-// affordances.
+// currentUserJetMap returns the map stored in vars["currentUser"]. Layouts call
+// IsAdmin() to gate edit affordances.
 func (h *userSpaceHelper) currentUserJetMap() map[string]interface{} {
 	return map[string]interface{}{
-		"IsAdmin":  h.admin,
-		"is_admin": h.admin, // deprecated alias
+		"IsAdmin": h.admin,
 	}
 }
 

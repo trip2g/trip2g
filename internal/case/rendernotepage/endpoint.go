@@ -333,18 +333,14 @@ func renderLayout(
 	// Build the shared helper and expose two Jet namespaces:
 	//   defaultTemplate — template chrome: {{ defaultTemplate.UserSpaceScripts() }}
 	//   currentUser     — viewer role:     {{ currentUser.IsAdmin() }}
-	// The snake_case keys are kept as deprecated aliases (the released kanban
-	// template still calls default_template.user_space_scripts()).
 	usHelper := buildUserSpaceHelper(ctx, env, resp)
 	defaultTemplateNS := reflect.ValueOf(usHelper.jetMap())
 	currentUserNS := reflect.ValueOf(usHelper.currentUserJetMap())
 	vars["defaultTemplate"] = defaultTemplateNS
 	vars["currentUser"] = currentUserNS
-	vars["default_template"] = defaultTemplateNS // deprecated alias
-	vars["current_user"] = currentUserNS         // deprecated alias
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
-	// version author (gated on current_user.is_admin()).
+	// version author (gated on currentUser.IsAdmin()).
 	injectLastEditedByResolver(env, resp)
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
@@ -365,7 +361,7 @@ func renderLayout(
 // unconditionally.
 //
 // SECURITY: admin/editor-only data. Layouts MUST gate display on
-// current_user.is_admin() and never render it on public pages.
+// currentUser.IsAdmin() and never render it on public pages.
 func injectLastEditedByResolver(env Env, resp *Response) {
 	if resp == nil || resp.NoteView == nil || resp.Note == nil {
 		return
