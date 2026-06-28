@@ -8,6 +8,8 @@ The Kanban template renders any [obsidian-kanban](https://github.com/mgmeyers/ob
 
 This is a separate, optional template, not part of trip2g core. The source is at [github.com/trip2g/kanban_template](https://github.com/trip2g/kanban_template).
 
+![[kanban-board.png]]
+
 ## Install
 
 Run these two commands in your vault root:
@@ -37,7 +39,7 @@ The board appears on the published page at that note's URL. The JS bundle loads 
 
 The board is produced by [obsidian-kanban](https://github.com/mgmeyers/obsidian-kanban), an open-source Obsidian plugin by mgmeyers. But the board itself is a plain markdown note — anything that can write markdown, including an AI agent, can create or modify a board without the plugin or Obsidian installed.
 
-**What makes a note a board.** A note becomes a Kanban board when its YAML frontmatter contains `kanban-plugin: basic`. Without that key, trip2g treats the note as an ordinary markdown note. Add `layout: kanban` alongside it so the site renders the board template:
+**What makes a note a board.** The trip2g trigger is **`layout: kanban`** — that key tells trip2g to render the note with this board template. Without it, the note is just plain markdown on your site (a checklist), no board. The other key, `kanban-plugin: basic`, is the **obsidian-kanban plugin's own** marker — the data format the template reads, and what makes *Obsidian* draw the board. It isn't a trip2g thing and the template doesn't strictly require it; you simply already have it if you built the board in Obsidian, so keep it and add `layout: kanban` next to it:
 
 ```yaml
 ---
