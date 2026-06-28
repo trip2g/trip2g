@@ -186,6 +186,46 @@ func TestResolve_CronAgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
 	require.Equal(t, "success", got.Status)
 }
 
+// F9(d): when transform_jsonnet is active on a cron webhook, the logged request_body must
+// equal the actual transformed bytes sent to the endpoint (not the pre-transform struct).
+func TestResolve_CronTransformJsonnet_LoggedBodyEqualsTransformedBytes(t *testing.T) {
+	var httpBody []byte
+	var loggedBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httpBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:               id,
+			Url:              srv.URL,
+			Secret:           "cron-secret",
+			TimeoutSeconds:   10,
+			WritePatterns:    "[]",
+			ReadPatterns:     "[]",
+			TransformJsonnet: `{ marker: "cron-logged" }`,
+		}, nil
+	}
+	env.InsertWebhookDeliveryLogFunc = func(_ context.Context, p db.InsertWebhookDeliveryLogParams) error {
+		if p.RequestBody != nil {
+			loggedBody = *p.RequestBody
+		}
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 300, Attempt: 1})
+	require.NoError(t, err)
+	require.NotEmpty(t, httpBody, "HTTP body must be non-empty")
+	require.NotEmpty(t, loggedBody, "logged body must be non-empty")
+	// The logged body must equal the bytes that were actually sent to the endpoint.
+	require.Equal(t, string(httpBody), loggedBody,
+		"logged request_body must match transformed bytes sent to endpoint")
+}
+
 func TestResolve_CronTransformJsonnet_AppliedAndSigned(t *testing.T) {
 	var body []byte
 	var gotSig string

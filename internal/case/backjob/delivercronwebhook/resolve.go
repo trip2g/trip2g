@@ -132,8 +132,9 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	}
 
 	// Apply outbound transform (if configured) strictly between marshal and
-	// sign, so both the HMAC and the logged request_body cover the result.
-	if wh.TransformJsonnet != "" {
+	// sign, so both the HMAC and the actual sent bytes are the transformed result.
+	transformed := wh.TransformJsonnet != ""
+	if transformed {
 		out, terr := jsonneteval.EvalJSON(wh.TransformJsonnet, transformExtVars(payloadBytes))
 		if terr != nil {
 			handleCronDeliveryError(ctx, env, params,
@@ -160,15 +161,24 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	result := webhookutil.Deliver(env.WebhookHTTPClient(), wh.Url, payloadBytes, headers, timeout)
 
 	// Save delivery log.
-	// Persist a redacted copy: never log the scoped token or secret values.
-	redacted := payload
-	redacted.APIToken = ""
-	redacted.Secrets = nil
-	redactedBytes, redErr := json.Marshal(redacted)
-	if redErr != nil {
-		redactedBytes = []byte("{}")
+	// F9(d): when transform_jsonnet is active, payloadBytes IS the transformed
+	// output (api_token/secrets never appear there — transformExtVars excludes
+	// them). Log those bytes directly so the logged body matches what was sent.
+	// Without a transform, log a redacted copy of the pre-marshal struct with
+	// APIToken and Secrets zeroed out.
+	var requestBodyStr string
+	if transformed {
+		requestBodyStr = string(payloadBytes)
+	} else {
+		redacted := payload
+		redacted.APIToken = ""
+		redacted.Secrets = nil
+		redactedBytes, redErr := json.Marshal(redacted)
+		if redErr != nil {
+			redactedBytes = []byte("{}")
+		}
+		requestBodyStr = string(redactedBytes)
 	}
-	requestBodyStr := string(redactedBytes)
 	logParams := db.InsertWebhookDeliveryLogParams{
 		DeliveryID:  params.DeliveryID,
 		Kind:        "cron",

@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/jsonneteval"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
@@ -16,6 +17,8 @@ import (
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	UpdateWebhook(ctx context.Context, params db.UpdateWebhookParams) (db.ChangeWebhook, error)
+	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
+	GetSecretValues(ctx context.Context, like string) (map[string]string, error)
 }
 
 type Input = model.ChangeWebhookUpdateInput
@@ -85,6 +88,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
+	// Load existing webhook to compute effective state for cross-field guards.
+	// Update inputs are partial (patch semantics): a nil field means "keep existing".
+	existing, err := env.WebhookByID(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load webhook %d: %w", input.ID, err)
+	}
+
 	boundsErr := validateBounds(input)
 	if boundsErr != nil {
 		return boundsErr, nil
@@ -94,20 +104,41 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return ep, nil
 	}
 
-	// F9(a): if URL is being set to http while pass_api_key is enabled in the same
-	// request, reject — the scoped token must not travel over cleartext.
-	if input.URL != nil && input.PassAPIKey != nil && *input.PassAPIKey {
-		if msg := webhookutil.RequireHTTPS(*input.URL); msg != "" {
+	// Compute effective state: merge input (patches) onto existing persisted values.
+	effectiveURL := existing.Url
+	if input.URL != nil {
+		effectiveURL = *input.URL
+	}
+	effectivePassAPIKey := existing.PassApiKey
+	if input.PassAPIKey != nil {
+		effectivePassAPIKey = *input.PassAPIKey
+	}
+	effectiveTransform := existing.TransformJsonnet
+	if input.TransformJsonnet != nil {
+		effectiveTransform = *input.TransformJsonnet
+	}
+
+	// Check for attached secrets (exist independently of pass_api_key).
+	prefix, _ := appmodel.ChangeWebhookSecretPrefix(input.ID)
+	secretValues, _ := env.GetSecretValues(ctx, prefix.Like())
+	hasSecrets := len(secretValues) > 0
+
+	// F9(a): require HTTPS whenever sensitive data (api_token or decrypted secrets)
+	// would travel in the delivery body. Use effective merged state so partial updates
+	// (URL-only or pass_api_key-only) are caught even when only one field is provided.
+	if effectivePassAPIKey || hasSecrets {
+		if msg := webhookutil.RequireHTTPS(effectiveURL); msg != "" {
 			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
 		}
 	}
 
 	// F9(b): transform_jsonnet output replaces the entire body, silently dropping
-	// the injected api_token. Reject the combination when both are set in this update.
-	if input.TransformJsonnet != nil && *input.TransformJsonnet != "" &&
-		input.PassAPIKey != nil && *input.PassAPIKey {
+	// api_token and secrets. Reject the combination on the effective merged state so
+	// enabling transform alone on a webhook that already has pass_api_key or secrets
+	// is caught even when only transform_jsonnet is provided in this request.
+	if effectiveTransform != "" && (effectivePassAPIKey || hasSecrets) {
 		return &model.ErrorPayload{ByFields: []model.FieldMessage{
-			{Name: "transformJsonnet", Value: "transform_jsonnet cannot be combined with pass_api_key"},
+			{Name: "transformJsonnet", Value: "transform_jsonnet cannot be combined with pass_api_key or attached secrets"},
 		}}, nil
 	}
 
