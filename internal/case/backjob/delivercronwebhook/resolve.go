@@ -114,6 +114,8 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 			Depth:         1, // Cron webhooks always start at depth 1.
 			ReadPatterns:  readPatterns,
 			WritePatterns: writePatterns,
+			DeliveryKind:  "cron",
+			DeliveryID:    params.DeliveryID,
 		}, env.ShortAPITokenSecret(), ttl)
 		if signErr != nil {
 			log.Error("failed to sign short API token", "cron_webhook_id", wh.ID, "error", signErr)
