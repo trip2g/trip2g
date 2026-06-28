@@ -161,12 +161,14 @@ export async function updateNotes(
   }
 }
 
-export type FetchNoteContentResult = { content: string } | { error: string }
+export type FetchNoteContentResult = { content: string; versionId?: number } | { error: string }
 
 /**
  * Re-read the current server content of a note (latest stored version). Used to
- * rebase an in-flight change after a hashMismatch instead of reloading and losing
- * the edit. Two round-trips: history (latest versionId) → version content.
+ * rebase an in-flight change after a hashMismatch, and to adopt a remote change
+ * pushed over the live subscription, instead of reloading and losing the edit.
+ * Two round-trips: history (latest versionId) → version content. The versionId is
+ * returned alongside the content so the caller can advance its self-echo baseline.
  */
 export async function fetchNoteContent(path: string): Promise<FetchNoteContentResult> {
   try {
@@ -205,8 +207,150 @@ export async function fetchNoteContent(path: string): Promise<FetchNoteContentRe
     if (verBody.errors?.length) return { error: verBody.errors.map(e => e.message).join(', ') }
     const content = verBody.data?.admin?.noteVersion?.content
     if (content === undefined || content === null) return { error: 'note content not found' }
-    return { content }
+    return { content, versionId: Number(versionId) }
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+/**
+ * Fetch just the latest stored versionId for a note (single round-trip). Used to
+ * advance the live-subscription baseline after our own save, so the save's own
+ * echo event is suppressed (its versionId is <= this baseline). Returns null on
+ * any error — the worst case is a spurious "Board updated" re-fetch later.
+ */
+export async function fetchLatestVersionId(path: string): Promise<number | null> {
+  try {
+    const res = await fetch('/_system/graphql', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: NOTE_VERSION_HISTORY_QUERY,
+        variables: { f: { path, limit: 1 } },
+      }),
+    })
+    if (!res.ok) return null
+    const body = await res.json() as {
+      data?: { admin?: { noteVersionHistory?: { nodes?: { versionId: number }[] } } }
+      errors?: { message: string }[]
+    }
+    if (body.errors?.length) return null
+    const versionId = body.data?.admin?.noteVersionHistory?.nodes?.[0]?.versionId
+    return versionId === undefined || versionId === null ? null : Number(versionId)
+  } catch {
+    return null
+  }
+}
+
+// ── live change subscription (noteChanges over GraphQL-SSE) ─────────────────────
+
+/** A normalised note-change event delivered to a subscribeNoteChanges listener. */
+export type NoteChangeItem =
+  | { type: 'upsert'; path: string; pathId: number; versionId: number }
+  | { type: 'hide'; path: string }
+
+const NOTE_CHANGES_SUBSCRIPTION = `subscription($filter: NoteChangesFilter!){ noteChanges(filter:$filter){ changes{ __typename ... on NoteUpsertEvent{ path pathId versionId } ... on NoteHideEvent{ path } } } }`
+
+function toChangeItem(ch: {
+  __typename?: string
+  path?: string
+  pathId?: number
+  versionId?: number
+}): NoteChangeItem | null {
+  if (ch.__typename === 'NoteUpsertEvent') {
+    return { type: 'upsert', path: ch.path ?? '', pathId: Number(ch.pathId), versionId: Number(ch.versionId) }
+  }
+  if (ch.__typename === 'NoteHideEvent') {
+    return { type: 'hide', path: ch.path ?? '' }
+  }
+  return null
+}
+
+/**
+ * Open one GraphQL-over-SSE noteChanges connection and emit each change. POST is
+ * required (EventSource is GET-only and cannot carry the query body), so we read
+ * the response body stream and parse the SSE frames by hand. Mirrors the editor's
+ * transport (assets/ui/sse/sse.ts). Returns when the server sends `complete` or
+ * the stream ends; throws on transport errors so the caller can reconnect.
+ */
+async function connectNoteChanges(
+  query: string,
+  variables: Record<string, unknown>,
+  onChange: (change: NoteChangeItem) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch('/_system/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+    credentials: 'include',
+    body: JSON.stringify({ query, variables }),
+    signal,
+  })
+  if (!res.ok || !res.body) {
+    throw new Error(`subscribeNoteChanges: ${res.status} ${res.statusText}`)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let eventType = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          eventType = line.slice(6).trim()
+        } else if (line.startsWith('data:')) {
+          const payload = line.slice(5).trim()
+          if (eventType === 'next') {
+            let parsed: { data?: { noteChanges?: { changes?: unknown[] } } } | null = null
+            try { parsed = JSON.parse(payload) } catch { parsed = null }
+            const changes = parsed?.data?.noteChanges?.changes
+            if (Array.isArray(changes)) {
+              for (const ch of changes) {
+                const item = toChangeItem(ch as Parameters<typeof toChangeItem>[0])
+                if (item) onChange(item)
+              }
+            }
+          } else if (eventType === 'complete') {
+            return
+          }
+          eventType = ''
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+/**
+ * Subscribe to live changes for `path` over the core noteChanges SSE stream.
+ * Auth is the admin cookie (credentials:'include') — no API key needed, since the
+ * board only renders editable for admins. Reconnects with a fixed backoff until
+ * `signal` aborts. Each change is normalised and handed to `onChange`.
+ */
+export async function subscribeNoteChanges(
+  path: string,
+  onChange: (change: NoteChangeItem) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const variables = { filter: { includePatterns: [path] } }
+  while (!signal?.aborted) {
+    try {
+      await connectNoteChanges(NOTE_CHANGES_SUBSCRIPTION, variables, onChange, signal)
+    } catch {
+      if (signal?.aborted) return
+    }
+    if (signal?.aborted) return
+    await new Promise(resolve => setTimeout(resolve, 3000))
   }
 }
