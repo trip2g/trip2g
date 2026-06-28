@@ -79,8 +79,6 @@ type Config struct {
 	CronExecuteWebhooksSchedule string
 	CronTelegramPublishSchedule string
 
-	AgentDeliveryCooldownSeconds int
-
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
@@ -528,8 +526,6 @@ func (c *Config) defineServerFlags() {
 		"Enable the periodic VACUUM/ANALYZE database maintenance cron. Off by default (heavy full-DB rewrite; incompatible with Litestream WAL replication).",
 	)
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
-	flag.IntVar(&c.AgentDeliveryCooldownSeconds, "agent-delivery-cooldown-seconds", 60,
-		"No-overlap stale window for skip/queue_one webhook delivery (seconds)")
 
 	// Storage limits.
 	datasize.FlagVar(
