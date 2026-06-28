@@ -11,12 +11,12 @@ import {
   DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import {
   arrayMove,
+  horizontalListSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -25,8 +25,16 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { parseBoard, KanbanCard, KanbanList, KanbanBoard } from './format'
-import { cardLine, applyBoardToBaseline } from './ops'
-import { sha256Base64, updateNotes, patchChange, upsertChange, NoteChange } from './api'
+import { cardLine, applyBoardToBaseline, applyStructuralChange } from './ops'
+import {
+  sha256Base64,
+  updateNotes,
+  fetchNoteContent,
+  patchChange,
+  upsertChange,
+  NoteChange,
+  UpdateNotesResult,
+} from './api'
 import { renderMarkdown } from './markdown'
 
 // ── augmented types (IDs for React / dnd-kit, stripped before serialising) ──
@@ -38,12 +46,17 @@ interface AugBoard extends Omit<KanbanBoard, 'lists'> { lists: AugList[] }
 let _counter = 0
 const nextId = () => `c${++_counter}`
 
+// Lists get their own stable id namespace so columns stay distinct from card ids
+// and survive add/delete/reorder without dnd-kit/React key churn.
+let _listCounter = 0
+const nextListId = () => `col-${++_listCounter}`
+
 function augment(b: KanbanBoard): AugBoard {
   return {
     ...b,
-    lists: b.lists.map((l, i) => ({
+    lists: b.lists.map(l => ({
       ...l,
-      id: `col-${i}`,
+      id: nextListId(),
       cards: l.cards.map(c => ({ ...c, id: nextId() })),
     })),
   }
@@ -54,6 +67,34 @@ function stripLists(lists: AugList[]): KanbanList[] {
     ...l,
     cards: l.cards.map(({ id: _id2, ...c }) => c),
   }))
+}
+
+// ── save plumbing (pure, no component state) ───────────────────────────────────
+
+/** How a pending change should be rebased if the server baseline shifts under it. */
+type RebaseKind = 'structural' | 'surgical'
+
+/** A queued save: the change to send plus how to re-derive it against a fresh baseline. */
+interface PendingSave {
+  change: NoteChange
+  rebase: (freshBaseline: string) => NoteChange
+}
+
+/** Attach the expected hash (of the baseline the change is built on) and send it. */
+async function sendChange(change: NoteChange, baselineForHash: string): Promise<UpdateNotesResult> {
+  const hash = await sha256Base64(baselineForHash)
+  const withHash: NoteChange =
+    'patch' in change
+      ? { patch: { ...change.patch, expectedHash: hash } }
+      : { upsert: { ...change.upsert, expectedHash: hash } }
+  return updateNotes([withHash])
+}
+
+/** The markdown that results from applying `change` to `base` (the new local baseline). */
+function applyChangeToBaseline(change: NoteChange, base: string): string {
+  return 'patch' in change
+    ? base.replace(change.patch.find, change.patch.replace)
+    : change.upsert.content
 }
 
 /** Derive a display title from a file path. */
@@ -195,7 +236,7 @@ function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps)
   )
 }
 
-// ── DroppableColumn ───────────────────────────────────────────────────────────
+// ── SortableColumn ────────────────────────────────────────────────────────────
 
 interface ColumnProps {
   list: AugList
@@ -210,9 +251,11 @@ interface ColumnProps {
   onToggle: (cardIdx: number) => void
   onEdit: (cardIdx: number, text: string) => void
   onDelete: (cardIdx: number) => void
+  onRenameList: (title: string) => void
+  onDeleteList: () => void
 }
 
-function DroppableColumn({
+function SortableColumn({
   list,
   listIdx,
   editable,
@@ -225,9 +268,36 @@ function DroppableColumn({
   onToggle,
   onEdit,
   onDelete,
+  onRenameList,
+  onDeleteList,
 }: ColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id: list.id })
+  const [renaming, setRenaming] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(list.title)
+  const renameRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Guards against the rename input's Enter-keydown and its blur-on-unmount both
+  // committing the same rename.
+  const renamingRef = useRef(false)
+
+  // The column itself is sortable (drag by the header handle); its cards are a
+  // nested vertical SortableContext. Card-drag starts from the card body, so the
+  // column drag is gated to the handle's listeners only.
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({ id: list.id, disabled: !editable || renaming })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  }
 
   useEffect(() => {
     if (addingTo === listIdx && inputRef.current) {
@@ -235,22 +305,109 @@ function DroppableColumn({
     }
   }, [addingTo, listIdx])
 
-  const colClass = ['kanban-column', isOver ? 'is-over' : ''].filter(Boolean).join(' ')
+  useEffect(() => {
+    if (renaming && renameRef.current) {
+      renameRef.current.focus()
+      renameRef.current.select()
+    }
+  }, [renaming])
+
+  function startRename() {
+    if (!editable) return
+    setTitleDraft(list.title)
+    renamingRef.current = true
+    setRenaming(true)
+  }
+
+  function commitRename() {
+    if (!renamingRef.current) return  // already committed/cancelled this rename
+    renamingRef.current = false
+    const trimmed = titleDraft.trim()
+    if (trimmed && trimmed !== list.title) onRenameList(trimmed)
+    setRenaming(false)
+  }
+
+  function cancelRename() {
+    renamingRef.current = false
+    setRenaming(false)
+  }
+
+  function handleDeleteClick() {
+    if (list.cards.length > 0) {
+      const n = list.cards.length
+      const ok = window.confirm(
+        `Delete column "${list.title}" and its ${n} ${n === 1 ? 'card' : 'cards'}?`
+      )
+      if (!ok) return
+    }
+    onDeleteList()
+  }
+
+  const colClass = [
+    'kanban-column',
+    isOver ? 'is-over' : '',
+    isDragging ? 'is-dragging' : '',
+  ].filter(Boolean).join(' ')
 
   return (
-    <div className={colClass}>
+    <div ref={setNodeRef} style={style} className={colClass}>
       <div className="kanban-column-header">
-        <span className={`kanban-column-title${list.complete ? ' is-complete' : ''}`}>
-          {list.title}
-        </span>
+        {editable && (
+          <button
+            ref={setActivatorNodeRef}
+            className="kanban-column-drag"
+            {...attributes}
+            {...listeners}
+            title="Drag to reorder column"
+            aria-label="Drag to reorder column"
+          >
+            ⠿
+          </button>
+        )}
+
+        {renaming ? (
+          <input
+            ref={renameRef}
+            className="kanban-column-rename"
+            value={titleDraft}
+            onChange={e => setTitleDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); commitRename() }
+              if (e.key === 'Escape') { e.preventDefault(); cancelRename() }
+            }}
+          />
+        ) : (
+          <span
+            className={`kanban-column-title${list.complete ? ' is-complete' : ''}`}
+            onDoubleClick={startRename}
+            role={editable ? 'button' : undefined}
+            title={editable ? 'Double-click to rename' : undefined}
+          >
+            {list.title}
+          </span>
+        )}
+
         <span className="kanban-column-count">{list.cards.length}</span>
+
+        {editable && !renaming && (
+          <button
+            className="kanban-column-delete"
+            onClick={handleDeleteClick}
+            title="Delete column"
+            aria-label="Delete column"
+            tabIndex={-1}
+          >
+            ×
+          </button>
+        )}
       </div>
 
       <SortableContext
         items={list.cards.map(c => c.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div ref={setNodeRef} className="kanban-cards">
+        <div className="kanban-cards">
           {list.cards.map((card, cardIdx) => (
             <SortableCard
               key={card.id}
@@ -305,6 +462,16 @@ export default function Board({ path, content, editable }: BoardProps) {
   const [toast, setToast] = useState<string | null>(null)
   const [addingTo, setAddingTo] = useState<number | null>(null)
   const [newCardText, setNewCardText] = useState('')
+  const [addingList, setAddingList] = useState(false)
+  const [newListTitle, setNewListTitle] = useState('')
+  const addListRef = useRef<HTMLInputElement>(null)
+  // Tracks an in-flight "add list" so the Enter-keydown and the focused input's
+  // blur-on-unmount don't both commit the same new column.
+  const addingListRef = useRef(false)
+
+  useEffect(() => {
+    if (addingList && addListRef.current) addListRef.current.focus()
+  }, [addingList])
 
   // Baseline tracking — the last-saved markdown (source of truth for patches/upserts)
   const baselineMdRef = useRef<string>(content)
@@ -312,7 +479,7 @@ export default function Board({ path, content, editable }: BoardProps) {
   const boardRef = useRef<AugBoard>(board)
   useEffect(() => { boardRef.current = board })
 
-  const pendingChangeRef = useRef<NoteChange | null>(null)
+  const pendingRef = useRef<PendingSave | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
@@ -326,53 +493,53 @@ export default function Board({ path, content, editable }: BoardProps) {
     setBoard(augment(parseBoard(baselineMdRef.current)))
   }
 
-  // Flush the pending change to the server
+  // Flush the pending change to the server.
   const flushSave = useCallback(async () => {
-    const change = pendingChangeRef.current
-    if (!change) return
-    pendingChangeRef.current = null
+    const pending = pendingRef.current
+    if (!pending) return
+    pendingRef.current = null
 
     const baselineMd = baselineMdRef.current
 
     // Guard: if a patch's find string is no longer in the baseline (rapid consecutive
     // edits to the same card within 500ms), fall back to a full surgical upsert.
-    let effectiveChange = change
-    if ('patch' in change && !baselineMd.includes(change.patch.find)) {
-      const lists = stripLists(boardRef.current.lists)
-      const newMd = applyBoardToBaseline(baselineMd, lists)
-      effectiveChange = upsertChange(path, newMd)
+    let effectiveChange = pending.change
+    if ('patch' in effectiveChange && !baselineMd.includes(effectiveChange.patch.find)) {
+      effectiveChange = upsertChange(path, applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists)))
     }
 
-    const hash = await sha256Base64(baselineMd)
-    const changeWithHash: NoteChange =
-      'patch' in effectiveChange
-        ? { patch: { ...effectiveChange.patch, expectedHash: hash } }
-        : { upsert: { ...effectiveChange.upsert, expectedHash: hash } }
-
-    const result = await updateNotes([changeWithHash])
+    const result = await sendChange(effectiveChange, baselineMd)
 
     if ('ok' in result) {
-      // Apply change to baselineMd locally
-      if ('patch' in effectiveChange) {
-        baselineMdRef.current = baselineMd.replace(effectiveChange.patch.find, effectiveChange.patch.replace)
-      } else {
-        baselineMdRef.current = effectiveChange.upsert.content
-      }
+      baselineMdRef.current = applyChangeToBaseline(effectiveChange, baselineMd)
       return
     }
 
     if ('hashMismatch' in result) {
+      // A hashMismatch is often spurious: the two-way sync's own writeback re-normalises
+      // the note and bumps its hash even though the board is semantically unchanged.
+      // Re-read the current server content, rebase our change onto it, and retry once —
+      // so an in-flight edit (e.g. a just-added list) isn't lost to a blind reload.
+      const fresh = await fetchNoteContent(path)
+      if ('content' in fresh) {
+        const rebased = pending.rebase(fresh.content)
+        const retry = await sendChange(rebased, fresh.content)
+        if ('ok' in retry) {
+          baselineMdRef.current = applyChangeToBaseline(rebased, fresh.content)
+          return
+        }
+      }
+      // Rebase/retry failed (could not re-read, or a genuine concurrent edit) — only now
+      // fall back to a reload, which is the last resort that can lose the in-flight edit.
       showToast('Board changed elsewhere — reloading…')
       setTimeout(() => location.reload(), 1500)
       return
     }
 
     if ('patchNotFound' in result && 'patch' in effectiveChange) {
-      // Patch string not found on server — retry as upsert with current board state
-      const lists = stripLists(boardRef.current.lists)
-      const newMd = applyBoardToBaseline(baselineMd, lists)
-      const retryHash = hash  // hash was computed from baselineMd which hasn't changed
-      const retryResult = await updateNotes([upsertChange(path, newMd, retryHash)])
+      // Patch string not found on server — retry as a surgical upsert of the current board.
+      const newMd = applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists))
+      const retryResult = await sendChange(upsertChange(path, newMd), baselineMd)
       if ('ok' in retryResult) {
         baselineMdRef.current = newMd
         return
@@ -386,8 +553,20 @@ export default function Board({ path, content, editable }: BoardProps) {
     revertBoard()
   }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  function scheduleSave(change: NoteChange) {
-    pendingChangeRef.current = change
+  // Queue a save. `kind` records how to rebase the change if the server baseline
+  // shifts under us (hashMismatch). The rebase reads the latest board at flush time.
+  function scheduleSave(change: NoteChange, kind: RebaseKind) {
+    const rebase = (freshBaseline: string): NoteChange => {
+      const lists = stripLists(boardRef.current.lists)
+      if (kind === 'structural') {
+        return upsertChange(path, applyStructuralChange(freshBaseline, lists))
+      }
+      // surgical: re-apply the exact card patch if its anchor still exists (least
+      // destructive), otherwise re-emit the card lines onto the fresh baseline.
+      if ('patch' in change && freshBaseline.includes(change.patch.find)) return change
+      return upsertChange(path, applyBoardToBaseline(freshBaseline, lists))
+    }
+    pendingRef.current = { change, rebase }
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       flushSave().catch(err => {
@@ -395,6 +574,14 @@ export default function Board({ path, content, editable }: BoardProps) {
         revertBoard()
       })
     }, 500)
+  }
+
+  // Apply a freshly-computed board state and queue its save. The setBoard updater
+  // stays pure — the next state and its change are computed here (from the current
+  // board), and the save (a side effect) is scheduled outside any updater.
+  function applyAndSave(next: AugBoard, change: NoteChange, kind: RebaseKind) {
+    setBoard(next)
+    scheduleSave(change, kind)
   }
 
   // ── drag ──
@@ -411,111 +598,112 @@ export default function Board({ path, content, editable }: BoardProps) {
     const overId = String(over.id)
     if (activeId === overId) return
 
-    setBoard(prev => {
-      const srcListIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === activeId))
-      if (srcListIdx === -1) return prev
-      const srcCardIdx = prev.lists[srcListIdx].cards.findIndex(c => c.id === activeId)
+    const prev = boardRef.current
 
-      const colIdx = prev.lists.findIndex(l => l.id === overId)
-      let dstListIdx: number, dstCardIdx: number
+    // ── column reorder ── (active id is a column, not a card)
+    const activeColIdx = prev.lists.findIndex(l => l.id === activeId)
+    if (activeColIdx !== -1) {
+      let toIdx = prev.lists.findIndex(l => l.id === overId)
+      if (toIdx === -1) toIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === overId))
+      if (toIdx === -1 || toIdx === activeColIdx) return
+      const lists = arrayMove(prev.lists, activeColIdx, toIdx)
+      const newMd = applyStructuralChange(baselineMdRef.current, stripLists(lists))
+      applyAndSave({ ...prev, lists }, upsertChange(path, newMd), 'structural')
+      return
+    }
 
-      if (colIdx !== -1) {
-        dstListIdx = colIdx
-        dstCardIdx = prev.lists[colIdx].cards.length
-      } else {
-        dstListIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === overId))
-        if (dstListIdx === -1) return prev
-        dstCardIdx = prev.lists[dstListIdx].cards.findIndex(c => c.id === overId)
+    // ── card move ──
+    const srcListIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === activeId))
+    if (srcListIdx === -1) return
+    const srcCardIdx = prev.lists[srcListIdx].cards.findIndex(c => c.id === activeId)
+
+    const colIdx = prev.lists.findIndex(l => l.id === overId)
+    let dstListIdx: number, dstCardIdx: number
+
+    if (colIdx !== -1) {
+      dstListIdx = colIdx
+      dstCardIdx = prev.lists[colIdx].cards.length
+    } else {
+      dstListIdx = prev.lists.findIndex(l => l.cards.some(c => c.id === overId))
+      if (dstListIdx === -1) return
+      dstCardIdx = prev.lists[dstListIdx].cards.findIndex(c => c.id === overId)
+    }
+
+    const lists = prev.lists.map(l => ({ ...l, cards: [...l.cards] }))
+
+    if (srcListIdx === dstListIdx) {
+      lists[srcListIdx] = {
+        ...lists[srcListIdx],
+        cards: arrayMove(lists[srcListIdx].cards, srcCardIdx, dstCardIdx),
       }
+    } else {
+      const [card] = lists[srcListIdx].cards.splice(srcCardIdx, 1)
+      lists[dstListIdx].cards.splice(dstCardIdx, 0, card)
+    }
 
-      const lists = prev.lists.map(l => ({ ...l, cards: [...l.cards] }))
-
-      if (srcListIdx === dstListIdx) {
-        lists[srcListIdx] = {
-          ...lists[srcListIdx],
-          cards: arrayMove(lists[srcListIdx].cards, srcCardIdx, dstCardIdx),
-        }
-      } else {
-        const [card] = lists[srcListIdx].cards.splice(srcCardIdx, 1)
-        lists[dstListIdx].cards.splice(dstCardIdx, 0, card)
-      }
-
-      // Move: always use surgical upsert (single unique patch isn't guaranteed)
-      const newMd = applyBoardToBaseline(baselineMdRef.current, stripLists(lists))
-      scheduleSave(upsertChange(path, newMd))
-
-      return { ...prev, lists }
-    })
+    // Move: always use surgical upsert (single unique patch isn't guaranteed)
+    const newMd = applyBoardToBaseline(baselineMdRef.current, stripLists(lists))
+    applyAndSave({ ...prev, lists }, upsertChange(path, newMd), 'surgical')
   }
 
   // ── card ops ──
 
   function handleToggle(listIdx: number, cardIdx: number) {
-    setBoard(prev => {
-      const card = prev.lists[listIdx].cards[cardIdx]
-      const oldLine = cardLine(card)
-      const newCard = { ...card, checked: !card.checked }
-      const newLine = cardLine(newCard)
-      scheduleSave(patchChange(path, oldLine, newLine))
+    const prev = boardRef.current
+    const card = prev.lists[listIdx].cards[cardIdx]
+    const oldLine = cardLine(card)
+    const newCard = { ...card, checked: !card.checked }
+    const newLine = cardLine(newCard)
 
-      const lists = prev.lists.map((l, li) =>
-        li !== listIdx
-          ? l
-          : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
-      )
-      return { ...prev, lists }
-    })
+    const lists = prev.lists.map((l, li) =>
+      li !== listIdx
+        ? l
+        : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
+    )
+    applyAndSave({ ...prev, lists }, patchChange(path, oldLine, newLine), 'surgical')
   }
 
   function handleEdit(listIdx: number, cardIdx: number, text: string) {
-    setBoard(prev => {
-      const card = prev.lists[listIdx].cards[cardIdx]
-      const oldLine = cardLine(card)
-      const newCard = { ...card, text }
-      const newLine = cardLine(newCard)
-      scheduleSave(patchChange(path, oldLine, newLine))
+    const prev = boardRef.current
+    const card = prev.lists[listIdx].cards[cardIdx]
+    const oldLine = cardLine(card)
+    const newCard = { ...card, text }
+    const newLine = cardLine(newCard)
 
-      const lists = prev.lists.map((l, li) =>
-        li !== listIdx
-          ? l
-          : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
-      )
-      return { ...prev, lists }
-    })
+    const lists = prev.lists.map((l, li) =>
+      li !== listIdx
+        ? l
+        : { ...l, cards: l.cards.map((c, ci) => (ci !== cardIdx ? c : newCard)) }
+    )
+    applyAndSave({ ...prev, lists }, patchChange(path, oldLine, newLine), 'surgical')
   }
 
   function handleDelete(listIdx: number, cardIdx: number) {
-    setBoard(prev => {
-      const card = prev.lists[listIdx].cards[cardIdx]
-      const line = cardLine(card)
-      const baseline = baselineMdRef.current
+    const prev = boardRef.current
+    const card = prev.lists[listIdx].cards[cardIdx]
+    const line = cardLine(card)
+    const baseline = baselineMdRef.current
 
-      // Prefer removing "\nline" (card preceded by another line)
-      // Fall back to "line\n" for first card in section
-      // Fall back to surgical upsert if neither is unambiguous
-      let change: NoteChange
-      const findPrev = '\n' + line
-      const findNext = line + '\n'
-      if (baseline.split(findPrev).length === 2) {
-        // Exactly one occurrence with preceding newline
-        change = patchChange(path, findPrev, '')
-      } else if (baseline.split(findNext).length === 2) {
-        change = patchChange(path, findNext, '')
-      } else {
-        // Ambiguous or missing — use surgical upsert
-        const nextLists = prev.lists.map((l, li) =>
-          li !== listIdx ? l : { ...l, cards: l.cards.filter((_, ci) => ci !== cardIdx) }
-        )
-        const newMd = applyBoardToBaseline(baseline, stripLists(nextLists))
-        change = upsertChange(path, newMd)
-      }
-      scheduleSave(change)
+    const nextLists = prev.lists.map((l, li) =>
+      li !== listIdx ? l : { ...l, cards: l.cards.filter((_, ci) => ci !== cardIdx) }
+    )
 
-      const lists = prev.lists.map((l, li) =>
-        li !== listIdx ? l : { ...l, cards: l.cards.filter((_, ci) => ci !== cardIdx) }
-      )
-      return { ...prev, lists }
-    })
+    // Prefer removing "\nline" (card preceded by another line)
+    // Fall back to "line\n" for first card in section
+    // Fall back to surgical upsert if neither is unambiguous
+    let change: NoteChange
+    const findPrev = '\n' + line
+    const findNext = line + '\n'
+    if (baseline.split(findPrev).length === 2) {
+      // Exactly one occurrence with preceding newline
+      change = patchChange(path, findPrev, '')
+    } else if (baseline.split(findNext).length === 2) {
+      change = patchChange(path, findNext, '')
+    } else {
+      // Ambiguous or missing — use surgical upsert
+      change = upsertChange(path, applyBoardToBaseline(baseline, stripLists(nextLists)))
+    }
+    applyAndSave({ ...prev, lists: nextLists }, change, 'surgical')
   }
 
   // ── add card ──
@@ -526,36 +714,67 @@ export default function Board({ path, content, editable }: BoardProps) {
     setNewCardText('')
     if (!text) return
 
-    setBoard(prev => {
-      const list = prev.lists[listIdx]
-      const newLine = cardLine({ text, checked: false })
+    const prev = boardRef.current
+    const list = prev.lists[listIdx]
+    const newLine = cardLine({ text, checked: false })
 
-      let change: NoteChange
-      if (list.cards.length > 0) {
-        // Anchor patch on the last card line (unique in the note if possible)
-        const lastCard = list.cards[list.cards.length - 1]
-        const lastLine = cardLine(lastCard)
-        change = patchChange(path, lastLine, lastLine + '\n' + newLine)
-      } else {
-        // Empty column — surgical upsert
-        const nextLists = prev.lists.map((l, li) =>
-          li !== listIdx ? l : { ...l, cards: [...l.cards, { id: '', text, checked: false }] }
-        )
-        const newMd = applyBoardToBaseline(baselineMdRef.current, stripLists(nextLists))
-        change = upsertChange(path, newMd)
-      }
-      scheduleSave(change)
+    const nextLists = prev.lists.map((l, li) =>
+      li !== listIdx ? l : { ...l, cards: [...l.cards, { id: nextId(), text, checked: false }] }
+    )
 
-      const lists = prev.lists.map((l, li) =>
-        li !== listIdx ? l : { ...l, cards: [...l.cards, { id: nextId(), text, checked: false }] }
-      )
-      return { ...prev, lists }
-    })
+    let change: NoteChange
+    if (list.cards.length > 0) {
+      // Anchor patch on the last card line (unique in the note if possible)
+      const lastLine = cardLine(list.cards[list.cards.length - 1])
+      change = patchChange(path, lastLine, lastLine + '\n' + newLine)
+    } else {
+      // Empty column — surgical upsert
+      change = upsertChange(path, applyBoardToBaseline(baselineMdRef.current, stripLists(nextLists)))
+    }
+    applyAndSave({ ...prev, lists: nextLists }, change, 'surgical')
   }
 
   function handleCancelAdd() {
     setAddingTo(null)
     setNewCardText('')
+  }
+
+  // ── list (column) ops ──
+  // Structural changes can't be expressed as a per-card patch, so they re-serialise
+  // the columns region and upsert it (preserving frontmatter + settings).
+
+  function handleAddList() {
+    if (!addingListRef.current) return  // already committed/cancelled this add session
+    addingListRef.current = false
+    const title = newListTitle.trim()
+    setAddingList(false)
+    setNewListTitle('')
+    if (!title) return
+
+    const prev = boardRef.current
+    const lists: AugList[] = [...prev.lists, { id: nextListId(), title, complete: false, cards: [] }]
+    const newMd = applyStructuralChange(baselineMdRef.current, stripLists(lists))
+    applyAndSave({ ...prev, lists }, upsertChange(path, newMd), 'structural')
+  }
+
+  function handleCancelAddList() {
+    addingListRef.current = false
+    setAddingList(false)
+    setNewListTitle('')
+  }
+
+  function handleRenameList(listIdx: number, title: string) {
+    const prev = boardRef.current
+    const lists = prev.lists.map((l, i) => (i === listIdx ? { ...l, title } : l))
+    const newMd = applyStructuralChange(baselineMdRef.current, stripLists(lists))
+    applyAndSave({ ...prev, lists }, upsertChange(path, newMd), 'structural')
+  }
+
+  function handleDeleteList(listIdx: number) {
+    const prev = boardRef.current
+    const lists = prev.lists.filter((_, i) => i !== listIdx)
+    const newMd = applyStructuralChange(baselineMdRef.current, stripLists(lists))
+    applyAndSave({ ...prev, lists }, upsertChange(path, newMd), 'structural')
   }
 
   const title = titleFromPath(path)
@@ -593,23 +812,56 @@ export default function Board({ path, content, editable }: BoardProps) {
           onDragEnd={handleDragEnd}
         >
           <div className="kanban-board">
-            {board.lists.map((list, listIdx) => (
-              <DroppableColumn
-                key={list.id}
-                list={list}
-                listIdx={listIdx}
-                editable={editable}
-                addingTo={addingTo}
-                newCardText={newCardText}
-                onNewCardTextChange={setNewCardText}
-                onStartAdd={setAddingTo}
-                onCommitAdd={handleCommitAdd}
-                onCancelAdd={handleCancelAdd}
-                onToggle={cardIdx => handleToggle(listIdx, cardIdx)}
-                onEdit={(cardIdx, text) => handleEdit(listIdx, cardIdx, text)}
-                onDelete={cardIdx => handleDelete(listIdx, cardIdx)}
-              />
-            ))}
+            <SortableContext
+              items={board.lists.map(l => l.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {board.lists.map((list, listIdx) => (
+                <SortableColumn
+                  key={list.id}
+                  list={list}
+                  listIdx={listIdx}
+                  editable={editable}
+                  addingTo={addingTo}
+                  newCardText={newCardText}
+                  onNewCardTextChange={setNewCardText}
+                  onStartAdd={setAddingTo}
+                  onCommitAdd={handleCommitAdd}
+                  onCancelAdd={handleCancelAdd}
+                  onToggle={cardIdx => handleToggle(listIdx, cardIdx)}
+                  onEdit={(cardIdx, text) => handleEdit(listIdx, cardIdx, text)}
+                  onDelete={cardIdx => handleDelete(listIdx, cardIdx)}
+                  onRenameList={title => handleRenameList(listIdx, title)}
+                  onDeleteList={() => handleDeleteList(listIdx)}
+                />
+              ))}
+            </SortableContext>
+
+            {editable && (
+              <div className="kanban-add-list">
+                {addingList ? (
+                  <input
+                    ref={addListRef}
+                    className="kanban-add-list-input"
+                    value={newListTitle}
+                    placeholder="Column title..."
+                    onChange={e => setNewListTitle(e.target.value)}
+                    onBlur={handleAddList}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleAddList() }
+                      if (e.key === 'Escape') { e.preventDefault(); handleCancelAddList() }
+                    }}
+                  />
+                ) : (
+                  <button
+                    className="kanban-add-list-btn"
+                    onClick={() => { addingListRef.current = true; setAddingList(true) }}
+                  >
+                    + Add list
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </DndContext>
       </main>

@@ -10,5 +10,5 @@
     "skipLibCheck": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/smoke.test.ts"]
+  "exclude": ["node_modules", "dist", "src/smoke.test.ts", "src/Board.integration.test.tsx"]
 }

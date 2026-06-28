@@ -10,6 +10,22 @@ const UPDATE_MUTATION = `
   }
 `
 
+// Re-read the note's current raw markdown from the server. The latest stored
+// version's content is what the server hashes for optimistic-concurrency checks,
+// so it is the exact baseline to rebase onto after a hashMismatch. Uses the admin
+// note-version queries (the board only renders editable for admins).
+const NOTE_VERSION_HISTORY_QUERY = `
+  query($f: AdminNoteVersionHistoryFilter!) {
+    admin { noteVersionHistory(filter: $f) { nodes { versionId } } }
+  }
+`
+
+const NOTE_VERSION_QUERY = `
+  query($id: Int64!) {
+    admin { noteVersion(versionId: $id) { content } }
+  }
+`
+
 export async function sha256Base64(str: string): Promise<string> {
   const encoded = new TextEncoder().encode(str)
   const hashBuf = await crypto.subtle.digest('SHA-256', encoded)
@@ -142,5 +158,55 @@ export async function updateNotes(
       return { error: result.message ?? 'Unknown error from updateNotes' }
     default:
       return { error: `Unexpected __typename: ${result.__typename}` }
+  }
+}
+
+export type FetchNoteContentResult = { content: string } | { error: string }
+
+/**
+ * Re-read the current server content of a note (latest stored version). Used to
+ * rebase an in-flight change after a hashMismatch instead of reloading and losing
+ * the edit. Two round-trips: history (latest versionId) → version content.
+ */
+export async function fetchNoteContent(path: string): Promise<FetchNoteContentResult> {
+  try {
+    const histRes = await fetch('/_system/graphql', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: NOTE_VERSION_HISTORY_QUERY,
+        variables: { f: { path, limit: 1 } },
+      }),
+    })
+    if (!histRes.ok) return { error: `GraphQL request failed: HTTP ${histRes.status}` }
+    const histBody = await histRes.json() as {
+      data?: { admin?: { noteVersionHistory?: { nodes?: { versionId: number }[] } } }
+      errors?: { message: string }[]
+    }
+    if (histBody.errors?.length) return { error: histBody.errors.map(e => e.message).join(', ') }
+    const versionId = histBody.data?.admin?.noteVersionHistory?.nodes?.[0]?.versionId
+    if (versionId === undefined || versionId === null) return { error: 'note version not found' }
+
+    const verRes = await fetch('/_system/graphql', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: NOTE_VERSION_QUERY,
+        variables: { id: versionId },
+      }),
+    })
+    if (!verRes.ok) return { error: `GraphQL request failed: HTTP ${verRes.status}` }
+    const verBody = await verRes.json() as {
+      data?: { admin?: { noteVersion?: { content?: string } } }
+      errors?: { message: string }[]
+    }
+    if (verBody.errors?.length) return { error: verBody.errors.map(e => e.message).join(', ') }
+    const content = verBody.data?.admin?.noteVersion?.content
+    if (content === undefined || content === null) return { error: 'note content not found' }
+    return { content }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) }
   }
 }
