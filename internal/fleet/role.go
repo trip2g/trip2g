@@ -64,7 +64,10 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 // webhook is registered. Tools must be a subset of the fleet's offered set.
 func (r Role) Validate(offered []string) error {
 	switch r.Mode {
-	case "change", "cron", "both":
+	case "change":
+		// supported
+	case "cron", "both":
+		return fmt.Errorf("role %s: mode %q is not yet supported by this fleet (cron-mode roles are not yet supported by this fleet)", r.NotePath, r.Mode)
 	default:
 		return fmt.Errorf("role %s: mode must be change|cron|both, got %q", r.NotePath, r.Mode)
 	}

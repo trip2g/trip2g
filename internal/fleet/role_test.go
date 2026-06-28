@@ -63,6 +63,32 @@ func TestRoleValidate_RequiresMode(t *testing.T) {
 }
 
 func TestRoleValidate_DefaultConcurrencyAllowed(t *testing.T) {
-	require.NoError(t, Role{Mode: "cron", Concurrency: ""}.Validate(nil))
-	require.Error(t, Role{Mode: "cron", Concurrency: "bogus"}.Validate(nil))
+	require.NoError(t, Role{Mode: "change", Concurrency: ""}.Validate(nil))
+	require.Error(t, Role{Mode: "change", Concurrency: "bogus"}.Validate(nil))
+}
+
+// TestRoleValidate_CronModeRejected is a regression test for F6: cron-mode
+// roles must fail fast at discovery because cron reconcile is not yet
+// implemented. mode:change must still pass.
+func TestRoleValidate_CronModeRejected(t *testing.T) {
+	cases := []struct {
+		mode    string
+		wantErr bool
+	}{
+		{"change", false},
+		{"cron", true},
+		{"both", true},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run("mode="+tc.mode, func(t *testing.T) {
+			err := Role{Mode: tc.mode}.Validate(nil)
+			if tc.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "not yet supported")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
