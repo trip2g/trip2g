@@ -126,6 +126,17 @@ func makeAroundOperations(
 
 		log.Debug("process", "operotion", op.Operation, "name", op.Name)
 
+		// Stamp scoped-token claims (read/write patterns, depth, delivery identity)
+		// once per operation, BEFORE resolvers run. This covers both Query and
+		// Mutation paths: checkapikey.Resolve stamps mutations via X-API-Key /
+		// Bearer handling inside the resolver, but query resolvers (note, search,
+		// notePaths) never call checkapikey.Resolve, so without this hook the
+		// Bearer shortapitoken is parsed as anonymous and read_patterns are never
+		// set — making scope enforcement dead on the read path.
+		if req, reqErr := appreq.FromCtx(ctx); reqErr == nil {
+			stampShortAPIToken(req, env.ShortAPITokenSecret())
+		}
+
 		if !devMode {
 			disableIntrospection(ctx, operationContext, env)
 		}

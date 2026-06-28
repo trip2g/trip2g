@@ -3123,19 +3123,45 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		path = *input.Path
 	}
 
+	// fsPath is the filesystem path (e.g. "boards/task.md") used to match
+	// read_patterns. It is distinct from `path` which is the URL path used
+	// by rendernotepage.Resolve. The two share one namespace so the same glob
+	// patterns cover both reads and writes.
+	var fsPath string
+
 	if input.PathID != nil {
 		latestViews := r.env(ctx).LatestNoteViews()
 
 		for _, view := range latestViews.List {
 			if view.PathID == *input.PathID {
 				path = view.Permalink
+				fsPath = view.Path
 				break
 			}
 		}
 	}
 
-	if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 && !webhookutil.MatchesAny(path, rp) {
-		return nil, nil
+	// When the caller supplies input.Path (a URL), resolve the filesystem path
+	// for the read-pattern check by looking up the note view by its permalink.
+	if fsPath == "" && path != "" {
+		latestViews := r.env(ctx).LatestNoteViews()
+		if latestViews != nil {
+			if nv, ok := latestViews.Map[path]; ok {
+				fsPath = nv.Path
+			}
+		}
+	}
+
+	// Enforce read_patterns using the filesystem path so scope globs (e.g.
+	// "boards/**") match the same namespace as write_patterns.
+	if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 {
+		checkPath := fsPath
+		if checkPath == "" {
+			checkPath = path // fallback: URL path if filesystem path unknown
+		}
+		if !webhookutil.MatchesAny(checkPath, rp) {
+			return nil, nil
+		}
 	}
 
 	request := rendernotepage.Request{
