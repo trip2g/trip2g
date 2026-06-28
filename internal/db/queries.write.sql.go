@@ -757,6 +757,31 @@ func (q *WriteQueries) EnableApiKey(ctx context.Context, id int64) (ApiKey, erro
 	return i, err
 }
 
+const expireStaleCronWebhookDeliveries = `-- name: ExpireStaleCronWebhookDeliveries :exec
+update cron_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status = 'running'
+  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', ?1)
+`
+
+func (q *WriteQueries) ExpireStaleCronWebhookDeliveries(ctx context.Context, staleWindow interface{}) error {
+	_, err := q.db.ExecContext(ctx, expireStaleCronWebhookDeliveries, staleWindow)
+	return err
+}
+
+const expireStaleWebhookDeliveries = `-- name: ExpireStaleWebhookDeliveries :exec
+update change_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status = 'running'
+  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', ?1)
+`
+
+// janitor: finalize orphaned 'running' rows past the stale window to 'failed'.
+func (q *WriteQueries) ExpireStaleWebhookDeliveries(ctx context.Context, staleWindow interface{}) error {
+	_, err := q.db.ExecContext(ctx, expireStaleWebhookDeliveries, staleWindow)
+	return err
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1180,6 +1205,67 @@ type InsertCronWebhookDeliveryParams struct {
 
 func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg InsertCronWebhookDeliveryParams) (CronWebhookDelivery, error) {
 	row := q.db.QueryRowContext(ctx, insertCronWebhookDelivery, arg.CronWebhookID, arg.Attempt)
+	var i CronWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.CronWebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
+	)
+	return i, err
+}
+
+const insertCronWebhookDeliveryIfClear = `-- name: InsertCronWebhookDeliveryIfClear :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from cron_webhook_deliveries
+  where cron_webhook_id = ?1
+    and status in ('pending','running'))
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+`
+
+// skip mode: insert only if no in-flight (pending/running) delivery exists for this cron webhook.
+// Stale 'running' rows are evicted by ExpireStaleCronWebhookDeliveries before the next attempt.
+func (q *WriteQueries) InsertCronWebhookDeliveryIfClear(ctx context.Context, cronWebhookID int64) (CronWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertCronWebhookDeliveryIfClear, cronWebhookID)
+	var i CronWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.CronWebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
+	)
+	return i, err
+}
+
+const insertCronWebhookDeliveryIfNoPending = `-- name: InsertCronWebhookDeliveryIfNoPending :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from cron_webhook_deliveries
+  where cron_webhook_id = ?1 and status = 'pending')
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+`
+
+func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context, cronWebhookID int64) (CronWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertCronWebhookDeliveryIfNoPending, cronWebhookID)
 	var i CronWebhookDelivery
 	err := row.Scan(
 		&i.ID,
@@ -2557,6 +2643,68 @@ func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebh
 	return i, err
 }
 
+const insertWebhookDeliveryIfClear = `-- name: InsertWebhookDeliveryIfClear :one
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from change_webhook_deliveries
+  where webhook_id = ?1
+    and status in ('pending','running'))
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+`
+
+// skip mode: insert only if no in-flight (pending/running) delivery exists for this webhook.
+// Stale 'running' rows are evicted by ExpireStaleWebhookDeliveries before the next attempt.
+func (q *WriteQueries) InsertWebhookDeliveryIfClear(ctx context.Context, webhookID int64) (ChangeWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertWebhookDeliveryIfClear, webhookID)
+	var i ChangeWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.WebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
+	)
+	return i, err
+}
+
+const insertWebhookDeliveryIfNoPending = `-- name: InsertWebhookDeliveryIfNoPending :one
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from change_webhook_deliveries
+  where webhook_id = ?1 and status = 'pending')
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+`
+
+// queue_one mode: insert only if there is no pending delivery already queued.
+func (q *WriteQueries) InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (ChangeWebhookDelivery, error) {
+	row := q.db.QueryRowContext(ctx, insertWebhookDeliveryIfNoPending, webhookID)
+	var i ChangeWebhookDelivery
+	err := row.Scan(
+		&i.ID,
+		&i.WebhookID,
+		&i.Status,
+		&i.ResponseStatus,
+		&i.Attempt,
+		&i.DurationMs,
+		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.StartedAt,
+		&i.HeartbeatAt,
+		&i.TokensUsed,
+		&i.Steps,
+	)
+	return i, err
+}
+
 const insertWebhookDeliveryLog = `-- name: InsertWebhookDeliveryLog :exec
 
 insert into webhook_delivery_logs (delivery_id, kind, request_body, response_body, error_message)
@@ -2633,6 +2781,17 @@ func (q *WriteQueries) MarkBoostyTiersAsMissed(ctx context.Context, arg MarkBoos
 		query = strings.Replace(query, "/*SLICE:boosty_ids*/?", "NULL", 1)
 	}
 	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const markCronWebhookDeliveryRunning = `-- name: MarkCronWebhookDeliveryRunning :exec
+update cron_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending'
+`
+
+func (q *WriteQueries) MarkCronWebhookDeliveryRunning(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, markCronWebhookDeliveryRunning, id)
 	return err
 }
 
@@ -2726,6 +2885,17 @@ where telegram_id = ?
 
 func (q *WriteQueries) MarkTgBotChatRemoved(ctx context.Context, telegramID int64) error {
 	_, err := q.db.ExecContext(ctx, markTgBotChatRemoved, telegramID)
+	return err
+}
+
+const markWebhookDeliveryRunning = `-- name: MarkWebhookDeliveryRunning :exec
+update change_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending'
+`
+
+func (q *WriteQueries) MarkWebhookDeliveryRunning(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, markWebhookDeliveryRunning, id)
 	return err
 }
 

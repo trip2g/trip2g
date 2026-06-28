@@ -979,6 +979,38 @@ insert into change_webhook_deliveries (webhook_id, attempt)
 values (?, ?)
 returning *;
 
+-- name: InsertWebhookDeliveryIfClear :one
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for this webhook.
+-- Stale 'running' rows are evicted by ExpireStaleWebhookDeliveries before the next attempt.
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from change_webhook_deliveries
+  where webhook_id = ?1
+    and status in ('pending','running'))
+returning *;
+
+-- name: InsertWebhookDeliveryIfNoPending :one
+-- queue_one mode: insert only if there is no pending delivery already queued.
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from change_webhook_deliveries
+  where webhook_id = ?1 and status = 'pending')
+returning *;
+
+-- name: MarkWebhookDeliveryRunning :exec
+update change_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending';
+
+-- name: ExpireStaleWebhookDeliveries :exec
+-- janitor: finalize orphaned 'running' rows past the stale window to 'failed'.
+update change_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status = 'running'
+  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', sqlc.arg(stale_window));
+
 -- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
 set status = ?, response_status = ?, duration_ms = ?,
@@ -1034,6 +1066,36 @@ where id = ?;
 insert into cron_webhook_deliveries (cron_webhook_id, attempt)
 values (?, ?)
 returning *;
+
+-- name: InsertCronWebhookDeliveryIfClear :one
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for this cron webhook.
+-- Stale 'running' rows are evicted by ExpireStaleCronWebhookDeliveries before the next attempt.
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from cron_webhook_deliveries
+  where cron_webhook_id = ?1
+    and status in ('pending','running'))
+returning *;
+
+-- name: InsertCronWebhookDeliveryIfNoPending :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from cron_webhook_deliveries
+  where cron_webhook_id = ?1 and status = 'pending')
+returning *;
+
+-- name: MarkCronWebhookDeliveryRunning :exec
+update cron_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending';
+
+-- name: ExpireStaleCronWebhookDeliveries :exec
+update cron_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status = 'running'
+  and coalesce(heartbeat_at, started_at, created_at) < datetime('now', sqlc.arg(stale_window));
 
 -- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
