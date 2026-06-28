@@ -37,6 +37,7 @@ const noteContentScopedQuery = `query NoteContent($path: String!) {
 
 const updateNotesMutation = `mutation Update($input: UpdateNotesInput!) {
   updateNotes(input: $input) {
+    __typename
     ... on UpdateNotesSuccessPayload { paths }
     ... on UpdateNotesPatchNotFoundPayload { path find }
     ... on UpdateNotesHashMismatchPayload { path actualHash }
@@ -104,8 +105,41 @@ func (k *remoteKB) Patch(ctx context.Context, path, find, replace string) error 
 	})
 }
 
+// updateNotesResult mirrors the updateNotes union. All fields are optional so
+// that any discriminant variant populates exactly the fields it selects.
+type updateNotesResult struct {
+	Typename   string   `json:"__typename"`
+	Paths      []string `json:"paths"`     // UpdateNotesSuccessPayload
+	Path       string   `json:"path"`      // UpdateNotesPatchNotFoundPayload / UpdateNotesHashMismatchPayload
+	Find       string   `json:"find"`      // UpdateNotesPatchNotFoundPayload
+	ActualHash string   `json:"actualHash"` // UpdateNotesHashMismatchPayload
+	Message    string   `json:"message"`   // ErrorPayload
+}
+
 func (k *remoteKB) update(ctx context.Context, changes []map[string]any) error {
-	_, err := k.client.GraphQLScoped(ctx, k.token, updateNotesMutation,
+	raw, err := k.client.GraphQLScoped(ctx, k.token, updateNotesMutation,
 		map[string]any{"input": map[string]any{"changes": changes}})
-	return err
+	if err != nil {
+		return err
+	}
+	var data struct {
+		UpdateNotes updateNotesResult `json:"updateNotes"`
+	}
+	if uerr := json.Unmarshal(raw, &data); uerr != nil {
+		return uerr
+	}
+	r := data.UpdateNotes
+	switch r.Typename {
+	case "UpdateNotesSuccessPayload", "":
+		// "" keeps backward-compat with mocks that omit __typename.
+		return nil
+	case "UpdateNotesPatchNotFoundPayload":
+		return fmt.Errorf("patch find not found in %s: %q", r.Path, r.Find)
+	case "UpdateNotesHashMismatchPayload":
+		return fmt.Errorf("hash mismatch on %s (actual: %s)", r.Path, r.ActualHash)
+	case "ErrorPayload":
+		return fmt.Errorf("%s", r.Message)
+	default:
+		return fmt.Errorf("updateNotes: unexpected type %q", r.Typename)
+	}
 }
