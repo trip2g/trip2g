@@ -99,6 +99,12 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
 	tools := allowedToolDefs(in.Tools)
+	// permitted is the execution-time enforcement set: same as the advertised set.
+	// finish is always present (already guaranteed by allowedToolDefs).
+	permitted := make(map[string]bool, len(tools))
+	for _, td := range tools {
+		permitted[td.Name] = true
+	}
 
 	messages := []Message{
 		{
@@ -147,6 +153,19 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 				res.Answer = finishAnswer(call.Arguments)
 				res.Status = StatusCompleted
 				return res, nil
+			}
+			// Execution-time allowlist enforcement: reject any tool not in the
+			// permitted set, even if the model hallucinated or was injected.
+			if !permitted[call.Name] {
+				denial := "tool not permitted: " + call.Name
+				res.Denials = append(res.Denials, denial)
+				messages = append(messages, Message{
+					Role:       RoleTool,
+					ToolCallID: call.ID,
+					Name:       call.Name,
+					Content:    "error: " + denial,
+				})
+				continue
 			}
 			output := execTool(ctx, scoped, res, call)
 			messages = append(messages, Message{

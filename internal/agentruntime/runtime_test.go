@@ -297,6 +297,38 @@ func TestRun_ToolsAllowlistRestrictsLLMTools(t *testing.T) {
 	})
 }
 
+// (f2) Tools allowlist at execution time: when Input.Tools=["search","finish"],
+// a model call to write_note must be rejected (denial recorded, no change
+// persisted). This guards the trust boundary — allowlist at execution not just
+// advertisement. See SECURITY finding F3.
+func TestRun_ToolsAllowlistBlocksUndeclaredToolAtExecution(t *testing.T) {
+	kb := newMemKB(map[string]string{"notes/a.md": "hello"})
+
+	llm := &stubLLM{
+		script: []ChatResult{
+			// Model calls write_note even though it was NOT offered (jailbreak / hallucination).
+			{ToolCalls: []ToolCall{toolCall("1", toolWriteNote, map[string]any{"path": "notes/a.md", "content": "INJECTED"})}, PromptTokens: 10, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})}, PromptTokens: 10, CompletionTokens: 5},
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction:   "search only",
+		ReadPatterns:  []string{"notes/**"},
+		WritePatterns: []string{"notes/**"}, // write scope exists but tool not allowed
+		Model:         "m", MaxTokens: 10000, MaxSteps: 10,
+		Tools: []string{toolSearch, toolFinish}, // write_note not in allowlist
+		LLM:   llm, KB: kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	// The write must be denied, not executed.
+	require.Empty(t, res.Changes, "undeclared write_note call must produce no change")
+	require.Len(t, res.Denials, 1, "undeclared tool call must be recorded as denial")
+	// The original content must be untouched.
+	require.Equal(t, "hello", kb.docs["notes/a.md"], "KB must not be mutated by denied tool")
+}
+
 // (c) Hard-cap: the model loops forever (always a tool call). A low MaxTokens
 // with a high MaxSteps must stop the loop via the cap, not the step guard.
 func TestRun_TokenHardCapStopsLoop(t *testing.T) {
