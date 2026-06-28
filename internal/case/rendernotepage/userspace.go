@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/defaulttemplate"
 	"trip2g/internal/langdetect"
+	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 
 	"github.com/valyala/fasthttp"
@@ -22,12 +24,15 @@ import (
 // once in <head> without duplicating the inline settings object.
 type userSpaceHelper struct {
 	jsURLs          []string
+	cssURLs         []string
 	localeHashes    map[string]string
 	uiLang          string
 	devMode         bool
 	isAdmin         bool
 	title           string
 	note            *templateviews.Note
+	nvs             *templateviews.NVS
+	layoutSections  []model.LayoutSectionEntry
 	settingsEmitted bool
 }
 
@@ -133,24 +138,68 @@ func (h *userSpaceHelper) scripts() string {
 }
 
 // admin returns true when the current viewer is the site owner/admin.
-// Jet calls this via reflection for {{ current_user.is_admin() }}.
+// Jet calls this via reflection for {{ currentUser.IsAdmin() }}.
 func (h *userSpaceHelper) admin() bool {
 	return h.isAdmin
 }
 
-// jetMap returns the map stored in vars["default_template"].
-// Contains only template-chrome helpers (script injection).
-func (h *userSpaceHelper) jetMap() map[string]interface{} {
-	return map[string]interface{}{
-		"user_space_scripts": h.scripts,
+// dtCtx builds the minimal default-template Ctx needed to resolve and render
+// the site header/footer chrome for a custom layout.
+func (h *userSpaceHelper) dtCtx() *defaulttemplate.Ctx {
+	return &defaulttemplate.Ctx{
+		Note:           h.note,
+		Notes:          h.nvs,
+		LayoutSections: h.layoutSections,
 	}
 }
 
-// currentUserJetMap returns the map stored in vars["current_user"].
-// Layouts call {{ current_user.is_admin() }} to gate edit affordances.
+// header returns the standard site-header HTML (or "" when the page has no
+// header). Jet calls this for {{ defaultTemplate.Header() }}.
+func (h *userSpaceHelper) header() string {
+	return defaulttemplate.Header(h.dtCtx())
+}
+
+// footer returns the standard site-footer HTML (or "" when the page has no
+// footer). Jet calls this for {{ defaultTemplate.Footer() }}.
+func (h *userSpaceHelper) footer() string {
+	return defaulttemplate.Footer(h.dtCtx())
+}
+
+// styles returns <link> tags for the default-template stylesheet so a custom
+// layout embedding the standard chrome isn't unstyled. Reuses the existing
+// hashed served URL (renderlayout.Env.UserCSSURLs) — never a hardcoded hash.
+// Jet calls this for {{ defaultTemplate.Styles() }}.
+func (h *userSpaceHelper) styles() string {
+	var sb strings.Builder
+	for _, u := range h.cssURLs {
+		sb.WriteString(`<link rel="stylesheet" href="`)
+		sb.WriteString(html.EscapeString(u))
+		sb.WriteString(`">`)
+		sb.WriteByte('\n')
+	}
+	return sb.String()
+}
+
+// jetMap returns the map stored in vars["defaultTemplate"] (and its deprecated
+// vars["default_template"] alias). Holds template-chrome helpers: script
+// injection plus the standard header/footer/styles.
+func (h *userSpaceHelper) jetMap() map[string]interface{} {
+	return map[string]interface{}{
+		"UserSpaceScripts":   h.scripts,
+		"user_space_scripts": h.scripts, // deprecated alias
+		"Header":             h.header,
+		"Footer":             h.footer,
+		"Styles":             h.styles,
+	}
+}
+
+// currentUserJetMap returns the map stored in vars["currentUser"] (and its
+// deprecated vars["current_user"] alias). Layouts call IsAdmin() to gate edit
+// affordances.
 func (h *userSpaceHelper) currentUserJetMap() map[string]interface{} {
 	return map[string]interface{}{
-		"is_admin": h.admin,
+		"IsAdmin":  h.admin,
+		"is_admin": h.admin, // deprecated alias
 	}
 }
 
@@ -168,12 +217,14 @@ func buildUserSpaceHelper(
 ) *userSpaceHelper {
 	var (
 		jsURLs       []string
+		cssURLs      []string
 		localeHashes map[string]string
 		devMode      bool
 	)
 
 	if rlEnv, ok := env.(renderlayout.Env); ok {
 		jsURLs = rlEnv.UserJSURLs()
+		cssURLs = rlEnv.UserCSSURLs()
 		localeHashes = rlEnv.UserLocaleHashes()
 		devMode = rlEnv.IsDevMode()
 	}
@@ -183,5 +234,11 @@ func buildUserSpaceHelper(
 		string(ctx.Request.Header.Peek("Accept-Language")),
 	)
 
-	return newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
+	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
+	h.cssURLs = cssURLs
+	h.nvs = templateviews.NewNVS(resp.Notes, resp.DefaultVersion)
+	if resp.Notes != nil {
+		h.layoutSections = resp.Notes.LayoutSections
+	}
+	return h
 }

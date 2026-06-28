@@ -331,11 +331,17 @@ func renderLayout(
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
 
 	// Build the shared helper and expose two Jet namespaces:
-	//   default_template — template chrome: {{ default_template.user_space_scripts() }}
-	//   current_user     — viewer role:     {{ current_user.is_admin() }}
+	//   defaultTemplate — template chrome: {{ defaultTemplate.UserSpaceScripts() }}
+	//   currentUser     — viewer role:     {{ currentUser.IsAdmin() }}
+	// The snake_case keys are kept as deprecated aliases (the released kanban
+	// template still calls default_template.user_space_scripts()).
 	usHelper := buildUserSpaceHelper(ctx, env, resp)
-	vars["default_template"] = reflect.ValueOf(usHelper.jetMap())
-	vars["current_user"] = reflect.ValueOf(usHelper.currentUserJetMap())
+	defaultTemplateNS := reflect.ValueOf(usHelper.jetMap())
+	currentUserNS := reflect.ValueOf(usHelper.currentUserJetMap())
+	vars["defaultTemplate"] = defaultTemplateNS
+	vars["currentUser"] = currentUserNS
+	vars["default_template"] = defaultTemplateNS // deprecated alias
+	vars["current_user"] = currentUserNS         // deprecated alias
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {
