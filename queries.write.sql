@@ -934,8 +934,8 @@ delete from oidc_credentials where id = ?;
 -- ============================================
 
 -- name: InsertWebhook :one
-insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning *;
 
 -- name: UpdateWebhook :one
@@ -956,6 +956,9 @@ set url = coalesce(sqlc.narg(url), url),
     on_remove = coalesce(sqlc.narg(on_remove), on_remove),
     read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
     write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    transform_jsonnet = coalesce(sqlc.narg(transform_jsonnet), transform_jsonnet),
+    attach_notes = coalesce(sqlc.narg(attach_notes), attach_notes),
+    concurrency_mode = coalesce(sqlc.narg(concurrency_mode), concurrency_mode),
     updated_at = datetime('now')
 where id = sqlc.arg(id) and disabled_at is null
 returning *;
@@ -987,8 +990,8 @@ where id = ?;
 -- ============================================
 
 -- name: InsertCronWebhook :one
-insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, description, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning *;
 
 -- name: UpdateCronWebhook :one
@@ -1002,6 +1005,9 @@ set url = coalesce(sqlc.narg(url), url),
     max_retries = coalesce(sqlc.narg(max_retries), max_retries),
     read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
     write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    transform_jsonnet = coalesce(sqlc.narg(transform_jsonnet), transform_jsonnet),
+    attach_notes = coalesce(sqlc.narg(attach_notes), attach_notes),
+    concurrency_mode = coalesce(sqlc.narg(concurrency_mode), concurrency_mode),
     enabled = coalesce(sqlc.narg(enabled), enabled),
     description = coalesce(sqlc.narg(description), description),
     updated_at = datetime('now')

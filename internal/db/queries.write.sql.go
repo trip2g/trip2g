@@ -1093,25 +1093,28 @@ func (q *WriteQueries) InsertCronJobExecution(ctx context.Context, arg InsertCro
 
 const insertCronWebhook = `-- name: InsertCronWebhook :one
 
-insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, description, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type InsertCronWebhookParams struct {
-	Url            string     `json:"url"`
-	CronSchedule   string     `json:"cron_schedule"`
-	Instruction    string     `json:"instruction"`
-	Secret         string     `json:"secret"`
-	PassApiKey     bool       `json:"pass_api_key"`
-	TimeoutSeconds int64      `json:"timeout_seconds"`
-	MaxDepth       int64      `json:"max_depth"`
-	MaxRetries     int64      `json:"max_retries"`
-	NextRunAt      *time.Time `json:"next_run_at"`
-	ReadPatterns   string     `json:"read_patterns"`
-	WritePatterns  string     `json:"write_patterns"`
-	Description    string     `json:"description"`
-	CreatedBy      int64      `json:"created_by"`
+	Url              string     `json:"url"`
+	CronSchedule     string     `json:"cron_schedule"`
+	Instruction      string     `json:"instruction"`
+	Secret           string     `json:"secret"`
+	PassApiKey       bool       `json:"pass_api_key"`
+	TimeoutSeconds   int64      `json:"timeout_seconds"`
+	MaxDepth         int64      `json:"max_depth"`
+	MaxRetries       int64      `json:"max_retries"`
+	NextRunAt        *time.Time `json:"next_run_at"`
+	ReadPatterns     string     `json:"read_patterns"`
+	WritePatterns    string     `json:"write_patterns"`
+	TransformJsonnet string     `json:"transform_jsonnet"`
+	AttachNotes      string     `json:"attach_notes"`
+	ConcurrencyMode  string     `json:"concurrency_mode"`
+	Description      string     `json:"description"`
+	CreatedBy        int64      `json:"created_by"`
 }
 
 // ============================================
@@ -1130,6 +1133,9 @@ func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebh
 		arg.NextRunAt,
 		arg.ReadPatterns,
 		arg.WritePatterns,
+		arg.TransformJsonnet,
+		arg.AttachNotes,
+		arg.ConcurrencyMode,
 		arg.Description,
 		arg.CreatedBy,
 	)
@@ -2434,29 +2440,32 @@ func (q *WriteQueries) InsertWaitListTgBotRequest(ctx context.Context, arg Inser
 
 const insertWebhook = `-- name: InsertWebhook :one
 
-insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type InsertWebhookParams struct {
-	Url             string `json:"url"`
-	IncludePatterns string `json:"include_patterns"`
-	ExcludePatterns string `json:"exclude_patterns"`
-	Instruction     string `json:"instruction"`
-	Secret          string `json:"secret"`
-	MaxDepth        int64  `json:"max_depth"`
-	PassApiKey      bool   `json:"pass_api_key"`
-	IncludeContent  bool   `json:"include_content"`
-	TimeoutSeconds  int64  `json:"timeout_seconds"`
-	MaxRetries      int64  `json:"max_retries"`
-	Description     string `json:"description"`
-	OnCreate        bool   `json:"on_create"`
-	OnUpdate        bool   `json:"on_update"`
-	OnRemove        bool   `json:"on_remove"`
-	ReadPatterns    string `json:"read_patterns"`
-	WritePatterns   string `json:"write_patterns"`
-	CreatedBy       int64  `json:"created_by"`
+	Url              string `json:"url"`
+	IncludePatterns  string `json:"include_patterns"`
+	ExcludePatterns  string `json:"exclude_patterns"`
+	Instruction      string `json:"instruction"`
+	Secret           string `json:"secret"`
+	MaxDepth         int64  `json:"max_depth"`
+	PassApiKey       bool   `json:"pass_api_key"`
+	IncludeContent   bool   `json:"include_content"`
+	TimeoutSeconds   int64  `json:"timeout_seconds"`
+	MaxRetries       int64  `json:"max_retries"`
+	Description      string `json:"description"`
+	OnCreate         bool   `json:"on_create"`
+	OnUpdate         bool   `json:"on_update"`
+	OnRemove         bool   `json:"on_remove"`
+	ReadPatterns     string `json:"read_patterns"`
+	WritePatterns    string `json:"write_patterns"`
+	TransformJsonnet string `json:"transform_jsonnet"`
+	AttachNotes      string `json:"attach_notes"`
+	ConcurrencyMode  string `json:"concurrency_mode"`
+	CreatedBy        int64  `json:"created_by"`
 }
 
 // ============================================
@@ -2480,6 +2489,9 @@ func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParam
 		arg.OnRemove,
 		arg.ReadPatterns,
 		arg.WritePatterns,
+		arg.TransformJsonnet,
+		arg.AttachNotes,
+		arg.ConcurrencyMode,
 		arg.CreatedBy,
 	)
 	var i ChangeWebhook
@@ -3349,26 +3361,32 @@ set url = coalesce(?1, url),
     max_retries = coalesce(?7, max_retries),
     read_patterns = coalesce(?8, read_patterns),
     write_patterns = coalesce(?9, write_patterns),
-    enabled = coalesce(?10, enabled),
-    description = coalesce(?11, description),
+    transform_jsonnet = coalesce(?10, transform_jsonnet),
+    attach_notes = coalesce(?11, attach_notes),
+    concurrency_mode = coalesce(?12, concurrency_mode),
+    enabled = coalesce(?13, enabled),
+    description = coalesce(?14, description),
     updated_at = datetime('now')
-where id = ?12 and disabled_at is null
+where id = ?15 and disabled_at is null
 returning id, url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type UpdateCronWebhookParams struct {
-	Url            *string `json:"url"`
-	CronSchedule   *string `json:"cron_schedule"`
-	Instruction    *string `json:"instruction"`
-	PassApiKey     *bool   `json:"pass_api_key"`
-	TimeoutSeconds *int64  `json:"timeout_seconds"`
-	MaxDepth       *int64  `json:"max_depth"`
-	MaxRetries     *int64  `json:"max_retries"`
-	ReadPatterns   *string `json:"read_patterns"`
-	WritePatterns  *string `json:"write_patterns"`
-	Enabled        *bool   `json:"enabled"`
-	Description    *string `json:"description"`
-	ID             int64   `json:"id"`
+	Url              *string `json:"url"`
+	CronSchedule     *string `json:"cron_schedule"`
+	Instruction      *string `json:"instruction"`
+	PassApiKey       *bool   `json:"pass_api_key"`
+	TimeoutSeconds   *int64  `json:"timeout_seconds"`
+	MaxDepth         *int64  `json:"max_depth"`
+	MaxRetries       *int64  `json:"max_retries"`
+	ReadPatterns     *string `json:"read_patterns"`
+	WritePatterns    *string `json:"write_patterns"`
+	TransformJsonnet *string `json:"transform_jsonnet"`
+	AttachNotes      *string `json:"attach_notes"`
+	ConcurrencyMode  *string `json:"concurrency_mode"`
+	Enabled          *bool   `json:"enabled"`
+	Description      *string `json:"description"`
+	ID               int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebhookParams) (CronWebhook, error) {
@@ -3382,6 +3400,9 @@ func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebh
 		arg.MaxRetries,
 		arg.ReadPatterns,
 		arg.WritePatterns,
+		arg.TransformJsonnet,
+		arg.AttachNotes,
+		arg.ConcurrencyMode,
 		arg.Enabled,
 		arg.Description,
 		arg.ID,
@@ -4090,29 +4111,35 @@ set url = coalesce(?1, url),
     on_remove = coalesce(?14, on_remove),
     read_patterns = coalesce(?15, read_patterns),
     write_patterns = coalesce(?16, write_patterns),
+    transform_jsonnet = coalesce(?17, transform_jsonnet),
+    attach_notes = coalesce(?18, attach_notes),
+    concurrency_mode = coalesce(?19, concurrency_mode),
     updated_at = datetime('now')
-where id = ?17 and disabled_at is null
+where id = ?20 and disabled_at is null
 returning id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode
 `
 
 type UpdateWebhookParams struct {
-	Url             *string `json:"url"`
-	IncludePatterns *string `json:"include_patterns"`
-	ExcludePatterns *string `json:"exclude_patterns"`
-	Instruction     *string `json:"instruction"`
-	MaxDepth        *int64  `json:"max_depth"`
-	PassApiKey      *bool   `json:"pass_api_key"`
-	IncludeContent  *bool   `json:"include_content"`
-	TimeoutSeconds  *int64  `json:"timeout_seconds"`
-	MaxRetries      *int64  `json:"max_retries"`
-	Enabled         *bool   `json:"enabled"`
-	Description     *string `json:"description"`
-	OnCreate        *bool   `json:"on_create"`
-	OnUpdate        *bool   `json:"on_update"`
-	OnRemove        *bool   `json:"on_remove"`
-	ReadPatterns    *string `json:"read_patterns"`
-	WritePatterns   *string `json:"write_patterns"`
-	ID              int64   `json:"id"`
+	Url              *string `json:"url"`
+	IncludePatterns  *string `json:"include_patterns"`
+	ExcludePatterns  *string `json:"exclude_patterns"`
+	Instruction      *string `json:"instruction"`
+	MaxDepth         *int64  `json:"max_depth"`
+	PassApiKey       *bool   `json:"pass_api_key"`
+	IncludeContent   *bool   `json:"include_content"`
+	TimeoutSeconds   *int64  `json:"timeout_seconds"`
+	MaxRetries       *int64  `json:"max_retries"`
+	Enabled          *bool   `json:"enabled"`
+	Description      *string `json:"description"`
+	OnCreate         *bool   `json:"on_create"`
+	OnUpdate         *bool   `json:"on_update"`
+	OnRemove         *bool   `json:"on_remove"`
+	ReadPatterns     *string `json:"read_patterns"`
+	WritePatterns    *string `json:"write_patterns"`
+	TransformJsonnet *string `json:"transform_jsonnet"`
+	AttachNotes      *string `json:"attach_notes"`
+	ConcurrencyMode  *string `json:"concurrency_mode"`
+	ID               int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParams) (ChangeWebhook, error) {
@@ -4133,6 +4160,9 @@ func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParam
 		arg.OnRemove,
 		arg.ReadPatterns,
 		arg.WritePatterns,
+		arg.TransformJsonnet,
+		arg.AttachNotes,
+		arg.ConcurrencyMode,
 		arg.ID,
 	)
 	var i ChangeWebhook
