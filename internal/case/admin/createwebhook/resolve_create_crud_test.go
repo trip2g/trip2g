@@ -1,0 +1,59 @@
+package createwebhook_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"trip2g/internal/case/admin/createwebhook"
+	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
+	"trip2g/internal/usertoken"
+)
+
+type mockEnv struct {
+	inserted *db.InsertWebhookParams
+}
+
+func (m *mockEnv) CurrentAdminUserToken(_ context.Context) (*usertoken.Data, error) {
+	return &usertoken.Data{ID: 1, Role: "admin"}, nil
+}
+
+func (m *mockEnv) InsertWebhook(_ context.Context, params db.InsertWebhookParams) (db.ChangeWebhook, error) {
+	m.inserted = &params
+	return db.ChangeWebhook{ID: 7}, nil
+}
+
+func TestResolve_PersistsConcurrencyAndAttach(t *testing.T) {
+	env := &mockEnv{}
+	out, err := createwebhook.Resolve(context.Background(), env, model.ChangeWebhookCreateInput{
+		URL:              "https://example.com/h",
+		IncludePatterns:  []string{"boards/sprint.md"},
+		AttachNotes:      []string{"boards/**", "roles/**"},
+		TransformJsonnet: ptr.To("{ x: 1 }"),
+		ConcurrencyMode:  ptr.To("skip"),
+	})
+	require.NoError(t, err)
+	_, isErr := out.(*model.ErrorPayload)
+	require.False(t, isErr)
+	require.NotNil(t, env.inserted)
+	require.Equal(t, "skip", env.inserted.ConcurrencyMode)
+	require.Equal(t, `["boards/**","roles/**"]`, env.inserted.AttachNotes)
+	require.Equal(t, "{ x: 1 }", env.inserted.TransformJsonnet)
+}
+
+func TestResolve_RejectsBadConcurrencyMode(t *testing.T) {
+	env := &mockEnv{}
+	out, err := createwebhook.Resolve(context.Background(), env, model.ChangeWebhookCreateInput{
+		URL:             "https://example.com/h",
+		IncludePatterns: []string{"boards/sprint.md"},
+		ConcurrencyMode: ptr.To("bogus"),
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok)
+	require.Equal(t, "concurrencyMode", ep.ByFields[0].Name)
+	require.Nil(t, env.inserted, "must not insert on invalid concurrency_mode")
+}

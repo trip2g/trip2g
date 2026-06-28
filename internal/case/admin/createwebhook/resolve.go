@@ -22,6 +22,17 @@ type Env interface {
 type Input = model.ChangeWebhookCreateInput
 type Payload = model.ChangeWebhookCreateOrErrorPayload
 
+func validateConcurrencyMode(mode string) *model.ErrorPayload {
+	switch mode {
+	case "allow_overlap", "skip", "queue_one":
+		return nil
+	default:
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
+		}}
+	}
+}
+
 func validateInput(i *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
 		ozzo.Field(&i.URL, ozzo.Required, is.URL),
@@ -103,6 +114,28 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
 	}
 
+	attachNotes := input.AttachNotes
+	if attachNotes == nil {
+		attachNotes = []string{}
+	}
+	attachJSON, err := json.Marshal(attachNotes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal attach_notes: %w", err)
+	}
+
+	transformJsonnet := ""
+	if input.TransformJsonnet != nil {
+		transformJsonnet = *input.TransformJsonnet
+	}
+
+	concurrencyMode := "allow_overlap"
+	if input.ConcurrencyMode != nil {
+		concurrencyMode = *input.ConcurrencyMode
+	}
+	if cErr := validateConcurrencyMode(concurrencyMode); cErr != nil {
+		return cErr, nil
+	}
+
 	// Set defaults for optional fields.
 	maxDepth := int64(1)
 	if input.MaxDepth != nil {
@@ -165,9 +198,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		OnCreate:        onCreate,
 		OnUpdate:        onUpdate,
 		OnRemove:        onRemove,
-		ReadPatterns:    string(readJSON),
-		WritePatterns:   string(writeJSON),
-		CreatedBy:       int64(token.ID),
+		ReadPatterns:     string(readJSON),
+		WritePatterns:    string(writeJSON),
+		TransformJsonnet: transformJsonnet,
+		AttachNotes:      string(attachJSON),
+		ConcurrencyMode:  concurrencyMode,
+		CreatedBy:        int64(token.ID),
 	}
 
 	webhook, err := env.InsertWebhook(ctx, params)
