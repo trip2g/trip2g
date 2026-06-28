@@ -69,3 +69,12 @@ func TestParseAgentResponse_WithExpectedHash(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, &hash, resp.Changes[0].ExpectedHash)
 }
+
+func TestParseAgentResponse_ParsesSpend(t *testing.T) {
+	body := []byte(`{"status":"ok","tokens_used":1234,"steps":5,"changes":[]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, 1234, resp.TokensUsed)
+	require.Equal(t, 5, resp.Steps)
+}

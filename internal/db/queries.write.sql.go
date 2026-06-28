@@ -3625,7 +3625,7 @@ func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebh
 
 const updateCronWebhookDeliveryResult = `-- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
     completed_at = datetime('now')
 where id = ?
 `
@@ -3634,6 +3634,8 @@ type UpdateCronWebhookDeliveryResultParams struct {
 	Status         string `json:"status"`
 	ResponseStatus *int64 `json:"response_status"`
 	DurationMs     *int64 `json:"duration_ms"`
+	TokensUsed     *int64 `json:"tokens_used"`
+	Steps          *int64 `json:"steps"`
 	ID             int64  `json:"id"`
 }
 
@@ -3642,6 +3644,8 @@ func (q *WriteQueries) UpdateCronWebhookDeliveryResult(ctx context.Context, arg 
 		arg.Status,
 		arg.ResponseStatus,
 		arg.DurationMs,
+		arg.TokensUsed,
+		arg.Steps,
 		arg.ID,
 	)
 	return err
@@ -4387,7 +4391,7 @@ func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParam
 
 const updateWebhookDeliveryResult = `-- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
     completed_at = datetime('now')
 where id = ?
 `
@@ -4396,6 +4400,8 @@ type UpdateWebhookDeliveryResultParams struct {
 	Status         string `json:"status"`
 	ResponseStatus *int64 `json:"response_status"`
 	DurationMs     *int64 `json:"duration_ms"`
+	TokensUsed     *int64 `json:"tokens_used"`
+	Steps          *int64 `json:"steps"`
 	ID             int64  `json:"id"`
 }
 
@@ -4404,6 +4410,8 @@ func (q *WriteQueries) UpdateWebhookDeliveryResult(ctx context.Context, arg Upda
 		arg.Status,
 		arg.ResponseStatus,
 		arg.DurationMs,
+		arg.TokensUsed,
+		arg.Steps,
 		arg.ID,
 	)
 	return err

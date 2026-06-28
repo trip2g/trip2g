@@ -232,11 +232,24 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		return nil
 	}
 
+	// Parse fleet-reported spend (tokens/steps) from the response body.
+	var tokensUsed, steps *int64
+	if resp, perr := webhookutil.ParseAgentResponse(result.Body); perr == nil && resp != nil {
+		if resp.TokensUsed > 0 {
+			tokensUsed = ptr.To(int64(resp.TokensUsed))
+		}
+		if resp.Steps > 0 {
+			steps = ptr.To(int64(resp.Steps))
+		}
+	}
+
 	// Mark as success.
 	updateErr := env.UpdateWebhookDeliveryResult(ctx, db.UpdateWebhookDeliveryResultParams{
 		Status:         "success",
 		ResponseStatus: ptr.To(int64(result.StatusCode)),
 		DurationMs:     ptr.To(result.DurationMs),
+		TokensUsed:     tokensUsed,
+		Steps:          steps,
 		ID:             params.DeliveryID,
 	})
 	if updateErr != nil {

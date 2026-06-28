@@ -9,9 +9,11 @@ import (
 
 // AgentResponse is the expected format of a webhook agent's response body.
 type AgentResponse struct {
-	Status  string        `json:"status"`
-	Message string        `json:"message"`
-	Changes []AgentChange `json:"changes"`
+	Status     string        `json:"status"`
+	Message    string        `json:"message"`
+	Changes    []AgentChange `json:"changes"`
+	TokensUsed int           `json:"tokens_used"`
+	Steps      int           `json:"steps"`
 }
 
 // AgentChange represents a single file change from an agent.

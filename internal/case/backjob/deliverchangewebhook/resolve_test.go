@@ -297,3 +297,27 @@ func TestResolve_TransformJsonnet_AppliedAndSigned(t *testing.T) {
 	// HMAC must cover the TRANSFORMED bytes the server actually received.
 	require.Equal(t, webhookutil.SignHMAC(body, "hook-secret"), gotSig)
 }
+
+func TestResolve_PersistsSpend(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","tokens_used":321,"steps":3,"changes":[]}`))
+	}))
+	defer srv.Close()
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env := baseEnv(t, srv.URL, nil)
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 1, Attempt: 1})
+	require.NoError(t, err)
+	require.Equal(t, "success", got.Status)
+	require.NotNil(t, got.TokensUsed)
+	require.EqualValues(t, 321, *got.TokensUsed)
+	require.NotNil(t, got.Steps)
+	require.EqualValues(t, 3, *got.Steps)
+}

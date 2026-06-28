@@ -1015,7 +1015,7 @@ where status = 'running'
 
 -- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
     completed_at = datetime('now')
 where id = ?;
 
@@ -1103,7 +1103,7 @@ where status = 'running'
 
 -- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
     completed_at = datetime('now')
 where id = ?;
 
