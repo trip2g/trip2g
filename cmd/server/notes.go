@@ -129,8 +129,8 @@ func (a *app) NoteVersionActor(ctx context.Context) model.NoteActor {
 		actor.UserID = &uid
 	}
 
-	if req.ApiKeyID != nil {
-		keyID := *req.ApiKeyID
+	if req.APIKeyID != nil {
+		keyID := *req.APIKeyID
 		actor.APIKeyID = &keyID
 	}
 

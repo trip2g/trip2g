@@ -53,11 +53,11 @@ type Request struct {
 	// authenticating MCP API key. Zero when the actor is unknown.
 	AdminActorUserID int
 
-	// ApiKeyID is the id of the API key that authenticated this request, set by
+	// APIKeyID is the id of the API key that authenticated this request, set by
 	// checkapikey for real (DB-backed) keys. nil when the request was not
 	// api-key-authed (user session, admin bypass, or virtual webhook token).
 	// Used to record who pushed a note version (created_by_api_key_id).
-	ApiKeyID *int64
+	APIKeyID *int64
 
 	// Client is the trimmed value of the X-trip2g-client request header, set
 	// when the request is built from the fasthttp context. Empty string when
@@ -84,7 +84,7 @@ func (c *Request) Reset() {
 	c.WebhookWritePatterns = nil
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
-	c.ApiKeyID = nil
+	c.APIKeyID = nil
 	c.Client = ""
 	c.FederatedSubgraphs = nil
 	c.federatedScoped = false
@@ -300,8 +300,8 @@ func (c *Request) Snapshot() *Request {
 	}
 
 	var apiKeyID *int64
-	if c.ApiKeyID != nil {
-		v := *c.ApiKeyID
+	if c.APIKeyID != nil {
+		v := *c.APIKeyID
 		apiKeyID = &v
 	}
 
@@ -317,7 +317,7 @@ func (c *Request) Snapshot() *Request {
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
 		SkipWebhooks:          c.SkipWebhooks,
-		ApiKeyID:              apiKeyID,
+		APIKeyID:              apiKeyID,
 		Client:                c.Client,
 		FederatedSubgraphs:    federatedSubgraphs,
 		federatedScoped:       c.federatedScoped,
