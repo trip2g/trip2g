@@ -38,6 +38,9 @@ var _ delivercronwebhook.Env = &EnvMock{}
 //			InsertWebhookDeliveryLogFunc: func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error {
 //				panic("mock out the InsertWebhookDeliveryLog method")
 //			},
+//			LatestNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LatestNoteViews method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -74,6 +77,9 @@ type EnvMock struct {
 
 	// InsertWebhookDeliveryLogFunc mocks the InsertWebhookDeliveryLog method.
 	InsertWebhookDeliveryLogFunc func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
+
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *model.NoteViews
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -127,6 +133,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertWebhookDeliveryLogParams
 		}
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
@@ -156,6 +165,7 @@ type EnvMock struct {
 	lockGetSecretValues                 sync.RWMutex
 	lockInsertNote                      sync.RWMutex
 	lockInsertWebhookDeliveryLog        sync.RWMutex
+	lockLatestNoteViews                 sync.RWMutex
 	lockLogger                          sync.RWMutex
 	lockMarkCronWebhookDeliveryRunning  sync.RWMutex
 	lockShortAPITokenSecret             sync.RWMutex
@@ -340,6 +350,33 @@ func (mock *EnvMock) InsertWebhookDeliveryLogCalls() []struct {
 	mock.lockInsertWebhookDeliveryLog.RLock()
 	calls = mock.calls.InsertWebhookDeliveryLog
 	mock.lockInsertWebhookDeliveryLog.RUnlock()
+	return calls
+}
+
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *model.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
+}
+
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
 	return calls
 }
 

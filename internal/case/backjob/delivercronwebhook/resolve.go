@@ -45,6 +45,7 @@ type Env interface {
 	UpdateCronWebhookDeliveryResult(ctx context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
+	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverCronWebhook(ctx context.Context, params DeliverCronParams) error
 	ShortAPITokenSecret() string
 	WebhookHTTPClient() *fasthttp.Client
@@ -341,6 +342,9 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 		return nil
 	}
 
+	// Read the current note views once; needed for patch operations.
+	nvs := env.LatestNoteViews()
+
 	for _, change := range agentResp.Changes {
 		// Deny-all when write_patterns is empty: a cron webhook delivery is always a
 		// scoped context, so an empty list means "no writes permitted" rather
@@ -349,9 +353,35 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
 		}
 
+		var content string
+		if change.Kind == "patch" {
+			// Apply find/replace against the note's current content.
+			// Matches updateNotes Patch semantics: find must be present exactly once.
+			if nvs == nil {
+				return fmt.Errorf("note not found for patch: %s", change.Path)
+			}
+			nv := nvs.PathMap[change.Path]
+			if nv == nil {
+				return fmt.Errorf("note not found for patch: %s", change.Path)
+			}
+			current := string(nv.Content)
+			idx := strings.Index(current, change.Find)
+			if idx == -1 {
+				return fmt.Errorf("patch find string not found in %s", change.Path)
+			}
+			// Reject ambiguous finds (multiple occurrences) to match updateNotes Patch semantics.
+			if strings.Contains(current[idx+len(change.Find):], change.Find) {
+				return fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
+			}
+			content = current[:idx] + change.Replace + current[idx+len(change.Find):]
+		} else {
+			// Kind=="" or "upsert": upsert with provided content.
+			content = change.Content
+		}
+
 		_, insertErr := env.InsertNote(ctx, model.RawNote{
 			Path:    change.Path,
-			Content: change.Content,
+			Content: content,
 		})
 		if insertErr != nil {
 			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)

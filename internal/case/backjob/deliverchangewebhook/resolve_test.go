@@ -400,3 +400,94 @@ func TestResolve_AgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
 	require.True(t, insertCalled, "InsertNote must be called when path matches write_patterns")
 	require.Equal(t, "success", got.Status)
 }
+
+// F8: patch-kind change must apply find→replace to existing note content, not overwrite with empty string.
+func TestResolve_AgentChanges_PatchKind_FindReplace(t *testing.T) {
+	const noteContent = "# Todo\nhello world\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","kind":"patch","find":"hello","replace":"HELLO"}]}`))
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.PathMap["notes/todo.md"] = &model.NoteView{Path: "notes/todo.md", Content: []byte(noteContent)}
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		return nvs, nil
+	}
+
+	var insertedNote model.RawNote
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+		insertedNote = note
+		return 1, nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 20, Attempt: 1})
+	require.NoError(t, err)
+	require.Equal(t, "success", got.Status)
+	require.Equal(t, "notes/todo.md", insertedNote.Path)
+	require.Equal(t, "# Todo\nHELLO world\n", insertedNote.Content, "patch must replace find→replace in existing content, not empty it")
+}
+
+// F8: patch-kind change with a find string absent from the note must error without writing.
+func TestResolve_AgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
+	const noteContent = "# Todo\nhello world\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","kind":"patch","find":"MISSING","replace":"X"}]}`))
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.PathMap["notes/todo.md"] = &model.NoteView{Path: "notes/todo.md", Content: []byte(noteContent)}
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			MaxRetries:     1,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 0, nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 21, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, insertCalled, "InsertNote must not be called when patch find string is absent")
+	require.Equal(t, "failed", got.Status, "delivery must be marked failed when patch find is missing")
+}
