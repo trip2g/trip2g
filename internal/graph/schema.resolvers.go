@@ -419,6 +419,13 @@ func (r *adminChangeWebhookResolver) WritePatterns(ctx context.Context, obj *db.
 	return patterns, err
 }
 
+// AttachNotes is the resolver for the attachNotes field.
+func (r *adminChangeWebhookResolver) AttachNotes(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.AttachNotes), &patterns)
+	return patterns, err
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminChangeWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminChangeWebhookDeliveriesConnection) ([]db.ChangeWebhookDelivery, error) {
 	return r.env(ctx).ListWebhookDeliveries(ctx, db.ListWebhookDeliveriesParams{
@@ -605,6 +612,13 @@ func (r *adminCronWebhookResolver) ReadPatterns(ctx context.Context, obj *db.Cro
 func (r *adminCronWebhookResolver) WritePatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
 	var patterns []string
 	err := json.Unmarshal([]byte(obj.WritePatterns), &patterns)
+	return patterns, err
+}
+
+// AttachNotes is the resolver for the attachNotes field.
+func (r *adminCronWebhookResolver) AttachNotes(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.AttachNotes), &patterns)
 	return patterns, err
 }
 

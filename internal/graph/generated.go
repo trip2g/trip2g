@@ -246,6 +246,8 @@ type AdminChangeWebhookResolver interface {
 
 	ReadPatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error)
 	WritePatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error)
+
+	AttachNotes(ctx context.Context, obj *db.ChangeWebhook) ([]string, error)
 }
 type AdminChangeWebhookDeliveriesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminChangeWebhookDeliveriesConnection) ([]db.ChangeWebhookDelivery, error)
@@ -294,6 +296,8 @@ type AdminCronWebhookResolver interface {
 
 	ReadPatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error)
 	WritePatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error)
+
+	AttachNotes(ctx context.Context, obj *db.CronWebhook) ([]string, error)
 
 	CreatedBy(ctx context.Context, obj *db.CronWebhook) (*db.User, error)
 	LastDeliveryAt(ctx context.Context, obj *db.CronWebhook) (*time.Time, error)
@@ -5871,6 +5875,93 @@ func (ec *executionContext) fieldContext_AdminChangeWebhook_writePatterns(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminChangeWebhook_transformJsonnet(ctx context.Context, field graphql.CollectedField, obj *db.ChangeWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminChangeWebhook_transformJsonnet,
+		func(ctx context.Context) (any, error) {
+			return obj.TransformJsonnet, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminChangeWebhook_transformJsonnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminChangeWebhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminChangeWebhook_attachNotes(ctx context.Context, field graphql.CollectedField, obj *db.ChangeWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminChangeWebhook_attachNotes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminChangeWebhook().AttachNotes(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminChangeWebhook_attachNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminChangeWebhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminChangeWebhook_concurrencyMode(ctx context.Context, field graphql.CollectedField, obj *db.ChangeWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminChangeWebhook_concurrencyMode,
+		func(ctx context.Context) (any, error) {
+			return obj.ConcurrencyMode, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminChangeWebhook_concurrencyMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminChangeWebhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminChangeWebhookDeliveriesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminChangeWebhookDeliveriesConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6220,6 +6311,12 @@ func (ec *executionContext) fieldContext_AdminChangeWebhooksConnection_nodes(_ c
 				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminChangeWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminChangeWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminChangeWebhook_concurrencyMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
@@ -8133,6 +8230,93 @@ func (ec *executionContext) fieldContext_AdminCronWebhook_writePatterns(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminCronWebhook_transformJsonnet(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCronWebhook_transformJsonnet,
+		func(ctx context.Context) (any, error) {
+			return obj.TransformJsonnet, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCronWebhook_transformJsonnet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronWebhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronWebhook_attachNotes(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCronWebhook_attachNotes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminCronWebhook().AttachNotes(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCronWebhook_attachNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronWebhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronWebhook_concurrencyMode(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCronWebhook_concurrencyMode,
+		func(ctx context.Context) (any, error) {
+			return obj.ConcurrencyMode, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCronWebhook_concurrencyMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronWebhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminCronWebhook_nextRunAt(ctx context.Context, field graphql.CollectedField, obj *db.CronWebhook) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8621,6 +8805,12 @@ func (ec *executionContext) fieldContext_AdminCronWebhooksConnection_nodes(_ con
 				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminCronWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminCronWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminCronWebhook_concurrencyMode(ctx, field)
 			case "nextRunAt":
 				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
 			case "createdAt":
@@ -20887,6 +21077,12 @@ func (ec *executionContext) fieldContext_AdminQuery_changeWebhook(ctx context.Co
 				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminChangeWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminChangeWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminChangeWebhook_concurrencyMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
@@ -21036,6 +21232,12 @@ func (ec *executionContext) fieldContext_AdminQuery_cronWebhook(ctx context.Cont
 				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminCronWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminCronWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminCronWebhook_concurrencyMode(ctx, field)
 			case "nextRunAt":
 				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
 			case "createdAt":
@@ -26437,6 +26639,12 @@ func (ec *executionContext) fieldContext_ChangeWebhookCreatePayload_webhook(_ co
 				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminChangeWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminChangeWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminChangeWebhook_concurrencyMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
@@ -26572,6 +26780,12 @@ func (ec *executionContext) fieldContext_ChangeWebhookRegenerateSecretPayload_we
 				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminChangeWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminChangeWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminChangeWebhook_concurrencyMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
@@ -26678,6 +26892,12 @@ func (ec *executionContext) fieldContext_ChangeWebhookUpdatePayload_webhook(_ co
 				return ec.fieldContext_AdminChangeWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminChangeWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminChangeWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminChangeWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminChangeWebhook_concurrencyMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminChangeWebhook", field.Name)
 		},
@@ -27041,6 +27261,12 @@ func (ec *executionContext) fieldContext_CreateCronWebhookPayload_cronWebhook(_ 
 				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminCronWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminCronWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminCronWebhook_concurrencyMode(ctx, field)
 			case "nextRunAt":
 				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
 			case "createdAt":
@@ -34213,6 +34439,12 @@ func (ec *executionContext) fieldContext_RegenerateCronWebhookSecretPayload_cron
 				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminCronWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminCronWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminCronWebhook_concurrencyMode(ctx, field)
 			case "nextRunAt":
 				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
 			case "createdAt":
@@ -37748,6 +37980,12 @@ func (ec *executionContext) fieldContext_UpdateCronWebhookPayload_cronWebhook(_ 
 				return ec.fieldContext_AdminCronWebhook_readPatterns(ctx, field)
 			case "writePatterns":
 				return ec.fieldContext_AdminCronWebhook_writePatterns(ctx, field)
+			case "transformJsonnet":
+				return ec.fieldContext_AdminCronWebhook_transformJsonnet(ctx, field)
+			case "attachNotes":
+				return ec.fieldContext_AdminCronWebhook_attachNotes(ctx, field)
+			case "concurrencyMode":
+				return ec.fieldContext_AdminCronWebhook_concurrencyMode(ctx, field)
 			case "nextRunAt":
 				return ec.fieldContext_AdminCronWebhook_nextRunAt(ctx, field)
 			case "createdAt":
@@ -41879,7 +42117,7 @@ func (ec *executionContext) unmarshalInputChangeWebhookCreateInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"url", "includePatterns", "excludePatterns", "instruction", "secret", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
+	fieldsInOrder := [...]string{"url", "includePatterns", "excludePatterns", "instruction", "secret", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns", "transformJsonnet", "attachNotes", "concurrencyMode"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -41998,6 +42236,27 @@ func (ec *executionContext) unmarshalInputChangeWebhookCreateInput(ctx context.C
 				return it, err
 			}
 			it.WritePatterns = data
+		case "transformJsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transformJsonnet"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TransformJsonnet = data
+		case "attachNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachNotes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachNotes = data
+		case "concurrencyMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyMode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyMode = data
 		}
 	}
 
@@ -42065,7 +42324,7 @@ func (ec *executionContext) unmarshalInputChangeWebhookUpdateInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "url", "includePatterns", "excludePatterns", "instruction", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "enabled", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns"}
+	fieldsInOrder := [...]string{"id", "url", "includePatterns", "excludePatterns", "instruction", "maxDepth", "passApiKey", "includeContent", "timeoutSeconds", "maxRetries", "enabled", "description", "onCreate", "onUpdate", "onRemove", "readPatterns", "writePatterns", "transformJsonnet", "attachNotes", "concurrencyMode"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42191,6 +42450,27 @@ func (ec *executionContext) unmarshalInputChangeWebhookUpdateInput(ctx context.C
 				return it, err
 			}
 			it.WritePatterns = data
+		case "transformJsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transformJsonnet"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TransformJsonnet = data
+		case "attachNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachNotes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachNotes = data
+		case "concurrencyMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyMode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyMode = data
 		}
 	}
 
@@ -42326,7 +42606,7 @@ func (ec *executionContext) unmarshalInputCreateCronWebhookInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"url", "cronSchedule", "instruction", "secret", "passApiKey", "timeoutSeconds", "maxDepth", "maxRetries", "enabled", "description", "readPatterns", "writePatterns"}
+	fieldsInOrder := [...]string{"url", "cronSchedule", "instruction", "secret", "passApiKey", "timeoutSeconds", "maxDepth", "maxRetries", "enabled", "description", "readPatterns", "writePatterns", "transformJsonnet", "attachNotes", "concurrencyMode"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -42417,6 +42697,27 @@ func (ec *executionContext) unmarshalInputCreateCronWebhookInput(ctx context.Con
 				return it, err
 			}
 			it.WritePatterns = data
+		case "transformJsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transformJsonnet"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TransformJsonnet = data
+		case "attachNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachNotes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachNotes = data
+		case "concurrencyMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyMode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyMode = data
 		}
 	}
 
@@ -45606,7 +45907,7 @@ func (ec *executionContext) unmarshalInputUpdateCronWebhookInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "url", "cronSchedule", "instruction", "passApiKey", "timeoutSeconds", "maxDepth", "maxRetries", "enabled", "description", "readPatterns", "writePatterns"}
+	fieldsInOrder := [...]string{"id", "url", "cronSchedule", "instruction", "passApiKey", "timeoutSeconds", "maxDepth", "maxRetries", "enabled", "description", "readPatterns", "writePatterns", "transformJsonnet", "attachNotes", "concurrencyMode"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -45697,6 +45998,27 @@ func (ec *executionContext) unmarshalInputUpdateCronWebhookInput(ctx context.Con
 				return it, err
 			}
 			it.WritePatterns = data
+		case "transformJsonnet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transformJsonnet"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TransformJsonnet = data
+		case "attachNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachNotes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachNotes = data
+		case "concurrencyMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyMode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyMode = data
 		}
 	}
 
@@ -51247,6 +51569,52 @@ func (ec *executionContext) _AdminChangeWebhook(ctx context.Context, sel ast.Sel
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "transformJsonnet":
+			out.Values[i] = ec._AdminChangeWebhook_transformJsonnet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "attachNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminChangeWebhook_attachNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "concurrencyMode":
+			out.Values[i] = ec._AdminChangeWebhook_concurrencyMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -52614,6 +52982,52 @@ func (ec *executionContext) _AdminCronWebhook(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "transformJsonnet":
+			out.Values[i] = ec._AdminCronWebhook_transformJsonnet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "attachNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronWebhook_attachNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "concurrencyMode":
+			out.Values[i] = ec._AdminCronWebhook_concurrencyMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "nextRunAt":
 			out.Values[i] = ec._AdminCronWebhook_nextRunAt(ctx, field, obj)
 		case "createdAt":
