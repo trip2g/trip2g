@@ -342,7 +342,10 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 	}
 
 	for _, change := range agentResp.Changes {
-		if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
+		// Deny-all when write_patterns is empty: a cron webhook delivery is always a
+		// scoped context, so an empty list means "no writes permitted" rather
+		// than "allow all". Also deny on no-match when non-empty.
+		if len(writePatterns) == 0 || !webhookutil.MatchesAny(change.Path, writePatterns) {
 			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
 		}
 

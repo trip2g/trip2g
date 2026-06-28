@@ -109,6 +109,82 @@ func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {
 	require.False(t, hasSecrets, "secrets field should be omitted when no secrets exist")
 }
 
+// F2: applyCronAgentChanges with empty write_patterns must deny all writes (was: allow all).
+func TestResolve_CronAgentChanges_EmptyWritePatterns_Denied(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"any.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	// WritePatterns: "[]" → parsed as empty slice → must deny.
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			MaxRetries:     1,
+			WritePatterns:  "[]",
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 0, nil
+	}
+
+	var got db.UpdateCronWebhookDeliveryResultParams
+	env.UpdateCronWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 10, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, insertCalled, "InsertNote must not be called when write_patterns is empty (scoped deny-all)")
+	require.Equal(t, "failed", got.Status, "delivery must be marked failed when agent tries to write with empty write_patterns")
+}
+
+// F2: applyCronAgentChanges with matching write_patterns still allows writes.
+func TestResolve_CronAgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 1, nil
+	}
+
+	var got db.UpdateCronWebhookDeliveryResultParams
+	env.UpdateCronWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 11, Attempt: 1})
+	require.NoError(t, err)
+	require.True(t, insertCalled, "InsertNote must be called when path matches write_patterns")
+	require.Equal(t, "success", got.Status)
+}
+
 func TestResolve_CronTransformJsonnet_AppliedAndSigned(t *testing.T) {
 	var body []byte
 	var gotSig string

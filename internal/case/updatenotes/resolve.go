@@ -31,7 +31,17 @@ func hashContent(content []byte) string {
 }
 
 func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
-	if wp := appreq.WebhookWritePatterns(ctx); len(wp) > 0 && !webhookutil.MatchesAny(path, wp) {
+	wp := appreq.WebhookWritePatterns(ctx)
+	// Scoped-token requests (fleet calls via shortapitoken): deny-all when
+	// write_patterns is empty, and deny on no-match when non-empty.
+	// Unscoped/admin requests keep the legacy behaviour: empty = allow all.
+	if appreq.WebhookDeliveryKind(ctx) != "" {
+		if len(wp) == 0 || !webhookutil.MatchesAny(path, wp) {
+			return &model.ErrorPayload{Message: "write denied for path: " + path}
+		}
+		return nil
+	}
+	if len(wp) > 0 && !webhookutil.MatchesAny(path, wp) {
 		return &model.ErrorPayload{Message: "write denied for path: " + path}
 	}
 	return nil

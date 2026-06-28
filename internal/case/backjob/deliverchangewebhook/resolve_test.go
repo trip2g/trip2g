@@ -321,3 +321,82 @@ func TestResolve_PersistsSpend(t *testing.T) {
 	require.NotNil(t, got.Steps)
 	require.EqualValues(t, 3, *got.Steps)
 }
+
+// F2: applyAgentChanges with empty write_patterns must deny all writes (was: allow all).
+func TestResolve_AgentChanges_EmptyWritePatterns_Denied(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"any.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	// WritePatterns: "[]" → parsed as empty slice → must deny.
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			MaxRetries:     1,
+			WritePatterns:  "[]",
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 0, nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 10, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, insertCalled, "InsertNote must not be called when write_patterns is empty (scoped deny-all)")
+	require.Equal(t, "failed", got.Status, "delivery must be marked failed when agent tries to write with empty write_patterns")
+}
+
+// F2: applyAgentChanges with matching write_patterns still allows writes.
+func TestResolve_AgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 1, nil
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		return model.NewNoteViews(), nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 11, Attempt: 1})
+	require.NoError(t, err)
+	require.True(t, insertCalled, "InsertNote must be called when path matches write_patterns")
+	require.Equal(t, "success", got.Status)
+}
