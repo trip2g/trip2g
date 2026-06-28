@@ -137,7 +137,15 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	result := webhookutil.Deliver(env.WebhookHTTPClient(), wh.Url, payloadBytes, headers, timeout)
 
 	// Save delivery log.
-	requestBodyStr := string(payloadBytes)
+	// Persist a redacted copy: never log the scoped token or secret values.
+	redacted := payload
+	redacted.APIToken = ""
+	redacted.Secrets = nil
+	redactedBytes, redErr := json.Marshal(redacted)
+	if redErr != nil {
+		redactedBytes = []byte("{}")
+	}
+	requestBodyStr := string(redactedBytes)
 	logParams := db.InsertWebhookDeliveryLogParams{
 		DeliveryID:  params.DeliveryID,
 		Kind:        "cron",

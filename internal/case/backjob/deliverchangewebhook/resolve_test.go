@@ -124,6 +124,37 @@ func TestResolve_TokenTTLHasNoSixtyMinuteFloor(t *testing.T) {
 	require.Less(t, tokenLifetimeSeconds(t, tok), int64(300), "60-min floor must be gone; TTL ~= timeout + margin")
 }
 
+func TestResolve_LoggedRequestBodyRedactsTokenAndSecrets(t *testing.T) {
+	var httpBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httpBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, map[string]string{"auth_token": "tok-abc"})
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{ID: id, Url: srv.URL, TimeoutSeconds: 10, PassApiKey: true, ReadPatterns: "[]", WritePatterns: "[]"}, nil
+	}
+	var loggedBody string
+	env.InsertWebhookDeliveryLogFunc = func(_ context.Context, p db.InsertWebhookDeliveryLogParams) error {
+		if p.RequestBody != nil {
+			loggedBody = *p.RequestBody
+		}
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env, handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 100, Attempt: 1})
+	require.NoError(t, err)
+
+	// HTTP body to the fleet keeps the credential + secrets.
+	require.Contains(t, string(httpBody), "api_token")
+	require.Contains(t, string(httpBody), "tok-abc")
+	// Logged body must not leak them.
+	require.NotContains(t, loggedBody, "tok-abc")
+	require.NotContains(t, loggedBody, "api_token")
+}
+
 func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {
 	var body []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
