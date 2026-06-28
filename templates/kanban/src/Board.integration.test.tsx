@@ -22,6 +22,9 @@ vi.mock('./api', async (importActual) => {
     sha256Base64: vi.fn(async () => 'TEST_HASH'),
     updateNotes: vi.fn(async () => ({ ok: true })),
     fetchNoteContent: vi.fn(async () => ({ error: 'fetchNoteContent not mocked' })),
+    // Live-sync edges are stubbed so the save-wiring tests stay hermetic.
+    fetchLatestVersionId: vi.fn(async () => null),
+    subscribeNoteChanges: vi.fn(),
   }
 })
 

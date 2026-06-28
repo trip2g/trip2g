@@ -17,6 +17,9 @@ interface LangStrings {
   doubleClickRename: string
   editable: string
   boardChangedReloading: string
+  boardUpdated: string
+  boardDeleted: string
+  lastEditedBy: string
   saveFailed: string
   // Plural keys — call t(lang, key, { count }) to get the right form.
   columns: PluralEntry
@@ -38,6 +41,9 @@ const STRINGS: Record<Lang, LangStrings> = {
     doubleClickRename: 'Double-click to rename',
     editable: 'Editable',
     boardChangedReloading: 'Board changed elsewhere — reloading…',
+    boardUpdated: 'Board updated',
+    boardDeleted: 'Board deleted',
+    lastEditedBy: 'Last edited by',
     saveFailed: 'Save failed: ',
     columns: { one: 'column', other: 'columns' },
     cards: { one: 'card', other: 'cards' },
@@ -58,6 +64,9 @@ const STRINGS: Record<Lang, LangStrings> = {
     doubleClickRename: 'Двойной клик для переименования',
     editable: 'Редактируется',
     boardChangedReloading: 'Доска изменена в другом месте — перезагрузка…',
+    boardUpdated: 'Доска обновлена',
+    boardDeleted: 'Доска удалена',
+    lastEditedBy: 'Последняя правка:',
     saveFailed: 'Ошибка сохранения: ',
     // Russian plural: one (1, 21, 31…), few (2–4, 22–24…), many (0, 5–20, 25–30…).
     columns: { one: 'колонка', few: 'колонки', many: 'колонок' },

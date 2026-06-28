@@ -30,9 +30,12 @@ import {
   sha256Base64,
   updateNotes,
   fetchNoteContent,
+  fetchLatestVersionId,
+  subscribeNoteChanges,
   patchChange,
   upsertChange,
   NoteChange,
+  NoteChangeItem,
   UpdateNotesResult,
 } from './api'
 import { renderMarkdown } from './markdown'
@@ -457,9 +460,11 @@ export interface BoardProps {
   path: string
   content: string
   editable: boolean
+  // Admin-only display name of the last editor (server-escaped); absent otherwise.
+  lastEditedBy?: string
 }
 
-export default function Board({ path, content, editable }: BoardProps) {
+export default function Board({ path, content, editable, lastEditedBy }: BoardProps) {
   const [board, setBoard] = useState<AugBoard>(() => augment(parseBoard(content)))
   const [toast, setToast] = useState<string | null>(null)
   const [addingTo, setAddingTo] = useState<number | null>(null)
@@ -483,6 +488,14 @@ export default function Board({ path, content, editable }: BoardProps) {
 
   const pendingRef = useRef<PendingSave | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // True while a save's network round-trip (and its baseline-version bump) is in
+  // flight. flushSave nulls pendingRef before the await, so without this the board
+  // looks "clean" mid-save; the live-change handler consults it to avoid adopting a
+  // remote bump over an edit that is currently being persisted.
+  const inFlightRef = useRef<boolean>(false)
+  // Latest stored version id this board has reconciled to. Live noteChanges events
+  // at or below it are our own save echoes and are ignored.
+  const baselineVersionIdRef = useRef<number>(0)
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
 
@@ -491,69 +504,90 @@ export default function Board({ path, content, editable }: BoardProps) {
     setTimeout(() => setToast(null), 3500)
   }
 
-  function revertBoard() {
-    setBoard(augment(parseBoard(baselineMdRef.current)))
+  // Replace the visible board from a markdown string (re-parse + re-augment). Used
+  // to revert to the saved baseline and to adopt a remote change while clean.
+  function setBoardFromMarkdown(md: string) {
+    setBoard(augment(parseBoard(md)))
   }
+
+  function revertBoard() {
+    setBoardFromMarkdown(baselineMdRef.current)
+  }
+
+  // Advance both baselines (content + version id) after a successful save. The
+  // updateNotes success payload carries only paths, so the new version id is read
+  // back from the version history; failing that, the worst case is a later spurious
+  // "Board updated" re-fetch, never a lost edit.
+  const commitBaseline = useCallback(async (newMd: string) => {
+    baselineMdRef.current = newMd
+    const vid = await fetchLatestVersionId(path)
+    if (vid != null) baselineVersionIdRef.current = vid
+  }, [path])
 
   // Flush the pending change to the server.
   const flushSave = useCallback(async () => {
     const pending = pendingRef.current
     if (!pending) return
     pendingRef.current = null
+    inFlightRef.current = true
 
-    const baselineMd = baselineMdRef.current
+    try {
+      const baselineMd = baselineMdRef.current
 
-    // Guard: if a patch's find string is no longer in the baseline (rapid consecutive
-    // edits to the same card within 500ms), fall back to a full surgical upsert.
-    let effectiveChange = pending.change
-    if ('patch' in effectiveChange && !baselineMd.includes(effectiveChange.patch.find)) {
-      effectiveChange = upsertChange(path, applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists)))
-    }
-
-    const result = await sendChange(effectiveChange, baselineMd)
-
-    if ('ok' in result) {
-      baselineMdRef.current = applyChangeToBaseline(effectiveChange, baselineMd)
-      return
-    }
-
-    if ('hashMismatch' in result) {
-      // A hashMismatch is often spurious: the two-way sync's own writeback re-normalises
-      // the note and bumps its hash even though the board is semantically unchanged.
-      // Re-read the current server content, rebase our change onto it, and retry once —
-      // so an in-flight edit (e.g. a just-added list) isn't lost to a blind reload.
-      const fresh = await fetchNoteContent(path)
-      if ('content' in fresh) {
-        const rebased = pending.rebase(fresh.content)
-        const retry = await sendChange(rebased, fresh.content)
-        if ('ok' in retry) {
-          baselineMdRef.current = applyChangeToBaseline(rebased, fresh.content)
-          return
-        }
+      // Guard: if a patch's find string is no longer in the baseline (rapid consecutive
+      // edits to the same card within 500ms), fall back to a full surgical upsert.
+      let effectiveChange = pending.change
+      if ('patch' in effectiveChange && !baselineMd.includes(effectiveChange.patch.find)) {
+        effectiveChange = upsertChange(path, applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists)))
       }
-      // Rebase/retry failed (could not re-read, or a genuine concurrent edit) — only now
-      // fall back to a reload, which is the last resort that can lose the in-flight edit.
-      showToast(t(lang, 'boardChangedReloading'))
-      setTimeout(() => location.reload(), 1500)
-      return
-    }
 
-    if ('patchNotFound' in result && 'patch' in effectiveChange) {
-      // Patch string not found on server — retry as a surgical upsert of the current board.
-      const newMd = applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists))
-      const retryResult = await sendChange(upsertChange(path, newMd), baselineMd)
-      if ('ok' in retryResult) {
-        baselineMdRef.current = newMd
+      const result = await sendChange(effectiveChange, baselineMd)
+
+      if ('ok' in result) {
+        await commitBaseline(applyChangeToBaseline(effectiveChange, baselineMd))
         return
       }
-      showToast(t(lang, 'saveFailed') + ('error' in retryResult ? retryResult.error : 'unknown'))
-      revertBoard()
-      return
-    }
 
-    showToast(t(lang, 'saveFailed') + ('error' in result ? result.error : 'unknown'))
-    revertBoard()
-  }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
+      if ('hashMismatch' in result) {
+        // A hashMismatch is often spurious: the two-way sync's own writeback re-normalises
+        // the note and bumps its hash even though the board is semantically unchanged.
+        // Re-read the current server content, rebase our change onto it, and retry once —
+        // so an in-flight edit (e.g. a just-added list) isn't lost to a blind reload.
+        const fresh = await fetchNoteContent(path)
+        if ('content' in fresh) {
+          const rebased = pending.rebase(fresh.content)
+          const retry = await sendChange(rebased, fresh.content)
+          if ('ok' in retry) {
+            await commitBaseline(applyChangeToBaseline(rebased, fresh.content))
+            return
+          }
+        }
+        // Rebase/retry failed (could not re-read, or a genuine concurrent edit) — only now
+        // fall back to a reload, which is the last resort that can lose the in-flight edit.
+        showToast(t(lang, 'boardChangedReloading'))
+        setTimeout(() => location.reload(), 1500)
+        return
+      }
+
+      if ('patchNotFound' in result && 'patch' in effectiveChange) {
+        // Patch string not found on server — retry as a surgical upsert of the current board.
+        const newMd = applyBoardToBaseline(baselineMd, stripLists(boardRef.current.lists))
+        const retryResult = await sendChange(upsertChange(path, newMd), baselineMd)
+        if ('ok' in retryResult) {
+          await commitBaseline(newMd)
+          return
+        }
+        showToast(t(lang, 'saveFailed') + ('error' in retryResult ? retryResult.error : 'unknown'))
+        revertBoard()
+        return
+      }
+
+      showToast(t(lang, 'saveFailed') + ('error' in result ? result.error : 'unknown'))
+      revertBoard()
+    } finally {
+      inFlightRef.current = false
+    }
+  }, [path, commitBaseline])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Queue a save. `kind` records how to rebase the change if the server baseline
   // shifts under us (hashMismatch). The rebase reads the latest board at flush time.
@@ -585,6 +619,56 @@ export default function Board({ path, content, editable }: BoardProps) {
     setBoard(next)
     scheduleSave(change, kind)
   }
+
+  // ── live change subscription ──
+  // React to a remote change pushed over the core noteChanges stream. The handler
+  // decides clean-vs-dirty by the in-flight/queued save state captured BEFORE the
+  // re-fetch await:
+  //   • clean  (no queued save, no debounce timer, no in-flight save) — nothing local
+  //     to lose, so adopt the remote board wholesale and show a subtle toast.
+  //   • dirty  — keep the in-progress edit (do NOT setBoard); advance the baseline to
+  //     the remote version and rebase the queued change onto it, so the next flush
+  //     merges remote + local losslessly via the existing rebase closure. If the save
+  //     already flushed during the await, its own hashMismatch path converges instead.
+  const handleRemoteChange = useCallback(async (change: NoteChangeItem) => {
+    if (change.type === 'hide') {
+      if (change.path === path) showToast(t(lang, 'boardDeleted'))
+      return
+    }
+    // NoteUpsertEvent — this board only.
+    if (change.path !== path) return
+    // Suppress our own save echoes (and anything already reconciled).
+    if (change.versionId <= baselineVersionIdRef.current) return
+
+    const dirty =
+      pendingRef.current !== null || saveTimer.current !== null || inFlightRef.current
+
+    const fresh = await fetchNoteContent(path)
+    if (!('content' in fresh)) return
+
+    baselineMdRef.current = fresh.content
+    if (fresh.versionId != null) baselineVersionIdRef.current = fresh.versionId
+
+    if (!dirty) {
+      setBoardFromMarkdown(fresh.content)
+      showToast(t(lang, 'boardUpdated'))
+      return
+    }
+
+    // Rebase the queued change onto the fresh remote baseline (the rebase closure
+    // re-derives it from the current board, merging remote + local). A flush that
+    // landed during the await leaves pendingRef null — its hashMismatch retry converges.
+    const pending = pendingRef.current
+    if (pending) {
+      pendingRef.current = { change: pending.rebase(fresh.content), rebase: pending.rebase }
+    }
+  }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const ctrl = new AbortController()
+    subscribeNoteChanges(path, change => { handleRemoteChange(change) }, ctrl.signal)
+    return () => ctrl.abort()
+  }, [path, handleRemoteChange])
 
   // ── drag ──
 
@@ -869,6 +953,12 @@ export default function Board({ path, content, editable }: BoardProps) {
       </main>
 
       {toast && <div className="kanban-toast" role="alert">{toast}</div>}
+
+      {/* Admin-only byline (the carrier span is only emitted server-side for admins),
+          localized here so there is no English flash. */}
+      {lastEditedBy && (
+        <div className="kanban-byline">{t(lang, 'lastEditedBy')} {lastEditedBy}</div>
+      )}
     </div>
   )
 }
