@@ -77,7 +77,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		readPatterns, rpErr := webhookutil.ParseJSONStringArray(wh.ReadPatterns)
 		if rpErr != nil {
 			log.Error("failed to parse read_patterns", "webhook_id", wh.ID, "error", rpErr)
-			readPatterns = []string{"*"}
+			readPatterns = []string{"**"}
 		}
 
 		ttl := time.Duration(wh.TimeoutSeconds) * time.Second

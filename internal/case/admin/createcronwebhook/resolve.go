@@ -97,7 +97,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Marshal JSON arrays.
 	readPatterns := input.ReadPatterns
 	if readPatterns == nil {
-		readPatterns = []string{"*"}
+		readPatterns = []string{"**"}
 	}
 	readJSON, err := json.Marshal(readPatterns)
 	if err != nil {
