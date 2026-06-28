@@ -35,6 +35,11 @@ type Input struct {
 	WritePatterns []string
 	Model         string
 
+	// Tools is the role-declared allowlist of tool names the model may use.
+	// finish is always included regardless of this list.
+	// An empty (nil) Tools means the full default offered set (backward-compat).
+	Tools []string
+
 	// MaxTokens is the NON-overridable per-run token hard-cap (safety floor).
 	// The model has no tool to change it; the loop enforces it. Must be > 0.
 	MaxTokens int
@@ -93,7 +98,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 	}
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
-	tools := toolDefs()
+	tools := allowedToolDefs(in.Tools)
 
 	messages := []Message{
 		{
@@ -265,6 +270,30 @@ func formatPatterns(patterns []string) string {
 		return "(none)"
 	}
 	return strings.Join(patterns, ", ")
+}
+
+// allowedToolDefs returns the ToolDef slice the model will see. When allowlist
+// is non-empty, only tools named in it are included; finish is always injected
+// regardless. An empty allowlist returns the full default offered set.
+func allowedToolDefs(allowlist []string) []ToolDef {
+	all := toolDefs()
+	if len(allowlist) == 0 {
+		return all
+	}
+	permitted := make(map[string]bool, len(allowlist))
+	for _, name := range allowlist {
+		permitted[name] = true
+	}
+	// finish is non-negotiable.
+	permitted[toolFinish] = true
+
+	var out []ToolDef
+	for _, td := range all {
+		if permitted[td.Name] {
+			out = append(out, td)
+		}
+	}
+	return out
 }
 
 func toolDefs() []ToolDef {

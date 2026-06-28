@@ -57,6 +57,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		Instruction:   role.Body,
 		ReadPatterns:  role.ReadPatterns,
 		WritePatterns: role.WritePatterns,
+		Tools:         role.Tools,
 		Model:         orDefault(role.Model, f.cfg.DefaultModel),
 		MaxTokens:     clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
 		MaxSteps:      clampBudget(role.MaxSteps, f.cfg.StepCeiling),

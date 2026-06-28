@@ -66,16 +66,21 @@ func (e *kbError) Error() string { return e.msg }
 
 // stubLLM returns a scripted sequence of responses, then a fixed fallback. It
 // records every message batch it receives so a test can assert what the model
-// was (or was not) shown.
+// was (or was not) shown. seenTools records the tool list from the first Chat
+// call so tests can assert which tools were offered to the model.
 type stubLLM struct {
-	script   []ChatResult
-	fallback ChatResult
-	idx      int
-	seen     []Message
+	script    []ChatResult
+	fallback  ChatResult
+	idx       int
+	seen      []Message
+	seenTools []ToolDef
 }
 
-func (s *stubLLM) Chat(_ context.Context, _ string, messages []Message, _ []ToolDef) (ChatResult, error) {
+func (s *stubLLM) Chat(_ context.Context, _ string, messages []Message, tools []ToolDef) (ChatResult, error) {
 	s.seen = append(s.seen, messages...)
+	if s.seenTools == nil {
+		s.seenTools = tools
+	}
 	if s.idx < len(s.script) {
 		r := s.script[s.idx]
 		s.idx++
@@ -236,6 +241,60 @@ func TestRun_PatchNoteDeniedOutOfScope(t *testing.T) {
 	require.Len(t, res.Changes, 0)
 	require.Equal(t, "@status:todo", kb.docs["other/x.md"])
 	require.Equal(t, []string{"patch other/x.md"}, res.Denials)
+}
+
+// (f) Tools allowlist: when Input.Tools is ["search","finish"], the tool list
+// passed to the LLM must contain only those two tools; write_note, patch_note,
+// and read_note must be absent. An empty Input.Tools must expose the full
+// default set (backward-compat).
+func TestRun_ToolsAllowlistRestrictsLLMTools(t *testing.T) {
+	kb := newMemKB(map[string]string{"notes/a.md": "hello"})
+
+	t.Run("restricted to search+finish", func(t *testing.T) {
+		llm := &stubLLM{
+			script: []ChatResult{
+				{ToolCalls: []ToolCall{toolCall("1", toolSearch, map[string]any{"query": "hello"})}, PromptTokens: 10, CompletionTokens: 5},
+				{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})}, PromptTokens: 10, CompletionTokens: 5},
+			},
+		}
+		res, err := Run(context.Background(), Input{
+			Instruction:  "search only",
+			ReadPatterns: []string{"notes/**"},
+			Model:        "m", MaxTokens: 10000, MaxSteps: 10,
+			Tools: []string{toolSearch, toolFinish},
+			LLM:   llm, KB: kb,
+		})
+		require.NoError(t, err)
+		require.Equal(t, StatusCompleted, res.Status)
+
+		offered := make(map[string]bool, len(llm.seenTools))
+		for _, td := range llm.seenTools {
+			offered[td.Name] = true
+		}
+		require.True(t, offered[toolSearch], "search must be offered")
+		require.True(t, offered[toolFinish], "finish must always be offered")
+		require.False(t, offered[toolWriteNote], "write_note must NOT be offered when not in allowlist")
+		require.False(t, offered[toolPatchNote], "patch_note must NOT be offered when not in allowlist")
+		require.False(t, offered[toolReadNote], "read_note must NOT be offered when not in allowlist")
+		require.Len(t, llm.seenTools, 2, "exactly 2 tools should be offered")
+	})
+
+	t.Run("empty Tools exposes full default set", func(t *testing.T) {
+		llm := &stubLLM{
+			script: []ChatResult{
+				{ToolCalls: []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "done"})}, PromptTokens: 5, CompletionTokens: 5},
+			},
+		}
+		_, err := Run(context.Background(), Input{
+			Instruction:  "all tools",
+			ReadPatterns: []string{"notes/**"},
+			Model:        "m", MaxTokens: 10000, MaxSteps: 10,
+			Tools: nil, // empty = back-compat full set
+			LLM:  llm, KB: kb,
+		})
+		require.NoError(t, err)
+		require.Len(t, llm.seenTools, 5, "empty Tools must expose all 5 default tools")
+	})
 }
 
 // (c) Hard-cap: the model loops forever (always a tool call). A low MaxTokens
