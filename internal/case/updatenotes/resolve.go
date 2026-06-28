@@ -44,6 +44,12 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
+			// ExpectedHash gates the upsert with optimistic concurrency.
+			// actualHash defaults to "" for an absent note (the nv != nil block is skipped),
+			// so expectedHash == "" is the create-only sentinel: it asserts "expect this note
+			// to be absent" — absent → actualHash "" matches → create; an existing note always
+			// hashes non-empty → HashMismatch (never overwritten). A non-empty expectedHash is
+			// the usual optimistic update (matches only the exact current content).
 			if upsert.ExpectedHash != nil {
 				nv := nvs.PathMap[upsert.Path]
 				var actualHash string
