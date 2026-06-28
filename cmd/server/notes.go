@@ -105,6 +105,16 @@ func (a *app) HideNotePaths(ctx context.Context, paths []string) error {
 }
 
 func (a *app) InsertNote(ctx context.Context, note model.RawNote) (int64, error) {
+	pathID, _, err := insertnote.Resolve(ctx, a, note)
+	return pathID, err
+}
+
+// InsertNoteWithVersion is InsertNote that also returns the id of the
+// note_versions row it inserted (0 when content was unchanged). updateNotes uses
+// it to report each save's OWN version id, race-free, instead of re-deriving it
+// from a post-write reload (which under concurrent same-board editing can be a
+// peer's newer version).
+func (a *app) InsertNoteWithVersion(ctx context.Context, note model.RawNote) (int64, int64, error) {
 	return insertnote.Resolve(ctx, a, note)
 }
 

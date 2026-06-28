@@ -77,7 +77,7 @@ func TestInsertNoteRecordsUserActor(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq, userID: &user.ID}
 
-	pathID, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "user-note.md", Content: "hello"})
+	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "user-note.md", Content: "hello"})
 	require.NoError(t, err)
 
 	version := latestVersion(t, rq, pathID)
@@ -121,7 +121,7 @@ func TestInsertNoteRecordsAPIKeyActor(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq, apiKeyID: &apiKey.ID}
 
-	pathID, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "synced-note.md", Content: "from sync"})
+	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "synced-note.md", Content: "from sync"})
 	require.NoError(t, err)
 
 	version := latestVersion(t, rq, pathID)
@@ -149,7 +149,7 @@ func TestInsertNoteRecordsNoActorAsNull(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq} // userID and apiKeyID both nil
 
-	pathID, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "anon-note.md", Content: "no actor"})
+	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "anon-note.md", Content: "no actor"})
 	require.NoError(t, err)
 
 	version := latestVersion(t, rq, pathID)
@@ -175,7 +175,7 @@ func TestInsertNoteRecordsClientHeader(t *testing.T) {
 	clientVal := "obsidian-plugin/4.2.1"
 	env := &actorEnv{WriteQueries: wq, client: &clientVal}
 
-	pathID, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "client-note.md", Content: "from client"})
+	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "client-note.md", Content: "from client"})
 	require.NoError(t, err)
 
 	version := latestVersion(t, rq, pathID)
