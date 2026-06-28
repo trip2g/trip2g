@@ -284,3 +284,121 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "false", buf.String())
 }
+
+// stubPartialRenderer is a no-op model.NoteViewPartialRenderer so SiteFooter can
+// render its chrome wrapper without a full markdown pipeline in tests.
+type stubPartialRenderer struct{}
+
+func (stubPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
+func (stubPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
+func (stubPartialRenderer) Introduce() model.NoteViewSection          { return model.NoteViewSection{} }
+func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
+func (stubPartialRenderer) FirstList() *model.NoteViewList            { return nil }
+func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
+func (stubPartialRenderer) FirstImageURL() string                    { return "" }
+
+// chromeHelper builds a userSpaceHelper whose Notes resolve _header/_footer so
+// that Header()/Footer()/Styles() produce the standard chrome HTML.
+func chromeHelper() *userSpaceHelper {
+	mainNV := &model.NoteView{Path: "blog/post1.md", Permalink: "/blog/post1"}
+	headerNV := &model.NoteView{Path: "_header.md", Permalink: "/_header"}
+	footerNV := &model.NoteView{Path: "_footer.md", Permalink: "/_footer", PartialRenderer: stubPartialRenderer{}}
+
+	nvs := model.NewNoteViews()
+	for _, nv := range []*model.NoteView{mainNV, headerNV, footerNV} {
+		nvs.PathMap[nv.Path] = nv
+		nvs.Map[nv.Permalink] = nv
+	}
+	tv := templateviews.NewNVS(nvs, "live")
+
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.ByPath("blog/post1.md"))
+	h.nvs = tv
+	h.cssURLs = []string{"/assets/defaulttemplate.css?h=abc123"}
+	return h
+}
+
+// TestJetBinding_DefaultTemplateChrome_CamelCase verifies the new camelCase
+// namespace + PascalCase methods resolve and render raw (WithSafeWriter(nil)):
+// UserSpaceScripts(), Header(), Footer(), Styles().
+func TestJetBinding_DefaultTemplateChrome_CamelCase(t *testing.T) {
+	const tmplKey = "/chrome.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `[s]{{ defaultTemplate.UserSpaceScripts() }}[h]{{ defaultTemplate.Header() }}` +
+				`[f]{{ defaultTemplate.Footer() }}[c]{{ defaultTemplate.Styles() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := chromeHelper()
+	vars := make(jet.VarMap)
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	out := buf.String()
+
+	require.Contains(t, out, "window.__trip2g_settings")    // UserSpaceScripts()
+	require.Contains(t, out, `<header class="site-header">`) // Header()
+	require.Contains(t, out, `<footer class="site-footer">`) // Footer()
+	require.Contains(t, out, `<link rel="stylesheet" href="/assets/defaulttemplate.css?h=abc123">`) // Styles()
+
+	// Chrome HTML is written raw, not entity-escaped.
+	require.NotContains(t, out, "&lt;header")
+	require.NotContains(t, out, "&lt;footer")
+	require.NotContains(t, out, "&lt;link")
+}
+
+// TestJetBinding_IsAdmin_CamelCase verifies {{ currentUser.IsAdmin() }} resolves.
+func TestJetBinding_IsAdmin_CamelCase(t *testing.T) {
+	const tmplKey = "/current-user.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
+	vars := make(jet.VarMap)
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "true", buf.String())
+}
+
+// TestJetBinding_DeprecatedAliasesStillResolve verifies the old snake_case
+// names kept as aliases still resolve — the released kanban template calls
+// default_template.user_space_scripts() and current_user.is_admin().
+func TestJetBinding_DeprecatedAliasesStillResolve(t *testing.T) {
+	const tmplKey = "/aliases.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `[s]{{ default_template.user_space_scripts() }}[a]{{ current_user.is_admin() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := newUserSpaceHelper([]string{"/assets/bundle.js"}, nil, "en", false, true, "Title", sampleNote())
+	vars := make(jet.VarMap)
+	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	out := buf.String()
+
+	require.Contains(t, out, "window.__trip2g_settings")                       // user_space_scripts()
+	require.Contains(t, out, `<script src="/assets/bundle.js" defer></script>`)
+	require.Contains(t, out, "[a]true")                                        // is_admin()
+}
