@@ -10,8 +10,18 @@
     /* The fixed sign-in corner lives top-right; reserve room so the board's own
        header status badge doesn't slide under it. */
     .kanban-header-right { margin-right: 184px !important; }
-    .kanban-byline { position: fixed; bottom: 10px; right: 14px; z-index: 50; font-size: 12px; color: #6b7280; background: rgba(255,255,255,.82); padding: 4px 10px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .kanban-byline { position: fixed; bottom: 10px; right: 14px; z-index: 50; font-size: 12px; color: hsl(var(--muted-foreground)); background: hsl(var(--background)); padding: 4px 10px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
   </style>
+
+  <!-- Theme bootstrap: set data-theme before any paint to avoid flash-of-wrong-theme.
+       Reads $mol_lights from localStorage (set by the Options menu toggle); falls
+       back to prefers-color-scheme. Must run before the kanban stylesheet is injected
+       by the bundle. -->
+  <script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
 
   <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
        the user-space bundle scripts so the login widget below can boot. -->
