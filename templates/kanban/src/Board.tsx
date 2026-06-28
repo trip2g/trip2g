@@ -36,6 +36,10 @@ import {
   UpdateNotesResult,
 } from './api'
 import { renderMarkdown } from './markdown'
+import { detectLang, t } from './i18n'
+
+// Detect once at module init (language doesn't change mid-session).
+const lang = detectLang()
 
 // ── augmented types (IDs for React / dnd-kit, stripped before serialising) ──
 
@@ -214,7 +218,7 @@ function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps)
           className={`kanban-card-text${card.checked ? ' is-checked' : ''}`}
           onDoubleClick={startEdit}
           role={editable ? 'button' : undefined}
-          title={editable ? 'Double-click to edit' : undefined}
+          title={editable ? t(lang, 'doubleClickEdit') : undefined}
         >
           {renderMarkdown(card.text)}
         </span>
@@ -225,9 +229,9 @@ function SortableCard({ card, editable, onToggle, onEdit, onDelete }: CardProps)
           className="kanban-card-delete"
           onClick={e => { e.stopPropagation(); onDelete() }}
           onPointerDown={e => e.stopPropagation()}
-          title="Delete card"
+          title={t(lang, 'deleteCard')}
           tabIndex={-1}
-          aria-label="Delete card"
+          aria-label={t(lang, 'deleteCard')}
         >
           ×
         </button>
@@ -335,9 +339,7 @@ function SortableColumn({
   function handleDeleteClick() {
     if (list.cards.length > 0) {
       const n = list.cards.length
-      const ok = window.confirm(
-        `Delete column "${list.title}" and its ${n} ${n === 1 ? 'card' : 'cards'}?`
-      )
+      const ok = window.confirm(t(lang, 'deleteColumnConfirm', { count: n, title: list.title }))
       if (!ok) return
     }
     onDeleteList()
@@ -358,8 +360,8 @@ function SortableColumn({
             className="kanban-column-drag"
             {...attributes}
             {...listeners}
-            title="Drag to reorder column"
-            aria-label="Drag to reorder column"
+            title={t(lang, 'dragColumn')}
+            aria-label={t(lang, 'dragColumn')}
           >
             ⠿
           </button>
@@ -382,7 +384,7 @@ function SortableColumn({
             className={`kanban-column-title${list.complete ? ' is-complete' : ''}`}
             onDoubleClick={startRename}
             role={editable ? 'button' : undefined}
-            title={editable ? 'Double-click to rename' : undefined}
+            title={editable ? t(lang, 'doubleClickRename') : undefined}
           >
             {list.title}
           </span>
@@ -394,8 +396,8 @@ function SortableColumn({
           <button
             className="kanban-column-delete"
             onClick={handleDeleteClick}
-            title="Delete column"
-            aria-label="Delete column"
+            title={t(lang, 'deleteColumn')}
+            aria-label={t(lang, 'deleteColumn')}
             tabIndex={-1}
           >
             ×
@@ -430,7 +432,7 @@ function SortableColumn({
               ref={inputRef}
               className="kanban-add-input"
               value={newCardText}
-              placeholder="Card text..."
+              placeholder={t(lang, 'cardPlaceholder')}
               onChange={e => onNewCardTextChange(e.target.value)}
               onBlur={() => onCommitAdd(listIdx)}
               onKeyDown={e => {
@@ -440,7 +442,7 @@ function SortableColumn({
             />
           ) : (
             <button className="kanban-add-btn" onClick={() => onStartAdd(listIdx)}>
-              + Add card
+              {t(lang, 'addCard')}
             </button>
           )}
         </div>
@@ -531,7 +533,7 @@ export default function Board({ path, content, editable }: BoardProps) {
       }
       // Rebase/retry failed (could not re-read, or a genuine concurrent edit) — only now
       // fall back to a reload, which is the last resort that can lose the in-flight edit.
-      showToast('Board changed elsewhere — reloading…')
+      showToast(t(lang, 'boardChangedReloading'))
       setTimeout(() => location.reload(), 1500)
       return
     }
@@ -544,12 +546,12 @@ export default function Board({ path, content, editable }: BoardProps) {
         baselineMdRef.current = newMd
         return
       }
-      showToast('Save failed: ' + ('error' in retryResult ? retryResult.error : 'unknown'))
+      showToast(t(lang, 'saveFailed') + ('error' in retryResult ? retryResult.error : 'unknown'))
       revertBoard()
       return
     }
 
-    showToast('Save failed: ' + ('error' in result ? result.error : 'unknown'))
+    showToast(t(lang, 'saveFailed') + ('error' in result ? result.error : 'unknown'))
     revertBoard()
   }, [path])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -790,14 +792,14 @@ export default function Board({ path, content, editable }: BoardProps) {
             <span className="kanban-header-title">{title}</span>
             <span className="kanban-header-sep" aria-hidden="true">/</span>
             <span className="kanban-header-sub">
-              {board.lists.length} {board.lists.length === 1 ? 'column' : 'columns'} · {totalCards} {totalCards === 1 ? 'card' : 'cards'}
+              {board.lists.length} {t(lang, 'columns', { count: board.lists.length })} · {totalCards} {t(lang, 'cards', { count: totalCards })}
             </span>
           </div>
           <div className="kanban-header-right">
             {editable && (
               <span className="kanban-header-tag">
                 <span className="kanban-header-tag-dot" aria-hidden="true" />
-                Editable
+                {t(lang, 'editable')}
               </span>
             )}
           </div>
@@ -844,7 +846,7 @@ export default function Board({ path, content, editable }: BoardProps) {
                     ref={addListRef}
                     className="kanban-add-list-input"
                     value={newListTitle}
-                    placeholder="Column title..."
+                    placeholder={t(lang, 'columnPlaceholder')}
                     onChange={e => setNewListTitle(e.target.value)}
                     onBlur={handleAddList}
                     onKeyDown={e => {
@@ -857,7 +859,7 @@ export default function Board({ path, content, editable }: BoardProps) {
                     className="kanban-add-list-btn"
                     onClick={() => { addingListRef.current = true; setAddingList(true) }}
                   >
-                    + Add list
+                    {t(lang, 'addList')}
                   </button>
                 )}
               </div>
