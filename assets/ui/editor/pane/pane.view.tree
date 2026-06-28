@@ -100,3 +100,4 @@ $trip2g_editor_pane $mol_view
 		create? <=> handle_create_file? null
 	newfile_msg_empty @ \Enter a file name
 	newfile_msg_exists @ \A file with this name already exists
+	newfile_msg_exists_remote @ \This file was just created elsewhere

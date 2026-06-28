@@ -27,6 +27,27 @@ namespace $.$$ {
 		}
 	`)
 
+	// Create-only upsert: `expectedHash: ""` means "expect this path absent", so the
+	// server creates the note iff it does not exist, else returns a HashMismatch and
+	// leaves the existing note untouched (race-proof guard for the new-file flow).
+	const create_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation EditorCreateNote($input: UpdateNotesInput!) {
+			updateNotes(input: $input) {
+				__typename
+				... on UpdateNotesSuccessPayload {
+					paths
+				}
+				... on UpdateNotesHashMismatchPayload {
+					path
+					actualHash
+				}
+				... on ErrorPayload {
+					message
+				}
+			}
+		}
+	`)
+
 	const resolve_request = $trip2g_graphql_request(/* GraphQL */ `
 		query ResolveWikilinks($filter: ResolveWikilinksFilter!) {
 			resolveWikilinks(filter: $filter) {
@@ -285,8 +306,10 @@ namespace $.$$ {
 			this.toggle_right_sidebar('newfile')
 		}
 
-		// Create a brand-new note: validate the entered name, upsert it via pushNotes
-		// (a create is an upsert of a path that does not exist yet), then open it.
+		// Create a brand-new note via a create-only upsert (updateNotes, expectedHash:"").
+		// The client-side paths() check below is a fast UX pre-reject; the server's
+		// expectedHash:"" is the authoritative, race-proof guard behind it (it refuses to
+		// overwrite a note created concurrently, e.g. via Obsidian sync, after the check).
 		override handle_create_file(next?: Event): null {
 			if (next === undefined) return null
 			const res = $trip2g_editor_newfile_normalize(this.newfile_value(), this.Navigator().paths())
@@ -295,17 +318,27 @@ namespace $.$$ {
 				return null
 			}
 			const content = $trip2g_editor_newfile_initial_content(res.path)
-			const result = save_mutate({ input: { updates: [{ path: res.path, content }] } })
-			if (result.pushNotes.__typename === 'ErrorPayload') {
-				this.newfile_error(result.pushNotes.message)
+			const result = create_mutate({
+				input: { changes: [{ upsert: { path: res.path, content, expectedHash: '' } }] },
+			})
+			const payload = result.updateNotes
+			if (payload.__typename === 'UpdateNotesHashMismatchPayload') {
+				// The note already exists server-side — created concurrently after our
+				// client-side paths() check passed. Refuse and tell the user.
+				this.newfile_error(this.newfile_msg_exists_remote())
 				return null
 			}
-			// Advance the baseline to the just-created version id so the self-echo SSE
-			// event is not surfaced as "updated elsewhere".
-			const updated = (result.pushNotes as any).updated as Array<{ path: string; id: number }> | undefined
-			for (const u of updated ?? []) {
-				if (u.id) this.baseline_version_id(u.path, Number(u.id))
+			if (payload.__typename === 'ErrorPayload') {
+				this.newfile_error(payload.message)
+				return null
 			}
+			// UpdateNotesSuccessPayload: the note was created. updateNotes returns only
+			// paths (no version id), so fetch the just-created version id and advance the
+			// baseline synchronously — this suppresses the create's own self-echo SSE event
+			// before the file is opened.
+			const hist = history_request({ filter: { path: res.path, limit: 1 } })
+			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
+			if (latestVersionId) this.baseline_version_id(res.path, Number(latestVersionId))
 			this.newfile_value('')
 			this.newfile_error('')
 			this.right_sidebar('')
