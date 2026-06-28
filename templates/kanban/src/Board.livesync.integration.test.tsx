@@ -516,4 +516,65 @@ describe('Board live sync', () => {
     // … and the concurrently-added remote column was healed in.
     expect(screen.getByText('Remote')).toBeTruthy()
   })
+
+  test('OK-path clobber: a remote add during the SAVE round-trip (post-#47 versionId) still renders live', async () => {
+    // Residual #2 surviving #47: under the post-#47 contract updateNotes returns OUR own
+    // versionId, so commitBaseline takes the synchronous branch (no fetchLatestVersionId
+    // await). The only await left is the SAVE POST itself. A peer event landing during
+    // THAT window passes the version gate (we haven't committed), so handleRemoteChange
+    // sets baselineMdRef = peer content but SKIPS its adopt (pendingRef is null). The OK
+    // branch then rebuilds baselineMdRef from the PRE-await snapshot, clobbering the peer
+    // content; the finally heal reads the already-clobbered ref → no-op. Net: the peer
+    // change never renders live (a refresh re-fetches it — the user-reported symptom).
+    const user = userEvent.setup()
+    renderBoard()
+    await waitFor(() => expect(sub.onChange).not.toBeNull())
+
+    // Server after Alice's rename lands AND Bob adds Remote: [Backlog, In Progress, Remote].
+    const FRESH2 = SAMPLE
+      .replace('## To Do', '## Backlog')
+      .replace('%% kanban:settings', '## Remote\n\n- [ ] Remote card\n\n\n%% kanban:settings')
+    mockFetch.mockResolvedValue({ content: FRESH2, versionId: 1001 })
+
+    // First POST hangs (in flight) so Bob's event lands during the save round-trip; it then
+    // resolves OK carrying OUR OWN versionId (post-#47 contract). Later POSTs also succeed.
+    let resolveFirstUpdate!: (v: Awaited<ReturnType<typeof updateNotes>>) => void
+    mockUpdate
+      .mockImplementationOnce(() => new Promise(res => { resolveFirstUpdate = res }))
+      .mockResolvedValue({ ok: true, versionId: 1002 })
+
+    // Step 1: rename To Do → Backlog (structural). Debounce → flushSave starts the POST.
+    await user.dblClick(screen.getByText('To Do'))
+    const input = screen.getByDisplayValue('To Do')
+    await user.clear(input)
+    await user.type(input, 'Backlog{Enter}')
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1), { timeout: 2000 })
+
+    // Step 2: Bob adds Remote DURING the in-flight POST (dirty via inFlightRef, pendingRef
+    // null → handleRemoteChange's adopt is skipped; baselineMdRef → FRESH2, board lacks it).
+    await fireRemote({ type: 'upsert', path: PATH, pathId: 1, versionId: 1001 })
+    expect(screen.queryByText('Remote')).toBeNull()
+
+    // Step 3: the POST resolves OK with our own versionId → OK branch. Pre-fix: it rebuilds
+    // baselineMdRef from the stale pre-await snapshot, clobbering FRESH2, and the finally
+    // heal no-ops. The peer column must render live (post-fix: the OK branch respects the
+    // remote-advanced baseline, the finally heal adopts it).
+    await act(async () => {
+      resolveFirstUpdate({ ok: true, versionId: 1000 })
+      await new Promise(r => setTimeout(r, 0))
+    })
+    await waitFor(() => expect(screen.getByText('Remote')).toBeTruthy(), { timeout: 2000 })
+
+    // Step 4: a later eager rename — Remote must survive (pre-fix: board lacked R → clobber).
+    await user.dblClick(screen.getByText('In Progress'))
+    const input2 = screen.getByDisplayValue('In Progress')
+    await user.clear(input2)
+    await user.type(input2, 'Doing{Enter}')
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(2), { timeout: 2000 })
+    const final = upsertOf(changeAt(1))
+    expect(final).toContain('## Remote')   // remote column STILL survives
+    expect(final).toContain('## Backlog')
+    expect(final).toContain('## Doing')
+  })
 })
