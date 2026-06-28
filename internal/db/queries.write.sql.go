@@ -1588,9 +1588,10 @@ func (q *WriteQueries) InsertNotePath(ctx context.Context, arg InsertNotePathPar
 	return i, err
 }
 
-const insertNoteVersion = `-- name: InsertNoteVersion :exec
+const insertNoteVersion = `-- name: InsertNoteVersion :one
 insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id, created_by_client)
 values (?, ?, ?, ?, ?, ?)
+returning id
 `
 
 type InsertNoteVersionParams struct {
@@ -1602,8 +1603,8 @@ type InsertNoteVersionParams struct {
 	CreatedByClient   *string `json:"created_by_client"`
 }
 
-func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
-	_, err := q.db.ExecContext(ctx, insertNoteVersion,
+func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertNoteVersion,
 		arg.PathID,
 		arg.Version,
 		arg.Content,
@@ -1611,7 +1612,9 @@ func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVers
 		arg.CreatedByApiKeyID,
 		arg.CreatedByClient,
 	)
-	return err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertOIDCCredentials = `-- name: InsertOIDCCredentials :one

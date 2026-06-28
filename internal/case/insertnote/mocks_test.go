@@ -27,7 +27,7 @@ var _ insertnote.Env = &EnvMock{}
 //			InsertNotePathFunc: func(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error) {
 //				panic("mock out the InsertNotePath method")
 //			},
-//			InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
+//			InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 //				panic("mock out the InsertNoteVersion method")
 //			},
 //			NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
@@ -50,7 +50,7 @@ type EnvMock struct {
 	InsertNotePathFunc func(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
 
 	// InsertNoteVersionFunc mocks the InsertNoteVersion method.
-	InsertNoteVersionFunc func(ctx context.Context, arg db.InsertNoteVersionParams) error
+	InsertNoteVersionFunc func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error)
 
 	// NoteVersionActorFunc mocks the NoteVersionActor method.
 	NoteVersionActorFunc func(ctx context.Context) model.NoteActor
@@ -174,7 +174,7 @@ func (mock *EnvMock) InsertNotePathCalls() []struct {
 }
 
 // InsertNoteVersion calls InsertNoteVersionFunc.
-func (mock *EnvMock) InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) error {
+func (mock *EnvMock) InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 	if mock.InsertNoteVersionFunc == nil {
 		panic("EnvMock.InsertNoteVersionFunc: method is nil but Env.InsertNoteVersion was just called")
 	}

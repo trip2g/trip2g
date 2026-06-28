@@ -16,7 +16,12 @@ import (
 
 type Env interface {
 	LatestNoteViews() *appmodel.NoteViews
-	InsertNote(ctx context.Context, note appmodel.RawNote) (int64, error)
+	// InsertNoteWithVersion writes the note and returns its path id and the id of
+	// the note_versions row it inserted (0 when content was unchanged). The own
+	// version id lets us report each save's OWN version (race-free) rather than
+	// re-deriving it from the post-write reload, which under concurrent same-board
+	// editing can be a peer's newer version.
+	InsertNoteWithVersion(ctx context.Context, note appmodel.RawNote) (int64, int64, error)
 	HideNotePath(ctx context.Context, params db.HideNotePathParams) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, pathIDs []int64) error
@@ -33,6 +38,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	nvs := env.LatestNoteViews()
 	var paths []string
 	var pathIDs []int64
+	// versionIDs is aligned with pathIDs: each entry is the write's OWN inserted
+	// version id (0 when content was unchanged).
+	var versionIDs []int64
 	hid := false
 
 	// nvs.PathMap is keyed by note.Path (filesystem path, e.g. "todo.md").
@@ -63,11 +71,12 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 					}, nil
 				}
 			}
-			pathID, err := env.InsertNote(ctx, appmodel.RawNote{Path: upsert.Path, Content: upsert.Content})
+			pathID, versionID, err := env.InsertNoteWithVersion(ctx, appmodel.RawNote{Path: upsert.Path, Content: upsert.Content})
 			if err != nil {
 				return nil, fmt.Errorf("updatenotes: insert upsert %s: %w", upsert.Path, err)
 			}
 			pathIDs = append(pathIDs, pathID)
+			versionIDs = append(versionIDs, versionID)
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
@@ -94,11 +103,12 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				return model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
 			}
 			newContent := content[:idx] + patch.Replace + content[idx+len(patch.Find):]
-			pathID, err := env.InsertNote(ctx, appmodel.RawNote{Path: patch.Path, Content: newContent})
+			pathID, versionID, err := env.InsertNoteWithVersion(ctx, appmodel.RawNote{Path: patch.Path, Content: newContent})
 			if err != nil {
 				return nil, fmt.Errorf("updatenotes: insert patch %s: %w", patch.Path, err)
 			}
 			pathIDs = append(pathIDs, pathID)
+			versionIDs = append(versionIDs, versionID)
 			paths = append(paths, patch.Path)
 		case change.Hide != nil:
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
@@ -133,7 +143,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		}
 		// Surface each saved note's new version id (mirrors pushNotes' updated[].id) so a
 		// client can advance its self-echo baseline to its OWN save's version.
-		updated = collectUpdated(reloaded, pathIDs)
+		updated = collectUpdated(reloaded, pathIDs, versionIDs)
 	} else if hid {
 		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
 			return nil, fmt.Errorf("updatenotes: prepare latest notes after hide: %w", err)
@@ -143,16 +153,26 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	return model.UpdateNotesSuccessPayload{Paths: paths, Updated: updated}, nil
 }
 
-// collectUpdated maps each saved path id to its new version id from the reloaded
-// NoteViews. Notes not found (e.g. hidden) are skipped.
-func collectUpdated(nvs *appmodel.NoteViews, pathIDs []int64) []model.NoteWriteResult {
+// collectUpdated reports each saved note with the version id the WRITE itself
+// inserted (versionIDs[i], aligned with pathIDs[i]). Reporting the write's own
+// version — rather than re-deriving it from the reloaded NoteViews — is race-free:
+// under concurrent same-board editing the reload's latest version can be a peer's,
+// which would briefly suppress a genuine peer event on the saving client. The
+// reload is still consulted for the note's Path and to skip notes no longer present
+// (e.g. hidden). When the write created no new version (versionID 0, content
+// unchanged) the reload's current version is used as a fallback.
+func collectUpdated(nvs *appmodel.NoteViews, pathIDs, versionIDs []int64) []model.NoteWriteResult {
 	updated := make([]model.NoteWriteResult, 0, len(pathIDs))
-	for _, id := range pathIDs {
+	for i, id := range pathIDs {
 		nv := nvs.GetByPathID(id)
 		if nv == nil {
 			continue
 		}
-		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: nv.VersionID})
+		versionID := versionIDs[i]
+		if versionID == 0 {
+			versionID = nv.VersionID
+		}
+		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: versionID})
 	}
 	return updated
 }
