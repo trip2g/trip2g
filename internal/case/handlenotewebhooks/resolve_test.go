@@ -709,6 +709,29 @@ func TestAttachGateSatisfied(t *testing.T) {
 	}
 }
 
+func TestResolve_ConcurrencySkip_OnlyInsertsWhenClear(t *testing.T) {
+	env := newMockEnv()
+	env.addNote("boards/sprint.md", 1, 10, "Sprint", "x")
+	env.setWebhooks([]db.ChangeWebhook{{
+		ID: 1, Url: "https://e/x",
+		IncludePatterns: `["boards/sprint.md"]`, ExcludePatterns: `[]`,
+		AttachNotes: "[]", OnUpdate: true, MaxDepth: 5,
+		ConcurrencyMode: "skip",
+	}})
+	env.ifClearOK = false // simulate an in-flight delivery -> 0 rows
+
+	err := handlenotewebhooks.Resolve(context.Background(), env,
+		[]handlenotewebhooks.NoteChange{{PathID: 1, Event: "update"}}, 0)
+	require.NoError(t, err)
+	require.Empty(t, env.getEnqueued(), "skip mode must not enqueue when not clear")
+
+	env.ifClearOK = true
+	err = handlenotewebhooks.Resolve(context.Background(), env,
+		[]handlenotewebhooks.NoteChange{{PathID: 1, Event: "update"}}, 0)
+	require.NoError(t, err)
+	require.Len(t, env.getEnqueued(), 1)
+}
+
 // createNoteView creates a NoteViews with a single note.
 func createNoteView(path string, title string, content string) *model.NoteViews {
 	nvs := model.NewNoteViews()

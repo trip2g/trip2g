@@ -124,3 +124,9 @@ func (a *app) EnqueueDeliverChangeWebhook(ctx context.Context, params handlenote
 func (a *app) EnqueueDeliverCronWebhook(ctx context.Context, params delivercronwebhook.DeliverCronParams) error {
 	return a.DeliverCronWebhookJob.EnqueueDeliverCronWebhook(ctx, params)
 }
+
+// AgentDeliveryCooldownSeconds returns the stale-lock window (in seconds)
+// for skip/queue_one webhook concurrency modes.
+func (a *app) AgentDeliveryCooldownSeconds() int {
+	return a.config.AgentDeliveryCooldownSeconds
+}

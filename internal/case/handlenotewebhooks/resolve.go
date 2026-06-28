@@ -43,6 +43,9 @@ type DeliverChangeWebhookParams struct {
 type Env interface {
 	ListEnabledWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhookDeliveryParams) (db.ChangeWebhookDelivery, error)
+	InsertWebhookDeliveryIfClear(ctx context.Context, arg db.InsertWebhookDeliveryIfClearParams) (db.ChangeWebhookDelivery, error)
+	InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (db.ChangeWebhookDelivery, error)
+	AgentDeliveryCooldownSeconds() int
 	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverChangeWebhook(ctx context.Context, params DeliverChangeWebhookParams) error
 	Logger() logger.Logger
@@ -216,11 +219,29 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 			return matched[i].Path < matched[j].Path
 		})
 
-		// Create delivery record.
-		delivery, insertErr := env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
-			WebhookID: wh.ID,
-			Attempt:   1,
-		})
+		// Create delivery record, respecting the webhook's concurrency_mode.
+		staleWindow := fmt.Sprintf("-%d seconds", env.AgentDeliveryCooldownSeconds())
+
+		var delivery db.ChangeWebhookDelivery
+		var insertErr error
+		switch wh.ConcurrencyMode {
+		case "skip":
+			delivery, insertErr = env.InsertWebhookDeliveryIfClear(ctx, db.InsertWebhookDeliveryIfClearParams{
+				WebhookID:   wh.ID,
+				StaleWindow: staleWindow,
+			})
+		case "queue_one":
+			delivery, insertErr = env.InsertWebhookDeliveryIfNoPending(ctx, wh.ID)
+		default: // allow_overlap
+			delivery, insertErr = env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
+				WebhookID: wh.ID,
+				Attempt:   1,
+			})
+		}
+		if db.IsNoFound(insertErr) {
+			// skip/queue_one: nothing inserted because an in-flight/pending exists.
+			continue
+		}
 		if insertErr != nil {
 			env.Logger().Error("failed to insert webhook delivery", "webhook_id", wh.ID, "error", insertErr)
 			continue
