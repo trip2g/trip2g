@@ -2,6 +2,7 @@ package fleet
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -82,13 +83,18 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		Depth:         payload.Depth,
 	}
 
-	var totalTokens, totalSteps int
-	var lastStatus, lastAnswer string
-	for _, rc := range fanOut(role.ForEach, base) {
+	// Sequential fan-out, continue-on-error: one Run per item, accumulate spend,
+	// collect per-item errors instead of aborting the batch. Each Run reuses the
+	// same scoped api_token, so per-item write-back attribution (created_by_
+	// delivery_*) is preserved across the batch.
+	var totalTokens, totalSteps, successCount int
+	var lastStatus string
+	var answers, errMsgs []string
+	for i, rc := range fanOut(role.ForEach, base) {
 		instruction, rerr := renderInstruction(role.Body, rc)
 		if rerr != nil {
-			writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: rerr.Error()})
-			return
+			errMsgs = append(errMsgs, fmt.Sprintf("item %d: render: %v", i+1, rerr))
+			continue
 		}
 		res, runErr := agentruntime.Run(r.Context(), agentruntime.Input{
 			Instruction:   instruction,
@@ -102,19 +108,41 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 			KB:            newRemoteKB(f.client, payload.APIToken, overlay),
 		})
 		if runErr != nil {
-			writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: runErr.Error()})
-			return
+			errMsgs = append(errMsgs, fmt.Sprintf("item %d: %v", i+1, runErr))
+			continue
 		}
 		totalTokens += res.TokensUsed
 		totalSteps += res.Steps
+		successCount++
 		lastStatus = res.Status
-		lastAnswer = res.Answer
+		if res.Answer != "" {
+			answers = append(answers, res.Answer)
+		}
+	}
+
+	// Whole batch failed: surface a non-2xx so trip2g's retry/backoff engages.
+	if successCount == 0 {
+		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{
+			Status:  "error",
+			Message: strings.Join(errMsgs, "; "),
+		})
+		return
+	}
+
+	status := lastStatus
+	message := strings.Join(answers, "\n")
+	if len(errMsgs) > 0 {
+		status = "partial"
+		if message != "" {
+			message += "\n"
+		}
+		message += "errors: " + strings.Join(errMsgs, "; ")
 	}
 
 	// Changes already applied in-loop via the scoped token; report spend only.
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
-		Status:     lastStatus,
-		Message:    lastAnswer,
+		Status:     status,
+		Message:    message,
 		Changes:    nil,
 		TokensUsed: totalTokens,
 		Steps:      totalSteps,

@@ -231,6 +231,52 @@ func TestServeDelivery_NoForEach_SingleRunAllChanges(t *testing.T) {
 	require.Contains(t, llm.systems[0], "Files: boards/sprint.md boards/backlog.md.")
 }
 
+// flakyLLM succeeds on the first run and errors on the second, simulating a
+// partial fan-out failure.
+type flakyLLM struct{ call int }
+
+func (l *flakyLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	l.call++
+	if l.call == 2 {
+		return agentruntime.ChatResult{}, fmt.Errorf("item 2 boom")
+	}
+	args, _ := json.Marshal(map[string]any{"answer": "ok"})
+	return agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "finish", Arguments: string(args)}},
+		PromptTokens: 3, CompletionTokens: 2,
+	}, nil
+}
+
+// TestServeDelivery_ForEach_ContinueOnError asserts a partial fan-out failure
+// does NOT abort the batch: item 1 still runs, spend is summed over the
+// successful run(s), per-item errors are reported, and the response is 200
+// (not a hard 500).
+func TestServeDelivery_ForEach_ContinueOnError(t *testing.T) {
+	llm := &flakyLLM{}
+	f := fanOutFleet(t, llm, "changed_files", "Handle {{ change_file.Path }}.")
+	rec := post(t, f, urlKey("roles/triage.md"), changesBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code, "partial failure must not be a hard 500")
+
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 5, resp.TokensUsed) // only item 1 succeeded (3+2)
+	require.Equal(t, 1, resp.Steps)      // only item 1
+	require.Contains(t, resp.Message, "item 2 boom", "per-item error must be reported")
+}
+
+// TestServeDelivery_ForEach_AllErrors502 asserts that when every fan-out item
+// fails, the whole batch is a non-2xx so trip2g's retry/backoff engages.
+func TestServeDelivery_ForEach_AllErrors502(t *testing.T) {
+	f := fanOutFleet(t, &errLLM{msg: "always boom"}, "changed_files", "Handle {{ change_file.Path }}.")
+	rec := post(t, f, urlKey("roles/triage.md"), changesBody(t), true)
+
+	require.GreaterOrEqual(t, rec.Code, 500)
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "error", resp.Status)
+}
+
 func TestClampBudget(t *testing.T) {
 	require.Equal(t, 4000, clampBudget(4000, 100000)) // frontmatter wins under ceiling
 	require.Equal(t, 100, clampBudget(4000, 100))     // ceiling wins
