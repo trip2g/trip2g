@@ -40,17 +40,6 @@ func validateTransformJsonnet(src *string) *model.ErrorPayload {
 	return nil
 }
 
-func validateConcurrencyMode(mode string) *model.ErrorPayload {
-	switch mode {
-	case "allow_overlap", "skip", "queue_one":
-		return nil
-	default:
-		return &model.ErrorPayload{ByFields: []model.FieldMessage{
-			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
-		}}
-	}
-}
-
 func validateInput(i *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
 		ozzo.Field(&i.URL, ozzo.Required, is.URL),
@@ -166,12 +155,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		transformJsonnet = *input.TransformJsonnet
 	}
 
-	concurrencyMode := "allow_overlap"
+	concurrencyMode := webhookutil.ConcurrencyAllowOverlap
 	if input.ConcurrencyMode != nil {
 		concurrencyMode = *input.ConcurrencyMode
 	}
-	if cErr := validateConcurrencyMode(concurrencyMode); cErr != nil {
-		return cErr, nil
+	if err := webhookutil.ValidateConcurrencyMode(concurrencyMode); err != nil {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: err.Error()},
+		}}, nil
 	}
 
 	// Set defaults for optional fields.
@@ -222,20 +213,20 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	params := db.InsertWebhookParams{
-		Url:             input.URL,
-		IncludePatterns: string(includeJSON),
-		ExcludePatterns: string(excludeJSON),
-		Instruction:     instruction,
-		Secret:          secret,
-		MaxDepth:        maxDepth,
-		PassApiKey:      passAPIKey,
-		IncludeContent:  includeContent,
-		TimeoutSeconds:  timeoutSeconds,
-		MaxRetries:      maxRetries,
-		Description:     description,
-		OnCreate:        onCreate,
-		OnUpdate:        onUpdate,
-		OnRemove:        onRemove,
+		Url:              input.URL,
+		IncludePatterns:  string(includeJSON),
+		ExcludePatterns:  string(excludeJSON),
+		Instruction:      instruction,
+		Secret:           secret,
+		MaxDepth:         maxDepth,
+		PassApiKey:       passAPIKey,
+		IncludeContent:   includeContent,
+		TimeoutSeconds:   timeoutSeconds,
+		MaxRetries:       maxRetries,
+		Description:      description,
+		OnCreate:         onCreate,
+		OnUpdate:         onUpdate,
+		OnRemove:         onRemove,
 		ReadPatterns:     string(readJSON),
 		WritePatterns:    string(writeJSON),
 		TransformJsonnet: transformJsonnet,

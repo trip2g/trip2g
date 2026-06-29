@@ -43,17 +43,6 @@ func validateTransformJsonnet(src *string) *model.ErrorPayload {
 	return nil
 }
 
-func validateConcurrencyMode(mode string) *model.ErrorPayload {
-	switch mode {
-	case "allow_overlap", "skip", "queue_one":
-		return nil
-	default:
-		return &model.ErrorPayload{ByFields: []model.FieldMessage{
-			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
-		}}
-	}
-}
-
 func validateInput(i *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
 		ozzo.Field(&i.URL, ozzo.Required, is.URL),
@@ -176,12 +165,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		transformJsonnet = *input.TransformJsonnet
 	}
 
-	concurrencyMode := "allow_overlap"
+	concurrencyMode := webhookutil.ConcurrencyAllowOverlap
 	if input.ConcurrencyMode != nil {
 		concurrencyMode = *input.ConcurrencyMode
 	}
-	if cErr := validateConcurrencyMode(concurrencyMode); cErr != nil {
-		return cErr, nil
+	if err := webhookutil.ValidateConcurrencyMode(concurrencyMode); err != nil {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: err.Error()},
+		}}, nil
 	}
 
 	// Set defaults for optional fields.
@@ -226,15 +217,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	params := db.InsertCronWebhookParams{
-		Url:            input.URL,
-		CronSchedule:   input.CronSchedule,
-		Instruction:    instruction,
-		Secret:         secret,
-		PassApiKey:     passAPIKey,
-		TimeoutSeconds: timeoutSeconds,
-		MaxDepth:       maxDepth,
-		MaxRetries:     maxRetries,
-		NextRunAt:      nextRunAtPtr,
+		Url:              input.URL,
+		CronSchedule:     input.CronSchedule,
+		Instruction:      instruction,
+		Secret:           secret,
+		PassApiKey:       passAPIKey,
+		TimeoutSeconds:   timeoutSeconds,
+		MaxDepth:         maxDepth,
+		MaxRetries:       maxRetries,
+		NextRunAt:        nextRunAtPtr,
 		ReadPatterns:     string(readJSON),
 		WritePatterns:    string(writeJSON),
 		TransformJsonnet: transformJsonnet,

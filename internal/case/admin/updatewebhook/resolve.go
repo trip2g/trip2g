@@ -71,17 +71,6 @@ func validateTransformJsonnet(src *string) *model.ErrorPayload {
 	return nil
 }
 
-func validateConcurrencyMode(mode string) *model.ErrorPayload {
-	switch mode {
-	case "allow_overlap", "skip", "queue_one":
-		return nil
-	default:
-		return &model.ErrorPayload{ByFields: []model.FieldMessage{
-			{Name: "concurrencyMode", Value: "must be one of allow_overlap, skip, queue_one"},
-		}}
-	}
-}
-
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
@@ -143,8 +132,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	if input.ConcurrencyMode != nil {
-		if cErr := validateConcurrencyMode(*input.ConcurrencyMode); cErr != nil {
-			return cErr, nil
+		if err := webhookutil.ValidateConcurrencyMode(*input.ConcurrencyMode); err != nil {
+			return &model.ErrorPayload{ByFields: []model.FieldMessage{
+				{Name: "concurrencyMode", Value: err.Error()},
+			}}, nil
 		}
 	}
 

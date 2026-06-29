@@ -230,15 +230,15 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 
 		var delivery db.ChangeWebhookDelivery
 		var insertErr error
-		switch wh.ConcurrencyMode {
-		case "skip":
+		switch webhookutil.NormalizeConcurrencyMode(wh.ConcurrencyMode) {
+		case webhookutil.ConcurrencySkip:
 			delivery, insertErr = env.InsertWebhookDeliveryIfClear(ctx, db.InsertWebhookDeliveryIfClearParams{
 				WebhookID:   wh.ID,
 				StaleWindow: staleWindow,
 			})
-		case "queue_one":
+		case webhookutil.ConcurrencyQueueOne:
 			delivery, insertErr = env.InsertWebhookDeliveryIfNoPending(ctx, wh.ID)
-		default: // allow_overlap
+		default: // ConcurrencyAllowOverlap
 			delivery, insertErr = env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
 				WebhookID: wh.ID,
 				Attempt:   1,
