@@ -32,3 +32,4 @@ title: "Navigation"
 - [[en/thoughts/sync-benchmark|Benchmarking Obsidian sync]]
 - [[en/thoughts/search-benchmark|Benchmarking search]]
 - [[en/thoughts/page-cache-and-the-surprise-bottleneck|The page cache and the surprise bottleneck]]
+- [[en/thoughts/the-database-was-re-reading-its-own-queries|The database was re-reading its own queries]]
