@@ -201,6 +201,10 @@ type loaderTestEnv struct{ log logger.Logger }
 
 func (e *loaderTestEnv) Logger() logger.Logger { return e.log }
 
+// IsDevMode satisfies layoutloader.Env (added when the interface gained the
+// method); tests load layouts in production mode.
+func (e *loaderTestEnv) IsDevMode() bool { return false }
+
 // TestJetBinding_IdempotentViaLayoutloader verifies idempotency through the
 // full layoutloader pipeline (covers the real jet.WithSafeWriter(nil) path).
 func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
