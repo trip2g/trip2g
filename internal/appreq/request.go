@@ -45,6 +45,13 @@ type Request struct {
 	WebhookReadPatterns  []string
 	WebhookWritePatterns []string
 
+	// WebhookScoped is true when this request authenticated via a scoped
+	// shortapitoken. It distinguishes "scoped to read/write patterns" (enforce,
+	// empty patterns = deny-all) from "not scoped at all" (admin/user/api-key
+	// — no webhook-pattern enforcement). Set by checkapikey on the shortapitoken
+	// path and by stampShortAPIToken in the AroundOperations middleware.
+	WebhookScoped bool
+
 	// Webhook delivery identity (from the scoped shortapitoken). Used to
 	// attribute note versions written by a fleet back to the delivery.
 	WebhookDeliveryKind string
@@ -87,6 +94,7 @@ func (c *Request) Reset() {
 	c.WebhookDepth = 0
 	c.WebhookReadPatterns = nil
 	c.WebhookWritePatterns = nil
+	c.WebhookScoped = false
 	c.WebhookDeliveryKind = ""
 	c.WebhookDeliveryID = 0
 	c.SkipWebhooks = false
@@ -277,6 +285,17 @@ func NewContext(parent context.Context, req *Request) context.Context {
 	return context.WithValue(parent, ctxKey, req)
 }
 
+// Scoped reports whether the request authenticated via a scoped shortapitoken
+// (so read/write-pattern enforcement applies). Returns false when ctx has no
+// appreq (internal calls, tests) or for admin/user/api-key auth.
+func Scoped(ctx context.Context) bool {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return false
+	}
+	return req.WebhookScoped
+}
+
 // WebhookWritePatterns returns the write-scope globs stamped on the request
 // by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
 func WebhookWritePatterns(ctx context.Context) []string {
@@ -362,6 +381,7 @@ func (c *Request) Snapshot() *Request {
 		WebhookDepth:          c.WebhookDepth,
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
+		WebhookScoped:         c.WebhookScoped,
 		WebhookDeliveryKind:   c.WebhookDeliveryKind,
 		WebhookDeliveryID:     c.WebhookDeliveryID,
 		SkipWebhooks:          c.SkipWebhooks,

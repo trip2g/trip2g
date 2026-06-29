@@ -29,7 +29,7 @@ func stampShortAPIToken(req *appreq.Request, secret string) {
 
 	// If already stamped by an earlier path (e.g. a mutation that called
 	// checkapikey.Resolve), skip to avoid double-parsing.
-	if len(req.WebhookReadPatterns) > 0 || len(req.WebhookWritePatterns) > 0 || req.WebhookDepth != 0 {
+	if req.WebhookScoped || len(req.WebhookReadPatterns) > 0 || len(req.WebhookWritePatterns) > 0 || req.WebhookDepth != 0 {
 		return
 	}
 
@@ -59,6 +59,7 @@ func stampShortAPIToken(req *appreq.Request, secret string) {
 	req.WebhookDepth = data.Depth
 	req.WebhookReadPatterns = data.ReadPatterns
 	req.WebhookWritePatterns = data.WritePatterns
+	req.WebhookScoped = true
 	req.WebhookDeliveryKind = data.DeliveryKind
 	req.WebhookDeliveryID = data.DeliveryID
 }

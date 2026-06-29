@@ -3151,12 +3151,14 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 
 	// Enforce read_patterns using the filesystem path so scope globs (e.g.
 	// "boards/**") match the same namespace as write_patterns.
-	if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 {
+	// Fail-closed: a scoped token with empty read_patterns denies all reads.
+	if appreq.Scoped(ctx) {
+		rp := appreq.WebhookReadPatterns(ctx)
 		checkPath := fsPath
 		if checkPath == "" {
 			checkPath = path // fallback: URL path if filesystem path unknown
 		}
-		if !webhookutil.MatchesAny(checkPath, rp) {
+		if len(rp) == 0 || !webhookutil.MatchesAny(checkPath, rp) {
 			return nil, nil
 		}
 	}

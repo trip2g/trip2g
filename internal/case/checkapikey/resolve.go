@@ -130,6 +130,7 @@ func resolveShortAPIToken(ctx context.Context, env Env, tokenStr string, req *ap
 	req.WebhookDepth = data.Depth
 	req.WebhookReadPatterns = data.ReadPatterns
 	req.WebhookWritePatterns = data.WritePatterns
+	req.WebhookScoped = true
 	req.WebhookDeliveryKind = data.DeliveryKind
 	req.WebhookDeliveryID = data.DeliveryID
 

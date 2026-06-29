@@ -26,14 +26,30 @@ import (
 	appmodel "trip2g/internal/model"
 )
 
-// scopedCtx returns a plain context with an appreq stamped with the given
-// read_patterns. Used to test helpers that call appreq.WebhookReadPatterns(ctx).
+// scopedCtx returns a plain context with an appreq stamped as a scoped
+// shortapitoken request with the given read_patterns. Used to test helpers
+// that call appreq.Scoped(ctx) and appreq.WebhookReadPatterns(ctx).
 func scopedCtx(readPatterns []string) context.Context {
 	fctx := &fasthttp.RequestCtx{}
 	fctx.Request.SetRequestURI("http://example.com/graphql")
 	req := &appreq.Request{
 		Req:                 fctx,
+		WebhookScoped:       true,
 		WebhookReadPatterns: readPatterns,
+	}
+	req.StoreInContext()
+	return fctx
+}
+
+// unscopedCtx returns a plain context with an appreq that is NOT scoped
+// (simulating admin / personal-token / api-key auth). Used to test that
+// unscoped requests bypass read_pattern filtering.
+func unscopedCtx() context.Context {
+	fctx := &fasthttp.RequestCtx{}
+	fctx.Request.SetRequestURI("http://example.com/graphql")
+	req := &appreq.Request{
+		Req:           fctx,
+		WebhookScoped: false,
 	}
 	req.StoreInContext()
 	return fctx
@@ -78,15 +94,32 @@ func TestFilterNotePathsByScope_ScopedToken_EmptyInput(t *testing.T) {
 }
 
 func TestFilterNotePathsByScope_UnscopedRequest_PassthroughAll(t *testing.T) {
-	// Admin / personal-token requests have no read_patterns — all paths pass.
+	// Admin / personal-token requests are not scoped — all paths pass through.
 	paths := []db.NotePath{
 		{ID: 1, Value: "boards/sprint.md"},
 		{ID: 2, Value: "private/secret.md"},
 	}
 
-	ctx := scopedCtx(nil) // no read patterns = unscoped
+	ctx := unscopedCtx()
 	got := filterNotePathsByScope(ctx, paths)
 	require.Equal(t, paths, got, "unscoped request must not filter any paths")
+}
+
+// TestFilterNotePathsByScope_ScopedEmptyReadPatterns_DeniesAll is the G1
+// regression test. Before the fix, a scoped token with empty read_patterns was
+// fail-open (len(rp)==0 → early return → all paths visible). The fix drives
+// enforcement off appreq.Scoped() so empty patterns deny all reads.
+func TestFilterNotePathsByScope_ScopedEmptyReadPatterns_DeniesAll(t *testing.T) {
+	paths := []db.NotePath{
+		{ID: 1, Value: "boards/sprint.md"},
+		{ID: 2, Value: "docs/readme.md"},
+	}
+
+	// Scoped token with explicitly empty read_patterns — no read access granted.
+	ctx := scopedCtx([]string{})
+
+	got := filterNotePathsByScope(ctx, paths)
+	require.Nil(t, got, "scoped token with empty read_patterns must deny all reads (fail-closed)")
 }
 
 func TestFilterNotePathsByScope_MultiplePatterns(t *testing.T) {

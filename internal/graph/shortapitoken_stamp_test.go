@@ -37,6 +37,7 @@ func TestStampShortAPIToken(t *testing.T) {
 		wantDepth     int
 		wantKind      string
 		wantID        int64
+		wantScoped    bool
 	}{
 		{
 			name: "scoped token stamps read and write patterns",
@@ -55,6 +56,7 @@ func TestStampShortAPIToken(t *testing.T) {
 			wantDepth:     2,
 			wantKind:      "change",
 			wantID:        77,
+			wantScoped:    true,
 		},
 		{
 			name: "personal token (t2g_) is not stamped",
@@ -109,6 +111,7 @@ func TestStampShortAPIToken(t *testing.T) {
 			require.Equal(t, tt.wantDepth, req.WebhookDepth)
 			require.Equal(t, tt.wantKind, req.WebhookDeliveryKind)
 			require.Equal(t, tt.wantID, req.WebhookDeliveryID)
+			require.Equal(t, tt.wantScoped, req.WebhookScoped)
 		})
 	}
 }

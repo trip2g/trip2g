@@ -39,6 +39,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 		expectedDepth     int
 		expectedReadPats  []string
 		expectedWritePats []string
+		expectedScoped    bool
 	}{
 		{
 			name: "valid Bearer token with webhook depth and patterns",
@@ -53,9 +54,12 @@ func TestResolveWithBearerToken(t *testing.T) {
 			expectedDepth:     3,
 			expectedReadPats:  []string{"read/*", "view/*"},
 			expectedWritePats: []string{"update/*"},
+			expectedScoped:    true,
 		},
 		{
-			name: "valid Bearer token with zero depth",
+			// G1 regression: scoped token with empty read_patterns must set
+			// WebhookScoped=true so that enforcement is fail-closed, not fail-open.
+			name: "valid Bearer token with zero depth and empty patterns (scoped, fail-closed)",
 			tokenData: shortapitoken.Data{
 				Depth:         0,
 				ReadPatterns:  []string{},
@@ -67,6 +71,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 			expectedDepth:     0,
 			expectedReadPats:  []string{},
 			expectedWritePats: []string{},
+			expectedScoped:    true,
 		},
 		{
 			name: "expired Bearer token",
@@ -118,6 +123,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 				require.Equal(t, tt.expectedDepth, req.WebhookDepth)
 				require.Equal(t, tt.expectedReadPats, req.WebhookReadPatterns)
 				require.Equal(t, tt.expectedWritePats, req.WebhookWritePatterns)
+				require.Equal(t, tt.expectedScoped, req.WebhookScoped, "WebhookScoped must be set for scoped shortapitoken")
 			}
 		})
 	}

@@ -107,6 +107,8 @@ func TestMakeAroundOperations_StampsShortAPIToken(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"boards/**"}, req.WebhookReadPatterns,
 		"makeAroundOperations must stamp WebhookReadPatterns before resolvers run")
+	require.True(t, req.WebhookScoped,
+		"makeAroundOperations must set WebhookScoped=true for scoped shortapitoken")
 }
 
 // TestMakeAroundOperations_UnscopedRequestUnchanged verifies that a request

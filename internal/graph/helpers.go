@@ -60,15 +60,20 @@ func checkAdmin(ctx context.Context) error {
 }
 
 // filterNotePathsByScope removes any db.NotePath whose Value (filesystem path)
-// does not match the read_patterns stamped on the request. When no patterns are
-// set (unscoped admin/personal-token request) the slice is returned unchanged.
+// does not match the read_patterns stamped on the request. When the request is
+// not scoped (admin/personal-token/api-key) the slice is returned unchanged.
 //
-// db.NotePath.Value is the filesystem path (e.g. "boards/sprint.md"), so the
-// same glob namespace is used by both read and write scope checks.
+// Scoped requests with empty read_patterns are fail-closed: all paths are
+// denied. Non-empty read_patterns require a glob match against the filesystem
+// path (e.g. "boards/sprint.md"), the same namespace used by write_patterns.
 func filterNotePathsByScope(ctx context.Context, paths []db.NotePath) []db.NotePath {
-	rp := appreq.WebhookReadPatterns(ctx)
-	if len(rp) == 0 {
+	if !appreq.Scoped(ctx) {
 		return paths
+	}
+	rp := appreq.WebhookReadPatterns(ctx)
+	// Fail-closed: scoped token with empty read_patterns denies all reads.
+	if len(rp) == 0 {
+		return nil
 	}
 	out := paths[:0:0] // nil-safe empty slice sharing no backing array
 	for _, p := range paths {
