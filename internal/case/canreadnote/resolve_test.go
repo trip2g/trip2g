@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
@@ -617,6 +618,86 @@ func TestResolve_FederatedIdentity(t *testing.T) {
 
 			got, err := canreadnote.Resolve(context.Background(), env, tt.note)
 
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got, tt.description)
+		})
+	}
+}
+
+// TestResolve_ScopedReadPatterns is the regression test for G2: scoped
+// shortapitoken read_patterns must be enforced at the canreadnote chokepoint
+// so every consumer (note, similarNotes, etc.) is covered.
+func TestResolve_ScopedReadPatterns(t *testing.T) {
+	// env whose normal access logic would grant full access (admin-like).
+	permissiveEnv := &EnvMock{
+		CurrentFederatedScopeFunc: noFedScope,
+		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{ID: 1, Role: "admin"}, nil
+		},
+	}
+
+	tests := []struct {
+		name         string
+		readPatterns []string // nil = unscoped
+		scoped       bool
+		notePath     string
+		wantAccess   bool
+		description  string
+	}{
+		{
+			name:         "scoped token with matching pattern allows access",
+			readPatterns: []string{"boards/**"},
+			scoped:       true,
+			notePath:     "boards/sprint.md",
+			wantAccess:   true,
+			description:  "note inside read_patterns glob must be readable",
+		},
+		{
+			name:         "scoped token with non-matching pattern denies access",
+			readPatterns: []string{"boards/**"},
+			scoped:       true,
+			notePath:     "docs/secret.md",
+			wantAccess:   false,
+			description:  "note outside read_patterns glob must be denied (security fix)",
+		},
+		{
+			name:         "scoped token with empty patterns denies all",
+			readPatterns: []string{},
+			scoped:       true,
+			notePath:     "boards/sprint.md",
+			wantAccess:   false,
+			description:  "scoped token with empty read_patterns is fail-closed (deny-all)",
+		},
+		{
+			name:         "unscoped request bypasses pattern check (admin still sees all)",
+			readPatterns: nil,
+			scoped:       false,
+			notePath:     "docs/secret.md",
+			wantAccess:   true,
+			description:  "unscoped request uses normal access logic unchanged",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ctx context.Context
+			if tt.scoped {
+				req := &appreq.Request{
+					WebhookScoped:      true,
+					WebhookReadPatterns: tt.readPatterns,
+				}
+				ctx = appreq.NewContext(context.Background(), req)
+			} else {
+				ctx = context.Background()
+			}
+
+			note := &model.NoteView{
+				Path:  tt.notePath,
+				Free:  true,
+				Title: "Test Note",
+			}
+
+			got, err := canreadnote.Resolve(ctx, permissiveEnv, note)
 			require.NoError(t, err)
 			require.Equal(t, tt.wantAccess, got, tt.description)
 		})
