@@ -82,7 +82,10 @@ import (
 var _ mcp.Env = (*app)(nil)
 var _ replicareload.Env = (*app)(nil)
 
-const replicaNoteReloadInterval = 2 * time.Second
+// replicaNoteReloadInterval is how often a read replica polls for note changes.
+// A few seconds of staleness on the public read path is acceptable (see docs/dev/readreplica.md).
+// A longer interval reduces reload churn (bleve IO + note-loader work) on resource-constrained hosts.
+const replicaNoteReloadInterval = 5 * time.Second
 
 type app struct {
 	*db.Queries

@@ -63,7 +63,11 @@ func (r *ReplicaReload) reloadIfChanged(ctx context.Context) (bool, error) {
 	if r.haveLast && sig == r.last {
 		return false, nil
 	}
-	if _, err := r.env.PrepareLatestNotes(ctx, false); err != nil {
+	// partial=true: skip the bleve search-index rebuild. A read replica serves the
+	// public read path only (search queries go through GraphQL, which the replica
+	// forwards to the leader), so rebuilding the index on every change is wasted
+	// work and the index-write IO churn can wedge the instance under heavy ingestion.
+	if _, err := r.env.PrepareLatestNotes(ctx, true); err != nil {
 		return false, err
 	}
 	if _, err := r.env.PrepareLiveNotes(ctx); err != nil {

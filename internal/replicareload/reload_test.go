@@ -21,12 +21,14 @@ func TestReloadIfChanged_FirstCallAlwaysReloads(t *testing.T) {
 	sig := db.NotesReloadSignalRow{VersionGen: 5, HiddenCount: 0}
 	latestCalls := 0
 	liveCalls := 0
+	var gotPartial bool
 	env := &EnvMock{
 		NotesReloadSignalFunc: func(ctx context.Context) (db.NotesReloadSignalRow, error) {
 			return sig, nil
 		},
 		PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*model.NoteViews, error) {
 			latestCalls++
+			gotPartial = partial
 			return nil, nil
 		},
 		PrepareLiveNotesFunc: func(ctx context.Context) (*model.NoteViews, error) {
@@ -42,6 +44,8 @@ func TestReloadIfChanged_FirstCallAlwaysReloads(t *testing.T) {
 	require.Equal(t, 1, liveCalls)
 	require.Equal(t, sig, r.last)
 	require.True(t, r.haveLast)
+	// replica reload must skip the search-index rebuild
+	require.True(t, gotPartial)
 }
 
 func TestReloadIfChanged_UnchangedSignalSkips(t *testing.T) {

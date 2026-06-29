@@ -157,8 +157,10 @@ runs none of the leader's write/reload path — so without a refresh it would se
 boot-time snapshot until restart, no matter what the leader publishes.
 
 `internal/replicareload` closes that gap. A goroutine started in the replica branch
-polls a **note-specific** change signal every 2s and reloads the cache
-(`PrepareLatestNotes` + `PrepareLiveNotes`) only when it actually changes:
+polls a **note-specific** change signal every 5s and reloads the cache
+(`PrepareLatestNotes(partial=true)` + `PrepareLiveNotes`) only when it actually changes.
+`partial=true` skips the bleve search-index rebuild — the replica doesn't serve search
+(search goes via GraphQL, which the replica forwards to the leader):
 
 ```sql
 -- NotesReloadSignal
@@ -181,7 +183,7 @@ site-config-only edit — won't trigger a reload on the replica until the next n
   the primary returns.
 - **Replication lag window.** A write forwarded by the replica is visible in the
   replica's local read only after DB replication (single-digit ms here) **and** the next
-  note-cache poll (≤2s, see *Note cache freshness*). For read-after-write on the same node
+  note-cache poll (≤5s, see *Note cache freshness*). For read-after-write on the same node
   there's a brief stale window — fine for the public read path.
 - **GraphQL reads go to the leader** (POST). Low-volume; keeps admin data fresh.
 
