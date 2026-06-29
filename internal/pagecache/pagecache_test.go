@@ -75,9 +75,9 @@ func TestClearInvalidatesEverything(t *testing.T) {
 }
 
 func TestTTLExpiry(t *testing.T) {
-	pc := New()
-	now := time.Unix(1000, 0)
-	pc.setClock(func() time.Time { return now })
+	// expirable.LRU has no clock injection, so drive a short real TTL + sleep.
+	const ttl = 30 * time.Millisecond
+	pc := newWithTTL(defaultMaxEntries, ttl)
 
 	gz, _ := Gzip([]byte("x"))
 	key := Key{Path: "/a"}
@@ -86,50 +86,35 @@ func TestTTLExpiry(t *testing.T) {
 	_, ok := pc.Get(key)
 	require.True(t, ok, "fresh entry served")
 
-	now = now.Add(DefaultTTL - time.Millisecond)
-	_, ok = pc.Get(key)
-	require.True(t, ok, "within TTL still served")
-
-	now = now.Add(2 * time.Millisecond)
+	time.Sleep(2 * ttl)
 	_, ok = pc.Get(key)
 	require.False(t, ok, "past TTL not served")
 }
 
-func TestSetPrunesExpired(t *testing.T) {
-	pc := New()
-	now := time.Unix(1000, 0)
-	pc.setClock(func() time.Time { return now })
-
-	gz, _ := Gzip([]byte("x"))
-	pc.Set(Key{Path: "/old"}, gz)
-
-	now = now.Add(2 * DefaultTTL)
-	pc.Set(Key{Path: "/new"}, gz)
-
-	// The stale /old entry is pruned during the copy-on-write of the new Set.
-	require.Equal(t, 1, pc.Len())
-	_, ok := pc.Get(Key{Path: "/new"})
-	require.True(t, ok)
-}
-
-func TestSizeCapDropsNewKeys(t *testing.T) {
-	pc := New()
-	pc.max = 2
+func TestSizeCapEvictsLRU(t *testing.T) {
+	// The cap now does LRU eviction (least-recently-used evicted to admit a new
+	// key), NOT drop-new.
+	pc := newWithTTL(2, DefaultTTL)
 	gz, _ := Gzip([]byte("x"))
 
 	pc.Set(Key{Path: "/a"}, gz)
 	pc.Set(Key{Path: "/b"}, gz)
-	pc.Set(Key{Path: "/c"}, gz) // over cap: dropped
 	require.Equal(t, 2, pc.Len())
-	_, ok := pc.Get(Key{Path: "/c"})
-	require.False(t, ok)
 
-	// Updating an existing key past the cap is still allowed.
-	gz2, _ := Gzip([]byte("y"))
-	pc.Set(Key{Path: "/a"}, gz2)
-	got, ok := pc.Get(Key{Path: "/a"})
+	// Touch /a so /b becomes the least-recently-used entry.
+	_, ok := pc.Get(Key{Path: "/a"})
 	require.True(t, ok)
-	require.Equal(t, []byte("y"), gunzip(t, got))
+
+	// Adding a new key over the cap evicts the LRU (/b), not the new key.
+	pc.Set(Key{Path: "/c"}, gz)
+	require.Equal(t, 2, pc.Len(), "cap holds: still max entries")
+
+	_, ok = pc.Get(Key{Path: "/c"})
+	require.True(t, ok, "new key is admitted (LRU eviction, not drop-new)")
+	_, ok = pc.Get(Key{Path: "/a"})
+	require.True(t, ok, "recently-used key retained")
+	_, ok = pc.Get(Key{Path: "/b"})
+	require.False(t, ok, "least-recently-used key was evicted")
 }
 
 func TestConcurrentGetSet(t *testing.T) {

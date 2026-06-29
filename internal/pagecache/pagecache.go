@@ -4,16 +4,18 @@
 // responsible for never caching personalized, authenticated, or paywalled
 // pages (see internal/case/rendernotepage).
 //
-// Reads are lock-free via an atomic map pointer; writes copy-on-write under a
-// mutex. A whole-map swap (Clear) invalidates everything on note reload.
+// The store is a thread-safe expirable LRU (hashicorp/golang-lru/v2): every
+// entry has a TTL after which Get misses, and the least-recently-used entry is
+// evicted once the size cap is reached. A whole-cache Purge (Clear) invalidates
+// everything on note reload.
 package pagecache
 
 import (
 	"bytes"
 	"compress/gzip"
-	"sync"
-	"sync/atomic"
 	"time"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 // Key identifies a cached anonymous rendered page. It is a comparable value
@@ -31,110 +33,59 @@ type Key struct {
 	UILang        string
 }
 
-type entry struct {
-	gz       []byte
-	storedAt time.Time
-}
-
 // DefaultTTL bounds how long an entry is served before a forced re-render. It
 // is the self-heal window for inputs that have no version counter today (HTML
 // injections, user-space JS/CSS bundle). Content and config changes invalidate
 // immediately via Clear / ConfigEpoch, so this only governs those few inputs.
+// The LRU enforces it internally: Get returns a miss once the entry is expired.
 const DefaultTTL = 30 * time.Second
 
-// defaultMaxEntries caps memory and copy-on-write cost. The live key space is
-// bounded (#notes x #hosts x 3 langs); the cap is a safety valve against
-// pathological growth, beyond which new pages are simply served uncached.
+// defaultMaxEntries caps memory. The live key space is bounded
+// (#notes x #hosts x 3 langs); once the cap is reached the LRU evicts the
+// least-recently-used entry to admit a new page rather than dropping the new one.
 const defaultMaxEntries = 8192
 
-// PageCache is a concurrency-safe store of pre-gzipped page bodies.
+// PageCache is a concurrency-safe store of pre-gzipped page bodies backed by an
+// expirable LRU.
 type PageCache struct {
-	m   atomic.Pointer[map[Key]entry]
-	mu  sync.Mutex // serializes writers performing copy-on-write
-	ttl time.Duration
-	max int
-	now func() time.Time
+	lru *expirable.LRU[Key, []byte]
 }
 
 // New returns an empty PageCache with the default TTL and size cap.
 func New() *PageCache {
-	pc := &PageCache{
-		ttl: DefaultTTL,
-		max: defaultMaxEntries,
-		now: time.Now,
-	}
-	empty := map[Key]entry{}
-	pc.m.Store(&empty)
-	return pc
+	return newWithTTL(defaultMaxEntries, DefaultTTL)
+}
+
+// newWithTTL builds a PageCache with an explicit size cap and TTL. Production
+// uses New(); tests use it to drive a short real TTL, since expirable.LRU does
+// not expose a clock injection hook.
+func newWithTTL(maxEntries int, ttl time.Duration) *PageCache {
+	return &PageCache{lru: expirable.NewLRU[Key, []byte](maxEntries, nil, ttl)}
 }
 
 // Get returns the pre-gzipped bytes for key when present and within its TTL.
-// Lock-free: a single atomic load of the map pointer on the hot path.
+// The underlying LRU is internally locked and enforces the TTL, returning a
+// miss for expired entries.
 func (pc *PageCache) Get(key Key) ([]byte, bool) {
-	mp := pc.m.Load()
-	if mp == nil {
-		return nil, false
-	}
-	e, ok := (*mp)[key]
-	if !ok {
-		return nil, false
-	}
-	if pc.now().Sub(e.storedAt) >= pc.ttl {
-		return nil, false
-	}
-	return e.gz, true
+	return pc.lru.Get(key)
 }
 
-// Set stores pre-gzipped bytes for key. It copies the map on write (so
-// concurrent lock-free readers never observe a partially mutated map), pruning
-// expired entries during the copy. Past the size cap, a brand-new key is
-// dropped (served uncached) rather than growing the map without bound.
+// Set stores pre-gzipped bytes for key. Past the size cap the LRU evicts the
+// least-recently-used entry to admit the new one.
 func (pc *PageCache) Set(key Key, gz []byte) {
-	pc.mu.Lock()
-	defer pc.mu.Unlock()
-
-	old := pc.m.Load()
-	now := pc.now()
-
-	if old != nil && len(*old) >= pc.max {
-		if _, exists := (*old)[key]; !exists {
-			return
-		}
-	}
-
-	next := make(map[Key]entry, len(*old)+1)
-	for k, v := range *old {
-		if now.Sub(v.storedAt) >= pc.ttl {
-			continue // prune stale entries while we are copying anyway
-		}
-		next[k] = v
-	}
-	next[key] = entry{gz: gz, storedAt: now}
-	pc.m.Store(&next)
+	pc.lru.Add(key, gz)
 }
 
-// Clear swaps in a fresh empty map, invalidating every entry at once. Called on
-// note reload, where every page must re-render against the new content. It
-// takes the writer mutex so it serializes with copy-on-write Set calls: without
-// it, a Set whose map snapshot pre-dates the Clear could store the just-cleared
-// entries back. (Such resurrected entries are bounded anyway — NoteVersionID and
-// ConfigEpoch are in the key, and every entry self-heals within the TTL — but
-// serializing makes Clear authoritative.)
+// Clear purges every entry at once, invalidating the whole cache. Called on
+// note reload, where every page must re-render against the new content.
 func (pc *PageCache) Clear() {
-	pc.mu.Lock()
-	defer pc.mu.Unlock()
-	empty := map[Key]entry{}
-	pc.m.Store(&empty)
+	pc.lru.Purge()
 }
 
-// Len reports the current number of stored entries (including any not yet
-// pruned expired ones). Intended for tests and metrics.
+// Len reports the current number of stored entries (including any expired ones
+// not yet reaped by the background cleanup). Intended for tests and metrics.
 func (pc *PageCache) Len() int {
-	mp := pc.m.Load()
-	if mp == nil {
-		return 0
-	}
-	return len(*mp)
+	return pc.lru.Len()
 }
 
 // Gzip compresses data with gzip at the level fasthttp's CompressHandler uses
@@ -153,9 +104,4 @@ func Gzip(data []byte) ([]byte, error) {
 		return nil, cerr
 	}
 	return buf.Bytes(), nil
-}
-
-// setClock overrides the time source; tests use it to drive TTL expiry.
-func (pc *PageCache) setClock(now func() time.Time) {
-	pc.now = now
 }
