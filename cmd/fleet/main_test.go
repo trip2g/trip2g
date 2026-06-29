@@ -16,6 +16,9 @@ func validConfig() fleet.Config {
 		LLMAPIKey:    "llm-key",
 		FleetID:      "fleet1",
 		DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000,
+		StepCeiling:  25,
+		OfferedTools: []string{"search", "read_note"},
 	}
 }
 
@@ -47,6 +50,21 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 			name:    "missing_llm_api_key",
 			mutate:  func(c *fleet.Config) { c.LLMAPIKey = "" },
 			wantErr: "LLMAPIKey",
+		},
+		{
+			name:    "token_ceiling_zero",
+			mutate:  func(c *fleet.Config) { c.TokenCeiling = 0 },
+			wantErr: "TokenCeiling",
+		},
+		{
+			name:    "step_ceiling_zero",
+			mutate:  func(c *fleet.Config) { c.StepCeiling = 0 },
+			wantErr: "StepCeiling",
+		},
+		{
+			name:    "offered_tools_empty",
+			mutate:  func(c *fleet.Config) { c.OfferedTools = nil },
+			wantErr: "OfferedTools",
 		},
 		{
 			name:    "all_fields_present",

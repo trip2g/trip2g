@@ -96,7 +96,7 @@ func normalizeCallbackURL(u string) string {
 	return strings.TrimRight(u, "/")
 }
 
-// validateConfig returns an error if any required field is empty.
+// validateConfig returns an error if any required field is missing or invalid.
 func validateConfig(cfg fleet.Config) error {
 	missing := []string{}
 	if cfg.CallbackURL == "" {
@@ -113,6 +113,15 @@ func validateConfig(cfg fleet.Config) error {
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("fleet: missing required config: %s", strings.Join(missing, ", "))
+	}
+	if cfg.TokenCeiling <= 0 {
+		return fmt.Errorf("fleet: TokenCeiling must be > 0 (got %d); use --token-ceiling", cfg.TokenCeiling)
+	}
+	if cfg.StepCeiling <= 0 {
+		return fmt.Errorf("fleet: StepCeiling must be > 0 (got %d); use --step-ceiling", cfg.StepCeiling)
+	}
+	if len(cfg.OfferedTools) == 0 {
+		return fmt.Errorf("fleet: OfferedTools must be non-empty; use --offered-tools")
 	}
 	return nil
 }
