@@ -280,7 +280,12 @@ func main() {
 	// use USER_TOKEN_INSECURE instead
 	// tokenManager.SetInsecure(config.DevMode) // for k6
 
-	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
+	// Cache prepared statements on the read pool so repeated queries reuse the
+	// compiled statement instead of re-parsing/planning the SQL on every call.
+	// Only the non-tx read pool is wrapped (a *sql.Stmt bound to a tx dies with
+	// it, so the write pool and WithTx paths must not use this).
+	readDBTX := db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:"))
+	queries := db.New(db.NewStmtCache(conn, readDBTX))
 	writeQueries := db.NewWriteQueries(
 		db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")).
 			WithPoolStats(writeConn.Stats),
