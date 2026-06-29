@@ -59,6 +59,11 @@ type Env interface {
 	Logger() logger.Logger
 	Now() time.Time
 
+	// IsDevMode reports whether this is a development instance. It drives
+	// jet.DevelopmentMode for layout templates: false (production) caches the
+	// compiled layout per reload, true re-parses every render for live reload.
+	IsDevMode() bool
+
 	// LoadFrontmatterPatches loads and compiles frontmatter patches from database
 	LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error)
 
@@ -299,6 +304,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	layoutOptions := layoutloader.Options{
 		BasePath: layoutBasePath,
+		DevMode:  l.env.IsDevMode(),
 	}
 
 	layouts, err := layoutloader.Load(l.env, templateSources, layoutOptions)
