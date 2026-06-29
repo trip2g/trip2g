@@ -86,6 +86,10 @@ func run() error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/deliver/", f.ServeDelivery)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 	srv := &http.Server{Addr: cli.cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
 	srvErrCh := make(chan error, 1)

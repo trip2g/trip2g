@@ -71,3 +71,7 @@ docker-compose.whoami.yml
 .test-infra.json
 .worktrees/
 templates/kanban/node_modules/
+
+# stray go build artifacts (cmd/fleet, cmd/llmmock)
+/fleet
+/llmmock
