@@ -18,6 +18,7 @@ type Role struct {
 	WritePatterns  []string
 	MaxTokens      int
 	MaxSteps       int
+	TimeoutSeconds int    // 0 = unset (defaults to defaultTimeoutSeconds)
 	Mode           string // "change" | "cron" | "both"
 	TriggerInclude []string
 	TriggerExclude []string
@@ -59,7 +60,27 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 	if r.MaxDepth, err = parseIntOpt(m["max_depth"]); err != nil {
 		return Role{}, fmt.Errorf("max_depth: %w", err)
 	}
+	if r.TimeoutSeconds, err = parseIntOpt(m["timeout_seconds"]); err != nil {
+		return Role{}, fmt.Errorf("timeout_seconds: %w", err)
+	}
 	return r, nil
+}
+
+// defaultTimeoutSeconds is the agent-run timeout applied when a role omits
+// timeout_seconds. It is deliberately generous: LLM agent runs routinely exceed
+// trip2g's 60s change-webhook default, so the reconciler registers a webhook
+// timeoutSeconds long enough for trip2g to wait for the run instead of closing
+// the delivery connection mid-run (which would cancel the agent and lose the
+// write-back).
+const defaultTimeoutSeconds = 300
+
+// EffectiveTimeoutSeconds returns the role's run timeout in seconds, applying
+// defaultTimeoutSeconds when timeout_seconds is unset (0).
+func (r Role) EffectiveTimeoutSeconds() int {
+	if r.TimeoutSeconds <= 0 {
+		return defaultTimeoutSeconds
+	}
+	return r.TimeoutSeconds
 }
 
 // Validate fails fast on misconfiguration discovered at poll time, before any
@@ -82,6 +103,9 @@ func (r Role) Validate(offered []string) error {
 	case "", "changed_files", "attached_notes":
 	default:
 		return fmt.Errorf("role %s: for_each must be changed_files|attached_notes, got %q", r.NotePath, r.ForEach)
+	}
+	if r.TimeoutSeconds < 0 {
+		return fmt.Errorf("role %s: timeout_seconds must be >= 0, got %d", r.NotePath, r.TimeoutSeconds)
 	}
 	for _, t := range r.Tools {
 		if !contains(offered, t) {

@@ -127,11 +127,15 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 		"passApiKey":       true,
 		"includeContent":   true,
 		"maxDepth":         int64(role.MaxDepth),
-		"onCreate":         contains(role.TriggerOn, "create"),
-		"onUpdate":         contains(role.TriggerOn, "update"),
-		"onRemove":         contains(role.TriggerOn, "remove"),
-		"description":      markerFor(r.cfg.FleetID, role),
-		"secret":           deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, specVer(role)),
+		// timeoutSeconds tells trip2g how long to wait for a delivery before
+		// closing the connection. An LLM agent run can exceed the 60s default, so
+		// register the role's (defaulted) timeout to avoid a mid-run cancel.
+		"timeoutSeconds": int64(role.EffectiveTimeoutSeconds()),
+		"onCreate":       contains(role.TriggerOn, "create"),
+		"onUpdate":       contains(role.TriggerOn, "update"),
+		"onRemove":       contains(role.TriggerOn, "remove"),
+		"description":    markerFor(r.cfg.FleetID, role),
+		"secret":         deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, specVer(role)),
 	}
 	raw, err := r.client.GraphQLAdmin(ctx, createChangeWebhookMutation, map[string]any{"input": input})
 	if err != nil {
@@ -197,6 +201,9 @@ func specVer(role Role) string {
 		strings.Join(role.TriggerOn, ","),
 		strconv.Itoa(role.MaxDepth),
 		role.Concurrency,
+		// Fold the effective timeout in so changing timeout_seconds rotates the
+		// marker and the webhook is recreated with the new timeoutSeconds.
+		strconv.Itoa(role.EffectiveTimeoutSeconds()),
 	}, "|")))
 	return base64.RawURLEncoding.EncodeToString(h[:6])
 }

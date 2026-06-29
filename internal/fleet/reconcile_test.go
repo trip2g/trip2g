@@ -131,6 +131,52 @@ func TestReconcile_RequestsNoteContent(t *testing.T) {
 		"reconciler must enable include_content so changes[].content is populated")
 }
 
+// TestReconcile_SendsTimeoutSeconds asserts the reconciler passes the role's
+// (defaulted) timeout into the create input as timeoutSeconds, so trip2g waits
+// long enough for a slow agent run instead of closing the delivery at its 60s
+// default.
+func TestReconcile_SendsTimeoutSeconds(t *testing.T) {
+	cases := []struct {
+		name    string
+		role    Role
+		wantSec int64
+	}{
+		{"explicit", Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, TimeoutSeconds: 120}, 120},
+		{"defaulted", Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1}, int64(defaultTimeoutSeconds)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var created map[string]any
+			client := &ClientMock{
+				GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
+					switch {
+					case strings.Contains(q, "allChangeWebhooks"):
+						return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[]}}}`), nil
+					case strings.Contains(q, "changeWebhookCreate"):
+						created = vars["input"].(map[string]any)
+						return json.RawMessage(`{"admin":{"changeWebhookCreate":{"webhook":{"id":7}}}}`), nil
+					}
+					return nil, nil
+				},
+			}
+			require.NoError(t, newReconciler(client).Reconcile(context.Background(), []Role{tc.role}))
+			require.NotNil(t, created)
+			require.Equal(t, tc.wantSec, created["timeoutSeconds"])
+		})
+	}
+}
+
+// TestSpecVer_TimeoutSecondsRotatesMarker asserts changing timeout_seconds
+// rotates the spec version (and hence the marker), so the webhook is recreated
+// with the new timeoutSeconds.
+func TestSpecVer_TimeoutSecondsRotatesMarker(t *testing.T) {
+	base := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1}
+	bumped := base
+	bumped.TimeoutSeconds = 120
+	require.NotEqual(t, specVer(base), specVer(bumped),
+		"changing timeout_seconds must rotate the spec version")
+}
+
 func TestReconcile_NoChangeWhenMarkerMatches(t *testing.T) {
 	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
 	desc := markerFor("f1", role)

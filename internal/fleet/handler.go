@@ -1,12 +1,14 @@
 package fleet
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/webhookutil"
@@ -99,6 +101,17 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Detach the agent run from the request context. trip2g closes the delivery
+	// connection when its change-webhook timeoutSeconds elapses, but an LLM agent
+	// run can outlive that. Tying Run to r.Context() would let a premature
+	// client/connection close cancel the run mid-flight and lose the write-back.
+	// Instead, bound the run by the role's own timeout off a fresh background
+	// context. No request-scoped values are needed here (the scoped api_token
+	// rides in the payload, not the context), so nothing is carried over.
+	runCtx, cancel := context.WithTimeout(context.Background(),
+		time.Duration(role.EffectiveTimeoutSeconds())*time.Second)
+	defer cancel()
+
 	// Sequential fan-out, continue-on-error: one Run per item, accumulate spend,
 	// collect per-item errors instead of aborting the batch. Each Run reuses the
 	// same scoped api_token, so per-delivery attribution (all items reuse the one
@@ -112,7 +125,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: render: %v", i+1, rerr))
 			continue
 		}
-		res, runErr := agentruntime.Run(r.Context(), agentruntime.Input{
+		res, runErr := agentruntime.Run(runCtx, agentruntime.Input{
 			Instruction:   instruction,
 			ReadPatterns:  role.ReadPatterns,
 			WritePatterns: role.WritePatterns,

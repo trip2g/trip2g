@@ -14,6 +14,49 @@ func meta(kv ...string) map[string]string {
 	return m
 }
 
+// validChangeRole is a minimal change-mode role that passes Validate: it has a
+// non-empty trigger_on and trigger_include (both now required for change mode).
+// Tests tweak one field to isolate the rejection under test.
+func validChangeRole() Role {
+	return Role{
+		NotePath:       "roles/a.md",
+		Mode:           "change",
+		TriggerOn:      []string{"update"},
+		TriggerInclude: []string{"boards/**"},
+	}
+}
+
+func TestParseRole_TimeoutSeconds(t *testing.T) {
+	r, err := ParseRole("roles/a.md", "body", meta("mode", "change", "timeout_seconds", "120"))
+	require.NoError(t, err)
+	require.Equal(t, 120, r.TimeoutSeconds)
+	require.Equal(t, 120, r.EffectiveTimeoutSeconds())
+
+	// Unset stays 0 raw and resolves to the generous default.
+	r2, err := ParseRole("roles/a.md", "body", meta("mode", "change"))
+	require.NoError(t, err)
+	require.Equal(t, 0, r2.TimeoutSeconds)
+	require.Equal(t, defaultTimeoutSeconds, r2.EffectiveTimeoutSeconds())
+
+	// Non-numeric is a parse error.
+	_, err = ParseRole("roles/a.md", "body", meta("mode", "change", "timeout_seconds", "soon"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timeout_seconds")
+}
+
+func TestRoleValidate_TimeoutSecondsNonNegative(t *testing.T) {
+	r := validChangeRole()
+	r.TimeoutSeconds = 0 // unset -> allowed (defaults later)
+	require.NoError(t, r.Validate(nil))
+	r.TimeoutSeconds = 300
+	require.NoError(t, r.Validate(nil))
+
+	r.TimeoutSeconds = -1
+	err := r.Validate(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timeout_seconds")
+}
+
 func TestParseRole_FlatFrontmatter(t *testing.T) {
 	r, err := ParseRole("roles/triage.md", "Triage the board.", meta(
 		"model", "gpt-4o-mini",

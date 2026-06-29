@@ -154,6 +154,81 @@ func TestDeliveryPayload_DecodesTriggerContext(t *testing.T) {
 	require.Equal(t, "2026-06-29T10:00:00Z", an.UpdatedAt)
 }
 
+// ctxProbeLLM blocks the first Chat call until the test signals it (after the
+// test has cancelled the request context), then records whether the run context
+// it received is still alive. A live (nil-error) run context proves the run was
+// detached from the request context. It writes once via patch_note, then
+// finishes, so the test can also assert the write-back survived the cancel.
+type ctxProbeLLM struct {
+	started   chan struct{}
+	proceed   chan struct{}
+	runCtxErr error
+	idx       int
+}
+
+func (l *ctxProbeLLM) Chat(ctx context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	defer func() { l.idx++ }()
+	if l.idx == 0 {
+		close(l.started)
+		<-l.proceed
+		l.runCtxErr = ctx.Err()
+		args, _ := json.Marshal(map[string]any{"path": "boards/sprint.md", "find": "todo", "replace": "doing"})
+		return agentruntime.ChatResult{
+			ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "patch_note", Arguments: string(args)}},
+			PromptTokens: 1, CompletionTokens: 1,
+		}, nil
+	}
+	args, _ := json.Marshal(map[string]any{"answer": "done"})
+	return agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "2", Name: "finish", Arguments: string(args)}},
+		PromptTokens: 1, CompletionTokens: 1,
+	}, nil
+}
+
+// TestServeDelivery_RunDetachedFromRequestContext is the regression test for
+// finding #4: trip2g closes the delivery connection when its change-webhook
+// timeoutSeconds (default 60s) elapses, which cancels the inbound request
+// context. The agent run MUST NOT be tied to that context — otherwise a slow
+// run is aborted mid-flight and its write-back is lost. Here the request context
+// is cancelled while the agent is mid-run; the run must still see a live context
+// and complete + write.
+func TestServeDelivery_RunDetachedFromRequestContext(t *testing.T) {
+	var scopedCalls int
+	client := &ClientMock{
+		GraphQLScopedFunc: func(_ context.Context, _, _ string, _ map[string]any) (json.RawMessage, error) {
+			scopedCalls++
+			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
+		},
+	}
+	llm := &ctxProbeLLM{started: make(chan struct{}), proceed: make(chan struct{})}
+	f := newTestFleetWithLLM(client, llm)
+
+	key := urlKey("roles/triage.md")
+	body := deliveryBody(t)
+	reqCtx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body)).WithContext(reqCtx)
+	role, ok := f.roleByKey(key)
+	require.True(t, ok)
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
+	rec := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		f.ServeDelivery(rec, req)
+		close(done)
+	}()
+
+	<-llm.started      // the handler has entered the agent run
+	cancel()           // simulate trip2g closing the delivery at its timeout
+	close(llm.proceed) // let the run continue
+	<-done
+
+	require.NoError(t, llm.runCtxErr,
+		"agent run context must NOT be cancelled by the inbound request context")
+	require.Equal(t, http.StatusOK, rec.Code, "run must complete despite request cancel")
+	require.Equal(t, 1, scopedCalls, "write-back must still happen after request cancel")
+}
+
 func TestServeDelivery_BadHMAC401(t *testing.T) {
 	f := newTestFleet(&ClientMock{})
 	rec := post(t, f, urlKey("roles/triage.md"), deliveryBody(t), false)
