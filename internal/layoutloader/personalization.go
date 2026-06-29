@@ -21,6 +21,11 @@ const (
 // Triggers:
 //   - any access to the `currentUser` namespace (e.g. currentUser.IsAdmin()).
 //   - note.LastEditedBy / note.LastEditedByLabel (the admin-only byline).
+//
+// For the anonymous page cache this list is defense-in-depth only: the cache is
+// keyed and gated to anon viewers, so a missed trigger here cannot serve one
+// viewer's personalized output to another — it would at worst cache an anon
+// render that need not have been cached.
 type personalizationFinder struct{ found bool }
 
 func (w *personalizationFinder) Visit(vc utils.VisitorContext, node jet.Node) {

@@ -33,11 +33,13 @@ type Key struct {
 	UILang        string
 }
 
-// DefaultTTL bounds how long an entry is served before a forced re-render. It
-// is the self-heal window for inputs that have no version counter today (HTML
-// injections, user-space JS/CSS bundle). Content and config changes invalidate
-// immediately via Clear / ConfigEpoch, so this only governs those few inputs.
-// The LRU enforces it internally: Get returns a miss once the entry is expired.
+// DefaultTTL bounds how long an entry is served before a forced re-render. The
+// LRU applies it to EVERY entry (Get returns a miss once the entry is expired),
+// so it caps staleness for all cached pages — the cache is more conservative
+// than strictly required. Its purpose is the self-heal window for inputs that
+// have no version counter today (HTML injections, user-space JS/CSS bundle):
+// content and config changes invalidate sooner via Clear / ConfigEpoch, but even
+// an input with no counter at all cannot go stale for longer than this.
 const DefaultTTL = 30 * time.Second
 
 // defaultMaxEntries caps memory. The live key space is bounded
