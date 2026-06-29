@@ -15,6 +15,7 @@ import (
 )
 
 type Env interface {
+	IsDevMode() bool
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	UpdateWebhook(ctx context.Context, params db.UpdateWebhookParams) (db.ChangeWebhook, error)
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
@@ -115,8 +116,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// F9(a): require HTTPS whenever sensitive data (api_token or decrypted secrets)
 	// would travel in the delivery body. Use effective merged state so partial updates
 	// (URL-only or pass_api_key-only) are caught even when only one field is provided.
+	// Dev mode exempts Docker-internal URLs (e.g. compose service names).
 	if effectivePassAPIKey || hasSecrets {
-		if msg := webhookutil.RequireHTTPS(effectiveURL); msg != "" {
+		if msg := webhookutil.RequireHTTPSUnlessDevMode(effectiveURL, env.IsDevMode()); msg != "" {
 			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
 		}
 	}

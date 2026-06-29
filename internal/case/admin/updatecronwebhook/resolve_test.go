@@ -23,6 +23,8 @@ func (m *mockEnv) CurrentAdminUserToken(_ context.Context) (*usertoken.Data, err
 	return &usertoken.Data{ID: 1, Role: "admin"}, nil
 }
 
+func (m *mockEnv) IsDevMode() bool { return false }
+
 func (m *mockEnv) UpdateCronWebhook(_ context.Context, p db.UpdateCronWebhookParams) (db.CronWebhook, error) {
 	m.updated = &p
 	return db.CronWebhook{ID: p.ID, CronSchedule: "0 * * * *"}, nil
