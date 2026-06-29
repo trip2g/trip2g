@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -186,7 +187,7 @@ func specVer(role Role) string {
 		strings.Join(role.WritePatterns, ","),
 		strings.Join(role.AttachNotes, ","),
 		strings.Join(role.TriggerOn, ","),
-		fmt.Sprintf("%d", role.MaxDepth),
+		strconv.Itoa(role.MaxDepth),
 		role.Concurrency,
 	}, "|")))
 	return base64.RawURLEncoding.EncodeToString(h[:6])

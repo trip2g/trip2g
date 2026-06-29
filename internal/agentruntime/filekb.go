@@ -57,7 +57,7 @@ func (f *FileKB) Search(_ context.Context, query string) ([]Doc, error) {
 		if d.IsDir() {
 			return nil
 		}
-		data, readErr := os.ReadFile(path) //nolint:gosec // path is under the vault root.
+		data, readErr := os.ReadFile(path)
 		if readErr != nil {
 			return readErr
 		}
@@ -78,7 +78,7 @@ func (f *FileKB) Read(_ context.Context, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data, err := os.ReadFile(abs) //nolint:gosec // path validated by resolve.
+	data, err := os.ReadFile(abs)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func (f *FileKB) Write(_ context.Context, path string, content string) error {
 	if err != nil {
 		return err
 	}
-	if mkErr := os.MkdirAll(filepath.Dir(abs), 0o755); mkErr != nil {
+	if mkErr := os.MkdirAll(filepath.Dir(abs), 0o750); mkErr != nil {
 		return mkErr
 	}
 	return os.WriteFile(abs, []byte(content), 0o644) //nolint:gosec // vault content is not a secret store.
@@ -116,10 +116,10 @@ func (f *FileKB) Patch(ctx context.Context, path, find, replace string) error {
 }
 
 func snippet(s string) string {
-	const max = 240
+	const snippetLen = 240
 	s = strings.TrimSpace(s)
-	if len(s) <= max {
+	if len(s) <= snippetLen {
 		return s
 	}
-	return s[:max] + "…"
+	return s[:snippetLen] + "…"
 }

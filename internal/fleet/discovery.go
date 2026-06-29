@@ -47,8 +47,8 @@ func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
 	var data struct {
 		NotePaths []discoveredNote `json:"notePaths"`
 	}
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return nil, []error{fmt.Errorf("discover decode: %w", err)}
+	if decErr := json.Unmarshal(raw, &data); decErr != nil {
+		return nil, []error{fmt.Errorf("discover decode: %w", decErr)}
 	}
 
 	var roles []Role

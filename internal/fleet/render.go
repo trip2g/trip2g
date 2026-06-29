@@ -42,8 +42,8 @@ func renderInstruction(body string, ctx renderCtx) (string, error) {
 	vars.Set("depth", ctx.Depth)
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, vars, nil); err != nil {
-		return "", err
+	if execErr := tmpl.Execute(&buf, vars, nil); execErr != nil {
+		return "", execErr
 	}
 	return withAttachedNotesHint(buf.String(), ctx.AttachedNotes), nil
 }

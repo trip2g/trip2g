@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -121,7 +122,7 @@ func validateConfig(cfg fleet.Config) error {
 		return fmt.Errorf("fleet: StepCeiling must be > 0 (got %d); use --step-ceiling", cfg.StepCeiling)
 	}
 	if len(cfg.OfferedTools) == 0 {
-		return fmt.Errorf("fleet: OfferedTools must be non-empty; use --offered-tools")
+		return errors.New("fleet: OfferedTools must be non-empty; use --offered-tools")
 	}
 	return nil
 }

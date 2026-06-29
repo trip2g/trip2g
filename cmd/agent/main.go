@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -47,7 +48,7 @@ func run() error {
 		instructionText = string(data)
 	}
 	if instructionText == "" {
-		return fmt.Errorf("an -instruction or -instruction-file is required")
+		return errors.New("an -instruction or -instruction-file is required")
 	}
 
 	readPats, err := webhookutil.ParseJSONStringArray(*readPatterns)
@@ -85,6 +86,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(out))
+	fmt.Fprintln(os.Stdout, string(out))
 	return nil
 }

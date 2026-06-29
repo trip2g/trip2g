@@ -67,8 +67,8 @@ func (c *httpClient) do(ctx context.Context, path string, headers map[string]str
 			Message string `json:"message"`
 		} `json:"errors"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
-		return nil, fmt.Errorf("decode graphql response (HTTP %d): %w", resp.StatusCode, err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&env); decErr != nil {
+		return nil, fmt.Errorf("decode graphql response (HTTP %d): %w", resp.StatusCode, decErr)
 	}
 	if len(env.Errors) > 0 {
 		return nil, fmt.Errorf("graphql error: %s", env.Errors[0].Message)

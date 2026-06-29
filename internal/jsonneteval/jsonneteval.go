@@ -5,6 +5,7 @@ package jsonneteval
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	jsonnet "github.com/google/go-jsonnet"
@@ -32,7 +33,7 @@ func EvalJSON(src string, extVars map[string]string) (json.RawMessage, error) {
 	}
 
 	if !json.Valid([]byte(out)) {
-		return nil, fmt.Errorf("jsonnet output is not valid JSON")
+		return nil, errors.New("jsonnet output is not valid JSON")
 	}
 
 	return json.RawMessage(out), nil

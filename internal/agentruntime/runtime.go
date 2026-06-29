@@ -121,7 +121,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 
 	res := &Result{Status: StatusMaxSteps}
 
-	for step := 0; step < in.MaxSteps; step++ {
+	for step := range in.MaxSteps {
 		// Hard-cap check happens BEFORE each model call: once spent, stop.
 		if res.TokensUsed >= in.MaxTokens {
 			res.Status = StatusCapped
