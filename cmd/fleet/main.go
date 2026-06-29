@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -28,7 +29,7 @@ func main() {
 }
 
 func run() error {
-	cfg, offeredFlag := parseFlags()
+	cfg, dryRun := parseFlags()
 
 	// Normalize: strip trailing slash so webhook URLs assemble cleanly.
 	cfg.CallbackURL = normalizeCallbackURL(cfg.CallbackURL)
@@ -43,11 +44,17 @@ func run() error {
 
 	f := fleet.NewFleet(cfg, client, llm)
 	discovery := fleet.NewDiscovery(client, cfg.AgentsFolder, cfg.OfferedTools)
-	reconciler := fleet.NewReconciler(client, cfg)
-	_ = offeredFlag
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// --dry-run: connect, print + flag each role's resolved config, then exit
+	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
+	if dryRun {
+		return runDryRun(ctx, discovery, cfg)
+	}
+
+	reconciler := fleet.NewReconciler(client, cfg)
 
 	// First sync before serving so the registry is populated.
 	syncOnce(ctx, f, discovery, reconciler)
@@ -138,9 +145,11 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 	}
 }
 
-func parseFlags() (fleet.Config, []string) {
+func parseFlags() (fleet.Config, bool) {
 	var cfg fleet.Config
 	var offered string
+	var dryRun bool
+	flag.BoolVar(&dryRun, "dry-run", false, "discover roles, print + flag their resolved config, then exit without registering webhooks")
 	flag.StringVar(&cfg.FleetID, "fleet-id", env("FLEET_ID", "fleet1"), "reconcile marker id")
 	flag.StringVar(&cfg.ListenAddr, "listen", env("FLEET_LISTEN", ":9090"), "HTTP listen address")
 	flag.StringVar(&cfg.CallbackURL, "callback-url", env("FLEET_CALLBACK_URL", ""), "trip2g-reachable base URL of this fleet")
@@ -161,7 +170,66 @@ func parseFlags() (fleet.Config, []string) {
 
 	cfg.OfferedTools = splitCSV(offered)
 	cfg.PollInterval = time.Duration(*poll) * time.Second
-	return cfg, cfg.OfferedTools
+	return cfg, dryRun
+}
+
+// runDryRun discovers (parses) every role over the admin lane, prints each
+// role's resolved config with a flag on any that fail Validate, and returns
+// without touching webhooks. It is the fleet's pre-flight doctor.
+func runDryRun(ctx context.Context, d *fleet.Discovery, cfg fleet.Config) error {
+	roles, errs := d.DiscoverParsed(ctx)
+	for _, e := range errs {
+		log.Printf("dry-run parse error: %v", e)
+	}
+	fmt.Print(reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
+	return nil
+}
+
+// reportRoles renders a human-readable resolved-config report for each role,
+// flagging any that fail Validate. offered is the fleet's offered tool set used
+// for the Validate check; defaultModel is shown when a role omits model.
+func reportRoles(roles []fleet.Role, offered []string, defaultModel string) string {
+	if len(roles) == 0 {
+		return "no roles discovered\n"
+	}
+	var b strings.Builder
+	for _, r := range roles {
+		model := r.Model
+		if model == "" {
+			model = defaultModel + " (default)"
+		}
+		forEach := r.ForEach
+		if forEach == "" {
+			forEach = "(single run)"
+		}
+		timeoutNote := ""
+		if r.TimeoutSeconds <= 0 {
+			timeoutNote = " (default)"
+		}
+
+		fmt.Fprintf(&b, "%s\n", r.NotePath)
+		fmt.Fprintf(&b, "  mode:            %s\n", r.Mode)
+		fmt.Fprintf(&b, "  trigger_on:      %v -> onCreate=%t onUpdate=%t onRemove=%t\n",
+			r.TriggerOn,
+			slices.Contains(r.TriggerOn, "create"),
+			slices.Contains(r.TriggerOn, "update"),
+			slices.Contains(r.TriggerOn, "remove"))
+		fmt.Fprintf(&b, "  trigger_include: %v\n", r.TriggerInclude)
+		fmt.Fprintf(&b, "  trigger_exclude: %v\n", r.TriggerExclude)
+		fmt.Fprintf(&b, "  read_patterns:   %v\n", r.ReadPatterns)
+		fmt.Fprintf(&b, "  write_patterns:  %v\n", r.WritePatterns)
+		fmt.Fprintf(&b, "  model:           %s\n", model)
+		fmt.Fprintf(&b, "  tools:           %v\n", r.Tools)
+		fmt.Fprintf(&b, "  for_each:        %s\n", forEach)
+		fmt.Fprintf(&b, "  timeout_seconds: %d%s\n", r.EffectiveTimeoutSeconds(), timeoutNote)
+		if verr := r.Validate(offered); verr != nil {
+			fmt.Fprintf(&b, "  STATUS: FLAGGED: %v\n", verr)
+		} else {
+			fmt.Fprint(&b, "  STATUS: OK\n")
+		}
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
 
 func splitCSV(s string) []string {

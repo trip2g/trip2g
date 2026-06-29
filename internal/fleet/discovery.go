@@ -40,6 +40,23 @@ type discoveredNote struct {
 // DiscoverRoles returns the valid roles plus a slice of per-note validation
 // errors (invalid roles are excluded, never registered).
 func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
+	parsed, errs := d.DiscoverParsed(ctx)
+	var roles []Role
+	for _, role := range parsed {
+		if verr := role.Validate(d.offeredTools); verr != nil {
+			errs = append(errs, verr)
+			continue
+		}
+		roles = append(roles, role)
+	}
+	return roles, errs
+}
+
+// DiscoverParsed fetches and parses every role note under AgentsFolder WITHOUT
+// the Validate filter, returning all successfully-parsed roles plus per-note
+// parse errors. The --dry-run report uses it so it can show (and flag) the
+// resolved config of roles that DiscoverRoles would silently skip.
+func (d *Discovery) DiscoverParsed(ctx context.Context) ([]Role, []error) {
 	raw, err := d.client.GraphQLAdmin(ctx, discoverRolesQuery, map[string]any{"like": likePattern(d.agentsFolder)})
 	if err != nil {
 		return nil, []error{fmt.Errorf("discover: %w", err)}
@@ -61,10 +78,6 @@ func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
 		role, perr := ParseRole(n.Value, n.Content, meta)
 		if perr != nil {
 			errs = append(errs, fmt.Errorf("parse %s: %w", n.Value, perr))
-			continue
-		}
-		if verr := role.Validate(d.offeredTools); verr != nil {
-			errs = append(errs, verr)
 			continue
 		}
 		roles = append(roles, role)

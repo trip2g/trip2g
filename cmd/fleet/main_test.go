@@ -89,6 +89,49 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 	}
 }
 
+// TestReportRoles_FormatsAndFlags verifies the --dry-run resolver/printer:
+// it renders each role's resolved config (trigger_on -> on* flags, defaulted
+// model and timeout) and FLAGS any role that fails Validate. This tests the
+// formatting/flagging logic, not the live admin-lane connect.
+func TestReportRoles_FormatsAndFlags(t *testing.T) {
+	roles := []fleet.Role{
+		{
+			NotePath:       "roles/good.md",
+			Mode:           "change",
+			TriggerOn:      []string{"update"},
+			TriggerInclude: []string{"boards/**"},
+			ReadPatterns:   []string{"boards/**"},
+			WritePatterns:  []string{"boards/**"},
+			Tools:          []string{"search", "patch_note"},
+		},
+		{
+			NotePath: "roles/bad.md",
+			Mode:     "change",
+			// empty trigger_on -> fires on nothing -> must be FLAGGED
+			TriggerInclude: []string{"boards/**"},
+		},
+	}
+	out := reportRoles(roles, []string{"search", "read_note", "patch_note"}, "gpt-4o-mini")
+
+	// Resolved config for the good role.
+	require.Contains(t, out, "roles/good.md")
+	require.Contains(t, out, "onCreate=false onUpdate=true onRemove=false")
+	require.Contains(t, out, "gpt-4o-mini (default)") // model omitted -> default shown
+	require.Contains(t, out, "300 (default)")         // timeout unset -> resolved default
+	require.Contains(t, out, "STATUS: OK")
+
+	// The misconfigured role is flagged with its failure reason.
+	require.Contains(t, out, "roles/bad.md")
+	require.Contains(t, out, "FLAGGED")
+	require.Contains(t, out, "trigger_on")
+}
+
+// TestReportRoles_Empty reports clearly when no roles were discovered.
+func TestReportRoles_Empty(t *testing.T) {
+	out := reportRoles(nil, []string{"search"}, "gpt-4o-mini")
+	require.Contains(t, out, "no roles discovered")
+}
+
 // TestTrailingSlashNormalization verifies that normalizeCallbackURL (called by
 // run() before validateConfig) strips trailing slashes from CallbackURL.
 func TestTrailingSlashNormalization(t *testing.T) {
