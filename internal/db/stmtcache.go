@@ -24,6 +24,15 @@ import (
 type StmtCache struct {
 	inner DBTX    // delegate for PrepareContext (DBTX interface completeness)
 	db    *sql.DB // read pool; source of pool-aware cached *sql.Stmt
+
+	// A plain map guarded by RWMutex (with double-checked locking in getStmt),
+	// not sync.Map. This is a grow-only, write-once/read-many cache — a pattern
+	// sync.Map is built for — but the cached value is expensive to build (a DB
+	// prepare round-trip) and owns a resource that must be Closed. RWMutex +
+	// double-check guarantees each distinct query is prepared EXACTLY once;
+	// sync.Map.LoadOrStore would let two goroutines racing the same cold key both
+	// prepare, then orphan (never Close) the loser's *sql.Stmt. After warmup,
+	// reads take only the RLock, so there is no read contention to trade away.
 	mu    sync.RWMutex
 	stmts map[string]*sql.Stmt
 }
