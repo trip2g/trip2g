@@ -178,6 +178,10 @@ func TestPageCache_AnonGzipHit(t *testing.T) {
 	ctx1 := newReqCtx(reqOpts{acceptEncoding: "gzip"})
 	runHandle(t, env, ctx1, nil)
 	require.Equal(t, "gzip", string(ctx1.Response.Header.ContentEncoding()))
+	// The fill path presets Content-Encoding (so CompressHandler is skipped) and
+	// must re-add the Vary: Accept-Encoding that CompressHandler emits otherwise.
+	require.Equal(t, "Accept-Encoding", string(ctx1.Response.Header.Peek("Vary")),
+		"fill response must carry Vary: Accept-Encoding like the uncached path")
 	require.Len(t, env.StoreCachedPageCalls(), 1, "first request fills the cache")
 	require.Equal(t, 1, pc.Len())
 	html1 := body(t, ctx1)
@@ -186,6 +190,8 @@ func TestPageCache_AnonGzipHit(t *testing.T) {
 	ctx2 := newReqCtx(reqOpts{acceptEncoding: "gzip"})
 	runHandle(t, env, ctx2, nil)
 	require.Equal(t, "gzip", string(ctx2.Response.Header.ContentEncoding()))
+	require.Equal(t, "Accept-Encoding", string(ctx2.Response.Header.Peek("Vary")),
+		"cache-hit response must carry Vary: Accept-Encoding like the uncached path")
 	require.Len(t, env.StoreCachedPageCalls(), 1, "second request must NOT re-fill (served from cache)")
 	require.Equal(t, html1, body(t, ctx2), "cached page decompresses identical to a fresh render")
 	// The cached gzipped bytes are served verbatim.
@@ -259,6 +265,34 @@ func TestPageCache_PushInvalidation(t *testing.T) {
 	runHandle(t, env, ctx2, nil)
 	require.Len(t, env.StoreCachedPageCalls(), 2, "post-push request re-renders + re-fills")
 	require.Contains(t, string(body(t, ctx2)), "<h1>Updated</h1>")
+}
+
+// Test 4b: the whole-cache Clear (map-swap) is load-bearing ON ITS OWN. Unlike
+// TestPageCache_PushInvalidation, NO key field changes here — same NoteVersionID,
+// same ConfigEpoch, same path/host/lang — so the key stays identical and the only
+// thing that can force a re-render is Clear(). This pins the invalidation path for
+// changes that do NOT move NoteVersionID (custom-layout edits whose layout version
+// is not in the key; subgraph access changes at the same content version). Remove
+// the pc.Clear() below and the second request hits the stale entry: the
+// StoreCachedPageCalls()==2 assertion then fails.
+func TestPageCache_ClearOnlyInvalidation(t *testing.T) {
+	_, views := cacheTestNote()
+	env, pc, _ := cacheTestEnv(views, nil)
+
+	ctx1 := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+	runHandle(t, env, ctx1, nil)
+	require.Len(t, env.StoreCachedPageCalls(), 1, "first request fills the cache")
+	require.Equal(t, 1, pc.Len())
+
+	// A reload that does NOT bump NoteVersionID still Clears the map.
+	pc.Clear()
+	require.Equal(t, 0, pc.Len())
+
+	ctx2 := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+	runHandle(t, env, ctx2, nil)
+	require.Len(t, env.StoreCachedPageCalls(), 2,
+		"Clear() alone (no key change) must force a re-render + re-fill")
+	require.Equal(t, 1, pc.Len())
 }
 
 // Test 5: a config change bumps ConfigEpoch so old entries are unreachable.

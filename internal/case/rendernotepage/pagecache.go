@@ -11,11 +11,14 @@ import (
 )
 
 // maxCacheableRender bounds how long a render may take and still be cached. It
-// guards against fasthttp.TimeoutHandler: on timeout (60s prod / 10min dev) the
-// handler goroutine keeps running on a ctx fasthttp may already be reusing, so a
-// render that reaches the fill path far slower than any healthy one must not
-// write (possibly foreign) response bytes into the shared cache. Healthy renders
-// complete in well under a second; this is comfortably below the timeout.
+// is defense-in-depth against fasthttp.TimeoutHandler: on timeout (60s prod /
+// 10min dev) the client is handed a fresh ctx while the original handler
+// goroutine keeps running on its now-abandoned ctx, which it owns exclusively
+// (fasthttp 1.66.0 server.go:2459-2462 — the timed-out ctx is not reused, so
+// there is no foreign-ctx contamination). The guard simply refuses to cache a
+// render that reaches the fill path far slower than any healthy one: those bytes
+// come from an incomplete/degraded render, not a representative page. Healthy
+// renders complete in well under a second; this is comfortably below the timeout.
 const maxCacheableRender = 5 * time.Second
 
 // normalizeUILang returns (lang, true) only for the small whitelist the page
@@ -109,6 +112,10 @@ func writeCachedPage(ctx *fasthttp.RequestCtx, gz []byte) {
 	ctx.SetStatusCode(http.StatusOK)
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.Response.Header.SetContentEncoding("gzip")
+	// CompressHandler's gzipBody early-returns once Content-Encoding is set, so it
+	// never adds the Vary: Accept-Encoding it emits on the uncached path. Add it
+	// here so cached responses carry the same Vary header as normal output.
+	ctx.Response.Header.Add("Vary", "Accept-Encoding")
 	ctx.Response.SetBody(gz)
 }
 
@@ -116,7 +123,8 @@ func writeCachedPage(ctx *fasthttp.RequestCtx, gz []byte) {
 // replaces the response body with the gzipped bytes + Content-Encoding so the
 // filling request is served identically and CompressHandler is skipped. It is a
 // no-op when caching was refused, the response is not a clean 200, or the render
-// took anomalously long (a likely timed-out handler racing ctx reuse).
+// took anomalously long (a likely timed-out handler whose incomplete bytes must
+// not enter the shared cache).
 func fillPageCache(
 	ctx *fasthttp.RequestCtx,
 	env Env,
@@ -142,5 +150,8 @@ func fillPageCache(
 
 	env.StoreCachedPage(key, gz)
 	ctx.Response.Header.SetContentEncoding("gzip")
+	// See writeCachedPage: presetting Content-Encoding makes CompressHandler skip
+	// adding Vary: Accept-Encoding, so add it to match the uncached path.
+	ctx.Response.Header.Add("Vary", "Accept-Encoding")
 	ctx.Response.SetBody(gz)
 }
