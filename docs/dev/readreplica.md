@@ -149,14 +149,40 @@ Single-digit-millisecond lag on the Hetzner private network. (Includes ~poll
 granularity, so actual lag is marginally lower.) LiteFS also exposes live lag in
 `/litefs/.lag`.
 
+## Note cache freshness
+
+A replica's rendered pages come from an **in-memory `NoteViews` cache**, not from the
+DB per request. That cache is built once at boot (`loadAllNotes`) and the replica
+runs none of the leader's write/reload path — so without a refresh it would serve the
+boot-time snapshot until restart, no matter what the leader publishes.
+
+`internal/replicareload` closes that gap. A goroutine started in the replica branch
+polls a **note-specific** change signal every 2s and reloads the cache
+(`PrepareLatestNotes` + `PrepareLiveNotes`) only when it actually changes:
+
+```sql
+-- NotesReloadSignal
+select max(note_versions.id)                         as version_gen,   -- creates/edits
+       count(note_paths where hidden_by is not null) as hidden_count   -- hides/unhides
+```
+
+The signal is deliberately **not** `PRAGMA data_version` (which bumps on every write,
+including unrelated ones like sign-in codes, API keys, and logs — it would reload the
+whole vault constantly). `note_versions.id` is monotonic on content changes; hides set
+`note_paths.hidden_by` (no new version row), so the hidden count is tracked too.
+
+Known gaps: changes that don't touch `note_versions` or `hidden_by` — e.g. a
+site-config-only edit — won't trigger a reload on the replica until the next note change.
+
 ## Known limitations
 
 - **Static lease, no failover.** `candidate: false` means the replica never promotes. If
   the primary is down, the replica keeps serving reads but write forwarding fails until
   the primary returns.
 - **Replication lag window.** A write forwarded by the replica is visible in the
-  replica's local read only after replication (single-digit ms here). For read-after-write
-  on the same node there's a brief stale window — fine for the public read path.
+  replica's local read only after DB replication (single-digit ms here) **and** the next
+  note-cache poll (≤2s, see *Note cache freshness*). For read-after-write on the same node
+  there's a brief stale window — fine for the public read path.
 - **GraphQL reads go to the leader** (POST). Low-volume; keeps admin data fresh.
 
 ## Code map
@@ -168,6 +194,11 @@ granularity, so actual lag is marginally lower.) LiteFS also exposes live lag in
 - `cmd/server/main.go` — `--leader-addr` wiring, replica branch in startup, `DBSet`,
   forward middleware, fasthttp internal server + `handleReplicaIntake`.
 - `internal/appconfig/config.go` — `LeaderAddr`, `IsReadReplica()`.
+- `internal/replicareload/` — the note-cache refresh loop (`NotesReloadSignal` poll →
+  `PrepareLatestNotes`/`PrepareLiveNotes` on change), launched in the replica startup branch.
 
 Tests: `internal/readreplica/*_test.go` (routing, sign/verify, end-to-end forward→intake
-over an in-memory listener), `internal/db/setup_test.go` (`TestStrictReadOnlyRejectsWrites`).
+over an in-memory listener), `internal/db/setup_test.go` (`TestStrictReadOnlyRejectsWrites`),
+`internal/replicareload/reload_test.go` (reload-on-change, skip-on-same, hide detection,
+error handling). E2E: `e2e/read-replica.spec.js` (the parity test polls until the replica
+converges with the leader, exercising the refresh loop end-to-end).
