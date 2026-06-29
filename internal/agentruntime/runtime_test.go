@@ -51,10 +51,14 @@ func (m *memKB) Patch(_ context.Context, path, find, replace string) error {
 	if !ok {
 		return errNotFound
 	}
-	if !strings.Contains(content, find) {
+	idx := strings.Index(content, find)
+	if idx == -1 {
 		return &kbError{"patch find not found"}
 	}
-	m.docs[path] = strings.Replace(content, find, replace, 1)
+	if strings.Contains(content[idx+len(find):], find) {
+		return &kbError{"patch find is ambiguous (multiple occurrences)"}
+	}
+	m.docs[path] = content[:idx] + replace + content[idx+len(find):]
 	return nil
 }
 

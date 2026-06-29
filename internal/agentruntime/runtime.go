@@ -74,7 +74,7 @@ Tools:
 - search(query): find documents within your read scope.
 - read_note(path): read a document's content (read scope only).
 - write_note(path, content): create or replace a document (write scope only).
-- patch_note(path, find, replace): surgically edit a document (write scope only).
+- patch_note(path, find, replace): surgically edit a document (write scope only). Fails if find is absent or occurs more than once; include enough surrounding context to make the match unique.
 - finish(answer): end the run with your final answer/summary.
 
 Rules:
