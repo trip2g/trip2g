@@ -129,6 +129,51 @@ func TestLint_FixtureDir(t *testing.T) {
 	})
 }
 
+// TestLint_BaselineRatchet verifies the baseline-ratchet:
+//   - Warnings present in a baseline file are grandfathered (exit 0, suppressed from output).
+//   - New warnings NOT in the baseline cause exit 1 and appear in output.
+//   - GenerateBaseline writes a file whose signatures match the current warnings.
+func TestLint_BaselineRatchet(t *testing.T) {
+	dir := t.TempDir()
+
+	// A note with one broken wikilink.
+	writeFile(t, filepath.Join(dir, "broken.md"), "# Broken\n\n[[does-not-exist]]\n")
+
+	// 1. Run without baseline → exit 1.
+	var buf strings.Builder
+	code, err := doclint.RunWithOptions(context.Background(), dir, &buf, &logger.DummyLogger{}, doclint.Options{})
+	require.NoError(t, err)
+	require.Equal(t, 1, code, "must fail before baseline is applied")
+
+	// 2. Generate a baseline from the current warnings.
+	baselineFile := filepath.Join(t.TempDir(), "baseline.txt")
+	require.NoError(t, doclint.GenerateBaseline(context.Background(), dir, baselineFile, &logger.DummyLogger{}))
+
+	// Baseline file must be non-empty.
+	data, readErr := os.ReadFile(baselineFile)
+	require.NoError(t, readErr)
+	require.NotEmpty(t, data, "baseline file must contain at least one entry")
+
+	// 3. Run with baseline → exit 0 (the existing warning is grandfathered).
+	var buf2 strings.Builder
+	code, err = doclint.RunWithOptions(context.Background(), dir, &buf2, &logger.DummyLogger{}, doclint.Options{BaselineFile: baselineFile})
+	require.NoError(t, err)
+	require.Equal(t, 0, code, "grandfathered warning must not cause exit 1")
+	require.Empty(t, buf2.String(), "baselined warning must be suppressed from output")
+
+	// 4. Add a NEW broken wikilink not in the baseline.
+	writeFile(t, filepath.Join(dir, "new_broken.md"), "# New\n\n[[also-missing]]\n")
+
+	var buf3 strings.Builder
+	code, err = doclint.RunWithOptions(context.Background(), dir, &buf3, &logger.DummyLogger{}, doclint.Options{BaselineFile: baselineFile})
+	require.NoError(t, err)
+	require.Equal(t, 1, code, "new warning must cause exit 1")
+
+	out3 := buf3.String()
+	require.Contains(t, out3, "also-missing", "new warning must appear in output")
+	require.NotContains(t, out3, "does-not-exist", "baselined warning must not appear in output")
+}
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
