@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"trip2g/internal/langdetect"
+	"trip2g/internal/model"
 	"trip2g/internal/pagecache"
 
 	"github.com/valyala/fasthttp"
@@ -75,21 +76,150 @@ func cacheDecision(
 		return zero, false
 	}
 
-	uiLang, ok := normalizeUILang(langdetect.DetectPreferred(
-		string(ctx.Request.Header.Cookie(langCookieName)),
-		string(ctx.Request.Header.Peek("Accept-Language")),
-	))
+	uiLang, ok := cacheableUILang(ctx)
 	if !ok {
 		return zero, false
 	}
 
+	return buildPageCacheKey(env, request, resp.Note, uiLang), true
+}
+
+// cacheableUILang resolves the request's preferred UI language and reports
+// whether it is in the cacheable whitelist. Shared by cacheDecision (store time)
+// and serveCachedPageEarly (the early read fast-path) so the two cannot drift.
+func cacheableUILang(ctx *fasthttp.RequestCtx) (string, bool) {
+	return normalizeUILang(langdetect.DetectPreferred(
+		string(ctx.Request.Header.Cookie(langCookieName)),
+		string(ctx.Request.Header.Peek("Accept-Language")),
+	))
+}
+
+// buildPageCacheKey assembles the page-cache key from a request + its resolved
+// note. The single source of truth for key construction, shared by cacheDecision
+// and serveCachedPageEarly so an early hit and its fill use identical keys.
+func buildPageCacheKey(env Env, request Request, note *model.NoteView, uiLang string) pagecache.Key {
 	return pagecache.Key{
 		Path:          request.Path,
 		Host:          request.Host,
-		NoteVersionID: resp.Note.VersionID,
+		NoteVersionID: note.VersionID,
 		ConfigEpoch:   env.ConfigEpoch(),
 		UILang:        uiLang,
-	}, true
+	}
+}
+
+// serveCachedPageEarly attempts to serve an anonymous, gzip-accepting request
+// from the page cache BEFORE Resolve runs, so a hit skips Resolve's per-request
+// DB enrichment (telegram links et al.). It fires only when every gate
+// cacheDecision enforces at store time also holds here. On ANY unmet gate or a
+// cache miss it returns false and the caller takes the full unchanged path; it
+// is a pure short-circuit that only serves an identical cache hit sooner.
+//
+// SAFETY: a stored entry was anonymously readable when stored (the full Resolve,
+// incl. the sign-in wall, paywall and CanReadNote, passed before the fill). The
+// note is re-resolved here from the SAME in-memory source and finder Resolve
+// uses, so its VersionID — part of the key — is identical. As a conservative
+// access gate we still call CanReadNote before serving, so the early path can
+// never serve a page the current viewer may not read. For anonymous viewers
+// CanReadNote is in-memory (note.Free / ".html" path), adding no DB work.
+func serveCachedPageEarly(ctx *fasthttp.RequestCtx, env Env, request Request) bool {
+	if request.UserToken != nil { // anonymous viewers only
+		return false
+	}
+	if request.Version != "" { // admin live/latest preview
+		return false
+	}
+	// ?setlang= is processed by handleSetLang (sets a cookie + redirects) on the
+	// full path and is NOT part of the cache key; never short-circuit it.
+	if len(ctx.QueryArgs().Peek("setlang")) > 0 {
+		return false
+	}
+	if !ctx.Request.Header.HasAcceptEncoding("gzip") {
+		return false
+	}
+	uiLang, ok := cacheableUILang(ctx)
+	if !ok {
+		return false
+	}
+
+	// Mirror Resolve's anonymous note-source selection (resolve.go): live unless
+	// the site shows draft versions. Admin ?version= switching cannot apply here.
+	siteConfig := env.SiteConfig(ctx)
+	notes := env.LiveNoteViews()
+	if siteConfig.ShowDraftVersions {
+		notes = env.LatestNoteViews()
+	}
+
+	var publicURL string
+	if request.Host != "" {
+		publicURL = env.PublicURL()
+	}
+	note := resolveNote(notes, request.Host, request.Path, publicURL)
+	if note == nil {
+		return false
+	}
+
+	// Notes handled by a special Handle branch that returns before the cacheable
+	// branch — alt-permalink 301, note.Redirect 302, lang-redirect 302, and the
+	// unsupported-file placeholder — are never stored by the full path, so the
+	// early lookup structurally misses them. Bail defensively anyway so the early
+	// path can never serve such a request from a (hypothetical) cache entry,
+	// keeping it provably no less strict than Handle even across future reorders.
+	if note.AlternatePermalinks != nil && request.Path != note.Permalink {
+		return false
+	}
+	if note.Redirect != nil {
+		return false
+	}
+	if len(note.LangRedirects) > 0 && note.Lang == "" {
+		return false
+	}
+	if unsupportedFileExt(note.Path) != "" {
+		return false
+	}
+
+	// Independently enforce every anonymous-readability gate Resolve applies
+	// before the cacheable branch, BEFORE consulting the cache. This makes the
+	// early path provably no less strict than the full path (paywalled / signin /
+	// unreadable notes never reach a cache hit) and, like the full path, never
+	// consults the cache for them.
+	//
+	// Sign-in wall: a require_signin subgraph blocks anonymous readers
+	// (resolve.go). CanReadNote does NOT re-check this for anonymous viewers, so
+	// the explicit gate is load-bearing, not redundant.
+	for _, sg := range note.Subgraphs {
+		if sg != nil && sg.RequireSignin {
+			return false
+		}
+	}
+	// Paywall: non-free notes are never anonymously readable (resolve.go).
+	if !note.Free {
+		return false
+	}
+
+	// Layout selection mirrors Handle: note.Layout else the site default.
+	layout := note.Layout
+	if layout == "" {
+		layout = siteConfig.DefaultLayout
+	}
+	if layoutIsPersonalized(env, layout) {
+		return false
+	}
+
+	// Conservative access gate (see SAFETY above): the real access function,
+	// also catching ".html" notes. For anonymous viewers it is in-memory
+	// (note.Free / ".html" path), so it adds no DB work.
+	hasAccess, err := env.CanReadNote(ctx, note)
+	if err != nil || !hasAccess {
+		return false
+	}
+
+	cached, ok := env.CachedPage(buildPageCacheKey(env, request, note, uiLang))
+	if !ok {
+		return false
+	}
+
+	writeCachedPage(ctx, cached)
+	return true
 }
 
 // layoutIsPersonalized reports whether the named custom layout exists, parses,
