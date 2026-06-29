@@ -1,0 +1,6 @@
+{
+	"$trip2g_editor_newfile_title": "Новый файл",
+	"$trip2g_editor_newfile_Field_hint": "папка/заметка.md",
+	"$trip2g_editor_newfile_hint_text": "Расширение .md добавляется автоматически",
+	"$trip2g_editor_newfile_create_label": "Создать"
+}

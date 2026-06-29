@@ -39,9 +39,9 @@ func TestUnhideCalledEvenWhenContentUnchanged(t *testing.T) {
 			t.Error("IncrementNoteVersionCount should not be called when content is unchanged")
 			return 0, nil
 		},
-		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
+		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 			t.Error("InsertNoteVersion should not be called when content is unchanged")
-			return nil
+			return 0, nil
 		},
 	}
 
@@ -50,9 +50,11 @@ func TestUnhideCalledEvenWhenContentUnchanged(t *testing.T) {
 		Content: "test content",
 	}
 
-	pathID, err := insertnote.Resolve(ctx, env, note)
+	pathID, versionID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), pathID)
+	// No new version is created when content is unchanged.
+	require.Equal(t, int64(0), versionID)
 
 	// UnhideNotePath MUST be called even when content hasn't changed
 	require.True(t, unhideCalled, "UnhideNotePath should be called even when content is unchanged")
@@ -83,9 +85,9 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 		IncrementNoteVersionCountFunc: func(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error) {
 			return 2, nil
 		},
-		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
+		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 			versionCreated = true
-			return nil
+			return 42, nil
 		},
 		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
 			return model.NoteActor{}
@@ -97,9 +99,11 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 		Content: "new content",
 	}
 
-	pathID, err := insertnote.Resolve(ctx, env, note)
+	pathID, versionID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), pathID)
+	// Resolve returns the id of the note_versions row it inserted.
+	require.Equal(t, int64(42), versionID)
 
 	require.True(t, unhideCalled, "UnhideNotePath should be called")
 	require.True(t, versionCreated, "New version should be created when content changed")
@@ -124,16 +128,16 @@ func TestResolve_RecordsDeliveryAttribution(t *testing.T) {
 		IncrementNoteVersionCountFunc: func(_ context.Context, _ db.IncrementNoteVersionCountParams) (int64, error) {
 			return 1, nil
 		},
-		InsertNoteVersionFunc: func(_ context.Context, arg db.InsertNoteVersionParams) error {
+		InsertNoteVersionFunc: func(_ context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 			got = arg
-			return nil
+			return 0, nil
 		},
 		NoteVersionActorFunc: func(_ context.Context) model.NoteActor {
 			return model.NoteActor{DeliveryKind: &kind, DeliveryID: &id}
 		},
 	}
 
-	_, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "boards/sprint.md", Content: "x"})
+	_, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "boards/sprint.md", Content: "x"})
 	require.NoError(t, err)
 	require.NotNil(t, got.CreatedByDeliveryKind)
 	require.Equal(t, "change", *got.CreatedByDeliveryKind)
@@ -165,9 +169,9 @@ func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
 		IncrementNoteVersionCountFunc: func(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error) {
 			return 1, nil
 		},
-		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) error {
+		InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 			versionCreated = true
-			return nil
+			return 7, nil
 		},
 		NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
 			return model.NoteActor{}
@@ -179,9 +183,10 @@ func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
 		Content: "brand new content",
 	}
 
-	pathID, err := insertnote.Resolve(ctx, env, note)
+	pathID, versionID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), pathID)
+	require.Equal(t, int64(7), versionID)
 
 	require.True(t, unhideCalled, "UnhideNotePath should be called for new note")
 	require.True(t, versionCreated, "Version should be created for new note")

@@ -1727,8 +1727,17 @@ input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.A
   changes: [NoteChangeInput!]!
 }
 
+type NoteWriteResult {
+  path: String!
+  versionId: Int64!
+}
+
 type UpdateNotesSuccessPayload {
   paths: [String!]!
+  # The saved notes with their new version ids. Mirrors pushNotes' updated[].id so a
+  # client can advance its self-echo baseline to its OWN save's version (not "latest
+  # stored", which under concurrent same-board editing is a peer's version).
+  updated: [NoteWriteResult!]!
 }
 
 type UpdateNotesHashMismatchPayload {

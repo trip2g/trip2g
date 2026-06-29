@@ -19,7 +19,7 @@ var ErrNoteVersionAlreadyExists = errors.New("note version already exists")
 type Env interface {
 	InsertNotePath(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
 	IncrementNoteVersionCount(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error)
-	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) error
+	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error)
 	UnhideNotePath(ctx context.Context, value string) error
 	// NoteVersionActor returns who is pushing this version: the acting user id,
 	// the authenticating API key id, and the client identifier from the
@@ -27,7 +27,11 @@ type Env interface {
 	NoteVersionActor(ctx context.Context) model.NoteActor
 }
 
-func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
+// Resolve writes the note and returns its note_paths id and the id of the
+// note_versions row it inserted. The version id is 0 when no new version was
+// created (content unchanged) — callers that need a version id should fall back
+// to the current latest in that case.
+func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, error) {
 	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
@@ -54,7 +58,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 				continue
 			}
 
-			return 0, fmt.Errorf("failed to InsertNotePath: %w", insertErr)
+			return 0, 0, fmt.Errorf("failed to InsertNotePath: %w", insertErr)
 		}
 
 		notePath = &insertedRow
@@ -63,18 +67,18 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 	}
 
 	if notePath == nil {
-		return 0, ErrNotePathHashUnresolvedCollision
+		return 0, 0, ErrNotePathHashUnresolvedCollision
 	}
 
 	// Always unhide note when pushed (even if content hasn't changed)
 	err := env.UnhideNotePath(ctx, arg.Path)
 	if err != nil {
-		return 0, fmt.Errorf("failed to unhide note path: %w", err)
+		return 0, 0, fmt.Errorf("failed to unhide note path: %w", err)
 	}
 
 	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
-		// Content hasn't changed, no need to create new version
-		return notePath.ID, nil
+		// Content hasn't changed, no new version created (version id 0).
+		return notePath.ID, 0, nil
 	}
 
 	increaseParams := db.IncrementNoteVersionCountParams{
@@ -85,7 +89,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 
 	version, err := env.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
-		return 0, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
+		return 0, 0, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
 	actor := env.NoteVersionActor(ctx)
@@ -101,10 +105,10 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 		CreatedByDeliveryID:   actor.DeliveryID,
 	}
 
-	err = env.InsertNoteVersion(ctx, noteVersion)
+	versionID, err := env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
-		return 0, fmt.Errorf("failed to InsertNoteVersion: %w", err)
+		return 0, 0, fmt.Errorf("failed to InsertNoteVersion: %w", err)
 	}
 
-	return notePath.ID, nil
+	return notePath.ID, versionID, nil
 }

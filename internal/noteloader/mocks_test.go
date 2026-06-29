@@ -24,6 +24,9 @@ var _ noteloader.Env = &EnvMock{}
 //
 //		// make and configure a mocked noteloader.Env
 //		mockedEnv := &EnvMock{
+//			IsDevModeFunc: func() bool {
+//				panic("mock out the IsDevMode method")
+//			},
 //			ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) {
 //				panic("mock out the ListAllSubgraphs method")
 //			},
@@ -67,6 +70,9 @@ var _ noteloader.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// IsDevModeFunc mocks the IsDevMode method.
+	IsDevModeFunc func() bool
+
 	// ListAllSubgraphsFunc mocks the ListAllSubgraphs method.
 	ListAllSubgraphsFunc func(ctx context.Context) ([]db.Subgraph, error)
 
@@ -105,6 +111,9 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// IsDevMode holds details about calls to the IsDevMode method.
+		IsDevMode []struct {
+		}
 		// ListAllSubgraphs holds details about calls to the ListAllSubgraphs method.
 		ListAllSubgraphs []struct {
 			// Ctx is the ctx argument value.
@@ -164,6 +173,7 @@ type EnvMock struct {
 			Ctx context.Context
 		}
 	}
+	lockIsDevMode              sync.RWMutex
 	lockListAllSubgraphs       sync.RWMutex
 	lockLoadFrontmatterPatches sync.RWMutex
 	lockLoadSiteConfig         sync.RWMutex
@@ -176,6 +186,33 @@ type EnvMock struct {
 	lockRawAssets              sync.RWMutex
 	lockRawNoteChunks          sync.RWMutex
 	lockRawNotes               sync.RWMutex
+}
+
+// IsDevMode calls IsDevModeFunc.
+func (mock *EnvMock) IsDevMode() bool {
+	if mock.IsDevModeFunc == nil {
+		panic("EnvMock.IsDevModeFunc: method is nil but Env.IsDevMode was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockIsDevMode.Lock()
+	mock.calls.IsDevMode = append(mock.calls.IsDevMode, callInfo)
+	mock.lockIsDevMode.Unlock()
+	return mock.IsDevModeFunc()
+}
+
+// IsDevModeCalls gets all the calls that were made to IsDevMode.
+// Check the length with:
+//
+//	len(mockedEnv.IsDevModeCalls())
+func (mock *EnvMock) IsDevModeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIsDevMode.RLock()
+	calls = mock.calls.IsDevMode
+	mock.lockIsDevMode.RUnlock()
+	return calls
 }
 
 // ListAllSubgraphs calls ListAllSubgraphsFunc.

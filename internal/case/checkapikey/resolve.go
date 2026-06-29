@@ -114,7 +114,7 @@ func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string,
 	// Record the authenticating key so downstream writes (e.g. note version
 	// inserts) can attribute the actor to this API key.
 	keyID := apiKey.ID
-	req.ApiKeyID = &keyID
+	req.APIKeyID = &keyID
 
 	return &apiKey, nil
 }

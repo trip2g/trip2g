@@ -262,6 +262,9 @@ type Env interface {
 	revokeusertoken.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env
+	// InsertNoteWithVersion is InsertNote that also returns the inserted version id;
+	// updateNotes (updatenotes.Env) reports each save's own version race-free with it.
+	InsertNoteWithVersion(ctx context.Context, note model.RawNote) (int64, int64, error)
 	commitnotes.Env
 	rendernotepage.Env
 	uploadnoteasset.Env

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
@@ -157,6 +158,21 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layout = resp.Config.DefaultLayout
 	}
 
+	// Anonymous page cache: serve pre-gzipped bytes to gzip-accepting anonymous
+	// readers and fill on a miss. This is the only branch that reaches a
+	// cacheable 200 note page; cacheDecision enforces every safety gate
+	// (authenticated viewer, ?version=, personalized layout, exotic UI lang,
+	// non-gzip client).
+	cacheKey, cacheable := cacheDecision(ctx, env, resp, request, layout)
+	if cacheable {
+		if cached, ok := env.CachedPage(cacheKey); ok {
+			writeCachedPage(ctx, cached)
+			return nil, nil
+		}
+	}
+
+	renderStart := time.Now()
+
 	if layout != "" {
 		processed, layoutErr := renderLayout(ctx, env, resp, layout)
 		if layoutErr != nil {
@@ -164,12 +180,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		if processed {
+			fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 			return nil, nil
 		}
 	}
 
 	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 	defaulttemplate.WriteRender(ctx, dtCtx)
+	fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 	return nil, nil
 }
 
@@ -331,14 +349,16 @@ func renderLayout(
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf(bodyEndInjections)
 
 	// Build the shared helper and expose two Jet namespaces:
-	//   default_template — template chrome: {{ default_template.user_space_scripts() }}
-	//   current_user     — viewer role:     {{ current_user.is_admin() }}
+	//   defaultTemplate — template chrome: {{ defaultTemplate.UserSpaceScripts() }}
+	//   currentUser     — viewer role:     {{ currentUser.IsAdmin() }}
 	usHelper := buildUserSpaceHelper(ctx, env, resp)
-	vars["default_template"] = reflect.ValueOf(usHelper.jetMap())
-	vars["current_user"] = reflect.ValueOf(usHelper.currentUserJetMap())
+	defaultTemplateNS := reflect.ValueOf(usHelper.jetMap())
+	currentUserNS := reflect.ValueOf(usHelper.currentUserJetMap())
+	vars["defaultTemplate"] = defaultTemplateNS
+	vars["currentUser"] = currentUserNS
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
-	// version author (gated on current_user.is_admin()).
+	// version author (gated on currentUser.IsAdmin()).
 	injectLastEditedByResolver(env, resp)
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
@@ -359,7 +379,7 @@ func renderLayout(
 // unconditionally.
 //
 // SECURITY: admin/editor-only data. Layouts MUST gate display on
-// current_user.is_admin() and never render it on public pages.
+// currentUser.IsAdmin() and never render it on public pages.
 func injectLastEditedByResolver(env Env, resp *Response) {
 	if resp == nil || resp.NoteView == nil || resp.Note == nil {
 		return

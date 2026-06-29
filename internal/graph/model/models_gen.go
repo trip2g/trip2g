@@ -2010,6 +2010,11 @@ type NoteViewMeta struct {
 	Raw string `json:"raw"`
 }
 
+type NoteWriteResult struct {
+	Path      string `json:"path"`
+	VersionID int64  `json:"versionId"`
+}
+
 type OAuthURLInput struct {
 	// URL to redirect to after authentication.
 	RedirectURL string `json:"redirectUrl"`
@@ -2702,7 +2707,8 @@ type UpdateNotesPatchNotFoundPayload struct {
 func (UpdateNotesPatchNotFoundPayload) IsUpdateNotesOrErrorPayload() {}
 
 type UpdateNotesSuccessPayload struct {
-	Paths []string `json:"paths"`
+	Paths   []string          `json:"paths"`
+	Updated []NoteWriteResult `json:"updated"`
 }
 
 func (UpdateNotesSuccessPayload) IsUpdateNotesOrErrorPayload() {}

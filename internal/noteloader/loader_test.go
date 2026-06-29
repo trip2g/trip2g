@@ -31,6 +31,7 @@ func makeMinimalEnv(notes []noteloader.RawNote, requireSignin func() bool) *EnvM
 		PublicURLFunc:     func() string { return "https://example.com" },
 		LoggerFunc:        func() logger.Logger { return &logger.TestLogger{} },
 		NowFunc:           time.Now,
+		IsDevModeFunc:     func() bool { return false },
 		LoadFrontmatterPatchesFunc: func(_ context.Context) ([]frontmatterpatch.CompiledPatch, error) {
 			return nil, nil
 		},

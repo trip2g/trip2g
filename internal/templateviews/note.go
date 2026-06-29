@@ -203,7 +203,7 @@ func (n *Note) LastEditedBy() *NoteEditor {
 // header. Returns "" when there is no editor.
 //
 // SECURITY: admin/editor-only data. Callers MUST gate rendering on
-// current_user.is_admin() and never expose it on public pages.
+// currentUser.IsAdmin() and never expose it on public pages.
 func (n *Note) LastEditedByLabel() string {
 	editor := n.LastEditedBy()
 	if editor == nil {

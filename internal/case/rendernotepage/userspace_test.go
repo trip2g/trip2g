@@ -140,13 +140,13 @@ func (l *testStringLoader) Exists(path string) bool {
 }
 
 // TestJetBinding_UserSpaceScripts verifies that the dotted Jet call
-// {{ default_template.user_space_scripts() }} resolves and renders correctly,
+// {{ defaultTemplate.UserSpaceScripts() }} resolves and renders correctly,
 // and that the output is NOT HTML-escaped (WithSafeWriter(nil) behaviour).
 func TestJetBinding_UserSpaceScripts(t *testing.T) {
 	const tmplKey = "/test.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ default_template.user_space_scripts() }}`,
+			tmplKey: `{{ defaultTemplate.UserSpaceScripts() }}`,
 		},
 	}
 
@@ -166,7 +166,7 @@ func TestJetBinding_UserSpaceScripts(t *testing.T) {
 	)
 
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -201,14 +201,18 @@ type loaderTestEnv struct{ log logger.Logger }
 
 func (e *loaderTestEnv) Logger() logger.Logger { return e.log }
 
+// IsDevMode satisfies layoutloader.Env (added when the interface gained the
+// method); tests load layouts in production mode.
+func (e *loaderTestEnv) IsDevMode() bool { return false }
+
 // TestJetBinding_IdempotentViaLayoutloader verifies idempotency through the
 // full layoutloader pipeline (covers the real jet.WithSafeWriter(nil) path).
 func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
 		ID:   "/two-calls",
 		Path: "_layouts/two-calls.html",
-		// Call user_space_scripts twice in the same render.
-		Content: `{{ default_template.user_space_scripts() }}MIDDLE{{ default_template.user_space_scripts() }}`,
+		// Call UserSpaceScripts twice in the same render.
+		Content: `{{ defaultTemplate.UserSpaceScripts() }}MIDDLE{{ defaultTemplate.UserSpaceScripts() }}`,
 	}}
 
 	env := &loaderTestEnv{log: &logger.TestLogger{}}
@@ -222,7 +226,7 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	)
 
 	vars := make(jet.VarMap)
-	vars["default_template"] = reflect.ValueOf(h.jetMap())
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
 
 	var buf bytes.Buffer
 	err = layouts.Map["/two-calls"].View.Execute(&buf, vars, nil)
@@ -239,13 +243,13 @@ func TestJetBinding_IdempotentViaLayoutloader(t *testing.T) {
 	require.Equal(t, 2, scriptCount, "bundle script tag should appear once per call")
 }
 
-// TestJetBinding_IsAdmin_True verifies {{ current_user.is_admin() }} renders
+// TestJetBinding_IsAdmin_True verifies {{ currentUser.IsAdmin() }} renders
 // "true" (Go bool true printed by Jet's fastprinter) when isAdmin=true.
 func TestJetBinding_IsAdmin_True(t *testing.T) {
 	const tmplKey = "/admin-check.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ current_user.is_admin() }}`,
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -254,7 +258,7 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
@@ -262,13 +266,13 @@ func TestJetBinding_IsAdmin_True(t *testing.T) {
 	require.Equal(t, "true", buf.String())
 }
 
-// TestJetBinding_IsAdmin_False verifies {{ current_user.is_admin() }} renders
+// TestJetBinding_IsAdmin_False verifies {{ currentUser.IsAdmin() }} renders
 // "false" for a non-admin viewer.
 func TestJetBinding_IsAdmin_False(t *testing.T) {
 	const tmplKey = "/admin-check-false.html"
 	loader := &testStringLoader{
 		templates: map[string]string{
-			tmplKey: `{{ current_user.is_admin() }}`,
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
 		},
 	}
 	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
@@ -277,10 +281,99 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 
 	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", nil)
 	vars := make(jet.VarMap)
-	vars["current_user"] = reflect.ValueOf(h.currentUserJetMap())
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, vars, nil)
 	require.NoError(t, err)
 	require.Equal(t, "false", buf.String())
+}
+
+// stubPartialRenderer is a no-op model.NoteViewPartialRenderer so SiteFooter can
+// render its chrome wrapper without a full markdown pipeline in tests.
+type stubPartialRenderer struct{}
+
+func (stubPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
+func (stubPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
+func (stubPartialRenderer) Introduce() model.NoteViewSection          { return model.NoteViewSection{} }
+func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
+func (stubPartialRenderer) FirstList() *model.NoteViewList            { return nil }
+func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
+func (stubPartialRenderer) FirstImageURL() string                     { return "" }
+
+// chromeHelper builds a userSpaceHelper whose Notes resolve _header/_footer so
+// that Header()/Footer()/Styles() produce the standard chrome HTML.
+func chromeHelper() *userSpaceHelper {
+	mainNV := &model.NoteView{Path: "blog/post1.md", Permalink: "/blog/post1"}
+	headerNV := &model.NoteView{Path: "_header.md", Permalink: "/_header"}
+	footerNV := &model.NoteView{Path: "_footer.md", Permalink: "/_footer", PartialRenderer: stubPartialRenderer{}}
+
+	nvs := model.NewNoteViews()
+	for _, nv := range []*model.NoteView{mainNV, headerNV, footerNV} {
+		nvs.PathMap[nv.Path] = nv
+		nvs.Map[nv.Permalink] = nv
+	}
+	tv := templateviews.NewNVS(nvs, "live")
+
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.ByPath("blog/post1.md"))
+	h.nvs = tv
+	h.cssURLs = []string{"/assets/defaulttemplate.css?h=abc123"}
+	return h
+}
+
+// TestJetBinding_DefaultTemplateChrome_CamelCase verifies the new camelCase
+// namespace + PascalCase methods resolve and render raw (WithSafeWriter(nil)):
+// UserSpaceScripts(), Header(), Footer(), Styles().
+func TestJetBinding_DefaultTemplateChrome_CamelCase(t *testing.T) {
+	const tmplKey = "/chrome.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `[s]{{ defaultTemplate.UserSpaceScripts() }}[h]{{ defaultTemplate.Header() }}` +
+				`[f]{{ defaultTemplate.Footer() }}[c]{{ defaultTemplate.Styles() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := chromeHelper()
+	vars := make(jet.VarMap)
+	vars["defaultTemplate"] = reflect.ValueOf(h.jetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	out := buf.String()
+
+	require.Contains(t, out, "window.__trip2g_settings")                                            // UserSpaceScripts()
+	require.Contains(t, out, `<header class="site-header">`)                                        // Header()
+	require.Contains(t, out, `<footer class="site-footer">`)                                        // Footer()
+	require.Contains(t, out, `<link rel="stylesheet" href="/assets/defaulttemplate.css?h=abc123">`) // Styles()
+
+	// Chrome HTML is written raw, not entity-escaped.
+	require.NotContains(t, out, "&lt;header")
+	require.NotContains(t, out, "&lt;footer")
+	require.NotContains(t, out, "&lt;link")
+}
+
+// TestJetBinding_IsAdmin_CamelCase verifies {{ currentUser.IsAdmin() }} resolves.
+func TestJetBinding_IsAdmin_CamelCase(t *testing.T) {
+	const tmplKey = "/current-user.html"
+	loader := &testStringLoader{
+		templates: map[string]string{
+			tmplKey: `{{ currentUser.IsAdmin() }}`,
+		},
+	}
+	views := jet.NewSet(loader, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	tmpl, err := views.GetTemplate(tmplKey)
+	require.NoError(t, err)
+
+	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
+	vars := make(jet.VarMap)
+	vars["currentUser"] = reflect.ValueOf(h.currentUserJetMap())
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "true", buf.String())
 }

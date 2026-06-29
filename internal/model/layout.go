@@ -25,6 +25,13 @@ type Layout struct {
 
 	// Warnings contains issues detected during loading (e.g., parse errors).
 	Warnings []NoteWarning
+
+	// Personalized is true when the layout's template (or any template it
+	// imports) references viewer/role-dependent helpers — the currentUser
+	// namespace or note.LastEditedBy/LastEditedByLabel. Such a layout renders
+	// differently per viewer, so its pages must never be served from the
+	// anonymous page cache. Computed once at load.
+	Personalized bool
 }
 
 type LayoutSourceFile struct {

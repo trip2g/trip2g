@@ -59,6 +59,11 @@ type Env interface {
 	Logger() logger.Logger
 	Now() time.Time
 
+	// IsDevMode reports whether this is a development instance. It drives
+	// jet.DevelopmentMode for layout templates: false (production) caches the
+	// compiled layout per reload, true re-parses every render for live reload.
+	IsDevMode() bool
+
 	// LoadFrontmatterPatches loads and compiles frontmatter patches from database
 	LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error)
 
@@ -92,6 +97,11 @@ type Loader struct {
 	config             mdloader.Config
 	frontmatterPatches []frontmatterpatch.CompiledPatch
 	chartData          mdloader.ChartDataProvider
+
+	// patchCache persists frontmatter-patch results across reloads, alongside the
+	// note (AST) cache held in l.nvs. It skips re-running the Jsonnet VM per note
+	// when neither the note's frontmatter nor the patch set changed.
+	patchCache *frontmatterpatch.ResultCache
 }
 
 func New(version string, env Env, config mdloader.Config) *Loader {
@@ -99,8 +109,9 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		env: env,
 		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
 
-		version: version,
-		config:  config,
+		version:    version,
+		config:     config,
+		patchCache: frontmatterpatch.NewResultCache(),
 	}
 }
 
@@ -269,6 +280,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		},
 		FrontmatterPatches: l.frontmatterPatches,
 		ChartData:          l.chartData,
+		PatchCache:         l.patchCache,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)
