@@ -1515,3 +1515,8 @@ select key from secrets where key like ? order by key;
 select version_id, chart_hash, data_json, fetched_at, last_error, last_error_at
   from chart_data_cache
  where version_id = ? and chart_hash = ?;
+
+-- name: NotesReloadSignal :one
+select
+  cast(coalesce((select max(id) from note_versions), 0) as integer) as version_gen,
+  cast((select count(*) from note_paths where hidden_by is not null) as integer) as hidden_count;

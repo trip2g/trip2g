@@ -61,6 +61,7 @@ import (
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/readreplica"
 	"trip2g/internal/redirectmanager"
+	"trip2g/internal/replicareload"
 	"trip2g/internal/simplebackup"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
@@ -79,6 +80,9 @@ import (
 )
 
 var _ mcp.Env = (*app)(nil)
+var _ replicareload.Env = (*app)(nil)
+
+const replicaNoteReloadInterval = 2 * time.Second
 
 type app struct {
 	*db.Queries
@@ -93,6 +97,7 @@ type app struct {
 	*sendsignincode.SendSignInCodeJob
 	*sendformsubmit.SendFormSubmitEmailJob
 	refreshChartDataJob *refreshchartdata.Job
+	replicaReload       *replicareload.ReplicaReload
 	*sendtelegrampost.SendTelegramPostJob
 	*updatetelegrampost.UpdateTelegramPostJob
 	*sendtelegrammessage.SendTelegramMessageJob
@@ -447,6 +452,8 @@ func main() {
 	// soon as the read-only warmup (Block A) is done.
 	if config.IsReadReplica() {
 		log.Info("read-only replica mode: skipping writer subsystems, forwarding writes to leader", "leader", config.LeaderAddr)
+		a.replicaReload = replicareload.New(a, a.log, replicaNoteReloadInterval)
+		go a.replicaReload.Run(a.shutdownCtx)
 		a.ready.Store(true)
 		a.startServer()
 		return
