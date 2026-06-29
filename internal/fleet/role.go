@@ -26,6 +26,7 @@ type Role struct {
 	AttachNotes    []string
 	MaxDepth       int
 	Concurrency    string // "allow_overlap" | "skip" | "queue_one"
+	ForEach        string // "" (single run) | "changed_files" | "attached_notes"
 }
 
 // ParseRole builds a Role from a note path, body, and flat frontmatter meta
@@ -46,6 +47,7 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		CronSchedule:   strings.TrimSpace(m["cron_schedule"]),
 		AttachNotes:    parseList(m["attach_notes"]),
 		Concurrency:    strings.TrimSpace(m["concurrency"]),
+		ForEach:        strings.TrimSpace(m["for_each"]),
 	}
 	var err error
 	if r.MaxTokens, err = parseIntOpt(m["max_tokens"]); err != nil {
@@ -75,6 +77,11 @@ func (r Role) Validate(offered []string) error {
 	case "", "allow_overlap", "skip", "queue_one":
 	default:
 		return fmt.Errorf("role %s: concurrency must be allow_overlap|skip|queue_one, got %q", r.NotePath, r.Concurrency)
+	}
+	switch r.ForEach {
+	case "", "changed_files", "attached_notes":
+	default:
+		return fmt.Errorf("role %s: for_each must be changed_files|attached_notes, got %q", r.NotePath, r.ForEach)
 	}
 	for _, t := range r.Tools {
 		if !contains(offered, t) {

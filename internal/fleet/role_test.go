@@ -46,6 +46,35 @@ func TestParseRole_FlatFrontmatter(t *testing.T) {
 	require.Equal(t, "skip", r.Concurrency)
 }
 
+func TestParseRole_ForEach(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want string
+	}{
+		{"changed_files", "changed_files"},
+		{"attached_notes", "attached_notes"},
+		{"", ""}, // absent = legacy single run
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run("for_each="+tc.raw, func(t *testing.T) {
+			r, err := ParseRole("roles/triage.md", "body", meta("mode", "change", "for_each", tc.raw))
+			require.NoError(t, err)
+			require.Equal(t, tc.want, r.ForEach)
+		})
+	}
+}
+
+func TestRoleValidate_ForEachEnum(t *testing.T) {
+	require.NoError(t, Role{Mode: "change", ForEach: ""}.Validate(nil))
+	require.NoError(t, Role{Mode: "change", ForEach: "changed_files"}.Validate(nil))
+	require.NoError(t, Role{Mode: "change", ForEach: "attached_notes"}.Validate(nil))
+
+	err := Role{Mode: "change", ForEach: "bogus"}.Validate(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "for_each")
+}
+
 func TestRoleValidate_ToolsSubset(t *testing.T) {
 	r := Role{Mode: "change", Tools: []string{"search", "patch_note"}}
 	require.NoError(t, r.Validate([]string{"search", "read_note", "patch_note", "write_note"}))
