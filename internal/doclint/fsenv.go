@@ -33,10 +33,10 @@ func newFsEnv(dir string, log logger.Logger) *fsEnv {
 
 // noteExts is the set of file extensions treated as note sources.
 var noteExts = map[string]bool{
-	".md":          true,
-	".canvas":      true,
-	".base":        true,
-	".excalidraw":  true,
+	".md":         true,
+	".canvas":     true,
+	".base":       true,
+	".excalidraw": true,
 }
 
 // RawNotes walks dir and returns every *.md, *.canvas, *.base, *.excalidraw file
