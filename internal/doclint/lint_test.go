@@ -71,6 +71,64 @@ func TestLint_CrossLangLeak(t *testing.T) {
 	require.Contains(t, out, "en/article.md", "source note path must appear in output")
 }
 
+// TestLint_FixtureDir runs the linter over docs/demo/lint/ — the dedicated
+// known-bad fixture directory — and asserts that every supported warning
+// category is reported and that clean.md produces no output.
+//
+// The fixture directory lives at ../../docs/demo/lint relative to this package.
+// Each sub-test below corresponds to one fixture file / warning category.
+//
+// Note on broken-image detection (fixture: broken_image.md):
+// ![[missing.png]] does NOT currently generate a warning. extractInLinks in
+// mdloader/loader.go early-returns for any embed where IsMediaExtension is
+// true (line ~485), so the "broken image link" fall-through is never reached
+// for ![[*.png]] syntax. This is documented as a known limitation in the
+// fixture file itself; no assertion is made here.
+func TestLint_FixtureDir(t *testing.T) {
+	// CWD during 'go test' is the package directory (internal/doclint/).
+	dir := filepath.Join("..", "..", "docs", "demo", "lint")
+
+	var buf strings.Builder
+	code, err := doclint.Run(context.Background(), dir, &buf, &logger.DummyLogger{})
+	require.NoError(t, err, "Run must not return an error for a valid directory")
+	require.Equal(t, 1, code, "exit code must be 1 because fixtures contain known warnings")
+
+	out := buf.String()
+
+	t.Run("broken_wikilink", func(t *testing.T) {
+		require.Contains(t, out, "broken_wikilink.md", "broken_wikilink.md must appear in output")
+		require.Contains(t, out, "broken link: does-not-exist", "broken link message must appear")
+	})
+
+	t.Run("cross_lang_leak", func(t *testing.T) {
+		// en/crossleak.md links [[ru_only]]; only ru/ru_only.md exists → definite cross-lang leak.
+		require.Contains(t, out, "en/crossleak.md", "crossleak note must appear in output")
+		require.Contains(t, out, "cross-language", "cross-language warning must be reported")
+	})
+
+	t.Run("ambiguous_wikilink", func(t *testing.T) {
+		// ru/foo.md links [[bar]]; both en/bar.md and ru/bar.md exist → ambiguous.
+		require.Contains(t, out, "ru/foo.md", "ru/foo.md must appear in output")
+		require.Contains(t, out, "ambiguous bare wikilink", "ambiguous wikilink warning must appear")
+	})
+
+	t.Run("vault_patch_failure", func(t *testing.T) {
+		// _vault_patch_bad.md declares type:frontmatter-patch but has no jsonnet block.
+		require.Contains(t, out, "_vault_patch_bad.md", "patch failure note must appear in output")
+		require.Contains(t, out, "vault patch:", "vault patch error message must appear")
+	})
+
+	t.Run("layout_render_error", func(t *testing.T) {
+		// _layouts/bad_layout.html accesses note.NoSuchField → smoke render fails.
+		require.Contains(t, out, "bad_layout", "bad layout must appear in output")
+		require.Contains(t, out, "smoke render", "smoke render error must be reported")
+	})
+
+	t.Run("clean_note_is_silent", func(t *testing.T) {
+		require.NotContains(t, out, "clean.md", "clean.md must not appear in output")
+	})
+}
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
