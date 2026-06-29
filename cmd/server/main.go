@@ -55,6 +55,7 @@ import (
 	"trip2g/internal/notion"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/openai"
+	"trip2g/internal/pagecache"
 	"trip2g/internal/patreon"
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/personaltoken"
@@ -209,6 +210,12 @@ type app struct {
 
 	*configregistry.SiteConfigBuilder
 
+	// pageCache holds pre-gzipped anonymous rendered-page responses. Named (not
+	// embedded) so its generic Get/Set/Clear don't promote onto app and collide
+	// with other embedded types; reached via the CachedPage/StoreCachedPage/
+	// ClearPageCache accessors below.
+	pageCache *pagecache.PageCache
+
 	liveNoteLoader         *noteloader.Loader
 	latestNoteLoader       *noteloader.Loader
 	frontmatterPatchLoader *frontmatterpatch.Loader
@@ -345,6 +352,7 @@ func main() {
 
 	a.ctx = ctx
 	a.SiteConfigBuilder = configregistry.NewSiteConfigBuilder(a)
+	a.pageCache = pagecache.New()
 	a.sigChan = make(chan os.Signal, 1)
 	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -512,6 +520,10 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 		return nil, fmt.Errorf("failed to load latest notes: %w", err)
 	}
 
+	// A reload changes note content, layouts and telegram links, so flush the
+	// whole anonymous page cache rather than reasoning about which keys moved.
+	a.ClearPageCache()
+
 	return a.latestNoteLoader.NoteViews(), nil
 }
 
@@ -521,7 +533,25 @@ func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
 		return nil, fmt.Errorf("failed to load live notes: %w", err)
 	}
 
+	a.ClearPageCache()
+
 	return a.liveNoteLoader.NoteViews(), nil
+}
+
+// CachedPage returns the pre-gzipped bytes cached for key, if any. Part of the
+// rendernotepage.Env contract for the anonymous page cache.
+func (a *app) CachedPage(key pagecache.Key) ([]byte, bool) {
+	return a.pageCache.Get(key)
+}
+
+// StoreCachedPage records pre-gzipped bytes for key.
+func (a *app) StoreCachedPage(key pagecache.Key, gz []byte) {
+	a.pageCache.Set(key, gz)
+}
+
+// ClearPageCache drops every cached page (on note reload).
+func (a *app) ClearPageCache() {
+	a.pageCache.Clear()
 }
 
 func (a *app) Layouts() *model.Layouts {

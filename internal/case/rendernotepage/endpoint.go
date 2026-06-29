@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
@@ -157,6 +158,21 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layout = resp.Config.DefaultLayout
 	}
 
+	// Anonymous page cache: serve pre-gzipped bytes to gzip-accepting anonymous
+	// readers and fill on a miss. This is the only branch that reaches a
+	// cacheable 200 note page; cacheDecision enforces every safety gate
+	// (authenticated viewer, ?version=, personalized layout, exotic UI lang,
+	// non-gzip client).
+	cacheKey, cacheable := cacheDecision(ctx, env, resp, request, layout)
+	if cacheable {
+		if cached, ok := env.CachedPage(cacheKey); ok {
+			writeCachedPage(ctx, cached)
+			return nil, nil
+		}
+	}
+
+	renderStart := time.Now()
+
 	if layout != "" {
 		processed, layoutErr := renderLayout(ctx, env, resp, layout)
 		if layoutErr != nil {
@@ -164,12 +180,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		if processed {
+			fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 			return nil, nil
 		}
 	}
 
 	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 	defaulttemplate.WriteRender(ctx, dtCtx)
+	fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 	return nil, nil
 }
 

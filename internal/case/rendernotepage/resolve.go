@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/pagecache"
 	"trip2g/internal/templateviews"
 	"trip2g/internal/usertoken"
 )
@@ -60,6 +61,14 @@ type Env interface {
 	// NoteVersionEditor loads who pushed the given note version, used to attach
 	// the admin-only "last edited by" lazy resolver onto the template note.
 	NoteVersionEditor(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error)
+
+	// ConfigEpoch is a monotonic counter bumped on every site-config change; it
+	// is part of the anonymous page-cache key so config changes invalidate it.
+	ConfigEpoch() uint64
+	// CachedPage returns pre-gzipped bytes previously stored for key, if fresh.
+	CachedPage(key pagecache.Key) ([]byte, bool)
+	// StoreCachedPage records pre-gzipped response bytes for key.
+	StoreCachedPage(key pagecache.Key, gz []byte)
 }
 
 type Request struct {

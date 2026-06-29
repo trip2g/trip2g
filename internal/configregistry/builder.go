@@ -23,6 +23,12 @@ type SiteConfigBuilder struct {
 	env   BuilderEnv
 	log   logger.Logger
 	cache atomic.Pointer[model.SiteConfig]
+
+	// configEpoch is a monotonic counter bumped on every InvalidateSiteConfig.
+	// The anonymous page cache embeds it in its key so any site-config change
+	// (which can affect site name, RSS, default layout, paywall, etc.) makes
+	// previously cached pages unreachable without an explicit flush.
+	configEpoch atomic.Uint64
 }
 
 // NewSiteConfigBuilder creates a new SiteConfigBuilder.
@@ -45,9 +51,18 @@ func (b *SiteConfigBuilder) SiteConfig(ctx context.Context) model.SiteConfig {
 	return cfg
 }
 
-// InvalidateSiteConfig resets the cached SiteConfig so it is rebuilt on next access.
+// InvalidateSiteConfig resets the cached SiteConfig so it is rebuilt on next
+// access and bumps the config epoch so anonymous page-cache entries built under
+// the previous config are no longer served.
 func (b *SiteConfigBuilder) InvalidateSiteConfig() {
 	b.cache.Store(nil)
+	b.configEpoch.Add(1)
+}
+
+// ConfigEpoch returns the current site-config epoch, bumped on every
+// InvalidateSiteConfig. Used as part of the anonymous page-cache key.
+func (b *SiteConfigBuilder) ConfigEpoch() uint64 {
+	return b.configEpoch.Load()
 }
 
 // TimeLocation returns the parsed timezone from the cached SiteConfig.
