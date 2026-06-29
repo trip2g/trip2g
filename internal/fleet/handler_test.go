@@ -310,6 +310,41 @@ func TestServeDelivery_ForEach_AllErrors502(t *testing.T) {
 	require.Equal(t, "error", resp.Status)
 }
 
+// capThenCompleteLLM caps item 1's run (a non-finish, non-permitted tool call
+// whose tokens exceed the per-run cap, so the next loop step trips the hard-cap
+// without touching the KB) then completes every later run.
+type capThenCompleteLLM struct{ call int }
+
+func (l *capThenCompleteLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	l.call++
+	if l.call == 1 {
+		args, _ := json.Marshal(map[string]any{})
+		return agentruntime.ChatResult{
+			ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "noop", Arguments: string(args)}},
+			PromptTokens: 5000, CompletionTokens: 0,
+		}, nil
+	}
+	args, _ := json.Marshal(map[string]any{"answer": "ok"})
+	return agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "2", Name: "finish", Arguments: string(args)}},
+		PromptTokens: 3, CompletionTokens: 2,
+	}, nil
+}
+
+// TestServeDelivery_ForEach_AggregatesCappedStatus asserts that when one fan-out
+// item is capped and another completes, the aggregate status reflects the cap
+// (not the last run's "completed").
+func TestServeDelivery_ForEach_AggregatesCappedStatus(t *testing.T) {
+	f := fanOutFleet(t, &capThenCompleteLLM{}, "changed_files", "Handle {{ change_file.Path }}.")
+	rec := post(t, f, urlKey("roles/triage.md"), changesBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, agentruntime.StatusCapped, resp.Status,
+		"aggregate status must reflect the capped item, not the last completed one")
+}
+
 func TestClampBudget(t *testing.T) {
 	require.Equal(t, 4000, clampBudget(4000, 100000)) // frontmatter wins under ceiling
 	require.Equal(t, 100, clampBudget(4000, 100))     // ceiling wins

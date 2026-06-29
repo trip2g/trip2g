@@ -103,7 +103,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 	// same scoped api_token, so per-delivery attribution (all items reuse the one
 	// scoped delivery token) is preserved across the batch.
 	var totalTokens, totalSteps, successCount int
-	var lastStatus string
+	var aggStatus string
 	var answers, errMsgs []string
 	for i, rc := range items {
 		instruction, rerr := renderInstruction(role.Body, rc)
@@ -129,7 +129,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		totalTokens += res.TokensUsed
 		totalSteps += res.Steps
 		successCount++
-		lastStatus = res.Status
+		aggStatus = mergeStatus(aggStatus, res.Status)
 		if res.Answer != "" {
 			answers = append(answers, res.Answer)
 		}
@@ -144,7 +144,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := lastStatus
+	status := aggStatus
 	message := strings.Join(answers, "\n")
 	if len(errMsgs) > 0 {
 		status = "partial"
@@ -189,6 +189,28 @@ func fanOut(mode string, base renderCtx) []renderCtx {
 		return out
 	default:
 		return []renderCtx{base}
+	}
+}
+
+// mergeStatus folds a fan-out item's run status into the batch aggregate,
+// preferring a cap status (capped/max_steps) over completed so a capped item is
+// never hidden by a later completed one.
+func mergeStatus(agg, next string) string {
+	if statusSeverity(next) >= statusSeverity(agg) {
+		return next
+	}
+	return agg
+}
+
+// statusSeverity ranks run statuses so the most severe wins in mergeStatus.
+func statusSeverity(status string) int {
+	switch status {
+	case agentruntime.StatusCapped:
+		return 2
+	case agentruntime.StatusMaxSteps:
+		return 1
+	default: // completed / empty
+		return 0
 	}
 }
 
