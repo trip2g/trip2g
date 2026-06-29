@@ -265,6 +265,39 @@ func TestServeDelivery_ForEach_ContinueOnError(t *testing.T) {
 	require.Contains(t, resp.Message, "item 2 boom", "per-item error must be reported")
 }
 
+// TestServeDelivery_ForEach_ZeroItems200NoOp asserts that a fan-out with no
+// items to iterate (empty changes[] for changed_files, empty attached_notes for
+// attached_notes) is a 200 no-op, not a 502. A 502 makes trip2g retry the empty
+// batch to exhaustion and mark the delivery failed.
+func TestServeDelivery_ForEach_ZeroItems200NoOp(t *testing.T) {
+	emptyBody := func(t *testing.T) []byte {
+		t.Helper()
+		b, _ := json.Marshal(map[string]any{
+			"depth": 0, "api_token": "scoped-token",
+			"changes":        []map[string]any{},
+			"attached_notes": []map[string]any{},
+		})
+		return b
+	}
+	for _, mode := range []string{"changed_files", "attached_notes"} {
+		t.Run(mode, func(t *testing.T) {
+			llm := &recordLLM{}
+			f := fanOutFleet(t, llm, mode, "Body {{ depth }}.")
+			rec := post(t, f, urlKey("roles/triage.md"), emptyBody(t), true)
+
+			require.Equal(t, http.StatusOK, rec.Code, "zero-item fan-out must be a 200 no-op")
+			require.Empty(t, llm.systems, "no items means the agent loop never runs")
+
+			var resp webhookutil.AgentResponse
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+			require.Equal(t, "completed", resp.Status)
+			require.Equal(t, 0, resp.TokensUsed)
+			require.Equal(t, 0, resp.Steps)
+			require.Contains(t, resp.Message, mode, "no-op message should name the empty collection")
+		})
+	}
+}
+
 // TestServeDelivery_ForEach_AllErrors502 asserts that when every fan-out item
 // fails, the whole batch is a non-2xx so trip2g's retry/backoff engages.
 func TestServeDelivery_ForEach_AllErrors502(t *testing.T) {

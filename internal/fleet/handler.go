@@ -83,14 +83,29 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		Depth:         payload.Depth,
 	}
 
+	// Zero-item fan-out (e.g. for_each:attached_notes with no attached notes, or
+	// for_each:changed_files with an empty changes[]) is a no-op, not a failure.
+	// Returning 200 stops trip2g from retrying the empty batch to exhaustion and
+	// marking the delivery failed.
+	items := fanOut(role.ForEach, base)
+	if len(items) == 0 {
+		writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
+			Status:     agentruntime.StatusCompleted,
+			Message:    "no " + role.ForEach + " items to process",
+			TokensUsed: 0,
+			Steps:      0,
+		})
+		return
+	}
+
 	// Sequential fan-out, continue-on-error: one Run per item, accumulate spend,
 	// collect per-item errors instead of aborting the batch. Each Run reuses the
-	// same scoped api_token, so per-item write-back attribution (created_by_
-	// delivery_*) is preserved across the batch.
+	// same scoped api_token, so per-delivery attribution (all items reuse the one
+	// scoped delivery token) is preserved across the batch.
 	var totalTokens, totalSteps, successCount int
 	var lastStatus string
 	var answers, errMsgs []string
-	for i, rc := range fanOut(role.ForEach, base) {
+	for i, rc := range items {
 		instruction, rerr := renderInstruction(role.Body, rc)
 		if rerr != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: render: %v", i+1, rerr))
