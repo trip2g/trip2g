@@ -175,12 +175,12 @@ func TestResolveFsPathFromPermalink_MissingView_ReturnsEmpty(t *testing.T) {
 		Map: map[string]*appmodel.NoteView{},
 	}
 	got := resolveFsPathFromPermalink(views, "/boards/sprint")
-	require.Equal(t, "", got)
+	require.Empty(t, got)
 }
 
 func TestResolveFsPathFromPermalink_NilViews_ReturnsEmpty(t *testing.T) {
 	got := resolveFsPathFromPermalink(nil, "/boards/sprint")
-	require.Equal(t, "", got)
+	require.Empty(t, got)
 }
 
 func TestResolveFsPathFromPermalink_EmptyPermalink_ReturnsEmpty(t *testing.T) {
@@ -190,7 +190,7 @@ func TestResolveFsPathFromPermalink_EmptyPermalink_ReturnsEmpty(t *testing.T) {
 		},
 	}
 	got := resolveFsPathFromPermalink(views, "")
-	require.Equal(t, "", got)
+	require.Empty(t, got)
 }
 
 // -- wikilinkTargetAllowed (G3 regression) --
@@ -239,7 +239,6 @@ func TestWikilinkTargetAllowed_ScopedToken_MultiplePatterns(t *testing.T) {
 		{"private/secret.md", false},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.path, func(t *testing.T) {
 			got := wikilinkTargetAllowed(ctx, tc.path)
 			require.Equal(t, tc.allowed, got)

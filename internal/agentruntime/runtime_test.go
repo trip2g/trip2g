@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/webhookutil"
+
+	"github.com/stretchr/testify/require"
 )
 
 // memKB is an in-memory KB for deterministic, offline tests.
@@ -112,7 +113,11 @@ func TestRun_ReadOnlyRoleStaysInReadScope(t *testing.T) {
 		script: []ChatResult{
 			{ToolCalls: []ToolCall{toolCall("1", toolReadNote, map[string]any{"path": "subjects/subj1/profile.md"})}, PromptTokens: 10, CompletionTokens: 5},
 			{ToolCalls: []ToolCall{toolCall("2", toolReadNote, map[string]any{"path": "subjects/subj2/profile.md"})}, PromptTokens: 10, CompletionTokens: 5},
-			{ToolCalls: []ToolCall{toolCall("3", toolWriteNote, map[string]any{"path": "subjects/subj1/profile.md", "content": "tampered"})}, PromptTokens: 10, CompletionTokens: 5},
+			{
+				ToolCalls:        []ToolCall{toolCall("3", toolWriteNote, map[string]any{"path": "subjects/subj1/profile.md", "content": "tampered"})},
+				PromptTokens:     10,
+				CompletionTokens: 5,
+			},
 			{ToolCalls: []ToolCall{toolCall("4", toolFinish, map[string]any{"answer": "subj1 is a backend engineer"})}, PromptTokens: 10, CompletionTokens: 5},
 		},
 	}
@@ -158,9 +163,21 @@ func TestRun_WriteRoleStaysInWriteScope(t *testing.T) {
 	llm := &stubLLM{
 		script: []ChatResult{
 			{ToolCalls: []ToolCall{toolCall("1", toolReadNote, map[string]any{"path": "subjects/subj1/transcript.md"})}, PromptTokens: 10, CompletionTokens: 5},
-			{ToolCalls: []ToolCall{toolCall("2", toolWriteNote, map[string]any{"path": "subjects/subj1/segments/a.md", "content": "topic A"})}, PromptTokens: 10, CompletionTokens: 5},
-			{ToolCalls: []ToolCall{toolCall("3", toolWriteNote, map[string]any{"path": "subjects/subj1/segments/b.md", "content": "topic B"})}, PromptTokens: 10, CompletionTokens: 5},
-			{ToolCalls: []ToolCall{toolCall("4", toolWriteNote, map[string]any{"path": "subjects/subj2/segments/x.md", "content": "leak"})}, PromptTokens: 10, CompletionTokens: 5},
+			{
+				ToolCalls:        []ToolCall{toolCall("2", toolWriteNote, map[string]any{"path": "subjects/subj1/segments/a.md", "content": "topic A"})},
+				PromptTokens:     10,
+				CompletionTokens: 5,
+			},
+			{
+				ToolCalls:        []ToolCall{toolCall("3", toolWriteNote, map[string]any{"path": "subjects/subj1/segments/b.md", "content": "topic B"})},
+				PromptTokens:     10,
+				CompletionTokens: 5,
+			},
+			{
+				ToolCalls:        []ToolCall{toolCall("4", toolWriteNote, map[string]any{"path": "subjects/subj2/segments/x.md", "content": "leak"})},
+				PromptTokens:     10,
+				CompletionTokens: 5,
+			},
 			{ToolCalls: []ToolCall{toolCall("5", toolFinish, map[string]any{"answer": "filed 2 segments"})}, PromptTokens: 10, CompletionTokens: 5},
 		},
 	}
@@ -243,7 +260,7 @@ func TestRun_PatchNoteDeniedOutOfScope(t *testing.T) {
 		Model: "m", MaxTokens: 10000, MaxSteps: 10, LLM: llm, KB: kb,
 	})
 	require.NoError(t, err)
-	require.Len(t, res.Changes, 0)
+	require.Empty(t, res.Changes)
 	require.Equal(t, "@status:todo", kb.docs["other/x.md"])
 	require.Equal(t, []string{"patch other/x.md"}, res.Denials)
 }
@@ -312,7 +329,11 @@ func TestRun_ToolsAllowlistBlocksUndeclaredToolAtExecution(t *testing.T) {
 	llm := &stubLLM{
 		script: []ChatResult{
 			// Model calls write_note even though it was NOT offered (jailbreak / hallucination).
-			{ToolCalls: []ToolCall{toolCall("1", toolWriteNote, map[string]any{"path": "notes/a.md", "content": "INJECTED"})}, PromptTokens: 10, CompletionTokens: 5},
+			{
+				ToolCalls:        []ToolCall{toolCall("1", toolWriteNote, map[string]any{"path": "notes/a.md", "content": "INJECTED"})},
+				PromptTokens:     10,
+				CompletionTokens: 5,
+			},
 			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})}, PromptTokens: 10, CompletionTokens: 5},
 		},
 	}

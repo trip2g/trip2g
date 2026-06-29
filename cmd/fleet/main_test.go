@@ -1,11 +1,11 @@
 package main
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/fleet"
+
+	"github.com/stretchr/testify/require"
 )
 
 func validConfig() fleet.Config {
@@ -81,7 +81,7 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
-				require.True(t, strings.Contains(err.Error(), tc.wantErr),
+				require.Contains(t, err.Error(), tc.wantErr,
 					"expected error to mention %q, got: %v", tc.wantErr, err)
 			}
 		})

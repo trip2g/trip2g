@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/webhookutil"
+
+	"github.com/stretchr/testify/require"
 )
 
 // stubLLM scripts the agent loop: one patch_note then finish.
@@ -120,7 +121,14 @@ func TestDeliveryPayload_DecodesTriggerContext(t *testing.T) {
 			{"path": "boards/backlog.md", "event": "create", "path_id": 8, "version": 1, "title": "Backlog", "content": "x"},
 		},
 		"attached_notes": []map[string]any{
-			{"path": "roles/triage.md", "content": "role body", "title": "Triage role", "tags": []string{"role", "triage"}, "meta": map[string]string{"layout": "doc"}, "updated_at": "2026-06-29T10:00:00Z"},
+			{
+				"path":       "roles/triage.md",
+				"content":    "role body",
+				"title":      "Triage role",
+				"tags":       []string{"role", "triage"},
+				"meta":       map[string]string{"layout": "doc"},
+				"updated_at": "2026-06-29T10:00:00Z",
+			},
 		},
 	})
 	require.NoError(t, err)
@@ -238,7 +246,7 @@ type flakyLLM struct{ call int }
 func (l *flakyLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
 	l.call++
 	if l.call == 2 {
-		return agentruntime.ChatResult{}, fmt.Errorf("item 2 boom")
+		return agentruntime.ChatResult{}, errors.New("item 2 boom")
 	}
 	args, _ := json.Marshal(map[string]any{"answer": "ok"})
 	return agentruntime.ChatResult{
@@ -357,7 +365,7 @@ var _ = strconv.Itoa // keep import if unused after edits
 type errLLM struct{ msg string }
 
 func (e *errLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
-	return agentruntime.ChatResult{}, fmt.Errorf("%s", e.msg)
+	return agentruntime.ChatResult{}, errors.New(e.msg)
 }
 
 // newTestFleetWithLLM builds a Fleet with the given LLM.

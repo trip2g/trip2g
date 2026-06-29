@@ -633,7 +633,7 @@ func TestResolve_WriteDeniedOutOfPattern(t *testing.T) {
 	ctx := appreq.NewContext(context.Background(), req)
 
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		// insertNote intentionally nil — must NOT be reached.
 	}
 
@@ -655,7 +655,7 @@ func TestResolve_WriteAllowedInPattern(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews:            appmodel.NewNoteViews,
 		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -729,7 +729,7 @@ func TestResolve_ScopedToken_MatchingPattern_Allowed(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews:            appmodel.NewNoteViews,
 		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -753,7 +753,7 @@ func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews:            appmodel.NewNoteViews,
 		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,

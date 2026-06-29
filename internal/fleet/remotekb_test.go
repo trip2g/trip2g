@@ -95,7 +95,7 @@ func TestRemoteKB_WriteIssuesUpsert(t *testing.T) {
 	}}
 	kb := newRemoteKB(client, "tok", nil)
 	require.NoError(t, kb.Write(context.Background(), "x.md", "body"))
-	require.True(t, strings.Contains(q, "updateNotes"))
+	require.Contains(t, q, "updateNotes")
 }
 
 func TestRemoteKB_PatchNotFoundReturnsError(t *testing.T) {

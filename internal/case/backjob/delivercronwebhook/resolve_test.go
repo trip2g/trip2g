@@ -413,7 +413,7 @@ func TestResolve_CronAttachNotes_GateSkipWhenNoneMatch(t *testing.T) {
 		}, nil
 	}
 	// Empty NoteViews — no notes match "x/**".
-	env.LatestNoteViewsFunc = func() *model.NoteViews { return model.NewNoteViews() }
+	env.LatestNoteViewsFunc = model.NewNoteViews
 
 	var got db.UpdateCronWebhookDeliveryResultParams
 	env.UpdateCronWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error {

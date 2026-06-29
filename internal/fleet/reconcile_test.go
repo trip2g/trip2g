@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -24,7 +24,7 @@ func legacySpecVer(role Role) string {
 		strings.Join(role.WritePatterns, ","),
 		strings.Join(role.AttachNotes, ","),
 		strings.Join(role.TriggerOn, ","),
-		fmt.Sprintf("%d", role.MaxDepth),
+		strconv.Itoa(role.MaxDepth),
 		role.Concurrency,
 	}, "|")))
 	return base64.RawURLEncoding.EncodeToString(h[:6])
@@ -167,7 +167,7 @@ func TestReconcile_DeletesStaleAndLeavesForeign(t *testing.T) {
 					{"id":8,"description":"some-other-integration"}
 				]}}`), nil
 			case strings.Contains(q, "changeWebhookDelete"):
-				deletedIDs = append(deletedIDs, int64(vars["input"].(map[string]any)["id"].(int64)))
+				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
 			}
 			return json.RawMessage(`{}`), nil
 		},
@@ -184,7 +184,7 @@ func TestDeregister_DeletesAllOwned(t *testing.T) {
 				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":7,"description":"fleet:f1:roles/a.md#x"}]}}`), nil
 			}
 			if strings.Contains(q, "changeWebhookDelete") {
-				deletedIDs = append(deletedIDs, int64(vars["input"].(map[string]any)["id"].(int64)))
+				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
 			}
 			return json.RawMessage(`{}`), nil
 		},

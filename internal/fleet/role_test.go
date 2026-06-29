@@ -56,7 +56,6 @@ func TestParseRole_ForEach(t *testing.T) {
 		{"", ""}, // absent = legacy single run
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run("for_each="+tc.raw, func(t *testing.T) {
 			r, err := ParseRole("roles/triage.md", "body", meta("mode", "change", "for_each", tc.raw))
 			require.NoError(t, err)
@@ -109,7 +108,6 @@ func TestRoleValidate_CronModeRejected(t *testing.T) {
 		{"both", true},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run("mode="+tc.mode, func(t *testing.T) {
 			err := Role{Mode: tc.mode}.Validate(nil)
 			if tc.wantErr {
