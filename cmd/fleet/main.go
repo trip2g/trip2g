@@ -38,7 +38,7 @@ func run() error {
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, cfg.AdminAPIKey, httpClient)
+	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, cfg.JWTSecret, cfg.AdminEmail, httpClient)
 	llm := agentruntime.NewOpenAILLM(cfg.LLMAPIKey, cfg.LLMBaseURL)
 
 	f := fleet.NewFleet(cfg, client, llm)

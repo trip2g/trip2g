@@ -2,90 +2,110 @@ package fleet
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// TestHTTPClient_AdminLaneMCPEnvelope asserts the admin lane wraps the GraphQL
-// request in a JSON-RPC tools/call graphql_request envelope, POSTs it to
-// /_system/mcp with the X-Api-Key + Accept headers, and unwraps the GraphQL data
-// out of result.structuredContent.data. This is the real /_system/mcp contract;
-// the endpoint is JSON-RPC MCP, not a raw GraphQL endpoint.
-func TestHTTPClient_AdminLaneMCPEnvelope(t *testing.T) {
-	var gotPath, gotKey, gotAuth, gotAccept string
-	var gotBody struct {
-		JSONRPC string `json:"jsonrpc"`
-		Method  string `json:"method"`
-		Params  struct {
-			Name      string `json:"name"`
-			Arguments struct {
-				Query     string         `json:"query"`
-				Variables map[string]any `json:"variables"`
-			} `json:"arguments"`
-		} `json:"params"`
+// hatCookieHandler writes a trip2g_token session cookie + 302, mimicking the
+// real /_system/hat exchange.
+func hatCookieHandler(value string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "trip2g_token", Value: value, Path: "/"})
+		w.Header().Set("Location", "/")
+		w.WriteHeader(http.StatusFound)
 	}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+}
+
+// TestHTTPClient_AdminLaneRawGraphQLWithCookie asserts the admin lane mints a
+// session cookie via /_system/hat, then POSTs the raw GraphQL {query,variables}
+// to /_system/graphql with that cookie attached (NOT an MCP/JSON-RPC envelope,
+// and no X-Api-Key), and decodes the standard {data} envelope.
+func TestHTTPClient_AdminLaneRawGraphQLWithCookie(t *testing.T) {
+	var gotPath, gotCookie, gotKey, gotBody string
+	mux := http.NewServeMux()
+	mux.Handle("/_system/hat", hatCookieHandler("sess123"))
+	mux.HandleFunc("/_system/graphql", func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
+		if c, err := r.Cookie("trip2g_token"); err == nil {
+			gotCookie = c.Value
+		}
 		gotKey = r.Header.Get("X-Api-Key")
-		gotAuth = r.Header.Get("Authorization")
-		gotAccept = r.Header.Get("Accept")
 		b, _ := io.ReadAll(r.Body)
-		_ = json.Unmarshal(b, &gotBody)
-		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"structured result"}],"structuredContent":{"data":{"ok":true}}}}`))
-	}))
+		gotBody = string(b)
+		_, _ = w.Write([]byte(`{"data":{"ok":true}}`))
+	})
+	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	c := NewHTTPClient(srv.URL, "admin-key", srv.Client())
+	c := NewHTTPClient(srv.URL, "secret", "fleet@local", srv.Client())
 	raw, err := c.GraphQLAdmin(context.Background(), "query{ok}", map[string]any{"x": 1})
 	require.NoError(t, err)
 
-	require.Equal(t, "/_system/mcp", gotPath)
-	require.Equal(t, "admin-key", gotKey)
-	require.Empty(t, gotAuth)
-	require.Contains(t, gotAccept, "application/json")
-
-	require.Equal(t, "2.0", gotBody.JSONRPC)
-	require.Equal(t, "tools/call", gotBody.Method)
-	require.Equal(t, "graphql_request", gotBody.Params.Name)
-	require.Equal(t, "query{ok}", gotBody.Params.Arguments.Query)
-	require.Equal(t, map[string]any{"x": float64(1)}, gotBody.Params.Arguments.Variables)
-
+	require.Equal(t, "/_system/graphql", gotPath)
+	require.Equal(t, "sess123", gotCookie, "admin lane must attach the HAT session cookie")
+	require.Empty(t, gotKey, "admin lane must not send the legacy X-Api-Key")
+	require.Contains(t, gotBody, `"query":"query{ok}"`)
+	require.Contains(t, gotBody, `"variables":{"x":1}`)
+	require.NotContains(t, gotBody, "jsonrpc")
 	require.JSONEq(t, `{"ok":true}`, string(raw))
 }
 
-// TestHTTPClient_AdminLaneErrorEnvelope asserts a JSON-RPC error envelope from
-// /_system/mcp (e.g. a GraphQL/tool error) surfaces as a Go error carrying the
-// error message.
-func TestHTTPClient_AdminLaneErrorEnvelope(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"GraphQL request failed: Cannot query field allChangeWebhooks"}}`))
-	}))
+// TestHTTPClient_AdminLaneGraphQLErrorSurfaces asserts a raw GraphQL error
+// envelope from /_system/graphql surfaces as a Go error carrying the message.
+func TestHTTPClient_AdminLaneGraphQLErrorSurfaces(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/_system/hat", hatCookieHandler("sess"))
+	mux.HandleFunc("/_system/graphql", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"errors":[{"message":"Cannot query field allChangeWebhooks"}]}`))
+	})
+	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	c := NewHTTPClient(srv.URL, "k", srv.Client())
+	c := NewHTTPClient(srv.URL, "secret", "fleet@local", srv.Client())
 	_, err := c.GraphQLAdmin(context.Background(), "query{allChangeWebhooks}", nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "Cannot query field allChangeWebhooks")
 }
 
-// TestHTTPClient_AdminLaneContentTextFallback asserts that when
-// structuredContent.data is absent, the admin lane falls back to parsing the
-// data key out of result.content[0].text.
-func TestHTTPClient_AdminLaneContentTextFallback(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"data\":{\"ok\":true}}"}]}}`))
-	}))
+// TestHTTPClient_AdminLaneReauthOn401 asserts that when the session cookie is
+// rejected (HTTP 401), the admin lane re-runs the HAT exchange to refresh the
+// cookie and retries the request once with the fresh cookie.
+func TestHTTPClient_AdminLaneReauthOn401(t *testing.T) {
+	var hatCalls, gqlCalls int32
+	var retriedCookie string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/_system/hat", func(w http.ResponseWriter, _ *http.Request) {
+		n := atomic.AddInt32(&hatCalls, 1)
+		http.SetCookie(w, &http.Cookie{Name: "trip2g_token", Value: "sess" + string(rune('0'+n)), Path: "/"})
+		w.WriteHeader(http.StatusFound)
+	})
+	mux.HandleFunc("/_system/graphql", func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&gqlCalls, 1)
+		if n == 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("unauthorized"))
+			return
+		}
+		if c, err := r.Cookie("trip2g_token"); err == nil {
+			retriedCookie = c.Value
+		}
+		_, _ = w.Write([]byte(`{"data":{"ok":true}}`))
+	})
+	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-	c := NewHTTPClient(srv.URL, "k", srv.Client())
+	c := NewHTTPClient(srv.URL, "secret", "fleet@local", srv.Client())
 	raw, err := c.GraphQLAdmin(context.Background(), "query{ok}", nil)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"ok":true}`, string(raw))
+	require.Equal(t, int32(2), atomic.LoadInt32(&hatCalls), "HAT exchange runs once on first use + once on 401 re-auth")
+	require.Equal(t, int32(2), atomic.LoadInt32(&gqlCalls), "the request is retried exactly once after re-auth")
+	require.Equal(t, "sess2", retriedCookie, "the retry must carry the refreshed session cookie")
 }
 
 func TestHTTPClient_ScopedLaneBearer(t *testing.T) {
@@ -100,7 +120,7 @@ func TestHTTPClient_ScopedLaneBearer(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewHTTPClient(srv.URL, "admin-key", srv.Client())
+	c := NewHTTPClient(srv.URL, "secret", "fleet@local", srv.Client())
 	_, err := c.GraphQLScoped(context.Background(), "scoped-token", "mutation{x}", nil)
 	require.NoError(t, err)
 
@@ -120,7 +140,7 @@ func TestHTTPClient_ScopedGraphQLErrorsSurface(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewHTTPClient(srv.URL, "k", srv.Client())
+	c := NewHTTPClient(srv.URL, "secret", "fleet@local", srv.Client())
 	_, err := c.GraphQLScoped(context.Background(), "tok", "q", nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "boom")

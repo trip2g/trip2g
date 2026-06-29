@@ -11,8 +11,8 @@ import (
 )
 
 // Client is the trip2g API surface the fleet depends on. Two lanes:
-//   - GraphQLAdmin: POST /_system/mcp with X-API-Key (full-admin elevation),
-//     used by discovery + reconcile only.
+//   - GraphQLAdmin: POST raw GraphQL to /_system/graphql with a HAT-minted admin
+//     session cookie (full-admin elevation), used by discovery + reconcile only.
 //   - GraphQLScoped: POST /_system/graphql with a Bearer shortapitoken,
 //     used for all per-delivery note IO (the only lane RemoteKB ever touches).
 type Client interface {
@@ -21,127 +21,87 @@ type Client interface {
 }
 
 type httpClient struct {
-	baseURL  string
-	adminKey string
-	hc       *http.Client
+	baseURL string
+	hat     *hatAuthenticator
+	hc      *http.Client
 }
 
-// NewHTTPClient builds the concrete HTTP-backed Client.
-func NewHTTPClient(baseURL, adminKey string, hc *http.Client) Client {
+// NewHTTPClient builds the concrete HTTP-backed Client. The admin lane mints a
+// Hot-Auth-Token from jwtSecret (the shared user-token/JWT secret), exchanges it
+// at /_system/hat for an admin session cookie (self-provisioning adminEmail),
+// and rides that cookie on raw admin{} GraphQL.
+func NewHTTPClient(baseURL, jwtSecret, adminEmail string, hc *http.Client) Client {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	return &httpClient{baseURL: baseURL, adminKey: adminKey, hc: hc}
+	return &httpClient{
+		baseURL: baseURL,
+		hat:     newHATAuthenticator(baseURL, jwtSecret, adminEmail, hc),
+		hc:      hc,
+	}
 }
 
-// mcpRequestID is the JSON-RPC id used for admin-lane tools/call requests. The
-// MCP endpoint echoes it back; a constant is sufficient since requests are
-// request/response and never multiplexed on one connection.
-const mcpRequestID = 1
-
-// GraphQLAdmin runs a GraphQL operation through the MCP graphql_request tool.
-// /_system/mcp is a JSON-RPC 2.0 MCP endpoint (NOT a raw GraphQL endpoint), so
-// the operation is wrapped in a tools/call envelope and the GraphQL data is
-// unwrapped from result.structuredContent.data.
+// GraphQLAdmin runs a GraphQL operation on the admin lane: raw GraphQL on
+// /_system/graphql carrying the HAT-minted admin session cookie. It mints the
+// cookie on first use, and on a 401 it re-runs the HAT exchange and retries once.
 func (c *httpClient) GraphQLAdmin(ctx context.Context, query string, vars map[string]any) (json.RawMessage, error) {
-	return c.doMCP(ctx, query, vars)
+	if len(c.hat.cached()) == 0 {
+		if err := c.hat.authenticate(ctx); err != nil {
+			return nil, err
+		}
+	}
+	raw, status, err := c.doAdmin(ctx, query, vars)
+	if err != nil && status == http.StatusUnauthorized {
+		if aerr := c.hat.authenticate(ctx); aerr != nil {
+			return nil, aerr
+		}
+		raw, _, err = c.doAdmin(ctx, query, vars)
+	}
+	return raw, err
 }
 
 func (c *httpClient) GraphQLScoped(ctx context.Context, token, query string, vars map[string]any) (json.RawMessage, error) {
-	return c.do(ctx, "/_system/graphql", map[string]string{"Authorization": "Bearer " + token}, query, vars)
+	raw, _, err := c.do(ctx, "/_system/graphql", token, nil, query, vars)
+	return raw, err
 }
 
-// doMCP posts a JSON-RPC tools/call graphql_request envelope to /_system/mcp and
-// returns the GraphQL data (result.structuredContent.data). A JSON-RPC error is
-// surfaced as a Go error.
-func (c *httpClient) doMCP(ctx context.Context, query string, vars map[string]any) (json.RawMessage, error) {
-	body, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      mcpRequestID,
-		"method":  "tools/call",
-		"params": map[string]any{
-			"name": "graphql_request",
-			"arguments": map[string]any{
-				"query":     query,
-				"variables": vars,
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/_system/mcp", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-Api-Key", c.adminKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	var env struct {
-		Result *struct {
-			Content []struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			} `json:"content"`
-			StructuredContent struct {
-				Data json.RawMessage `json:"data"`
-			} `json:"structuredContent"`
-		} `json:"result"`
-		Error *struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if decErr := json.NewDecoder(resp.Body).Decode(&env); decErr != nil {
-		return nil, fmt.Errorf("decode mcp response (HTTP %d): %w", resp.StatusCode, decErr)
-	}
-	if env.Error != nil {
-		return nil, fmt.Errorf("%s", env.Error.Message)
-	}
-	if env.Result == nil {
-		return nil, fmt.Errorf("mcp response missing result (HTTP %d)", resp.StatusCode)
-	}
-	if len(env.Result.StructuredContent.Data) > 0 {
-		return env.Result.StructuredContent.Data, nil
-	}
-	// Fallback: some responses carry the GraphQL envelope only in the text
-	// content block; parse the data key out of it.
-	if len(env.Result.Content) > 0 && env.Result.Content[0].Text != "" {
-		var inner struct {
-			Data json.RawMessage `json:"data"`
-		}
-		if json.Unmarshal([]byte(env.Result.Content[0].Text), &inner) == nil && len(inner.Data) > 0 {
-			return inner.Data, nil
-		}
-	}
-	return nil, fmt.Errorf("mcp response missing structuredContent.data (HTTP %d)", resp.StatusCode)
+// doAdmin posts raw GraphQL to /_system/graphql with the cached admin session
+// cookie(s). It returns the HTTP status alongside the result so GraphQLAdmin can
+// detect a 401 and re-authenticate.
+func (c *httpClient) doAdmin(ctx context.Context, query string, vars map[string]any) (json.RawMessage, int, error) {
+	return c.do(ctx, "/_system/graphql", "", c.hat.cached(), query, vars)
 }
 
-func (c *httpClient) do(ctx context.Context, path string, headers map[string]string, query string, vars map[string]any) (json.RawMessage, error) {
+// do posts a raw GraphQL {query, variables} request and decodes the standard
+// {data, errors} envelope. A bearer token (scoped lane) and/or cookies (admin
+// lane) authenticate it. A 401 is returned as an error with the HTTP status so
+// the admin lane can re-authenticate.
+func (c *httpClient) do(ctx context.Context, path, bearer string, cookies []*http.Cookie, query string, vars map[string]any) (json.RawMessage, int, error) {
 	body, err := json.Marshal(map[string]any{"query": query, "variables": vars})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	for k, v := range headers {
-		req.Header.Set(k, v)
+	if bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
+	for _, ck := range cookies {
+		req.AddCookie(ck)
+	}
+
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, resp.StatusCode, fmt.Errorf("graphql unauthorized (HTTP %d)", resp.StatusCode)
+	}
 
 	var env struct {
 		Data   json.RawMessage `json:"data"`
@@ -150,10 +110,10 @@ func (c *httpClient) do(ctx context.Context, path string, headers map[string]str
 		} `json:"errors"`
 	}
 	if decErr := json.NewDecoder(resp.Body).Decode(&env); decErr != nil {
-		return nil, fmt.Errorf("decode graphql response (HTTP %d): %w", resp.StatusCode, decErr)
+		return nil, resp.StatusCode, fmt.Errorf("decode graphql response (HTTP %d): %w", resp.StatusCode, decErr)
 	}
 	if len(env.Errors) > 0 {
-		return nil, fmt.Errorf("graphql error: %s", env.Errors[0].Message)
+		return nil, resp.StatusCode, fmt.Errorf("graphql error: %s", env.Errors[0].Message)
 	}
-	return env.Data, nil
+	return env.Data, resp.StatusCode, nil
 }
