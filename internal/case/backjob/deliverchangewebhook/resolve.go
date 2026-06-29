@@ -38,13 +38,13 @@ type Env interface {
 // changeWebhookPayload is the JSON body sent to the webhook endpoint.
 type changeWebhookPayload struct {
 	webhookutil.BasePayload
-	Depth         int                              `json:"depth"`
-	Instruction   string                           `json:"instruction"`
-	Changes       []handlenotewebhooks.ChangeInfo  `json:"changes"`
-	AttachedNotes []webhookutil.AttachedNote       `json:"attached_notes,omitempty"`
-	APIToken      string                           `json:"api_token,omitempty"`
-	Secrets       map[string]string                `json:"secrets,omitempty"`
-	PreviousError string                           `json:"previous_error,omitempty"`
+	Depth         int                             `json:"depth"`
+	Instruction   string                          `json:"instruction"`
+	Changes       []handlenotewebhooks.ChangeInfo `json:"changes"`
+	AttachedNotes []webhookutil.AttachedNote      `json:"attached_notes,omitempty"`
+	APIToken      string                          `json:"api_token,omitempty"`
+	Secrets       map[string]string               `json:"secrets,omitempty"`
+	PreviousError string                          `json:"previous_error,omitempty"`
 }
 
 // tokenTTLMargin is the small grace window added to the delivery timeout for
