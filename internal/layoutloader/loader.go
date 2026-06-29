@@ -126,6 +126,9 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		Load: func(source model.LayoutSourceFile) model.Layout {
 			view, parseErr := jl.load(source)
 			layout := model.Layout{View: view}
+			if view != nil {
+				layout.Personalized = jl.detectPersonalized(source.ID, source.Content, view)
+			}
 			if parseErr != "" {
 				layout.Warnings = []model.NoteWarning{{
 					Level:   model.NoteWarningCritical,
@@ -291,6 +294,10 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 			warnings = append(warnings, pending...)
 		}
 
+		// Detect viewer/role-dependent helper usage so the anonymous page cache
+		// can bypass personalized layouts. Walks the page plus its imports.
+		personalized := jl.detectPersonalized(source.ID, source.Content, view)
+
 		jl.layouts.Map[source.ID] = model.Layout{
 			VersionID:       source.VersionID,
 			Path:            source.Path,
@@ -301,7 +308,8 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 
 			AssetReplaces: source.Assets,
 
-			Warnings: warnings,
+			Warnings:     warnings,
+			Personalized: personalized,
 		}
 	}
 }
