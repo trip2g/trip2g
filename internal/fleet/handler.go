@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -156,8 +156,9 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		// trip2g ignores the status field and records partials as success, so a
 		// permanent per-item failure is otherwise invisible. Log it warn-level so
 		// partials are discoverable from the fleet side.
-		log.Printf("warn: fleet: partial fan-out for role %s: %d/%d item(s) failed: %s",
-			role.NotePath, len(errMsgs), len(items), strings.Join(errMsgs, "; "))
+		//nolint:sloglint // Fleet has no logger instance; global slog is intentional here
+		slog.WarnContext(r.Context(), "fleet: partial fan-out", "role", role.NotePath,
+			"failed", len(errMsgs), "total", len(items), "errors", strings.Join(errMsgs, "; "))
 	}
 
 	// Changes already applied in-loop via the scoped token; report spend only.
