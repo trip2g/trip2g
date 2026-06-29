@@ -2,12 +2,72 @@ package fleet
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+// legacySpecVer reproduces the pre-schema-bump specVer hash (no schema token,
+// no content flag folded in). The current specVer must differ from this so the
+// always-on include_content / passApiKey constants force exactly one webhook
+// recreate on the upgrade path.
+func legacySpecVer(role Role) string {
+	h := sha256.Sum256([]byte(strings.Join([]string{
+		strings.Join(role.TriggerInclude, ","),
+		strings.Join(role.TriggerExclude, ","),
+		strings.Join(role.ReadPatterns, ","),
+		strings.Join(role.WritePatterns, ","),
+		strings.Join(role.AttachNotes, ","),
+		strings.Join(role.TriggerOn, ","),
+		fmt.Sprintf("%d", role.MaxDepth),
+		role.Concurrency,
+	}, "|")))
+	return base64.RawURLEncoding.EncodeToString(h[:6])
+}
+
+// TestSpecVer_SchemaBumpRotatesMarker asserts the schema-version bump makes
+// specVer differ from the legacy hash for a fixed role, so every marker rotates
+// exactly once and webhooks pick up the always-on include_content flag.
+func TestSpecVer_SchemaBumpRotatesMarker(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	require.NotEqual(t, legacySpecVer(role), specVer(role),
+		"schema bump must rotate the spec version vs the pre-fix value")
+}
+
+// TestReconcile_SchemaBumpRecreatesLegacyWebhook asserts a webhook stored with a
+// legacy (pre-bump) marker is deleted and recreated, and the recreated webhook
+// enables include_content.
+func TestReconcile_SchemaBumpRecreatesLegacyWebhook(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	legacyMarker := "fleet:f1:" + role.NotePath + "#" + legacySpecVer(role)
+
+	var createInputs []map[string]any
+	var deletedIDs []int64
+	client := &ClientMock{
+		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
+			switch {
+			case strings.Contains(q, "allChangeWebhooks"):
+				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":7,"description":"` + legacyMarker + `"}]}}`), nil
+			case strings.Contains(q, "changeWebhookCreate"):
+				createInputs = append(createInputs, vars["input"].(map[string]any))
+				return json.RawMessage(`{"changeWebhookCreate":{"webhook":{"id":8}}}`), nil
+			case strings.Contains(q, "changeWebhookDelete"):
+				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	require.NoError(t, newReconciler(client).Reconcile(context.Background(), []Role{role}))
+	require.Equal(t, []int64{7}, deletedIDs, "legacy-marker webhook must be deleted")
+	require.Len(t, createInputs, 1, "a recreated webhook must be created")
+	require.Equal(t, true, createInputs[0]["includeContent"],
+		"recreated webhook must enable include_content")
+}
 
 func newReconciler(client Client) *Reconciler {
 	return NewReconciler(client, Config{

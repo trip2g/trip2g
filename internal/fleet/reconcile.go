@@ -167,10 +167,19 @@ func markerFor(fleetID string, role Role) string {
 	return "fleet:" + fleetID + ":" + role.NotePath + "#" + specVer(role)
 }
 
+// specSchemaVer is a manual schema-version token folded into the specVer hash.
+// Bump it when an always-on create() constant changes (e.g. includeContent,
+// passApiKey, transformJsonnet) so every marker rotates exactly once and all
+// existing webhooks are recreated to pick up the new shape. Bump=2 rotates the
+// markers that predate the include_content/passApiKey constants.
+const specSchemaVer = "schema=2"
+
 // specVer is a short content hash of the parts of a role that define its
 // reconciled webhook; bumping any of them rotates the marker (delete+recreate).
+// specSchemaVer is folded in so always-on constants can force a one-time rotate.
 func specVer(role Role) string {
 	h := sha256.Sum256([]byte(strings.Join([]string{
+		specSchemaVer,
 		strings.Join(role.TriggerInclude, ","),
 		strings.Join(role.TriggerExclude, ","),
 		strings.Join(role.ReadPatterns, ","),
