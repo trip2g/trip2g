@@ -90,8 +90,13 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
-			if rp := appreq.WebhookReadPatterns(ctx); len(rp) > 0 && !webhookutil.MatchesAny(res.NoteView.Path, rp) {
-				continue
+			// Fail-closed: scoped shortapitoken → enforce read_patterns strictly.
+			// Empty patterns + scoped = deny-all (not "no restriction").
+			if appreq.Scoped(ctx) {
+				rp := appreq.WebhookReadPatterns(ctx)
+				if len(rp) == 0 || !webhookutil.MatchesAny(res.NoteView.Path, rp) {
+					continue
+				}
 			}
 
 			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
