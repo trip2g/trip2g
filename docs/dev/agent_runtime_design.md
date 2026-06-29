@@ -19,10 +19,12 @@ note save (updateNotes)
 ```
 
 - **trip2g = event source only.** `deliverchangewebhook` / `delivercronwebhook` keep doing `webhookutil.Deliver` (HTTP POST). trip2g never imports `agentruntime`, never runs an LLM.
-- **The fleet = the agent host AND the `external_url` target.** It owns `internal/agentruntime/*` (cherry-picked loop) and `cmd/agent` (offline harness).
+- **The fleet = the agent host AND the `external_url` target.** It owns `internal/agentruntime/*` (the agent loop) and `cmd/fleet` (the daemon). The note-driven offline harness is `cmd/fleet --once <role-note>`; the former `cmd/agent` raw-instruction CLI is removed — agent specs come only from notes.
 - **Agent = note.** A role note's **frontmatter** carries all config (model, tools, read/write patterns, budgets, triggers, mode); the **body** is the instruction. No trip2g DB columns for model/budget/tools/patterns.
 - **trip2g changes are minimal and additive:** `transform_jsonnet` (outbound payload transform), `attach_notes` (push context), `concurrency_mode` (no-overlap guard), and delivery attribution/spend — **2 migration files**.
 - **Acceptance = the kanban demo**: drag a card → trip2g webhook → fleet agent triages → writes back → board re-renders, with `max_depth=1` preventing self-retrigger.
+
+**Second demo — Krisp transcript → knowledge-base pipeline.** Raw call transcripts become topic-split segments, then wiki notes with `[[WikiLinks]]`. The raw-transcript extraction + topic-splitting step is a **deterministic `executor: code` agent — no LLM** (following the original Krisp topic-split demos); the LLM is reserved for the semantic wiki-extraction step. Deterministic ingest keeps the source auditable and re-processable. Delivered by the code-executor role kind (separate follow-up).
 
 **Critic-driven corrections baked in:** the "scoped token" is made *real* (server-side pattern enforcement — today it is decorative); the token TTL floor is dropped and the token/secrets are kept out of the jsonnet ExtVar + the logged body; `patch_note` is added to the runtime for surgical write-back; the kanban bundle's `noteChanges` subscription is a Step-0 blocker; the reconcile admin key is named honestly as **full-admin**.
 
