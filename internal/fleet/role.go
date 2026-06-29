@@ -112,8 +112,11 @@ func parseList(raw string) []string {
 	raw = strings.TrimPrefix(raw, "[")
 	raw = strings.TrimSuffix(raw, "]")
 	var out []string
-	for _, part := range strings.Split(raw, ",") {
-		v := strings.Trim(strings.TrimSpace(part), `"'`)
+	// trip2g's note meta.raw renders a YAML list as space-joined inside brackets
+	// (e.g. "[read_note write_note]"), so split on whitespace as well as commas.
+	// Safe for tools and globs (none contain internal spaces).
+	for _, part := range strings.Fields(strings.ReplaceAll(raw, ",", " ")) {
+		v := strings.Trim(part, `"'`)
 		if v != "" {
 			out = append(out, v)
 		}

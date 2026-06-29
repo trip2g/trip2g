@@ -5,6 +5,7 @@ tools: [write_note]
 read_patterns: ["transcripts/**"]
 write_patterns: ["segments/**"]
 mode: change
+trigger_on: [create, update]
 trigger_include: ["transcripts/**"]
 trigger_exclude: ["segments/**", "wiki/**"]
 for_each: changed_files
