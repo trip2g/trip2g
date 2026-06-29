@@ -38,10 +38,10 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 
 		_ executecronwebhooks.Env = app
 
-		_ cleanupwebhookdeliverylogs.Env       = app
-		_ cleanupwebhookdeliveries.Env         = app
-		_ cleanupapikeylogs.Env                = app
-		_ expirestalewebhookdeliveries.Env     = app
+		_ cleanupwebhookdeliverylogs.Env   = app
+		_ cleanupwebhookdeliveries.Env     = app
+		_ cleanupapikeylogs.Env            = app
+		_ expirestalewebhookdeliveries.Env = app
 	)
 
 	jobs := []cronjobs.Job{

@@ -105,7 +105,7 @@ func TestAgentChangeIsPatch(t *testing.T) {
 	}{
 		{AgentChangeKindPatch, true},
 		{AgentChangeKindWrite, false},
-		{"", false},     // backward-compat: empty string = write
+		{"", false},       // backward-compat: empty string = write
 		{"upsert", false}, // legacy alias also not patch
 	}
 	for _, tc := range cases {

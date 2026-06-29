@@ -96,13 +96,13 @@ func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
 	rec := post(t, f, key, deliveryBody(t), true)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, scopedCalls)    // exactly one scoped updateNotes
-	require.Zero(t, adminCalls)         // admin key never used for writes
+	require.Equal(t, 1, scopedCalls) // exactly one scoped updateNotes
+	require.Zero(t, adminCalls)      // admin key never used for writes
 	require.Equal(t, "scoped-token", lastToken)
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	require.Nil(t, resp.Changes)      // writes already applied in-loop
+	require.Nil(t, resp.Changes)          // writes already applied in-loop
 	require.Equal(t, 30, resp.TokensUsed) // (10+5)*2
 	require.Equal(t, 2, resp.Steps)
 }

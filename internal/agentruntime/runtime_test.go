@@ -239,7 +239,7 @@ func TestRun_PatchNoteDeniedOutOfScope(t *testing.T) {
 		},
 	}
 	res, err := Run(context.Background(), Input{
-		Instruction:   "x", ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		Instruction: "x", ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
 		Model: "m", MaxTokens: 10000, MaxSteps: 10, LLM: llm, KB: kb,
 	})
 	require.NoError(t, err)
@@ -295,7 +295,7 @@ func TestRun_ToolsAllowlistRestrictsLLMTools(t *testing.T) {
 			ReadPatterns: []string{"notes/**"},
 			Model:        "m", MaxTokens: 10000, MaxSteps: 10,
 			Tools: nil, // empty = back-compat full set
-			LLM:  llm, KB: kb,
+			LLM:   llm, KB: kb,
 		})
 		require.NoError(t, err)
 		require.Len(t, llm.seenTools, 5, "empty Tools must expose all 5 default tools")

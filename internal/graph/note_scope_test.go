@@ -67,7 +67,7 @@ func TestFilterNotePathsByScope_ScopedToken_FiltersOutOfScope(t *testing.T) {
 	// that glob. This is the core NotePaths F1 regression.
 	paths := []db.NotePath{
 		{ID: 1, Value: "boards/sprint.md"},
-		{ID: 2, Value: "docs/readme.md"},    // out of scope
+		{ID: 2, Value: "docs/readme.md"}, // out of scope
 		{ID: 3, Value: "boards/retro.md"},
 		{ID: 4, Value: "private/secret.md"}, // out of scope
 	}
@@ -159,8 +159,8 @@ func TestResolveFsPathFromPermalink_UsesFsPathNotPermalink(t *testing.T) {
 	views := &appmodel.NoteViews{
 		Map: map[string]*appmodel.NoteView{
 			"/boards/sprint": {
-				Path:      "boards/sprint.md",   // filesystem path
-				Permalink: "/boards/sprint",     // URL path
+				Path:      "boards/sprint.md", // filesystem path
+				Permalink: "/boards/sprint",   // URL path
 			},
 		},
 	}
@@ -246,4 +246,3 @@ func TestWikilinkTargetAllowed_ScopedToken_MultiplePatterns(t *testing.T) {
 		})
 	}
 }
-

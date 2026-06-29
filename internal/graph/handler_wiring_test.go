@@ -35,9 +35,9 @@ type stubOpsEnv struct {
 	secret  string
 }
 
-func (s *stubOpsEnv) IsDevMode() bool                                          { return s.devMode }
-func (s *stubOpsEnv) ShortAPITokenSecret() string                              { return s.secret }
-func (s *stubOpsEnv) Logger() logger.Logger                                    { return &logger.DummyLogger{} }
+func (s *stubOpsEnv) IsDevMode() bool                                         { return s.devMode }
+func (s *stubOpsEnv) ShortAPITokenSecret() string                             { return s.secret }
+func (s *stubOpsEnv) Logger() logger.Logger                                   { return &logger.DummyLogger{} }
 func (s *stubOpsEnv) AcquireTxEnvInRequest(_ context.Context, _ string) error { panic("unexpected") }
 func (s *stubOpsEnv) ReleaseTxEnvInRequest(_ context.Context, _ bool) error   { panic("unexpected") }
 

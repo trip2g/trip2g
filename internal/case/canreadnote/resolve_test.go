@@ -683,7 +683,7 @@ func TestResolve_ScopedReadPatterns(t *testing.T) {
 			var ctx context.Context
 			if tt.scoped {
 				req := &appreq.Request{
-					WebhookScoped:      true,
+					WebhookScoped:       true,
 					WebhookReadPatterns: tt.readPatterns,
 				}
 				ctx = appreq.NewContext(context.Background(), req)

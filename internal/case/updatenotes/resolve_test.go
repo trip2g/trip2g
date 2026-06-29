@@ -485,8 +485,8 @@ func TestResolve_WriteAllowedInPattern(t *testing.T) {
 // F2: scoped token (WebhookDeliveryKind set) + empty write_patterns → deny-all.
 func TestResolve_ScopedToken_EmptyWritePatterns_DenyAll(t *testing.T) {
 	tests := []struct {
-		name    string
-		change  model.NoteChangeInput
+		name   string
+		change model.NoteChangeInput
 	}{
 		{
 			name:   "upsert denied",
