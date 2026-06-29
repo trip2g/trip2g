@@ -52,10 +52,10 @@ func TestReconcile_SchemaBumpRecreatesLegacyWebhook(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
 			switch {
 			case strings.Contains(q, "allChangeWebhooks"):
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":7,"description":"` + legacyMarker + `"}]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[{"id":7,"description":"` + legacyMarker + `"}]}}}`), nil
 			case strings.Contains(q, "changeWebhookCreate"):
 				createInputs = append(createInputs, vars["input"].(map[string]any))
-				return json.RawMessage(`{"changeWebhookCreate":{"webhook":{"id":8}}}`), nil
+				return json.RawMessage(`{"admin":{"changeWebhookCreate":{"webhook":{"id":8}}}}`), nil
 			case strings.Contains(q, "changeWebhookDelete"):
 				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
 			}
@@ -82,10 +82,10 @@ func TestReconcile_CreatesMissingWebhook(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
 			switch {
 			case strings.Contains(q, "allChangeWebhooks"):
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[]}}}`), nil
 			case strings.Contains(q, "changeWebhookCreate"):
 				created = vars["input"].(map[string]any)
-				return json.RawMessage(`{"changeWebhookCreate":{"webhook":{"id":7},"secret":"s"}}`), nil
+				return json.RawMessage(`{"admin":{"changeWebhookCreate":{"webhook":{"id":7},"secret":"s"}}}`), nil
 			}
 			return nil, nil
 		},
@@ -116,10 +116,10 @@ func TestReconcile_RequestsNoteContent(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
 			switch {
 			case strings.Contains(q, "allChangeWebhooks"):
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[]}}}`), nil
 			case strings.Contains(q, "changeWebhookCreate"):
 				created = vars["input"].(map[string]any)
-				return json.RawMessage(`{"changeWebhookCreate":{"webhook":{"id":7},"secret":"s"}}`), nil
+				return json.RawMessage(`{"admin":{"changeWebhookCreate":{"webhook":{"id":7},"secret":"s"}}}`), nil
 			}
 			return nil, nil
 		},
@@ -139,7 +139,7 @@ func TestReconcile_NoChangeWhenMarkerMatches(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, _ map[string]any) (json.RawMessage, error) {
 			switch {
 			case strings.Contains(q, "allChangeWebhooks"):
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":7,"description":"` + desc + `"}]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[{"id":7,"description":"` + desc + `"}]}}}`), nil
 			case strings.Contains(q, "changeWebhookCreate"):
 				createCalls++
 			case strings.Contains(q, "changeWebhookUpdate"):
@@ -162,10 +162,10 @@ func TestReconcile_DeletesStaleAndLeavesForeign(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
 			switch {
 			case strings.Contains(q, "allChangeWebhooks"):
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[
 					{"id":7,"description":"fleet:f1:roles/old.md#deadbeef"},
 					{"id":8,"description":"some-other-integration"}
-				]}}`), nil
+				]}}}`), nil
 			case strings.Contains(q, "changeWebhookDelete"):
 				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
 			}
@@ -181,7 +181,7 @@ func TestDeregister_DeletesAllOwned(t *testing.T) {
 	client := &ClientMock{
 		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
 			if strings.Contains(q, "allChangeWebhooks") {
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":7,"description":"fleet:f1:roles/a.md#x"}]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[{"id":7,"description":"fleet:f1:roles/a.md#x"}]}}}`), nil
 			}
 			if strings.Contains(q, "changeWebhookDelete") {
 				deletedIDs = append(deletedIDs, vars["input"].(map[string]any)["id"].(int64))
@@ -198,11 +198,11 @@ func TestReconcile_Create_ErrorPayload_SurfacesAsError(t *testing.T) {
 	client := &ClientMock{
 		GraphQLAdminFunc: func(_ context.Context, q string, _ map[string]any) (json.RawMessage, error) {
 			if strings.Contains(q, "allChangeWebhooks") {
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[]}}}`), nil
 			}
 			if strings.Contains(q, "changeWebhookCreate") {
 				// Server returns an ErrorPayload instead of a ChangeWebhookCreatePayload.
-				return json.RawMessage(`{"changeWebhookCreate":{"message":"url is required"}}`), nil
+				return json.RawMessage(`{"admin":{"changeWebhookCreate":{"message":"url is required"}}}`), nil
 			}
 			return json.RawMessage(`{}`), nil
 		},
@@ -219,10 +219,10 @@ func TestReconcile_Delete_ErrorPayload_SurfacesAsError(t *testing.T) {
 		GraphQLAdminFunc: func(_ context.Context, q string, _ map[string]any) (json.RawMessage, error) {
 			if strings.Contains(q, "allChangeWebhooks") {
 				// Existing stale webhook not in desired set → will be deleted.
-				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[{"id":42,"description":"fleet:f1:roles/old.md#deadbeef"}]}}`), nil
+				return json.RawMessage(`{"admin":{"allChangeWebhooks":{"nodes":[{"id":42,"description":"fleet:f1:roles/old.md#deadbeef"}]}}}`), nil
 			}
 			if strings.Contains(q, "changeWebhookDelete") {
-				return json.RawMessage(`{"changeWebhookDelete":{"message":"not found"}}`), nil
+				return json.RawMessage(`{"admin":{"changeWebhookDelete":{"message":"not found"}}}`), nil
 			}
 			return json.RawMessage(`{}`), nil
 		},
