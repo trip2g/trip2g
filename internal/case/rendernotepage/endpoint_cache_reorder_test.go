@@ -188,3 +188,98 @@ func TestPageCache_EarlyAccessEnforced(t *testing.T) {
 	require.NotContains(t, string(body(t, ctx)), "PRIMED-SHOULD-NOT-BE-SERVED",
 		"early path must enforce CanReadNote before serving a cache hit")
 }
+
+// sentinel marks page-cache bytes that must never reach a client via the early
+// fast-path for a request that the full path handles with a redirect/placeholder.
+const sentinel = "PRIMED-SHOULD-NOT-BE-SERVED"
+
+// primeSentinel stores sentinel bytes under the exact key serveCachedPageEarly
+// builds for the default anon request, so the regression tests prove the early
+// path bails BEFORE consulting (and serving) the cache for these notes.
+func primeSentinel(t *testing.T, pc *pagecache.PageCache, key pagecache.Key) {
+	t.Helper()
+	gz, err := pagecache.Gzip([]byte(sentinel))
+	require.NoError(t, err)
+	pc.Set(key, gz)
+	require.Equal(t, 1, pc.Len())
+}
+
+// Test (M1): the early fast-path must NEVER serve a primed cache entry for a
+// request that a special Handle branch resolves to a redirect / placeholder —
+// alt-permalink 301, note.Redirect 302, lang-redirect 302, unsupported-file
+// placeholder. These pages are never stored by the full path (they return before
+// fillPageCache), so today's safety is structural; these tests pin it by priming
+// an entry under the exact key and proving the early path still bails and the
+// full-path outcome (redirect / placeholder) wins.
+func TestPageCache_EarlyNeverServesRedirectGates(t *testing.T) {
+	// All cases use the default request key (path /test-note, host example.com,
+	// version 42, epoch 0, ui_lang "" — except lang-redirect which keys on "en").
+	defaultKey := pagecache.Key{Path: "/test-note", Host: "example.com", NoteVersionID: 42, ConfigEpoch: 0, UILang: ""}
+
+	t.Run("alt-permalink 301", func(t *testing.T) {
+		note, views := cacheTestNote()
+		// Non-canonical request path: note is reachable at /test-note but its
+		// canonical permalink differs and it has alternate permalinks → 301.
+		note.Permalink = "/canonical-note"
+		note.AlternatePermalinks = map[model.URLNormalizationMethod]string{
+			model.URLNormSimpleTranslit: "/test-note",
+		}
+		env, pc, _ := cacheTestEnv(views, nil)
+		primeSentinel(t, pc, defaultKey)
+
+		ctx := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+		runHandle(t, env, ctx, nil)
+		require.NotContains(t, string(body(t, ctx)), sentinel,
+			"alt-permalink request must not be served from the early cache")
+		require.Equal(t, http.StatusMovedPermanently, ctx.Response.StatusCode())
+		require.NotEmpty(t, string(ctx.Response.Header.Peek("Location")), "301 must set Location")
+	})
+
+	t.Run("note.Redirect 302", func(t *testing.T) {
+		note, views := cacheTestNote()
+		target := "https://example.com/elsewhere"
+		note.Redirect = &target
+		env, pc, _ := cacheTestEnv(views, nil)
+		primeSentinel(t, pc, defaultKey)
+
+		ctx := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+		runHandle(t, env, ctx, nil)
+		require.NotContains(t, string(body(t, ctx)), sentinel,
+			"note.Redirect request must not be served from the early cache")
+		require.Equal(t, http.StatusFound, ctx.Response.StatusCode())
+		require.Equal(t, target, string(ctx.Response.Header.Peek("Location")))
+	})
+
+	t.Run("unsupported-file-ext placeholder", func(t *testing.T) {
+		note, views := cacheTestNote()
+		note.Path = "/board.canvas" // .canvas → unsupported-file placeholder
+		env, pc, _ := cacheTestEnv(views, nil)
+		primeSentinel(t, pc, defaultKey)
+
+		ctx := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+		runHandle(t, env, ctx, nil)
+		require.NotContains(t, string(body(t, ctx)), sentinel,
+			"unsupported-file request must not be served from the early cache")
+		require.Equal(t, http.StatusOK, ctx.Response.StatusCode(), "placeholder renders 200")
+	})
+
+	t.Run("lang-redirect 302", func(t *testing.T) {
+		note, views := cacheTestNote()
+		// Hub note (no own lang) with an en alternative: an en-preferring anon
+		// request is redirected to the en version before the cacheable branch.
+		note.Lang = ""
+		other := &model.NoteView{Path: "/note-en", Permalink: "/note-en", Lang: "en"}
+		note.LangRedirects = []model.LangRedirect{{Lang: "en", URL: "/note-en", Note: other}}
+		env, pc, _ := cacheTestEnv(views, nil)
+		// en-preferring request keys on ui_lang "en".
+		enKey := pagecache.Key{Path: "/test-note", Host: "example.com", NoteVersionID: 42, ConfigEpoch: 0, UILang: "en"}
+		primeSentinel(t, pc, enKey)
+
+		ctx := newReqCtx(reqOpts{acceptEncoding: "gzip", acceptLang: "en-US,en;q=0.9"})
+		runHandle(t, env, ctx, nil)
+		require.NotContains(t, string(body(t, ctx)), sentinel,
+			"lang-redirect request must not be served from the early cache")
+		require.Equal(t, http.StatusFound, ctx.Response.StatusCode())
+		require.Equal(t, "/note-en", string(ctx.Response.Header.Peek("Location")))
+	})
+}

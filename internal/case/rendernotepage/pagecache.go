@@ -158,6 +158,25 @@ func serveCachedPageEarly(ctx *fasthttp.RequestCtx, env Env, request Request) bo
 		return false
 	}
 
+	// Notes handled by a special Handle branch that returns before the cacheable
+	// branch — alt-permalink 301, note.Redirect 302, lang-redirect 302, and the
+	// unsupported-file placeholder — are never stored by the full path, so the
+	// early lookup structurally misses them. Bail defensively anyway so the early
+	// path can never serve such a request from a (hypothetical) cache entry,
+	// keeping it provably no less strict than Handle even across future reorders.
+	if note.AlternatePermalinks != nil && request.Path != note.Permalink {
+		return false
+	}
+	if note.Redirect != nil {
+		return false
+	}
+	if len(note.LangRedirects) > 0 && note.Lang == "" {
+		return false
+	}
+	if unsupportedFileExt(note.Path) != "" {
+		return false
+	}
+
 	// Independently enforce every anonymous-readability gate Resolve applies
 	// before the cacheable branch, BEFORE consulting the cache. This makes the
 	// early path provably no less strict than the full path (paywalled / signin /
