@@ -156,6 +156,32 @@ On startup the fleet:
    carries `depth=1`. trip2g refuses to re-fire the webhook for depth ≥ max_depth,
    so the loop terminates.
 
+### Template variables per `for_each` mode
+
+The role body is a Jet template rendered against four variables. Which of them
+are populated depends on the role's `for_each` frontmatter:
+
+| `for_each` | `change_file` | `changed_files` | `attached_notes` |
+|------------|---------------|-----------------|------------------|
+| `""` (default — one run for the whole delivery) | `nil` | full list of all changes | full list of all attached notes |
+| `changed_files` (one run per change) | the current change | full list (unchanged) | full list |
+| `attached_notes` (one run per attached note) | `nil` | full list | one-element list — the current note |
+
+`depth` is always set. In `attached_notes` mode the current note is exposed as
+the single element of `attached_notes` (there is no singular note slot), so
+iterate it with `{{ range attached_notes }}`.
+
+**Footgun:** a body that references `change_file` (e.g. `{{ change_file.Path }}`)
+without `for_each: changed_files` renders against a `nil` `change_file` and
+**fails the delivery**. In the default and `attached_notes` modes, walk
+`{{ range changed_files }}` instead.
+
+**Prompt injection:** note content is interpolated verbatim into the agent's
+prompt, so a note author can attempt prompt injection. This is mitigated — not
+eliminated — by the role's read/write scope and tool allowlist: even a hijacked
+run can only read/write within the role's declared globs and call its
+allowlisted tools.
+
 ### Pointing a role at the example board
 
 Copy `docs/demo/fleet/roles/triage.md` and `docs/demo/fleet/boards/sprint.md`
