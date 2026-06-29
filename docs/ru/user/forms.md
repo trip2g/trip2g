@@ -323,11 +323,13 @@ mutation MarkProcessed($input: MarkFormSubmitProcessedInput!) {
 ### Что ещё не реализовано
 
 - **`type: file`** — загрузка файлов возвращает `file_upload_not_supported`. Пока используйте отдельный шаг с загрузкой в object storage.
+- **`type: payment`** — поле оплаты, которое принимает деньги при сабмите, запланировано, но ещё не сделано. Для платного контента сейчас используйте [[ru/user/monetization|сабграф-пейволы]].
 - **`can_submit: paid_user`** — поле признаётся, но сервер возвращает `FormSubmitDeniedPayload { reason: "not_implemented" }`. Пока используйте `admin`.
 - **Капчи, кроме Cloudflare Turnstile** — hCaptcha и Yandex SmartCaptcha в роадмапе (Turnstile подключён и включён по умолчанию, см. «Защита от спама» выше).
+- **Вебхук при сабмите** — отправка формы пока не запускает вебхук. Сабмит ставит в очередь письмо админам базы; вебхук-уведомление при сабмите запланировано.
 
 ### Связанные доки
 
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]] — массово навесить `form:` или `form_ref:` на папку
-- [[ru/user/change_webhooks|Вебхуки при изменении]] — узнать о новом сабмите вне админки
+- [[ru/user/change_webhooks|Вебхуки при изменении]] — вебхуки на изменения заметок; уведомление о новом сабмите вне админки запланировано
 - [[ru/user/selfhosted|Self-hosted]] — собственная инсталляция, где живёт GraphQL-эндпоинт и API-ключи

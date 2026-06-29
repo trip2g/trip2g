@@ -353,11 +353,13 @@ All notes under `blog/` then expose the shared form. Add `exclude: ["blog/drafts
 ### What's not implemented yet
 
 - **`type: file`** — file uploads return `file_upload_not_supported` on submit. Use a separate object-storage upload step for now.
+- **`type: payment`** — a payment field that collects money on submit is planned, not built yet. For paid content today, use [[en/user/monetization|subgraph paywalls]].
 - **`can_submit: paid_user`** — recognised in frontmatter but server returns `FormSubmitDeniedPayload { reason: "not_implemented" }`. Use `admin` until this lands.
 - **Captcha providers other than Cloudflare Turnstile** — hCaptcha and Yandex SmartCaptcha are on the roadmap (Turnstile is wired up and on by default; see "Spam protection" above).
+- **Webhook on submit** — a form submission does not fire a webhook yet. It enqueues an email to vault admins; webhook notification on submit is planned.
 
 ### Related
 
 - [[en/user/frontmatter-patches|Frontmatter patches]] — bulk-apply `form:` or `form_ref:` to a folder
-- [[en/user/webhooks|Webhooks]] — get notified outside the admin panel when a submission arrives
+- [[en/user/webhooks|Webhooks]] — note-change webhooks today; getting notified when a form submission arrives is planned
 - [[en/user/selfhosted|Self-hosted]] — running your own instance, where the GraphQL endpoint and API keys live
