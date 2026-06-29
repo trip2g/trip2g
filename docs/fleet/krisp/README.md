@@ -24,10 +24,10 @@ Raw-source-saving is **deterministic ingest**, not the LLM: the raw transcript i
 - `segments/sample-call.md`, `wiki/sample-call.md` — captured outputs from a real run.
 
 ## Validated run (2026-06-29)
-Both steps run end-to-end on the fleet's own engine (`agentruntime`) via the `cmd/agent` offline harness, model **`qwen/qwen3-14b`** over OpenRouter:
+Both steps run end-to-end on the fleet's own engine (`agentruntime`) via the `cmd/fleet --once` offline harness, model **`qwen/qwen3-14b`** over OpenRouter:
 - step 1: `completed`, ~7.6K tokens, 2 steps — 3 correct topic segments, Minto headlines.
 - step 2: `completed`, ~11.2K tokens, 2 steps — knowledge note + 7 `[[WikiLinks]]` ([[Блог]], [[Контекстная реклама]], [[Сеньор-разработчик]], …).
-Cost ≈ fractions of a cent total. (`cmd/agent` is the same engine as the fleet, without the webhook plumbing — see `docs/dev/fleet_run.md` for the full fleet run.)
+Cost ≈ fractions of a cent total. (`cmd/fleet --once` runs a single role-note offline — same engine as the daemon, no trip2g connection — see `docs/dev/fleet_run.md` for the full fleet run.)
 
 ## To run on the real fleet
 Push `roles/*` and `transcripts/sample-call.md` into a trip2g instance (`roles/` is the fleet's `--agents-folder`), start `cmd/fleet` (see `docs/dev/fleet_run.md`) with `--default-model qwen/qwen3-14b --llm-base-url https://openrouter.ai/api/v1`, then edit the transcript → the chain runs and writes `segments/*` + `wiki/*`.

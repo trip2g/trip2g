@@ -48,6 +48,21 @@ func renderInstruction(body string, ctx renderCtx) (string, error) {
 	return withAttachedNotesHint(buf.String(), ctx.AttachedNotes), nil
 }
 
+// RenderRoleInstruction is the exported entry point for offline role rendering
+// (used by cmd/fleet --once). When targetPath is non-empty, a one-element
+// changed_files list and change_file pointer are built from the target note,
+// matching the for_each:changed_files render-context shape. The returned string
+// is the rendered instruction ready to feed into agentruntime.Run.
+func RenderRoleInstruction(role Role, targetPath, targetContent string) (string, error) {
+	ctx := renderCtx{}
+	if targetPath != "" {
+		ci := changeInfo{Path: targetPath, Content: targetContent}
+		ctx.ChangedFiles = []changeInfo{ci}
+		ctx.ChangeFile = &ctx.ChangedFiles[0]
+	}
+	return renderInstruction(role.Body, ctx)
+}
+
 // withAttachedNotesHint appends a short line naming any attached notes whose
 // paths the rendered instruction doesn't already mention, so the model knows
 // they are available to read even when the role body never references them.

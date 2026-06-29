@@ -2,10 +2,14 @@
 // notes in trip2g, reconciles change-webhooks to point back at itself, receives
 // deliveries, runs the scoped agent loop, and writes results back via a
 // per-delivery scoped trip2g token. trip2g stays a dumb event source.
+//
+// Use --once <role-note.md> to run a single role-note offline without a trip2g
+// connection (local KB from --vault, optional target note via --target).
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,6 +23,7 @@ import (
 	"time"
 
 	"trip2g/internal/agentruntime"
+	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
 )
 
@@ -28,70 +33,90 @@ func main() {
 	}
 }
 
+// cliFlags holds the parsed command-line state for a single invocation.
+type cliFlags struct {
+	cfg        fleet.Config
+	dryRun     bool
+	oncePath   string // non-empty → one-shot mode; daemon must NOT start
+	vaultDir   string // KB root for --once (default ".")
+	targetPath string // optional note in the vault to use as change_file context
+}
+
 func run() error {
-	cfg, dryRun := parseFlags()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	cli, err := parseFlags(ctx)
+	if err != nil {
+		return err
+	}
+
+	// --once: run a single role-note offline, then exit. No daemon, no trip2g.
+	if cli.oncePath != "" {
+		return runOnce(ctx, cli)
+	}
 
 	// Normalize: strip trailing slash so webhook URLs assemble cleanly.
-	cfg.CallbackURL = normalizeCallbackURL(cfg.CallbackURL)
+	cli.cfg.CallbackURL = normalizeCallbackURL(cli.cfg.CallbackURL)
 
-	if err := validateConfig(cfg); err != nil {
+	err = validateConfig(cli.cfg)
+	if err != nil {
 		return err
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, httpClient)
-	adminGQL := fleet.NewAdminGraphQLClient(cfg.Trip2gBaseURL, cfg.JWTSecret, cfg.AdminEmail, httpClient)
-	llm := agentruntime.NewOpenAILLM(cfg.LLMAPIKey, cfg.LLMBaseURL)
+	client := fleet.NewHTTPClient(cli.cfg.Trip2gBaseURL, httpClient)
+	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.JWTSecret, cli.cfg.AdminEmail, httpClient)
+	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
 
-	f := fleet.NewFleet(cfg, client, llm)
-	discovery := fleet.NewDiscovery(adminGQL, cfg.AgentsFolder, cfg.OfferedTools)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	f := fleet.NewFleet(cli.cfg, client, llm)
+	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
 
 	// --dry-run: connect, print + flag each role's resolved config, then exit
 	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
-	if dryRun {
-		runDryRun(ctx, discovery, cfg)
+	if cli.dryRun {
+		runDryRun(ctx, discovery, cli.cfg)
 		return nil
 	}
 
-	reconciler := fleet.NewReconciler(adminGQL, cfg)
+	reconciler := fleet.NewReconciler(adminGQL, cli.cfg)
 
 	// First sync before serving so the registry is populated.
 	syncOnce(ctx, f, discovery, reconciler)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/deliver/", f.ServeDelivery)
-	srv := &http.Server{Addr: cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: cli.cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
-	srvErr := make(chan error, 1)
+	srvErrCh := make(chan error, 1)
 	go func() {
-		log.Printf("fleet %s listening on %s, callback %s", cfg.FleetID, cfg.ListenAddr, cfg.CallbackURL)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			srvErr <- err
+		log.Printf("fleet %s listening on %s, callback %s", cli.cfg.FleetID, cli.cfg.ListenAddr, cli.cfg.CallbackURL)
+		listenErr := srv.ListenAndServe()
+		if listenErr != nil && listenErr != http.ErrServerClosed {
+			srvErrCh <- listenErr
 			stop()
 		}
 	}()
 
-	ticker := time.NewTicker(cfg.PollInterval)
+	ticker := time.NewTicker(cli.cfg.PollInterval)
 	defer ticker.Stop()
 	for {
 		select {
-		case err := <-srvErr:
-			return fmt.Errorf("http server: %w", err)
+		case srvListenErr := <-srvErrCh:
+			return fmt.Errorf("http server: %w", srvListenErr)
 		case <-ctx.Done():
 			log.Print("shutdown: deregistering webhooks")
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			if err := reconciler.Deregister(shutdownCtx); err != nil {
-				log.Printf("deregister: %v", err)
+			deregErr := reconciler.Deregister(shutdownCtx)
+			if deregErr != nil {
+				log.Printf("deregister: %v", deregErr)
 			}
 			_ = srv.Shutdown(shutdownCtx)
 			cancel()
 			// Check if the server goroutine also reported an error.
 			select {
-			case err := <-srvErr:
-				return fmt.Errorf("http server: %w", err)
+			case srvListenErr := <-srvErrCh:
+				return fmt.Errorf("http server: %w", srvListenErr)
 			default:
 				return nil
 			}
@@ -99,6 +124,133 @@ func run() error {
 			syncOnce(ctx, f, discovery, reconciler)
 		}
 	}
+}
+
+// runOnce reads cli.oncePath as a role-note, parses it, validates against the
+// fleet's offered tools, renders the instruction, and runs agentruntime.Run
+// against a local file KB. Prints the Result as indented JSON. No trip2g
+// connection is required; LLM credentials must still be set.
+func runOnce(ctx context.Context, cli cliFlags) error {
+	raw, err := os.ReadFile(cli.oncePath)
+	if err != nil {
+		return fmt.Errorf("once: read role file: %w", err)
+	}
+
+	meta, body, err := parseFrontmatter(string(raw))
+	if err != nil {
+		return fmt.Errorf("once: parse frontmatter: %w", err)
+	}
+
+	role, err := fleet.ParseRole(cli.oncePath, body, meta)
+	if err != nil {
+		return fmt.Errorf("once: parse role: %w", err)
+	}
+
+	err = role.Validate(cli.cfg.OfferedTools)
+	if err != nil {
+		return fmt.Errorf("once: validate role: %w", err)
+	}
+
+	// Load target note content if --target was given.
+	var targetContent string
+	if cli.targetPath != "" {
+		data, readErr := os.ReadFile(cli.targetPath)
+		if readErr != nil {
+			return fmt.Errorf("once: read target file: %w", readErr)
+		}
+		targetContent = string(data)
+	}
+
+	instruction, err := fleet.RenderRoleInstruction(role, cli.targetPath, targetContent)
+	if err != nil {
+		return fmt.Errorf("once: render instruction: %w", err)
+	}
+
+	model := role.Model
+	if model == "" {
+		model = cli.cfg.DefaultModel
+	}
+	maxTokens := role.MaxTokens
+	if maxTokens <= 0 || (cli.cfg.TokenCeiling > 0 && maxTokens > cli.cfg.TokenCeiling) {
+		maxTokens = cli.cfg.TokenCeiling
+	}
+	if maxTokens <= 0 {
+		maxTokens = 100000
+	}
+	maxSteps := role.MaxSteps
+	if maxSteps <= 0 || (cli.cfg.StepCeiling > 0 && maxSteps > cli.cfg.StepCeiling) {
+		maxSteps = cli.cfg.StepCeiling
+	}
+	if maxSteps <= 0 {
+		maxSteps = 25
+	}
+
+	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
+	kb := agentruntime.NewFileKB(cli.vaultDir)
+
+	runCtx, cancel := context.WithTimeout(ctx,
+		time.Duration(role.EffectiveTimeoutSeconds())*time.Second)
+	defer cancel()
+
+	result, runErr := agentruntime.Run(runCtx, agentruntime.Input{
+		Instruction:   instruction,
+		ReadPatterns:  role.ReadPatterns,
+		WritePatterns: role.WritePatterns,
+		Tools:         role.Tools,
+		Model:         model,
+		MaxTokens:     maxTokens,
+		MaxSteps:      maxSteps,
+		LLM:           llm,
+		KB:            kb,
+	})
+	if runErr != nil {
+		return fmt.Errorf("once: run: %w", runErr)
+	}
+
+	out, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stdout, string(out))
+	return nil
+}
+
+// parseFrontmatter splits a markdown file into a raw-value meta map and body.
+// The frontmatter block is the leading ---\n...\n---\n section (YAML, flat
+// key: value lines). Values are kept as raw strings so fleet.ParseRole's
+// parseList handles array forms (JSON ["a"] or YAML-flow [a, b]) correctly.
+// Files without a leading --- block return an empty meta map and the full
+// content as body.
+func parseFrontmatter(content string) (map[string]string, string, error) {
+	if !strings.HasPrefix(content, "---\n") {
+		return map[string]string{}, content, nil
+	}
+	rest := content[4:]
+	idx := strings.Index(rest, "\n---")
+	if idx < 0 {
+		return nil, "", errors.New("unclosed frontmatter block (missing closing ---)")
+	}
+	block := rest[:idx]
+	after := rest[idx+4:]
+	if strings.HasPrefix(after, "\r\n") {
+		after = after[2:]
+	} else if strings.HasPrefix(after, "\n") {
+		after = after[1:]
+	}
+
+	meta := make(map[string]string)
+	for _, line := range strings.Split(block, "\n") {
+		key, val, found := strings.Cut(line, ":")
+		if !found {
+			continue
+		}
+		k := strings.TrimSpace(key)
+		if k == "" || strings.HasPrefix(k, "#") {
+			continue
+		}
+		meta[k] = strings.TrimSpace(val)
+	}
+	return meta, after, nil
 }
 
 // normalizeCallbackURL strips trailing slashes so webhook URLs assemble cleanly.
@@ -110,16 +262,16 @@ func normalizeCallbackURL(u string) string {
 func validateConfig(cfg fleet.Config) error {
 	missing := []string{}
 	if cfg.CallbackURL == "" {
-		missing = append(missing, "CallbackURL (--callback-url / FLEET_CALLBACK_URL)")
+		missing = append(missing, "CallbackURL (--callback-url / TRIP2G_CALLBACK_URL)")
 	}
 	if cfg.JWTSecret == "" {
-		missing = append(missing, "JWTSecret (--jwt-secret / FLEET_JWT_SECRET)")
+		missing = append(missing, "JWTSecret (--jwt-secret / TRIP2G_JWT_SECRET)")
 	}
 	if cfg.FleetSecret == "" {
-		missing = append(missing, "FleetSecret (--fleet-secret / FLEET_SECRET)")
+		missing = append(missing, "FleetSecret (--fleet-secret / TRIP2G_FLEET_SECRET)")
 	}
 	if cfg.LLMAPIKey == "" {
-		missing = append(missing, "LLMAPIKey (--llm-api-key / FLEET_LLM_API_KEY)")
+		missing = append(missing, "LLMAPIKey (--llm-api-key / TRIP2G_LLM_API_KEY)")
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("fleet: missing required config: %s", strings.Join(missing, ", "))
@@ -147,32 +299,79 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 	}
 }
 
-func parseFlags() (fleet.Config, bool) {
-	var cfg fleet.Config
+// parseFlags registers all fleet flags on a dedicated FlagSet wired to
+// appconfig.EnvFlag so every flag gets a TRIP2G_<FLAG_NAME> environment
+// variable fallback (standard kebab-to-SCREAMING_SNAKE mapping).
+func parseFlags(ctx context.Context) (cliFlags, error) {
+	var cli cliFlags
 	var offered string
-	var dryRun bool
-	flag.BoolVar(&dryRun, "dry-run", false, "discover roles, print + flag their resolved config, then exit without registering webhooks")
-	flag.StringVar(&cfg.FleetID, "fleet-id", env("FLEET_ID", "fleet1"), "reconcile marker id")
-	flag.StringVar(&cfg.ListenAddr, "listen", env("FLEET_LISTEN", ":9090"), "HTTP listen address")
-	flag.StringVar(&cfg.CallbackURL, "callback-url", env("FLEET_CALLBACK_URL", ""), "trip2g-reachable base URL of this fleet")
-	flag.StringVar(&cfg.Trip2gBaseURL, "trip2g-url", env("TRIP2G_BASE_URL", "http://localhost:8081"), "trip2g base URL")
-	flag.StringVar(&cfg.AdminAPIKey, "admin-api-key", env("FLEET_ADMIN_API_KEY", ""), "DEPRECATED/unused: legacy full-admin X-Api-Key")
-	flag.StringVar(&cfg.JWTSecret, "jwt-secret", env("FLEET_JWT_SECRET", ""), "shared user-token/JWT secret for minting admin HATs")
-	flag.StringVar(&cfg.AdminEmail, "admin-email", env("FLEET_ADMIN_EMAIL", "fleet@local"), "admin email the fleet self-provisions via HAT")
-	flag.StringVar(&cfg.FleetSecret, "fleet-secret", env("FLEET_SECRET", ""), "HMAC seed for per-role secrets")
-	flag.StringVar(&cfg.LLMBaseURL, "llm-base-url", env("FLEET_LLM_BASE_URL", ""), "OpenAI-compatible base URL")
-	flag.StringVar(&cfg.LLMAPIKey, "llm-api-key", env("FLEET_LLM_API_KEY", ""), "LLM API key")
-	flag.StringVar(&cfg.DefaultModel, "default-model", env("FLEET_DEFAULT_MODEL", "gpt-4o-mini"), "default model")
-	flag.IntVar(&cfg.TokenCeiling, "token-ceiling", 100000, "non-overridable per-run token cap")
-	flag.IntVar(&cfg.StepCeiling, "step-ceiling", 25, "non-overridable per-run step cap")
-	flag.StringVar(&cfg.AgentsFolder, "agents-folder", env("FLEET_AGENTS_FOLDER", "roles/"), "role-note folder (LIKE prefix)")
-	flag.StringVar(&offered, "offered-tools", "search,read_note,patch_note,write_note", "comma-separated allowed tools")
-	poll := flag.Int("poll-seconds", 30, "discovery/reconcile poll interval seconds")
-	flag.Parse()
+	var poll int
 
-	cfg.OfferedTools = splitCSV(offered)
-	cfg.PollInterval = time.Duration(*poll) * time.Second
-	return cfg, dryRun
+	fs := flag.NewFlagSet("fleet", flag.ContinueOnError)
+
+	// Daemon flags.
+	fs.BoolVar(&cli.dryRun, "dry-run", false,
+		"discover roles, print + flag their resolved config, then exit without registering webhooks")
+	fs.StringVar(&cli.cfg.FleetID, "fleet-id", "fleet1",
+		"reconcile marker id")
+	fs.StringVar(&cli.cfg.ListenAddr, "listen", ":9090",
+		"HTTP listen address")
+	fs.StringVar(&cli.cfg.CallbackURL, "callback-url", "",
+		"trip2g-reachable base URL of this fleet (required for daemon mode)")
+	fs.StringVar(&cli.cfg.Trip2gBaseURL, "trip2g-url", "http://localhost:8081",
+		"trip2g base URL")
+	fs.StringVar(&cli.cfg.AdminAPIKey, "admin-api-key", "",
+		"DEPRECATED/unused: legacy full-admin X-Api-Key")
+	fs.StringVar(&cli.cfg.JWTSecret, "jwt-secret", "",
+		"shared user-token/JWT secret for minting admin HATs (required for daemon mode)")
+	fs.StringVar(&cli.cfg.AdminEmail, "admin-email", "fleet@local",
+		"admin email the fleet self-provisions via HAT")
+	fs.StringVar(&cli.cfg.FleetSecret, "fleet-secret", "",
+		"HMAC seed for per-role secrets (required for daemon mode)")
+	fs.StringVar(&cli.cfg.LLMBaseURL, "llm-base-url", "",
+		"OpenAI-compatible base URL")
+	fs.StringVar(&cli.cfg.LLMAPIKey, "llm-api-key", "",
+		"LLM API key (falls back to OPENAI_API_KEY)")
+	fs.StringVar(&cli.cfg.DefaultModel, "default-model", "gpt-4o-mini",
+		"default model when a role omits model")
+	fs.IntVar(&cli.cfg.TokenCeiling, "token-ceiling", 100000,
+		"non-overridable per-run token cap")
+	fs.IntVar(&cli.cfg.StepCeiling, "step-ceiling", 25,
+		"non-overridable per-run step cap")
+	fs.StringVar(&cli.cfg.AgentsFolder, "agents-folder", "roles/",
+		"role-note folder (LIKE prefix)")
+	fs.StringVar(&offered, "offered-tools", "search,read_note,patch_note,write_note",
+		"comma-separated allowed tools")
+	fs.IntVar(&poll, "poll-seconds", 30,
+		"discovery/reconcile poll interval seconds")
+
+	// One-shot offline harness flags.
+	fs.StringVar(&cli.oncePath, "once", "",
+		"path to a role-note .md file; runs it once without a trip2g connection and exits")
+	fs.StringVar(&cli.vaultDir, "vault", ".",
+		"vault directory for the local file KB (used with --once)")
+	fs.StringVar(&cli.targetPath, "target", "",
+		"note path in the vault to populate change_file context (used with --once)")
+
+	ef := appconfig.New(appconfig.EnvFlagConfig{
+		FlagSet:           fs,
+		EnvPrefix:         "TRIP2G_",
+		ShowEnvKeyInUsage: true,
+		ShowEnvValInUsage: true,
+	})
+
+	if err := ef.Parse(ctx, os.Args[1:]); err != nil {
+		return cliFlags{}, err
+	}
+
+	// OPENAI_API_KEY fallback for --once offline convenience.
+	if cli.cfg.LLMAPIKey == "" {
+		cli.cfg.LLMAPIKey = os.Getenv("OPENAI_API_KEY")
+	}
+
+	cli.cfg.OfferedTools = splitCSV(offered)
+	cli.cfg.PollInterval = time.Duration(poll) * time.Second
+	return cli, nil
 }
 
 // runDryRun discovers (parses) every role over the admin lane, prints each
@@ -241,11 +440,4 @@ func splitCSV(s string) []string {
 		}
 	}
 	return out
-}
-
-func env(name, def string) string {
-	if v := os.Getenv(name); v != "" {
-		return v
-	}
-	return def
 }

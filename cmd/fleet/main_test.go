@@ -132,6 +132,58 @@ func TestReportRoles_Empty(t *testing.T) {
 	require.Contains(t, out, "no roles discovered")
 }
 
+// TestParseFrontmatter verifies that parseFrontmatter splits a role-note into
+// its flat meta map and body, handling both present and absent frontmatter.
+func TestParseFrontmatter(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantMeta map[string]string
+		wantBody string
+		wantErr  bool
+	}{
+		{
+			name:  "full_frontmatter",
+			input: "---\nmodel: gpt-4o-mini\ntools: [search, read_note]\nmode: change\n---\nBody text here.\n",
+			wantMeta: map[string]string{
+				"model": "gpt-4o-mini",
+				"tools": "[search, read_note]",
+				"mode":  "change",
+			},
+			wantBody: "Body text here.\n",
+		},
+		{
+			name:     "no_frontmatter",
+			input:    "Just a body with no frontmatter.\n",
+			wantMeta: map[string]string{},
+			wantBody: "Just a body with no frontmatter.\n",
+		},
+		{
+			name:    "unclosed_frontmatter",
+			input:   "---\nmodel: gpt-4o\n",
+			wantErr: true,
+		},
+		{
+			name:     "empty_body_after_frontmatter",
+			input:    "---\nmode: change\n---\n",
+			wantMeta: map[string]string{"mode": "change"},
+			wantBody: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			meta, body, err := parseFrontmatter(tc.input)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantMeta, meta)
+			require.Equal(t, tc.wantBody, body)
+		})
+	}
+}
+
 // TestTrailingSlashNormalization verifies that normalizeCallbackURL (called by
 // run() before validateConfig) strips trailing slashes from CallbackURL.
 func TestTrailingSlashNormalization(t *testing.T) {
