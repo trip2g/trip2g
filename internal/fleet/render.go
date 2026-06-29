@@ -2,6 +2,7 @@ package fleet
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/CloudyKit/jet/v6"
 )
@@ -44,5 +45,24 @@ func renderInstruction(body string, ctx renderCtx) (string, error) {
 	if err := tmpl.Execute(&buf, vars, nil); err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return withAttachedNotesHint(buf.String(), ctx.AttachedNotes), nil
+}
+
+// withAttachedNotesHint appends a short line naming any attached notes whose
+// paths the rendered instruction doesn't already mention, so the model knows
+// they are available to read even when the role body never references them.
+func withAttachedNotesHint(rendered string, notes []attachedNote) string {
+	if len(notes) == 0 {
+		return rendered
+	}
+	var missing []string
+	for _, n := range notes {
+		if n.Path != "" && !strings.Contains(rendered, n.Path) {
+			missing = append(missing, n.Path)
+		}
+	}
+	if len(missing) == 0 {
+		return rendered
+	}
+	return rendered + "\n\nAttached notes available: " + strings.Join(missing, ", ")
 }
