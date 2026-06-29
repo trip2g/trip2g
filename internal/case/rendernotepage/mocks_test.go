@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/pagecache"
 	"trip2g/internal/templateviews"
 )
 
@@ -30,8 +31,14 @@ var _ rendernotepage.Env = &EnvMock{}
 //			AssetURLFunc: func(path string) string {
 //				panic("mock out the AssetURL method")
 //			},
+//			CachedPageFunc: func(key pagecache.Key) ([]byte, bool) {
+//				panic("mock out the CachedPage method")
+//			},
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
+//			},
+//			ConfigEpochFunc: func() uint64 {
+//				panic("mock out the ConfigEpoch method")
 //			},
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
@@ -84,6 +91,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			SiteTitleTemplateFunc: func() string {
 //				panic("mock out the SiteTitleTemplate method")
 //			},
+//			StoreCachedPageFunc: func(key pagecache.Key, gz []byte)  {
+//				panic("mock out the StoreCachedPage method")
+//			},
 //			UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
 //				panic("mock out the UpsertUserNoteDailyView method")
 //			},
@@ -100,8 +110,14 @@ type EnvMock struct {
 	// AssetURLFunc mocks the AssetURL method.
 	AssetURLFunc func(path string) string
 
+	// CachedPageFunc mocks the CachedPage method.
+	CachedPageFunc func(key pagecache.Key) ([]byte, bool)
+
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
+
+	// ConfigEpochFunc mocks the ConfigEpoch method.
+	ConfigEpochFunc func() uint64
 
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
@@ -154,6 +170,9 @@ type EnvMock struct {
 	// SiteTitleTemplateFunc mocks the SiteTitleTemplate method.
 	SiteTitleTemplateFunc func() string
 
+	// StoreCachedPageFunc mocks the StoreCachedPage method.
+	StoreCachedPageFunc func(key pagecache.Key, gz []byte)
+
 	// UpsertUserNoteDailyViewFunc mocks the UpsertUserNoteDailyView method.
 	UpsertUserNoteDailyViewFunc func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 
@@ -169,12 +188,20 @@ type EnvMock struct {
 			// Path is the path argument value.
 			Path string
 		}
+		// CachedPage holds details about calls to the CachedPage method.
+		CachedPage []struct {
+			// Key is the key argument value.
+			Key pagecache.Key
+		}
 		// CanReadNote holds details about calls to the CanReadNote method.
 		CanReadNote []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Note is the note argument value.
 			Note *model.NoteView
+		}
+		// ConfigEpoch holds details about calls to the ConfigEpoch method.
+		ConfigEpoch []struct {
 		}
 		// Features holds details about calls to the Features method.
 		Features []struct {
@@ -265,6 +292,13 @@ type EnvMock struct {
 		// SiteTitleTemplate holds details about calls to the SiteTitleTemplate method.
 		SiteTitleTemplate []struct {
 		}
+		// StoreCachedPage holds details about calls to the StoreCachedPage method.
+		StoreCachedPage []struct {
+			// Key is the key argument value.
+			Key pagecache.Key
+			// Gz is the gz argument value.
+			Gz []byte
+		}
 		// UpsertUserNoteDailyView holds details about calls to the UpsertUserNoteDailyView method.
 		UpsertUserNoteDailyView []struct {
 			// Ctx is the ctx argument value.
@@ -275,7 +309,9 @@ type EnvMock struct {
 	}
 	lockActiveHTMLInjections                sync.RWMutex
 	lockAssetURL                            sync.RWMutex
+	lockCachedPage                          sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
+	lockConfigEpoch                         sync.RWMutex
 	lockFeatures                            sync.RWMutex
 	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
@@ -293,6 +329,7 @@ type EnvMock struct {
 	lockRecordUserNoteView                  sync.RWMutex
 	lockSiteConfig                          sync.RWMutex
 	lockSiteTitleTemplate                   sync.RWMutex
+	lockStoreCachedPage                     sync.RWMutex
 	lockUpsertUserNoteDailyView             sync.RWMutex
 }
 
@@ -360,6 +397,38 @@ func (mock *EnvMock) AssetURLCalls() []struct {
 	return calls
 }
 
+// CachedPage calls CachedPageFunc.
+func (mock *EnvMock) CachedPage(key pagecache.Key) ([]byte, bool) {
+	if mock.CachedPageFunc == nil {
+		panic("EnvMock.CachedPageFunc: method is nil but Env.CachedPage was just called")
+	}
+	callInfo := struct {
+		Key pagecache.Key
+	}{
+		Key: key,
+	}
+	mock.lockCachedPage.Lock()
+	mock.calls.CachedPage = append(mock.calls.CachedPage, callInfo)
+	mock.lockCachedPage.Unlock()
+	return mock.CachedPageFunc(key)
+}
+
+// CachedPageCalls gets all the calls that were made to CachedPage.
+// Check the length with:
+//
+//	len(mockedEnv.CachedPageCalls())
+func (mock *EnvMock) CachedPageCalls() []struct {
+	Key pagecache.Key
+} {
+	var calls []struct {
+		Key pagecache.Key
+	}
+	mock.lockCachedPage.RLock()
+	calls = mock.calls.CachedPage
+	mock.lockCachedPage.RUnlock()
+	return calls
+}
+
 // CanReadNote calls CanReadNoteFunc.
 func (mock *EnvMock) CanReadNote(ctx context.Context, note *model.NoteView) (bool, error) {
 	if mock.CanReadNoteFunc == nil {
@@ -393,6 +462,33 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
+	return calls
+}
+
+// ConfigEpoch calls ConfigEpochFunc.
+func (mock *EnvMock) ConfigEpoch() uint64 {
+	if mock.ConfigEpochFunc == nil {
+		panic("EnvMock.ConfigEpochFunc: method is nil but Env.ConfigEpoch was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockConfigEpoch.Lock()
+	mock.calls.ConfigEpoch = append(mock.calls.ConfigEpoch, callInfo)
+	mock.lockConfigEpoch.Unlock()
+	return mock.ConfigEpochFunc()
+}
+
+// ConfigEpochCalls gets all the calls that were made to ConfigEpoch.
+// Check the length with:
+//
+//	len(mockedEnv.ConfigEpochCalls())
+func (mock *EnvMock) ConfigEpochCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockConfigEpoch.RLock()
+	calls = mock.calls.ConfigEpoch
+	mock.lockConfigEpoch.RUnlock()
 	return calls
 }
 
@@ -937,6 +1033,42 @@ func (mock *EnvMock) SiteTitleTemplateCalls() []struct {
 	mock.lockSiteTitleTemplate.RLock()
 	calls = mock.calls.SiteTitleTemplate
 	mock.lockSiteTitleTemplate.RUnlock()
+	return calls
+}
+
+// StoreCachedPage calls StoreCachedPageFunc.
+func (mock *EnvMock) StoreCachedPage(key pagecache.Key, gz []byte) {
+	if mock.StoreCachedPageFunc == nil {
+		panic("EnvMock.StoreCachedPageFunc: method is nil but Env.StoreCachedPage was just called")
+	}
+	callInfo := struct {
+		Key pagecache.Key
+		Gz  []byte
+	}{
+		Key: key,
+		Gz:  gz,
+	}
+	mock.lockStoreCachedPage.Lock()
+	mock.calls.StoreCachedPage = append(mock.calls.StoreCachedPage, callInfo)
+	mock.lockStoreCachedPage.Unlock()
+	mock.StoreCachedPageFunc(key, gz)
+}
+
+// StoreCachedPageCalls gets all the calls that were made to StoreCachedPage.
+// Check the length with:
+//
+//	len(mockedEnv.StoreCachedPageCalls())
+func (mock *EnvMock) StoreCachedPageCalls() []struct {
+	Key pagecache.Key
+	Gz  []byte
+} {
+	var calls []struct {
+		Key pagecache.Key
+		Gz  []byte
+	}
+	mock.lockStoreCachedPage.RLock()
+	calls = mock.calls.StoreCachedPage
+	mock.lockStoreCachedPage.RUnlock()
 	return calls
 }
 
