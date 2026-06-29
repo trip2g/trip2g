@@ -1,0 +1,61 @@
+# Fleet admin-lane operations. genqlient validates these against
+# ../../graph/schema.graphqls at generation time; a wrong field, nesting, or
+# input name fails `go generate ./internal/fleet/trip2ggql/...`.
+
+# DiscoverRoles lists role notes under the agents folder (LIKE pattern) with the
+# frontmatter meta the fleet parses into a Role.
+query DiscoverRoles($like: String!) {
+  notePaths(filter: { like: $like }) {
+    value
+    content
+    latestNoteView {
+      meta {
+        key
+        raw
+      }
+    }
+  }
+}
+
+# ListChangeWebhooks returns every change-webhook; the reconciler filters to the
+# ones this fleet owns by description marker.
+query ListChangeWebhooks {
+  admin {
+    allChangeWebhooks {
+      nodes {
+        id
+        description
+      }
+    }
+  }
+}
+
+# CreateChangeWebhook registers one webhook for a role.
+mutation CreateChangeWebhook($input: ChangeWebhookCreateInput!) {
+  admin {
+    changeWebhookCreate(input: $input) {
+      ... on ChangeWebhookCreatePayload {
+        webhook {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
+
+# DeleteChangeWebhook removes one owned webhook by id.
+mutation DeleteChangeWebhook($input: ChangeWebhookDeleteInput!) {
+  admin {
+    changeWebhookDelete(input: $input) {
+      ... on ChangeWebhookDeletePayload {
+        deletedId
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
