@@ -45,20 +45,26 @@ trip2g borrows the operating-system vocabulary because the primitives line up. E
 |---|---|---|
 | Filesystem | one path-addressed note namespace, humans and agents share it | shipped |
 | Files | notes: markdown frontmatter (metadata) + body (content) | shipped |
+| Overlay filesystem | frontmatter patches (Jsonnet) override notes without touching the source | shipped |
 | Snapshots | `note_versions` + DB-canonical git mirror (`gitapi`) | shipped |
 | Filesystem over git | `git clone`/`pull`/`push` the vault over Smart HTTP (`/_system/git`) | shipped |
 | Syscalls | MCP tools: `search`, `note_html`, `similar`, `federated_*` | shipped |
 | Network stack | federation: fan one query out to peer hubs | shipped |
+| Virtual hosts | per-domain routing via `route`/`routes` frontmatter | shipped |
 | Scheduler | cron webhooks (`next_run_at`) + goqite worker pools | shipped |
 | Process dispatch | webhook delivery: note create/update/remove → POST | shipped |
 | IPC | notes as an event bus: one agent's write fires the next | shipped |
 | Display server | website rendering: default + Jet templates, mermaid, datachart | shipped |
+| Page cache | anonymous rendered-page cache, version-keyed | shipped |
 | Output target | publish notes to a Telegram channel, links preserved | shipped |
 | Standard input | forms in frontmatter, submissions stored per note | shipped |
 | Permissions (users) | subgraphs + subscription ACLs, admins, API keys | shipped |
+| Auth providers | email magic-link, Google/GitHub OAuth, OIDC SSO | shipped |
 | Permissions (agents) | per-webhook `read_patterns`/`write_patterns` in a scoped token | shipped |
 | Credential store | encrypted `secrets` / `federation_secrets` (AES-256-GCM) | shipped |
+| Capability ticket | HAT: signed short-TTL token, `ae=true` admin elevation | shipped |
 | Control surface | kanban board note (`layout: kanban`) | shipped (layout), branch (agent wiring) |
+| Kernel config | feature flags, validated at boot (panics on missing dep) | shipped |
 | Process executor | internal LLM run loop (`agentruntime`), tool allowlist + caps | branch |
 | Package manager | role-as-note: drop a note, `fleet` registers the agent | branch |
 | Resource limits | non-overridable token + step caps per run | branch |

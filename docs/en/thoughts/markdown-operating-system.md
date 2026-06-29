@@ -28,19 +28,25 @@ The operating-system words are not decoration. Each one points at a specific mec
 |---|---|---|
 | Filesystem | one path-addressed note namespace | shipped |
 | Files | notes: frontmatter is metadata, body is content | shipped |
+| Overlay filesystem | frontmatter patches (Jsonnet) override notes without touching the source | shipped |
 | Snapshots | `note_versions` plus a database-canonical git mirror | shipped |
 | Filesystem over git | clone, pull, and push the vault over git Smart HTTP (`/_system/git`) | shipped |
 | Syscalls | MCP tools: `search`, `note_html`, `similar`, `federated_*` | shipped |
 | Network stack | federation, with a `max_depth` TTL on every query | shipped |
+| Virtual hosts | per-domain routing via `route`/`routes` frontmatter | shipped |
 | Scheduler | cron webhooks plus goqite worker pools | shipped |
 | Process dispatch | change webhooks: a note edit POSTs an event | shipped |
 | Permissions (people) | subgraphs and subscription access | shipped |
+| Auth providers | email magic-link, Google/GitHub OAuth, OIDC SSO | shipped |
 | Permissions (agents) | per-webhook read and write globs in a signed token | shipped |
 | Credential store | encrypted secrets, AES-256-GCM | shipped |
+| Capability ticket | HAT: signed short-TTL token, `ae=true` admin elevation | shipped |
 | Display server | the website: default and Jet templates, mermaid, datachart | shipped |
+| Page cache | anonymous rendered-page cache, version-keyed | shipped |
 | Output target | publish notes to a Telegram channel, links preserved | shipped |
 | Standard input | forms in frontmatter, submissions stored per note | shipped |
 | Control surface | a kanban board note (`layout: kanban`) | shipped (layout), branch (agent wiring) |
+| Kernel config | feature flags, validated at boot (panics on missing dep) | shipped |
 | Process executor | the in-note model loop (`agentruntime`) | branch |
 | Package manager | role-as-note: `fleet` registers the agent | branch |
 | Resource limits | non-overridable token and step caps per run | branch |
