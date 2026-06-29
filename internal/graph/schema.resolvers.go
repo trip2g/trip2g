@@ -3239,7 +3239,7 @@ func (r *queryResolver) ResolveWikilinks(ctx context.Context, filter model.Resol
 	results := make([]model.WikilinkResolution, len(filter.Links))
 	for i, link := range filter.Links {
 		res := model.WikilinkResolution{Link: link}
-		if nvs != nil {
+		if nvs != nil { //nolint:nestif // wikilink resolution requires nil-guard, target resolution, and read-pattern enforcement
 			if target := nvs.ResolveWikilinkTarget(source, link); target != nil {
 				// Enforce read_patterns: a scoped token must not learn the
 				// existence or path of notes outside its scope.

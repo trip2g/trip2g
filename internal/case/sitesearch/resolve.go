@@ -40,6 +40,7 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
+//nolint:gocognit // multi-source search merge with per-result auth, scoping, and RRF ranking
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {
@@ -89,7 +90,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	hiddenResults := []appmodel.SearchResult{}
 
 	for _, res := range results {
-		if res.NoteView != nil {
+		if res.NoteView != nil { //nolint:nestif // per-result auth checks require nil-guard, scope check, and read-pattern gate
 			// Fail-closed: scoped shortapitoken → enforce read_patterns strictly.
 			// Empty patterns + scoped = deny-all (not "no restriction").
 			if appreq.Scoped(ctx) {

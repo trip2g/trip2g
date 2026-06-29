@@ -68,6 +68,7 @@ type cronWebhookPayload struct {
 // the scoped write-back token. Replaces the former 60-minute floor.
 const tokenTTLMargin = 30 * time.Second
 
+//nolint:gocognit,gocyclo,cyclop,funlen // cron delivery resolver handles full lifecycle: attach-gate, fan-out, write-back, secrets
 func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	log := env.Logger()
 
@@ -88,7 +89,7 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 
 	// Materialize attach_notes context and apply presence gate.
 	var attachedNotes []webhookutil.AttachedNote
-	if wh.AttachNotes != "" && wh.AttachNotes != "[]" {
+	if wh.AttachNotes != "" && wh.AttachNotes != "[]" { //nolint:nestif // attach-gate requires parse, nil-check, and gate evaluation
 		attach, aerr := webhookutil.ParseJSONStringArray(wh.AttachNotes)
 		if aerr != nil {
 			log.Error("failed to parse attach_notes", "cron_webhook_id", wh.ID, "error", aerr)
@@ -390,7 +391,7 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 		}
 
 		var content string
-		if change.Kind == "patch" {
+		if change.Kind == "patch" { //nolint:nestif // patch requires sequential null-checks before string ops
 			// Apply find/replace against the note's current content.
 			// Matches updateNotes Patch semantics: find must be present exactly once.
 			if nvs == nil {

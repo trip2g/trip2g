@@ -154,6 +154,8 @@ func AttachGateSatisfiedForTest(attach []string, nvs *model.NoteViews) bool {
 // Resolve processes changed notes against enabled webhooks.
 // It filters by depth, event type, and glob patterns, then creates
 // delivery records and enqueues background jobs for matching webhooks.
+//
+//nolint:gocognit // multi-webhook fanout with per-note filtering, depth, event, and pattern checks
 func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) error {
 	if len(changes) == 0 {
 		return nil

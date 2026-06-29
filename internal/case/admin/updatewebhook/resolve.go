@@ -132,9 +132,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	if input.ConcurrencyMode != nil {
-		if err := webhookutil.ValidateConcurrencyMode(*input.ConcurrencyMode); err != nil {
+		if modeErr := webhookutil.ValidateConcurrencyMode(*input.ConcurrencyMode); modeErr != nil {
+			//nolint:nilerr // returning user-facing validation error
 			return &model.ErrorPayload{ByFields: []model.FieldMessage{
-				{Name: "concurrencyMode", Value: err.Error()},
+				{Name: "concurrencyMode", Value: modeErr.Error()},
 			}}, nil
 		}
 	}

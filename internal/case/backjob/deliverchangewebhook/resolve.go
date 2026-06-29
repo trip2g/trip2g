@@ -51,6 +51,7 @@ type changeWebhookPayload struct {
 // the scoped write-back token. Replaces the former 60-minute floor.
 const tokenTTLMargin = 30 * time.Second
 
+//nolint:gocognit,gocyclo,cyclop,funlen // delivery resolver handles full webhook lifecycle: auth, attach-gate, fan-out, write-back
 func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChangeWebhookParams) error {
 	log := env.Logger()
 
@@ -376,7 +377,7 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		}
 
 		var content string
-		if change.IsPatch() {
+		if change.IsPatch() { //nolint:nestif // patch requires sequential null-checks before string ops
 			// Apply find/replace against the note's current content.
 			// Matches updateNotes Patch semantics: find must be present exactly once.
 			if nvs == nil {

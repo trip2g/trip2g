@@ -79,6 +79,7 @@ func validateBounds(maxDepth, timeoutSeconds, maxRetries int64) *model.ErrorPayl
 	return nil
 }
 
+//nolint:gocognit,gocyclo,cyclop,funlen // complex webhook creation with many optional fields and cross-field validations
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	errPayload := validateInput(&input)
 	if errPayload != nil {
@@ -169,9 +170,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	if input.ConcurrencyMode != nil {
 		concurrencyMode = *input.ConcurrencyMode
 	}
-	if err := webhookutil.ValidateConcurrencyMode(concurrencyMode); err != nil {
+	if modeErr := webhookutil.ValidateConcurrencyMode(concurrencyMode); modeErr != nil {
+		//nolint:nilerr // returning user-facing validation error
 		return &model.ErrorPayload{ByFields: []model.FieldMessage{
-			{Name: "concurrencyMode", Value: err.Error()},
+			{Name: "concurrencyMode", Value: modeErr.Error()},
 		}}, nil
 	}
 
