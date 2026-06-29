@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Obsidian %% comment stripping', () => {
   test('inline comment: surrounding text is visible, comment text is absent', async ({ page }) => {
-    await page.goto('/obsidian-comments');
+    await page.goto('/obsidian_comments');
 
     // The text on both sides of the inline comment must be present
     await expect(page.locator('body')).toContainText('BEFORE');
@@ -15,7 +15,7 @@ test.describe('Obsidian %% comment stripping', () => {
   });
 
   test('block comment: surrounding paragraphs are visible, block content is absent', async ({ page }) => {
-    await page.goto('/obsidian-comments');
+    await page.goto('/obsidian_comments');
 
     // Paragraphs surrounding the block comment must be present
     await expect(page.locator('body')).toContainText('Text before the block comment.');
@@ -28,7 +28,7 @@ test.describe('Obsidian %% comment stripping', () => {
   });
 
   test('code block: literal %% inside fenced code is preserved', async ({ page }) => {
-    await page.goto('/obsidian-comments');
+    await page.goto('/obsidian_comments');
 
     // The literal %% inside a fenced code block must survive
     await expect(page.locator('pre code')).toContainText('%%');

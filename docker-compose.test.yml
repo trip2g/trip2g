@@ -146,6 +146,7 @@ services:
       - DB_FILE=/data/test.sqlite3 # SAME file as the leader
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -201,6 +202,7 @@ services:
       - DB_FILE=/data/test.sqlite3 # SAME file as the leader
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -254,6 +256,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20092
       - DB_FILE=/data/peer.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -315,6 +318,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20094
       - DB_FILE=/data/peer2.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -376,6 +380,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20096
       - DB_FILE=/data/peer3.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms

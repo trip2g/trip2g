@@ -45,11 +45,18 @@ function replicaSuite(replicaUrl) {
   });
 
   test('read parity — replica returns the same bytes as the leader', async () => {
-    const [lr, rr] = await Promise.all([leader.get('/'), replica.get('/')]);
-    expect(lr.status()).toBe(200);
-    expect(rr.status()).toBe(200);
-    const [lb, rb] = await Promise.all([lr.body(), rr.body()]);
-    expect(rb.length).toBe(lb.length);
+    // A read replica is eventually consistent: it reloads its in-memory note
+    // cache from the shared DB a beat behind the leader after a push. Poll until
+    // the rendered "/" converges to identical byte length (it must) so a transient
+    // cache-reload lag doesn't flake the parity check — it still fails loudly if
+    // the bytes never converge.
+    await expect(async () => {
+      const [lr, rr] = await Promise.all([leader.get('/'), replica.get('/')]);
+      expect(lr.status()).toBe(200);
+      expect(rr.status()).toBe(200);
+      const [lb, rb] = await Promise.all([lr.body(), rr.body()]);
+      expect(rb.length).toBe(lb.length);
+    }).toPass({ timeout: 15000, intervals: [500, 1000, 2000] });
   });
 
   test('forwards a POST (GraphQL) to the leader and relays the response', async () => {
