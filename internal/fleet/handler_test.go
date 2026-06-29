@@ -107,6 +107,45 @@ func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
 	require.Equal(t, 2, resp.Steps)
 }
 
+// TestDeliveryPayload_DecodesTriggerContext asserts the widened delivery payload
+// decodes trip2g's changes[] array and the attached-note metadata (title/tags/
+// meta/updated_at) into the fleet's receiving structs.
+func TestDeliveryPayload_DecodesTriggerContext(t *testing.T) {
+	body, err := json.Marshal(map[string]any{
+		"depth":       2,
+		"instruction": "Triage.",
+		"api_token":   "scoped-token",
+		"changes": []map[string]any{
+			{"path": "boards/sprint.md", "event": "update", "path_id": 7, "version": 42, "title": "Sprint", "content": "- a @status:todo\n"},
+			{"path": "boards/backlog.md", "event": "create", "path_id": 8, "version": 1, "title": "Backlog", "content": "x"},
+		},
+		"attached_notes": []map[string]any{
+			{"path": "roles/triage.md", "content": "role body", "title": "Triage role", "tags": []string{"role", "triage"}, "meta": map[string]string{"layout": "doc"}, "updated_at": "2026-06-29T10:00:00Z"},
+		},
+	})
+	require.NoError(t, err)
+
+	var p deliveryPayload
+	require.NoError(t, json.Unmarshal(body, &p))
+
+	require.Equal(t, 2, p.Depth)
+	require.Len(t, p.Changes, 2)
+	require.Equal(t, "boards/sprint.md", p.Changes[0].Path)
+	require.Equal(t, "update", p.Changes[0].Event)
+	require.Equal(t, int64(7), p.Changes[0].PathID)
+	require.Equal(t, int64(42), p.Changes[0].Version)
+	require.Equal(t, "Sprint", p.Changes[0].Title)
+	require.Equal(t, "- a @status:todo\n", p.Changes[0].Content)
+
+	require.Len(t, p.AttachedNotes, 1)
+	an := p.AttachedNotes[0]
+	require.Equal(t, "roles/triage.md", an.Path)
+	require.Equal(t, "Triage role", an.Title)
+	require.Equal(t, []string{"role", "triage"}, an.Tags)
+	require.Equal(t, "doc", an.Meta["layout"])
+	require.Equal(t, "2026-06-29T10:00:00Z", an.UpdatedAt)
+}
+
 func TestServeDelivery_BadHMAC401(t *testing.T) {
 	f := newTestFleet(&ClientMock{})
 	rec := post(t, f, urlKey("roles/triage.md"), deliveryBody(t), false)

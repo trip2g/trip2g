@@ -16,12 +16,31 @@ type deliveryPayload struct {
 	Depth         int            `json:"depth"`
 	Instruction   string         `json:"instruction"`
 	APIToken      string         `json:"api_token"`
+	Changes       []changeInfo   `json:"changes"`
 	AttachedNotes []attachedNote `json:"attached_notes"`
 }
 
-type attachedNote struct {
+// changeInfo mirrors handlenotewebhooks.ChangeInfo — the per-note trigger data
+// trip2g sends in the delivery payload's changes[] array.
+type changeInfo struct {
 	Path    string `json:"path"`
+	Event   string `json:"event"`
+	PathID  int64  `json:"path_id"`
+	Version int64  `json:"version"`
+	Title   string `json:"title"`
 	Content string `json:"content"`
+}
+
+// attachedNote mirrors webhookutil.AttachedNote — a context note materialized
+// by trip2g via attach_notes. Meta is the key-allowlist trip2g sends (not the
+// full RawMeta).
+type attachedNote struct {
+	Path      string            `json:"path"`
+	Title     string            `json:"title"`
+	Content   string            `json:"content"`
+	UpdatedAt string            `json:"updated_at"`
+	Tags      []string          `json:"tags"`
+	Meta      map[string]string `json:"meta"`
 }
 
 // maxBodyBytes caps the delivery payload size to guard against DoS.
