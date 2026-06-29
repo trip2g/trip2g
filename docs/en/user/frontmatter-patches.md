@@ -269,3 +269,16 @@ The warning appears when you open the note in the published site. Other patches 
 **Two patches conflict** — the one with higher priority (larger number) wins. At equal priority, the one created later wins.
 
 **Accessing a missing field** — `meta.tags` fails if the note has no `tags`. Wrap in a check: `if std.objectHas(meta, "tags") then meta.tags else []`.
+
+## Live examples on this site
+
+This documentation site runs on its own patches. Each one is a real note you can open:
+
+- [[patches/free|Publish every note]] — marks all Markdown free
+- [[patches/lang-en|Default language English]] — site-wide `lang: en`
+- [[patches/ru|Russian section]] — language plus shared header and footer under `ru/`
+- [[patches/en-user-sidebar|English user-docs sidebar]] and [[patches/ru-user-sidebar|Russian user-docs sidebar]]
+- [[patches/en-thoughts-sidebar|English thoughts sidebar]] and [[patches/ru-thoughts-sidebar|Russian thoughts sidebar]]
+- [[patches/dev-no-search|Keep dev docs out of search]]
+
+Together they replace frontmatter that would otherwise be repeated across hundreds of notes.

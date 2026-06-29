@@ -183,16 +183,16 @@ func StreamRender(qw422016 *qt422016.Writer, ctx *Ctx) {
 		qw422016.N().S(`
 `)
 //line views.html:49
-		for property, value := range ctx.OGTags {
+		for _, tag := range ctx.OGTagsSorted() {
 //line views.html:49
 			qw422016.N().S(`
 <meta property="`)
 //line views.html:50
-			qw422016.N().S(property)
+			qw422016.N().S(tag.Property)
 //line views.html:50
 			qw422016.N().S(`" content="`)
 //line views.html:50
-			qw422016.N().S(value)
+			qw422016.N().S(tag.Value)
 //line views.html:50
 			qw422016.N().S(`">
 `)

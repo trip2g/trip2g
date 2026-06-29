@@ -46,8 +46,8 @@
 {% endif %}
 
 {% if ctx.OGTags != nil %}
-{% for property, value := range ctx.OGTags %}
-<meta property="{%s= property %}" content="{%s= value %}">
+{% for _, tag := range ctx.OGTagsSorted() %}
+<meta property="{%s= tag.Property %}" content="{%s= tag.Value %}">
 {% endfor %}
 {% endif %}
 

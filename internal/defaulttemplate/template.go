@@ -2,6 +2,7 @@ package defaulttemplate
 
 import (
 	"encoding/json"
+	"sort"
 	"strings"
 
 	"trip2g/internal/db"
@@ -19,6 +20,13 @@ import (
 type HrefLang struct {
 	Lang string // "en", "ru", "x-default"
 	Href string // full URL including scheme+host
+}
+
+// OGTag is a single Open Graph / Twitter meta tag. It exists so the template can
+// emit ctx.OGTags in a stable (property-sorted) order — see OGTagsSorted.
+type OGTag struct {
+	Property string
+	Value    string
 }
 
 // PaywallError holds data needed to render the paywall page.
@@ -82,6 +90,25 @@ type Ctx struct {
 	// LayoutSections holds vault-based layout section files for glob-based
 	// header/footer/sidebar resolution. Populated from NoteViews.LayoutSections.
 	LayoutSections []model.LayoutSectionEntry
+}
+
+// OGTagsSorted returns the Open Graph / Twitter meta tags sorted by property, so
+// the template emits them deterministically. ctx.OGTags is a map, and Go
+// randomizes map iteration order, which would otherwise shuffle the
+// <meta property="og:*"> tags between renders and make the rendered page — and
+// thus its cached bytes — vary byte-for-byte for identical inputs.
+func (ctx *Ctx) OGTagsSorted() []OGTag {
+	if len(ctx.OGTags) == 0 {
+		return nil
+	}
+	tags := make([]OGTag, 0, len(ctx.OGTags))
+	for property, value := range ctx.OGTags {
+		tags = append(tags, OGTag{Property: property, Value: value})
+	}
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].Property < tags[j].Property
+	})
+	return tags
 }
 
 // IsWide reports whether the note opted into full-width rendering via

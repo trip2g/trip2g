@@ -3,6 +3,7 @@ title: "Performance"
 free: true
 lang_redirect: "[[ru/user/perfomance]]"
 chart_bench: "[[pushnotes_bench.datachart.csv]]"
+chart_ramp: "[[pagecache_ramp.datachart.csv]]"
 ---
 
 ## In short
@@ -10,6 +11,7 @@ chart_bench: "[[pushnotes_bench.datachart.csv]]"
 - **Sync** (the everyday write): one changed note pushes in tens of milliseconds even on a 10 000-note vault; the *first* full import of 10 000 notes takes ~14 s on one core.
 - **Serving** (the read hot path): a single small server (Hetzner cpx32, 4 vCPU) serves **~4 000 real documentation pages per second** at 100 % success with a p99 of ~30 ms.
 - **Memory**: ~80 MB per 100 notes, ~1 GB per 10 000.
+- **Anonymous page cache**: a €6.49/month shared box (Hetzner cx23, 2 vCPU) sustains **~8 500 req/s** of gzipped pages for 10 continuous minutes: 0 errors, 0 % CPU steal, ≈ €0.0003 per million requests.
 
 Getting an *honest* serving number turned out to be surprisingly hard — three measurement traps, each costing roughly 2×:
 
@@ -56,7 +58,7 @@ Important context: while a push is being processed, the server holds the databas
 }
 ```
 
-Scaling is close to linear: ~1.2 s for 1 000 notes on one core, ~14 s for 10 000. Four cores cut that roughly in half — note rendering parallelizes, the database writes do not.
+Scaling is close to linear: ~1.2 s for 1 000 notes on one core, ~14 s for 10 000. Four cores cut that roughly in half: note rendering parallelizes but the database writes do not.
 
 ## Incremental sync: the everyday case
 
@@ -151,7 +153,7 @@ Measured 2026-06-11 on a 12-core ARM64 dev machine restricted with `taskset`, SQ
 
 The numbers above are for write operations. Page reads are a different story: p50 response time is **3–6 ms** at any vault size, even under 10 concurrent users.
 
-This is not an accident — it is an architectural choice. trip2g sits somewhere between a static site generator and a traditional CMS:
+This is not an accident; it is an architectural choice. trip2g sits somewhere between a static site generator and a traditional CMS:
 
 - **Static generator** (Gatsby, Hugo, Eleventy): builds HTML files to disk on deploy. Reads are instant because they're just file serving. But every content change requires a full rebuild — minutes for large sites, no live editing.
 - **Traditional CMS** (WordPress, Ghost): renders every page on request — queries the database, fetches relations, runs templates. Flexible and live, but every reader hits the database.
@@ -174,11 +176,11 @@ We loaded this very documentation — 35 real pages (the `/en/user` set: custom 
 | 5 000 req/s | 100 % | 9.1 ms | 74 ms | 169 ms |
 | 6 000 req/s | 100 % | 241 ms | 645 ms | 898 ms |
 
-Every request succeeds (100 % `200`) right through 6 000 req/s — the limit is *latency*, not errors. A single 4-core node comfortably serves **~4 000 real pages per second** with a p99 of ~30 ms; the knee is around 4 000–5 000 req/s, past which latency climbs into the hundreds of ms as the node becomes CPU-bound. That's the per-node ceiling on this hardware, and where a second node (or a read replica — see [[zerodowntime]] / [[litestream]]) earns its keep. Measured 2026-06-22.
+Every request succeeds (100 % `200`) right through 6 000 req/s; the limit is latency, not error count. A single 4-core node comfortably serves **~4 000 real pages per second** with a p99 of ~30 ms; the knee is around 4 000–5 000 req/s, past which latency climbs into the hundreds of ms as the node becomes CPU-bound. That's the per-node ceiling on this hardware, and where a second node (or a read replica — see [[zerodowntime]] / [[litestream]]) earns its keep. Measured 2026-06-22.
 
 > **How to benchmark this honestly.** Run with `DEV=false` (dev mode recomputes asset hashes per request, ~2× slower), run the load generator on a *separate* machine (sharing the box steals ~2× the CPU), and hit many real pages with a warm cache. Skipping any of these understated our first run by ~4×.
 
-Two things dominate the per-request cost at the ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable — pages are static between writes — so there is clear headroom for a future optimization pass to push the ceiling several times higher. *(That optimization is planned, not yet done.)*
+Two things dominate the per-request cost at the ceiling: **gzip compression** of each response, and a handful of **per-request database lookups** in the render path (access check, embedded Telegram links, HTML injections, view tracking). Both are cacheable: pages are static between writes, so there is clear headroom for a future optimization pass to push the ceiling several times higher. *(That optimization is planned, not yet done.)*
 
 ### Static files, and a bandwidth reality check
 
@@ -196,6 +198,8 @@ We deployed trip2g on a range of cheap VMs and load-tested each **from a separat
 
 \*Its single core holds **~500 rps** of the `/` page (~43 KB) at 100 % with p99 < 50 ms; the knee is ~600–700 rps and past ~900 latency falls apart. Measured with the generator in the same US-East area (~23 ms away) — a first run with the generator in Germany showed a misleading "1 000 rps", but that 86 ms transatlantic link just throttled the generator so the droplet never got pushed. Prices are provider list rates.
 
+*Measurement note: these box-comparison numbers predate the 2026-06-29 page cache, so they show throughput without it. Within the table, the Hetzner rows were measured after the earlier write-path optimizations and the DigitalOcean row before them. For page-cache throughput on comparable hardware, see the section below.*
+
 Two findings matter more than the raw rates.
 
 **A deploy drops nothing.** Restarting the service under live traffic — `systemctl restart` while requests were firing — dropped **zero** connections on both the 2-core Hetzner node and the $4 droplet (20 000 / 20 000 and 12 000 / 12 000 requests answered `200`, no refusals). The listening socket stays open across the restart via **systemd socket activation**, so in-flight requests wait in the kernel queue for a few hundred milliseconds instead of being refused. One server, no load balancer, no downtime — see [[zerodowntime]].
@@ -207,3 +211,75 @@ Two findings matter more than the raw rates.
 - **Vaults up to ~1 000 notes**: everything is instant — syncs are tens of milliseconds.
 - **~10 000 notes on a small server**: everyday syncs are still sub-second, but the *first* push of the whole vault takes ~14 s on one core. During that window the database is locked for other writers; on very large vaults prefer an initial import during quiet hours.
 - **More cores help rendering, not locking**: a 4-core server halves big-push times. The lock is held for the whole push either way, so many *concurrent* writers gain less than the raw numbers suggest.
+
+## Anonymous page cache: 8 500 req/s on a €6.49/month box
+
+The note-cache architecture above pre-renders HTML and holds it in memory, but per-request gzip and a handful of database lookups remain on the hot path. Both costs are now also eliminated for anonymous readers by a second layer: the **anonymous page cache**, which stores the final pre-gzipped HTML keyed by (path, host, note version, config, language). A cache hit copies bytes out of memory, with no re-render and no gzip.
+
+The effect: a default-template docs page previously cost ~28 ms/request (dominated by a synchronous per-request vector-search "similar notes" pass using cosine similarity over all note embeddings, ~94% of CPU) while a Jet landing page cost ~0.9 ms/request. After the cache warmed, both pages served at the **same ~9 000 req/s**. The cache equalizes cheap and expensive pages.
+
+**Benchmark: 2026-06-29, Hetzner shared-vCPU VMs**
+
+| Box | vCPU / RAM | Price |
+|---|---|---|
+| cx23 (server under test) | 2 / 3.8 GB | **€6.49/month** |
+| cx33 (load generator) | 4 / 7.7 GB | €8.99/month |
+
+Attacked from the cx33 over the network (separate machines, cross-network).
+
+**12-second burst (max rate):** ~9 000 req/s, server CPU ~78%, steal 0%.
+
+**10-minute sustained run (max rate):**
+
+| Metric | Value |
+|---|---|
+| Total requests | 5 134 192 |
+| Throughput | **8 557 req/s** |
+| vs. burst | −5% |
+| p50 | 25.8 ms |
+| p99 | 86 ms |
+| Max | 323 ms |
+| Errors | 0 |
+| CPU steal | **0% throughout** |
+
+Five million requests, ten minutes, zero errors.
+
+The chart below shows how latency changes as the offered request rate climbs toward and past saturation.
+
+```datachart
+{
+  "data": { "source": "frontmatter", "ref": "chart_ramp" },
+  "config": {
+    "title": { "text": "Latency vs request rate, cx23 (less is better)" },
+    "tooltip": { "trigger": "axis" },
+    "legend": {},
+    "xAxis": { "type": "category", "name": "req/s" },
+    "yAxis": { "type": "log", "name": "ms" },
+    "series": [
+      { "type": "line", "name": "p50", "encode": { "x": "rate", "y": "p50" } },
+      { "type": "line", "name": "p95", "encode": { "x": "rate", "y": "p95" } },
+      { "type": "line", "name": "p99", "encode": { "x": "rate", "y": "p99" } }
+    ]
+  }
+}
+```
+
+p50 stays sub-millisecond up to ~6 000 req/s. The knee is at ~7 000–8 000 req/s, where p50 jumps from 1.2 ms to 146 ms. The box saturates near 9 000 req/s. Success rate was 100% throughout: the server degrades on latency under overload rather than refusing requests.
+
+**Cost framing:** 8 557 req/s ≈ 739 million requests per day on a €6.49/month box — roughly **€0.0003 per million requests**, or about €0.29 per billion. For any realistic traffic volume, the serving cost per request is negligible.
+
+> **Pre-cache comparison (12-core dev box, single page):** the default-template docs page served **421 → 8 504 req/s** after the cache warmed — a **20× improvement**. CPU on cache hits dropped from ~95% to ~0%.
+
+### Three measurement traps
+
+Two alternative setups produce misleadingly low numbers:
+
+**Loopback (same-box) attack.** Running vegeta on the same cx23 measured only ~5 400 req/s — the load generator competed with the server for the same two cores. The server CPU was not at 100%; what we measured was the attacker's ceiling, not the server's. The cross-network number is the real ceiling.
+
+**Weak attacker, strong server.** Running trip2g on the stronger cx33 and attacking from the cx23 showed only ~44–45% CPU on the cx33. The cx23 could not generate enough load to find the cx33's real limit. That number is attacker-limited, not a server measurement.
+
+**CPU steal as the throttle probe.** Shared vCPUs can be fair-use-throttled by the provider. The signal is the `steal` metric in CPU stats. During the entire 10-minute run, steal stayed at 0%: no throttling. For workloads that sustain maximum load 24/7, a dedicated-vCPU instance avoids this risk. For typical bursty traffic, shared is enough.
+
+### What the cache covers
+
+The anonymous page cache covers unauthenticated readers only. Logged-in users bypass it. The reason: an authenticated viewer could be an admin (who sees edit controls), a subscriber (who is paywall-exempt), or have other per-user state that differs from the anonymous view; serving them a cached anonymous page risks showing the wrong thing. There is one nuance: on the default template, the admin/anonymous difference (login button, edit badge) is rendered by a client-side script, so the server sends the same HTML to both. The cache could safely extend to logged-in users on default-template pages, but not on custom layouts or paywalled notes. The current design takes the simpler path: any authenticated request bypasses the cache. The underlying synchronous vector-search "similar notes" computation (~28 ms) remains on the read path for cache misses and authenticated requests. The planned next step is precomputing "similar notes" once per note reload, moving the O(N) cosine scan off the read path entirely. The benchmark found this; [[en/thoughts/page-cache-and-the-surprise-bottleneck|The page cache and the surprise bottleneck]] tells the full story.

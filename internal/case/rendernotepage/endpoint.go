@@ -53,6 +53,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	env := req.Env.(Env)
 
+	// Anonymous page-cache fast path: serve a pre-gzipped HIT BEFORE Resolve so
+	// the hot read path skips Resolve's per-request DB enrichment (telegram
+	// links). Any unmet gate or cache miss falls through to the unchanged full
+	// path below; cacheDecision + fillPageCache there remain the only writer.
+	if serveCachedPageEarly(ctx, env, request) {
+		return nil, nil
+	}
+
 	resp, err := Resolve(ctx, env, request)
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
