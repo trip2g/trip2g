@@ -1852,6 +1852,101 @@ func TestFrontmatterPatchNotDoubledOnCacheHit(t *testing.T) {
 		"patch must NOT accumulate on third cached reload")
 }
 
+// TestFrontmatterPatchResultCacheAcrossReloads verifies that a persistent
+// ResultCache reused across reloads (1) keeps patched RawMeta byte-identical to
+// the uncached path, (2) actually serves cache hits when content and patch set
+// are unchanged, and (3) recomputes when a note's content changes.
+func TestFrontmatterPatchResultCacheAcrossReloads(t *testing.T) {
+	log := logger.TestLogger{}
+
+	patch := frontmatterpatch.Compile(1, []string{"*"}, nil,
+		`meta + { title: meta.title + " — Site", patched: true }`, 0, "title suffix")
+
+	srcA := mdloader.SourceFile{Path: "a.md", Content: []byte("---\ntitle: A\nfree: true\n---\nBody A")}
+	srcB := mdloader.SourceFile{Path: "b.md", Content: []byte("---\ntitle: B\n---\nBody B")}
+
+	// Reference: uncached load (no PatchCache).
+	ref, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{srcA, srcB},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+	})
+	require.NoError(t, err)
+
+	cache := frontmatterpatch.NewResultCache()
+
+	// Load 1 with the cache — all misses (cold).
+	pages1, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{srcA, srcB},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+		PatchCache:         cache,
+	})
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), cache.Hits(), "cold load has no hits")
+	require.Equal(t, uint64(2), cache.Misses(), "cold load computes both notes")
+
+	makeNoteCache := func(prev *model.NoteViews) func(mdloader.SourceFile) *model.NoteView {
+		return func(src mdloader.SourceFile) *model.NoteView {
+			old, ok := prev.PathMap[src.Path]
+			if !ok || string(old.Content) != string(src.Content) {
+				return nil
+			}
+			return old
+		}
+	}
+
+	// Load 2 — same content + same patch set → both notes served from cache.
+	pages2, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{srcA, srcB},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+		PatchCache:         cache,
+		NoteCache:          makeNoteCache(pages1),
+	})
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), cache.Hits(), "warm reload must hit the cache for both notes")
+	require.Equal(t, uint64(2), cache.Misses(), "no new computes on a warm reload")
+
+	// Cached result must be byte-identical to the uncached reference.
+	require.Equal(t, ref.PathMap["a.md"].RawMeta, pages2.PathMap["a.md"].RawMeta)
+	require.Equal(t, ref.PathMap["b.md"].RawMeta, pages2.PathMap["b.md"].RawMeta)
+	require.Equal(t, "A — Site", pages2.PathMap["a.md"].Title, "patch applied exactly once via cache")
+	require.Equal(t, true, pages2.PathMap["a.md"].RawMeta["patched"])
+
+	// Load 3 — a.md content changes, b.md unchanged.
+	srcA2 := mdloader.SourceFile{Path: "a.md", Content: []byte("---\ntitle: A2\nfree: true\n---\nBody A2")}
+	pages3, err := mdloader.Load(mdloader.Options{
+		Sources:            []mdloader.SourceFile{srcA2, srcB},
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+		PatchCache:         cache,
+		NoteCache:          makeNoteCache(pages2),
+	})
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), cache.Hits(), "unchanged b.md still hits")
+	require.Equal(t, uint64(3), cache.Misses(), "changed a.md recomputes once")
+	require.Equal(t, "A2 — Site", pages3.PathMap["a.md"].Title)
+}
+
+// TestFrontmatterPatchCacheNoPatchesBypassed verifies the empty-patch fast path
+// is preserved: with no patches the cache is never touched.
+func TestFrontmatterPatchCacheNoPatchesBypassed(t *testing.T) {
+	log := logger.TestLogger{}
+	cache := frontmatterpatch.NewResultCache()
+
+	src := mdloader.SourceFile{Path: "a.md", Content: []byte("---\ntitle: A\nfree: true\n---\nBody")}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources:    []mdloader.SourceFile{src},
+		Log:        &log,
+		PatchCache: cache,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "A", pages.PathMap["a.md"].Title)
+	require.Equal(t, uint64(0), cache.Hits())
+	require.Equal(t, uint64(0), cache.Misses(), "no patches → cache must not be consulted")
+}
+
 // TestVaultPatchApplies verifies that a vault patch file (type: frontmatter-patch)
 // with a matching include pattern applies its jsonnet block to target notes.
 func TestVaultPatchApplies(t *testing.T) {
