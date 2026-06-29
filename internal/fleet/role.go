@@ -83,6 +83,13 @@ func (r Role) EffectiveTimeoutSeconds() int {
 	return r.TimeoutSeconds
 }
 
+// for_each modes. These strings double as the Jet template variable names the
+// modes fan out over (forEachChangedFiles → the changed_files bag var, etc.).
+const (
+	forEachChangedFiles  = "changed_files"
+	forEachAttachedNotes = "attached_notes"
+)
+
 // Validate fails fast on misconfiguration discovered at poll time, before any
 // webhook is registered. Tools must be a subset of the fleet's offered set.
 func (r Role) Validate(offered []string) error {
@@ -105,7 +112,7 @@ func (r Role) Validate(offered []string) error {
 	// change_file footgun: a body referencing change_file but not fanned out per
 	// changed file renders against nil, so every delivery fails. Note
 	// "changed_files" (plural) does not contain the "change_file" substring.
-	if strings.Contains(r.Body, "change_file") && r.ForEach != "changed_files" {
+	if strings.Contains(r.Body, "change_file") && r.ForEach != forEachChangedFiles {
 		return fmt.Errorf(
 			"role %s: body references change_file but for_each is not changed_files "+
 				"(renders against nil); set for_each: changed_files",
@@ -118,7 +125,7 @@ func (r Role) Validate(offered []string) error {
 		return fmt.Errorf("role %s: concurrency must be allow_overlap|skip|queue_one, got %q", r.NotePath, r.Concurrency)
 	}
 	switch r.ForEach {
-	case "", "changed_files", "attached_notes":
+	case "", forEachChangedFiles, forEachAttachedNotes:
 	default:
 		return fmt.Errorf("role %s: for_each must be changed_files|attached_notes, got %q", r.NotePath, r.ForEach)
 	}

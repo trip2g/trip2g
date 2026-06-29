@@ -191,7 +191,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 // so the current item is exposed as a one-element attached_notes list).
 func fanOut(mode string, base renderCtx) []renderCtx {
 	switch mode {
-	case "changed_files":
+	case forEachChangedFiles:
 		out := make([]renderCtx, 0, len(base.ChangedFiles))
 		for i := range base.ChangedFiles {
 			rc := base
@@ -199,7 +199,7 @@ func fanOut(mode string, base renderCtx) []renderCtx {
 			out = append(out, rc)
 		}
 		return out
-	case "attached_notes":
+	case forEachAttachedNotes:
 		out := make([]renderCtx, 0, len(base.AttachedNotes))
 		for i := range base.AttachedNotes {
 			rc := base

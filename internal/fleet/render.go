@@ -36,9 +36,9 @@ func renderInstruction(body string, ctx renderCtx) (string, error) {
 	}
 
 	vars := make(jet.VarMap)
-	vars.Set("changed_files", ctx.ChangedFiles)
+	vars.Set(forEachChangedFiles, ctx.ChangedFiles)
 	vars.Set("change_file", ctx.ChangeFile)
-	vars.Set("attached_notes", ctx.AttachedNotes)
+	vars.Set(forEachAttachedNotes, ctx.AttachedNotes)
 	vars.Set("depth", ctx.Depth)
 
 	var buf bytes.Buffer
