@@ -28,6 +28,12 @@ const GRAPHQL_URL = `${APP_URL}/_system/graphql`;
 // REPO_ROOT is the worktree root — where go run ./cmd/fleet will be executed.
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+// FLEET_CALLBACK_HOST controls the callback URL the fleet registers with trip2g.
+// Pure-host run: 127.0.0.1 (default). Docker compose run (app in container,
+// fleet on host): host.docker.internal — the app container resolves this to the
+// host gateway via extra_hosts in docker-compose.test.yml.
+const FLEET_CALLBACK_HOST = process.env.FLEET_CALLBACK_HOST || '127.0.0.1';
+
 const BOARD_PATH = 'boards/sprint.md';
 const ROLE_PATH = 'roles/triage.md';
 
@@ -83,7 +89,11 @@ test.describe.serial('Fleet kanban vertical slice', () => {
   // matches immediately when the fleet fires on the user edit.
   const boardSeed = '---\nlayout: kanban\n---\n\n## Doing\n- Fix login bug @status:doing\n';
 
-  // Role note frontmatter (Shared contracts §role-note).
+  // Role note with Jet template body — exercises for_each templating end-to-end.
+  // for_each: changed_files renders the body once per changed file with
+  // change_file bound to that file's changeInfo. The stub LLM ignores the
+  // rendered instruction text; what matters is that renderInstruction succeeds
+  // (no Jet parse/exec error) and the handler invokes agentruntime.Run once.
   const roleSeed = [
     '---',
     'model: stub',
@@ -98,8 +108,17 @@ test.describe.serial('Fleet kanban vertical slice', () => {
     'attach_notes: ["boards/**","roles/**"]',
     'max_depth: 1',
     'concurrency: skip',
+    'for_each: changed_files',
     '---',
-    'Append " @triaged" to the line of any card whose status is doing.',
+    'You are a sprint-triage agent. A change occurred in the project board.',
+    '',
+    'Changed file: {{ change_file.Path }} (event: {{ change_file.Event }})',
+    '',
+    'Current content:',
+    '{{ change_file.Content }}',
+    '',
+    'Append " @triaged" to any line containing "@status:doing" that does not yet',
+    'have "@triaged". Use patch_note with the exact find text from the content above.',
   ].join('\n');
 
   test.beforeAll(async ({ browser, request }) => {
@@ -185,7 +204,7 @@ test.describe.serial('Fleet kanban vertical slice', () => {
         'run', './cmd/fleet',
         '-fleet-id', 'e2e',
         '-listen', '127.0.0.1:9099',
-        '-callback-url', 'http://127.0.0.1:9099',
+        '-callback-url', `http://${FLEET_CALLBACK_HOST}:9099`,
         '-trip2g-url', APP_URL,
         '-admin-api-key', apiKey,
         '-fleet-secret', 'e2e-secret',
