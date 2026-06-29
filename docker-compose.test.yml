@@ -11,6 +11,13 @@ services:
       MINIO_ROOT_USER: testuser
       MINIO_ROOT_PASSWORD: testpassword
     command: server /data --console-address ":29001" --address ":29000"
+    # /data is ephemeral. The minio image declares VOLUME /data, so an anonymous
+    # volume is created and SURVIVES `docker compose rm -v` (which does not remove
+    # image-declared anon volumes). A stale backup left there gets restored over a
+    # freshly-seeded DB and breaks the onboarding/no-notes test. tmpfs gives every
+    # container (re)create a clean /data — no stale backups, no manual volume drop.
+    tmpfs:
+      - /data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:29000/minio/health/live"]
       interval: 5s
