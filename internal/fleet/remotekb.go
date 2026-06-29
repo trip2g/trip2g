@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"trip2g/internal/agentruntime"
 )
@@ -103,15 +104,36 @@ func (k *remoteKB) Read(ctx context.Context, path string) (string, error) {
 }
 
 func (k *remoteKB) Write(ctx context.Context, path, content string) error {
-	return k.update(ctx, []map[string]any{
+	if err := k.update(ctx, []map[string]any{
 		{"upsert": map[string]any{"path": path, "content": content}},
-	})
+	}); err != nil {
+		return err
+	}
+	k.overlay[path] = content
+	return nil
 }
 
 func (k *remoteKB) Patch(ctx context.Context, path, find, replace string) error {
-	return k.update(ctx, []map[string]any{
+	if err := k.update(ctx, []map[string]any{
 		{"patch": map[string]any{"path": path, "find": find, "replace": replace}},
-	})
+	}); err != nil {
+		return err
+	}
+	// Best-effort overlay sync: keep in-memory view consistent so a subsequent
+	// Read in the same run is served from cache without a remote round-trip.
+	if cur, ok := k.overlay[path]; ok {
+		k.overlay[path] = replaceOnce(cur, find, replace)
+	}
+	return nil
+}
+
+// replaceOnce replaces the first occurrence of find in s with replace.
+func replaceOnce(s, find, replace string) string {
+	idx := strings.Index(s, find)
+	if idx == -1 {
+		return s
+	}
+	return s[:idx] + replace + s[idx+len(find):]
 }
 
 // updateNotesResult mirrors the updateNotes union. All fields are optional so

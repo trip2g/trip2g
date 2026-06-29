@@ -127,3 +127,50 @@ func TestRemoteKB_UpdateNotesErrorPayloadReturnsError(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "permission denied")
 }
+
+// TestRemoteKB_WriteUpdatesOverlay is a regression for G6: Write must update the
+// in-memory overlay so that a subsequent Read in the same run is served from cache
+// without a remote round-trip, and returns the new content.
+func TestRemoteKB_WriteUpdatesOverlay(t *testing.T) {
+	successResp := json.RawMessage(`{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["notes/task.md"]}}`)
+	var calls int
+	client := &ClientMock{GraphQLScopedFunc: func(_ context.Context, _ string, q string, _ map[string]any) (json.RawMessage, error) {
+		calls++
+		if strings.Contains(q, "updateNotes") {
+			return successResp, nil
+		}
+		// If Read falls through to the remote, the test must fail.
+		t.Fatal("Read after Write must be served from overlay, got remote call for query:", q)
+		return nil, nil
+	}}
+	kb := newRemoteKB(client, "tok", nil)
+	require.NoError(t, kb.Write(context.Background(), "notes/task.md", "new content"))
+	got, err := kb.Read(context.Background(), "notes/task.md")
+	require.NoError(t, err)
+	require.Equal(t, "new content", got)
+	require.Equal(t, 1, calls, "only the Write mutation must hit the client; Read must be overlay-served")
+}
+
+// TestRemoteKB_PatchUpdatesOverlay is a regression for G6: Patch must apply the
+// find→replace to the in-memory overlay so that a subsequent Read returns the
+// patched content without a remote round-trip.
+func TestRemoteKB_PatchUpdatesOverlay(t *testing.T) {
+	successResp := json.RawMessage(`{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["boards/sprint.md"]}}`)
+	var calls int
+	client := &ClientMock{GraphQLScopedFunc: func(_ context.Context, _ string, q string, _ map[string]any) (json.RawMessage, error) {
+		calls++
+		if strings.Contains(q, "updateNotes") {
+			return successResp, nil
+		}
+		t.Fatal("Read after Patch must be served from overlay, got remote call for query:", q)
+		return nil, nil
+	}}
+	initial := "# Sprint\n@status:todo task A\n@status:todo task B"
+	kb := newRemoteKB(client, "tok", map[string]string{"boards/sprint.md": initial})
+	require.NoError(t, kb.Patch(context.Background(), "boards/sprint.md", "@status:todo", "@status:doing"))
+	got, err := kb.Read(context.Background(), "boards/sprint.md")
+	require.NoError(t, err)
+	// Only the FIRST occurrence must be replaced (unique patch per G5 contract).
+	require.Equal(t, "# Sprint\n@status:doing task A\n@status:todo task B", got)
+	require.Equal(t, 1, calls, "only the Patch mutation must hit the client; Read must be overlay-served")
+}
