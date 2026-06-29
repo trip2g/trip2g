@@ -241,6 +241,7 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall)
 		res.Changes = append(res.Changes, webhookutil.AgentChange{
 			Path:    args.Path,
 			Content: args.Content,
+			Kind:    webhookutil.AgentChangeKindWrite,
 		})
 		return "ok: wrote " + args.Path
 
@@ -265,7 +266,7 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall)
 			Path:    args.Path,
 			Find:    args.Find,
 			Replace: args.Replace,
-			Kind:    "patch",
+			Kind:    webhookutil.AgentChangeKindPatch,
 		})
 		return "ok: patched " + args.Path
 

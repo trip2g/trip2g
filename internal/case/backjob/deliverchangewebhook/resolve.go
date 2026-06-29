@@ -376,7 +376,7 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		}
 
 		var content string
-		if change.Kind == "patch" {
+		if change.IsPatch() {
 			// Apply find/replace against the note's current content.
 			// Matches updateNotes Patch semantics: find must be present exactly once.
 			if nvs == nil {

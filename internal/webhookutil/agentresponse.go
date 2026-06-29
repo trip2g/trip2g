@@ -7,6 +7,13 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
+// AgentChange kinds. An empty Kind is treated as KindWrite for backward
+// compatibility with existing webhook agents that only send {path, content}.
+const (
+	AgentChangeKindWrite = "write" // full upsert of Content at Path.
+	AgentChangeKindPatch = "patch" // surgical single-occurrence Find/Replace.
+)
+
 // AgentResponse is the expected format of a webhook agent's response body.
 type AgentResponse struct {
 	Status     string        `json:"status"`
@@ -26,10 +33,15 @@ type AgentChange struct {
 	Kind         string  `json:"kind,omitempty"` // "" | "upsert" | "patch"
 }
 
+// IsPatch reports whether the change is a surgical find/replace patch.
+func (c AgentChange) IsPatch() bool {
+	return c.Kind == AgentChangeKindPatch
+}
+
 // Validate validates required fields of an AgentChange. Patch changes require
 // Find (not Content); upsert/legacy changes require Content.
 func (c AgentChange) Validate() error {
-	if c.Kind == "patch" {
+	if c.IsPatch() {
 		return ozzo.ValidateStruct(&c,
 			ozzo.Field(&c.Path, ozzo.Required),
 			ozzo.Field(&c.Find, ozzo.Required),

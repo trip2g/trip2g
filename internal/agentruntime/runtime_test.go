@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"trip2g/internal/webhookutil"
 )
 
 // memKB is an in-memory KB for deterministic, offline tests.
@@ -331,6 +332,32 @@ func TestRun_ToolsAllowlistBlocksUndeclaredToolAtExecution(t *testing.T) {
 	require.Len(t, res.Denials, 1, "undeclared tool call must be recorded as denial")
 	// The original content must be untouched.
 	require.Equal(t, "hello", kb.docs["notes/a.md"], "KB must not be mutated by denied tool")
+}
+
+// G9 regression: write_note must emit AgentChangeKindWrite (not empty string).
+func TestRun_WriteNoteKindIsExplicit(t *testing.T) {
+	kb := newMemKB(map[string]string{})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolWriteNote, map[string]any{
+				"path": "notes/a.md", "content": "hello",
+			})}, PromptTokens: 10, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})},
+				PromptTokens: 5, CompletionTokens: 5},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "write a note",
+		ReadPatterns:  []string{"notes/**"},
+		WritePatterns: []string{"notes/**"},
+		Model:         "m", MaxTokens: 10000, MaxSteps: 10,
+		LLM: llm, KB: kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Len(t, res.Changes, 1)
+	require.Equal(t, webhookutil.AgentChangeKindWrite, res.Changes[0].Kind,
+		"write_note must set AgentChangeKindWrite, not emit empty Kind")
 }
 
 // (c) Hard-cap: the model loops forever (always a tool call). A low MaxTokens

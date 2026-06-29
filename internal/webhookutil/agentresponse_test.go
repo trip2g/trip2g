@@ -96,3 +96,25 @@ func TestParseAgentResponse_PatchChangeMissingFind(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid change")
 }
+
+// G9 regression: IsPatch must exist and return true only for patch kind.
+func TestAgentChangeIsPatch(t *testing.T) {
+	cases := []struct {
+		kind string
+		want bool
+	}{
+		{AgentChangeKindPatch, true},
+		{AgentChangeKindWrite, false},
+		{"", false},     // backward-compat: empty string = write
+		{"upsert", false}, // legacy alias also not patch
+	}
+	for _, tc := range cases {
+		c := AgentChange{Path: "x.md", Kind: tc.kind}
+		if tc.kind == AgentChangeKindPatch {
+			c.Find = "x"
+		} else {
+			c.Content = "y"
+		}
+		require.Equalf(t, tc.want, c.IsPatch(), "IsPatch() for kind=%q", tc.kind)
+	}
+}
