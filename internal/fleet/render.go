@@ -1,0 +1,48 @@
+package fleet
+
+import (
+	"bytes"
+
+	"github.com/CloudyKit/jet/v6"
+)
+
+// renderCtx is the non-secret trigger-context bag exposed to a role's Jet body.
+// It NEVER carries secrets, the scoped api_token, or any credential — only the
+// data trip2g already ships in the delivery payload.
+type renderCtx struct {
+	ChangedFiles  []changeInfo
+	ChangeFile    *changeInfo
+	AttachedNotes []attachedNote
+	Depth         int
+}
+
+// renderInstruction renders a role-note body as a Jet template against the
+// trigger context. Exactly four vars are exposed — changed_files, change_file,
+// attached_notes, depth — mirroring the layoutloader Jet pattern. Referencing
+// any other identifier (e.g. secrets, api_token) is an execution error, so no
+// credential can leak into the instruction.
+func renderInstruction(body string, ctx renderCtx) (string, error) {
+	loader := jet.NewInMemLoader()
+	loader.Set("role", body)
+	// WithSafeWriter(nil) disables HTML auto-escaping: the rendered text is fed
+	// to an LLM as a prompt, not emitted as HTML, so escaping would corrupt note
+	// content (e.g. & < > inside code blocks).
+	set := jet.NewSet(loader, jet.WithSafeWriter(nil))
+
+	tmpl, err := set.GetTemplate("role")
+	if err != nil {
+		return "", err
+	}
+
+	vars := make(jet.VarMap)
+	vars.Set("changed_files", ctx.ChangedFiles)
+	vars.Set("change_file", ctx.ChangeFile)
+	vars.Set("attached_notes", ctx.AttachedNotes)
+	vars.Set("depth", ctx.Depth)
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, vars, nil); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
