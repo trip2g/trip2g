@@ -31,3 +31,4 @@ title: "Navigation"
 - [[en/thoughts/patching-obsidian-canvas-on-minimal-linux|Patching Obsidian Canvas on minimal Linux]]
 - [[en/thoughts/sync-benchmark|Benchmarking Obsidian sync]]
 - [[en/thoughts/search-benchmark|Benchmarking search]]
+- [[en/thoughts/page-cache-and-the-surprise-bottleneck|The page cache and the surprise bottleneck]]
