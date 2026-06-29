@@ -66,6 +66,12 @@ type loader struct {
 
 	frontmatterPatches []frontmatterpatch.CompiledPatch
 	jsonnetVM          *jsonnet.VM
+
+	// patchCache memoizes frontmatter-patch results across reloads (optional).
+	// patchSetHash identifies the merged patch set for this Load and is the
+	// cache's coarse invalidation key.
+	patchCache   *frontmatterpatch.ResultCache
+	patchSetHash string
 }
 
 type Config struct {
@@ -94,6 +100,11 @@ type Options struct {
 	// ChartData supplies cached rows for url/internal datachart sources. Nil is
 	// fine — those charts then render a loader.
 	ChartData ChartDataProvider
+
+	// PatchCache memoizes frontmatter-patch results across Load calls. Optional;
+	// when nil, patches are applied directly (uncached). Reuse the same instance
+	// across reloads for the cache to help (it persists alongside the note cache).
+	PatchCache *frontmatterpatch.ResultCache
 }
 
 // Load transforms markdown files into pages.
@@ -115,6 +126,7 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.linkResolver.chartData = options.ChartData
 
 	ldr.frontmatterPatches = options.FrontmatterPatches
+	ldr.patchCache = options.PatchCache
 
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
@@ -160,48 +172,8 @@ func Load(options Options) (*model.NoteViews, error) {
 		parsed = append(parsed, ps)
 	}
 
-	// Step 2: collect vault patches from sources with type: frontmatter-patch.
-	var vaultPatches []frontmatterpatch.CompiledPatch
-	for _, ps := range parsed {
-		typ, _ := ps.rawMeta["type"].(string)
-		if typ != "frontmatter-patch" {
-			continue
-		}
-
-		bodies, err := extractJsonnetBlocks(ps.doc, ps.src.Content)
-		if err != nil {
-			ps.patchError = err.Error()
-			continue
-		}
-
-		patches, err := frontmatterpatch.CompileVaultPatches(
-			ps.src.Path,
-			toStringSlice(ps.rawMeta["include"]),
-			toStringSlice(ps.rawMeta["exclude"]),
-			bodies,
-			toInt(ps.rawMeta["priority"]),
-		)
-		if err != nil {
-			ps.patchError = err.Error()
-			continue
-		}
-
-		vaultPatches = append(vaultPatches, patches...)
-	}
-
-	// Sort vault patches by priority, then description (path).
-	sort.Slice(vaultPatches, func(i, j int) bool {
-		if vaultPatches[i].Priority != vaultPatches[j].Priority {
-			return vaultPatches[i].Priority < vaultPatches[j].Priority
-		}
-		return vaultPatches[i].Description < vaultPatches[j].Description
-	})
-
-	// Merge: DB patches first, then vault patches.
-	ldr.frontmatterPatches = append(ldr.frontmatterPatches, vaultPatches...)
-	if len(ldr.frontmatterPatches) > 0 {
-		ldr.jsonnetVM = frontmatterpatch.NewVM()
-	}
+	// Step 2: collect vault patches, merge with DB patches, prepare the VM + hash.
+	ldr.collectAndMergePatches(parsed)
 
 	// Step 2b: collect layout section files (header/footer/sidebar with glob patterns).
 	for _, ps := range parsed {
@@ -714,6 +686,56 @@ func (ldr *loader) parseSource(src SourceFile) *parsedSource {
 	return &parsedSource{src: src, doc: doc, rawMeta: rawMeta}
 }
 
+// collectAndMergePatches gathers vault patches from sources with
+// type: frontmatter-patch, merges them after the DB patches, and prepares the
+// shared Jsonnet VM plus the patch-set hash used by the result cache.
+func (ldr *loader) collectAndMergePatches(parsed []*parsedSource) {
+	var vaultPatches []frontmatterpatch.CompiledPatch
+	for _, ps := range parsed {
+		typ, _ := ps.rawMeta["type"].(string)
+		if typ != "frontmatter-patch" {
+			continue
+		}
+
+		bodies, err := extractJsonnetBlocks(ps.doc, ps.src.Content)
+		if err != nil {
+			ps.patchError = err.Error()
+			continue
+		}
+
+		patches, err := frontmatterpatch.CompileVaultPatches(
+			ps.src.Path,
+			toStringSlice(ps.rawMeta["include"]),
+			toStringSlice(ps.rawMeta["exclude"]),
+			bodies,
+			toInt(ps.rawMeta["priority"]),
+		)
+		if err != nil {
+			ps.patchError = err.Error()
+			continue
+		}
+
+		vaultPatches = append(vaultPatches, patches...)
+	}
+
+	// Sort vault patches by priority, then description (path).
+	sort.Slice(vaultPatches, func(i, j int) bool {
+		if vaultPatches[i].Priority != vaultPatches[j].Priority {
+			return vaultPatches[i].Priority < vaultPatches[j].Priority
+		}
+		return vaultPatches[i].Description < vaultPatches[j].Description
+	})
+
+	// Merge: DB patches first, then vault patches.
+	ldr.frontmatterPatches = append(ldr.frontmatterPatches, vaultPatches...)
+	if len(ldr.frontmatterPatches) > 0 {
+		ldr.jsonnetVM = frontmatterpatch.NewVM()
+		// Hash the full merged set (DB + vault) once. Any patch change — admin or
+		// note-defined — flips this and invalidates the whole result cache.
+		ldr.patchSetHash = frontmatterpatch.PatchSetHash(ldr.frontmatterPatches)
+	}
+}
+
 // finishPage applies frontmatter patches, extracts metadata, and prepares
 // the NoteView for rendering. This is the second phase of note loading.
 func (ldr *loader) finishPage(ps *parsedSource) (*model.NoteView, error) {
@@ -797,7 +819,16 @@ func (ldr *loader) applyFrontmatterPatches(
 		return rawMeta, nil
 	}
 
-	result := frontmatterpatch.ApplyPatches(ldr.jsonnetVM, ldr.frontmatterPatches, path, rawMeta)
+	var result frontmatterpatch.ApplyResult
+	if ldr.patchCache != nil {
+		// Cache hit returns a private deep copy; cache miss applies patches and
+		// stores a snapshot. Either way the result is byte-identical to the
+		// direct ApplyPatches below.
+		result = ldr.patchCache.CachedApply(
+			ldr.jsonnetVM, ldr.frontmatterPatches, ldr.patchSetHash, path, rawMeta)
+	} else {
+		result = frontmatterpatch.ApplyPatches(ldr.jsonnetVM, ldr.frontmatterPatches, path, rawMeta)
+	}
 
 	// Convert AppliedPatch to model.AppliedFrontmatterPatch.
 	applied := make([]model.AppliedFrontmatterPatch, len(result.AppliedPatches))
