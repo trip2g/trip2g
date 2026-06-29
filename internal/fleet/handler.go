@@ -76,30 +76,77 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		overlay[n.Path] = n.Content
 	}
 
-	res, runErr := agentruntime.Run(r.Context(), agentruntime.Input{
-		Instruction:   role.Body,
-		ReadPatterns:  role.ReadPatterns,
-		WritePatterns: role.WritePatterns,
-		Tools:         role.Tools,
-		Model:         orDefault(role.Model, f.cfg.DefaultModel),
-		MaxTokens:     clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
-		MaxSteps:      clampBudget(role.MaxSteps, f.cfg.StepCeiling),
-		LLM:           f.llm,
-		KB:            newRemoteKB(f.client, payload.APIToken, overlay),
-	})
-	if runErr != nil {
-		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: runErr.Error()})
-		return
+	base := renderCtx{
+		ChangedFiles:  payload.Changes,
+		AttachedNotes: payload.AttachedNotes,
+		Depth:         payload.Depth,
+	}
+
+	var totalTokens, totalSteps int
+	var lastStatus, lastAnswer string
+	for _, rc := range fanOut(role.ForEach, base) {
+		instruction, rerr := renderInstruction(role.Body, rc)
+		if rerr != nil {
+			writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: rerr.Error()})
+			return
+		}
+		res, runErr := agentruntime.Run(r.Context(), agentruntime.Input{
+			Instruction:   instruction,
+			ReadPatterns:  role.ReadPatterns,
+			WritePatterns: role.WritePatterns,
+			Tools:         role.Tools,
+			Model:         orDefault(role.Model, f.cfg.DefaultModel),
+			MaxTokens:     clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
+			MaxSteps:      clampBudget(role.MaxSteps, f.cfg.StepCeiling),
+			LLM:           f.llm,
+			KB:            newRemoteKB(f.client, payload.APIToken, overlay),
+		})
+		if runErr != nil {
+			writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{Status: "error", Message: runErr.Error()})
+			return
+		}
+		totalTokens += res.TokensUsed
+		totalSteps += res.Steps
+		lastStatus = res.Status
+		lastAnswer = res.Answer
 	}
 
 	// Changes already applied in-loop via the scoped token; report spend only.
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
-		Status:     res.Status,
-		Message:    res.Answer,
+		Status:     lastStatus,
+		Message:    lastAnswer,
 		Changes:    nil,
-		TokensUsed: res.TokensUsed,
-		Steps:      res.Steps,
+		TokensUsed: totalTokens,
+		Steps:      totalSteps,
 	})
+}
+
+// fanOut expands the base render context into one context per for_each item,
+// sequentially. Empty for_each yields a single context (change_file=nil, full
+// changed_files/attached_notes lists). for_each:attached_notes scopes the
+// attached_notes var to the current note (the var bag has no singular note slot,
+// so the current item is exposed as a one-element attached_notes list).
+func fanOut(mode string, base renderCtx) []renderCtx {
+	switch mode {
+	case "changed_files":
+		out := make([]renderCtx, 0, len(base.ChangedFiles))
+		for i := range base.ChangedFiles {
+			rc := base
+			rc.ChangeFile = &base.ChangedFiles[i]
+			out = append(out, rc)
+		}
+		return out
+	case "attached_notes":
+		out := make([]renderCtx, 0, len(base.AttachedNotes))
+		for i := range base.AttachedNotes {
+			rc := base
+			rc.AttachedNotes = base.AttachedNotes[i : i+1]
+			out = append(out, rc)
+		}
+		return out
+	default:
+		return []renderCtx{base}
+	}
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

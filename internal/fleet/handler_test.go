@@ -158,6 +158,79 @@ func TestServeDelivery_UnknownKey404(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, rec.Code)
 }
 
+// recordLLM finishes each run in one step and records the system prompt (which
+// embeds the rendered instruction) so tests can assert per-item rendering.
+type recordLLM struct{ systems []string }
+
+func (r *recordLLM) Chat(_ context.Context, _ string, msgs []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	if len(msgs) > 0 {
+		r.systems = append(r.systems, msgs[0].Content)
+	}
+	args, _ := json.Marshal(map[string]any{"answer": "ok"})
+	return agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "finish", Arguments: string(args)}},
+		PromptTokens: 3, CompletionTokens: 2,
+	}, nil
+}
+
+func fanOutFleet(t *testing.T, llm agentruntime.LLM, forEach, body string) *Fleet {
+	t.Helper()
+	role := Role{
+		NotePath: "roles/triage.md", Body: body, Mode: "change", ForEach: forEach,
+		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+	}
+	f := NewFleet(cfg, &ClientMock{}, llm)
+	f.SetRoles([]Role{role})
+	return f
+}
+
+func changesBody(t *testing.T) []byte {
+	t.Helper()
+	b, _ := json.Marshal(map[string]any{
+		"depth": 0, "api_token": "scoped-token",
+		"changes": []map[string]any{
+			{"path": "boards/sprint.md", "event": "update", "title": "Sprint", "content": "x"},
+			{"path": "boards/backlog.md", "event": "update", "title": "Backlog", "content": "y"},
+		},
+	})
+	return b
+}
+
+// TestServeDelivery_ForEachChangedFiles asserts a for_each:changed_files role
+// runs once per change, each with the instruction rendered for that change_file.
+func TestServeDelivery_ForEachChangedFiles(t *testing.T) {
+	llm := &recordLLM{}
+	f := fanOutFleet(t, llm, "changed_files", "Handle file {{ change_file.Path }}.")
+	rec := post(t, f, urlKey("roles/triage.md"), changesBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Len(t, llm.systems, 2)
+	require.Contains(t, llm.systems[0], "Handle file boards/sprint.md.")
+	require.Contains(t, llm.systems[1], "Handle file boards/backlog.md.")
+
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 10, resp.TokensUsed) // (3+2)*2 runs
+	require.Equal(t, 2, resp.Steps)       // 1 step per run
+}
+
+// TestServeDelivery_NoForEach_SingleRunAllChanges asserts the legacy mode runs
+// once with the full changed_files list in context.
+func TestServeDelivery_NoForEach_SingleRunAllChanges(t *testing.T) {
+	llm := &recordLLM{}
+	f := fanOutFleet(t, llm, "", "Files:{{ range changed_files }} {{ .Path }}{{ end }}.")
+	rec := post(t, f, urlKey("roles/triage.md"), changesBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Len(t, llm.systems, 1)
+	require.Contains(t, llm.systems[0], "Files: boards/sprint.md boards/backlog.md.")
+}
+
 func TestClampBudget(t *testing.T) {
 	require.Equal(t, 4000, clampBudget(4000, 100000)) // frontmatter wins under ceiling
 	require.Equal(t, 100, clampBudget(4000, 100))     // ceiling wins
