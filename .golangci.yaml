@@ -435,6 +435,12 @@ linters:
           - noctx
           - wrapcheck
           - nilnil
+      - path: 'internal/db/stmtcache\.go'
+        linters:
+          - sqlclosecheck  # StmtCache caches long-lived *sql.Stmt for reuse (closed on reprepare/evict), never by the caller
+      - path: 'internal/db/stmtcache_test\.go'
+        linters:
+          - sqlclosecheck  # tests eager-Close() rows between queries to assert cache state, rather than defer
       - path: 'endpoint\.go'
         linters:
           - errcheck

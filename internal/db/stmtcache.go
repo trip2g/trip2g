@@ -63,8 +63,8 @@ func (c *StmtCache) getStmt(ctx context.Context, query string) (*sql.Stmt, error
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// Re-check: another goroutine may have prepared it while we waited.
-	if stmt, ok := c.stmts[query]; ok {
-		return stmt, nil
+	if s, found := c.stmts[query]; found {
+		return s, nil
 	}
 	stmt, err := c.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -99,11 +99,11 @@ func (c *StmtCache) QueryContext(ctx context.Context, query string, args ...inte
 	}
 	rows, err := stmt.QueryContext(ctx, args...)
 	if isSchemaChangedErr(err) {
-		stmt, rerr := c.reprepare(ctx, query)
+		fresh, rerr := c.reprepare(ctx, query)
 		if rerr != nil {
 			return nil, rerr
 		}
-		return stmt.QueryContext(ctx, args...)
+		return fresh.QueryContext(ctx, args...)
 	}
 	return rows, err
 }
@@ -129,11 +129,11 @@ func (c *StmtCache) ExecContext(ctx context.Context, query string, args ...inter
 	}
 	res, err := stmt.ExecContext(ctx, args...)
 	if isSchemaChangedErr(err) {
-		stmt, rerr := c.reprepare(ctx, query)
+		fresh, rerr := c.reprepare(ctx, query)
 		if rerr != nil {
 			return nil, rerr
 		}
-		return stmt.ExecContext(ctx, args...)
+		return fresh.ExecContext(ctx, args...)
 	}
 	return res, err
 }
