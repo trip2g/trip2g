@@ -59,6 +59,11 @@ type Env interface {
 	Logger() logger.Logger
 	Now() time.Time
 
+	// IsDevMode reports whether this is a development instance. It drives
+	// jet.DevelopmentMode for layout templates: false (production) caches the
+	// compiled layout per reload, true re-parses every render for live reload.
+	IsDevMode() bool
+
 	// LoadFrontmatterPatches loads and compiles frontmatter patches from database
 	LoadFrontmatterPatches(ctx context.Context) ([]frontmatterpatch.CompiledPatch, error)
 

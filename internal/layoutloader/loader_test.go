@@ -19,11 +19,16 @@ import (
 )
 
 type testEnv struct {
-	logger logger.Logger
+	logger  logger.Logger
+	devMode bool
 }
 
 func (t *testEnv) Logger() logger.Logger {
 	return t.logger
+}
+
+func (t *testEnv) IsDevMode() bool {
+	return t.devMode
 }
 
 func TestResolveAssets(t *testing.T) {
