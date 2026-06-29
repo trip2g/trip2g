@@ -67,10 +67,10 @@ func (r *ReplicaReload) reloadIfChanged(ctx context.Context) (bool, error) {
 	// public read path only (search queries go through GraphQL, which the replica
 	// forwards to the leader), so rebuilding the index on every change is wasted
 	// work and the index-write IO churn can wedge the instance under heavy ingestion.
-	if _, err := r.env.PrepareLatestNotes(ctx, true); err != nil {
+	if _, err = r.env.PrepareLatestNotes(ctx, true); err != nil {
 		return false, err
 	}
-	if _, err := r.env.PrepareLiveNotes(ctx); err != nil {
+	if _, err = r.env.PrepareLiveNotes(ctx); err != nil {
 		return false, err
 	}
 	r.last = sig

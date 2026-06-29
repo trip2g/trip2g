@@ -123,6 +123,6 @@ func TestDevBypass_Success(t *testing.T) {
 	require.NotNil(t, payload.Viewer)
 	require.Equal(t, int64(7), *payload.Viewer.UserID)
 
-	require.Len(t, mock.VerifySignInCodeCalls(), 0, "VerifySignInCode must not be called in dev bypass")
-	require.Len(t, mock.DeleteSignInCodesByUserIDCalls(), 0, "DeleteSignInCodesByUserID must not be called in dev bypass")
+	require.Empty(t, mock.VerifySignInCodeCalls(), "VerifySignInCode must not be called in dev bypass")
+	require.Empty(t, mock.DeleteSignInCodesByUserIDCalls(), "DeleteSignInCodesByUserID must not be called in dev bypass")
 }
