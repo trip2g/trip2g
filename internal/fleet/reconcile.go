@@ -120,6 +120,7 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 		"transformJsonnet": "",
 		"concurrencyMode":  orDefault(role.Concurrency, "allow_overlap"),
 		"passApiKey":       true,
+		"includeContent":   true,
 		"maxDepth":         int64(role.MaxDepth),
 		"onCreate":         contains(role.TriggerOn, "create"),
 		"onUpdate":         contains(role.TriggerOn, "update"),

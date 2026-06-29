@@ -46,6 +46,31 @@ func TestReconcile_CreatesMissingWebhook(t *testing.T) {
 	require.True(t, strings.HasPrefix(created["url"].(string), "https://fleet.example/deliver/"))
 }
 
+// TestReconcile_RequestsNoteContent is a regression test for the content gap:
+// trip2g only populates changes[].content when the webhook has include_content
+// enabled (see matchChange in handlenotewebhooks). The fleet's Jet templates
+// reference change_file.Content, so the reconciler must request it.
+func TestReconcile_RequestsNoteContent(t *testing.T) {
+	var created map[string]any
+	client := &ClientMock{
+		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
+			switch {
+			case strings.Contains(q, "allChangeWebhooks"):
+				return json.RawMessage(`{"allChangeWebhooks":{"nodes":[]}}`), nil
+			case strings.Contains(q, "changeWebhookCreate"):
+				created = vars["input"].(map[string]any)
+				return json.RawMessage(`{"changeWebhookCreate":{"webhook":{"id":7},"secret":"s"}}`), nil
+			}
+			return nil, nil
+		},
+	}
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1}
+	require.NoError(t, newReconciler(client).Reconcile(context.Background(), []Role{role}))
+	require.NotNil(t, created)
+	require.Equal(t, true, created["includeContent"],
+		"reconciler must enable include_content so changes[].content is populated")
+}
+
 func TestReconcile_NoChangeWhenMarkerMatches(t *testing.T) {
 	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
 	desc := markerFor("f1", role)
