@@ -3257,14 +3257,18 @@ func (r *queryResolver) ResolveWikilinks(ctx context.Context, filter model.Resol
 		res := model.WikilinkResolution{Link: link}
 		if nvs != nil {
 			if target := nvs.ResolveWikilinkTarget(source, link); target != nil {
-				res.Path = &target.Path
-				var url string
-				if target.Slug != "" {
-					url = target.PermalinkOriginal
-				} else {
-					url = target.Permalink
+				// Enforce read_patterns: a scoped token must not learn the
+				// existence or path of notes outside its scope.
+				if wikilinkTargetAllowed(ctx, target.Path) {
+					res.Path = &target.Path
+					var url string
+					if target.Slug != "" {
+						url = target.PermalinkOriginal
+					} else {
+						url = target.Permalink
+					}
+					res.URL = &url
 				}
-				res.URL = &url
 			}
 		}
 		results[i] = res

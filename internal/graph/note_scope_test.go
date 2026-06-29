@@ -2,9 +2,10 @@ package graph
 
 // Tests for read_pattern scope enforcement helpers:
 //
-//   filterNotePathsByScope  — guards NotePaths resolver (ByValues/Like/AllVisible branches)
+//   filterNotePathsByScope   — guards NotePaths resolver (ByValues/Like/AllVisible branches)
 //   resolveFsPathFromPermalink — guards Note resolver fsPath lookup (scope uses filesystem
 //                                path, not permalink/URL)
+//   wikilinkTargetAllowed    — guards ResolveWikilinks resolver (G3 regression)
 //
 // F1 regression: notePaths ByValues/Like/AllVisible branches had ZERO read_pattern
 // enforcement. A scoped shortapitoken could list any filesystem path via those
@@ -13,6 +14,10 @@ package graph
 // F1 regression (Note resolver): the read-pattern check was matching against the
 // URL permalink instead of the filesystem path. The fix uses NoteView.Path (the
 // filesystem path) so that read & write patterns share one namespace.
+//
+// G3 regression: resolveWikilinks returned target.Path+URL with no read_patterns
+// check — leaks existence/paths of out-of-scope notes to a scoped token.
+// The fix calls wikilinkTargetAllowed before exposing any target fields.
 
 import (
 	"context"
@@ -187,3 +192,58 @@ func TestResolveFsPathFromPermalink_EmptyPermalink_ReturnsEmpty(t *testing.T) {
 	got := resolveFsPathFromPermalink(views, "")
 	require.Equal(t, "", got)
 }
+
+// -- wikilinkTargetAllowed (G3 regression) --
+
+// TestWikilinkTargetAllowed_ScopedToken_OutOfScope_Denied is the G3 regression
+// test. Before the fix, resolveWikilinks set res.Path/res.URL for any resolved
+// target regardless of the token's read_patterns — leaking out-of-scope note
+// existence/paths to a scoped agent. The fix gates each target on
+// wikilinkTargetAllowed before exposing Path or URL.
+func TestWikilinkTargetAllowed_ScopedToken_OutOfScope_Denied(t *testing.T) {
+	ctx := scopedCtx([]string{"boards/**"})
+	// "docs/guide.md" is outside the scoped token's read_patterns.
+	allowed := wikilinkTargetAllowed(ctx, "docs/guide.md")
+	require.False(t, allowed, "scoped token must not see targets outside read_patterns")
+}
+
+func TestWikilinkTargetAllowed_ScopedToken_InScope_Allowed(t *testing.T) {
+	ctx := scopedCtx([]string{"boards/**"})
+	allowed := wikilinkTargetAllowed(ctx, "boards/sprint.md")
+	require.True(t, allowed, "scoped token must see targets inside read_patterns")
+}
+
+func TestWikilinkTargetAllowed_ScopedToken_EmptyPatterns_DeniesAll(t *testing.T) {
+	// Scoped token with empty read_patterns is fail-closed: no targets allowed.
+	ctx := scopedCtx([]string{})
+	allowed := wikilinkTargetAllowed(ctx, "boards/sprint.md")
+	require.False(t, allowed, "scoped token with empty read_patterns must deny all targets (fail-closed)")
+}
+
+func TestWikilinkTargetAllowed_UnscopedToken_AlwaysAllowed(t *testing.T) {
+	// Admin / personal-token requests are not scoped — all targets pass through.
+	ctx := unscopedCtx()
+	allowed := wikilinkTargetAllowed(ctx, "private/secret.md")
+	require.True(t, allowed, "unscoped request must not filter any wikilink targets")
+}
+
+func TestWikilinkTargetAllowed_ScopedToken_MultiplePatterns(t *testing.T) {
+	ctx := scopedCtx([]string{"boards/**", "docs/**"})
+
+	cases := []struct {
+		path    string
+		allowed bool
+	}{
+		{"boards/sprint.md", true},
+		{"docs/guide.md", true},
+		{"private/secret.md", false},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.path, func(t *testing.T) {
+			got := wikilinkTargetAllowed(ctx, tc.path)
+			require.Equal(t, tc.allowed, got)
+		})
+	}
+}
+

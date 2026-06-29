@@ -84,6 +84,22 @@ func filterNotePathsByScope(ctx context.Context, paths []db.NotePath) []db.NoteP
 	return out
 }
 
+// wikilinkTargetAllowed reports whether a resolved wikilink target at
+// targetPath may be returned to the caller under the current request's scope.
+// When the request is not scoped (admin/personal-token/api-key) the target is
+// always allowed. Scoped requests require the target's filesystem path to match
+// at least one read_pattern; an empty pattern list is fail-closed (denies all).
+func wikilinkTargetAllowed(ctx context.Context, targetPath string) bool {
+	if !appreq.Scoped(ctx) {
+		return true
+	}
+	rp := appreq.WebhookReadPatterns(ctx)
+	if len(rp) == 0 {
+		return false // fail-closed
+	}
+	return webhookutil.MatchesAny(targetPath, rp)
+}
+
 // resolveFsPathFromPermalink looks up the filesystem path of a note given its
 // permalink (URL path). Returns "" when the view is not found.
 //
