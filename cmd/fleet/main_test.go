@@ -11,7 +11,8 @@ import (
 func validConfig() fleet.Config {
 	return fleet.Config{
 		CallbackURL:  "https://fleet.example.com",
-		AdminAPIKey:  "admin-key",
+		JWTSecret:    "jwt-secret",
+		AdminEmail:   "fleet@local",
 		FleetSecret:  "secret",
 		LLMAPIKey:    "llm-key",
 		FleetID:      "fleet1",
@@ -37,9 +38,9 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 			wantErr: "CallbackURL",
 		},
 		{
-			name:    "missing_admin_api_key",
-			mutate:  func(c *fleet.Config) { c.AdminAPIKey = "" },
-			wantErr: "AdminAPIKey",
+			name:    "missing_jwt_secret",
+			mutate:  func(c *fleet.Config) { c.JWTSecret = "" },
+			wantErr: "JWTSecret",
 		},
 		{
 			name:    "missing_fleet_secret",

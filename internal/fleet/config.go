@@ -15,7 +15,9 @@ type Config struct {
 	ListenAddr    string        // ":9090"
 	CallbackURL   string        // trip2g-reachable base; webhook url = CallbackURL + "/deliver/" + urlKey(path)
 	Trip2gBaseURL string        // e.g. "http://localhost:20081"
-	AdminAPIKey   string        // X-API-Key, EnableMcpAdminTools=true — FULL ADMIN
+	AdminAPIKey   string        // DEPRECATED/unused: legacy full-admin X-Api-Key (admin lane now authenticates via HAT)
+	JWTSecret     string        // shared user-token/JWT secret used to mint admin HATs (= trip2g UserToken.Secret)
+	AdminEmail    string        // admin identity the fleet self-provisions via HAT (default "fleet@local")
 	FleetSecret   string        // per-role HMAC secret seed
 	LLMBaseURL    string        // OpenAI-compatible base URL (fleet-local, NOT a trip2g secret)
 	LLMAPIKey     string        // fleet-local LLM credential

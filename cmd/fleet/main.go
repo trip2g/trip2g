@@ -103,8 +103,8 @@ func validateConfig(cfg fleet.Config) error {
 	if cfg.CallbackURL == "" {
 		missing = append(missing, "CallbackURL (--callback-url / FLEET_CALLBACK_URL)")
 	}
-	if cfg.AdminAPIKey == "" {
-		missing = append(missing, "AdminAPIKey (--admin-api-key / FLEET_ADMIN_API_KEY)")
+	if cfg.JWTSecret == "" {
+		missing = append(missing, "JWTSecret (--jwt-secret / FLEET_JWT_SECRET)")
 	}
 	if cfg.FleetSecret == "" {
 		missing = append(missing, "FleetSecret (--fleet-secret / FLEET_SECRET)")
@@ -145,7 +145,9 @@ func parseFlags() (fleet.Config, []string) {
 	flag.StringVar(&cfg.ListenAddr, "listen", env("FLEET_LISTEN", ":9090"), "HTTP listen address")
 	flag.StringVar(&cfg.CallbackURL, "callback-url", env("FLEET_CALLBACK_URL", ""), "trip2g-reachable base URL of this fleet")
 	flag.StringVar(&cfg.Trip2gBaseURL, "trip2g-url", env("TRIP2G_BASE_URL", "http://localhost:8081"), "trip2g base URL")
-	flag.StringVar(&cfg.AdminAPIKey, "admin-api-key", env("FLEET_ADMIN_API_KEY", ""), "full-admin X-Api-Key")
+	flag.StringVar(&cfg.AdminAPIKey, "admin-api-key", env("FLEET_ADMIN_API_KEY", ""), "DEPRECATED/unused: legacy full-admin X-Api-Key")
+	flag.StringVar(&cfg.JWTSecret, "jwt-secret", env("FLEET_JWT_SECRET", ""), "shared user-token/JWT secret for minting admin HATs")
+	flag.StringVar(&cfg.AdminEmail, "admin-email", env("FLEET_ADMIN_EMAIL", "fleet@local"), "admin email the fleet self-provisions via HAT")
 	flag.StringVar(&cfg.FleetSecret, "fleet-secret", env("FLEET_SECRET", ""), "HMAC seed for per-role secrets")
 	flag.StringVar(&cfg.LLMBaseURL, "llm-base-url", env("FLEET_LLM_BASE_URL", ""), "OpenAI-compatible base URL")
 	flag.StringVar(&cfg.LLMAPIKey, "llm-api-key", env("FLEET_LLM_API_KEY", ""), "LLM API key")
