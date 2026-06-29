@@ -52,7 +52,8 @@ func run() error {
 	// --dry-run: connect, print + flag each role's resolved config, then exit
 	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
 	if dryRun {
-		return runDryRun(ctx, discovery, cfg)
+		runDryRun(ctx, discovery, cfg)
+		return nil
 	}
 
 	reconciler := fleet.NewReconciler(adminGQL, cfg)
@@ -177,13 +178,12 @@ func parseFlags() (fleet.Config, bool) {
 // runDryRun discovers (parses) every role over the admin lane, prints each
 // role's resolved config with a flag on any that fail Validate, and returns
 // without touching webhooks. It is the fleet's pre-flight doctor.
-func runDryRun(ctx context.Context, d *fleet.Discovery, cfg fleet.Config) error {
+func runDryRun(ctx context.Context, d *fleet.Discovery, cfg fleet.Config) {
 	roles, errs := d.DiscoverParsed(ctx)
 	for _, e := range errs {
 		log.Printf("dry-run parse error: %v", e)
 	}
-	fmt.Print(reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
-	return nil
+	fmt.Fprint(os.Stdout, reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
 }
 
 // reportRoles renders a human-readable resolved-config report for each role,

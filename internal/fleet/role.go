@@ -106,7 +106,11 @@ func (r Role) Validate(offered []string) error {
 	// changed file renders against nil, so every delivery fails. Note
 	// "changed_files" (plural) does not contain the "change_file" substring.
 	if strings.Contains(r.Body, "change_file") && r.ForEach != "changed_files" {
-		return fmt.Errorf("role %s: body references change_file but for_each is not changed_files (renders against nil); set for_each: changed_files", r.NotePath)
+		return fmt.Errorf(
+			"role %s: body references change_file but for_each is not changed_files "+
+				"(renders against nil); set for_each: changed_files",
+			r.NotePath,
+		)
 	}
 	switch r.Concurrency {
 	case "", "allow_overlap", "skip", "queue_one":

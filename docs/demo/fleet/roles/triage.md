@@ -4,6 +4,7 @@ tools: [search, patch_note]
 read_patterns: ["boards/**"]
 write_patterns: ["boards/sprint.md"]
 mode: change
+trigger_on: [create, update]
 trigger_include: ["boards/sprint.md"]
 attach_notes: ["boards/sprint.md"]
 max_depth: 1

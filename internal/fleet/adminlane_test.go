@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -83,7 +84,7 @@ func TestAdminGQL_ReauthOn401(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_system/hat", func(w http.ResponseWriter, _ *http.Request) {
 		n := atomic.AddInt32(&hatCalls, 1)
-		http.SetCookie(w, &http.Cookie{Name: "trip2g_token", Value: "sess" + string(rune('0'+n)), Path: "/"})
+		http.SetCookie(w, &http.Cookie{Name: "trip2g_token", Value: "sess" + strconv.Itoa(int(n)), Path: "/"})
 		w.WriteHeader(http.StatusFound)
 	})
 	mux.HandleFunc("/_system/graphql", func(w http.ResponseWriter, r *http.Request) {
