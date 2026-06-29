@@ -2808,26 +2808,10 @@ func (r *notePathResolver) LatestNoteView(ctx context.Context, obj *db.NotePath)
 
 // Content is the resolver for the content field.
 func (r *notePathResolver) Content(ctx context.Context, obj *db.NotePath) (string, error) {
-	// TODO: optimize - add PathMap to Layouts for O(1) lookup
-	layouts := r.env(ctx).Layouts()
-	for _, layout := range layouts.Map {
-		if layout.Path == obj.Value {
-			// Return original content for sync (JSON for .html.json, HTML for .html)
-			return layout.OriginalContent, nil
-		}
-	}
-
-	nvs := r.env(ctx).LatestNoteViews()
-	nv := nvs.PathMap[obj.Value]
-
-	if nv != nil {
-		return string(nv.Content), nil
-	}
-
-	// if the client push html files outside of _layouts folder,
-	// we may not have content for them
-	// TODO: fix this
-	return "", nil // errors.New("note content not found")
+	env := r.env(ctx)
+	return resolveNotePathContent(obj, env.Layouts(), env.LatestNoteViews(), func() (string, bool, error) {
+		return latestNoteVersionContent(ctx, env, obj.Value)
+	})
 }
 
 // AssetReplaces is the resolver for the assetReplaces field.
