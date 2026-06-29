@@ -193,6 +193,11 @@ func (a *app) Insecure() bool {
 
 var ErrFailedGeneration = errors.New("failed to generate code")
 
+// DevSignInCode is the fixed sign-in code used in dev mode (DevMode=true).
+// Defined as a package-level const so the sign-in bypass path can reference
+// it without duplicating the literal.
+const DevSignInCode = "111111"
+
 func generateSixDigitCode() (int64, error) {
 	for range 100 {
 		var b [4]byte
@@ -222,11 +227,10 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 		return "", err
 	}
 
-	if a.config.DevMode {
-		code = 111111
-	}
-
 	sCode := strconv.Itoa(int(code))
+	if a.config.DevMode {
+		sCode = DevSignInCode
+	}
 
 	err = appreq.CtxEnv(ctx, a).InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
@@ -237,6 +241,13 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 	}
 
 	return sCode, nil
+}
+
+// DevSignInBypass reports whether a sign-in code should be accepted without the
+// sign_in_codes row dance. True only in dev mode for the fixed dev code, so the
+// parallel-sign-in delete-all race can't occur in tests. Zero prod effect.
+func (a *app) DevSignInBypass(code string) bool {
+	return a.config.DevMode && code == DevSignInCode
 }
 
 func (a *app) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {
