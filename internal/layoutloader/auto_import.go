@@ -54,8 +54,10 @@ func injectAfterLeadingImports(content, preamble string) string {
 // IMPORTANT: callers must already hold jl.mu — this function reads jl.templates.
 func (jl *jetLoader) buildAutoImportPreamble(pageSourceID string) string {
 	// Use a separate jet.Set to parse the page and component templates without
-	// polluting the page's real Set.
-	tmpViews := jet.NewSet(jl, jet.DevelopmentMode(true))
+	// polluting the page's real Set. This runs on every reload (not per render),
+	// but follows jl.devMode for consistency: with caching on, the repeated
+	// GetTemplate calls in buildBlockRegistry/resolveNeededFiles reuse parses.
+	tmpViews := jet.NewSet(jl, jet.DevelopmentMode(jl.devMode))
 	// `arg_type` and `yield_blocks` are referenced inside component bodies; provide
 	// no-op implementations so that GetTemplate parses successfully.
 	tmpViews.AddGlobalFunc("arg_type", func(a jet.Arguments) reflect.Value {

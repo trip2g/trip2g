@@ -30,6 +30,11 @@ type jetLoader struct {
 	sourceIDs []string
 	log       logger.Logger
 
+	// devMode controls jet.DevelopmentMode for every Set this loader builds.
+	// false (production) caches the parsed template within the Set's lifetime;
+	// true (dev) re-reads + re-parses on every render for live layout reload.
+	devMode bool
+
 	layouts model.Layouts
 
 	pendingWarnings map[string][]model.NoteWarning
@@ -57,6 +62,13 @@ func (jl *jetLoader) Open(templatePath string) (io.ReadCloser, error) {
 
 type Options struct {
 	BasePath string
+
+	// DevMode toggles jet.DevelopmentMode. Production must be false so each
+	// layout's compiled template is cached (parsed once per reload) instead of
+	// re-read + re-parsed on every render. Set true only for dev instances that
+	// want live layout reload. Layout edits still propagate when false because
+	// Load rebuilds the jet.Set fresh from the current sourceFiles each reload.
+	DevMode bool
 }
 
 func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*model.Layouts, error) {
@@ -65,6 +77,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 	jl := &jetLoader{
 		templates:            make(map[string]string),
 		log:                  log,
+		devMode:              options.DevMode,
 		pendingWarnings:      make(map[string][]model.NoteWarning),
 		sets:                 make(map[string]*jet.Set),
 		yieldBlocksSlices:    make(map[string]*[]string),
@@ -154,6 +167,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 				templates:            snap,
 				sourceIDs:            sourceIDs,
 				log:                  jl.log,
+				devMode:              jl.devMode,
 				layouts:              model.Layouts{Map: make(map[string]model.Layout)},
 				pendingWarnings:      make(map[string][]model.NoteWarning),
 				sets:                 make(map[string]*jet.Set),
@@ -413,7 +427,7 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string)
 	// WithSafeWriter(nil) disables HTML auto-escaping. Layouts contain trusted,
 	// pre-rendered content (not user input), so escaping breaks presigned URLs
 	// in CSS url() — & becomes &amp;, which corrupts AWS signature params.
-	views := jet.NewSet(jl, jet.DevelopmentMode(true), jet.WithSafeWriter(nil))
+	views := jet.NewSet(jl, jet.DevelopmentMode(jl.devMode), jet.WithSafeWriter(nil))
 
 	sourceDir := filepath.Dir(source.Path)
 
