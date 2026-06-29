@@ -9,6 +9,7 @@ title: "Навигация"
 - [[ru/thoughts/dogfooding|Dogfooding]]
 
 **Архитектура**
+- [[ru/thoughts/markdown-operating-system|Markdown как операционная система]]
 - [[ru/thoughts/declarativity|Декларативность]]
 - [[ru/thoughts/contentless-cms|Contentless CMS]]
 - [[ru/thoughts/admin-panel|Админка как универсальный конфиг]]
