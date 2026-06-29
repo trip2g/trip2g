@@ -1024,9 +1024,13 @@ where status in ('running', 'pending')
 
 -- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
+set status = sqlc.arg(status),
+    response_status = sqlc.narg(response_status),
+    duration_ms = sqlc.narg(duration_ms),
+    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
+    steps = coalesce(sqlc.narg(steps), steps),
     completed_at = datetime('now')
-where id = ?;
+where id = sqlc.arg(id);
 
 -- ============================================
 -- Cron Webhooks
@@ -1121,9 +1125,13 @@ where status in ('running', 'pending')
 
 -- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
+set status = sqlc.arg(status),
+    response_status = sqlc.narg(response_status),
+    duration_ms = sqlc.narg(duration_ms),
+    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
+    steps = coalesce(sqlc.narg(steps), steps),
     completed_at = datetime('now')
-where id = ?;
+where id = sqlc.arg(id);
 
 -- ============================================
 -- Webhook Delivery Logs

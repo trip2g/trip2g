@@ -3643,9 +3643,13 @@ func (q *WriteQueries) UpdateCronWebhook(ctx context.Context, arg UpdateCronWebh
 
 const updateCronWebhookDeliveryResult = `-- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
+set status = ?1,
+    response_status = ?2,
+    duration_ms = ?3,
+    tokens_used = coalesce(?4, tokens_used),
+    steps = coalesce(?5, steps),
     completed_at = datetime('now')
-where id = ?
+where id = ?6
 `
 
 type UpdateCronWebhookDeliveryResultParams struct {
@@ -4409,9 +4413,13 @@ func (q *WriteQueries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParam
 
 const updateWebhookDeliveryResult = `-- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?, tokens_used = ?, steps = ?,
+set status = ?1,
+    response_status = ?2,
+    duration_ms = ?3,
+    tokens_used = coalesce(?4, tokens_used),
+    steps = coalesce(?5, steps),
     completed_at = datetime('now')
-where id = ?
+where id = ?6
 `
 
 type UpdateWebhookDeliveryResultParams struct {
