@@ -53,6 +53,9 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
 //				panic("mock out the InsertPurchase method")
 //			},
+//			MaxActiveSignInCodesFunc: func() int64 {
+//				panic("mock out the MaxActiveSignInCodes method")
+//			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
@@ -113,6 +116,9 @@ type EnvMock struct {
 
 	// InsertPurchaseFunc mocks the InsertPurchase method.
 	InsertPurchaseFunc func(ctx context.Context, arg db.InsertPurchaseParams) error
+
+	// MaxActiveSignInCodesFunc mocks the MaxActiveSignInCodes method.
+	MaxActiveSignInCodesFunc func() int64
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -200,6 +206,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertPurchaseParams
 		}
+		// MaxActiveSignInCodes holds details about calls to the MaxActiveSignInCodes method.
+		MaxActiveSignInCodes []struct {
+		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -261,6 +270,7 @@ type EnvMock struct {
 	lockGeneratePurchaseID             sync.RWMutex
 	lockIncrementAndCheckSigninCounter sync.RWMutex
 	lockInsertPurchase                 sync.RWMutex
+	lockMaxActiveSignInCodes           sync.RWMutex
 	lockPublicURL                      sync.RWMutex
 	lockStorePurchaseToken             sync.RWMutex
 	lockTryToAutoRegisterUser          sync.RWMutex
@@ -606,6 +616,33 @@ func (mock *EnvMock) InsertPurchaseCalls() []struct {
 	mock.lockInsertPurchase.RLock()
 	calls = mock.calls.InsertPurchase
 	mock.lockInsertPurchase.RUnlock()
+	return calls
+}
+
+// MaxActiveSignInCodes calls MaxActiveSignInCodesFunc.
+func (mock *EnvMock) MaxActiveSignInCodes() int64 {
+	if mock.MaxActiveSignInCodesFunc == nil {
+		panic("EnvMock.MaxActiveSignInCodesFunc: method is nil but Env.MaxActiveSignInCodes was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockMaxActiveSignInCodes.Lock()
+	mock.calls.MaxActiveSignInCodes = append(mock.calls.MaxActiveSignInCodes, callInfo)
+	mock.lockMaxActiveSignInCodes.Unlock()
+	return mock.MaxActiveSignInCodesFunc()
+}
+
+// MaxActiveSignInCodesCalls gets all the calls that were made to MaxActiveSignInCodes.
+// Check the length with:
+//
+//	len(mockedEnv.MaxActiveSignInCodesCalls())
+func (mock *EnvMock) MaxActiveSignInCodesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockMaxActiveSignInCodes.RLock()
+	calls = mock.calls.MaxActiveSignInCodes
+	mock.lockMaxActiveSignInCodes.RUnlock()
 	return calls
 }
 

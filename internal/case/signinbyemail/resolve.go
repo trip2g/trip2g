@@ -21,6 +21,8 @@ type Env interface {
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
 	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
+	DevSignInBypass(code string) bool
+	UserByEmail(ctx context.Context, email string) (db.User, error)
 }
 
 func normalizeRequest(r *gmodel.SignInByEmailInput) {
@@ -40,6 +42,24 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 	errorPayload := validateRequest(&req)
 	if errorPayload != nil {
 		return errorPayload, nil
+	}
+
+	if env.DevSignInBypass(req.Code) {
+		user, err := env.UserByEmail(ctx, req.Email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return gmodel.NewFieldError("code", "Code is invalid or expired"), nil
+			}
+			return nil, fmt.Errorf("failed to resolve user by email: %w", err)
+		}
+		token, err := env.SetupUserToken(ctx, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build user token data: %w", err)
+		}
+		return &gmodel.SignInPayload{
+			Token:  token,
+			Viewer: &model.Viewer{UserID: &user.ID},
+		}, nil
 	}
 
 	codeParams := db.VerifySignInCodeParams{

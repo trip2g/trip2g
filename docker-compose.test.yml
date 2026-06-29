@@ -11,6 +11,13 @@ services:
       MINIO_ROOT_USER: testuser
       MINIO_ROOT_PASSWORD: testpassword
     command: server /data --console-address ":29001" --address ":29000"
+    # /data is ephemeral. The minio image declares VOLUME /data, so an anonymous
+    # volume is created and SURVIVES `docker compose rm -v` (which does not remove
+    # image-declared anon volumes). A stale backup left there gets restored over a
+    # freshly-seeded DB and breaks the onboarding/no-notes test. tmpfs gives every
+    # container (re)create a clean /data — no stale backups, no manual volume drop.
+    tmpfs:
+      - /data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:29000/minio/health/live"]
       interval: 5s
@@ -71,7 +78,8 @@ services:
       - LISTEN_ADDR=0.0.0.0:20081
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
-      - DEV=true # sign in code 000000
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -145,6 +153,7 @@ services:
       - DB_FILE=/data/test.sqlite3 # SAME file as the leader
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -200,6 +209,7 @@ services:
       - DB_FILE=/data/test.sqlite3 # SAME file as the leader
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -253,6 +263,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20092
       - DB_FILE=/data/peer.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -314,6 +325,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20094
       - DB_FILE=/data/peer2.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -375,6 +387,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20096
       - DB_FILE=/data/peer3.sqlite3
       - DEV=true
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms

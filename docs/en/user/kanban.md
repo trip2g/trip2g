@@ -10,6 +10,8 @@ This is a separate, optional template, not part of trip2g core. The source is at
 
 ![[kanban-board.png]]
 
+[[en/user/kanban-demo|▶ Open the live demo board]] — read-only for visitors, fully editable for the site owner.
+
 ## Install
 
 Run these two commands in your vault root:

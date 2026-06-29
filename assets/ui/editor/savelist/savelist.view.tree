@@ -8,7 +8,7 @@ $trip2g_editor_savelist $mol_page
 			Empty <= Empty $mol_view
 				sub / <= empty_text @ \No changes
 			rows <= file_rows /$mol_view
-	foot /
+	tools /
 		<= SubmitButton $mol_button_major
 			click? <=> submit? null
 			sub /

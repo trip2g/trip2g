@@ -19,6 +19,7 @@ type Env interface {
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
 	CreateSignInCode(ctx context.Context, userID int64) (string, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
+	MaxActiveSignInCodes() int64
 
 	// patreon, boosty, etc
 	TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error)
@@ -101,7 +102,7 @@ func Resolve(ctx context.Context, env Env, input Input, remoteIP string) (model.
 		return nil, fmt.Errorf("failed to count active signin codes: %w", err)
 	}
 
-	if count > 3 {
+	if count > env.MaxActiveSignInCodes() {
 		return &model.ErrorPayload{Message: "too_many_sign_in_codes"}, nil
 	}
 

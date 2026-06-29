@@ -6949,6 +6949,24 @@ func (q *Queries) NoteVersionHistoryByPath(ctx context.Context, arg NoteVersionH
 	return items, nil
 }
 
+const notesReloadSignal = `-- name: NotesReloadSignal :one
+select
+  cast(coalesce((select max(id) from note_versions), 0) as integer) as version_gen,
+  cast((select count(*) from note_paths where hidden_by is not null) as integer) as hidden_count
+`
+
+type NotesReloadSignalRow struct {
+	VersionGen  int64 `json:"version_gen"`
+	HiddenCount int64 `json:"hidden_count"`
+}
+
+func (q *Queries) NotesReloadSignal(ctx context.Context) (NotesReloadSignalRow, error) {
+	row := q.db.QueryRowContext(ctx, notesReloadSignal)
+	var i NotesReloadSignalRow
+	err := row.Scan(&i.VersionGen, &i.HiddenCount)
+	return i, err
+}
+
 const notionIntegration = `-- name: NotionIntegration :one
 select id, created_at, created_by, enabled, secret_token, verification_token, base_path
   from notion_integrations
