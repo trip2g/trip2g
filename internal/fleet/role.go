@@ -94,6 +94,20 @@ func (r Role) Validate(offered []string) error {
 	default:
 		return fmt.Errorf("role %s: mode must be change|cron|both, got %q", r.NotePath, r.Mode)
 	}
+	// Change-mode trigger sanity (only mode change reaches here): a webhook that
+	// fires on no events or matches no paths silently never runs.
+	if len(r.TriggerOn) == 0 {
+		return fmt.Errorf("role %s: trigger_on is empty (webhook would fire on no events); set trigger_on to some of create|update|remove", r.NotePath)
+	}
+	if len(r.TriggerInclude) == 0 {
+		return fmt.Errorf("role %s: trigger_include is empty (webhook would match no paths); set trigger_include patterns", r.NotePath)
+	}
+	// change_file footgun: a body referencing change_file but not fanned out per
+	// changed file renders against nil, so every delivery fails. Note
+	// "changed_files" (plural) does not contain the "change_file" substring.
+	if strings.Contains(r.Body, "change_file") && r.ForEach != "changed_files" {
+		return fmt.Errorf("role %s: body references change_file but for_each is not changed_files (renders against nil); set for_each: changed_files", r.NotePath)
+	}
 	switch r.Concurrency {
 	case "", "allow_overlap", "skip", "queue_one":
 	default:

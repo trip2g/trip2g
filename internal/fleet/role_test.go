@@ -108,17 +108,22 @@ func TestParseRole_ForEach(t *testing.T) {
 }
 
 func TestRoleValidate_ForEachEnum(t *testing.T) {
-	require.NoError(t, Role{Mode: "change", ForEach: ""}.Validate(nil))
-	require.NoError(t, Role{Mode: "change", ForEach: "changed_files"}.Validate(nil))
-	require.NoError(t, Role{Mode: "change", ForEach: "attached_notes"}.Validate(nil))
+	for _, fe := range []string{"", "changed_files", "attached_notes"} {
+		r := validChangeRole()
+		r.ForEach = fe
+		require.NoError(t, r.Validate(nil))
+	}
 
-	err := Role{Mode: "change", ForEach: "bogus"}.Validate(nil)
+	bad := validChangeRole()
+	bad.ForEach = "bogus"
+	err := bad.Validate(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "for_each")
 }
 
 func TestRoleValidate_ToolsSubset(t *testing.T) {
-	r := Role{Mode: "change", Tools: []string{"search", "patch_note"}}
+	r := validChangeRole()
+	r.Tools = []string{"search", "patch_note"}
 	require.NoError(t, r.Validate([]string{"search", "read_note", "patch_note", "write_note"}))
 
 	r.Tools = []string{"search", "shell"}
@@ -134,8 +139,13 @@ func TestRoleValidate_RequiresMode(t *testing.T) {
 }
 
 func TestRoleValidate_DefaultConcurrencyAllowed(t *testing.T) {
-	require.NoError(t, Role{Mode: "change", Concurrency: ""}.Validate(nil))
-	require.Error(t, Role{Mode: "change", Concurrency: "bogus"}.Validate(nil))
+	ok := validChangeRole()
+	ok.Concurrency = ""
+	require.NoError(t, ok.Validate(nil))
+
+	bad := validChangeRole()
+	bad.Concurrency = "bogus"
+	require.Error(t, bad.Validate(nil))
 }
 
 // TestRoleValidate_CronModeRejected is a regression test for F6: cron-mode
@@ -152,7 +162,9 @@ func TestRoleValidate_CronModeRejected(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run("mode="+tc.mode, func(t *testing.T) {
-			err := Role{Mode: tc.mode}.Validate(nil)
+			r := validChangeRole()
+			r.Mode = tc.mode
+			err := r.Validate(nil)
 			if tc.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "not yet supported")
@@ -161,4 +173,45 @@ func TestRoleValidate_CronModeRejected(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRoleValidate_RejectsEmptyTriggerOn: a change-mode role with no trigger_on
+// registers a webhook that fires on no events (the silent-misconfig footgun).
+func TestRoleValidate_RejectsEmptyTriggerOn(t *testing.T) {
+	r := validChangeRole()
+	r.TriggerOn = nil
+	err := r.Validate(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "trigger_on")
+}
+
+// TestRoleValidate_RejectsEmptyTriggerInclude: an empty trigger_include matches
+// no paths, so the webhook never fires.
+func TestRoleValidate_RejectsEmptyTriggerInclude(t *testing.T) {
+	r := validChangeRole()
+	r.TriggerInclude = nil
+	err := r.Validate(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "trigger_include")
+}
+
+// TestRoleValidate_RejectsChangeFileWithoutForEach: a body that references
+// change_file but isn't fanned out per changed file renders against nil and
+// every delivery fails — the documented footgun. for_each:changed_files fixes it.
+func TestRoleValidate_RejectsChangeFileWithoutForEach(t *testing.T) {
+	r := validChangeRole()
+	r.Body = "Handle {{ change_file.Path }}."
+	r.ForEach = "" // not changed_files
+	err := r.Validate(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "change_file")
+
+	// Correct usage (for_each:changed_files) passes.
+	r.ForEach = "changed_files"
+	require.NoError(t, r.Validate(nil))
+
+	// Bodies that only mention changed_files (plural) are not flagged.
+	ok := validChangeRole()
+	ok.Body = "Files:{{ range changed_files }} {{ .Path }}{{ end }}."
+	require.NoError(t, ok.Validate(nil))
 }
