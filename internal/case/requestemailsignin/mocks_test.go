@@ -31,6 +31,9 @@ var _ Env = &EnvMock{}
 //			IncrementAndCheckSigninCounterFunc: func() bool {
 //				panic("mock out the IncrementAndCheckSigninCounter method")
 //			},
+//			MaxActiveSignInCodesFunc: func() int64 {
+//				panic("mock out the MaxActiveSignInCodes method")
+//			},
 //			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
 //				panic("mock out the TryToAutoRegisterUser method")
 //			},
@@ -64,6 +67,9 @@ type EnvMock struct {
 
 	// IncrementAndCheckSigninCounterFunc mocks the IncrementAndCheckSigninCounter method.
 	IncrementAndCheckSigninCounterFunc func() bool
+
+	// MaxActiveSignInCodesFunc mocks the MaxActiveSignInCodes method.
+	MaxActiveSignInCodesFunc func() int64
 
 	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
 	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
@@ -108,6 +114,9 @@ type EnvMock struct {
 		// IncrementAndCheckSigninCounter holds details about calls to the IncrementAndCheckSigninCounter method.
 		IncrementAndCheckSigninCounter []struct {
 		}
+		// MaxActiveSignInCodes holds details about calls to the MaxActiveSignInCodes method.
+		MaxActiveSignInCodes []struct {
+		}
 		// TryToAutoRegisterUser holds details about calls to the TryToAutoRegisterUser method.
 		TryToAutoRegisterUser []struct {
 			// Ctx is the ctx argument value.
@@ -146,6 +155,7 @@ type EnvMock struct {
 	lockCreateSignInCode               sync.RWMutex
 	lockEnqueueRequestSignInEmail      sync.RWMutex
 	lockIncrementAndCheckSigninCounter sync.RWMutex
+	lockMaxActiveSignInCodes           sync.RWMutex
 	lockTryToAutoRegisterUser          sync.RWMutex
 	lockTurnstileSiteKey               sync.RWMutex
 	lockUserBanByUserID                sync.RWMutex
@@ -289,6 +299,33 @@ func (mock *EnvMock) IncrementAndCheckSigninCounterCalls() []struct {
 	mock.lockIncrementAndCheckSigninCounter.RLock()
 	calls = mock.calls.IncrementAndCheckSigninCounter
 	mock.lockIncrementAndCheckSigninCounter.RUnlock()
+	return calls
+}
+
+// MaxActiveSignInCodes calls MaxActiveSignInCodesFunc.
+func (mock *EnvMock) MaxActiveSignInCodes() int64 {
+	if mock.MaxActiveSignInCodesFunc == nil {
+		panic("EnvMock.MaxActiveSignInCodesFunc: method is nil but Env.MaxActiveSignInCodes was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockMaxActiveSignInCodes.Lock()
+	mock.calls.MaxActiveSignInCodes = append(mock.calls.MaxActiveSignInCodes, callInfo)
+	mock.lockMaxActiveSignInCodes.Unlock()
+	return mock.MaxActiveSignInCodesFunc()
+}
+
+// MaxActiveSignInCodesCalls gets all the calls that were made to MaxActiveSignInCodes.
+// Check the length with:
+//
+//	len(mockedEnv.MaxActiveSignInCodesCalls())
+func (mock *EnvMock) MaxActiveSignInCodesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockMaxActiveSignInCodes.RLock()
+	calls = mock.calls.MaxActiveSignInCodes
+	mock.lockMaxActiveSignInCodes.RUnlock()
 	return calls
 }
 

@@ -57,9 +57,10 @@ type Config struct {
 	LogQueries bool
 
 	// Application settings
-	DevMode    bool
-	AdminJSURL string
-	LogLevel   string
+	DevMode              bool
+	AdminJSURL           string
+	LogLevel             string
+	MaxActiveSignInCodes int
 
 	ShutdownGracePeriod     time.Duration
 	ShutdownTimeout         time.Duration
@@ -191,11 +192,12 @@ type CronJobsConfig struct {
 
 // Default values for configuration.
 const (
-	DefaultListenAddr   = ":8081"
-	DefaultDatabaseFile = "data.sqlite3"
-	DefaultAdminJSURL   = "/assets/ui/admin/-/web.js"
-	DefaultLogLevel     = "info"
-	DefaultDevMode      = false
+	DefaultListenAddr           = ":8081"
+	DefaultDatabaseFile         = "data.sqlite3"
+	DefaultAdminJSURL           = "/assets/ui/admin/-/web.js"
+	DefaultLogLevel             = "info"
+	DefaultDevMode              = false
+	DefaultMaxActiveSignInCodes = 3
 
 	// Storage backend selection.
 	StorageBackendMinIO    = "minio"
@@ -231,18 +233,19 @@ func DefaultStorageConfig() miniostorage.Config {
 // DefaultConfig returns a configuration with default values.
 func DefaultConfig() *Config {
 	return &Config{
-		ListenAddr:      DefaultListenAddr,
-		DatabaseFile:    DefaultDatabaseFile,
-		DevMode:         DefaultDevMode,
-		AdminJSURL:      DefaultAdminJSURL,
-		LogLevel:        DefaultLogLevel,
-		AcmeDomains:     ArrayFlags{},
-		StorageBackend:  DefaultStorageBackend,
-		StorageLocalDir: DefaultStorageLocalDir,
-		Storage:         DefaultStorageConfig(),
-		Metrics:         DefaultMetricsConfig(),
-		RenderPreview:   renderpreview.DefaultConfig(),
-		APIKeyLogs:      cleanupapikeylogs.DefaultConfig(),
+		ListenAddr:           DefaultListenAddr,
+		DatabaseFile:         DefaultDatabaseFile,
+		DevMode:              DefaultDevMode,
+		AdminJSURL:           DefaultAdminJSURL,
+		LogLevel:             DefaultLogLevel,
+		MaxActiveSignInCodes: DefaultMaxActiveSignInCodes,
+		AcmeDomains:          ArrayFlags{},
+		StorageBackend:       DefaultStorageBackend,
+		StorageLocalDir:      DefaultStorageLocalDir,
+		Storage:              DefaultStorageConfig(),
+		Metrics:              DefaultMetricsConfig(),
+		RenderPreview:        renderpreview.DefaultConfig(),
+		APIKeyLogs:           cleanupapikeylogs.DefaultConfig(),
 	}
 }
 
@@ -539,6 +542,9 @@ func (c *Config) defineServerFlags() {
 
 	// Features configuration
 	flag.StringVar(&c.FeaturesJSON, "features", "{}", "Features configuration as JSON")
+
+	flag.IntVar(&c.MaxActiveSignInCodes, "max-active-signin-codes", DefaultMaxActiveSignInCodes,
+		"Max active (unconsumed, unexpired) sign-in codes per user before requestEmailSignInCode is rejected")
 }
 
 func (c *Config) defineMinioFlags() {

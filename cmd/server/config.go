@@ -166,6 +166,10 @@ func (a *app) MaxRequestBodySize() int {
 	return a.config.MaxRequestBodySize
 }
 
+func (a *app) MaxActiveSignInCodes() int64 {
+	return int64(a.config.MaxActiveSignInCodes)
+}
+
 // BackupManager returns the backup manager for cronjob env interface.
 func (a *app) BackupManager() *simplebackup.Manager {
 	return a.simpleBackup

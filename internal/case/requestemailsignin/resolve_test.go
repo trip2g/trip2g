@@ -28,6 +28,7 @@ func fullFlowEnv(siteKey string) *EnvMock {
 		CountActiveSignInCodesFunc: func(_ context.Context, _ int64) (int64, error) {
 			return 0, nil
 		},
+		MaxActiveSignInCodesFunc: func() int64 { return 3 },
 		CreateSignInCodeFunc: func(_ context.Context, _ int64) (string, error) {
 			return "ABC123", nil
 		},
@@ -107,4 +108,38 @@ func TestCaptcha_AboveThreshold_InvalidToken(t *testing.T) {
 	errPayload, ok := result.(*model.ErrorPayload)
 	require.True(t, ok, "expected ErrorPayload, got %T", result)
 	require.Equal(t, "captcha_invalid", errPayload.Message)
+}
+
+// TestMaxActiveSignInCodes_LimitEnforced verifies that when the active code count
+// exceeds the configured limit, too_many_sign_in_codes is returned.
+func TestMaxActiveSignInCodes_LimitEnforced(t *testing.T) {
+	env := fullFlowEnv("")
+	env.MaxActiveSignInCodesFunc = func() int64 { return 3 }
+	env.CountActiveSignInCodesFunc = func(_ context.Context, _ int64) (int64, error) {
+		return 4, nil // exceeds limit of 3
+	}
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	errPayload, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", result)
+	require.Equal(t, "too_many_sign_in_codes", errPayload.Message)
+}
+
+// TestMaxActiveSignInCodes_BelowLimit verifies that when the active code count
+// is below the configured limit, sign-in proceeds successfully.
+func TestMaxActiveSignInCodes_BelowLimit(t *testing.T) {
+	env := fullFlowEnv("")
+	env.MaxActiveSignInCodesFunc = func() int64 { return 3 }
+	env.CountActiveSignInCodesFunc = func(_ context.Context, _ int64) (int64, error) {
+		return 2, nil // within limit of 3
+	}
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.RequestEmailSignInCodePayload)
+	require.True(t, ok, "expected RequestEmailSignInCodePayload, got %T", result)
+	require.True(t, payload.Success)
 }

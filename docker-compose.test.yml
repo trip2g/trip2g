@@ -71,7 +71,8 @@ services:
       - LISTEN_ADDR=0.0.0.0:20081
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
-      - DEV=true # sign in code 000000
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
