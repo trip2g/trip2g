@@ -63,10 +63,10 @@ func (c *StmtCache) getStmt(ctx context.Context, query string) (*sql.Stmt, error
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// Re-check: another goroutine may have prepared it while we waited.
-	if stmt, ok := c.stmts[query]; ok {
-		return stmt, nil
+	if cached, cacheHit := c.stmts[query]; cacheHit {
+		return cached, nil
 	}
-	stmt, err := c.db.PrepareContext(ctx, query)
+	stmt, err := c.db.PrepareContext(ctx, query) //nolint:sqlclosecheck // stmt is transferred to cache; closed on eviction
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (c *StmtCache) reprepare(ctx context.Context, query string) (*sql.Stmt, err
 		delete(c.stmts, query)
 		_ = old.Close()
 	}
-	stmt, err := c.db.PrepareContext(ctx, query)
+	stmt, err := c.db.PrepareContext(ctx, query) //nolint:sqlclosecheck // stmt is transferred to cache; closed on eviction
 	if err != nil {
 		return nil, err
 	}
@@ -93,23 +93,23 @@ func (c *StmtCache) reprepare(ctx context.Context, query string) (*sql.Stmt, err
 }
 
 func (c *StmtCache) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	stmt, err := c.getStmt(ctx, query)
+	stmt, err := c.getStmt(ctx, query) //nolint:sqlclosecheck // borrowed from cache; cache owns the lifetime
 	if err != nil {
 		return nil, err
 	}
 	rows, err := stmt.QueryContext(ctx, args...)
 	if isSchemaChangedErr(err) {
-		stmt, rerr := c.reprepare(ctx, query)
+		fresh, rerr := c.reprepare(ctx, query) //nolint:sqlclosecheck // fresh is stored in cache by reprepare; cache owns lifetime
 		if rerr != nil {
 			return nil, rerr
 		}
-		return stmt.QueryContext(ctx, args...)
+		return fresh.QueryContext(ctx, args...)
 	}
 	return rows, err
 }
 
 func (c *StmtCache) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	stmt, err := c.getStmt(ctx, query)
+	stmt, err := c.getStmt(ctx, query) //nolint:sqlclosecheck // borrowed from cache; cache owns the lifetime
 	if err != nil {
 		// Could not prepare a cached statement; fall back to the inner DBTX so
 		// the caller still gets a *sql.Row whose deferred error surfaces on
@@ -123,17 +123,17 @@ func (c *StmtCache) QueryRowContext(ctx context.Context, query string, args ...i
 }
 
 func (c *StmtCache) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	stmt, err := c.getStmt(ctx, query)
+	stmt, err := c.getStmt(ctx, query) //nolint:sqlclosecheck // borrowed from cache; cache owns the lifetime
 	if err != nil {
 		return nil, err
 	}
 	res, err := stmt.ExecContext(ctx, args...)
 	if isSchemaChangedErr(err) {
-		stmt, rerr := c.reprepare(ctx, query)
+		fresh, rerr := c.reprepare(ctx, query) //nolint:sqlclosecheck // fresh is stored in cache by reprepare; cache owns lifetime
 		if rerr != nil {
 			return nil, rerr
 		}
-		return stmt.ExecContext(ctx, args...)
+		return fresh.ExecContext(ctx, args...)
 	}
 	return res, err
 }

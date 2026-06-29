@@ -44,7 +44,8 @@ func TestStmtCacheReusesPreparedStatement(t *testing.T) {
 
 	rows1, err := cache.QueryContext(ctx, q, 1)
 	require.NoError(t, err)
-	require.NoError(t, rows1.Close())
+	defer rows1.Close()
+	require.NoError(t, rows1.Err())
 
 	cache.mu.RLock()
 	stmt1, ok := cache.stmts[q]
@@ -56,7 +57,8 @@ func TestStmtCacheReusesPreparedStatement(t *testing.T) {
 	// Second call with the same SQL must reuse the same *sql.Stmt pointer.
 	rows2, err := cache.QueryContext(ctx, q, 2)
 	require.NoError(t, err)
-	require.NoError(t, rows2.Close())
+	defer rows2.Close()
+	require.NoError(t, rows2.Err())
 
 	cache.mu.RLock()
 	stmt2 := cache.stmts[q]
@@ -137,7 +139,8 @@ func TestStmtCacheRecoversAfterSchemaChange(t *testing.T) {
 	// Cache the statement via QueryContext too (the path with the explicit fallback).
 	rows, err := cache.QueryContext(ctx, q, 1)
 	require.NoError(t, err)
-	require.NoError(t, rows.Close())
+	require.NoError(t, rows.Close()) //nolint:sqlclosecheck // must close immediately; row reassigned below
+	require.NoError(t, rows.Err())
 
 	// Schema change that bumps the schema cookie but keeps the query valid.
 	_, err = dbh.ExecContext(ctx, "ALTER TABLE items ADD COLUMN extra TEXT")
@@ -150,6 +153,7 @@ func TestStmtCacheRecoversAfterSchemaChange(t *testing.T) {
 	require.True(t, rows.Next())
 	require.NoError(t, rows.Scan(&name))
 	require.Equal(t, "alpha", name)
+	require.NoError(t, rows.Err())
 }
 
 // TestIsSchemaChangedErr covers the SQLITE_SCHEMA detection predicate used by
@@ -223,5 +227,5 @@ func TestStmtCacheConcurrentReuse(t *testing.T) {
 
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
-	require.Equal(t, 1, len(cache.stmts), "concurrent identical SQL must prepare exactly one statement")
+	require.Len(t, cache.stmts, 1, "concurrent identical SQL must prepare exactly one statement")
 }

@@ -41,7 +41,7 @@ func TestPageCache_EarlyHitSkipsResolveDBWork(t *testing.T) {
 	runHandle(t, env, ctx, nil)
 	require.Equal(t, "gzip", string(ctx.Response.Header.ContentEncoding()))
 	require.Len(t, env.StoreCachedPageCalls(), 1, "hit must not re-fill the cache")
-	require.Equal(t, tgBefore, len(env.GetTelegramPostLinksByNoteVersionIDCalls()),
+	require.Len(t, env.GetTelegramPostLinksByNoteVersionIDCalls(), tgBefore,
 		"cache HIT must skip GetTelegramPostLinksByNoteVersionID (Resolve DB enrichment)")
 }
 
@@ -221,7 +221,7 @@ func TestPageCache_EarlyNeverServesRedirectGates(t *testing.T) {
 		// Non-canonical request path: note is reachable at /test-note but its
 		// canonical permalink differs and it has alternate permalinks → 301.
 		note.Permalink = "/canonical-note"
-		note.AlternatePermalinks = map[model.URLNormalizationMethod]string{
+		note.AlternatePermalinks = map[model.URLNormalizationMethod]string{ //nolint:exhaustive // test only needs one alternate to trigger the 301
 			model.URLNormSimpleTranslit: "/test-note",
 		}
 		env, pc, _ := cacheTestEnv(views, nil)
