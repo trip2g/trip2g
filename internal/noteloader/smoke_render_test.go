@@ -13,6 +13,7 @@ import (
 type smokeTestEnv struct{ log logger.Logger }
 
 func (e *smokeTestEnv) Logger() logger.Logger { return e.log }
+func (e *smokeTestEnv) IsDevMode() bool       { return false }
 
 func smokeLoadLayouts(t *testing.T, sources []model.LayoutSourceFile) *model.Layouts {
 	t.Helper()

@@ -304,7 +304,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	layoutOptions := layoutloader.Options{
 		BasePath: layoutBasePath,
-		DevMode:  l.env.IsDevMode(),
 	}
 
 	layouts, err := layoutloader.Load(l.env, templateSources, layoutOptions)

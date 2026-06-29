@@ -19,6 +19,14 @@ type Loader struct {
 
 type Env interface {
 	Logger() logger.Logger
+
+	// IsDevMode reports whether this is a development instance. When false
+	// (production), the compiled layout is cached within the jet.Set's lifetime
+	// so each template is parsed once per reload, not once per render. When true
+	// (dev), jet.DevelopmentMode re-reads + re-parses every render for live layout
+	// reload. Layout edits still propagate when false because Load rebuilds the
+	// jet.Set fresh from the current sourceFiles on every reload.
+	IsDevMode() bool
 }
 
 // func New(env Env) *Loader {
@@ -62,13 +70,6 @@ func (jl *jetLoader) Open(templatePath string) (io.ReadCloser, error) {
 
 type Options struct {
 	BasePath string
-
-	// DevMode toggles jet.DevelopmentMode. Production must be false so each
-	// layout's compiled template is cached (parsed once per reload) instead of
-	// re-read + re-parsed on every render. Set true only for dev instances that
-	// want live layout reload. Layout edits still propagate when false because
-	// Load rebuilds the jet.Set fresh from the current sourceFiles each reload.
-	DevMode bool
 }
 
 func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*model.Layouts, error) {
@@ -77,7 +78,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 	jl := &jetLoader{
 		templates:            make(map[string]string),
 		log:                  log,
-		devMode:              options.DevMode,
+		devMode:              env.IsDevMode(),
 		pendingWarnings:      make(map[string][]model.NoteWarning),
 		sets:                 make(map[string]*jet.Set),
 		yieldBlocksSlices:    make(map[string]*[]string),

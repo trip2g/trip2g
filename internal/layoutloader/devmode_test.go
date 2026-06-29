@@ -73,7 +73,8 @@ func TestDevMode_CachesParsedIncludeAcrossRenders(t *testing.T) {
 // sourceFiles, so an edited layout (a new Load) renders the new content even
 // though DevelopmentMode is off — the cache lives only for one Set's lifetime.
 func TestLoadDevModeFalse_LayoutEditsPropagateAcrossReloads(t *testing.T) {
-	env := &testEnv{logger: &logger.TestLogger{}}
+	// devMode=false: production caching ON (IsDevMode returns false).
+	env := &testEnv{logger: &logger.TestLogger{}, devMode: false}
 	mk := func(body string) []model.LayoutSourceFile {
 		return []model.LayoutSourceFile{{
 			ID:      "/page",
@@ -83,7 +84,7 @@ func TestLoadDevModeFalse_LayoutEditsPropagateAcrossReloads(t *testing.T) {
 	}
 
 	render := func(sources []model.LayoutSourceFile) string {
-		layouts, err := Load(env, sources, Options{DevMode: false})
+		layouts, err := Load(env, sources, Options{})
 		require.NoError(t, err)
 		var buf bytes.Buffer
 		require.NoError(t, layouts.Map["/page"].View.Execute(&buf, nil, nil))
@@ -100,14 +101,15 @@ func TestLoadDevModeFalse_LayoutEditsPropagateAcrossReloads(t *testing.T) {
 // only parse caching, never rendered output, through the public Load API with a
 // runtime {{ include }} (the path that re-parses in dev mode).
 func TestLoadDevMode_OutputIdenticalAcrossModes(t *testing.T) {
-	env := &testEnv{logger: &logger.TestLogger{}}
 	sources := []model.LayoutSourceFile{
 		{ID: "/page", Path: "_layouts/page.html", Content: `<main>{{ include "/part" }}</main>`},
 		{ID: "/part", Path: "_layouts/part.html", Content: `<p>shared</p>`},
 	}
 
 	out := func(dev bool) string {
-		layouts, err := Load(env, sources, Options{DevMode: dev})
+		// env.IsDevMode() drives jet.DevelopmentMode via the Env interface.
+		env := &testEnv{logger: &logger.TestLogger{}, devMode: dev}
+		layouts, err := Load(env, sources, Options{})
 		require.NoError(t, err)
 		// Render twice to exercise the include cache/no-cache path.
 		require.NoError(t, layouts.Map["/page"].View.Execute(io.Discard, nil, nil))
