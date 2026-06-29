@@ -48,14 +48,6 @@ Validating the driver upgrade required more care. A version jump of 16 releases 
 
 ---
 
-## A static site generator without the wait
-
-Step back from the numbers. ~16,400 cached pages per second on a €6.49/month box is static-site-generator territory: the throughput you would expect from flat files behind nginx. A static site generator pays for that speed with a build step. Hugo, Jekyll, or Astro on a CI pipeline rebuilds the whole site on every edit, and a change is not live until minutes of CI/CD have run.
-
-trip2g has no build step. Editing a note re-renders that one note and invalidates its cache entry; everything else stays warm. The change is live in a fraction of a second, and the site still serves at static-site-generator throughput. That is the trade this work bought: the serving speed of a generated static site, without the generation.
-
----
-
 ## What's left
 
 Logged-in readers still carry two costs the anonymous path does not. Every response is re-gzipped on the fly; there is no page cache for them yet. And each page view fires a handful of bookkeeping queries to record the visit.
