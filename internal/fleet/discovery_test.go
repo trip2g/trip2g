@@ -26,14 +26,16 @@ func TestDiscoverRoles_ParsesValidSkipsInvalid(t *testing.T) {
 			{"key":"tools","raw":"[shell]"}
 		]}}
 	]}`
-	client := &ClientMock{
-		GraphQLAdminFunc: func(_ context.Context, q string, vars map[string]any) (json.RawMessage, error) {
-			require.Contains(t, q, "notePaths")
-			require.Equal(t, "roles/%", vars["like"])
-			return json.RawMessage(resp), nil
-		},
-	}
-	d := NewDiscovery(client, "roles/", []string{"search", "read_note", "patch_note"})
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		require.Equal(t, "DiscoverRoles", op)
+		var v struct {
+			Like string `json:"like"`
+		}
+		require.NoError(t, json.Unmarshal(vars, &v))
+		require.Equal(t, "roles/%", v.Like)
+		return resp, nil
+	})
+	d := NewDiscovery(gql, "roles/", []string{"search", "read_note", "patch_note"})
 	roles, errs := d.DiscoverRoles(context.Background())
 	require.Len(t, roles, 1)
 	require.Equal(t, "roles/triage.md", roles[0].NotePath)

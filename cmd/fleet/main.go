@@ -39,11 +39,12 @@ func run() error {
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, cfg.JWTSecret, cfg.AdminEmail, httpClient)
+	client := fleet.NewHTTPClient(cfg.Trip2gBaseURL, httpClient)
+	adminGQL := fleet.NewAdminGraphQLClient(cfg.Trip2gBaseURL, cfg.JWTSecret, cfg.AdminEmail, httpClient)
 	llm := agentruntime.NewOpenAILLM(cfg.LLMAPIKey, cfg.LLMBaseURL)
 
 	f := fleet.NewFleet(cfg, client, llm)
-	discovery := fleet.NewDiscovery(client, cfg.AgentsFolder, cfg.OfferedTools)
+	discovery := fleet.NewDiscovery(adminGQL, cfg.AgentsFolder, cfg.OfferedTools)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -54,7 +55,7 @@ func run() error {
 		return runDryRun(ctx, discovery, cfg)
 	}
 
-	reconciler := fleet.NewReconciler(client, cfg)
+	reconciler := fleet.NewReconciler(adminGQL, cfg)
 
 	// First sync before serving so the registry is populated.
 	syncOnce(ctx, f, discovery, reconciler)

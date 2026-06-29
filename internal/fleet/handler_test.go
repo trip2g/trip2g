@@ -79,7 +79,7 @@ func deliveryBody(t *testing.T) []byte {
 }
 
 func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
-	var scopedCalls, adminCalls int
+	var scopedCalls int
 	var lastToken string
 	client := &ClientMock{
 		GraphQLScopedFunc: func(_ context.Context, tok, q string, _ map[string]any) (json.RawMessage, error) {
@@ -87,18 +87,13 @@ func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
 			lastToken = tok
 			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
 		},
-		GraphQLAdminFunc: func(context.Context, string, map[string]any) (json.RawMessage, error) {
-			adminCalls++
-			return nil, nil
-		},
 	}
 	f := newTestFleet(client)
 	key := urlKey("roles/triage.md")
 	rec := post(t, f, key, deliveryBody(t), true)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, scopedCalls) // exactly one scoped updateNotes
-	require.Zero(t, adminCalls)      // admin key never used for writes
+	require.Equal(t, 1, scopedCalls) // exactly one scoped updateNotes; writes ride the scoped lane only
 	require.Equal(t, "scoped-token", lastToken)
 
 	var resp webhookutil.AgentResponse

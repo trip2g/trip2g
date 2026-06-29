@@ -6,38 +6,25 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/Khan/genqlient/graphql"
+
+	"trip2g/internal/fleet/trip2ggql"
 )
 
-// Reconciler drives the desired-vs-actual webhook diff over the admin lane.
+// Reconciler drives the desired-vs-actual webhook diff over the genqlient admin
+// lane.
 type Reconciler struct {
-	client Client
-	cfg    Config
+	gql graphql.Client
+	cfg Config
 }
 
-// NewReconciler builds a Reconciler.
-func NewReconciler(client Client, cfg Config) *Reconciler {
-	return &Reconciler{client: client, cfg: cfg}
-}
-
-// Admin webhook fields live under the AdminQuery/AdminMutation `admin { }`
-// wrapper; flat queries are rejected by the schema.
-const listChangeWebhooksQuery = `query { admin { allChangeWebhooks { nodes { id description } } } }`
-
-const createChangeWebhookMutation = `mutation Create($input: ChangeWebhookCreateInput!) {
-  admin { changeWebhookCreate(input: $input) { ... on ChangeWebhookCreatePayload { webhook { id } } ... on ErrorPayload { message } } }
-}`
-
-const deleteChangeWebhookMutation = `mutation Delete($input: ChangeWebhookDeleteInput!) {
-  admin { changeWebhookDelete(input: $input) { ... on ChangeWebhookDeletePayload { deletedId } ... on ErrorPayload { message } } }
-}`
-
-type existingWebhook struct {
-	ID          int64  `json:"id"`
-	Description string `json:"description"`
+// NewReconciler builds a Reconciler over the genqlient admin lane.
+func NewReconciler(gql graphql.Client, cfg Config) *Reconciler {
+	return &Reconciler{gql: gql, cfg: cfg}
 }
 
 // Reconcile makes the registered change-webhooks match desired roles. Foreign
@@ -90,87 +77,62 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 }
 
 func (r *Reconciler) listOwned(ctx context.Context) (map[string]int64, error) {
-	raw, err := r.client.GraphQLAdmin(ctx, listChangeWebhooksQuery, nil)
+	resp, err := trip2ggql.ListChangeWebhooks(ctx, r.gql)
 	if err != nil {
 		return nil, err
 	}
-	var data struct {
-		Admin struct {
-			AllChangeWebhooks struct {
-				Nodes []existingWebhook `json:"nodes"`
-			} `json:"allChangeWebhooks"`
-		} `json:"admin"`
-	}
-	if uerr := json.Unmarshal(raw, &data); uerr != nil {
-		return nil, uerr
-	}
 	prefix := "fleet:" + r.cfg.FleetID + ":"
 	owned := map[string]int64{}
-	for _, n := range data.Admin.AllChangeWebhooks.Nodes {
+	for _, n := range resp.Admin.AllChangeWebhooks.Nodes {
 		if strings.HasPrefix(n.Description, prefix) {
-			owned[n.Description] = n.ID
+			owned[n.Description] = n.Id
 		}
 	}
 	return owned, nil
 }
 
 func (r *Reconciler) create(ctx context.Context, role Role) error {
-	input := map[string]any{
-		"url":              r.cfg.CallbackURL + "/deliver/" + urlKey(role.NotePath),
-		"includePatterns":  orEmpty(role.TriggerInclude),
-		"excludePatterns":  orEmpty(role.TriggerExclude),
-		"readPatterns":     orEmpty(role.ReadPatterns),
-		"writePatterns":    orEmpty(role.WritePatterns),
-		"attachNotes":      orEmpty(role.AttachNotes),
-		"transformJsonnet": "",
-		"concurrencyMode":  orDefault(role.Concurrency, "allow_overlap"),
-		"passApiKey":       true,
-		"includeContent":   true,
-		"maxDepth":         int64(role.MaxDepth),
-		// timeoutSeconds tells trip2g how long to wait for a delivery before
+	input := trip2ggql.ChangeWebhookCreateInput{
+		Url:              r.cfg.CallbackURL + "/deliver/" + urlKey(role.NotePath),
+		IncludePatterns:  orEmpty(role.TriggerInclude),
+		ExcludePatterns:  orEmpty(role.TriggerExclude),
+		ReadPatterns:     orEmpty(role.ReadPatterns),
+		WritePatterns:    orEmpty(role.WritePatterns),
+		AttachNotes:      orEmpty(role.AttachNotes),
+		TransformJsonnet: "",
+		ConcurrencyMode:  orDefault(role.Concurrency, "allow_overlap"),
+		PassApiKey:       true,
+		IncludeContent:   true,
+		MaxDepth:         int64(role.MaxDepth),
+		// TimeoutSeconds tells trip2g how long to wait for a delivery before
 		// closing the connection. An LLM agent run can exceed the 60s default, so
 		// register the role's (defaulted) timeout to avoid a mid-run cancel.
-		"timeoutSeconds": int64(role.EffectiveTimeoutSeconds()),
-		"onCreate":       contains(role.TriggerOn, "create"),
-		"onUpdate":       contains(role.TriggerOn, "update"),
-		"onRemove":       contains(role.TriggerOn, "remove"),
-		"description":    markerFor(r.cfg.FleetID, role),
-		"secret":         deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, specVer(role)),
+		TimeoutSeconds: int64(role.EffectiveTimeoutSeconds()),
+		OnCreate:       contains(role.TriggerOn, "create"),
+		OnUpdate:       contains(role.TriggerOn, "update"),
+		OnRemove:       contains(role.TriggerOn, "remove"),
+		Description:    markerFor(r.cfg.FleetID, role),
+		Secret:         deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, specVer(role)),
 	}
-	raw, err := r.client.GraphQLAdmin(ctx, createChangeWebhookMutation, map[string]any{"input": input})
+	resp, err := trip2ggql.CreateChangeWebhook(ctx, r.gql, input)
 	if err != nil {
 		return err
 	}
-	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
-	var resp struct {
-		Admin struct {
-			ChangeWebhookCreate struct {
-				Message string `json:"message"`
-			} `json:"changeWebhookCreate"`
-		} `json:"admin"`
-	}
-	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.Admin.ChangeWebhookCreate.Message != "" {
-		return fmt.Errorf("changeWebhookCreate: %s", resp.Admin.ChangeWebhookCreate.Message)
+	// F9(c): surface a GraphQL-level ErrorPayload instead of swallowing it.
+	if ep, ok := resp.Admin.ChangeWebhookCreate.(*trip2ggql.CreateChangeWebhookAdminAdminMutationChangeWebhookCreateErrorPayload); ok {
+		return fmt.Errorf("changeWebhookCreate: %s", ep.Message)
 	}
 	return nil
 }
 
 func (r *Reconciler) delete(ctx context.Context, id int64) error {
-	raw, err := r.client.GraphQLAdmin(ctx, deleteChangeWebhookMutation,
-		map[string]any{"input": map[string]any{"id": id}})
+	resp, err := trip2ggql.DeleteChangeWebhook(ctx, r.gql, trip2ggql.ChangeWebhookDeleteInput{Id: id})
 	if err != nil {
 		return err
 	}
-	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
-	var resp struct {
-		Admin struct {
-			ChangeWebhookDelete struct {
-				Message string `json:"message"`
-			} `json:"changeWebhookDelete"`
-		} `json:"admin"`
-	}
-	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.Admin.ChangeWebhookDelete.Message != "" {
-		return fmt.Errorf("changeWebhookDelete: %s", resp.Admin.ChangeWebhookDelete.Message)
+	// F9(c): surface a GraphQL-level ErrorPayload instead of swallowing it.
+	if ep, ok := resp.Admin.ChangeWebhookDelete.(*trip2ggql.DeleteChangeWebhookAdminAdminMutationChangeWebhookDeleteErrorPayload); ok {
+		return fmt.Errorf("changeWebhookDelete: %s", ep.Message)
 	}
 	return nil
 }

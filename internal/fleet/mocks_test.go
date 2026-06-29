@@ -19,9 +19,6 @@ var _ Client = &ClientMock{}
 //
 //		// make and configure a mocked Client
 //		mockedClient := &ClientMock{
-//			GraphQLAdminFunc: func(ctx context.Context, query string, vars map[string]any) (json.RawMessage, error) {
-//				panic("mock out the GraphQLAdmin method")
-//			},
 //			GraphQLScopedFunc: func(ctx context.Context, token string, query string, vars map[string]any) (json.RawMessage, error) {
 //				panic("mock out the GraphQLScoped method")
 //			},
@@ -32,23 +29,11 @@ var _ Client = &ClientMock{}
 //
 //	}
 type ClientMock struct {
-	// GraphQLAdminFunc mocks the GraphQLAdmin method.
-	GraphQLAdminFunc func(ctx context.Context, query string, vars map[string]any) (json.RawMessage, error)
-
 	// GraphQLScopedFunc mocks the GraphQLScoped method.
 	GraphQLScopedFunc func(ctx context.Context, token string, query string, vars map[string]any) (json.RawMessage, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GraphQLAdmin holds details about calls to the GraphQLAdmin method.
-		GraphQLAdmin []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Query is the query argument value.
-			Query string
-			// Vars is the vars argument value.
-			Vars map[string]any
-		}
 		// GraphQLScoped holds details about calls to the GraphQLScoped method.
 		GraphQLScoped []struct {
 			// Ctx is the ctx argument value.
@@ -61,48 +46,7 @@ type ClientMock struct {
 			Vars map[string]any
 		}
 	}
-	lockGraphQLAdmin  sync.RWMutex
 	lockGraphQLScoped sync.RWMutex
-}
-
-// GraphQLAdmin calls GraphQLAdminFunc.
-func (mock *ClientMock) GraphQLAdmin(ctx context.Context, query string, vars map[string]any) (json.RawMessage, error) {
-	if mock.GraphQLAdminFunc == nil {
-		panic("ClientMock.GraphQLAdminFunc: method is nil but Client.GraphQLAdmin was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Query string
-		Vars  map[string]any
-	}{
-		Ctx:   ctx,
-		Query: query,
-		Vars:  vars,
-	}
-	mock.lockGraphQLAdmin.Lock()
-	mock.calls.GraphQLAdmin = append(mock.calls.GraphQLAdmin, callInfo)
-	mock.lockGraphQLAdmin.Unlock()
-	return mock.GraphQLAdminFunc(ctx, query, vars)
-}
-
-// GraphQLAdminCalls gets all the calls that were made to GraphQLAdmin.
-// Check the length with:
-//
-//	len(mockedClient.GraphQLAdminCalls())
-func (mock *ClientMock) GraphQLAdminCalls() []struct {
-	Ctx   context.Context
-	Query string
-	Vars  map[string]any
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Query string
-		Vars  map[string]any
-	}
-	mock.lockGraphQLAdmin.RLock()
-	calls = mock.calls.GraphQLAdmin
-	mock.lockGraphQLAdmin.RUnlock()
-	return calls
 }
 
 // GraphQLScoped calls GraphQLScopedFunc.
