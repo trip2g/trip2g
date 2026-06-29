@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	jsonnet "github.com/google/go-jsonnet"
+
+	"trip2g/internal/jsonneteval"
 )
 
 // NewVM creates a new jsonnet VM with safe stack limits.
+// Delegates to jsonneteval so the MaxStack limit has one source of truth.
 func NewVM() *jsonnet.VM {
-	vm := jsonnet.MakeVM()
-	vm.MaxStack = 500 // Prevent stack overflow from recursive jsonnet
-	return vm
+	return jsonneteval.NewVM()
 }
 
 // normalizeYAML converts yaml.v2-style map[interface{}]interface{} values

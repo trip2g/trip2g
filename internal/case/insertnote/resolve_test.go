@@ -109,6 +109,57 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 	require.True(t, versionCreated, "New version should be created when content changed")
 }
 
+// TestResolve_RecordsDeliveryAttribution verifies that delivery attribution
+// (kind + id) from NoteActor is written to the separate
+// note_version_delivery_attribution table via InsertNoteVersionDeliveryAttribution,
+// and that InsertNoteVersionParams no longer carries those fields.
+func TestResolve_RecordsDeliveryAttribution(t *testing.T) {
+	ctx := context.Background()
+
+	var gotAttrib db.InsertNoteVersionDeliveryAttributionParams
+	var gotVersion db.InsertNoteVersionParams
+	kind := "change"
+	var deliveryID int64 = 77
+
+	env := &EnvMock{
+		InsertNotePathFunc: func(_ context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error) {
+			return db.InsertNotePathRow{ID: 1, VersionCount: 0}, nil
+		},
+		UnhideNotePathFunc: func(_ context.Context, _ string) error {
+			return nil
+		},
+		IncrementNoteVersionCountFunc: func(_ context.Context, _ db.IncrementNoteVersionCountParams) (int64, error) {
+			return 1, nil
+		},
+		InsertNoteVersionFunc: func(_ context.Context, arg db.InsertNoteVersionParams) (int64, error) {
+			gotVersion = arg
+			return 42, nil
+		},
+		InsertNoteVersionDeliveryAttributionFunc: func(_ context.Context, arg db.InsertNoteVersionDeliveryAttributionParams) error {
+			gotAttrib = arg
+			return nil
+		},
+		NoteVersionActorFunc: func(_ context.Context) model.NoteActor {
+			return model.NoteActor{DeliveryKind: &kind, DeliveryID: &deliveryID}
+		},
+	}
+
+	_, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "boards/sprint.md", Content: "x"})
+	require.NoError(t, err)
+
+	// Delivery fields must NOT appear on the note_versions insert.
+	// (InsertNoteVersionParams no longer has those fields at all — this
+	// compile-time assertion is implicit; we just confirm the user fields are intact.)
+	require.Nil(t, gotVersion.CreatedByUserID)
+	require.Nil(t, gotVersion.CreatedByApiKeyID)
+
+	// Attribution must be written to the separate table with the version id
+	// returned by InsertNoteVersion (42) and the exact kind/id from the actor.
+	require.Equal(t, int64(42), gotAttrib.NoteVersionID)
+	require.Equal(t, "change", gotAttrib.DeliveryKind)
+	require.EqualValues(t, 77, gotAttrib.DeliveryID)
+}
+
 // TestNewNoteUnhideAndVersionCreated verifies that both UnhideNotePath and
 // version creation happen for a brand new note.
 func TestNewNoteUnhideAndVersionCreated(t *testing.T) {

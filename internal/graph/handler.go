@@ -98,7 +98,7 @@ func NewHandler(env Env) *handler.Server {
 	return srv
 }
 
-func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env Env) {
+func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env operationsEnv) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		env.Logger().Warn("failed to get app request from context", "error", err)
@@ -111,10 +111,21 @@ func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, 
 	}
 }
 
+// operationsEnv is the narrow subset of Env that makeAroundOperations requires.
+// Defining it as a separate interface makes the function independently testable
+// without a full Env mock.
+type operationsEnv interface {
+	IsDevMode() bool
+	ShortAPITokenSecret() string
+	Logger() logger.Logger
+	AcquireTxEnvInRequest(ctx context.Context, label string) error
+	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
+}
+
 func makeAroundOperations(
 	log logger.Logger,
 	skipTxMutations map[string]struct{},
-	env Env,
+	env operationsEnv,
 	graphqlErr func(err error) graphql.ResponseHandler,
 ) graphql.OperationMiddleware {
 	devMode := env.IsDevMode()
@@ -125,6 +136,17 @@ func makeAroundOperations(
 		op := operationContext.Operation
 
 		log.Debug("process", "operotion", op.Operation, "name", op.Name)
+
+		// Stamp scoped-token claims (read/write patterns, depth, delivery identity)
+		// once per operation, BEFORE resolvers run. This covers both Query and
+		// Mutation paths: checkapikey.Resolve stamps mutations via X-API-Key /
+		// Bearer handling inside the resolver, but query resolvers (note, search,
+		// notePaths) never call checkapikey.Resolve, so without this hook the
+		// Bearer shortapitoken is parsed as anonymous and read_patterns are never
+		// set — making scope enforcement dead on the read path.
+		if req, reqErr := appreq.FromCtx(ctx); reqErr == nil {
+			stampShortAPIToken(req, env.ShortAPITokenSecret())
+		}
 
 		if !devMode {
 			disableIntrospection(ctx, operationContext, env)

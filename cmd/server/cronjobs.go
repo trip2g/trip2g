@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/executecronwebhooks"
+	"trip2g/internal/case/cronjob/expirestalewebhookdeliveries"
 	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
 	"trip2g/internal/case/cronjob/refreshtelegramchatusernames"
 	"trip2g/internal/case/cronjob/regeneratenoteembeddings"
@@ -37,9 +38,10 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 
 		_ executecronwebhooks.Env = app
 
-		_ cleanupwebhookdeliverylogs.Env = app
-		_ cleanupwebhookdeliveries.Env   = app
-		_ cleanupapikeylogs.Env          = app
+		_ cleanupwebhookdeliverylogs.Env   = app
+		_ cleanupwebhookdeliveries.Env     = app
+		_ cleanupapikeylogs.Env            = app
+		_ expirestalewebhookdeliveries.Env = app
 	)
 
 	jobs := []cronjobs.Job{
@@ -55,6 +57,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&cleanupwebhookdeliverylogs.Job{},
 		&cleanupwebhookdeliveries.Job{},
 		&cleanupapikeylogs.Job{Config: app.config.APIKeyLogs},
+		&expirestalewebhookdeliveries.Job{},
 	}
 
 	// VACUUM/ANALYZE maintenance is opt-in (heavy full-DB rewrite; incompatible

@@ -39,6 +39,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 		expectedDepth     int
 		expectedReadPats  []string
 		expectedWritePats []string
+		expectedScoped    bool
 	}{
 		{
 			name: "valid Bearer token with webhook depth and patterns",
@@ -53,9 +54,12 @@ func TestResolveWithBearerToken(t *testing.T) {
 			expectedDepth:     3,
 			expectedReadPats:  []string{"read/*", "view/*"},
 			expectedWritePats: []string{"update/*"},
+			expectedScoped:    true,
 		},
 		{
-			name: "valid Bearer token with zero depth",
+			// G1 regression: scoped token with empty read_patterns must set
+			// WebhookScoped=true so that enforcement is fail-closed, not fail-open.
+			name: "valid Bearer token with zero depth and empty patterns (scoped, fail-closed)",
 			tokenData: shortapitoken.Data{
 				Depth:         0,
 				ReadPatterns:  []string{},
@@ -67,6 +71,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 			expectedDepth:     0,
 			expectedReadPats:  []string{},
 			expectedWritePats: []string{},
+			expectedScoped:    true,
 		},
 		{
 			name: "expired Bearer token",
@@ -118,6 +123,7 @@ func TestResolveWithBearerToken(t *testing.T) {
 				require.Equal(t, tt.expectedDepth, req.WebhookDepth)
 				require.Equal(t, tt.expectedReadPats, req.WebhookReadPatterns)
 				require.Equal(t, tt.expectedWritePats, req.WebhookWritePatterns)
+				require.Equal(t, tt.expectedScoped, req.WebhookScoped, "WebhookScoped must be set for scoped shortapitoken")
 			}
 		})
 	}
@@ -184,6 +190,37 @@ func TestResolvePrefersAPIKeyOverBearer(t *testing.T) {
 	require.Equal(t, 0, req.WebhookDepth)
 	require.Empty(t, req.WebhookReadPatterns)
 	require.Empty(t, req.WebhookWritePatterns)
+}
+
+func TestResolveWithDeliveryIdentity(t *testing.T) {
+	const testSecret = "test-secret-key-for-jwt"
+
+	tokenData := shortapitoken.Data{
+		Depth:         1,
+		ReadPatterns:  []string{"boards/**"},
+		WritePatterns: []string{"boards/**"},
+		DeliveryKind:  "change",
+		DeliveryID:    99,
+	}
+	token, err := shortapitoken.Sign(tokenData, testSecret, time.Hour)
+	require.NoError(t, err)
+
+	env := &EnvMock{
+		CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+			return nil, nil
+		},
+		ShortAPITokenSecretFunc: func() string {
+			return testSecret
+		},
+	}
+
+	ctx, req := setupRequestContextWithBearer(token)
+
+	_, err = checkapikey.Resolve(ctx, env, "test-action")
+	require.NoError(t, err)
+
+	require.Equal(t, "change", req.WebhookDeliveryKind)
+	require.EqualValues(t, 99, req.WebhookDeliveryID)
 }
 
 func TestResolveInvalidBearerToken(t *testing.T) {

@@ -36,8 +36,14 @@ var _ deliverchangewebhook.Env = &EnvMock{}
 //			InsertWebhookDeliveryLogFunc: func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error {
 //				panic("mock out the InsertWebhookDeliveryLog method")
 //			},
+//			LatestNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LatestNoteViews method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
+//			},
+//			MarkWebhookDeliveryRunningFunc: func(ctx context.Context, id int64) error {
+//				panic("mock out the MarkWebhookDeliveryRunning method")
 //			},
 //			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*model.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
@@ -73,8 +79,14 @@ type EnvMock struct {
 	// InsertWebhookDeliveryLogFunc mocks the InsertWebhookDeliveryLog method.
 	InsertWebhookDeliveryLogFunc func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *model.NoteViews
+
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// MarkWebhookDeliveryRunningFunc mocks the MarkWebhookDeliveryRunning method.
+	MarkWebhookDeliveryRunningFunc func(ctx context.Context, id int64) error
 
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
 	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*model.NoteViews, error)
@@ -121,8 +133,18 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertWebhookDeliveryLogParams
 		}
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
+		}
+		// MarkWebhookDeliveryRunning holds details about calls to the MarkWebhookDeliveryRunning method.
+		MarkWebhookDeliveryRunning []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
 		}
 		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
 		PrepareLatestNotes []struct {
@@ -156,7 +178,9 @@ type EnvMock struct {
 	lockGetSecretValues             sync.RWMutex
 	lockInsertNote                  sync.RWMutex
 	lockInsertWebhookDeliveryLog    sync.RWMutex
+	lockLatestNoteViews             sync.RWMutex
 	lockLogger                      sync.RWMutex
+	lockMarkWebhookDeliveryRunning  sync.RWMutex
 	lockPrepareLatestNotes          sync.RWMutex
 	lockShortAPITokenSecret         sync.RWMutex
 	lockUpdateWebhookDeliveryResult sync.RWMutex
@@ -308,6 +332,33 @@ func (mock *EnvMock) InsertWebhookDeliveryLogCalls() []struct {
 	return calls
 }
 
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *model.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
+}
+
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
 // Logger calls LoggerFunc.
 func (mock *EnvMock) Logger() logger.Logger {
 	if mock.LoggerFunc == nil {
@@ -332,6 +383,42 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// MarkWebhookDeliveryRunning calls MarkWebhookDeliveryRunningFunc.
+func (mock *EnvMock) MarkWebhookDeliveryRunning(ctx context.Context, id int64) error {
+	if mock.MarkWebhookDeliveryRunningFunc == nil {
+		panic("EnvMock.MarkWebhookDeliveryRunningFunc: method is nil but Env.MarkWebhookDeliveryRunning was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockMarkWebhookDeliveryRunning.Lock()
+	mock.calls.MarkWebhookDeliveryRunning = append(mock.calls.MarkWebhookDeliveryRunning, callInfo)
+	mock.lockMarkWebhookDeliveryRunning.Unlock()
+	return mock.MarkWebhookDeliveryRunningFunc(ctx, id)
+}
+
+// MarkWebhookDeliveryRunningCalls gets all the calls that were made to MarkWebhookDeliveryRunning.
+// Check the length with:
+//
+//	len(mockedEnv.MarkWebhookDeliveryRunningCalls())
+func (mock *EnvMock) MarkWebhookDeliveryRunningCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockMarkWebhookDeliveryRunning.RLock()
+	calls = mock.calls.MarkWebhookDeliveryRunning
+	mock.lockMarkWebhookDeliveryRunning.RUnlock()
 	return calls
 }
 

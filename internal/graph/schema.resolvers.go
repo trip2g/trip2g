@@ -148,6 +148,7 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/webhookutil"
 )
 
 // ID is the resolver for the id field.
@@ -419,6 +420,13 @@ func (r *adminChangeWebhookResolver) WritePatterns(ctx context.Context, obj *db.
 	return patterns, err
 }
 
+// AttachNotes is the resolver for the attachNotes field.
+func (r *adminChangeWebhookResolver) AttachNotes(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.AttachNotes), &patterns)
+	return patterns, err
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminChangeWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminChangeWebhookDeliveriesConnection) ([]db.ChangeWebhookDelivery, error) {
 	return r.env(ctx).ListWebhookDeliveries(ctx, db.ListWebhookDeliveriesParams{
@@ -605,6 +613,13 @@ func (r *adminCronWebhookResolver) ReadPatterns(ctx context.Context, obj *db.Cro
 func (r *adminCronWebhookResolver) WritePatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
 	var patterns []string
 	err := json.Unmarshal([]byte(obj.WritePatterns), &patterns)
+	return patterns, err
+}
+
+// AttachNotes is the resolver for the attachNotes field.
+func (r *adminCronWebhookResolver) AttachNotes(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.AttachNotes), &patterns)
 	return patterns, err
 }
 
@@ -3092,14 +3107,43 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		path = *input.Path
 	}
 
+	// fsPath is the filesystem path (e.g. "boards/task.md") used to match
+	// read_patterns. It is distinct from `path` which is the URL path used
+	// by rendernotepage.Resolve. The two share one namespace so the same glob
+	// patterns cover both reads and writes.
+	var fsPath string
+
 	if input.PathID != nil {
 		latestViews := r.env(ctx).LatestNoteViews()
 
 		for _, view := range latestViews.List {
 			if view.PathID == *input.PathID {
 				path = view.Permalink
+				fsPath = view.Path
 				break
 			}
+		}
+	}
+
+	// When the caller supplies input.Path (a URL), resolve the filesystem path
+	// for the read-pattern check. resolveFsPathFromPermalink looks up the note
+	// in NoteViews.Map (keyed by Permalink) and returns NoteView.Path (the
+	// filesystem path), ensuring scope globs match the same namespace as writes.
+	if fsPath == "" && path != "" {
+		fsPath = resolveFsPathFromPermalink(r.env(ctx).LatestNoteViews(), path)
+	}
+
+	// Enforce read_patterns using the filesystem path so scope globs (e.g.
+	// "boards/**") match the same namespace as write_patterns.
+	// Fail-closed: a scoped token with empty read_patterns denies all reads.
+	if appreq.Scoped(ctx) {
+		rp := appreq.WebhookReadPatterns(ctx)
+		checkPath := fsPath
+		if checkPath == "" {
+			checkPath = path // fallback: URL path if filesystem path unknown
+		}
+		if len(rp) == 0 || !webhookutil.MatchesAny(checkPath, rp) {
+			return nil, nil
 		}
 	}
 
@@ -3139,7 +3183,11 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	}
 
 	if filter != nil && len(filter.Paths) > 0 {
-		return r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
+		paths, fetchErr := r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		return filterNotePathsByScope(ctx, paths), nil
 	}
 
 	if filter != nil && filter.Search != nil {
@@ -3148,6 +3196,8 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 			return nil, searchErr
 		}
 
+		// Search already filters by read_patterns (sitesearch.Resolve enforces
+		// scope); convertSearchResultsToNotePath only wraps the results.
 		return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
 	}
 
@@ -3159,10 +3209,18 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 			return nil, errors.New("too many wildcard characters in pattern")
 		}
 
-		return r.env(ctx).ListNotePathsLike(ctx, pattern)
+		paths, fetchErr := r.env(ctx).ListNotePathsLike(ctx, pattern)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		return filterNotePathsByScope(ctx, paths), nil
 	}
 
-	return r.env(ctx).AllVisibleNotePaths(ctx)
+	paths, fetchErr := r.env(ctx).AllVisibleNotePaths(ctx)
+	if fetchErr != nil {
+		return nil, fetchErr
+	}
+	return filterNotePathsByScope(ctx, paths), nil
 }
 
 // ResolveWikilinks is the resolver for the resolveWikilinks field.
@@ -3181,16 +3239,20 @@ func (r *queryResolver) ResolveWikilinks(ctx context.Context, filter model.Resol
 	results := make([]model.WikilinkResolution, len(filter.Links))
 	for i, link := range filter.Links {
 		res := model.WikilinkResolution{Link: link}
-		if nvs != nil {
+		if nvs != nil { //nolint:nestif // wikilink resolution requires nil-guard, target resolution, and read-pattern enforcement
 			if target := nvs.ResolveWikilinkTarget(source, link); target != nil {
-				res.Path = &target.Path
-				var url string
-				if target.Slug != "" {
-					url = target.PermalinkOriginal
-				} else {
-					url = target.Permalink
+				// Enforce read_patterns: a scoped token must not learn the
+				// existence or path of notes outside its scope.
+				if wikilinkTargetAllowed(ctx, target.Path) {
+					res.Path = &target.Path
+					var url string
+					if target.Slug != "" {
+						url = target.PermalinkOriginal
+					} else {
+						url = target.Permalink
+					}
+					res.URL = &url
 				}
-				res.URL = &url
 			}
 		}
 		results[i] = res

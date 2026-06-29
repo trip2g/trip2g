@@ -745,6 +745,9 @@ type AdminChangeWebhook @goModel(model: "trip2g/internal/db.ChangeWebhook") {
   onRemove: Boolean!
   readPatterns: [String!]! @goField(forceResolver: true)
   writePatterns: [String!]! @goField(forceResolver: true)
+  transformJsonnet: String!
+  attachNotes: [String!]! @goField(forceResolver: true)
+  concurrencyMode: String!
 }
 
 type AdminChangeWebhooksConnection {
@@ -788,6 +791,9 @@ type AdminCronWebhook @goModel(model: "trip2g/internal/db.CronWebhook") {
   description: String!
   readPatterns: [String!]! @goField(forceResolver: true)
   writePatterns: [String!]! @goField(forceResolver: true)
+  transformJsonnet: String!
+  attachNotes: [String!]! @goField(forceResolver: true)
+  concurrencyMode: String!
   nextRunAt: Time
   createdAt: Time!
   createdBy: AdminUser! @goField(forceResolver: true)
@@ -3301,6 +3307,9 @@ input ChangeWebhookCreateInput {
   onRemove: Boolean
   readPatterns: [String!]
   writePatterns: [String!]
+  transformJsonnet: String
+  attachNotes: [String!]
+  concurrencyMode: String
 }
 
 type ChangeWebhookCreatePayload {
@@ -3332,6 +3341,9 @@ input ChangeWebhookUpdateInput {
   onRemove: Boolean
   readPatterns: [String!]
   writePatterns: [String!]
+  transformJsonnet: String
+  attachNotes: [String!]
+  concurrencyMode: String
 }
 
 type ChangeWebhookUpdatePayload {
@@ -3403,6 +3415,9 @@ input CreateCronWebhookInput {
   description: String
   readPatterns: [String!]
   writePatterns: [String!]
+  transformJsonnet: String
+  attachNotes: [String!]
+  concurrencyMode: String
 }
 
 type CreateCronWebhookPayload {
@@ -3429,6 +3444,9 @@ input UpdateCronWebhookInput {
   description: String
   readPatterns: [String!]
   writePatterns: [String!]
+  transformJsonnet: String
+  attachNotes: [String!]
+  concurrencyMode: String
 }
 
 type UpdateCronWebhookPayload {

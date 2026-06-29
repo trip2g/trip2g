@@ -29,6 +29,10 @@ insert into note_versions (path_id, version, content, created_by_user_id, create
 values (?, ?, ?, ?, ?, ?)
 returning id;
 
+-- name: InsertNoteVersionDeliveryAttribution :exec
+insert into note_version_delivery_attribution (note_version_id, delivery_kind, delivery_id)
+values (?, ?, ?);
+
 -- name: InsertUserWithEmail :one
 insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(created_via))
 returning *;
@@ -935,8 +939,8 @@ delete from oidc_credentials where id = ?;
 -- ============================================
 
 -- name: InsertWebhook :one
-insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into change_webhooks (url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, description, on_create, on_update, on_remove, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning *;
 
 -- name: UpdateWebhook :one
@@ -957,6 +961,9 @@ set url = coalesce(sqlc.narg(url), url),
     on_remove = coalesce(sqlc.narg(on_remove), on_remove),
     read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
     write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    transform_jsonnet = coalesce(sqlc.narg(transform_jsonnet), transform_jsonnet),
+    attach_notes = coalesce(sqlc.narg(attach_notes), attach_notes),
+    concurrency_mode = coalesce(sqlc.narg(concurrency_mode), concurrency_mode),
     updated_at = datetime('now')
 where id = sqlc.arg(id) and disabled_at is null
 returning *;
@@ -977,19 +984,66 @@ insert into change_webhook_deliveries (webhook_id, attempt)
 values (?, ?)
 returning *;
 
+-- name: InsertWebhookDeliveryIfClear :one
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for
+-- this webhook within the stale window (heartbeat/started/created coalesced).
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select sqlc.arg(webhook_id), 1, 'pending'
+where sqlc.arg(stale_window) is not null
+  and not exists (
+    select 1 from change_webhook_deliveries
+    where webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
+returning *;
+
+-- name: InsertWebhookDeliveryIfNoPending :one
+-- queue_one mode: insert only if there is no pending delivery already queued.
+insert into change_webhook_deliveries (webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from change_webhook_deliveries
+  where webhook_id = ?1 and status = 'pending')
+returning *;
+
+-- name: MarkWebhookDeliveryRunning :exec
+update change_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending';
+
+-- name: ExpireStaleWebhookDeliveries :exec
+-- janitor: finalize orphaned 'running'/'pending' deliveries whose liveness window
+-- (per-webhook timeout_seconds + 30s margin) has lapsed, marking them 'failed'.
+-- Using the webhook's own timeout prevents premature reaping of long-running agents.
+-- 'pending' rows are also expired so queue_one orphans cannot block forever.
+update change_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status in ('running', 'pending')
+  and exists (
+    select 1 from change_webhooks w
+    where w.id = change_webhook_deliveries.webhook_id
+      and datetime(coalesce(change_webhook_deliveries.heartbeat_at,
+                            change_webhook_deliveries.started_at,
+                            change_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'));
+
 -- name: UpdateWebhookDeliveryResult :exec
 update change_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = sqlc.arg(status),
+    response_status = sqlc.narg(response_status),
+    duration_ms = sqlc.narg(duration_ms),
+    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
+    steps = coalesce(sqlc.narg(steps), steps),
     completed_at = datetime('now')
-where id = ?;
+where id = sqlc.arg(id);
 
 -- ============================================
 -- Cron Webhooks
 -- ============================================
 
 -- name: InsertCronWebhook :one
-insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, description, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+insert into cron_webhooks (url, cron_schedule, instruction, secret, pass_api_key, timeout_seconds, max_depth, max_retries, next_run_at, read_patterns, write_patterns, transform_jsonnet, attach_notes, concurrency_mode, description, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 returning *;
 
 -- name: UpdateCronWebhook :one
@@ -1003,6 +1057,9 @@ set url = coalesce(sqlc.narg(url), url),
     max_retries = coalesce(sqlc.narg(max_retries), max_retries),
     read_patterns = coalesce(sqlc.narg(read_patterns), read_patterns),
     write_patterns = coalesce(sqlc.narg(write_patterns), write_patterns),
+    transform_jsonnet = coalesce(sqlc.narg(transform_jsonnet), transform_jsonnet),
+    attach_notes = coalesce(sqlc.narg(attach_notes), attach_notes),
+    concurrency_mode = coalesce(sqlc.narg(concurrency_mode), concurrency_mode),
     enabled = coalesce(sqlc.narg(enabled), enabled),
     description = coalesce(sqlc.narg(description), description),
     updated_at = datetime('now')
@@ -1030,11 +1087,56 @@ insert into cron_webhook_deliveries (cron_webhook_id, attempt)
 values (?, ?)
 returning *;
 
+-- name: InsertCronWebhookDeliveryIfClear :one
+-- skip mode: insert only if no in-flight (pending/running) delivery exists for
+-- this cron webhook within the stale window (heartbeat/started/created coalesced).
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select sqlc.arg(cron_webhook_id), 1, 'pending'
+where sqlc.arg(stale_window) is not null
+  and not exists (
+    select 1 from cron_webhook_deliveries
+    where cron_webhook_id = ?1
+      and status in ('pending','running')
+      and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
+returning *;
+
+-- name: InsertCronWebhookDeliveryIfNoPending :one
+insert into cron_webhook_deliveries (cron_webhook_id, attempt, status)
+select ?, 1, 'pending'
+where not exists (
+  select 1 from cron_webhook_deliveries
+  where cron_webhook_id = ?1 and status = 'pending')
+returning *;
+
+-- name: MarkCronWebhookDeliveryRunning :exec
+update cron_webhook_deliveries
+set status = 'running', started_at = datetime('now')
+where id = ? and status = 'pending';
+
+-- name: ExpireStaleCronWebhookDeliveries :exec
+-- janitor: finalize orphaned 'running'/'pending' cron deliveries using per-webhook
+-- timeout_seconds + 30s margin, preventing premature reaping of long-running agents.
+-- 'pending' rows are also expired so queue_one orphans cannot block forever.
+update cron_webhook_deliveries
+set status = 'failed', completed_at = datetime('now')
+where status in ('running', 'pending')
+  and exists (
+    select 1 from cron_webhooks w
+    where w.id = cron_webhook_deliveries.cron_webhook_id
+      and datetime(coalesce(cron_webhook_deliveries.heartbeat_at,
+                            cron_webhook_deliveries.started_at,
+                            cron_webhook_deliveries.created_at),
+                   '+' || (w.timeout_seconds + 30) || ' seconds') < datetime('now'));
+
 -- name: UpdateCronWebhookDeliveryResult :exec
 update cron_webhook_deliveries
-set status = ?, response_status = ?, duration_ms = ?,
+set status = sqlc.arg(status),
+    response_status = sqlc.narg(response_status),
+    duration_ms = sqlc.narg(duration_ms),
+    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
+    steps = coalesce(sqlc.narg(steps), steps),
     completed_at = datetime('now')
-where id = ?;
+where id = sqlc.arg(id);
 
 -- ============================================
 -- Webhook Delivery Logs

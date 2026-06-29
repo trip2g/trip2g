@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -625,4 +626,146 @@ func TestResolve_MixedBatch(t *testing.T) {
 	require.Contains(t, payload.Paths, "old.md")
 	require.Equal(t, 2, insertCallCount)
 	require.Equal(t, 1, hideCallCount)
+}
+
+func TestResolve_WriteDeniedOutOfPattern(t *testing.T) {
+	req := &appreq.Request{WebhookWritePatterns: []string{"boards/**"}}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	env := &mockEnv{
+		latestNoteViews: appmodel.NewNoteViews,
+		// insertNote intentionally nil — must NOT be reached.
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "secrets/private.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	ep, ok := out.(*model.ErrorPayload)
+	require.True(t, ok)
+	require.Contains(t, ep.Message, "write denied for path: secrets/private.md")
+}
+
+func TestResolve_WriteAllowedInPattern(t *testing.T) {
+	req := &appreq.Request{WebhookWritePatterns: []string{"boards/**"}}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "boards/sprint.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
+	require.True(t, called)
+}
+
+// F2: scoped token (WebhookDeliveryKind set) + empty write_patterns → deny-all.
+func TestResolve_ScopedToken_EmptyWritePatterns_DenyAll(t *testing.T) {
+	tests := []struct {
+		name   string
+		change model.NoteChangeInput
+	}{
+		{
+			name:   "upsert denied",
+			change: model.NoteChangeInput{Upsert: &model.NoteChangeUpsertInput{Path: "any.md", Content: "x"}},
+		},
+		{
+			name:   "patch denied",
+			change: model.NoteChangeInput{Patch: &model.NoteChangePatchInput{Path: "any.md", Find: "x", Replace: "y"}},
+		},
+		{
+			name:   "hide denied",
+			change: model.NoteChangeInput{Hide: &model.NoteChangeHideInput{Path: "any.md"}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Scoped token: DeliveryKind set, WritePatterns deliberately empty (CRUD default).
+			req := &appreq.Request{
+				WebhookDeliveryKind:  "change",
+				WebhookWritePatterns: []string{}, // empty = should be deny-all when scoped
+			}
+			ctx := appreq.NewContext(context.Background(), req)
+
+			nvs := makeNVSWithNote("any.md", "existing", 1)
+			env := &mockEnv{
+				latestNoteViews: func() *appmodel.NoteViews { return nvs },
+				// insertNote and hideNotePath intentionally nil — must NOT be reached.
+			}
+
+			out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+				ApiKey:  db.ApiKey{},
+				Changes: []model.NoteChangeInput{tc.change},
+			})
+			require.NoError(t, err)
+			ep, ok := out.(*model.ErrorPayload)
+			require.True(t, ok, "expected *ErrorPayload (write denied), got %T", out)
+			require.Contains(t, ep.Message, "write denied")
+		})
+	}
+}
+
+// F2: scoped token + non-empty matching write_patterns → allowed.
+func TestResolve_ScopedToken_MatchingPattern_Allowed(t *testing.T) {
+	req := &appreq.Request{
+		WebhookDeliveryKind:  "cron",
+		WebhookWritePatterns: []string{"notes/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "notes/todo.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
+	require.True(t, called)
+}
+
+// F2: unscoped/admin request (no DeliveryKind) + empty write_patterns → allowed (unchanged behavior).
+func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
+	// No appreq in context — simulates admin/unscoped request.
+	ctx := context.Background()
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "anything.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
+	require.True(t, called)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -39,9 +40,16 @@ type DeliverChangeWebhookParams struct {
 	PreviousError string       `json:"previous_error,omitempty"`
 }
 
+// webhookStaleMarginSeconds is added on top of a webhook's timeout_seconds when
+// computing whether an existing delivery is still legitimately in-flight.
+// This small grace period absorbs clock skew and DB write latency.
+const webhookStaleMarginSeconds = int64(30)
+
 type Env interface {
 	ListEnabledWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhookDeliveryParams) (db.ChangeWebhookDelivery, error)
+	InsertWebhookDeliveryIfClear(ctx context.Context, arg db.InsertWebhookDeliveryIfClearParams) (db.ChangeWebhookDelivery, error)
+	InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (db.ChangeWebhookDelivery, error)
 	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverChangeWebhook(ctx context.Context, params DeliverChangeWebhookParams) error
 	Logger() logger.Logger
@@ -108,9 +116,46 @@ func matchChange(ch NoteChange, wh db.ChangeWebhook, nvs *model.NoteViews, inclu
 	return &info
 }
 
+// attachGateSatisfied reports whether the webhook's attach_notes preconditions
+// hold against the current note set. A plain glob requires >=1 matching note;
+// a "!glob" requires 0 matching notes. Empty attach is always satisfied.
+func attachGateSatisfied(attach []string, nvs *model.NoteViews) bool {
+	for _, pat := range attach {
+		if strings.HasPrefix(pat, "!") {
+			if anyNoteMatches(strings.TrimPrefix(pat, "!"), nvs) {
+				return false // required-absent glob matched something
+			}
+			continue
+		}
+		if !anyNoteMatches(pat, nvs) {
+			return false // required-present glob matched nothing
+		}
+	}
+	return true
+}
+
+func anyNoteMatches(glob string, nvs *model.NoteViews) bool {
+	if nvs == nil {
+		return false
+	}
+	for path := range nvs.PathMap {
+		if webhookutil.MatchesAny(path, []string{glob}) {
+			return true
+		}
+	}
+	return false
+}
+
+// AttachGateSatisfiedForTest exposes attachGateSatisfied to the test package.
+func AttachGateSatisfiedForTest(attach []string, nvs *model.NoteViews) bool {
+	return attachGateSatisfied(attach, nvs)
+}
+
 // Resolve processes changed notes against enabled webhooks.
 // It filters by depth, event type, and glob patterns, then creates
 // delivery records and enqueues background jobs for matching webhooks.
+//
+//nolint:gocognit // multi-webhook fanout with per-note filtering, depth, event, and pattern checks
 func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) error {
 	if len(changes) == 0 {
 		return nil
@@ -160,16 +205,51 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 			continue
 		}
 
+		// attach_notes presence gate: skip if the role's required context is
+		// absent (plain glob) or a forbidden note is present ("!glob").
+		var attach []string
+		if wh.AttachNotes != "" {
+			var attachErr error
+			attach, attachErr = webhookutil.ParseJSONStringArray(wh.AttachNotes)
+			if attachErr != nil {
+				env.Logger().Error("failed to parse attach_notes", "webhook_id", wh.ID, "error", attachErr)
+				continue
+			}
+		}
+		if !attachGateSatisfied(attach, nvs) {
+			continue
+		}
+
 		// Sort by path for deterministic ordering.
 		sort.Slice(matched, func(i, j int) bool {
 			return matched[i].Path < matched[j].Path
 		})
 
-		// Create delivery record.
-		delivery, insertErr := env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
-			WebhookID: wh.ID,
-			Attempt:   1,
-		})
+		// Create delivery record, respecting the webhook's concurrency_mode.
+		// For skip mode the stale window is derived from the webhook's own timeout_seconds
+		// (+ a small margin), so a long-running delivery is not treated as stale prematurely.
+		staleWindow := fmt.Sprintf("-%d seconds", wh.TimeoutSeconds+webhookStaleMarginSeconds)
+
+		var delivery db.ChangeWebhookDelivery
+		var insertErr error
+		switch webhookutil.NormalizeConcurrencyMode(wh.ConcurrencyMode) {
+		case webhookutil.ConcurrencySkip:
+			delivery, insertErr = env.InsertWebhookDeliveryIfClear(ctx, db.InsertWebhookDeliveryIfClearParams{
+				WebhookID:   wh.ID,
+				StaleWindow: staleWindow,
+			})
+		case webhookutil.ConcurrencyQueueOne:
+			delivery, insertErr = env.InsertWebhookDeliveryIfNoPending(ctx, wh.ID)
+		default: // ConcurrencyAllowOverlap
+			delivery, insertErr = env.InsertWebhookDelivery(ctx, db.InsertWebhookDeliveryParams{
+				WebhookID: wh.ID,
+				Attempt:   1,
+			})
+		}
+		if db.IsNoFound(insertErr) {
+			// skip/queue_one: nothing inserted because an in-flight/pending exists.
+			continue
+		}
 		if insertErr != nil {
 			env.Logger().Error("failed to insert webhook delivery", "webhook_id", wh.ID, "error", insertErr)
 			continue

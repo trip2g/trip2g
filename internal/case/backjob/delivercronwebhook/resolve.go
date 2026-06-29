@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
@@ -40,9 +41,11 @@ var ResponseSchema = json.RawMessage(`{
 
 type Env interface {
 	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
+	MarkCronWebhookDeliveryRunning(ctx context.Context, id int64) error
 	UpdateCronWebhookDeliveryResult(ctx context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
+	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverCronWebhook(ctx context.Context, params DeliverCronParams) error
 	ShortAPITokenSecret() string
 	WebhookHTTPClient() *fasthttp.Client
@@ -53,13 +56,19 @@ type Env interface {
 // cronWebhookPayload is the JSON body sent to the cron webhook endpoint.
 type cronWebhookPayload struct {
 	webhookutil.BasePayload
-	Instruction    string            `json:"instruction"`
-	ResponseSchema json.RawMessage   `json:"response_schema"`
-	APIToken       string            `json:"api_token,omitempty"`
-	Secrets        map[string]string `json:"secrets,omitempty"`
-	PreviousError  string            `json:"previous_error,omitempty"`
+	Instruction    string                     `json:"instruction"`
+	ResponseSchema json.RawMessage            `json:"response_schema"`
+	AttachedNotes  []webhookutil.AttachedNote `json:"attached_notes,omitempty"`
+	APIToken       string                     `json:"api_token,omitempty"`
+	Secrets        map[string]string          `json:"secrets,omitempty"`
+	PreviousError  string                     `json:"previous_error,omitempty"`
 }
 
+// tokenTTLMargin is the small grace window added to the delivery timeout for
+// the scoped write-back token. Replaces the former 60-minute floor.
+const tokenTTLMargin = 30 * time.Second
+
+//nolint:gocognit,gocyclo,cyclop,funlen // cron delivery resolver handles full lifecycle: attach-gate, fan-out, write-back, secrets
 func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	log := env.Logger()
 
@@ -69,14 +78,45 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		return fmt.Errorf("failed to load cron webhook %d: %w", params.CronWebhookID, err)
 	}
 
+	if params.Attempt <= 1 {
+		if mErr := env.MarkCronWebhookDeliveryRunning(ctx, params.DeliveryID); mErr != nil {
+			log.Error("failed to mark cron delivery running", "delivery_id", params.DeliveryID, "error", mErr)
+		}
+	}
+
 	p, _ := model.CronWebhookSecretPrefix(params.CronWebhookID)
 	secrets := loadCronSecrets(ctx, env, log, p.String())
+
+	// Materialize attach_notes context and apply presence gate.
+	var attachedNotes []webhookutil.AttachedNote
+	if wh.AttachNotes != "" && wh.AttachNotes != "[]" { //nolint:nestif // attach-gate requires parse, nil-check, and gate evaluation
+		attach, aerr := webhookutil.ParseJSONStringArray(wh.AttachNotes)
+		if aerr != nil {
+			log.Error("failed to parse attach_notes", "cron_webhook_id", wh.ID, "error", aerr)
+		} else {
+			nvs := env.LatestNoteViews()
+			if !webhookutil.AttachGateSatisfied(attach, nvs) {
+				log.Info("cron delivery skipped: attach_notes gate not satisfied",
+					"cron_webhook_id", wh.ID, "delivery_id", params.DeliveryID)
+				updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
+					Status: "success",
+					ID:     params.DeliveryID,
+				})
+				if updateErr != nil {
+					log.Error("failed to mark skipped cron delivery", "delivery_id", params.DeliveryID, "error", updateErr)
+				}
+				return nil
+			}
+			attachedNotes = webhookutil.MaterializeAttachedNotes(attach, nvs)
+		}
+	}
 
 	// Build payload.
 	payload := cronWebhookPayload{
 		BasePayload:    webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
 		Instruction:    wh.Instruction,
 		ResponseSchema: ResponseSchema,
+		AttachedNotes:  attachedNotes,
 		Secrets:        secrets,
 		PreviousError:  params.PreviousError,
 	}
@@ -93,18 +133,17 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		readPatterns, rpErr := webhookutil.ParseJSONStringArray(wh.ReadPatterns)
 		if rpErr != nil {
 			log.Error("failed to parse read_patterns", "cron_webhook_id", wh.ID, "error", rpErr)
-			readPatterns = []string{"*"}
+			readPatterns = []string{"**"}
 		}
 
-		ttl := time.Duration(wh.TimeoutSeconds) * time.Second
-		if ttl < 60*time.Minute {
-			ttl = 60 * time.Minute
-		}
+		ttl := time.Duration(wh.TimeoutSeconds)*time.Second + tokenTTLMargin
 
 		token, signErr := shortapitoken.Sign(shortapitoken.Data{
 			Depth:         1, // Cron webhooks always start at depth 1.
 			ReadPatterns:  readPatterns,
 			WritePatterns: writePatterns,
+			DeliveryKind:  "cron",
+			DeliveryID:    params.DeliveryID,
 		}, env.ShortAPITokenSecret(), ttl)
 		if signErr != nil {
 			log.Error("failed to sign short API token", "cron_webhook_id", wh.ID, "error", signErr)
@@ -117,6 +156,19 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal cron webhook payload: %w", err)
+	}
+
+	// Apply outbound transform (if configured) strictly between marshal and
+	// sign, so both the HMAC and the actual sent bytes are the transformed result.
+	transformed := wh.TransformJsonnet != ""
+	if transformed {
+		out, terr := jsonneteval.EvalJSON(wh.TransformJsonnet, transformExtVars(payloadBytes))
+		if terr != nil {
+			handleCronDeliveryError(ctx, env, params,
+				webhookutil.DeliveryResult{Err: fmt.Errorf("transform_jsonnet: %w", terr)}, wh)
+			return nil
+		}
+		payloadBytes = out
 	}
 
 	// Sign payload with HMAC.
@@ -136,7 +188,24 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	result := webhookutil.Deliver(env.WebhookHTTPClient(), wh.Url, payloadBytes, headers, timeout)
 
 	// Save delivery log.
-	requestBodyStr := string(payloadBytes)
+	// F9(d): when transform_jsonnet is active, payloadBytes IS the transformed
+	// output (api_token/secrets never appear there — transformExtVars excludes
+	// them). Log those bytes directly so the logged body matches what was sent.
+	// Without a transform, log a redacted copy of the pre-marshal struct with
+	// APIToken and Secrets zeroed out.
+	var requestBodyStr string
+	if transformed {
+		requestBodyStr = string(payloadBytes)
+	} else {
+		redacted := payload
+		redacted.APIToken = ""
+		redacted.Secrets = nil
+		redactedBytes, redErr := json.Marshal(redacted)
+		if redErr != nil {
+			redactedBytes = []byte("{}")
+		}
+		requestBodyStr = string(redactedBytes)
+	}
 	logParams := db.InsertWebhookDeliveryLogParams{
 		DeliveryID:  params.DeliveryID,
 		Kind:        "cron",
@@ -202,11 +271,24 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		return nil
 	}
 
+	// Parse fleet-reported spend (tokens/steps) from the response body.
+	var tokensUsed, steps *int64
+	if resp, perr := webhookutil.ParseAgentResponse(result.Body); perr == nil && resp != nil {
+		if resp.TokensUsed > 0 {
+			tokensUsed = ptr.To(int64(resp.TokensUsed))
+		}
+		if resp.Steps > 0 {
+			steps = ptr.To(int64(resp.Steps))
+		}
+	}
+
 	// Mark as success.
 	updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
 		Status:         "success",
 		ResponseStatus: ptr.To(int64(result.StatusCode)),
 		DurationMs:     ptr.To(result.DurationMs),
+		TokensUsed:     tokensUsed,
+		Steps:          steps,
 		ID:             params.DeliveryID,
 	})
 	if updateErr != nil {
@@ -267,6 +349,26 @@ func handleCronDeliveryError(ctx context.Context, env Env, params DeliverCronPar
 	}
 }
 
+// transformExtVars exposes non-secret payload fields to the jsonnet transform.
+// api_token and secrets are never exposed.
+func transformExtVars(payloadBytes []byte) map[string]string {
+	var p map[string]json.RawMessage
+	if err := json.Unmarshal(payloadBytes, &p); err != nil {
+		return map[string]string{}
+	}
+	ev := make(map[string]string, 3)
+	for _, k := range []string{"changes", "attached_notes", "meta"} {
+		if v, ok := p[k]; ok {
+			key := k
+			if k == "changes" {
+				key = "change"
+			}
+			ev[key] = string(v)
+		}
+	}
+	return ev
+}
+
 // applyCronAgentChanges parses and applies agent response changes.
 func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.DeliveryResult, writePatterns []string) error {
 	agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
@@ -277,14 +379,46 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 		return nil
 	}
 
+	// Read the current note views once; needed for patch operations.
+	nvs := env.LatestNoteViews()
+
 	for _, change := range agentResp.Changes {
-		if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
+		// Deny-all when write_patterns is empty: a cron webhook delivery is always a
+		// scoped context, so an empty list means "no writes permitted" rather
+		// than "allow all". Also deny on no-match when non-empty.
+		if len(writePatterns) == 0 || !webhookutil.MatchesAny(change.Path, writePatterns) {
 			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
+		}
+
+		var content string
+		if change.Kind == "patch" { //nolint:nestif // patch requires sequential null-checks before string ops
+			// Apply find/replace against the note's current content.
+			// Matches updateNotes Patch semantics: find must be present exactly once.
+			if nvs == nil {
+				return fmt.Errorf("note not found for patch: %s", change.Path)
+			}
+			nv := nvs.PathMap[change.Path]
+			if nv == nil {
+				return fmt.Errorf("note not found for patch: %s", change.Path)
+			}
+			current := string(nv.Content)
+			idx := strings.Index(current, change.Find)
+			if idx == -1 {
+				return fmt.Errorf("patch find string not found in %s", change.Path)
+			}
+			// Reject ambiguous finds (multiple occurrences) to match updateNotes Patch semantics.
+			if strings.Contains(current[idx+len(change.Find):], change.Find) {
+				return fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
+			}
+			content = current[:idx] + change.Replace + current[idx+len(change.Find):]
+		} else {
+			// Kind=="" or "upsert": upsert with provided content.
+			content = change.Content
 		}
 
 		_, insertErr := env.InsertNote(ctx, model.RawNote{
 			Path:    change.Path,
-			Content: change.Content,
+			Content: content,
 		})
 		if insertErr != nil {
 			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)

@@ -149,6 +149,13 @@ func (a *app) NoteVersionActor(ctx context.Context) model.NoteActor {
 		actor.Client = &c
 	}
 
+	if kind := req.WebhookDeliveryKind; kind != "" {
+		k := kind
+		actor.DeliveryKind = &k
+		id := req.WebhookDeliveryID
+		actor.DeliveryID = &id
+	}
+
 	return actor
 }
 

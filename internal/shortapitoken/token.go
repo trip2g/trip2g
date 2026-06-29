@@ -13,6 +13,8 @@ type Data struct {
 	Depth         int      `json:"d"`
 	ReadPatterns  []string `json:"rp"`
 	WritePatterns []string `json:"wp"`
+	DeliveryKind  string   `json:"dk,omitempty"` // "change" | "cron"
+	DeliveryID    int64    `json:"di,omitempty"`
 }
 
 type claims struct {

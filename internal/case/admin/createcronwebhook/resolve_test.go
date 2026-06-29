@@ -3,8 +3,22 @@ package createcronwebhook
 import (
 	"testing"
 
+	"trip2g/internal/webhookutil"
+
 	"github.com/stretchr/testify/require"
 )
+
+// TestDefaultReadPattern_MatchesNestedNote proves that the default read_patterns
+// value ["**"] matches nested note paths, while the old default ["*"] did not.
+func TestDefaultReadPattern_MatchesNestedNote(t *testing.T) {
+	nestedPaths := []string{"boards/sprint.md", "inbox/req.md", "a/b/c.md"}
+	for _, path := range nestedPaths {
+		require.True(t, webhookutil.MatchesAny(path, []string{"**"}),
+			"default [\"**\"] must match nested note %q", path)
+		require.False(t, webhookutil.MatchesAny(path, []string{"*"}),
+			"old default [\"*\"] must NOT match nested note %q — proves the bug was real", path)
+	}
+}
 
 func TestValidateBounds(t *testing.T) {
 	tests := []struct {

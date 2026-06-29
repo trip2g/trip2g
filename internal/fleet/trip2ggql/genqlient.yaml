@@ -1,0 +1,13 @@
+# genqlient configuration for the fleet's trip2g admin-lane GraphQL operations.
+# The operations in operations.graphql are validated against the full trip2g
+# schema at generation time, so a wrong field, nesting, or input name fails
+# `go generate ./internal/fleet/trip2ggql/...` instead of at runtime.
+schema: ../../graph/schema.graphqls
+operations:
+  - operations.graphql
+generated: genqlient.gen.go
+package: trip2ggql
+bindings:
+  # trip2g's 64-bit integer scalar maps to a plain Go int64.
+  Int64:
+    type: int64

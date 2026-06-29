@@ -10,6 +10,7 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
 )
@@ -21,6 +22,23 @@ type Env interface {
 
 type Input = model.ChangeWebhookCreateInput
 type Payload = model.ChangeWebhookCreateOrErrorPayload
+
+// validateTransformJsonnet rejects a transform that cannot even evaluate.
+func validateTransformJsonnet(src *string) *model.ErrorPayload {
+	if src == nil || *src == "" {
+		return nil
+	}
+	if err := jsonneteval.Validate(*src, map[string]string{
+		"change":         "[]",
+		"attached_notes": "[]",
+		"meta":           "{}",
+	}); err != nil {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "invalid jsonnet: " + err.Error()},
+		}}
+	}
+	return nil
+}
 
 func validateInput(i *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
@@ -48,10 +66,31 @@ func validateBounds(maxDepth, timeoutSeconds, maxRetries int64) *model.ErrorPayl
 	return nil
 }
 
+//nolint:gocognit,gocyclo,cyclop,funlen // complex webhook creation with many optional fields and cross-field validations
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	errPayload := validateInput(&input)
 	if errPayload != nil {
 		return errPayload, nil
+	}
+
+	if ep := validateTransformJsonnet(input.TransformJsonnet); ep != nil {
+		return ep, nil
+	}
+
+	// F9(a): require https when the api_token will be sent in the body.
+	if input.PassAPIKey != nil && *input.PassAPIKey {
+		if msg := webhookutil.RequireHTTPS(input.URL); msg != "" {
+			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
+		}
+	}
+
+	// F9(b): transform_jsonnet output replaces the entire body, silently dropping
+	// the injected api_token. Reject the combination at creation time.
+	if input.TransformJsonnet != nil && *input.TransformJsonnet != "" &&
+		input.PassAPIKey != nil && *input.PassAPIKey {
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "transformJsonnet", Value: "transform_jsonnet cannot be combined with pass_api_key"},
+		}}, nil
 	}
 
 	token, err := env.CurrentAdminUserToken(ctx)
@@ -87,7 +126,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	readPatterns := input.ReadPatterns
 	if readPatterns == nil {
-		readPatterns = []string{"*"}
+		readPatterns = []string{"**"}
 	}
 	readJSON, err := json.Marshal(readPatterns)
 	if err != nil {
@@ -101,6 +140,31 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	writeJSON, err := json.Marshal(writePatterns)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
+	}
+
+	attachNotes := input.AttachNotes
+	if attachNotes == nil {
+		attachNotes = []string{}
+	}
+	attachJSON, err := json.Marshal(attachNotes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal attach_notes: %w", err)
+	}
+
+	transformJsonnet := ""
+	if input.TransformJsonnet != nil {
+		transformJsonnet = *input.TransformJsonnet
+	}
+
+	concurrencyMode := webhookutil.ConcurrencyAllowOverlap
+	if input.ConcurrencyMode != nil {
+		concurrencyMode = *input.ConcurrencyMode
+	}
+	if modeErr := webhookutil.ValidateConcurrencyMode(concurrencyMode); modeErr != nil {
+		//nolint:nilerr // returning user-facing validation error
+		return &model.ErrorPayload{ByFields: []model.FieldMessage{
+			{Name: "concurrencyMode", Value: modeErr.Error()},
+		}}, nil
 	}
 
 	// Set defaults for optional fields.
@@ -151,23 +215,26 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	params := db.InsertWebhookParams{
-		Url:             input.URL,
-		IncludePatterns: string(includeJSON),
-		ExcludePatterns: string(excludeJSON),
-		Instruction:     instruction,
-		Secret:          secret,
-		MaxDepth:        maxDepth,
-		PassApiKey:      passAPIKey,
-		IncludeContent:  includeContent,
-		TimeoutSeconds:  timeoutSeconds,
-		MaxRetries:      maxRetries,
-		Description:     description,
-		OnCreate:        onCreate,
-		OnUpdate:        onUpdate,
-		OnRemove:        onRemove,
-		ReadPatterns:    string(readJSON),
-		WritePatterns:   string(writeJSON),
-		CreatedBy:       int64(token.ID),
+		Url:              input.URL,
+		IncludePatterns:  string(includeJSON),
+		ExcludePatterns:  string(excludeJSON),
+		Instruction:      instruction,
+		Secret:           secret,
+		MaxDepth:         maxDepth,
+		PassApiKey:       passAPIKey,
+		IncludeContent:   includeContent,
+		TimeoutSeconds:   timeoutSeconds,
+		MaxRetries:       maxRetries,
+		Description:      description,
+		OnCreate:         onCreate,
+		OnUpdate:         onUpdate,
+		OnRemove:         onRemove,
+		ReadPatterns:     string(readJSON),
+		WritePatterns:    string(writeJSON),
+		TransformJsonnet: transformJsonnet,
+		AttachNotes:      string(attachJSON),
+		ConcurrencyMode:  concurrencyMode,
+		CreatedBy:        int64(token.ID),
 	}
 
 	webhook, err := env.InsertWebhook(ctx, params)

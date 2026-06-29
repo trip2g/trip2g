@@ -69,3 +69,52 @@ func TestParseAgentResponse_WithExpectedHash(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, &hash, resp.Changes[0].ExpectedHash)
 }
+
+func TestParseAgentResponse_ParsesSpend(t *testing.T) {
+	body := []byte(`{"status":"ok","tokens_used":1234,"steps":5,"changes":[]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, 1234, resp.TokensUsed)
+	require.Equal(t, 5, resp.Steps)
+}
+
+func TestParseAgentResponse_PatchChangeNoContentOK(t *testing.T) {
+	body := []byte(`{"changes":[{"path":"boards/sprint.md","find":"todo","replace":"doing","kind":"patch"}]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Changes, 1)
+	require.Equal(t, "patch", resp.Changes[0].Kind)
+	require.Equal(t, "todo", resp.Changes[0].Find)
+	require.Equal(t, "doing", resp.Changes[0].Replace)
+}
+
+func TestParseAgentResponse_PatchChangeMissingFind(t *testing.T) {
+	body := []byte(`{"changes":[{"path":"boards/sprint.md","kind":"patch"}]}`)
+	_, err := ParseAgentResponse(body)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid change")
+}
+
+// G9 regression: IsPatch must exist and return true only for patch kind.
+func TestAgentChangeIsPatch(t *testing.T) {
+	cases := []struct {
+		kind string
+		want bool
+	}{
+		{AgentChangeKindPatch, true},
+		{AgentChangeKindWrite, false},
+		{"", false},       // backward-compat: empty string = write
+		{"upsert", false}, // legacy alias also not patch
+	}
+	for _, tc := range cases {
+		c := AgentChange{Path: "x.md", Kind: tc.kind}
+		if tc.kind == AgentChangeKindPatch {
+			c.Find = "x"
+		} else {
+			c.Content = "y"
+		}
+		require.Equalf(t, tc.want, c.IsPatch(), "IsPatch() for kind=%q", tc.kind)
+	}
+}

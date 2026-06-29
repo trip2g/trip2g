@@ -2,6 +2,7 @@ package handlenotewebhooks_test
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 
 	"trip2g/internal/case/handlenotewebhooks"
@@ -25,6 +26,10 @@ type mockEnv struct {
 	insertDeliveryErr  error
 	enqueueDeliveryErr error
 	nextDeliveryID     int64
+
+	ifClearOK         bool
+	ifNoPendingOK     bool
+	lastIfClearWindow string // captures StaleWindow passed to InsertWebhookDeliveryIfClear
 }
 
 func newMockEnv() *mockEnv {
@@ -68,6 +73,31 @@ func (m *mockEnv) InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhoo
 	m.nextDeliveryID++
 
 	return delivery, nil
+}
+
+func (m *mockEnv) InsertWebhookDeliveryIfClear(ctx context.Context, arg db.InsertWebhookDeliveryIfClearParams) (db.ChangeWebhookDelivery, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if sw, ok := arg.StaleWindow.(string); ok {
+		m.lastIfClearWindow = sw
+	}
+	if !m.ifClearOK {
+		return db.ChangeWebhookDelivery{}, sql.ErrNoRows
+	}
+	id := m.nextDeliveryID
+	m.nextDeliveryID++
+	return db.ChangeWebhookDelivery{ID: id, WebhookID: arg.WebhookID, Status: "pending"}, nil
+}
+
+func (m *mockEnv) InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (db.ChangeWebhookDelivery, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.ifNoPendingOK {
+		return db.ChangeWebhookDelivery{}, sql.ErrNoRows
+	}
+	id := m.nextDeliveryID
+	m.nextDeliveryID++
+	return db.ChangeWebhookDelivery{ID: id, WebhookID: webhookID, Status: "pending"}, nil
 }
 
 func (m *mockEnv) LatestNoteViews() *model.NoteViews {

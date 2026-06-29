@@ -1027,22 +1027,25 @@ type BoolParamValue struct {
 func (BoolParamValue) IsLayoutBlockParamValue() {}
 
 type ChangeWebhookCreateInput struct {
-	URL             string   `json:"url"`
-	IncludePatterns []string `json:"includePatterns"`
-	ExcludePatterns []string `json:"excludePatterns,omitempty"`
-	Instruction     *string  `json:"instruction,omitempty"`
-	Secret          *string  `json:"secret,omitempty"`
-	MaxDepth        *int64   `json:"maxDepth,omitempty"`
-	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
-	IncludeContent  *bool    `json:"includeContent,omitempty"`
-	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
-	MaxRetries      *int64   `json:"maxRetries,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	OnCreate        *bool    `json:"onCreate,omitempty"`
-	OnUpdate        *bool    `json:"onUpdate,omitempty"`
-	OnRemove        *bool    `json:"onRemove,omitempty"`
-	ReadPatterns    []string `json:"readPatterns,omitempty"`
-	WritePatterns   []string `json:"writePatterns,omitempty"`
+	URL              string   `json:"url"`
+	IncludePatterns  []string `json:"includePatterns"`
+	ExcludePatterns  []string `json:"excludePatterns,omitempty"`
+	Instruction      *string  `json:"instruction,omitempty"`
+	Secret           *string  `json:"secret,omitempty"`
+	MaxDepth         *int64   `json:"maxDepth,omitempty"`
+	PassAPIKey       *bool    `json:"passApiKey,omitempty"`
+	IncludeContent   *bool    `json:"includeContent,omitempty"`
+	TimeoutSeconds   *int64   `json:"timeoutSeconds,omitempty"`
+	MaxRetries       *int64   `json:"maxRetries,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	OnCreate         *bool    `json:"onCreate,omitempty"`
+	OnUpdate         *bool    `json:"onUpdate,omitempty"`
+	OnRemove         *bool    `json:"onRemove,omitempty"`
+	ReadPatterns     []string `json:"readPatterns,omitempty"`
+	WritePatterns    []string `json:"writePatterns,omitempty"`
+	TransformJsonnet *string  `json:"transformJsonnet,omitempty"`
+	AttachNotes      []string `json:"attachNotes,omitempty"`
+	ConcurrencyMode  *string  `json:"concurrencyMode,omitempty"`
 }
 
 type ChangeWebhookCreatePayload struct {
@@ -1074,23 +1077,26 @@ type ChangeWebhookRegenerateSecretPayload struct {
 func (ChangeWebhookRegenerateSecretPayload) IsChangeWebhookRegenerateSecretOrErrorPayload() {}
 
 type ChangeWebhookUpdateInput struct {
-	ID              int64    `json:"id"`
-	URL             *string  `json:"url,omitempty"`
-	IncludePatterns []string `json:"includePatterns,omitempty"`
-	ExcludePatterns []string `json:"excludePatterns,omitempty"`
-	Instruction     *string  `json:"instruction,omitempty"`
-	MaxDepth        *int64   `json:"maxDepth,omitempty"`
-	PassAPIKey      *bool    `json:"passApiKey,omitempty"`
-	IncludeContent  *bool    `json:"includeContent,omitempty"`
-	TimeoutSeconds  *int64   `json:"timeoutSeconds,omitempty"`
-	MaxRetries      *int64   `json:"maxRetries,omitempty"`
-	Enabled         *bool    `json:"enabled,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	OnCreate        *bool    `json:"onCreate,omitempty"`
-	OnUpdate        *bool    `json:"onUpdate,omitempty"`
-	OnRemove        *bool    `json:"onRemove,omitempty"`
-	ReadPatterns    []string `json:"readPatterns,omitempty"`
-	WritePatterns   []string `json:"writePatterns,omitempty"`
+	ID               int64    `json:"id"`
+	URL              *string  `json:"url,omitempty"`
+	IncludePatterns  []string `json:"includePatterns,omitempty"`
+	ExcludePatterns  []string `json:"excludePatterns,omitempty"`
+	Instruction      *string  `json:"instruction,omitempty"`
+	MaxDepth         *int64   `json:"maxDepth,omitempty"`
+	PassAPIKey       *bool    `json:"passApiKey,omitempty"`
+	IncludeContent   *bool    `json:"includeContent,omitempty"`
+	TimeoutSeconds   *int64   `json:"timeoutSeconds,omitempty"`
+	MaxRetries       *int64   `json:"maxRetries,omitempty"`
+	Enabled          *bool    `json:"enabled,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	OnCreate         *bool    `json:"onCreate,omitempty"`
+	OnUpdate         *bool    `json:"onUpdate,omitempty"`
+	OnRemove         *bool    `json:"onRemove,omitempty"`
+	ReadPatterns     []string `json:"readPatterns,omitempty"`
+	WritePatterns    []string `json:"writePatterns,omitempty"`
+	TransformJsonnet *string  `json:"transformJsonnet,omitempty"`
+	AttachNotes      []string `json:"attachNotes,omitempty"`
+	ConcurrencyMode  *string  `json:"concurrencyMode,omitempty"`
 }
 
 type ChangeWebhookUpdatePayload struct {
@@ -1151,18 +1157,21 @@ type CreateBoostyCredentialsPayload struct {
 func (CreateBoostyCredentialsPayload) IsCreateBoostyCredentialsOrErrorPayload() {}
 
 type CreateCronWebhookInput struct {
-	URL            string   `json:"url"`
-	CronSchedule   string   `json:"cronSchedule"`
-	Instruction    *string  `json:"instruction,omitempty"`
-	Secret         *string  `json:"secret,omitempty"`
-	PassAPIKey     *bool    `json:"passApiKey,omitempty"`
-	TimeoutSeconds *int64   `json:"timeoutSeconds,omitempty"`
-	MaxDepth       *int64   `json:"maxDepth,omitempty"`
-	MaxRetries     *int64   `json:"maxRetries,omitempty"`
-	Enabled        *bool    `json:"enabled,omitempty"`
-	Description    *string  `json:"description,omitempty"`
-	ReadPatterns   []string `json:"readPatterns,omitempty"`
-	WritePatterns  []string `json:"writePatterns,omitempty"`
+	URL              string   `json:"url"`
+	CronSchedule     string   `json:"cronSchedule"`
+	Instruction      *string  `json:"instruction,omitempty"`
+	Secret           *string  `json:"secret,omitempty"`
+	PassAPIKey       *bool    `json:"passApiKey,omitempty"`
+	TimeoutSeconds   *int64   `json:"timeoutSeconds,omitempty"`
+	MaxDepth         *int64   `json:"maxDepth,omitempty"`
+	MaxRetries       *int64   `json:"maxRetries,omitempty"`
+	Enabled          *bool    `json:"enabled,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	ReadPatterns     []string `json:"readPatterns,omitempty"`
+	WritePatterns    []string `json:"writePatterns,omitempty"`
+	TransformJsonnet *string  `json:"transformJsonnet,omitempty"`
+	AttachNotes      []string `json:"attachNotes,omitempty"`
+	ConcurrencyMode  *string  `json:"concurrencyMode,omitempty"`
 }
 
 type CreateCronWebhookPayload struct {
@@ -2594,18 +2603,21 @@ type UpdateCronJobPayload struct {
 func (UpdateCronJobPayload) IsUpdateCronJobOrErrorPayload() {}
 
 type UpdateCronWebhookInput struct {
-	ID             int64    `json:"id"`
-	URL            *string  `json:"url,omitempty"`
-	CronSchedule   *string  `json:"cronSchedule,omitempty"`
-	Instruction    *string  `json:"instruction,omitempty"`
-	PassAPIKey     *bool    `json:"passApiKey,omitempty"`
-	TimeoutSeconds *int64   `json:"timeoutSeconds,omitempty"`
-	MaxDepth       *int64   `json:"maxDepth,omitempty"`
-	MaxRetries     *int64   `json:"maxRetries,omitempty"`
-	Enabled        *bool    `json:"enabled,omitempty"`
-	Description    *string  `json:"description,omitempty"`
-	ReadPatterns   []string `json:"readPatterns,omitempty"`
-	WritePatterns  []string `json:"writePatterns,omitempty"`
+	ID               int64    `json:"id"`
+	URL              *string  `json:"url,omitempty"`
+	CronSchedule     *string  `json:"cronSchedule,omitempty"`
+	Instruction      *string  `json:"instruction,omitempty"`
+	PassAPIKey       *bool    `json:"passApiKey,omitempty"`
+	TimeoutSeconds   *int64   `json:"timeoutSeconds,omitempty"`
+	MaxDepth         *int64   `json:"maxDepth,omitempty"`
+	MaxRetries       *int64   `json:"maxRetries,omitempty"`
+	Enabled          *bool    `json:"enabled,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	ReadPatterns     []string `json:"readPatterns,omitempty"`
+	WritePatterns    []string `json:"writePatterns,omitempty"`
+	TransformJsonnet *string  `json:"transformJsonnet,omitempty"`
+	AttachNotes      []string `json:"attachNotes,omitempty"`
+	ConcurrencyMode  *string  `json:"concurrencyMode,omitempty"`
 }
 
 type UpdateCronWebhookPayload struct {

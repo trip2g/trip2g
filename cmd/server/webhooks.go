@@ -124,3 +124,17 @@ func (a *app) EnqueueDeliverChangeWebhook(ctx context.Context, params handlenote
 func (a *app) EnqueueDeliverCronWebhook(ctx context.Context, params delivercronwebhook.DeliverCronParams) error {
 	return a.DeliverCronWebhookJob.EnqueueDeliverCronWebhook(ctx, params)
 }
+
+// ExpireStaleWebhookDeliveries marks orphaned 'running'/'pending' change webhook
+// deliveries as 'failed' once their per-webhook liveness window (timeout_seconds
+// + 30-second margin) has lapsed.
+func (a *app) ExpireStaleWebhookDeliveries(ctx context.Context) error {
+	return a.WriteQueries.ExpireStaleWebhookDeliveries(ctx)
+}
+
+// ExpireStaleCronWebhookDeliveries marks orphaned 'running'/'pending' cron webhook
+// deliveries as 'failed' once their per-webhook liveness window (timeout_seconds
+// + 30-second margin) has lapsed.
+func (a *app) ExpireStaleCronWebhookDeliveries(ctx context.Context) error {
+	return a.WriteQueries.ExpireStaleCronWebhookDeliveries(ctx)
+}

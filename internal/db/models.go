@@ -128,29 +128,32 @@ type BoostyTierSubgraph struct {
 }
 
 type ChangeWebhook struct {
-	ID              int64      `json:"id"`
-	Url             string     `json:"url"`
-	IncludePatterns string     `json:"include_patterns"`
-	ExcludePatterns string     `json:"exclude_patterns"`
-	Instruction     string     `json:"instruction"`
-	Secret          string     `json:"secret"`
-	MaxDepth        int64      `json:"max_depth"`
-	PassApiKey      bool       `json:"pass_api_key"`
-	IncludeContent  bool       `json:"include_content"`
-	TimeoutSeconds  int64      `json:"timeout_seconds"`
-	MaxRetries      int64      `json:"max_retries"`
-	OnCreate        bool       `json:"on_create"`
-	OnUpdate        bool       `json:"on_update"`
-	OnRemove        bool       `json:"on_remove"`
-	ReadPatterns    string     `json:"read_patterns"`
-	WritePatterns   string     `json:"write_patterns"`
-	Enabled         bool       `json:"enabled"`
-	Description     string     `json:"description"`
-	CreatedAt       time.Time  `json:"created_at"`
-	CreatedBy       int64      `json:"created_by"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	DisabledAt      *time.Time `json:"disabled_at"`
-	DisabledBy      *int64     `json:"disabled_by"`
+	ID               int64      `json:"id"`
+	Url              string     `json:"url"`
+	IncludePatterns  string     `json:"include_patterns"`
+	ExcludePatterns  string     `json:"exclude_patterns"`
+	Instruction      string     `json:"instruction"`
+	Secret           string     `json:"secret"`
+	MaxDepth         int64      `json:"max_depth"`
+	PassApiKey       bool       `json:"pass_api_key"`
+	IncludeContent   bool       `json:"include_content"`
+	TimeoutSeconds   int64      `json:"timeout_seconds"`
+	MaxRetries       int64      `json:"max_retries"`
+	OnCreate         bool       `json:"on_create"`
+	OnUpdate         bool       `json:"on_update"`
+	OnRemove         bool       `json:"on_remove"`
+	ReadPatterns     string     `json:"read_patterns"`
+	WritePatterns    string     `json:"write_patterns"`
+	Enabled          bool       `json:"enabled"`
+	Description      string     `json:"description"`
+	CreatedAt        time.Time  `json:"created_at"`
+	CreatedBy        int64      `json:"created_by"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	DisabledAt       *time.Time `json:"disabled_at"`
+	DisabledBy       *int64     `json:"disabled_by"`
+	TransformJsonnet string     `json:"transform_jsonnet"`
+	AttachNotes      string     `json:"attach_notes"`
+	ConcurrencyMode  string     `json:"concurrency_mode"`
 }
 
 type ChangeWebhookDelivery struct {
@@ -162,6 +165,10 @@ type ChangeWebhookDelivery struct {
 	DurationMs     *int64     `json:"duration_ms"`
 	CreatedAt      time.Time  `json:"created_at"`
 	CompletedAt    *time.Time `json:"completed_at"`
+	StartedAt      *time.Time `json:"started_at"`
+	HeartbeatAt    *time.Time `json:"heartbeat_at"`
+	TokensUsed     *int64     `json:"tokens_used"`
+	Steps          *int64     `json:"steps"`
 }
 
 type ChartDataCache struct {
@@ -214,25 +221,28 @@ type CronJobExecution struct {
 }
 
 type CronWebhook struct {
-	ID             int64      `json:"id"`
-	Url            string     `json:"url"`
-	CronSchedule   string     `json:"cron_schedule"`
-	Instruction    string     `json:"instruction"`
-	Secret         string     `json:"secret"`
-	PassApiKey     bool       `json:"pass_api_key"`
-	TimeoutSeconds int64      `json:"timeout_seconds"`
-	MaxDepth       int64      `json:"max_depth"`
-	MaxRetries     int64      `json:"max_retries"`
-	NextRunAt      *time.Time `json:"next_run_at"`
-	ReadPatterns   string     `json:"read_patterns"`
-	WritePatterns  string     `json:"write_patterns"`
-	Enabled        bool       `json:"enabled"`
-	Description    string     `json:"description"`
-	CreatedAt      time.Time  `json:"created_at"`
-	CreatedBy      int64      `json:"created_by"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	DisabledAt     *time.Time `json:"disabled_at"`
-	DisabledBy     *int64     `json:"disabled_by"`
+	ID               int64      `json:"id"`
+	Url              string     `json:"url"`
+	CronSchedule     string     `json:"cron_schedule"`
+	Instruction      string     `json:"instruction"`
+	Secret           string     `json:"secret"`
+	PassApiKey       bool       `json:"pass_api_key"`
+	TimeoutSeconds   int64      `json:"timeout_seconds"`
+	MaxDepth         int64      `json:"max_depth"`
+	MaxRetries       int64      `json:"max_retries"`
+	NextRunAt        *time.Time `json:"next_run_at"`
+	ReadPatterns     string     `json:"read_patterns"`
+	WritePatterns    string     `json:"write_patterns"`
+	Enabled          bool       `json:"enabled"`
+	Description      string     `json:"description"`
+	CreatedAt        time.Time  `json:"created_at"`
+	CreatedBy        int64      `json:"created_by"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	DisabledAt       *time.Time `json:"disabled_at"`
+	DisabledBy       *int64     `json:"disabled_by"`
+	TransformJsonnet string     `json:"transform_jsonnet"`
+	AttachNotes      string     `json:"attach_notes"`
+	ConcurrencyMode  string     `json:"concurrency_mode"`
 }
 
 type CronWebhookDelivery struct {
@@ -244,6 +254,10 @@ type CronWebhookDelivery struct {
 	DurationMs     *int64     `json:"duration_ms"`
 	CreatedAt      time.Time  `json:"created_at"`
 	CompletedAt    *time.Time `json:"completed_at"`
+	StartedAt      *time.Time `json:"started_at"`
+	HeartbeatAt    *time.Time `json:"heartbeat_at"`
+	TokensUsed     *int64     `json:"tokens_used"`
+	Steps          *int64     `json:"steps"`
 }
 
 type FederationSecret struct {
@@ -438,6 +452,12 @@ type NoteVersionChunk struct {
 	ContentHash []byte    `json:"content_hash"`
 	Tokens      *int64    `json:"tokens"`
 	CreatedAt   time.Time `json:"created_at"`
+}
+
+type NoteVersionDeliveryAttribution struct {
+	NoteVersionID int64  `json:"note_version_id"`
+	DeliveryKind  string `json:"delivery_kind"`
+	DeliveryID    int64  `json:"delivery_id"`
 }
 
 type NoteVersionEmbedding struct {

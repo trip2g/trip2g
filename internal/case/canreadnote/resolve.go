@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"trip2g/internal/appreq"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
+	"trip2g/internal/webhookutil"
 )
 
 type Env interface {
@@ -19,6 +21,14 @@ type Env interface {
 // Resolve determines if the current user has access to read the given note.
 // Yes, it's not optimized for performance, but it's simple and works well enough for now.
 func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
+	// Scoped shortapitoken: enforce read_patterns at the chokepoint so every
+	// consumer (note resolver, similarNotes, etc.) is covered automatically.
+	// Fail-closed: scoped token with empty read_patterns denies all reads.
+	if appreq.Scoped(ctx) {
+		rp := appreq.WebhookReadPatterns(ctx)
+		return len(rp) > 0 && webhookutil.MatchesAny(note.Path, rp), nil
+	}
+
 	// Federated identity: scope strictly by AllowedSubgraphs, no admin, no DB.
 	if allowed, ok := env.CurrentFederatedScope(ctx); ok {
 		if strings.HasSuffix(note.Path, ".html") {

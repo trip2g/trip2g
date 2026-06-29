@@ -45,6 +45,18 @@ type Request struct {
 	WebhookReadPatterns  []string
 	WebhookWritePatterns []string
 
+	// WebhookScoped is true when this request authenticated via a scoped
+	// shortapitoken. It distinguishes "scoped to read/write patterns" (enforce,
+	// empty patterns = deny-all) from "not scoped at all" (admin/user/api-key
+	// — no webhook-pattern enforcement). Set by checkapikey on the shortapitoken
+	// path and by stampShortAPIToken in the AroundOperations middleware.
+	WebhookScoped bool
+
+	// Webhook delivery identity (from the scoped shortapitoken). Used to
+	// attribute note versions written by a fleet back to the delivery.
+	WebhookDeliveryKind string
+	WebhookDeliveryID   int64
+
 	// SkipWebhooks indicates this API key should not trigger webhooks.
 	SkipWebhooks bool
 
@@ -82,6 +94,9 @@ func (c *Request) Reset() {
 	c.WebhookDepth = 0
 	c.WebhookReadPatterns = nil
 	c.WebhookWritePatterns = nil
+	c.WebhookScoped = false
+	c.WebhookDeliveryKind = ""
+	c.WebhookDeliveryID = 0
 	c.SkipWebhooks = false
 	c.AdminActorUserID = 0
 	c.APIKeyID = nil
@@ -270,6 +285,56 @@ func NewContext(parent context.Context, req *Request) context.Context {
 	return context.WithValue(parent, ctxKey, req)
 }
 
+// Scoped reports whether the request authenticated via a scoped shortapitoken
+// (so read/write-pattern enforcement applies). Returns false when ctx has no
+// appreq (internal calls, tests) or for admin/user/api-key auth.
+func Scoped(ctx context.Context) bool {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return false
+	}
+	return req.WebhookScoped
+}
+
+// WebhookWritePatterns returns the write-scope globs stamped on the request
+// by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
+func WebhookWritePatterns(ctx context.Context) []string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return nil
+	}
+	return req.WebhookWritePatterns
+}
+
+// WebhookReadPatterns returns the read-scope globs stamped on the request
+// by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
+func WebhookReadPatterns(ctx context.Context) []string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return nil
+	}
+	return req.WebhookReadPatterns
+}
+
+// WebhookDeliveryKind returns the delivery kind ("change"/"cron") for a
+// scoped-token request, or "" if none.
+func WebhookDeliveryKind(ctx context.Context) string {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return ""
+	}
+	return req.WebhookDeliveryKind
+}
+
+// WebhookDeliveryID returns the delivery id for a scoped-token request, or 0.
+func WebhookDeliveryID(ctx context.Context) int64 {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return 0
+	}
+	return req.WebhookDeliveryID
+}
+
 // Snapshot returns an independent deep copy of c suitable for use beyond the
 // request lifetime. The snapshot's Req field is a fresh fasthttp.RequestCtx
 // with headers, cookies, query args, and remote address copied from the
@@ -316,6 +381,9 @@ func (c *Request) Snapshot() *Request {
 		WebhookDepth:          c.WebhookDepth,
 		WebhookReadPatterns:   readPatterns,
 		WebhookWritePatterns:  writePatterns,
+		WebhookScoped:         c.WebhookScoped,
+		WebhookDeliveryKind:   c.WebhookDeliveryKind,
+		WebhookDeliveryID:     c.WebhookDeliveryID,
 		SkipWebhooks:          c.SkipWebhooks,
 		APIKeyID:              apiKeyID,
 		Client:                c.Client,

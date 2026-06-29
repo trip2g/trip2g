@@ -30,6 +30,9 @@ var _ insertnote.Env = &EnvMock{}
 //			InsertNoteVersionFunc: func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error) {
 //				panic("mock out the InsertNoteVersion method")
 //			},
+//			InsertNoteVersionDeliveryAttributionFunc: func(ctx context.Context, arg db.InsertNoteVersionDeliveryAttributionParams) error {
+//				panic("mock out the InsertNoteVersionDeliveryAttribution method")
+//			},
 //			NoteVersionActorFunc: func(ctx context.Context) model.NoteActor {
 //				panic("mock out the NoteVersionActor method")
 //			},
@@ -51,6 +54,9 @@ type EnvMock struct {
 
 	// InsertNoteVersionFunc mocks the InsertNoteVersion method.
 	InsertNoteVersionFunc func(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error)
+
+	// InsertNoteVersionDeliveryAttributionFunc mocks the InsertNoteVersionDeliveryAttribution method.
+	InsertNoteVersionDeliveryAttributionFunc func(ctx context.Context, arg db.InsertNoteVersionDeliveryAttributionParams) error
 
 	// NoteVersionActorFunc mocks the NoteVersionActor method.
 	NoteVersionActorFunc func(ctx context.Context) model.NoteActor
@@ -81,6 +87,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertNoteVersionParams
 		}
+		// InsertNoteVersionDeliveryAttribution holds details about calls to the InsertNoteVersionDeliveryAttribution method.
+		InsertNoteVersionDeliveryAttribution []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertNoteVersionDeliveryAttributionParams
+		}
 		// NoteVersionActor holds details about calls to the NoteVersionActor method.
 		NoteVersionActor []struct {
 			// Ctx is the ctx argument value.
@@ -94,11 +107,12 @@ type EnvMock struct {
 			Value string
 		}
 	}
-	lockIncrementNoteVersionCount sync.RWMutex
-	lockInsertNotePath            sync.RWMutex
-	lockInsertNoteVersion         sync.RWMutex
-	lockNoteVersionActor          sync.RWMutex
-	lockUnhideNotePath            sync.RWMutex
+	lockIncrementNoteVersionCount            sync.RWMutex
+	lockInsertNotePath                       sync.RWMutex
+	lockInsertNoteVersion                    sync.RWMutex
+	lockInsertNoteVersionDeliveryAttribution sync.RWMutex
+	lockNoteVersionActor                     sync.RWMutex
+	lockUnhideNotePath                       sync.RWMutex
 }
 
 // IncrementNoteVersionCount calls IncrementNoteVersionCountFunc.
@@ -206,6 +220,42 @@ func (mock *EnvMock) InsertNoteVersionCalls() []struct {
 	mock.lockInsertNoteVersion.RLock()
 	calls = mock.calls.InsertNoteVersion
 	mock.lockInsertNoteVersion.RUnlock()
+	return calls
+}
+
+// InsertNoteVersionDeliveryAttribution calls InsertNoteVersionDeliveryAttributionFunc.
+func (mock *EnvMock) InsertNoteVersionDeliveryAttribution(ctx context.Context, arg db.InsertNoteVersionDeliveryAttributionParams) error {
+	if mock.InsertNoteVersionDeliveryAttributionFunc == nil {
+		panic("EnvMock.InsertNoteVersionDeliveryAttributionFunc: method is nil but Env.InsertNoteVersionDeliveryAttribution was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertNoteVersionDeliveryAttributionParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertNoteVersionDeliveryAttribution.Lock()
+	mock.calls.InsertNoteVersionDeliveryAttribution = append(mock.calls.InsertNoteVersionDeliveryAttribution, callInfo)
+	mock.lockInsertNoteVersionDeliveryAttribution.Unlock()
+	return mock.InsertNoteVersionDeliveryAttributionFunc(ctx, arg)
+}
+
+// InsertNoteVersionDeliveryAttributionCalls gets all the calls that were made to InsertNoteVersionDeliveryAttribution.
+// Check the length with:
+//
+//	len(mockedEnv.InsertNoteVersionDeliveryAttributionCalls())
+func (mock *EnvMock) InsertNoteVersionDeliveryAttributionCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertNoteVersionDeliveryAttributionParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertNoteVersionDeliveryAttributionParams
+	}
+	mock.lockInsertNoteVersionDeliveryAttribution.RLock()
+	calls = mock.calls.InsertNoteVersionDeliveryAttribution
+	mock.lockInsertNoteVersionDeliveryAttribution.RUnlock()
 	return calls
 }
 

@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CloudyKit/jet/v6 v6.3.1
+	github.com/Khan/genqlient v0.8.1
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/blevesearch/bleve/v2 v2.5.3
 	github.com/bmatcuk/doublestar/v4 v4.9.1
@@ -81,6 +82,8 @@ require (
 	github.com/air-verse/air v1.62.0 // indirect
 	github.com/alecthomas/chroma/v2 v2.17.2 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
+	github.com/alexflint/go-arg v1.5.1 // indirect
+	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.6 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
@@ -393,6 +396,7 @@ replace maragu.dev/goqite => github.com/maragudk/goqite v0.3.2-0.20250930123615-
 
 tool (
 	github.com/99designs/gqlgen
+	github.com/Khan/genqlient
 	github.com/air-verse/air
 	github.com/amacneil/dbmate/v2
 	github.com/go-gremlins/gremlins/cmd/gremlins
