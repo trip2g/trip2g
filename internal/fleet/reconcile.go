@@ -23,14 +23,16 @@ func NewReconciler(client Client, cfg Config) *Reconciler {
 	return &Reconciler{client: client, cfg: cfg}
 }
 
-const listChangeWebhooksQuery = `query { allChangeWebhooks { nodes { id description } } }`
+// Admin webhook fields live under the AdminQuery/AdminMutation `admin { }`
+// wrapper; flat queries are rejected by the schema.
+const listChangeWebhooksQuery = `query { admin { allChangeWebhooks { nodes { id description } } } }`
 
 const createChangeWebhookMutation = `mutation Create($input: ChangeWebhookCreateInput!) {
-  changeWebhookCreate(input: $input) { ... on ChangeWebhookCreatePayload { webhook { id } } ... on ErrorPayload { message } }
+  admin { changeWebhookCreate(input: $input) { ... on ChangeWebhookCreatePayload { webhook { id } } ... on ErrorPayload { message } } }
 }`
 
 const deleteChangeWebhookMutation = `mutation Delete($input: ChangeWebhookDeleteInput!) {
-  changeWebhookDelete(input: $input) { ... on ChangeWebhookDeletePayload { deletedId } ... on ErrorPayload { message } }
+  admin { changeWebhookDelete(input: $input) { ... on ChangeWebhookDeletePayload { deletedId } ... on ErrorPayload { message } } }
 }`
 
 type existingWebhook struct {
@@ -93,16 +95,18 @@ func (r *Reconciler) listOwned(ctx context.Context) (map[string]int64, error) {
 		return nil, err
 	}
 	var data struct {
-		AllChangeWebhooks struct {
-			Nodes []existingWebhook `json:"nodes"`
-		} `json:"allChangeWebhooks"`
+		Admin struct {
+			AllChangeWebhooks struct {
+				Nodes []existingWebhook `json:"nodes"`
+			} `json:"allChangeWebhooks"`
+		} `json:"admin"`
 	}
 	if uerr := json.Unmarshal(raw, &data); uerr != nil {
 		return nil, uerr
 	}
 	prefix := "fleet:" + r.cfg.FleetID + ":"
 	owned := map[string]int64{}
-	for _, n := range data.AllChangeWebhooks.Nodes {
+	for _, n := range data.Admin.AllChangeWebhooks.Nodes {
 		if strings.HasPrefix(n.Description, prefix) {
 			owned[n.Description] = n.ID
 		}
@@ -135,12 +139,14 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 	}
 	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
 	var resp struct {
-		ChangeWebhookCreate struct {
-			Message string `json:"message"`
-		} `json:"changeWebhookCreate"`
+		Admin struct {
+			ChangeWebhookCreate struct {
+				Message string `json:"message"`
+			} `json:"changeWebhookCreate"`
+		} `json:"admin"`
 	}
-	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.ChangeWebhookCreate.Message != "" {
-		return fmt.Errorf("changeWebhookCreate: %s", resp.ChangeWebhookCreate.Message)
+	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.Admin.ChangeWebhookCreate.Message != "" {
+		return fmt.Errorf("changeWebhookCreate: %s", resp.Admin.ChangeWebhookCreate.Message)
 	}
 	return nil
 }
@@ -153,12 +159,14 @@ func (r *Reconciler) delete(ctx context.Context, id int64) error {
 	}
 	// F9(c): surface GraphQL-level ErrorPayload instead of swallowing it.
 	var resp struct {
-		ChangeWebhookDelete struct {
-			Message string `json:"message"`
-		} `json:"changeWebhookDelete"`
+		Admin struct {
+			ChangeWebhookDelete struct {
+				Message string `json:"message"`
+			} `json:"changeWebhookDelete"`
+		} `json:"admin"`
 	}
-	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.ChangeWebhookDelete.Message != "" {
-		return fmt.Errorf("changeWebhookDelete: %s", resp.ChangeWebhookDelete.Message)
+	if uerr := json.Unmarshal(raw, &resp); uerr == nil && resp.Admin.ChangeWebhookDelete.Message != "" {
+		return fmt.Errorf("changeWebhookDelete: %s", resp.Admin.ChangeWebhookDelete.Message)
 	}
 	return nil
 }
