@@ -687,7 +687,7 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 }
 
 const allNoteVersions = `-- name: AllNoteVersions :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id from note_versions order by path_id, version
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions order by path_id, version
 `
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
@@ -708,8 +708,6 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
 			&i.CreatedByClient,
-			&i.CreatedByDeliveryKind,
-			&i.CreatedByDeliveryID,
 		); err != nil {
 			return nil, err
 		}
@@ -725,7 +723,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 }
 
 const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
-select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id from note_versions
+select id, path_id, version, content, created_at, created_by_user_id, created_by_api_key_id, created_by_client from note_versions
  where path_id = ?
  order by version desc
 `
@@ -748,8 +746,6 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 			&i.CreatedByUserID,
 			&i.CreatedByApiKeyID,
 			&i.CreatedByClient,
-			&i.CreatedByDeliveryKind,
-			&i.CreatedByDeliveryID,
 		); err != nil {
 			return nil, err
 		}

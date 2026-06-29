@@ -425,16 +425,14 @@ type NoteUncommittedPath struct {
 }
 
 type NoteVersion struct {
-	ID                    int64     `json:"id"`
-	PathID                int64     `json:"path_id"`
-	Version               int64     `json:"version"`
-	Content               string    `json:"content"`
-	CreatedAt             time.Time `json:"created_at"`
-	CreatedByUserID       *int64    `json:"created_by_user_id"`
-	CreatedByApiKeyID     *int64    `json:"created_by_api_key_id"`
-	CreatedByClient       *string   `json:"created_by_client"`
-	CreatedByDeliveryKind *string   `json:"created_by_delivery_kind"`
-	CreatedByDeliveryID   *int64    `json:"created_by_delivery_id"`
+	ID                int64     `json:"id"`
+	PathID            int64     `json:"path_id"`
+	Version           int64     `json:"version"`
+	Content           string    `json:"content"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedByUserID   *int64    `json:"created_by_user_id"`
+	CreatedByApiKeyID *int64    `json:"created_by_api_key_id"`
+	CreatedByClient   *string   `json:"created_by_client"`
 }
 
 type NoteVersionAsset struct {
@@ -454,6 +452,12 @@ type NoteVersionChunk struct {
 	ContentHash []byte    `json:"content_hash"`
 	Tokens      *int64    `json:"tokens"`
 	CreatedAt   time.Time `json:"created_at"`
+}
+
+type NoteVersionDeliveryAttribution struct {
+	NoteVersionID int64  `json:"note_version_id"`
+	DeliveryKind  string `json:"delivery_kind"`
+	DeliveryID    int64  `json:"delivery_id"`
 }
 
 type NoteVersionEmbedding struct {

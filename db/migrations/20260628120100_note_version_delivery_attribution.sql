@@ -1,13 +1,13 @@
 -- migrate:up
 
-alter table note_versions add column created_by_delivery_kind text;
-alter table note_versions add column created_by_delivery_id integer;
+create table note_version_delivery_attribution (
+  note_version_id integer primary key references note_versions(id) on delete cascade,
+  delivery_kind text not null,
+  delivery_id integer not null
+);
 
-create index idx_note_versions_delivery on note_versions(created_by_delivery_kind, created_by_delivery_id);
+create index idx_nvda_delivery on note_version_delivery_attribution(delivery_kind, delivery_id);
 
 -- migrate:down
 
-drop index if exists idx_note_versions_delivery;
-
-alter table note_versions drop column created_by_delivery_id;
-alter table note_versions drop column created_by_delivery_kind;
+drop table if exists note_version_delivery_attribution;

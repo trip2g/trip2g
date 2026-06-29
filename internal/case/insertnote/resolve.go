@@ -20,6 +20,7 @@ type Env interface {
 	InsertNotePath(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
 	IncrementNoteVersionCount(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error)
 	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) (int64, error)
+	InsertNoteVersionDeliveryAttribution(ctx context.Context, arg db.InsertNoteVersionDeliveryAttributionParams) error
 	UnhideNotePath(ctx context.Context, value string) error
 	// NoteVersionActor returns who is pushing this version: the acting user id,
 	// the authenticating API key id, and the client identifier from the
@@ -95,19 +96,28 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 	actor := env.NoteVersionActor(ctx)
 
 	noteVersion := db.InsertNoteVersionParams{
-		PathID:                notePath.ID,
-		Version:               version,
-		Content:               arg.Content,
-		CreatedByUserID:       actor.UserID,
-		CreatedByApiKeyID:     actor.APIKeyID,
-		CreatedByClient:       actor.Client,
-		CreatedByDeliveryKind: actor.DeliveryKind,
-		CreatedByDeliveryID:   actor.DeliveryID,
+		PathID:            notePath.ID,
+		Version:           version,
+		Content:           arg.Content,
+		CreatedByUserID:   actor.UserID,
+		CreatedByApiKeyID: actor.APIKeyID,
+		CreatedByClient:   actor.Client,
 	}
 
 	versionID, err := env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to InsertNoteVersion: %w", err)
+	}
+
+	if actor.DeliveryKind != nil && actor.DeliveryID != nil {
+		err = env.InsertNoteVersionDeliveryAttribution(ctx, db.InsertNoteVersionDeliveryAttributionParams{
+			NoteVersionID: versionID,
+			DeliveryKind:  *actor.DeliveryKind,
+			DeliveryID:    *actor.DeliveryID,
+		})
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to InsertNoteVersionDeliveryAttribution: %w", err)
+		}
 	}
 
 	return notePath.ID, versionID, nil

@@ -1713,20 +1713,18 @@ func (q *WriteQueries) InsertNotePath(ctx context.Context, arg InsertNotePathPar
 }
 
 const insertNoteVersion = `-- name: InsertNoteVersion :one
-insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id)
-values (?, ?, ?, ?, ?, ?, ?, ?)
+insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id, created_by_client)
+values (?, ?, ?, ?, ?, ?)
 returning id
 `
 
 type InsertNoteVersionParams struct {
-	PathID                int64   `json:"path_id"`
-	Version               int64   `json:"version"`
-	Content               string  `json:"content"`
-	CreatedByUserID       *int64  `json:"created_by_user_id"`
-	CreatedByApiKeyID     *int64  `json:"created_by_api_key_id"`
-	CreatedByClient       *string `json:"created_by_client"`
-	CreatedByDeliveryKind *string `json:"created_by_delivery_kind"`
-	CreatedByDeliveryID   *int64  `json:"created_by_delivery_id"`
+	PathID            int64   `json:"path_id"`
+	Version           int64   `json:"version"`
+	Content           string  `json:"content"`
+	CreatedByUserID   *int64  `json:"created_by_user_id"`
+	CreatedByApiKeyID *int64  `json:"created_by_api_key_id"`
+	CreatedByClient   *string `json:"created_by_client"`
 }
 
 func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) (int64, error) {
@@ -1737,12 +1735,26 @@ func (q *WriteQueries) InsertNoteVersion(ctx context.Context, arg InsertNoteVers
 		arg.CreatedByUserID,
 		arg.CreatedByApiKeyID,
 		arg.CreatedByClient,
-		arg.CreatedByDeliveryKind,
-		arg.CreatedByDeliveryID,
 	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const insertNoteVersionDeliveryAttribution = `-- name: InsertNoteVersionDeliveryAttribution :exec
+insert into note_version_delivery_attribution (note_version_id, delivery_kind, delivery_id)
+values (?, ?, ?)
+`
+
+type InsertNoteVersionDeliveryAttributionParams struct {
+	NoteVersionID int64  `json:"note_version_id"`
+	DeliveryKind  string `json:"delivery_kind"`
+	DeliveryID    int64  `json:"delivery_id"`
+}
+
+func (q *WriteQueries) InsertNoteVersionDeliveryAttribution(ctx context.Context, arg InsertNoteVersionDeliveryAttributionParams) error {
+	_, err := q.db.ExecContext(ctx, insertNoteVersionDeliveryAttribution, arg.NoteVersionID, arg.DeliveryKind, arg.DeliveryID)
+	return err
 }
 
 const insertOIDCCredentials = `-- name: InsertOIDCCredentials :one
@@ -5014,11 +5026,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

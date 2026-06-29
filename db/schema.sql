@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS "note_versions" (
   path_id integer not null,
   version integer not null,
   content text not null,
-  created_at datetime not null default current_timestamp, created_by_user_id integer references users(id) on delete set null, created_by_api_key_id integer references api_keys(id) on delete set null, created_by_client text, created_by_delivery_kind text, created_by_delivery_id integer,
+  created_at datetime not null default current_timestamp, created_by_user_id integer references users(id) on delete set null, created_by_api_key_id integer references api_keys(id) on delete set null, created_by_client text,
   unique(path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );
@@ -856,7 +856,12 @@ CREATE TABLE oidc_credentials (
 );
 CREATE INDEX idx_change_webhook_deliveries_inflight on change_webhook_deliveries(webhook_id, status);
 CREATE INDEX idx_cron_webhook_deliveries_inflight on cron_webhook_deliveries(cron_webhook_id, status);
-CREATE INDEX idx_note_versions_delivery on note_versions(created_by_delivery_kind, created_by_delivery_id);
+CREATE TABLE note_version_delivery_attribution (
+  note_version_id integer primary key references note_versions(id) on delete cascade,
+  delivery_kind text not null,
+  delivery_id integer not null
+);
+CREATE INDEX idx_nvda_delivery on note_version_delivery_attribution(delivery_kind, delivery_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),

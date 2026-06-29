@@ -25,9 +25,13 @@ update note_paths
 returning version_count;
 
 -- name: InsertNoteVersion :one
-insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id, created_by_client, created_by_delivery_kind, created_by_delivery_id)
-values (?, ?, ?, ?, ?, ?, ?, ?)
+insert into note_versions (path_id, version, content, created_by_user_id, created_by_api_key_id, created_by_client)
+values (?, ?, ?, ?, ?, ?)
 returning id;
+
+-- name: InsertNoteVersionDeliveryAttribution :exec
+insert into note_version_delivery_attribution (note_version_id, delivery_kind, delivery_id)
+values (?, ?, ?);
 
 -- name: InsertUserWithEmail :one
 insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(created_via))
