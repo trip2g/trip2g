@@ -346,3 +346,84 @@ func TestResolve_CronAgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
 	require.False(t, insertCalled, "InsertNote must not be called when patch find string is absent")
 	require.Equal(t, "failed", got.Status, "delivery must be marked failed when patch find is missing")
 }
+
+// G4: cron webhook with attach_notes must carry matched notes in the delivery payload.
+func TestResolve_CronAttachNotes_Materialized(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.PathMap["boards/sprint.md"] = &model.NoteView{
+		Path:    "boards/sprint.md",
+		Title:   "Sprint",
+		Content: []byte("# Sprint\n- card"),
+		Tags:    []string{"kanban"},
+	}
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  "[]",
+			ReadPatterns:   "[]",
+			AttachNotes:    `["boards/**"]`,
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 40, Attempt: 1})
+	require.NoError(t, err)
+	require.NotEmpty(t, body, "HTTP body must be non-empty")
+
+	var payload struct {
+		AttachedNotes []map[string]any `json:"attached_notes"`
+	}
+	require.NoError(t, json.Unmarshal(body, &payload))
+	require.Len(t, payload.AttachedNotes, 1, "expected exactly one attached note")
+	require.Equal(t, "boards/sprint.md", payload.AttachedNotes[0]["path"])
+	require.Equal(t, "Sprint", payload.AttachedNotes[0]["title"])
+	require.Contains(t, payload.AttachedNotes[0], "content")
+}
+
+// G4: cron attach_notes gate must skip delivery (no HTTP call) when no notes match.
+func TestResolve_CronAttachNotes_GateSkipWhenNoneMatch(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  "[]",
+			ReadPatterns:   "[]",
+			AttachNotes:    `["x/**"]`,
+		}, nil
+	}
+	// Empty NoteViews — no notes match "x/**".
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return model.NewNoteViews() }
+
+	var got db.UpdateCronWebhookDeliveryResultParams
+	env.UpdateCronWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 41, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, called, "HTTP endpoint must not be called when attach_notes gate is not satisfied")
+	require.Equal(t, "success", got.Status, "delivery must be marked success (skipped) when gate not satisfied")
+}

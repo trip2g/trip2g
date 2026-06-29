@@ -56,11 +56,12 @@ type Env interface {
 // cronWebhookPayload is the JSON body sent to the cron webhook endpoint.
 type cronWebhookPayload struct {
 	webhookutil.BasePayload
-	Instruction    string            `json:"instruction"`
-	ResponseSchema json.RawMessage   `json:"response_schema"`
-	APIToken       string            `json:"api_token,omitempty"`
-	Secrets        map[string]string `json:"secrets,omitempty"`
-	PreviousError  string            `json:"previous_error,omitempty"`
+	Instruction    string                     `json:"instruction"`
+	ResponseSchema json.RawMessage            `json:"response_schema"`
+	AttachedNotes  []webhookutil.AttachedNote `json:"attached_notes,omitempty"`
+	APIToken       string                     `json:"api_token,omitempty"`
+	Secrets        map[string]string          `json:"secrets,omitempty"`
+	PreviousError  string                     `json:"previous_error,omitempty"`
 }
 
 // tokenTTLMargin is the small grace window added to the delivery timeout for
@@ -85,11 +86,36 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	p, _ := model.CronWebhookSecretPrefix(params.CronWebhookID)
 	secrets := loadCronSecrets(ctx, env, log, p.String())
 
+	// Materialize attach_notes context and apply presence gate.
+	var attachedNotes []webhookutil.AttachedNote
+	if wh.AttachNotes != "" && wh.AttachNotes != "[]" {
+		attach, aerr := webhookutil.ParseJSONStringArray(wh.AttachNotes)
+		if aerr != nil {
+			log.Error("failed to parse attach_notes", "cron_webhook_id", wh.ID, "error", aerr)
+		} else {
+			nvs := env.LatestNoteViews()
+			if !webhookutil.AttachGateSatisfied(attach, nvs) {
+				log.Info("cron delivery skipped: attach_notes gate not satisfied",
+					"cron_webhook_id", wh.ID, "delivery_id", params.DeliveryID)
+				updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
+					Status: "success",
+					ID:     params.DeliveryID,
+				})
+				if updateErr != nil {
+					log.Error("failed to mark skipped cron delivery", "delivery_id", params.DeliveryID, "error", updateErr)
+				}
+				return nil
+			}
+			attachedNotes = webhookutil.MaterializeAttachedNotes(attach, nvs)
+		}
+	}
+
 	// Build payload.
 	payload := cronWebhookPayload{
 		BasePayload:    webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
 		Instruction:    wh.Instruction,
 		ResponseSchema: ResponseSchema,
+		AttachedNotes:  attachedNotes,
 		Secrets:        secrets,
 		PreviousError:  params.PreviousError,
 	}

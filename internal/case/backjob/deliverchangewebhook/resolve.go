@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -39,13 +38,13 @@ type Env interface {
 // changeWebhookPayload is the JSON body sent to the webhook endpoint.
 type changeWebhookPayload struct {
 	webhookutil.BasePayload
-	Depth         int                             `json:"depth"`
-	Instruction   string                          `json:"instruction"`
-	Changes       []handlenotewebhooks.ChangeInfo `json:"changes"`
-	AttachedNotes []attachedNote                  `json:"attached_notes,omitempty"`
-	APIToken      string                          `json:"api_token,omitempty"`
-	Secrets       map[string]string               `json:"secrets,omitempty"`
-	PreviousError string                          `json:"previous_error,omitempty"`
+	Depth         int                              `json:"depth"`
+	Instruction   string                           `json:"instruction"`
+	Changes       []handlenotewebhooks.ChangeInfo  `json:"changes"`
+	AttachedNotes []webhookutil.AttachedNote       `json:"attached_notes,omitempty"`
+	APIToken      string                           `json:"api_token,omitempty"`
+	Secrets       map[string]string                `json:"secrets,omitempty"`
+	PreviousError string                           `json:"previous_error,omitempty"`
 }
 
 // tokenTTLMargin is the small grace window added to the delivery timeout for
@@ -114,7 +113,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	// Materialize attach_notes context notes into the payload.
 	if wh.AttachNotes != "" && wh.AttachNotes != "[]" {
 		if attach, aerr := webhookutil.ParseJSONStringArray(wh.AttachNotes); aerr == nil {
-			payload.AttachedNotes = materializeAttachNotes(attach, env.LatestNoteViews())
+			payload.AttachedNotes = webhookutil.MaterializeAttachedNotes(attach, env.LatestNoteViews())
 		} else {
 			log.Error("failed to parse attach_notes", "webhook_id", wh.ID, "error", aerr)
 		}
@@ -353,60 +352,6 @@ func transformExtVars(payloadBytes []byte) map[string]string {
 // TransformExtVarsForTest exposes transformExtVars to the external test package.
 func TransformExtVarsForTest(payloadBytes []byte) map[string]string {
 	return transformExtVars(payloadBytes)
-}
-
-// attachedNote is a context note pushed into the delivery payload. meta is an
-// allowlist (never the full RawMeta) so the role only sees what it asked for.
-type attachedNote struct {
-	Path      string            `json:"path"`
-	Title     string            `json:"title"`
-	Content   string            `json:"content"`
-	UpdatedAt string            `json:"updated_at,omitempty"`
-	Tags      []string          `json:"tags,omitempty"`
-	Meta      map[string]string `json:"meta"`
-}
-
-// materializeAttachNotes returns the current notes matching the non-"!" attach
-// globs, sorted by path for determinism.
-func materializeAttachNotes(attach []string, nvs *model.NoteViews) []attachedNote {
-	if nvs == nil {
-		return nil
-	}
-	var globs []string
-	for _, p := range attach {
-		if !strings.HasPrefix(p, "!") {
-			globs = append(globs, p)
-		}
-	}
-	if len(globs) == 0 {
-		return nil
-	}
-
-	var out []attachedNote
-	for path, nv := range nvs.PathMap {
-		if !webhookutil.MatchesAny(path, globs) {
-			continue
-		}
-		an := attachedNote{
-			Path:    nv.Path,
-			Title:   nv.Title,
-			Content: string(nv.Content),
-			Tags:    nv.Tags,
-			Meta:    map[string]string{},
-		}
-		if !nv.UpdatedAt.IsZero() {
-			an.UpdatedAt = nv.UpdatedAt.Format(time.RFC3339)
-		}
-		if len(nv.Tags) > 0 {
-			an.Meta["tags"] = strings.Join(nv.Tags, ",")
-		}
-		if nv.Layout != "" {
-			an.Meta["layout"] = nv.Layout
-		}
-		out = append(out, an)
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
-	return out
 }
 
 // applyAgentChanges parses and applies agent response changes.
