@@ -27,16 +27,25 @@ func NewReconciler(gql graphql.Client, cfg Config) *Reconciler {
 	return &Reconciler{gql: gql, cfg: cfg}
 }
 
-// Reconcile makes the registered change-webhooks match desired roles. Foreign
-// webhooks (description without this fleet's prefix) are never touched.
+// Reconcile makes the registered change-webhooks and cron-webhooks match
+// desired roles. Foreign webhooks (description without this fleet's prefix)
+// are never touched.
 func (r *Reconciler) Reconcile(ctx context.Context, roles []Role) error {
+	if err := r.reconcileChange(ctx, roles); err != nil {
+		return err
+	}
+	return r.reconcileCron(ctx, roles)
+}
+
+// reconcileChange syncs change-webhooks for change-mode and both-mode roles.
+func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 	existing, err := r.listOwned(ctx)
 	if err != nil {
 		return err
 	}
 	desired := map[string]Role{} // marker -> role
 	for _, role := range roles {
-		if role.Mode != "change" && role.Mode != "both" {
+		if role.Mode != modeChange && role.Mode != modeBoth {
 			continue
 		}
 		desired[markerFor(r.cfg.FleetID, role)] = role
@@ -62,6 +71,40 @@ func (r *Reconciler) Reconcile(ctx context.Context, roles []Role) error {
 	return nil
 }
 
+// reconcileCron syncs cron-webhooks for cron-mode and both-mode roles.
+func (r *Reconciler) reconcileCron(ctx context.Context, roles []Role) error {
+	existing, err := r.listOwnedCron(ctx)
+	if err != nil {
+		return err
+	}
+	desired := map[string]Role{} // cronMarker -> role
+	for _, role := range roles {
+		if role.Mode != modeCron && role.Mode != modeBoth {
+			continue
+		}
+		desired[cronMarkerFor(r.cfg.FleetID, role)] = role
+	}
+
+	// Delete owned cron-webhooks whose marker is no longer desired.
+	for marker, id := range existing {
+		if _, keep := desired[marker]; !keep {
+			if derr := r.deleteCron(ctx, id); derr != nil {
+				return derr
+			}
+		}
+	}
+	// Create cron-webhooks for desired markers not yet present.
+	for marker, role := range desired {
+		if _, present := existing[marker]; present {
+			continue // marker already matches => spec unchanged
+		}
+		if cerr := r.createCron(ctx, role); cerr != nil {
+			return cerr
+		}
+	}
+	return nil
+}
+
 // Deregister removes every webhook owned by this fleet (shutdown).
 func (r *Reconciler) Deregister(ctx context.Context) error {
 	existing, err := r.listOwned(ctx)
@@ -70,6 +113,15 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 	}
 	for _, id := range existing {
 		if derr := r.delete(ctx, id); derr != nil {
+			return derr
+		}
+	}
+	existingCron, err := r.listOwnedCron(ctx)
+	if err != nil {
+		return err
+	}
+	for _, id := range existingCron {
+		if derr := r.deleteCron(ctx, id); derr != nil {
 			return derr
 		}
 	}
@@ -100,7 +152,7 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 		WritePatterns:    orEmpty(role.WritePatterns),
 		AttachNotes:      orEmpty(role.AttachNotes),
 		TransformJsonnet: "",
-		ConcurrencyMode:  orDefault(role.Concurrency, "allow_overlap"),
+		ConcurrencyMode:  orDefault(role.Concurrency, concurrencyAllowOverlap),
 		PassApiKey:       true,
 		IncludeContent:   true,
 		MaxDepth:         int64(role.MaxDepth),
@@ -135,6 +187,78 @@ func (r *Reconciler) delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("changeWebhookDelete: %s", ep.Message)
 	}
 	return nil
+}
+
+func (r *Reconciler) listOwnedCron(ctx context.Context) (map[string]int64, error) {
+	resp, err := trip2ggql.ListCronWebhooks(ctx, r.gql)
+	if err != nil {
+		return nil, err
+	}
+	prefix := "fleetcron:" + r.cfg.FleetID + ":"
+	owned := map[string]int64{}
+	for _, n := range resp.Admin.AllCronWebhooks.Nodes {
+		if strings.HasPrefix(n.Description, prefix) {
+			owned[n.Description] = n.Id
+		}
+	}
+	return owned, nil
+}
+
+func (r *Reconciler) createCron(ctx context.Context, role Role) error {
+	input := trip2ggql.CreateCronWebhookInput{
+		Url:             r.cfg.CallbackURL + "/deliver/cron/" + urlKey(role.NotePath),
+		CronSchedule:    role.CronSchedule,
+		ReadPatterns:    orEmpty(role.ReadPatterns),
+		WritePatterns:   orEmpty(role.WritePatterns),
+		AttachNotes:     orEmpty(role.AttachNotes),
+		ConcurrencyMode: orDefault(role.Concurrency, "allow_overlap"),
+		MaxDepth:        int64(role.MaxDepth),
+		TimeoutSeconds:  int64(role.EffectiveTimeoutSeconds()),
+		PassApiKey:      true,
+		Enabled:         true,
+		Description:     cronMarkerFor(r.cfg.FleetID, role),
+		Secret:          deriveSecret(r.cfg.FleetSecret, r.cfg.FleetID, role.NotePath, cronSpecVer(role)),
+	}
+	resp, err := trip2ggql.CreateCronWebhook(ctx, r.gql, input)
+	if err != nil {
+		return err
+	}
+	if ep, ok := resp.Admin.CreateCronWebhook.(*trip2ggql.CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload); ok {
+		return fmt.Errorf("createCronWebhook: %s", ep.Message)
+	}
+	return nil
+}
+
+func (r *Reconciler) deleteCron(ctx context.Context, id int64) error {
+	resp, err := trip2ggql.DeleteCronWebhook(ctx, r.gql, trip2ggql.DeleteCronWebhookInput{Id: id})
+	if err != nil {
+		return err
+	}
+	if ep, ok := resp.Admin.DeleteCronWebhook.(*trip2ggql.DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload); ok {
+		return fmt.Errorf("deleteCronWebhook: %s", ep.Message)
+	}
+	return nil
+}
+
+// cronMarkerFor is the cron reconcile dedup key stored in the cron-webhook description.
+// Uses "fleetcron:" prefix to distinguish from change-webhook markers ("fleet:").
+func cronMarkerFor(fleetID string, role Role) string {
+	return "fleetcron:" + fleetID + ":" + role.NotePath + "#" + cronSpecVer(role)
+}
+
+// cronSpecVer is a short content hash of the cron-webhook-relevant role fields.
+// Bumping any field rotates the marker (delete+recreate).
+func cronSpecVer(role Role) string {
+	h := sha256.Sum256([]byte(strings.Join([]string{
+		role.CronSchedule,
+		strings.Join(role.ReadPatterns, ","),
+		strings.Join(role.WritePatterns, ","),
+		strings.Join(role.AttachNotes, ","),
+		role.Concurrency,
+		strconv.Itoa(role.MaxDepth),
+		strconv.Itoa(role.EffectiveTimeoutSeconds()),
+	}, "|")))
+	return base64.RawURLEncoding.EncodeToString(h[:6])
 }
 
 // markerFor is the reconcile dedup key stored in the webhook description.

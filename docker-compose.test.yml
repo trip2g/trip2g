@@ -463,21 +463,21 @@ services:
     ports:
       - "29090:9090"
     environment:
-      - TRIP2G_FLEET_ID=e2e
-      - TRIP2G_LISTEN=:9090
-      - TRIP2G_CALLBACK_URL=http://fleet:9090
-      - TRIP2G_TRIP2G_URL=http://app:20081
-      - TRIP2G_JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
-      - TRIP2G_ADMIN_EMAIL=fleet@local
-      - TRIP2G_FLEET_SECRET=e2e-fleet-secret
-      - TRIP2G_LLM_BASE_URL=http://llm-mock:9091/v1
-      - TRIP2G_LLM_API_KEY=x
-      - TRIP2G_DEFAULT_MODEL=mock
-      - TRIP2G_AGENTS_FOLDER=roles/
-      - TRIP2G_POLL_SECONDS=3
-      - TRIP2G_TOKEN_CEILING=100000
-      - TRIP2G_STEP_CEILING=25
-      - TRIP2G_OFFERED_TOOLS=search,read_note,patch_note,write_note
+      - TRIP2G_FLEET_FLEET_ID=e2e
+      - TRIP2G_FLEET_LISTEN=:9090
+      - TRIP2G_FLEET_CALLBACK_URL=http://fleet:9090
+      - TRIP2G_FLEET_TRIP2G_URL=http://app:20081
+      - TRIP2G_FLEET_JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
+      - TRIP2G_FLEET_ADMIN_EMAIL=fleet@local
+      - TRIP2G_FLEET_FLEET_SECRET=e2e-fleet-secret
+      - TRIP2G_FLEET_LLM_BASE_URL=http://llm-mock:9091/v1
+      - TRIP2G_FLEET_LLM_API_KEY=x
+      - TRIP2G_FLEET_DEFAULT_MODEL=mock
+      - TRIP2G_FLEET_AGENTS_FOLDER=roles/
+      - TRIP2G_FLEET_POLL_SECONDS=3
+      - TRIP2G_FLEET_TOKEN_CEILING=100000
+      - TRIP2G_FLEET_STEP_CEILING=25
+      - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
       interval: 5s

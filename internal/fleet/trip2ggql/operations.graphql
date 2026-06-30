@@ -59,3 +59,63 @@ mutation DeleteChangeWebhook($input: ChangeWebhookDeleteInput!) {
     }
   }
 }
+
+# ListCronWebhooks returns every cron-webhook; the reconciler filters to the
+# ones this fleet owns by description marker.
+query ListCronWebhooks {
+  admin {
+    allCronWebhooks {
+      nodes {
+        id
+        description
+      }
+    }
+  }
+}
+
+# CreateCronWebhook registers one cron-webhook for a role.
+mutation CreateCronWebhook($input: CreateCronWebhookInput!) {
+  admin {
+    createCronWebhook(input: $input) {
+      ... on CreateCronWebhookPayload {
+        cronWebhook {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
+
+# UpdateCronWebhook patches one cron-webhook (currently unused by reconciler
+# but generated for completeness so callers can patch without delete+recreate).
+mutation UpdateCronWebhook($input: UpdateCronWebhookInput!) {
+  admin {
+    updateCronWebhook(input: $input) {
+      ... on UpdateCronWebhookPayload {
+        cronWebhook {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
+
+# DeleteCronWebhook removes one owned cron-webhook by id.
+mutation DeleteCronWebhook($input: DeleteCronWebhookInput!) {
+  admin {
+    deleteCronWebhook(input: $input) {
+      ... on DeleteCronWebhookPayload {
+        deletedId
+      }
+      ... on ErrorPayload {
+        message
+      }
+    }
+  }
+}
