@@ -23,7 +23,7 @@ func openTestDB(t *testing.T) (*sql.DB, string) {
 	// Seed a table so page_count > 0 and WAL has data.
 	_, err = db.Exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)")
 	require.NoError(t, err)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		_, err = db.Exec("INSERT INTO t (v) VALUES (?)", "hello")
 		require.NoError(t, err)
 	}
