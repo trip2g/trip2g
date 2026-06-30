@@ -8,10 +8,17 @@ import (
 	"trip2g/internal/webhookutil"
 )
 
+// Executor values for Role.Executor.
+const (
+	executorLLM  = "llm"  // default: run through agentruntime.Run (LLM tool loop)
+	executorCode = "code" // deterministic: body renders to a program; stdout = write JSON
+)
+
 // Role is a parsed role note: flat frontmatter (config) + body (instruction).
 type Role struct {
 	NotePath       string
 	Body           string
+	Executor       string // "" | "llm" | "code" (default: llm)
 	Model          string
 	Tools          []string
 	ReadPatterns   []string
@@ -26,8 +33,10 @@ type Role struct {
 	CronSchedule   string
 	AttachNotes    []string
 	MaxDepth       int
-	Concurrency    string // "allow_overlap" | "skip" | "queue_one"
-	ForEach        string // "" (single run) | "changed_files" | "attached_notes"
+	Concurrency    string   // "allow_overlap" | "skip" | "queue_one"
+	ForEach        string   // "" (single run) | "changed_files" | "attached_notes"
+	EnvPassthrough []string // exact env var names forwarded to code child process
+	EnvPrefix      []string // env var name prefixes forwarded to code child process
 }
 
 // ParseRole builds a Role from a note path, body, and flat frontmatter meta
@@ -37,6 +46,7 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 	r := Role{
 		NotePath:       notePath,
 		Body:           body,
+		Executor:       strings.TrimSpace(m["executor"]),
 		Model:          strings.TrimSpace(m["model"]),
 		Tools:          parseList(m["tools"]),
 		ReadPatterns:   parseList(m["read_patterns"]),
@@ -49,6 +59,8 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		AttachNotes:    parseList(m["attach_notes"]),
 		Concurrency:    strings.TrimSpace(m["concurrency"]),
 		ForEach:        strings.TrimSpace(m["for_each"]),
+		EnvPassthrough: parseList(m["env_passthrough"]),
+		EnvPrefix:      parseList(m["env_prefix"]),
 	}
 	var err error
 	if r.MaxTokens, err = parseIntOpt(m["max_tokens"]); err != nil {
@@ -112,6 +124,9 @@ func (r Role) Validate(offered []string) error {
 	// change_file footgun: a body referencing change_file but not fanned out per
 	// changed file renders against nil, so every delivery fails. Note
 	// "changed_files" (plural) does not contain the "change_file" substring.
+	// For code executor roles the body IS still Jet-rendered, so the check
+	// applies. However, Python variable names like `change_file = ...` would
+	// be false positives; a future improvement could scope this more narrowly.
 	if strings.Contains(r.Body, "change_file") && r.ForEach != forEachChangedFiles {
 		return fmt.Errorf(
 			"role %s: body references change_file but for_each is not changed_files "+
@@ -132,12 +147,65 @@ func (r Role) Validate(offered []string) error {
 	if r.TimeoutSeconds < 0 {
 		return fmt.Errorf("role %s: timeout_seconds must be >= 0, got %d", r.NotePath, r.TimeoutSeconds)
 	}
-	for _, t := range r.Tools {
-		if !contains(offered, t) {
-			return fmt.Errorf("role %s: tool %q not offered by this fleet", r.NotePath, t)
+	// Executor-specific validation.
+	switch r.Executor {
+	case "", executorLLM:
+		// LLM path (default): validate the role-declared tool allowlist.
+		for _, t := range r.Tools {
+			if !contains(offered, t) {
+				return fmt.Errorf("role %s: tool %q not offered by this fleet", r.NotePath, t)
+			}
 		}
+	case executorCode:
+		// Code path: require a write scope and a resolvable fenced program block.
+		if len(r.WritePatterns) == 0 {
+			return fmt.Errorf("role %s: executor:code requires at least one write_patterns entry", r.NotePath)
+		}
+		lang, found := roleFenceLang(r.Body)
+		if !found {
+			return fmt.Errorf("role %s: executor:code body must contain a fenced code block (```lang...```)", r.NotePath)
+		}
+		if !resolveFenceLang(lang) {
+			return fmt.Errorf("role %s: executor:code fence language %q not supported (supported: python, bash, node)", r.NotePath, lang)
+		}
+		// env_prefix safety: an empty-string prefix would match every env var,
+		// defeating the deny-by-default secret-scrub guarantee.
+		for _, p := range r.EnvPrefix {
+			if p == "" {
+				return fmt.Errorf("role %s: env_prefix must not contain an empty entry (would match all env vars)", r.NotePath)
+			}
+		}
+	default:
+		return fmt.Errorf("role %s: executor must be llm|code, got %q", r.NotePath, r.Executor)
 	}
 	return nil
+}
+
+// roleFenceLang scans body for the first fenced code block and returns its
+// language tag. Returns ("", false) when no complete block is found.
+func roleFenceLang(body string) (string, bool) {
+	idx := strings.Index(body, "```")
+	if idx == -1 {
+		return "", false
+	}
+	rest := body[idx+3:]
+	nl := strings.IndexByte(rest, '\n')
+	if nl == -1 {
+		return "", false
+	}
+	langStr := strings.TrimSpace(rest[:nl])
+	end := strings.Index(rest[nl+1:], "```")
+	return langStr, end != -1
+}
+
+// resolveFenceLang reports whether a fence language tag maps to a supported
+// code executor program (python, bash, or node).
+func resolveFenceLang(lang string) bool {
+	switch strings.ToLower(lang) {
+	case "python", "py", "bash", "sh", "js", "javascript", "node":
+		return true
+	}
+	return false
 }
 
 func contains(set []string, v string) bool {
