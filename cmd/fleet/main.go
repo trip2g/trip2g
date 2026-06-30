@@ -109,15 +109,7 @@ func run() error {
 		case srvListenErr := <-srvErrCh:
 			return fmt.Errorf("http server: %w", srvListenErr)
 		case <-ctx.Done():
-			log.Print("shutdown: deregistering webhooks")
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			deregErr := reconciler.Deregister(shutdownCtx)
-			if deregErr != nil {
-				log.Printf("deregister: %v", deregErr)
-			}
-			_ = srv.Shutdown(shutdownCtx)
-			cancel()
-			// Check if the server goroutine also reported an error.
+			_ = gracefulShutdown(srv, reconciler.Deregister, cli.cfg.KeepWebhooksOnShutdown, cli.cfg.ShutdownGrace)
 			select {
 			case srvListenErr := <-srvErrCh:
 				return fmt.Errorf("http server: %w", srvListenErr)
@@ -303,6 +295,51 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 	}
 }
 
+// gracefulShutdown drains in-flight deliveries (srv.Shutdown waits for active
+// handlers — runs are synchronous, so this drains runs too) within the grace
+// window, then deregisters owned webhooks unless keepWebhooks is set (rolling
+// deploys keep them so trip2g retries against the next instance). deregister may
+// be nil (no-op). Returns the drain error, if any.
+//
+// Drain runs BEFORE deregister so in-flight writes always finish; the tradeoff
+// is that on a clean (non-keep) shutdown trip2g may see connection-refused for
+// up to grace until deregister runs — those deliveries are retried, and not
+// losing in-flight writes is the priority.
+func gracefulShutdown(srv *http.Server, deregister func(context.Context) error, keepWebhooks bool, grace time.Duration) error {
+	log.Printf("shutdown: draining in-flight runs (grace %s)", grace)
+	drainCtx, cancel := context.WithTimeout(context.Background(), grace)
+	defer cancel()
+	shutdownErr := srv.Shutdown(drainCtx)
+	if shutdownErr != nil {
+		log.Printf("shutdown: drain incomplete: %v", shutdownErr)
+	}
+
+	if keepWebhooks {
+		log.Print("shutdown: keeping webhooks (--keep-webhooks-on-shutdown)")
+		return shutdownErr
+	}
+	if deregister != nil {
+		log.Print("shutdown: deregistering webhooks")
+		deregCtx, cancel2 := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel2()
+		if deregErr := deregister(deregCtx); deregErr != nil {
+			log.Printf("shutdown: deregister: %v", deregErr)
+		}
+	}
+	return shutdownErr
+}
+
+// effectiveGrace converts the --shutdown-grace-seconds flag to a duration,
+// flooring non-positive values to 30s so the drain path is never skipped (a
+// zero/expired grace would make srv.Shutdown force-close in-flight runs).
+func effectiveGrace(seconds int) time.Duration {
+	d := time.Duration(seconds) * time.Second
+	if d <= 0 {
+		return 30 * time.Second
+	}
+	return d
+}
+
 // parseFlags registers all fleet flags on a dedicated FlagSet wired to
 // appconfig.EnvFlag so every flag gets a TRIP2G_FLEET_<FLAG_NAME> environment
 // variable fallback (standard kebab-to-SCREAMING_SNAKE mapping). The
@@ -313,6 +350,7 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	var offered string
 	var allowedPrograms string
 	var poll int
+	var graceSeconds int
 
 	fs := flag.NewFlagSet("fleet", flag.ContinueOnError)
 
@@ -355,6 +393,10 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"stdout cap per code child (bytes)")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
+	fs.IntVar(&graceSeconds, "shutdown-grace-seconds", 30,
+		"max seconds to drain in-flight runs on shutdown before forcing close")
+	fs.BoolVar(&cli.cfg.KeepWebhooksOnShutdown, "keep-webhooks-on-shutdown", false,
+		"do not deregister webhooks on shutdown (rolling deploys: trip2g keeps them and retries)")
 
 	// One-shot offline harness flags.
 	fs.StringVar(&cli.oncePath, "once", "",
@@ -391,6 +433,7 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	cli.cfg.OfferedTools = splitCSV(offered)
 	cli.cfg.AllowedPrograms = splitCSV(allowedPrograms)
 	cli.cfg.PollInterval = time.Duration(poll) * time.Second
+	cli.cfg.ShutdownGrace = effectiveGrace(graceSeconds)
 	return cli, nil
 }
 

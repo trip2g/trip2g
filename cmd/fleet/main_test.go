@@ -1,7 +1,13 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"trip2g/internal/fleet"
 
@@ -200,4 +206,161 @@ func TestTrailingSlashNormalization(t *testing.T) {
 		got := normalizeCallbackURL(tc.input)
 		require.Equal(t, tc.want, got, "input: %s", tc.input)
 	}
+}
+
+// newIdleTestServer starts a real HTTP server on a random loopback port using
+// the provided handler. The caller must call srv.Shutdown or srv.Close when done.
+func newIdleTestServer(t *testing.T, handler http.Handler) (*http.Server, string) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	srv := &http.Server{Handler: handler}
+	go func() { _ = srv.Serve(ln) }()
+	return srv, ln.Addr().String()
+}
+
+// waitShutdownDraining blocks until srv.Shutdown has closed the listener (a new
+// dial is refused), proving Shutdown has been entered and is in its drain loop
+// waiting for the in-flight handler. Releasing the handler only after this makes
+// the subsequent 200 a genuine drain guarantee: a force-close (srv.Close) would
+// instead drop the in-flight connection and the request would not get 200.
+func waitShutdownDraining(t *testing.T, addr string) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		c, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err != nil {
+			return true // refused → listener closed → Shutdown is draining
+		}
+		_ = c.Close()
+		return false
+	}, 3*time.Second, 5*time.Millisecond)
+}
+
+// TestGracefulShutdown_DrainsInFlightAndDeregisters asserts that gracefulShutdown
+// waits for an active in-flight request to complete (drain) before returning, and
+// then calls the deregister function exactly once when keepWebhooks is false.
+func TestGracefulShutdown_DrainsInFlightAndDeregisters(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		close(entered)
+		<-release
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv, addr := newIdleTestServer(t, mux)
+
+	// Fire a request in a background goroutine; capture the status code.
+	var respCode int
+	reqDone := make(chan struct{})
+	go func() {
+		defer close(reqDone)
+		resp, httpErr := http.Get("http://" + addr + "/")
+		if httpErr == nil {
+			respCode = resp.StatusCode
+			resp.Body.Close()
+		}
+	}()
+
+	<-entered // handler is now blocking inside the server
+
+	var deregCount atomic.Int32
+	stubDereg := func(_ context.Context) error {
+		if n := deregCount.Add(1); n < 0 {
+			return fmt.Errorf("unexpected: deregCount overflowed to %d", n)
+		}
+		return nil
+	}
+
+	shutdownErr := make(chan error, 1)
+	go func() {
+		shutdownErr <- gracefulShutdown(srv, stubDereg, false, 5*time.Second)
+	}()
+
+	// Block until Shutdown has closed the listener and is draining the active
+	// request, so releasing the handler now proves Shutdown WAITED for it.
+	waitShutdownDraining(t, addr)
+	close(release) // unblock the handler → it writes 200
+
+	<-reqDone
+	err := <-shutdownErr
+
+	require.NoError(t, err, "gracefulShutdown must return nil when drain succeeds")
+	require.Equal(t, http.StatusOK, respCode, "in-flight request must drain and complete with 200")
+	require.Equal(t, int32(1), deregCount.Load(), "deregister must be called exactly once")
+}
+
+// TestGracefulShutdown_KeepWebhooksSkipsDeregister asserts that when
+// keepWebhooks is true the deregister function is never called, but the
+// in-flight request is still drained normally (200 response).
+func TestGracefulShutdown_KeepWebhooksSkipsDeregister(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		close(entered)
+		<-release
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv, addr := newIdleTestServer(t, mux)
+
+	var respCode int
+	reqDone := make(chan struct{})
+	go func() {
+		defer close(reqDone)
+		resp, httpErr := http.Get("http://" + addr + "/")
+		if httpErr == nil {
+			respCode = resp.StatusCode
+			resp.Body.Close()
+		}
+	}()
+
+	<-entered
+
+	var deregCount atomic.Int32
+	stubDereg := func(_ context.Context) error {
+		if n := deregCount.Add(1); n < 0 {
+			return fmt.Errorf("unexpected: deregCount overflowed to %d", n)
+		}
+		return nil
+	}
+
+	shutdownErr := make(chan error, 1)
+	go func() {
+		shutdownErr <- gracefulShutdown(srv, stubDereg, true, 5*time.Second)
+	}()
+
+	// Same drain-ordering guarantee as the deregister test (see waitShutdownDraining).
+	waitShutdownDraining(t, addr)
+	close(release)
+
+	<-reqDone
+	err := <-shutdownErr
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, respCode, "in-flight request must still drain with keepWebhooks=true")
+	require.Equal(t, int32(0), deregCount.Load(), "deregister must NOT be called when keepWebhooks=true")
+}
+
+// TestGracefulShutdown_DeregisterNilSafe asserts that passing a nil deregister
+// function does not panic and returns without error on an idle server.
+func TestGracefulShutdown_DeregisterNilSafe(t *testing.T) {
+	srv, _ := newIdleTestServer(t, http.NewServeMux())
+	err := gracefulShutdown(srv, nil, false, time.Second)
+	require.NoError(t, err)
+}
+
+// TestEffectiveGrace_FloorsNonPositive guards the floor that protects the drain
+// path: a zero/negative grace must become 30s, never an already-expired context
+// (which would make srv.Shutdown force-close in-flight runs). This floor is the
+// only thing keeping --shutdown-grace-seconds=0 (incl. via env) from skipping
+// the drain entirely, so it is tested directly.
+func TestEffectiveGrace_FloorsNonPositive(t *testing.T) {
+	require.Equal(t, 30*time.Second, effectiveGrace(0), "0 must floor to 30s")
+	require.Equal(t, 30*time.Second, effectiveGrace(-5), "negative must floor to 30s")
+	require.Equal(t, 45*time.Second, effectiveGrace(45), "positive must pass through")
 }
