@@ -27,5 +27,6 @@ type Config struct {
 	AgentsFolder    string        // e.g. "roles/" -> notePaths like "roles/%"
 	OfferedTools    []string      // a role's tools must be a subset of these
 	AllowedPrograms []string      // programs allowed for code execution (empty = disabled)
+	MaxStdoutBytes  int           // stdout cap per code child (bytes); 0 → 1 MiB default
 	PollInterval    time.Duration // discovery/reconcile poll cadence
 }

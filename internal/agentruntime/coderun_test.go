@@ -477,7 +477,7 @@ func TestFenceLangToProgram(t *testing.T) {
 	require.Equal(t, "node", fenceLangToProgram("node"))
 	require.Equal(t, "node", fenceLangToProgram("js"))
 	require.Equal(t, "node", fenceLangToProgram("javascript"))
-	require.Empty(t, fenceLangToProgram("ruby"))
+	require.Equal(t, "ruby", fenceLangToProgram("ruby"))
 }
 
 func TestProgramBinary(t *testing.T) {
@@ -489,7 +489,7 @@ func TestProgramBinary(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "bash", b)
 
-	_, err = programBinary("ruby")
+	_, err = programBinary("haskell")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown program")
 }
@@ -498,6 +498,37 @@ func TestIsAllowed(t *testing.T) {
 	require.True(t, isAllowed("bash", []string{"bash", "python"}))
 	require.False(t, isAllowed("node", []string{"bash", "python"}))
 	require.False(t, isAllowed("bash", nil))
+}
+
+func TestInterpretersJSON_Load(t *testing.T) {
+	prog := fenceLangToProgram("python")
+	require.Equal(t, "python", prog)
+	prog = fenceLangToProgram("py")
+	require.Equal(t, "python", prog)
+	prog = fenceLangToProgram("ruby")
+	require.Equal(t, "ruby", prog)
+	prog = fenceLangToProgram("haskell")
+	require.Empty(t, prog)
+}
+
+func TestInterpretersJSON_Override(t *testing.T) {
+	orig := registry
+	t.Cleanup(func() { registry = orig })
+	custom := []byte(`{"interpreters":[{"name":"bash","cmd":["bash"],"code_block_labels":["bash","sh"],"ext":".sh"}]}`)
+	require.NoError(t, SetInterpretersJSON(custom))
+	require.Equal(t, "bash", fenceLangToProgram("bash"))
+	require.Empty(t, fenceLangToProgram("python"))
+}
+
+func TestMaxStdoutBytesFromConfig(t *testing.T) {
+	code := `printf '%0.s1234567890' {1..10}` // writes 100 bytes
+	stdout, _, _, err := RunBlock(context.Background(), CodeSpec{
+		Program:        "bash",
+		Code:           code,
+		MaxStdoutBytes: 10,
+	})
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(stdout), 10, "stdout must not exceed MaxStdoutBytes")
 }
 
 // TestRunBlock_WorkdirIsolation asserts each RunBlock call gets a clean working

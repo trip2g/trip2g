@@ -139,6 +139,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 				Input:           buildInputBag(rc),
 				EnvPassthrough:  role.EnvPassthrough,
 				EnvPrefix:       role.EnvPrefix,
+				MaxStdoutBytes:  f.cfg.MaxStdoutBytes,
 			})
 		} else {
 			res, runErr = agentruntime.Run(runCtx, agentruntime.Input{
