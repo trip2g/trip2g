@@ -56,6 +56,11 @@ RUN go generate ./onboarding-vault && \
     -ldflags="-s -w -X main.GitCommit=${GIT_COMMIT}" \
     ./cmd/server
 
+# Secondary binary: the fleet agent host (static, LLM-only — no interpreters here;
+# code-execution roles add their own runtime, see docs/dev/fleet_packaging.md).
+RUN GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
+    go build -o /fleet -ldflags="-s -w" ./cmd/fleet
+
 # Build final image
 FROM alpine:latest
 
@@ -66,5 +71,7 @@ RUN apk add --no-cache git ca-certificates
 WORKDIR /app
 
 COPY --from=builder /trip2g /trip2g
+# Secondary: run as a sidecar/second container — `docker run <image> /fleet`.
+COPY --from=builder /fleet /fleet
 
 CMD ["/trip2g"]
