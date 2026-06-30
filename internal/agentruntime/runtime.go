@@ -24,7 +24,15 @@ const (
 	toolWriteNote = "write_note"
 	toolPatchNote = "patch_note"
 	toolFinish    = "finish"
+	toolExec      = "exec"
 )
+
+// toolInvoker is the extension-point function type for the tool registry seam.
+// Built-in tools (search, read_note, write_note, patch_note, finish) are
+// handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
+// register an invoker here via buildInvokers so the loop never needs a new
+// switch case. future: populate from MCP server descriptors, config, etc.
+type toolInvoker func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string
 
 // Input is one executor run, derived from a webhook delivery
 // (instruction + read_patterns + write_patterns + model) plus the safety
@@ -39,6 +47,11 @@ type Input struct {
 	// finish is always included regardless of this list.
 	// An empty (nil) Tools means the full default offered set (backward-compat).
 	Tools []string
+
+	// AllowedPrograms is the fleet-level allowlist for code execution. When
+	// non-empty, the exec(program, code) tool is advertised to the model and
+	// enabled at execution time. An empty slice disables exec entirely.
+	AllowedPrograms []string
 
 	// MaxTokens is the NON-overridable per-run token hard-cap (safety floor).
 	// The model has no tool to change it; the loop enforces it. Must be > 0.
@@ -98,13 +111,17 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 	}
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
-	tools := allowedToolDefs(in.Tools)
+	tools := allowedToolDefs(in.Tools, in.AllowedPrograms)
 	// permitted is the execution-time enforcement set: same as the advertised set.
 	// finish is always present (already guaranteed by allowedToolDefs).
 	permitted := make(map[string]bool, len(tools))
 	for _, td := range tools {
 		permitted[td.Name] = true
 	}
+
+	// Tool registry: extension invokers (exec + future MCP plug-ins) are called
+	// before the built-in switch in execTool. Built-in tools leave this nil-safe.
+	invokers := buildInvokers(in.AllowedPrograms)
 
 	messages := []Message{
 		{
@@ -167,7 +184,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 				})
 				continue
 			}
-			output := execTool(ctx, scoped, res, call)
+			output := execTool(ctx, scoped, res, call, invokers)
 			messages = append(messages, Message{
 				Role:       RoleTool,
 				ToolCallID: call.ID,
@@ -183,7 +200,12 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 // execTool runs one tool call against the scoped KB and returns the textual
 // result to feed back to the model. Scope denials are recorded and surfaced to
 // the model (so it learns), never silently swallowed.
-func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
+// Extension tools registered in invokers are dispatched before the built-in
+// switch, forming the tool registry seam for exec and future MCP plug-ins.
+func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall, invokers map[string]toolInvoker) string {
+	if fn, ok := invokers[call.Name]; ok {
+		return fn(ctx, scoped, res, call)
+	}
 	switch call.Name {
 	case toolSearch:
 		var args struct {
@@ -295,8 +317,9 @@ func formatPatterns(patterns []string) string {
 // allowedToolDefs returns the ToolDef slice the model will see. When allowlist
 // is non-empty, only tools named in it are included; finish is always injected
 // regardless. An empty allowlist returns the full default offered set.
-func allowedToolDefs(allowlist []string) []ToolDef {
-	all := toolDefs()
+// allowedPrograms gates whether exec is included in the base set.
+func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
+	all := toolDefs(allowedPrograms)
 	if len(allowlist) == 0 {
 		return all
 	}
@@ -316,8 +339,100 @@ func allowedToolDefs(allowlist []string) []ToolDef {
 	return out
 }
 
-func toolDefs() []ToolDef {
-	return []ToolDef{
+// buildInvokers constructs the extension tool registry. When allowedPrograms is
+// non-empty, exec is registered. future: add MCP server tool invokers here.
+func buildInvokers(allowedPrograms []string) map[string]toolInvoker {
+	if len(allowedPrograms) == 0 {
+		return nil
+	}
+	return map[string]toolInvoker{
+		toolExec: makeExecInvoker(allowedPrograms),
+	}
+}
+
+// makeExecInvoker returns an invoker for the exec(program, code) tool.
+// It runs the code via RunBlock (secret-scrubbed), parses stdout as write JSON,
+// and applies changes via the scoped KB — same write_patterns enforcement as
+// write_note. Out-of-scope writes are denied and recorded, not silently dropped.
+func makeExecInvoker(allowedPrograms []string) toolInvoker {
+	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
+		var args struct {
+			Program string `json:"program"`
+			Code    string `json:"code"`
+		}
+		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
+			return "error: invalid arguments: " + err.Error()
+		}
+		if !isAllowed(args.Program, allowedPrograms) {
+			return fmt.Sprintf("error: program %q not in allowed_programs", args.Program)
+		}
+		stdout, _, _, runErr := RunBlock(ctx, CodeSpec{
+			Program: args.Program,
+			Code:    args.Code,
+			// No Input bag: exec tool runs inline; the model already has context.
+			// No Timeout: the call is bounded by the parent run context.
+		})
+		if runErr != nil {
+			return "error: " + runErr.Error()
+		}
+		changes, answer, perr := parseCodeOutput(stdout)
+		if perr != nil {
+			return "error: " + perr.Error()
+		}
+		nWritten := 0
+		for _, ch := range changes {
+			var applyErr error
+			switch ch.Kind {
+			case webhookutil.AgentChangeKindPatch:
+				applyErr = scoped.Patch(ctx, ch.Path, ch.Find, ch.Replace)
+			default: // AgentChangeKindWrite or empty
+				applyErr = scoped.Write(ctx, ch.Path, ch.Content)
+			}
+			if errors.Is(applyErr, ErrWriteDenied) {
+				res.Denials = append(res.Denials, "exec write "+ch.Path)
+				continue
+			}
+			if applyErr != nil {
+				return "error: apply " + ch.Path + ": " + applyErr.Error()
+			}
+			res.Changes = append(res.Changes, ch)
+			nWritten++
+		}
+		summary := fmt.Sprintf("ok: ran %s, %d write(s)", args.Program, nWritten)
+		if answer != "" {
+			summary += "; " + answer
+		}
+		return summary
+	}
+}
+
+// execToolDef returns the ToolDef for the exec tool advertised to the model
+// when AllowedPrograms is non-empty.
+func execToolDef() ToolDef {
+	return ToolDef{
+		Name:        toolExec,
+		Description: "Run a code snippet. stdout MUST be JSON: {\"changes\":[{\"path\",\"content\"} or {\"path\",\"find\",\"replace\"}],\"answer\":\"...\"}. Writes go through write_patterns scope — out-of-scope paths are denied.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"program": map[string]any{
+					"type":        "string",
+					"description": "Program to run: python, bash, or node.",
+				},
+				"code": map[string]any{
+					"type":        "string",
+					"description": "Source code to execute.",
+				},
+			},
+			"required": []string{"program", "code"},
+		},
+	}
+}
+
+// toolDefs returns the full set of ToolDefs offered to the model.
+// The exec tool is included when allowedPrograms is non-empty.
+func toolDefs(allowedPrograms []string) []ToolDef {
+	out := []ToolDef{
 		{
 			Name:        toolSearch,
 			Description: "Find documents within your read scope.",
@@ -377,4 +492,8 @@ func toolDefs() []ToolDef {
 			},
 		},
 	}
+	if len(allowedPrograms) > 0 {
+		out = append(out, execToolDef())
+	}
+	return out
 }
