@@ -82,7 +82,7 @@ else if req.method == "POST" && req.path == "/v1/chat/completions" then
         type: "function",
         "function": {
           name: "write_note",
-          arguments: std.manifestJsonEx(argsObj, ""),
+          arguments: std.manifestJsonMinified(argsObj),
         },
       };
 
