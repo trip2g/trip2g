@@ -75,3 +75,4 @@ templates/kanban/node_modules/
 # stray go build artifacts (cmd/fleet, cmd/llmmock)
 /fleet
 /llmmock
+/krispmock
