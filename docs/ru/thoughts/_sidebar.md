@@ -36,3 +36,4 @@ title: "Навигация"
 - [[ru/thoughts/page-cache-and-the-surprise-bottleneck|Кеш страниц и неожиданное узкое место]]
 - [[ru/thoughts/the-database-was-re-reading-its-own-queries|База данных разбирала свои запросы заново]]
 - [[ru/thoughts/blaming-sqlite-for-my-own-bug|Полгода я винил SQLite в собственном баге]]
+- [[ru/thoughts/krisp-segmentation-nano-vs-mini|Проси точку поворота, а не интервал]]

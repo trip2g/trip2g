@@ -35,3 +35,4 @@ title: "Navigation"
 - [[en/thoughts/page-cache-and-the-surprise-bottleneck|The page cache and the surprise bottleneck]]
 - [[en/thoughts/the-database-was-re-reading-its-own-queries|The database was re-reading its own queries]]
 - [[en/thoughts/blaming-sqlite-for-my-own-bug|I spent half a year blaming SQLite for my own bug]]
+- [[en/thoughts/krisp-segmentation-nano-vs-mini|Ask for the turn, not the interval]]
