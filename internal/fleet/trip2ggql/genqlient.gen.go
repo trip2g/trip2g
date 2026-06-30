@@ -1071,6 +1071,266 @@ type ListCronWebhooksResponse struct {
 // GetAdmin returns ListCronWebhooksResponse.Admin, and is useful for accessing the field via an interface.
 func (v *ListCronWebhooksResponse) GetAdmin() ListCronWebhooksAdminAdminQuery { return v.Admin }
 
+type NoteChangeHideInput struct {
+	Path string `json:"path"`
+}
+
+// GetPath returns NoteChangeHideInput.Path, and is useful for accessing the field via an interface.
+func (v *NoteChangeHideInput) GetPath() string { return v.Path }
+
+type NoteChangeInput struct {
+	Upsert NoteChangeUpsertInput `json:"upsert"`
+	Patch  NoteChangePatchInput  `json:"patch"`
+	Hide   NoteChangeHideInput   `json:"hide"`
+}
+
+// GetUpsert returns NoteChangeInput.Upsert, and is useful for accessing the field via an interface.
+func (v *NoteChangeInput) GetUpsert() NoteChangeUpsertInput { return v.Upsert }
+
+// GetPatch returns NoteChangeInput.Patch, and is useful for accessing the field via an interface.
+func (v *NoteChangeInput) GetPatch() NoteChangePatchInput { return v.Patch }
+
+// GetHide returns NoteChangeInput.Hide, and is useful for accessing the field via an interface.
+func (v *NoteChangeInput) GetHide() NoteChangeHideInput { return v.Hide }
+
+type NoteChangePatchInput struct {
+	Path         string `json:"path"`
+	Find         string `json:"find"`
+	Replace      string `json:"replace"`
+	ExpectedHash string `json:"expectedHash"`
+}
+
+// GetPath returns NoteChangePatchInput.Path, and is useful for accessing the field via an interface.
+func (v *NoteChangePatchInput) GetPath() string { return v.Path }
+
+// GetFind returns NoteChangePatchInput.Find, and is useful for accessing the field via an interface.
+func (v *NoteChangePatchInput) GetFind() string { return v.Find }
+
+// GetReplace returns NoteChangePatchInput.Replace, and is useful for accessing the field via an interface.
+func (v *NoteChangePatchInput) GetReplace() string { return v.Replace }
+
+// GetExpectedHash returns NoteChangePatchInput.ExpectedHash, and is useful for accessing the field via an interface.
+func (v *NoteChangePatchInput) GetExpectedHash() string { return v.ExpectedHash }
+
+type NoteChangeUpsertInput struct {
+	Path         string `json:"path"`
+	Content      string `json:"content"`
+	ExpectedHash string `json:"expectedHash"`
+}
+
+// GetPath returns NoteChangeUpsertInput.Path, and is useful for accessing the field via an interface.
+func (v *NoteChangeUpsertInput) GetPath() string { return v.Path }
+
+// GetContent returns NoteChangeUpsertInput.Content, and is useful for accessing the field via an interface.
+func (v *NoteChangeUpsertInput) GetContent() string { return v.Content }
+
+// GetExpectedHash returns NoteChangeUpsertInput.ExpectedHash, and is useful for accessing the field via an interface.
+func (v *NoteChangeUpsertInput) GetExpectedHash() string { return v.ExpectedHash }
+
+// NoteContentScopedNotePathsNotePath includes the requested fields of the GraphQL type NotePath.
+type NoteContentScopedNotePathsNotePath struct {
+	Content string `json:"content"`
+}
+
+// GetContent returns NoteContentScopedNotePathsNotePath.Content, and is useful for accessing the field via an interface.
+func (v *NoteContentScopedNotePathsNotePath) GetContent() string { return v.Content }
+
+// NoteContentScopedResponse is returned by NoteContentScoped on success.
+type NoteContentScopedResponse struct {
+	// X-Api-Key header must be set.
+	NotePaths []NoteContentScopedNotePathsNotePath `json:"notePaths"`
+}
+
+// GetNotePaths returns NoteContentScopedResponse.NotePaths, and is useful for accessing the field via an interface.
+func (v *NoteContentScopedResponse) GetNotePaths() []NoteContentScopedNotePathsNotePath {
+	return v.NotePaths
+}
+
+type NotePathsFilter struct {
+	// LIKE pattern with % and _ wildcards supported.
+	// For example, to find all note paths starting with "myfolder/", use "myfolder/%".
+	Like string `json:"like"`
+	// Full-text search on note paths. like will be ignored if search is set.
+	Search string `json:"search"`
+	// Only return these specific note paths. Search and like will be ignored if paths is set.
+	Paths []string `json:"paths"`
+}
+
+// GetLike returns NotePathsFilter.Like, and is useful for accessing the field via an interface.
+func (v *NotePathsFilter) GetLike() string { return v.Like }
+
+// GetSearch returns NotePathsFilter.Search, and is useful for accessing the field via an interface.
+func (v *NotePathsFilter) GetSearch() string { return v.Search }
+
+// GetPaths returns NotePathsFilter.Paths, and is useful for accessing the field via an interface.
+func (v *NotePathsFilter) GetPaths() []string { return v.Paths }
+
+// SearchScopedResponse is returned by SearchScoped on success.
+type SearchScopedResponse struct {
+	Search SearchScopedSearchSearchConnection `json:"search"`
+}
+
+// GetSearch returns SearchScopedResponse.Search, and is useful for accessing the field via an interface.
+func (v *SearchScopedResponse) GetSearch() SearchScopedSearchSearchConnection { return v.Search }
+
+// SearchScopedSearchSearchConnection includes the requested fields of the GraphQL type SearchConnection.
+type SearchScopedSearchSearchConnection struct {
+	Nodes []SearchScopedSearchSearchConnectionNodesSearchResult `json:"nodes"`
+}
+
+// GetNodes returns SearchScopedSearchSearchConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *SearchScopedSearchSearchConnection) GetNodes() []SearchScopedSearchSearchConnectionNodesSearchResult {
+	return v.Nodes
+}
+
+// SearchScopedSearchSearchConnectionNodesSearchResult includes the requested fields of the GraphQL type SearchResult.
+type SearchScopedSearchSearchConnectionNodesSearchResult struct {
+	Document SearchScopedSearchSearchConnectionNodesSearchResultDocument `json:"-"`
+}
+
+// GetDocument returns SearchScopedSearchSearchConnectionNodesSearchResult.Document, and is useful for accessing the field via an interface.
+func (v *SearchScopedSearchSearchConnectionNodesSearchResult) GetDocument() SearchScopedSearchSearchConnectionNodesSearchResultDocument {
+	return v.Document
+}
+
+func (v *SearchScopedSearchSearchConnectionNodesSearchResult) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*SearchScopedSearchSearchConnectionNodesSearchResult
+		Document json.RawMessage `json:"document"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.SearchScopedSearchSearchConnectionNodesSearchResult = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Document
+		src := firstPass.Document
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalSearchScopedSearchSearchConnectionNodesSearchResultDocument(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal SearchScopedSearchSearchConnectionNodesSearchResult.Document: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalSearchScopedSearchSearchConnectionNodesSearchResult struct {
+	Document json.RawMessage `json:"document"`
+}
+
+func (v *SearchScopedSearchSearchConnectionNodesSearchResult) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *SearchScopedSearchSearchConnectionNodesSearchResult) __premarshalJSON() (*__premarshalSearchScopedSearchSearchConnectionNodesSearchResult, error) {
+	var retval __premarshalSearchScopedSearchSearchConnectionNodesSearchResult
+
+	{
+
+		dst := &retval.Document
+		src := v.Document
+		var err error
+		*dst, err = __marshalSearchScopedSearchSearchConnectionNodesSearchResultDocument(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal SearchScopedSearchSearchConnectionNodesSearchResult.Document: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// SearchScopedSearchSearchConnectionNodesSearchResultDocument includes the requested fields of the GraphQL interface SearchResultDocument.
+//
+// SearchScopedSearchSearchConnectionNodesSearchResultDocument is implemented by the following types:
+// SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote
+type SearchScopedSearchSearchConnectionNodesSearchResultDocument interface {
+	implementsGraphQLInterfaceSearchScopedSearchSearchConnectionNodesSearchResultDocument()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) implementsGraphQLInterfaceSearchScopedSearchSearchConnectionNodesSearchResultDocument() {
+}
+
+func __unmarshalSearchScopedSearchSearchConnectionNodesSearchResultDocument(b []byte, v *SearchScopedSearchSearchConnectionNodesSearchResultDocument) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "PublicNote":
+		*v = new(SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing SearchResultDocument.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for SearchScopedSearchSearchConnectionNodesSearchResultDocument: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalSearchScopedSearchSearchConnectionNodesSearchResultDocument(v *SearchScopedSearchSearchConnectionNodesSearchResultDocument) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote:
+		typename = "PublicNote"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for SearchScopedSearchSearchConnectionNodesSearchResultDocument: "%T"`, v)
+	}
+}
+
+// SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote includes the requested fields of the GraphQL type PublicNote.
+type SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote struct {
+	Typename string `json:"__typename"`
+	Path     string `json:"path"`
+}
+
+// GetTypename returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.Typename, and is useful for accessing the field via an interface.
+func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) GetTypename() string {
+	return v.Typename
+}
+
+// GetPath returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.Path, and is useful for accessing the field via an interface.
+func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) GetPath() string {
+	return v.Path
+}
+
 // UpdateCronWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
 type UpdateCronWebhookAdminAdminMutation struct {
 	UpdateCronWebhook UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload `json:"-"`
@@ -1330,6 +1590,251 @@ type UpdateCronWebhookResponse struct {
 // GetAdmin returns UpdateCronWebhookResponse.Admin, and is useful for accessing the field via an interface.
 func (v *UpdateCronWebhookResponse) GetAdmin() UpdateCronWebhookAdminAdminMutation { return v.Admin }
 
+type UpdateNotesInput struct {
+	Changes []NoteChangeInput `json:"changes"`
+}
+
+// GetChanges returns UpdateNotesInput.Changes, and is useful for accessing the field via an interface.
+func (v *UpdateNotesInput) GetChanges() []NoteChangeInput { return v.Changes }
+
+// UpdateNotesScopedResponse is returned by UpdateNotesScoped on success.
+type UpdateNotesScopedResponse struct {
+	UpdateNotes UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload `json:"-"`
+}
+
+// GetUpdateNotes returns UpdateNotesScopedResponse.UpdateNotes, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedResponse) GetUpdateNotes() UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload {
+	return v.UpdateNotes
+}
+
+func (v *UpdateNotesScopedResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateNotesScopedResponse
+		UpdateNotes json.RawMessage `json:"updateNotes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateNotesScopedResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.UpdateNotes
+		src := firstPass.UpdateNotes
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateNotesScopedResponse.UpdateNotes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateNotesScopedResponse struct {
+	UpdateNotes json.RawMessage `json:"updateNotes"`
+}
+
+func (v *UpdateNotesScopedResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateNotesScopedResponse) __premarshalJSON() (*__premarshalUpdateNotesScopedResponse, error) {
+	var retval __premarshalUpdateNotesScopedResponse
+
+	{
+
+		dst := &retval.UpdateNotes
+		src := v.UpdateNotes
+		var err error
+		*dst, err = __marshalUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateNotesScopedResponse.UpdateNotes: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// UpdateNotesScopedUpdateNotesErrorPayload includes the requested fields of the GraphQL type ErrorPayload.
+type UpdateNotesScopedUpdateNotesErrorPayload struct {
+	Typename string `json:"__typename"`
+	Message  string `json:"message"`
+}
+
+// GetTypename returns UpdateNotesScopedUpdateNotesErrorPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesErrorPayload) GetTypename() string { return v.Typename }
+
+// GetMessage returns UpdateNotesScopedUpdateNotesErrorPayload.Message, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesErrorPayload) GetMessage() string { return v.Message }
+
+// UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload includes the requested fields of the GraphQL type UpdateNotesHashMismatchPayload.
+type UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload struct {
+	Typename   string `json:"__typename"`
+	Path       string `json:"path"`
+	ActualHash string `json:"actualHash"`
+}
+
+// GetTypename returns UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetPath returns UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload.Path, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload) GetPath() string { return v.Path }
+
+// GetActualHash returns UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload.ActualHash, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload) GetActualHash() string {
+	return v.ActualHash
+}
+
+// UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload includes the requested fields of the GraphQL interface UpdateNotesOrErrorPayload.
+//
+// UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload is implemented by the following types:
+// UpdateNotesScopedUpdateNotesErrorPayload
+// UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload
+// UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload
+// UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload
+type UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload interface {
+	implementsGraphQLInterfaceUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *UpdateNotesScopedUpdateNotesErrorPayload) implementsGraphQLInterfaceUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload() {
+}
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload) implementsGraphQLInterfaceUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload() {
+}
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload) implementsGraphQLInterfaceUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload() {
+}
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload) implementsGraphQLInterfaceUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload() {
+}
+
+func __unmarshalUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload(b []byte, v *UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "ErrorPayload":
+		*v = new(UpdateNotesScopedUpdateNotesErrorPayload)
+		return json.Unmarshal(b, *v)
+	case "UpdateNotesHashMismatchPayload":
+		*v = new(UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload)
+		return json.Unmarshal(b, *v)
+	case "UpdateNotesPatchNotFoundPayload":
+		*v = new(UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload)
+		return json.Unmarshal(b, *v)
+	case "UpdateNotesSuccessPayload":
+		*v = new(UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing UpdateNotesOrErrorPayload.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalUpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload(v *UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *UpdateNotesScopedUpdateNotesErrorPayload:
+		typename = "ErrorPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateNotesScopedUpdateNotesErrorPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload:
+		typename = "UpdateNotesHashMismatchPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateNotesScopedUpdateNotesUpdateNotesHashMismatchPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload:
+		typename = "UpdateNotesPatchNotFoundPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload:
+		typename = "UpdateNotesSuccessPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for UpdateNotesScopedUpdateNotesUpdateNotesOrErrorPayload: "%T"`, v)
+	}
+}
+
+// UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload includes the requested fields of the GraphQL type UpdateNotesPatchNotFoundPayload.
+type UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload struct {
+	Typename string `json:"__typename"`
+	Path     string `json:"path"`
+	Find     string `json:"find"`
+}
+
+// GetTypename returns UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetPath returns UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload.Path, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload) GetPath() string { return v.Path }
+
+// GetFind returns UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload.Find, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesPatchNotFoundPayload) GetFind() string { return v.Find }
+
+// UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload includes the requested fields of the GraphQL type UpdateNotesSuccessPayload.
+type UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload struct {
+	Typename string   `json:"__typename"`
+	Paths    []string `json:"paths"`
+}
+
+// GetTypename returns UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetPaths returns UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload.Paths, and is useful for accessing the field via an interface.
+func (v *UpdateNotesScopedUpdateNotesUpdateNotesSuccessPayload) GetPaths() []string { return v.Paths }
+
 // __CreateChangeWebhookInput is used internally by genqlient
 type __CreateChangeWebhookInput struct {
 	Input ChangeWebhookCreateInput `json:"input"`
@@ -1370,6 +1875,22 @@ type __DiscoverRolesInput struct {
 // GetLike returns __DiscoverRolesInput.Like, and is useful for accessing the field via an interface.
 func (v *__DiscoverRolesInput) GetLike() string { return v.Like }
 
+// __NoteContentScopedInput is used internally by genqlient
+type __NoteContentScopedInput struct {
+	Filter NotePathsFilter `json:"filter"`
+}
+
+// GetFilter returns __NoteContentScopedInput.Filter, and is useful for accessing the field via an interface.
+func (v *__NoteContentScopedInput) GetFilter() NotePathsFilter { return v.Filter }
+
+// __SearchScopedInput is used internally by genqlient
+type __SearchScopedInput struct {
+	Q string `json:"q"`
+}
+
+// GetQ returns __SearchScopedInput.Q, and is useful for accessing the field via an interface.
+func (v *__SearchScopedInput) GetQ() string { return v.Q }
+
 // __UpdateCronWebhookInput is used internally by genqlient
 type __UpdateCronWebhookInput struct {
 	Input UpdateCronWebhookInput `json:"input"`
@@ -1377,6 +1898,14 @@ type __UpdateCronWebhookInput struct {
 
 // GetInput returns __UpdateCronWebhookInput.Input, and is useful for accessing the field via an interface.
 func (v *__UpdateCronWebhookInput) GetInput() UpdateCronWebhookInput { return v.Input }
+
+// __UpdateNotesScopedInput is used internally by genqlient
+type __UpdateNotesScopedInput struct {
+	Input UpdateNotesInput `json:"input"`
+}
+
+// GetInput returns __UpdateNotesScopedInput.Input, and is useful for accessing the field via an interface.
+func (v *__UpdateNotesScopedInput) GetInput() UpdateNotesInput { return v.Input }
 
 // The mutation executed by CreateChangeWebhook.
 const CreateChangeWebhook_Operation = `
@@ -1671,6 +2200,89 @@ func ListCronWebhooks(
 	return data_, err_
 }
 
+// The query executed by NoteContentScoped.
+const NoteContentScoped_Operation = `
+query NoteContentScoped ($filter: NotePathsFilter!) {
+	notePaths(filter: $filter) {
+		content
+	}
+}
+`
+
+// NoteContentScoped fetches raw markdown via notePaths, not the note() query
+// which returns rendered HTML. Using notePaths ensures the returned string is
+// the same raw markdown that Write/Patch operate on, so a find-string derived
+// from Read round-trips correctly through Patch. notePaths is scope-enforced
+// by filterNotePathsByScope (F1 fix), so read_patterns are respected — an
+// out-of-scope path returns an empty list.
+func NoteContentScoped(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	filter NotePathsFilter,
+) (data_ *NoteContentScopedResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "NoteContentScoped",
+		Query:  NoteContentScoped_Operation,
+		Variables: &__NoteContentScopedInput{
+			Filter: filter,
+		},
+	}
+
+	data_ = &NoteContentScopedResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by SearchScoped.
+const SearchScoped_Operation = `
+query SearchScoped ($q: String!) {
+	search(input: {query:$q}) {
+		nodes {
+			document {
+				__typename
+				... on PublicNote {
+					path
+				}
+			}
+		}
+	}
+}
+`
+
+// SearchScoped searches notes by query string using the scoped (Bearer) lane.
+// Only the path is fetched — the caller decides what to read from found notes.
+func SearchScoped(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	q string,
+) (data_ *SearchScopedResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "SearchScoped",
+		Query:  SearchScoped_Operation,
+		Variables: &__SearchScopedInput{
+			Q: q,
+		},
+	}
+
+	data_ = &SearchScopedResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by UpdateCronWebhook.
 const UpdateCronWebhook_Operation = `
 mutation UpdateCronWebhook ($input: UpdateCronWebhookInput!) {
@@ -1706,6 +2318,56 @@ func UpdateCronWebhook(
 	}
 
 	data_ = &UpdateCronWebhookResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateNotesScoped.
+const UpdateNotesScoped_Operation = `
+mutation UpdateNotesScoped ($input: UpdateNotesInput!) {
+	updateNotes(input: $input) {
+		__typename
+		... on UpdateNotesSuccessPayload {
+			paths
+		}
+		... on UpdateNotesPatchNotFoundPayload {
+			path
+			find
+		}
+		... on UpdateNotesHashMismatchPayload {
+			path
+			actualHash
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}
+`
+
+// UpdateNotesScoped applies upsert/patch/hide changes via the scoped token.
+// The union covers every outcome so the caller can map each variant to an error.
+func UpdateNotesScoped(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	input UpdateNotesInput,
+) (data_ *UpdateNotesScopedResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateNotesScoped",
+		Query:  UpdateNotesScoped_Operation,
+		Variables: &__UpdateNotesScopedInput{
+			Input: input,
+		},
+	}
+
+	data_ = &UpdateNotesScopedResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

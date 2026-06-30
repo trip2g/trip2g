@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Khan/genqlient/graphql"
+
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/webhookutil"
 )
@@ -166,7 +168,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 			Ctx:      runCtx,
 			Role:     role,
 			Instr:    instruction,
-			APIToken: payload.APIToken,
+			GQL:      NewScopedGraphQLClient(f.cfg.Trip2gBaseURL, payload.APIToken, f.hc),
 			Overlay:  overlay,
 			InputBag: buildInputBag(rc),
 		})
@@ -322,7 +324,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 		Ctx:      runCtx,
 		Role:     role,
 		Instr:    instruction,
-		APIToken: payload.APIToken,
+		GQL:      NewScopedGraphQLClient(f.cfg.Trip2gBaseURL, payload.APIToken, f.hc),
 		Overlay:  overlay,
 		InputBag: buildCronInputBag(rc),
 	})
@@ -361,7 +363,7 @@ type execRoleInput struct {
 	Ctx      context.Context
 	Role     Role
 	Instr    string
-	APIToken string
+	GQL      graphql.Client // scoped genqlient client for the delivery's KB lane
 	Overlay  map[string]string
 	InputBag []byte // JSON bag for code executor ($FLEET_INPUT); nil for LLM executor
 }
@@ -370,11 +372,12 @@ type execRoleInput struct {
 // executor (LLM agent run or deterministic code runner). Called from both change
 // delivery (with buildInputBag) and cron delivery (with buildCronInputBag).
 func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
+	kb := newRemoteKB(p.GQL, p.Overlay)
 	if p.Role.Executor == executorCode {
 		return f.codeRunner(p.Ctx, agentruntime.CodeInput{
 			Body:            p.Instr,
 			WritePatterns:   p.Role.WritePatterns,
-			KB:              newRemoteKB(f.client, p.APIToken, p.Overlay),
+			KB:              kb,
 			AllowedPrograms: f.cfg.AllowedPrograms,
 			Input:           p.InputBag,
 			EnvPassthrough:  p.Role.EnvPassthrough,
@@ -392,7 +395,7 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 		MaxSteps:        clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
 		AllowedPrograms: f.cfg.AllowedPrograms,
 		LLM:             f.llm,
-		KB:              newRemoteKB(f.client, p.APIToken, p.Overlay),
+		KB:              kb,
 	})
 }
 

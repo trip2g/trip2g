@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"trip2g/internal/agentruntime"
@@ -36,7 +38,7 @@ func (s *stubLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ 
 	}, nil
 }
 
-func newTestFleet(client Client) *Fleet {
+func newTestFleet(hc *http.Client) *Fleet {
 	role := Role{
 		NotePath: "roles/triage.md", Body: "Triage.", Mode: "change",
 		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
@@ -46,9 +48,29 @@ func newTestFleet(client Client) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, client, &stubLLM{})
+	f := NewFleet(cfg, hc, &stubLLM{})
 	f.SetRoles([]Role{role})
 	return f
+}
+
+// newScopedKBServer starts an httptest server that handles scoped /_system/graphql
+// requests. respond is called with the Authorization header value and must return
+// JSON to put under {"data": ...}. A nil respond returns an empty UpdateNotes success.
+func newScopedKBServer(t *testing.T, respond func(auth, body string) string) (*httptest.Server, *http.Client) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		rawBody, _ := io.ReadAll(r.Body)
+		var data string
+		if respond != nil {
+			data = respond(r.Header.Get("Authorization"), string(rawBody))
+		} else {
+			data = `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":[]}}`
+		}
+		_, _ = w.Write([]byte(`{"data":` + data + `}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv, srv.Client()
 }
 
 func post(t *testing.T, f *Fleet, key string, body []byte, sign bool) *httptest.ResponseRecorder {
@@ -79,22 +101,32 @@ func deliveryBody(t *testing.T) []byte {
 }
 
 func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
-	var scopedCalls int
-	var lastToken string
-	client := &ClientMock{
-		GraphQLScopedFunc: func(_ context.Context, tok, q string, _ map[string]any) (json.RawMessage, error) {
-			scopedCalls++
-			lastToken = tok
-			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
-		},
+	var scopedCalls atomic.Int32
+	var lastToken atomic.Value
+	srv, hc := newScopedKBServer(t, func(auth, _ string) string {
+		scopedCalls.Add(1)
+		lastToken.Store(auth)
+		return `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["boards/sprint.md"]}}`
+	})
+
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		Trip2gBaseURL: srv.URL, TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := newTestFleet(client)
+	role := Role{
+		NotePath: "roles/triage.md", Body: "Triage.", Mode: "change",
+		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
+	}
+	f := NewFleet(cfg, hc, &stubLLM{})
+	f.SetRoles([]Role{role})
+
 	key := urlKey("roles/triage.md")
 	rec := post(t, f, key, deliveryBody(t), true)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, scopedCalls) // exactly one scoped updateNotes; writes ride the scoped lane only
-	require.Equal(t, "scoped-token", lastToken)
+	require.Equal(t, int32(1), scopedCalls.Load()) // exactly one scoped updateNotes
+	require.Equal(t, "Bearer scoped-token", lastToken.Load())
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
@@ -188,23 +220,32 @@ func (l *ctxProbeLLM) Chat(ctx context.Context, _ string, _ []agentruntime.Messa
 // is cancelled while the agent is mid-run; the run must still see a live context
 // and complete + write.
 func TestServeDelivery_RunDetachedFromRequestContext(t *testing.T) {
-	var scopedCalls int
-	client := &ClientMock{
-		GraphQLScopedFunc: func(_ context.Context, _, _ string, _ map[string]any) (json.RawMessage, error) {
-			scopedCalls++
-			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
-		},
-	}
+	var scopedCalls atomic.Int32
+	srv, hc := newScopedKBServer(t, func(_, _ string) string {
+		scopedCalls.Add(1)
+		return `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["boards/sprint.md"]}}`
+	})
+
 	llm := &ctxProbeLLM{started: make(chan struct{}), proceed: make(chan struct{})}
-	f := newTestFleetWithLLM(client, llm)
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		Trip2gBaseURL: srv.URL, TokenCeiling: 100000, StepCeiling: 25,
+	}
+	role := Role{
+		NotePath: "roles/triage.md", Body: "Triage.", Mode: "change",
+		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
+	}
+	f := NewFleet(cfg, hc, llm)
+	f.SetRoles([]Role{role})
 
 	key := urlKey("roles/triage.md")
 	body := deliveryBody(t)
 	reqCtx, cancel := context.WithCancel(context.Background())
 	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body)).WithContext(reqCtx)
-	role, ok := f.roleByKey(key)
+	r, ok := f.roleByKey(key)
 	require.True(t, ok)
-	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(r)))
 	rec := httptest.NewRecorder()
 
 	done := make(chan struct{})
@@ -221,17 +262,17 @@ func TestServeDelivery_RunDetachedFromRequestContext(t *testing.T) {
 	require.NoError(t, llm.runCtxErr,
 		"agent run context must NOT be cancelled by the inbound request context")
 	require.Equal(t, http.StatusOK, rec.Code, "run must complete despite request cancel")
-	require.Equal(t, 1, scopedCalls, "write-back must still happen after request cancel")
+	require.Equal(t, int32(1), scopedCalls.Load(), "write-back must still happen after request cancel")
 }
 
 func TestServeDelivery_BadHMAC401(t *testing.T) {
-	f := newTestFleet(&ClientMock{})
+	f := newTestFleet(http.DefaultClient)
 	rec := post(t, f, urlKey("roles/triage.md"), deliveryBody(t), false)
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
 func TestServeDelivery_UnknownKey404(t *testing.T) {
-	f := newTestFleet(&ClientMock{})
+	f := newTestFleet(http.DefaultClient)
 	rec := post(t, f, urlKey("roles/missing.md"), deliveryBody(t), false)
 	require.Equal(t, http.StatusNotFound, rec.Code)
 }
@@ -262,7 +303,7 @@ func fanOutFleet(t *testing.T, llm agentruntime.LLM, forEach, body string) *Flee
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, &ClientMock{}, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -437,7 +478,7 @@ func newCodeRoleFleet(stubRunner func(context.Context, agentruntime.CodeInput) (
 		TokenCeiling: 100000, StepCeiling: 25,
 		AllowedPrograms: []string{"bash"},
 	}
-	f := NewFleet(cfg, &ClientMock{}, nil) // llm=nil is fine for code roles
+	f := NewFleet(cfg, http.DefaultClient, nil) // llm=nil is fine for code roles
 	f.codeRunner = stubRunner
 	f.SetRoles([]Role{role})
 	return f
@@ -511,7 +552,7 @@ func TestServeDelivery_CodeRole_PassesEnvPassthrough(t *testing.T) {
 		TokenCeiling: 100000, StepCeiling: 25,
 		AllowedPrograms: []string{"bash"},
 	}
-	f := NewFleet(cfg, &ClientMock{}, nil)
+	f := NewFleet(cfg, http.DefaultClient, nil)
 	f.codeRunner = stub
 	f.SetRoles([]Role{role})
 
@@ -564,7 +605,7 @@ func newCronFleet(llm agentruntime.LLM) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, &ClientMock{}, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -672,7 +713,7 @@ func TestServeCronDelivery_WithAttachedNotes(t *testing.T) {
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
 	llm := &recordLLM{}
-	f := NewFleet(cfg, &ClientMock{}, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm)
 	f.SetRoles([]Role{role})
 
 	key := urlKey(role.NotePath)
@@ -707,8 +748,8 @@ func TestServeCronDelivery_RunError502(t *testing.T) {
 	require.Equal(t, "error", resp.Status)
 }
 
-// newTestFleetWithLLM builds a Fleet with the given LLM.
-func newTestFleetWithLLM(client Client, llm agentruntime.LLM) *Fleet {
+// newTestFleetWithLLM builds a Fleet with the given LLM (no KB writes expected).
+func newTestFleetWithLLM(llm agentruntime.LLM) *Fleet {
 	role := Role{
 		NotePath: "roles/triage.md", Body: "Triage.", Mode: "change",
 		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
@@ -718,7 +759,7 @@ func newTestFleetWithLLM(client Client, llm agentruntime.LLM) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, client, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -737,8 +778,7 @@ func TestServeDelivery_RunError502(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			client := &ClientMock{}
-			f := newTestFleetWithLLM(client, &errLLM{msg: tc.llmErrMsg})
+			f := newTestFleetWithLLM(&errLLM{msg: tc.llmErrMsg})
 			key := urlKey("roles/triage.md")
 			rec := post(t, f, key, deliveryBody(t), true)
 
@@ -761,12 +801,8 @@ func TestServeDelivery_RunError502(t *testing.T) {
 // verifies, JSON parses, the agent runs, and the response is 200 — so
 // removing MaxBytesReader makes this test fail.
 func TestServeDelivery_MaxBytesReader413(t *testing.T) {
-	client := &ClientMock{
-		GraphQLScopedFunc: func(_ context.Context, _, _ string, _ map[string]any) (json.RawMessage, error) {
-			return json.RawMessage(`{"updateNotes":{"paths":["boards/sprint.md"]}}`), nil
-		},
-	}
-	f := newTestFleetWithLLM(client, &stubLLM{})
+	// Body is too large to even parse — rejected before any LLM or KB call.
+	f := newTestFleetWithLLM(&stubLLM{})
 	key := urlKey("roles/triage.md")
 
 	// Construct a valid JSON body that is larger than maxBodyBytes. The

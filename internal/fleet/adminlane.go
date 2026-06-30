@@ -84,3 +84,37 @@ func drainBody(req *http.Request) ([]byte, error) {
 	_ = req.Body.Close()
 	return body, nil
 }
+
+// NewScopedGraphQLClient builds the genqlient client for the fleet's scoped
+// lane: the per-delivery Bearer token is injected into every request by
+// scopedDoer, so trip2g enforces the delivery's read/write scope.
+func NewScopedGraphQLClient(baseURL, token string, hc *http.Client) graphql.Client {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	doer := &scopedDoer{token: token, hc: hc}
+	return graphql.NewClient(baseURL+"/_system/graphql", doer)
+}
+
+// scopedDoer is the genqlient graphql.Doer for the scoped lane. It attaches
+// the per-delivery Bearer token to each request, mirroring adminDoer exactly
+// except authentication is a static token rather than a HAT-minted cookie.
+type scopedDoer struct {
+	token string
+	hc    *http.Client
+}
+
+// Do clones the request, injects the Bearer Authorization header, and sends it.
+func (d *scopedDoer) Do(req *http.Request) (*http.Response, error) {
+	body, err := drainBody(req)
+	if err != nil {
+		return nil, err
+	}
+	r := req.Clone(req.Context())
+	if body != nil {
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.ContentLength = int64(len(body))
+	}
+	r.Header.Set("Authorization", "Bearer "+d.token)
+	return d.hc.Do(r)
+}

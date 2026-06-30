@@ -2,17 +2,19 @@ package fleet
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"trip2g/internal/agentruntime"
 )
 
-// Fleet ties config, the trip2g client, the LLM, and the live role registry
-// (keyed by url key) together. It is the HTTP handler's owner.
+// Fleet ties config, the trip2g HTTP client, the LLM, and the live role
+// registry (keyed by url key) together. It is the HTTP handler's owner.
+// hc is the HTTP client used to build per-delivery scoped graphql clients.
 type Fleet struct {
-	cfg    Config
-	client Client
-	llm    agentruntime.LLM
+	cfg Config
+	hc  *http.Client
+	llm agentruntime.LLM
 
 	mu       sync.RWMutex
 	registry map[string]Role // urlKey(notePath) -> Role
@@ -23,10 +25,15 @@ type Fleet struct {
 }
 
 // NewFleet builds a Fleet with an empty registry and the default code runner.
-func NewFleet(cfg Config, client Client, llm agentruntime.LLM) *Fleet {
+// hc is the HTTP client used for per-delivery scoped KB requests; nil uses
+// http.DefaultClient.
+func NewFleet(cfg Config, hc *http.Client, llm agentruntime.LLM) *Fleet {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
 	return &Fleet{
 		cfg:        cfg,
-		client:     client,
+		hc:         hc,
 		llm:        llm,
 		registry:   map[string]Role{},
 		codeRunner: agentruntime.RunCode,
