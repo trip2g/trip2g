@@ -8,10 +8,10 @@ import (
 	"time"
 	"trip2g/internal/logger"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
+	_ "modernc.org/sqlite"
 )
 
 //go:embed testdata/goqite_schema.sql
@@ -20,7 +20,7 @@ var goqiteSchema string
 func newTestQueue(t *testing.T, ctx context.Context) *appQueue {
 	t.Helper()
 
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite", ":memory:")
 	require.NoError(t, err)
 	t.Cleanup(func() { db.Close() })
 

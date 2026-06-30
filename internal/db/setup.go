@@ -172,6 +172,11 @@ func openConnection(config SetupConfig, queryLog logger.Logger) (*sql.DB, error)
 	q.Add("_pragma", "cache_size(-64000)")
 	q.Add("_pragma", "wal_autocheckpoint(1000)")
 
+	// Disable SQLite's double-quoted-string-literal fallback so a double-quoted
+	// token that doesn't resolve as an identifier becomes a parse error instead
+	// of a silent string literal. https://www.sqlite.org/quirks.html#dblquote
+	q.Add("_dqs", "false")
+
 	if !config.ReadOnly {
 		// Writers must take the write lock at BEGIN. The default deferred
 		// mode starts every transaction as a reader; upgrading to a write

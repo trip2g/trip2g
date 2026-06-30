@@ -280,6 +280,9 @@ func (a *app) startInternalServer() {
 	// port — no separate listener, no net/http→fasthttp request bridge.
 	debugMux := http.NewServeMux()
 
+	// Register DB observability collectors (pool stats + file metrics).
+	metrics.RegisterDBCollectors(a.conn, a.writeConn, a.queueConn, a.config.DatabaseFile)
+
 	// Prometheus metrics endpoint
 	debugMux.Handle("/metrics", metrics.Setup())
 
