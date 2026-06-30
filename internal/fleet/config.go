@@ -31,4 +31,5 @@ type Config struct {
 	PollInterval           time.Duration // discovery/reconcile poll cadence
 	ShutdownGrace          time.Duration // max time to drain in-flight runs on shutdown
 	KeepWebhooksOnShutdown bool          // skip webhook deregister on shutdown (rolling deploys; trip2g retains + retries)
+	LogLevel               string        // zerolog level: debug|info|warn|error
 }

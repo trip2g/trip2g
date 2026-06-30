@@ -13,7 +13,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,11 +24,14 @@ import (
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
+	"trip2g/internal/logger"
+	"trip2g/internal/zerologger"
 )
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("fleet: %v", err)
+		fmt.Fprintln(os.Stderr, "fleet:", err)
+		os.Exit(1)
 	}
 }
 
@@ -65,6 +67,8 @@ func run() error {
 		return err
 	}
 
+	lg := zerologger.New(cli.cfg.LogLevel, false)
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.JWTSecret, cli.cfg.AdminEmail, httpClient)
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
@@ -75,14 +79,14 @@ func run() error {
 	// --dry-run: connect, print + flag each role's resolved config, then exit
 	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
 	if cli.dryRun {
-		runDryRun(ctx, discovery, cli.cfg)
+		runDryRun(ctx, lg, discovery, cli.cfg)
 		return nil
 	}
 
 	reconciler := fleet.NewReconciler(adminGQL, cli.cfg)
 
 	// First sync before serving so the registry is populated.
-	syncOnce(ctx, f, discovery, reconciler)
+	syncOnce(ctx, lg, f, discovery, reconciler)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/deliver/", f.ServeDelivery)
@@ -94,7 +98,7 @@ func run() error {
 
 	srvErrCh := make(chan error, 1)
 	go func() {
-		log.Printf("fleet %s listening on %s, callback %s", cli.cfg.FleetID, cli.cfg.ListenAddr, cli.cfg.CallbackURL)
+		lg.Info("fleet listening", "fleet_id", cli.cfg.FleetID, "addr", cli.cfg.ListenAddr, "callback", cli.cfg.CallbackURL)
 		listenErr := srv.ListenAndServe()
 		if listenErr != nil && listenErr != http.ErrServerClosed {
 			srvErrCh <- listenErr
@@ -109,7 +113,7 @@ func run() error {
 		case srvListenErr := <-srvErrCh:
 			return fmt.Errorf("http server: %w", srvListenErr)
 		case <-ctx.Done():
-			_ = gracefulShutdown(srv, reconciler.Deregister, cli.cfg.KeepWebhooksOnShutdown, cli.cfg.ShutdownGrace)
+			_ = gracefulShutdown(lg, srv, reconciler.Deregister, cli.cfg.KeepWebhooksOnShutdown, cli.cfg.ShutdownGrace)
 			select {
 			case srvListenErr := <-srvErrCh:
 				return fmt.Errorf("http server: %w", srvListenErr)
@@ -117,7 +121,7 @@ func run() error {
 				return nil
 			}
 		case <-ticker.C:
-			syncOnce(ctx, f, discovery, reconciler)
+			syncOnce(ctx, lg, f, discovery, reconciler)
 		}
 	}
 }
@@ -284,14 +288,14 @@ func validateConfig(cfg fleet.Config) error {
 	return nil
 }
 
-func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.Reconciler) {
+func syncOnce(ctx context.Context, lg logger.Logger, f *fleet.Fleet, d *fleet.Discovery, r *fleet.Reconciler) {
 	roles, errs := d.DiscoverRoles(ctx)
 	for _, e := range errs {
-		log.Printf("discover (skipped role): %v", e)
+		lg.Warn("discover: skipped role", "err", e)
 	}
 	f.SetRoles(roles)
 	if err := r.Reconcile(ctx, roles); err != nil {
-		log.Printf("reconcile: %v", err)
+		lg.Error("reconcile failed", "err", err)
 	}
 }
 
@@ -305,25 +309,25 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 // is that on a clean (non-keep) shutdown trip2g may see connection-refused for
 // up to grace until deregister runs — those deliveries are retried, and not
 // losing in-flight writes is the priority.
-func gracefulShutdown(srv *http.Server, deregister func(context.Context) error, keepWebhooks bool, grace time.Duration) error {
-	log.Printf("shutdown: draining in-flight runs (grace %s)", grace)
+func gracefulShutdown(lg logger.Logger, srv *http.Server, deregister func(context.Context) error, keepWebhooks bool, grace time.Duration) error {
+	lg.Info("shutdown: draining in-flight runs", "grace", grace.String())
 	drainCtx, cancel := context.WithTimeout(context.Background(), grace)
 	defer cancel()
 	shutdownErr := srv.Shutdown(drainCtx)
 	if shutdownErr != nil {
-		log.Printf("shutdown: drain incomplete: %v", shutdownErr)
+		lg.Error("shutdown: drain incomplete", "err", shutdownErr)
 	}
 
 	if keepWebhooks {
-		log.Print("shutdown: keeping webhooks (--keep-webhooks-on-shutdown)")
+		lg.Info("shutdown: keeping webhooks (keep-webhooks-on-shutdown)")
 		return shutdownErr
 	}
 	if deregister != nil {
-		log.Print("shutdown: deregistering webhooks")
+		lg.Info("shutdown: deregistering webhooks")
 		deregCtx, cancel2 := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel2()
 		if deregErr := deregister(deregCtx); deregErr != nil {
-			log.Printf("shutdown: deregister: %v", deregErr)
+			lg.Error("shutdown: deregister failed", "err", deregErr)
 		}
 	}
 	return shutdownErr
@@ -397,6 +401,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"max seconds to drain in-flight runs on shutdown before forcing close")
 	fs.BoolVar(&cli.cfg.KeepWebhooksOnShutdown, "keep-webhooks-on-shutdown", false,
 		"do not deregister webhooks on shutdown (rolling deploys: trip2g keeps them and retries)")
+	fs.StringVar(&cli.cfg.LogLevel, "log-level", "info",
+		"log level: debug|info|warn|error")
 
 	// One-shot offline harness flags.
 	fs.StringVar(&cli.oncePath, "once", "",
@@ -440,10 +446,10 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 // runDryRun discovers (parses) every role over the admin lane, prints each
 // role's resolved config with a flag on any that fail Validate, and returns
 // without touching webhooks. It is the fleet's pre-flight doctor.
-func runDryRun(ctx context.Context, d *fleet.Discovery, cfg fleet.Config) {
+func runDryRun(ctx context.Context, lg logger.Logger, d *fleet.Discovery, cfg fleet.Config) {
 	roles, errs := d.DiscoverParsed(ctx)
 	for _, e := range errs {
-		log.Printf("dry-run parse error: %v", e)
+		lg.Warn("dry-run: parse error", "err", e)
 	}
 	fmt.Fprint(os.Stdout, reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
 }

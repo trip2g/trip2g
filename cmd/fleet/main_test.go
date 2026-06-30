@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"trip2g/internal/fleet"
+	"trip2g/internal/logger"
 
 	"github.com/stretchr/testify/require"
 )
@@ -276,7 +277,7 @@ func TestGracefulShutdown_DrainsInFlightAndDeregisters(t *testing.T) {
 
 	shutdownErr := make(chan error, 1)
 	go func() {
-		shutdownErr <- gracefulShutdown(srv, stubDereg, false, 5*time.Second)
+		shutdownErr <- gracefulShutdown(&logger.DummyLogger{}, srv, stubDereg, false, 5*time.Second)
 	}()
 
 	// Block until Shutdown has closed the listener and is draining the active
@@ -331,7 +332,7 @@ func TestGracefulShutdown_KeepWebhooksSkipsDeregister(t *testing.T) {
 
 	shutdownErr := make(chan error, 1)
 	go func() {
-		shutdownErr <- gracefulShutdown(srv, stubDereg, true, 5*time.Second)
+		shutdownErr <- gracefulShutdown(&logger.DummyLogger{}, srv, stubDereg, true, 5*time.Second)
 	}()
 
 	// Same drain-ordering guarantee as the deregister test (see waitShutdownDraining).
@@ -350,7 +351,7 @@ func TestGracefulShutdown_KeepWebhooksSkipsDeregister(t *testing.T) {
 // function does not panic and returns without error on an idle server.
 func TestGracefulShutdown_DeregisterNilSafe(t *testing.T) {
 	srv, _ := newIdleTestServer(t, http.NewServeMux())
-	err := gracefulShutdown(srv, nil, false, time.Second)
+	err := gracefulShutdown(&logger.DummyLogger{}, srv, nil, false, time.Second)
 	require.NoError(t, err)
 }
 
