@@ -14,6 +14,16 @@ import (
 	"trip2g/internal/webhookutil"
 )
 
+// cronDeliveryPayload mirrors trip2g's cron-webhook delivery body
+// (delivercronwebhook.cronWebhookPayload). Only the fields the fleet needs are
+// decoded; instruction, response_schema, secrets, and previous_error are owned
+// by trip2g's retry logic and are not forwarded to the role body.
+type cronDeliveryPayload struct {
+	Depth         int            `json:"depth"`
+	APIToken      string         `json:"api_token"`
+	AttachedNotes []attachedNote `json:"attached_notes"`
+}
+
 // deliveryPayload mirrors deliverchangewebhook.changeWebhookPayload plus the
 // Section-B attached_notes field. api_token is the per-delivery scoped token.
 type deliveryPayload struct {
@@ -50,9 +60,22 @@ type attachedNote struct {
 // maxBodyBytes caps the delivery payload size to guard against DoS.
 const maxBodyBytes = 10 * 1024 * 1024 // 10 MiB
 
-// ServeDelivery handles POST /deliver/<urlKey>.
+// inputKeyDepth is the JSON key for the depth field in the $FLEET_INPUT bag.
+const inputKeyDepth = "depth"
+
+// statusError is the AgentResponse status value for hard-failure responses.
+const statusError = "error"
+
+// ServeDelivery handles POST /deliver/<urlKey> (change deliveries) and
+// POST /deliver/cron/<urlKey> (cron-triggered deliveries).
 func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
-	key := strings.TrimPrefix(r.URL.Path, "/deliver/")
+	rawPath := strings.TrimPrefix(r.URL.Path, "/deliver/")
+	isCron := strings.HasPrefix(rawPath, "cron/")
+	key := rawPath
+	if isCron {
+		key = strings.TrimPrefix(rawPath, "cron/")
+	}
+
 	role, ok := f.roleByKey(key)
 	if !ok {
 		http.Error(w, "unknown delivery key", http.StatusNotFound)
@@ -64,8 +87,19 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "read body", http.StatusBadRequest)
 		return
 	}
-	if !webhookutil.VerifyHMAC(body, f.secretFor(role), r.Header.Get("X-Webhook-Signature")) {
+
+	// Select the HMAC secret that matches this delivery type.
+	secret := f.secretFor(role)
+	if isCron {
+		secret = f.cronSecretFor(role)
+	}
+	if !webhookutil.VerifyHMAC(body, secret, r.Header.Get("X-Webhook-Signature")) {
 		http.Error(w, "bad signature", http.StatusUnauthorized)
+		return
+	}
+
+	if isCron {
+		f.serveCronDelivery(w, r, role, body)
 		return
 	}
 
@@ -125,36 +159,17 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: render: %v", i+1, rerr))
 			continue
 		}
-		var res *agentruntime.Result
-		var runErr error
-		if role.Executor == executorCode {
-			// Code executor: body already rendered to a program; run it deterministically.
-			// The run context (runCtx) already carries the role timeout — Timeout: 0
-			// means "use ctx only" so we don't double-apply the deadline.
-			res, runErr = f.codeRunner(runCtx, agentruntime.CodeInput{
-				Body:            instruction,
-				WritePatterns:   role.WritePatterns,
-				KB:              newRemoteKB(f.client, payload.APIToken, overlay),
-				AllowedPrograms: f.cfg.AllowedPrograms,
-				Input:           buildInputBag(rc),
-				EnvPassthrough:  role.EnvPassthrough,
-				EnvPrefix:       role.EnvPrefix,
-				MaxStdoutBytes:  f.cfg.MaxStdoutBytes,
-			})
-		} else {
-			res, runErr = agentruntime.Run(runCtx, agentruntime.Input{
-				Instruction:     instruction,
-				ReadPatterns:    role.ReadPatterns,
-				WritePatterns:   role.WritePatterns,
-				Tools:           role.Tools,
-				Model:           orDefault(role.Model, f.cfg.DefaultModel),
-				MaxTokens:       clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
-				MaxSteps:        clampBudget(role.MaxSteps, f.cfg.StepCeiling),
-				AllowedPrograms: f.cfg.AllowedPrograms,
-				LLM:             f.llm,
-				KB:              newRemoteKB(f.client, payload.APIToken, overlay),
-			})
-		}
+		// Code executor: body already rendered to a program; run it deterministically.
+		// The run context (runCtx) already carries the role timeout — Timeout: 0
+		// means "use ctx only" so we don't double-apply the deadline.
+		res, runErr := f.execRole(execRoleInput{
+			Ctx:      runCtx,
+			Role:     role,
+			Instr:    instruction,
+			APIToken: payload.APIToken,
+			Overlay:  overlay,
+			InputBag: buildInputBag(rc),
+		})
 		if runErr != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: %v", i+1, runErr))
 			continue
@@ -171,7 +186,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 	// Whole batch failed: surface a non-2xx so trip2g's retry/backoff engages.
 	if successCount == 0 {
 		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{
-			Status:  "error",
+			Status:  statusError,
 			Message: strings.Join(errMsgs, "; "),
 		})
 		return
@@ -209,10 +224,10 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 // included.
 func buildInputBag(rc renderCtx) []byte {
 	bag := map[string]any{
-		"changed_files":  rc.ChangedFiles,
-		"change_file":    rc.ChangeFile,
-		"attached_notes": rc.AttachedNotes,
-		"depth":          rc.Depth,
+		forEachChangedFiles:  rc.ChangedFiles,
+		"change_file":        rc.ChangeFile,
+		forEachAttachedNotes: rc.AttachedNotes,
+		inputKeyDepth:        rc.Depth,
 	}
 	data, _ := json.Marshal(bag)
 	return data
@@ -266,6 +281,119 @@ func statusSeverity(status string) int {
 	default: // completed / empty
 		return 0
 	}
+}
+
+// serveCronDelivery handles a cron-triggered POST /deliver/cron/<key>.
+// Unlike change delivery, there are no changed_files; the role body is rendered
+// once with an empty change context and the wall-clock `now` variable.
+func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role Role, body []byte) {
+	var payload cronDeliveryPayload
+	if uerr := json.Unmarshal(body, &payload); uerr != nil {
+		http.Error(w, "bad payload", http.StatusBadRequest)
+		return
+	}
+
+	overlay := make(map[string]string, len(payload.AttachedNotes))
+	for _, n := range payload.AttachedNotes {
+		overlay[n.Path] = n.Content
+	}
+
+	rc := renderCtx{
+		AttachedNotes: payload.AttachedNotes,
+		Depth:         payload.Depth,
+		Now:           time.Now(),
+	}
+
+	instruction, rerr := renderInstruction(role.Body, rc)
+	if rerr != nil {
+		writeJSON(w, http.StatusBadRequest, webhookutil.AgentResponse{
+			Status:  statusError,
+			Message: fmt.Sprintf("render: %v", rerr),
+		})
+		return
+	}
+
+	// Detach the run from the request context (same rationale as change delivery).
+	runCtx, cancel := context.WithTimeout(context.Background(),
+		time.Duration(role.EffectiveTimeoutSeconds())*time.Second)
+	defer cancel()
+
+	res, runErr := f.execRole(execRoleInput{
+		Ctx:      runCtx,
+		Role:     role,
+		Instr:    instruction,
+		APIToken: payload.APIToken,
+		Overlay:  overlay,
+		InputBag: buildCronInputBag(rc),
+	})
+	if runErr != nil {
+		//nolint:sloglint // Fleet has no logger instance; global slog is intentional here
+		slog.WarnContext(r.Context(), "fleet: cron run error", "role", role.NotePath, "error", runErr)
+		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{
+			Status:  statusError,
+			Message: runErr.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
+		Status:     res.Status,
+		Message:    res.Answer,
+		TokensUsed: res.TokensUsed,
+		Steps:      res.Steps,
+	})
+}
+
+// buildCronInputBag marshals the cron render context into the JSON bag delivered
+// to code programs via $FLEET_INPUT. Exposes now as an RFC3339 string.
+func buildCronInputBag(rc renderCtx) []byte {
+	bag := map[string]any{
+		forEachAttachedNotes: rc.AttachedNotes,
+		inputKeyDepth:        rc.Depth,
+		"now":                rc.Now.Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(bag)
+	return data
+}
+
+// execRoleInput bundles the parameters for a single role execution dispatch.
+type execRoleInput struct {
+	Ctx      context.Context
+	Role     Role
+	Instr    string
+	APIToken string
+	Overlay  map[string]string
+	InputBag []byte // JSON bag for code executor ($FLEET_INPUT); nil for LLM executor
+}
+
+// execRole dispatches a single rendered instruction through the role's configured
+// executor (LLM agent run or deterministic code runner). Called from both change
+// delivery (with buildInputBag) and cron delivery (with buildCronInputBag).
+func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
+	if p.Role.Executor == executorCode {
+		return f.codeRunner(p.Ctx, agentruntime.CodeInput{
+			Body:            p.Instr,
+			WritePatterns:   p.Role.WritePatterns,
+			KB:              newRemoteKB(f.client, p.APIToken, p.Overlay),
+			AllowedPrograms: f.cfg.AllowedPrograms,
+			Input:           p.InputBag,
+			EnvPassthrough:  p.Role.EnvPassthrough,
+			EnvPrefix:       p.Role.EnvPrefix,
+			MaxStdoutBytes:  f.cfg.MaxStdoutBytes,
+		})
+	}
+	return agentruntime.Run(p.Ctx, agentruntime.Input{
+		Instruction:     p.Instr,
+		ReadPatterns:    p.Role.ReadPatterns,
+		WritePatterns:   p.Role.WritePatterns,
+		Tools:           p.Role.Tools,
+		Model:           orDefault(p.Role.Model, f.cfg.DefaultModel),
+		MaxTokens:       clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
+		MaxSteps:        clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
+		AllowedPrograms: f.cfg.AllowedPrograms,
+		LLM:             f.llm,
+		KB:              newRemoteKB(f.client, p.APIToken, p.Overlay),
+	})
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

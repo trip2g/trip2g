@@ -103,19 +103,60 @@ const (
 	forEachAttachedNotes = "attached_notes"
 )
 
+// Role mode values for Role.Mode.
+const (
+	modeChange = "change"
+	modeCron   = "cron"
+	modeBoth   = "both"
+)
+
+// Concurrency mode values for Role.Concurrency.
+const (
+	concurrencyAllowOverlap = "allow_overlap"
+	concurrencySkip         = "skip"
+	concurrencyQueueOne     = "queue_one"
+)
+
 // Validate fails fast on misconfiguration discovered at poll time, before any
 // webhook is registered. Tools must be a subset of the fleet's offered set.
 func (r Role) Validate(offered []string) error {
 	switch r.Mode {
-	case "change":
+	case modeChange, modeCron, modeBoth:
 		// supported
-	case "cron", "both":
-		return fmt.Errorf("role %s: mode %q is not yet supported by this fleet (cron-mode roles are not yet supported by this fleet)", r.NotePath, r.Mode)
 	default:
 		return fmt.Errorf("role %s: mode must be change|cron|both, got %q", r.NotePath, r.Mode)
 	}
-	// Change-mode trigger sanity (only mode change reaches here): a webhook that
-	// fires on no events or matches no paths silently never runs.
+	// cron_schedule is required for any mode that registers a cron webhook.
+	if (r.Mode == modeCron || r.Mode == modeBoth) && r.CronSchedule == "" {
+		return fmt.Errorf("role %s: cron_schedule is required for mode %q", r.NotePath, r.Mode)
+	}
+	// Change-mode trigger sanity: only applies when a change webhook is registered
+	// (mode change or both). A webhook that fires on no events or matches no
+	// paths silently never runs.
+	if r.Mode == modeChange || r.Mode == modeBoth {
+		if err := r.validateChangeModeFields(); err != nil {
+			return err
+		}
+	}
+	switch r.Concurrency {
+	case "", concurrencyAllowOverlap, concurrencySkip, concurrencyQueueOne:
+	default:
+		return fmt.Errorf("role %s: concurrency must be allow_overlap|skip|queue_one, got %q", r.NotePath, r.Concurrency)
+	}
+	switch r.ForEach {
+	case "", forEachChangedFiles, forEachAttachedNotes:
+	default:
+		return fmt.Errorf("role %s: for_each must be changed_files|attached_notes, got %q", r.NotePath, r.ForEach)
+	}
+	if r.TimeoutSeconds < 0 {
+		return fmt.Errorf("role %s: timeout_seconds must be >= 0, got %d", r.NotePath, r.TimeoutSeconds)
+	}
+	return r.validateExecutorFields(offered)
+}
+
+// validateChangeModeFields checks the trigger fields required for change-webhook registration.
+// It is called from Validate when mode is "change" or "both".
+func (r Role) validateChangeModeFields() error {
 	if len(r.TriggerOn) == 0 {
 		return fmt.Errorf("role %s: trigger_on is empty (webhook would fire on no events); set trigger_on to some of create|update|remove", r.NotePath)
 	}
@@ -135,20 +176,11 @@ func (r Role) Validate(offered []string) error {
 			r.NotePath,
 		)
 	}
-	switch r.Concurrency {
-	case "", "allow_overlap", "skip", "queue_one":
-	default:
-		return fmt.Errorf("role %s: concurrency must be allow_overlap|skip|queue_one, got %q", r.NotePath, r.Concurrency)
-	}
-	switch r.ForEach {
-	case "", forEachChangedFiles, forEachAttachedNotes:
-	default:
-		return fmt.Errorf("role %s: for_each must be changed_files|attached_notes, got %q", r.NotePath, r.ForEach)
-	}
-	if r.TimeoutSeconds < 0 {
-		return fmt.Errorf("role %s: timeout_seconds must be >= 0, got %d", r.NotePath, r.TimeoutSeconds)
-	}
-	// Executor-specific validation.
+	return nil
+}
+
+// validateExecutorFields checks executor-specific fields. It is called from Validate.
+func (r Role) validateExecutorFields(offered []string) error {
 	switch r.Executor {
 	case "", executorLLM:
 		// LLM path (default): validate the role-declared tool allowlist.

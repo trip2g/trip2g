@@ -19,12 +19,27 @@ type gqlDoerFunc func(*http.Request) (*http.Response, error)
 
 func (f gqlDoerFunc) Do(r *http.Request) (*http.Response, error) { return f(r) }
 
+// emptyCronNodesData is the ListCronWebhooks response for an empty cron-webhook set.
+const emptyCronNodesData = `{"admin":{"allCronWebhooks":{"nodes":[]}}}`
+
 // fakeAdminGQL builds a genqlient client whose transport routes each admin-lane
 // request to respond, keyed by GraphQL operationName. respond returns the JSON
 // object placed under the {"data": ...} envelope; a non-nil error is sent as a
 // GraphQL errors[] entry. The real genqlient decode path runs over the result,
 // so a field/typename mismatch surfaces in the test.
+//
+// ListCronWebhooks is automatically handled with an empty-list response when
+// the respond func doesn't cover it (returns an error). This lets existing
+// change-mode tests remain unchanged after cron reconcile was added.
 func fakeAdminGQL(respond func(op string, vars json.RawMessage) (string, error)) graphql.Client {
+	innerRespond := respond
+	respond = func(op string, vars json.RawMessage) (string, error) {
+		data, err := innerRespond(op, vars)
+		if err != nil && op == "ListCronWebhooks" {
+			return emptyCronNodesData, nil
+		}
+		return data, err
+	}
 	doer := gqlDoerFunc(func(req *http.Request) (*http.Response, error) {
 		raw, err := io.ReadAll(req.Body)
 		if err != nil {

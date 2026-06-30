@@ -51,9 +51,15 @@ func (f *Fleet) roleByKey(key string) (Role, bool) {
 	return r, ok
 }
 
-// secretFor derives the per-role HMAC secret used to verify deliveries.
+// secretFor derives the per-role HMAC secret used to verify change deliveries.
 func (f *Fleet) secretFor(role Role) string {
 	return deriveSecret(f.cfg.FleetSecret, f.cfg.FleetID, role.NotePath, specVer(role))
+}
+
+// cronSecretFor derives the per-role HMAC secret used to verify cron deliveries.
+// It uses cronSpecVer so change-webhook and cron-webhook secrets are distinct.
+func (f *Fleet) cronSecretFor(role Role) string {
+	return deriveSecret(f.cfg.FleetSecret, f.cfg.FleetID, role.NotePath, cronSpecVer(role))
 }
 
 // clampBudget enforces the non-overridable fleet ceiling. An unset (<=0)

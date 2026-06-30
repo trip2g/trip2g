@@ -28,6 +28,15 @@ func newRemoteKB(client Client, token string, overlay map[string]string) *remote
 
 var _ agentruntime.KB = (*remoteKB)(nil)
 
+// JSON field name constants used in the updateNotes mutation input maps.
+const (
+	kbKeyContent = "content" // upsert operation field: note body
+	kbKeyFind    = "find"    // patch operation field: search string
+	kbKeyReplace = "replace" // patch operation field: replacement string
+	kbKeyPath    = "path"    // operation field: note path
+	kbKeyChanges = "changes" // UpdateNotesInput field: list of change operations
+)
+
 const searchScopedQuery = `query Search($q: String!) {
   search(input: {query: $q}) { nodes { document { ... on PublicNote { path } } } }
 }`
@@ -105,7 +114,7 @@ func (k *remoteKB) Read(ctx context.Context, path string) (string, error) {
 
 func (k *remoteKB) Write(ctx context.Context, path, content string) error {
 	if err := k.update(ctx, []map[string]any{
-		{"upsert": map[string]any{"path": path, "content": content}},
+		{"upsert": map[string]any{kbKeyPath: path, kbKeyContent: content}},
 	}); err != nil {
 		return err
 	}
@@ -115,7 +124,7 @@ func (k *remoteKB) Write(ctx context.Context, path, content string) error {
 
 func (k *remoteKB) Patch(ctx context.Context, path, find, replace string) error {
 	if err := k.update(ctx, []map[string]any{
-		{"patch": map[string]any{"path": path, "find": find, "replace": replace}},
+		{"patch": map[string]any{kbKeyPath: path, kbKeyFind: find, kbKeyReplace: replace}},
 	}); err != nil {
 		return err
 	}
@@ -149,7 +158,7 @@ type updateNotesResult struct {
 
 func (k *remoteKB) update(ctx context.Context, changes []map[string]any) error {
 	raw, err := k.client.GraphQLScoped(ctx, k.token, updateNotesMutation,
-		map[string]any{"input": map[string]any{"changes": changes}})
+		map[string]any{"input": map[string]any{kbKeyChanges: changes}})
 	if err != nil {
 		return err
 	}

@@ -282,3 +282,192 @@ func TestReconcile_Delete_ErrorPayload_SurfacesAsError(t *testing.T) {
 	require.Error(t, err, "ErrorPayload from changeWebhookDelete must propagate as an error")
 	require.Contains(t, err.Error(), "not found")
 }
+
+// -- Cron webhook reconcile tests --
+
+// newCronRole returns a minimal cron-mode role that passes Validate.
+func newCronRole() Role {
+	return Role{
+		NotePath:       "roles/kb-refresh.md",
+		Mode:           "cron",
+		CronSchedule:   "0 */6 * * *",
+		ReadPatterns:   []string{"kb/**"},
+		WritePatterns:  []string{"kb/**"},
+		AttachNotes:    []string{"kb/**"},
+		TimeoutSeconds: 120,
+	}
+}
+
+// cronNodesData builds an allCronWebhooks {nodes} data object from id/description pairs.
+func cronNodesData(nodes ...[2]string) string {
+	parts := make([]string, 0, len(nodes))
+	for _, n := range nodes {
+		parts = append(parts, fmt.Sprintf(`{"id":%s,"description":%q}`, n[0], n[1]))
+	}
+	return `{"admin":{"allCronWebhooks":{"nodes":[` + strings.Join(parts, ",") + `]}}}`
+}
+
+const createCronOKData = `{"admin":{"createCronWebhook":{"__typename":"CreateCronWebhookPayload","cronWebhook":{"id":10}}}}`
+const deleteCronOKData = `{"admin":{"deleteCronWebhook":{"__typename":"DeleteCronWebhookPayload","deletedId":0}}}`
+
+// createCronInputFrom decodes a CreateCronWebhook request's typed input variable.
+func createCronInputFrom(t *testing.T, vars json.RawMessage) trip2ggql.CreateCronWebhookInput {
+	t.Helper()
+	var v struct {
+		Input trip2ggql.CreateCronWebhookInput `json:"input"`
+	}
+	require.NoError(t, json.Unmarshal(vars, &v))
+	return v.Input
+}
+
+// TestReconcile_CreatesCronWebhookForCronRole asserts that a cron-mode role
+// triggers a CreateCronWebhook call with the expected fields.
+func TestReconcile_CreatesCronWebhookForCronRole(t *testing.T) {
+	var createdInput *trip2ggql.CreateCronWebhookInput
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData(), nil
+		case "CreateCronWebhook":
+			in := createCronInputFrom(t, vars)
+			createdInput = &in
+			return createCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	role := newCronRole()
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.NotNil(t, createdInput, "CreateCronWebhook must be called")
+	require.Equal(t, "0 */6 * * *", createdInput.CronSchedule)
+	require.True(t, createdInput.PassApiKey, "cron webhook must pass api_key")
+	require.True(t, createdInput.Enabled, "cron webhook must be enabled")
+	require.Equal(t, int64(120), createdInput.TimeoutSeconds)
+	require.Contains(t, createdInput.Url, "/deliver/cron/")
+	require.Contains(t, createdInput.Description, "fleetcron:f1:roles/kb-refresh.md#")
+}
+
+// TestReconcile_BothModeRegistersChangeAndCronWebhooks asserts that a both-mode
+// role registers exactly one change webhook AND one cron webhook.
+func TestReconcile_BothModeRegistersChangeAndCronWebhooks(t *testing.T) {
+	var changeCalls, cronCalls int
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData(), nil
+		case "CreateChangeWebhook":
+			changeCalls++
+			return createOKData, nil
+		case "CreateCronWebhook":
+			cronCalls++
+			return createCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	role := Role{
+		NotePath:       "roles/both.md",
+		Mode:           "both",
+		CronSchedule:   "*/15 * * * *",
+		TriggerOn:      []string{"update"},
+		TriggerInclude: []string{"notes/**"},
+	}
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.Equal(t, 1, changeCalls, "one change webhook must be created")
+	require.Equal(t, 1, cronCalls, "one cron webhook must be created")
+}
+
+// TestReconcile_CronWebhookNoChangeWhenMarkerMatches asserts that an existing
+// cron webhook with a matching marker is not deleted and not recreated.
+func TestReconcile_CronWebhookNoChangeWhenMarkerMatches(t *testing.T) {
+	role := newCronRole()
+	desc := cronMarkerFor("f1", role)
+	var createCronCalls, deleteCronCalls int
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData([2]string{"10", desc}), nil
+		case "CreateCronWebhook":
+			createCronCalls++
+			return createCronOKData, nil
+		case "DeleteCronWebhook":
+			deleteCronCalls++
+			return deleteCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.Zero(t, createCronCalls, "no cron webhook should be created when marker matches")
+	require.Zero(t, deleteCronCalls, "no cron webhook should be deleted when marker matches")
+}
+
+// TestReconcile_DeletesStaleOwnedCronWebhook asserts that a cron webhook owned
+// by this fleet but no longer desired is deleted.
+func TestReconcile_DeletesStaleOwnedCronWebhook(t *testing.T) {
+	var deletedCronIDs []int64
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData([2]string{"55", "fleetcron:f1:roles/old.md#stale"}), nil
+		case "DeleteCronWebhook":
+			var v struct {
+				Input trip2ggql.DeleteCronWebhookInput `json:"input"`
+			}
+			require.NoError(t, json.Unmarshal(vars, &v))
+			deletedCronIDs = append(deletedCronIDs, v.Input.Id)
+			return deleteCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), nil))
+	require.Equal(t, []int64{55}, deletedCronIDs, "stale fleet-owned cron webhook must be deleted")
+}
+
+// TestDeregister_DeletesOwnedCronWebhooks asserts Deregister also removes
+// cron webhooks owned by this fleet.
+func TestDeregister_DeletesOwnedCronWebhooks(t *testing.T) {
+	var deletedCronIDs []int64
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData([2]string{"20", "fleetcron:f1:roles/x.md#abc"}), nil
+		case "DeleteCronWebhook":
+			var v struct {
+				Input trip2ggql.DeleteCronWebhookInput `json:"input"`
+			}
+			require.NoError(t, json.Unmarshal(vars, &v))
+			deletedCronIDs = append(deletedCronIDs, v.Input.Id)
+			return deleteCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Deregister(context.Background()))
+	require.Equal(t, []int64{20}, deletedCronIDs, "cron webhook must be removed on deregister")
+}
+
+// TestReconcile_CronCreate_ErrorPayload_SurfacesAsError asserts that an
+// ErrorPayload from createCronWebhook propagates as an error.
+func TestReconcile_CronCreate_ErrorPayload_SurfacesAsError(t *testing.T) {
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "ListCronWebhooks":
+			return cronNodesData(), nil
+		case "CreateCronWebhook":
+			return `{"admin":{"createCronWebhook":{"__typename":"ErrorPayload","message":"invalid schedule"}}}`, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	err := newReconciler(gql).Reconcile(context.Background(), []Role{newCronRole()})
+	require.Error(t, err, "ErrorPayload from createCronWebhook must propagate as an error")
+	require.Contains(t, err.Error(), "invalid schedule")
+}

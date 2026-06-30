@@ -267,16 +267,16 @@ func normalizeCallbackURL(u string) string {
 func validateConfig(cfg fleet.Config) error {
 	missing := []string{}
 	if cfg.CallbackURL == "" {
-		missing = append(missing, "CallbackURL (--callback-url / TRIP2G_CALLBACK_URL)")
+		missing = append(missing, "CallbackURL (--callback-url / TRIP2G_FLEET_CALLBACK_URL)")
 	}
 	if cfg.JWTSecret == "" {
-		missing = append(missing, "JWTSecret (--jwt-secret / TRIP2G_JWT_SECRET)")
+		missing = append(missing, "JWTSecret (--jwt-secret / TRIP2G_FLEET_JWT_SECRET)")
 	}
 	if cfg.FleetSecret == "" {
-		missing = append(missing, "FleetSecret (--fleet-secret / TRIP2G_FLEET_SECRET)")
+		missing = append(missing, "FleetSecret (--fleet-secret / TRIP2G_FLEET_FLEET_SECRET)")
 	}
 	if cfg.LLMAPIKey == "" {
-		missing = append(missing, "LLMAPIKey (--llm-api-key / TRIP2G_LLM_API_KEY)")
+		missing = append(missing, "LLMAPIKey (--llm-api-key / TRIP2G_FLEET_LLM_API_KEY)")
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("fleet: missing required config: %s", strings.Join(missing, ", "))
@@ -305,8 +305,10 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 }
 
 // parseFlags registers all fleet flags on a dedicated FlagSet wired to
-// appconfig.EnvFlag so every flag gets a TRIP2G_<FLAG_NAME> environment
-// variable fallback (standard kebab-to-SCREAMING_SNAKE mapping).
+// appconfig.EnvFlag so every flag gets a TRIP2G_FLEET_<FLAG_NAME> environment
+// variable fallback (standard kebab-to-SCREAMING_SNAKE mapping). The
+// TRIP2G_FLEET_ prefix distinguishes fleet config from the trip2g app's
+// TRIP2G_ namespace when both run in the same environment.
 func parseFlags(ctx context.Context) (cliFlags, error) {
 	var cli cliFlags
 	var offered string
@@ -367,7 +369,7 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 
 	ef := appconfig.New(appconfig.EnvFlagConfig{
 		FlagSet:           fs,
-		EnvPrefix:         "TRIP2G_",
+		EnvPrefix:         "TRIP2G_FLEET_",
 		ShowEnvKeyInUsage: true,
 		ShowEnvValInUsage: true,
 	})

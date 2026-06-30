@@ -148,31 +148,66 @@ func TestRoleValidate_DefaultConcurrencyAllowed(t *testing.T) {
 	require.Error(t, bad.Validate(nil))
 }
 
-// TestRoleValidate_CronModeRejected is a regression test for F6: cron-mode
-// roles must fail fast at discovery because cron reconcile is not yet
-// implemented. mode:change must still pass.
-func TestRoleValidate_CronModeRejected(t *testing.T) {
-	cases := []struct {
-		mode    string
-		wantErr bool
-	}{
-		{"change", false},
-		{"cron", true},
-		{"both", true},
+// TestRoleValidate_CronModeAccepted verifies that cron and both modes are now
+// accepted by Validate. Previously they were rejected as "not yet supported";
+// the cron-mode implementation removes that restriction.
+func TestRoleValidate_CronModeAccepted(t *testing.T) {
+	// A minimal valid cron-only role (no trigger_on/include needed).
+	cronRole := func() Role {
+		return Role{
+			NotePath:     "roles/a.md",
+			Mode:         "cron",
+			CronSchedule: "*/5 * * * *",
+		}
 	}
-	for _, tc := range cases {
-		t.Run("mode="+tc.mode, func(t *testing.T) {
-			r := validChangeRole()
-			r.Mode = tc.mode
-			err := r.Validate(nil)
-			if tc.wantErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "not yet supported")
-			} else {
-				require.NoError(t, err)
-			}
-		})
+	// A minimal valid both-mode role needs change fields + cron_schedule.
+	bothRole := func() Role {
+		return Role{
+			NotePath:       "roles/a.md",
+			Mode:           "both",
+			CronSchedule:   "0 * * * *",
+			TriggerOn:      []string{"update"},
+			TriggerInclude: []string{"boards/**"},
+		}
 	}
+
+	t.Run("cron_with_schedule_passes", func(t *testing.T) {
+		require.NoError(t, cronRole().Validate(nil))
+	})
+	t.Run("cron_without_schedule_fails", func(t *testing.T) {
+		r := cronRole()
+		r.CronSchedule = ""
+		err := r.Validate(nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cron_schedule")
+	})
+	t.Run("both_with_all_required_fields_passes", func(t *testing.T) {
+		require.NoError(t, bothRole().Validate(nil))
+	})
+	t.Run("both_without_schedule_fails", func(t *testing.T) {
+		r := bothRole()
+		r.CronSchedule = ""
+		err := r.Validate(nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cron_schedule")
+	})
+	t.Run("both_without_trigger_on_fails", func(t *testing.T) {
+		r := bothRole()
+		r.TriggerOn = nil
+		err := r.Validate(nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "trigger_on")
+	})
+	t.Run("both_without_trigger_include_fails", func(t *testing.T) {
+		r := bothRole()
+		r.TriggerInclude = nil
+		err := r.Validate(nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "trigger_include")
+	})
+	t.Run("change_still_passes", func(t *testing.T) {
+		require.NoError(t, validChangeRole().Validate(nil))
+	})
 }
 
 // TestRoleValidate_RejectsEmptyTriggerOn: a change-mode role with no trigger_on

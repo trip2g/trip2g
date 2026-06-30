@@ -3,6 +3,7 @@ package fleet
 import (
 	"bytes"
 	"strings"
+	"time"
 
 	"github.com/CloudyKit/jet/v6"
 )
@@ -15,6 +16,7 @@ type renderCtx struct {
 	ChangeFile    *changeInfo
 	AttachedNotes []attachedNote
 	Depth         int
+	Now           time.Time // wall-clock time at delivery; zero for legacy contexts
 }
 
 // renderInstruction renders a role-note body as a Jet template against the
@@ -40,6 +42,7 @@ func renderInstruction(body string, ctx renderCtx) (string, error) {
 	vars.Set("change_file", ctx.ChangeFile)
 	vars.Set(forEachAttachedNotes, ctx.AttachedNotes)
 	vars.Set("depth", ctx.Depth)
+	vars.Set("now", ctx.Now)
 
 	var buf bytes.Buffer
 	if execErr := tmpl.Execute(&buf, vars, nil); execErr != nil {

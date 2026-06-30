@@ -546,6 +546,167 @@ func (e *errLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ [
 	return agentruntime.ChatResult{}, errors.New(e.msg)
 }
 
+// -- Cron delivery tests --
+
+// newCronFleet builds a Fleet with a cron-mode role for delivery tests.
+func newCronFleet(llm agentruntime.LLM) *Fleet {
+	role := Role{
+		NotePath:      "roles/kb-refresh.md",
+		Body:          `Refresh the KB at {{ now.Format("2006-01-02") }}.`,
+		Mode:          "cron",
+		CronSchedule:  "0 */6 * * *",
+		ReadPatterns:  []string{"kb/**"},
+		WritePatterns: []string{"kb/**"},
+		MaxTokens:     4000,
+		MaxSteps:      6,
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+	}
+	f := NewFleet(cfg, &ClientMock{}, llm)
+	f.SetRoles([]Role{role})
+	return f
+}
+
+// cronDeliveryBody returns a minimal cron delivery payload (no changes[]).
+func cronDeliveryBody(t *testing.T) []byte {
+	t.Helper()
+	b, _ := json.Marshal(map[string]any{
+		"depth":          0,
+		"api_token":      "cron-token",
+		"attached_notes": []map[string]any{},
+	})
+	return b
+}
+
+// postCron sends a POST to /deliver/cron/<key> with a cron-signed HMAC.
+func postCron(t *testing.T, f *Fleet, key string, body []byte, sign bool) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	if sign {
+		role, ok := f.roleByKey(key)
+		require.True(t, ok)
+		req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.cronSecretFor(role)))
+	}
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+	return rec
+}
+
+// TestServeCronDelivery_HappyPath asserts that a cron delivery (no changes[])
+// triggers a single LLM run and returns 200 with spend data.
+func TestServeCronDelivery_HappyPath(t *testing.T) {
+	llm := &recordLLM{}
+	f := newCronFleet(llm)
+	key := urlKey("roles/kb-refresh.md")
+	rec := postCron(t, f, key, cronDeliveryBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Len(t, llm.systems, 1, "cron delivery must trigger exactly one LLM run")
+
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, agentruntime.StatusCompleted, resp.Status)
+	require.Equal(t, 5, resp.TokensUsed) // (3+2)*1
+}
+
+// TestServeCronDelivery_NowVarRendered asserts the `now` template variable is
+// non-zero and renders into the instruction (proof the var is injected).
+func TestServeCronDelivery_NowVarRendered(t *testing.T) {
+	llm := &recordLLM{}
+	f := newCronFleet(llm)
+	key := urlKey("roles/kb-refresh.md")
+	rec := postCron(t, f, key, cronDeliveryBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Len(t, llm.systems, 1)
+	// The body template is "Refresh the KB at {{ now.Format \"2006-01-02\" }}."
+	// A rendered date looks like "2026-06-30"; it must not be the zero-value "0001-01-01".
+	require.NotContains(t, llm.systems[0], "0001-01-01", "now must not be zero")
+	require.Regexp(t, `\d{4}-\d{2}-\d{2}`, llm.systems[0], "now must render as a date")
+}
+
+// TestServeCronDelivery_BadHMAC401 asserts that a wrong HMAC is rejected.
+func TestServeCronDelivery_BadHMAC401(t *testing.T) {
+	f := newCronFleet(&recordLLM{})
+	key := urlKey("roles/kb-refresh.md")
+	rec := postCron(t, f, key, cronDeliveryBody(t), false) // unsigned
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+// TestServeCronDelivery_ChangeHMACRejected asserts the change-webhook HMAC is
+// NOT accepted for a cron delivery (the two secrets are derived differently).
+func TestServeCronDelivery_ChangeHMACRejected(t *testing.T) {
+	llm := &recordLLM{}
+	f := newCronFleet(llm)
+	key := urlKey("roles/kb-refresh.md")
+	body := cronDeliveryBody(t)
+
+	// Sign with the change secret (not the cron secret).
+	role, ok := f.roleByKey(key)
+	require.True(t, ok)
+	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code,
+		"change-webhook HMAC must not be valid for cron delivery")
+}
+
+// TestServeCronDelivery_WithAttachedNotes asserts that attached_notes in the
+// cron payload are accessible via the overlay/KB.
+func TestServeCronDelivery_WithAttachedNotes(t *testing.T) {
+	role := Role{
+		NotePath:      "roles/notes-role.md",
+		Body:          "Process {{ range attached_notes }}{{ .Path }} {{ end }}.",
+		Mode:          "cron",
+		CronSchedule:  "*/5 * * * *",
+		ReadPatterns:  []string{"**"},
+		WritePatterns: []string{"**"},
+		MaxSteps:      6,
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+	}
+	llm := &recordLLM{}
+	f := NewFleet(cfg, &ClientMock{}, llm)
+	f.SetRoles([]Role{role})
+
+	key := urlKey(role.NotePath)
+	body, _ := json.Marshal(map[string]any{
+		"depth":     0,
+		"api_token": "tok",
+		"attached_notes": []map[string]any{
+			{"path": "kb/a.md", "content": "content A"},
+			{"path": "kb/b.md", "content": "content B"},
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.cronSecretFor(role)))
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Len(t, llm.systems, 1)
+	require.Contains(t, llm.systems[0], "kb/a.md")
+	require.Contains(t, llm.systems[0], "kb/b.md")
+}
+
+// TestServeCronDelivery_RunError502 asserts a cron run error produces 502.
+func TestServeCronDelivery_RunError502(t *testing.T) {
+	f := newCronFleet(&errLLM{msg: "llm unavailable"})
+	key := urlKey("roles/kb-refresh.md")
+	rec := postCron(t, f, key, cronDeliveryBody(t), true)
+
+	require.GreaterOrEqual(t, rec.Code, 500)
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "error", resp.Status)
+}
+
 // newTestFleetWithLLM builds a Fleet with the given LLM.
 func newTestFleetWithLLM(client Client, llm agentruntime.LLM) *Fleet {
 	role := Role{

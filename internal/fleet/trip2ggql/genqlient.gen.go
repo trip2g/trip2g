@@ -294,6 +294,265 @@ func (v *CreateChangeWebhookResponse) GetAdmin() CreateChangeWebhookAdminAdminMu
 	return v.Admin
 }
 
+// CreateCronWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
+type CreateCronWebhookAdminAdminMutation struct {
+	CreateCronWebhook CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload `json:"-"`
+}
+
+// GetCreateCronWebhook returns CreateCronWebhookAdminAdminMutation.CreateCronWebhook, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutation) GetCreateCronWebhook() CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload {
+	return v.CreateCronWebhook
+}
+
+func (v *CreateCronWebhookAdminAdminMutation) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateCronWebhookAdminAdminMutation
+		CreateCronWebhook json.RawMessage `json:"createCronWebhook"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateCronWebhookAdminAdminMutation = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.CreateCronWebhook
+		src := firstPass.CreateCronWebhook
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateCronWebhookAdminAdminMutation.CreateCronWebhook: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateCronWebhookAdminAdminMutation struct {
+	CreateCronWebhook json.RawMessage `json:"createCronWebhook"`
+}
+
+func (v *CreateCronWebhookAdminAdminMutation) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateCronWebhookAdminAdminMutation) __premarshalJSON() (*__premarshalCreateCronWebhookAdminAdminMutation, error) {
+	var retval __premarshalCreateCronWebhookAdminAdminMutation
+
+	{
+
+		dst := &retval.CreateCronWebhook
+		src := v.CreateCronWebhook
+		var err error
+		*dst, err = __marshalCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateCronWebhookAdminAdminMutation.CreateCronWebhook: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload includes the requested fields of the GraphQL interface CreateCronWebhookOrErrorPayload.
+//
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload is implemented by the following types:
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload
+type CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload interface {
+	implementsGraphQLInterfaceCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload) implementsGraphQLInterfaceCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload() {
+}
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload) implementsGraphQLInterfaceCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload() {
+}
+
+func __unmarshalCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload(b []byte, v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "CreateCronWebhookPayload":
+		*v = new(CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload)
+		return json.Unmarshal(b, *v)
+	case "ErrorPayload":
+		*v = new(CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing CreateCronWebhookOrErrorPayload.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalCreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload(v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload:
+		typename = "CreateCronWebhookPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload:
+		typename = "ErrorPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookOrErrorPayload: "%T"`, v)
+	}
+}
+
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload includes the requested fields of the GraphQL type CreateCronWebhookPayload.
+type CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload struct {
+	Typename    string                                                                                                  `json:"__typename"`
+	CronWebhook CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook `json:"cronWebhook"`
+}
+
+// GetTypename returns CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload.Typename, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetCronWebhook returns CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload.CronWebhook, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayload) GetCronWebhook() CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook {
+	return v.CronWebhook
+}
+
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook includes the requested fields of the GraphQL type AdminCronWebhook.
+type CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook struct {
+	Id int64 `json:"id"`
+}
+
+// GetId returns CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook.Id, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookCreateCronWebhookPayloadCronWebhookAdminCronWebhook) GetId() int64 {
+	return v.Id
+}
+
+// CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload includes the requested fields of the GraphQL type ErrorPayload.
+type CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload struct {
+	Typename string `json:"__typename"`
+	Message  string `json:"message"`
+}
+
+// GetTypename returns CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload.Typename, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetMessage returns CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload.Message, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookAdminAdminMutationCreateCronWebhookErrorPayload) GetMessage() string {
+	return v.Message
+}
+
+type CreateCronWebhookInput struct {
+	Url              string   `json:"url"`
+	CronSchedule     string   `json:"cronSchedule"`
+	Instruction      string   `json:"instruction"`
+	Secret           string   `json:"secret"`
+	PassApiKey       bool     `json:"passApiKey"`
+	TimeoutSeconds   int64    `json:"timeoutSeconds"`
+	MaxDepth         int64    `json:"maxDepth"`
+	MaxRetries       int64    `json:"maxRetries"`
+	Enabled          bool     `json:"enabled"`
+	Description      string   `json:"description"`
+	ReadPatterns     []string `json:"readPatterns"`
+	WritePatterns    []string `json:"writePatterns"`
+	TransformJsonnet string   `json:"transformJsonnet"`
+	AttachNotes      []string `json:"attachNotes"`
+	ConcurrencyMode  string   `json:"concurrencyMode"`
+}
+
+// GetUrl returns CreateCronWebhookInput.Url, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetUrl() string { return v.Url }
+
+// GetCronSchedule returns CreateCronWebhookInput.CronSchedule, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetCronSchedule() string { return v.CronSchedule }
+
+// GetInstruction returns CreateCronWebhookInput.Instruction, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetInstruction() string { return v.Instruction }
+
+// GetSecret returns CreateCronWebhookInput.Secret, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetSecret() string { return v.Secret }
+
+// GetPassApiKey returns CreateCronWebhookInput.PassApiKey, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetPassApiKey() bool { return v.PassApiKey }
+
+// GetTimeoutSeconds returns CreateCronWebhookInput.TimeoutSeconds, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetTimeoutSeconds() int64 { return v.TimeoutSeconds }
+
+// GetMaxDepth returns CreateCronWebhookInput.MaxDepth, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetMaxDepth() int64 { return v.MaxDepth }
+
+// GetMaxRetries returns CreateCronWebhookInput.MaxRetries, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetMaxRetries() int64 { return v.MaxRetries }
+
+// GetEnabled returns CreateCronWebhookInput.Enabled, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetEnabled() bool { return v.Enabled }
+
+// GetDescription returns CreateCronWebhookInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetDescription() string { return v.Description }
+
+// GetReadPatterns returns CreateCronWebhookInput.ReadPatterns, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetReadPatterns() []string { return v.ReadPatterns }
+
+// GetWritePatterns returns CreateCronWebhookInput.WritePatterns, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetWritePatterns() []string { return v.WritePatterns }
+
+// GetTransformJsonnet returns CreateCronWebhookInput.TransformJsonnet, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetTransformJsonnet() string { return v.TransformJsonnet }
+
+// GetAttachNotes returns CreateCronWebhookInput.AttachNotes, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetAttachNotes() []string { return v.AttachNotes }
+
+// GetConcurrencyMode returns CreateCronWebhookInput.ConcurrencyMode, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookInput) GetConcurrencyMode() string { return v.ConcurrencyMode }
+
+// CreateCronWebhookResponse is returned by CreateCronWebhook on success.
+type CreateCronWebhookResponse struct {
+	Admin CreateCronWebhookAdminAdminMutation `json:"admin"`
+}
+
+// GetAdmin returns CreateCronWebhookResponse.Admin, and is useful for accessing the field via an interface.
+func (v *CreateCronWebhookResponse) GetAdmin() CreateCronWebhookAdminAdminMutation { return v.Admin }
+
 // DeleteChangeWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
 type DeleteChangeWebhookAdminAdminMutation struct {
 	ChangeWebhookDelete DeleteChangeWebhookAdminAdminMutationChangeWebhookDeleteChangeWebhookDeleteOrErrorPayload `json:"-"`
@@ -482,6 +741,199 @@ func (v *DeleteChangeWebhookResponse) GetAdmin() DeleteChangeWebhookAdminAdminMu
 	return v.Admin
 }
 
+// DeleteCronWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
+type DeleteCronWebhookAdminAdminMutation struct {
+	DeleteCronWebhook DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload `json:"-"`
+}
+
+// GetDeleteCronWebhook returns DeleteCronWebhookAdminAdminMutation.DeleteCronWebhook, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookAdminAdminMutation) GetDeleteCronWebhook() DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload {
+	return v.DeleteCronWebhook
+}
+
+func (v *DeleteCronWebhookAdminAdminMutation) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*DeleteCronWebhookAdminAdminMutation
+		DeleteCronWebhook json.RawMessage `json:"deleteCronWebhook"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.DeleteCronWebhookAdminAdminMutation = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.DeleteCronWebhook
+		src := firstPass.DeleteCronWebhook
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal DeleteCronWebhookAdminAdminMutation.DeleteCronWebhook: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalDeleteCronWebhookAdminAdminMutation struct {
+	DeleteCronWebhook json.RawMessage `json:"deleteCronWebhook"`
+}
+
+func (v *DeleteCronWebhookAdminAdminMutation) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *DeleteCronWebhookAdminAdminMutation) __premarshalJSON() (*__premarshalDeleteCronWebhookAdminAdminMutation, error) {
+	var retval __premarshalDeleteCronWebhookAdminAdminMutation
+
+	{
+
+		dst := &retval.DeleteCronWebhook
+		src := v.DeleteCronWebhook
+		var err error
+		*dst, err = __marshalDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal DeleteCronWebhookAdminAdminMutation.DeleteCronWebhook: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload includes the requested fields of the GraphQL interface DeleteCronWebhookOrErrorPayload.
+//
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload is implemented by the following types:
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload
+type DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload interface {
+	implementsGraphQLInterfaceDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload) implementsGraphQLInterfaceDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload() {
+}
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload) implementsGraphQLInterfaceDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload() {
+}
+
+func __unmarshalDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload(b []byte, v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "DeleteCronWebhookPayload":
+		*v = new(DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload)
+		return json.Unmarshal(b, *v)
+	case "ErrorPayload":
+		*v = new(DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing DeleteCronWebhookOrErrorPayload.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalDeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload(v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload:
+		typename = "DeleteCronWebhookPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload:
+		typename = "ErrorPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookOrErrorPayload: "%T"`, v)
+	}
+}
+
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload includes the requested fields of the GraphQL type DeleteCronWebhookPayload.
+type DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload struct {
+	Typename  string `json:"__typename"`
+	DeletedId int64  `json:"deletedId"`
+}
+
+// GetTypename returns DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload.Typename, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetDeletedId returns DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload.DeletedId, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookDeleteCronWebhookPayload) GetDeletedId() int64 {
+	return v.DeletedId
+}
+
+// DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload includes the requested fields of the GraphQL type ErrorPayload.
+type DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload struct {
+	Typename string `json:"__typename"`
+	Message  string `json:"message"`
+}
+
+// GetTypename returns DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload.Typename, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetMessage returns DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload.Message, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookAdminAdminMutationDeleteCronWebhookErrorPayload) GetMessage() string {
+	return v.Message
+}
+
+type DeleteCronWebhookInput struct {
+	Id int64 `json:"id"`
+}
+
+// GetId returns DeleteCronWebhookInput.Id, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookInput) GetId() int64 { return v.Id }
+
+// DeleteCronWebhookResponse is returned by DeleteCronWebhook on success.
+type DeleteCronWebhookResponse struct {
+	Admin DeleteCronWebhookAdminAdminMutation `json:"admin"`
+}
+
+// GetAdmin returns DeleteCronWebhookResponse.Admin, and is useful for accessing the field via an interface.
+func (v *DeleteCronWebhookResponse) GetAdmin() DeleteCronWebhookAdminAdminMutation { return v.Admin }
+
 // DiscoverRolesNotePathsNotePath includes the requested fields of the GraphQL type NotePath.
 type DiscoverRolesNotePathsNotePath struct {
 	Value          string                                       `json:"value"`
@@ -575,6 +1027,309 @@ type ListChangeWebhooksResponse struct {
 // GetAdmin returns ListChangeWebhooksResponse.Admin, and is useful for accessing the field via an interface.
 func (v *ListChangeWebhooksResponse) GetAdmin() ListChangeWebhooksAdminAdminQuery { return v.Admin }
 
+// ListCronWebhooksAdminAdminQuery includes the requested fields of the GraphQL type AdminQuery.
+type ListCronWebhooksAdminAdminQuery struct {
+	AllCronWebhooks ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection `json:"allCronWebhooks"`
+}
+
+// GetAllCronWebhooks returns ListCronWebhooksAdminAdminQuery.AllCronWebhooks, and is useful for accessing the field via an interface.
+func (v *ListCronWebhooksAdminAdminQuery) GetAllCronWebhooks() ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection {
+	return v.AllCronWebhooks
+}
+
+// ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection includes the requested fields of the GraphQL type AdminCronWebhooksConnection.
+type ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection struct {
+	Nodes []ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook `json:"nodes"`
+}
+
+// GetNodes returns ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnection) GetNodes() []ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook {
+	return v.Nodes
+}
+
+// ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook includes the requested fields of the GraphQL type AdminCronWebhook.
+type ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook struct {
+	Id          int64  `json:"id"`
+	Description string `json:"description"`
+}
+
+// GetId returns ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook.Id, and is useful for accessing the field via an interface.
+func (v *ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook) GetId() int64 {
+	return v.Id
+}
+
+// GetDescription returns ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook.Description, and is useful for accessing the field via an interface.
+func (v *ListCronWebhooksAdminAdminQueryAllCronWebhooksAdminCronWebhooksConnectionNodesAdminCronWebhook) GetDescription() string {
+	return v.Description
+}
+
+// ListCronWebhooksResponse is returned by ListCronWebhooks on success.
+type ListCronWebhooksResponse struct {
+	Admin ListCronWebhooksAdminAdminQuery `json:"admin"`
+}
+
+// GetAdmin returns ListCronWebhooksResponse.Admin, and is useful for accessing the field via an interface.
+func (v *ListCronWebhooksResponse) GetAdmin() ListCronWebhooksAdminAdminQuery { return v.Admin }
+
+// UpdateCronWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
+type UpdateCronWebhookAdminAdminMutation struct {
+	UpdateCronWebhook UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload `json:"-"`
+}
+
+// GetUpdateCronWebhook returns UpdateCronWebhookAdminAdminMutation.UpdateCronWebhook, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutation) GetUpdateCronWebhook() UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload {
+	return v.UpdateCronWebhook
+}
+
+func (v *UpdateCronWebhookAdminAdminMutation) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateCronWebhookAdminAdminMutation
+		UpdateCronWebhook json.RawMessage `json:"updateCronWebhook"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateCronWebhookAdminAdminMutation = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.UpdateCronWebhook
+		src := firstPass.UpdateCronWebhook
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateCronWebhookAdminAdminMutation.UpdateCronWebhook: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateCronWebhookAdminAdminMutation struct {
+	UpdateCronWebhook json.RawMessage `json:"updateCronWebhook"`
+}
+
+func (v *UpdateCronWebhookAdminAdminMutation) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateCronWebhookAdminAdminMutation) __premarshalJSON() (*__premarshalUpdateCronWebhookAdminAdminMutation, error) {
+	var retval __premarshalUpdateCronWebhookAdminAdminMutation
+
+	{
+
+		dst := &retval.UpdateCronWebhook
+		src := v.UpdateCronWebhook
+		var err error
+		*dst, err = __marshalUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateCronWebhookAdminAdminMutation.UpdateCronWebhook: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload includes the requested fields of the GraphQL type ErrorPayload.
+type UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload struct {
+	Typename string `json:"__typename"`
+	Message  string `json:"message"`
+}
+
+// GetTypename returns UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetMessage returns UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload.Message, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload) GetMessage() string {
+	return v.Message
+}
+
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload includes the requested fields of the GraphQL interface UpdateCronWebhookOrErrorPayload.
+//
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload is implemented by the following types:
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload
+type UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload interface {
+	implementsGraphQLInterfaceUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload) implementsGraphQLInterfaceUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload() {
+}
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload) implementsGraphQLInterfaceUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload() {
+}
+
+func __unmarshalUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload(b []byte, v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "ErrorPayload":
+		*v = new(UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload)
+		return json.Unmarshal(b, *v)
+	case "UpdateCronWebhookPayload":
+		*v = new(UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing UpdateCronWebhookOrErrorPayload.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalUpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload(v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload:
+		typename = "ErrorPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateCronWebhookAdminAdminMutationUpdateCronWebhookErrorPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload:
+		typename = "UpdateCronWebhookPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookOrErrorPayload: "%T"`, v)
+	}
+}
+
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload includes the requested fields of the GraphQL type UpdateCronWebhookPayload.
+type UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload struct {
+	Typename    string                                                                                                  `json:"__typename"`
+	CronWebhook UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook `json:"cronWebhook"`
+}
+
+// GetTypename returns UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetCronWebhook returns UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload.CronWebhook, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayload) GetCronWebhook() UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook {
+	return v.CronWebhook
+}
+
+// UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook includes the requested fields of the GraphQL type AdminCronWebhook.
+type UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook struct {
+	Id int64 `json:"id"`
+}
+
+// GetId returns UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook.Id, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookAdminAdminMutationUpdateCronWebhookUpdateCronWebhookPayloadCronWebhookAdminCronWebhook) GetId() int64 {
+	return v.Id
+}
+
+type UpdateCronWebhookInput struct {
+	Id               int64    `json:"id"`
+	Url              string   `json:"url"`
+	CronSchedule     string   `json:"cronSchedule"`
+	Instruction      string   `json:"instruction"`
+	PassApiKey       bool     `json:"passApiKey"`
+	TimeoutSeconds   int64    `json:"timeoutSeconds"`
+	MaxDepth         int64    `json:"maxDepth"`
+	MaxRetries       int64    `json:"maxRetries"`
+	Enabled          bool     `json:"enabled"`
+	Description      string   `json:"description"`
+	ReadPatterns     []string `json:"readPatterns"`
+	WritePatterns    []string `json:"writePatterns"`
+	TransformJsonnet string   `json:"transformJsonnet"`
+	AttachNotes      []string `json:"attachNotes"`
+	ConcurrencyMode  string   `json:"concurrencyMode"`
+}
+
+// GetId returns UpdateCronWebhookInput.Id, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetId() int64 { return v.Id }
+
+// GetUrl returns UpdateCronWebhookInput.Url, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetUrl() string { return v.Url }
+
+// GetCronSchedule returns UpdateCronWebhookInput.CronSchedule, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetCronSchedule() string { return v.CronSchedule }
+
+// GetInstruction returns UpdateCronWebhookInput.Instruction, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetInstruction() string { return v.Instruction }
+
+// GetPassApiKey returns UpdateCronWebhookInput.PassApiKey, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetPassApiKey() bool { return v.PassApiKey }
+
+// GetTimeoutSeconds returns UpdateCronWebhookInput.TimeoutSeconds, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetTimeoutSeconds() int64 { return v.TimeoutSeconds }
+
+// GetMaxDepth returns UpdateCronWebhookInput.MaxDepth, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetMaxDepth() int64 { return v.MaxDepth }
+
+// GetMaxRetries returns UpdateCronWebhookInput.MaxRetries, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetMaxRetries() int64 { return v.MaxRetries }
+
+// GetEnabled returns UpdateCronWebhookInput.Enabled, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetEnabled() bool { return v.Enabled }
+
+// GetDescription returns UpdateCronWebhookInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetDescription() string { return v.Description }
+
+// GetReadPatterns returns UpdateCronWebhookInput.ReadPatterns, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetReadPatterns() []string { return v.ReadPatterns }
+
+// GetWritePatterns returns UpdateCronWebhookInput.WritePatterns, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetWritePatterns() []string { return v.WritePatterns }
+
+// GetTransformJsonnet returns UpdateCronWebhookInput.TransformJsonnet, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetTransformJsonnet() string { return v.TransformJsonnet }
+
+// GetAttachNotes returns UpdateCronWebhookInput.AttachNotes, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetAttachNotes() []string { return v.AttachNotes }
+
+// GetConcurrencyMode returns UpdateCronWebhookInput.ConcurrencyMode, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookInput) GetConcurrencyMode() string { return v.ConcurrencyMode }
+
+// UpdateCronWebhookResponse is returned by UpdateCronWebhook on success.
+type UpdateCronWebhookResponse struct {
+	Admin UpdateCronWebhookAdminAdminMutation `json:"admin"`
+}
+
+// GetAdmin returns UpdateCronWebhookResponse.Admin, and is useful for accessing the field via an interface.
+func (v *UpdateCronWebhookResponse) GetAdmin() UpdateCronWebhookAdminAdminMutation { return v.Admin }
+
 // __CreateChangeWebhookInput is used internally by genqlient
 type __CreateChangeWebhookInput struct {
 	Input ChangeWebhookCreateInput `json:"input"`
@@ -582,6 +1337,14 @@ type __CreateChangeWebhookInput struct {
 
 // GetInput returns __CreateChangeWebhookInput.Input, and is useful for accessing the field via an interface.
 func (v *__CreateChangeWebhookInput) GetInput() ChangeWebhookCreateInput { return v.Input }
+
+// __CreateCronWebhookInput is used internally by genqlient
+type __CreateCronWebhookInput struct {
+	Input CreateCronWebhookInput `json:"input"`
+}
+
+// GetInput returns __CreateCronWebhookInput.Input, and is useful for accessing the field via an interface.
+func (v *__CreateCronWebhookInput) GetInput() CreateCronWebhookInput { return v.Input }
 
 // __DeleteChangeWebhookInput is used internally by genqlient
 type __DeleteChangeWebhookInput struct {
@@ -591,6 +1354,14 @@ type __DeleteChangeWebhookInput struct {
 // GetInput returns __DeleteChangeWebhookInput.Input, and is useful for accessing the field via an interface.
 func (v *__DeleteChangeWebhookInput) GetInput() ChangeWebhookDeleteInput { return v.Input }
 
+// __DeleteCronWebhookInput is used internally by genqlient
+type __DeleteCronWebhookInput struct {
+	Input DeleteCronWebhookInput `json:"input"`
+}
+
+// GetInput returns __DeleteCronWebhookInput.Input, and is useful for accessing the field via an interface.
+func (v *__DeleteCronWebhookInput) GetInput() DeleteCronWebhookInput { return v.Input }
+
 // __DiscoverRolesInput is used internally by genqlient
 type __DiscoverRolesInput struct {
 	Like string `json:"like"`
@@ -598,6 +1369,14 @@ type __DiscoverRolesInput struct {
 
 // GetLike returns __DiscoverRolesInput.Like, and is useful for accessing the field via an interface.
 func (v *__DiscoverRolesInput) GetLike() string { return v.Like }
+
+// __UpdateCronWebhookInput is used internally by genqlient
+type __UpdateCronWebhookInput struct {
+	Input UpdateCronWebhookInput `json:"input"`
+}
+
+// GetInput returns __UpdateCronWebhookInput.Input, and is useful for accessing the field via an interface.
+func (v *__UpdateCronWebhookInput) GetInput() UpdateCronWebhookInput { return v.Input }
 
 // The mutation executed by CreateChangeWebhook.
 const CreateChangeWebhook_Operation = `
@@ -644,6 +1423,51 @@ func CreateChangeWebhook(
 	return data_, err_
 }
 
+// The mutation executed by CreateCronWebhook.
+const CreateCronWebhook_Operation = `
+mutation CreateCronWebhook ($input: CreateCronWebhookInput!) {
+	admin {
+		createCronWebhook(input: $input) {
+			__typename
+			... on CreateCronWebhookPayload {
+				cronWebhook {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
+`
+
+// CreateCronWebhook registers one cron-webhook for a role.
+func CreateCronWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	input CreateCronWebhookInput,
+) (data_ *CreateCronWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "CreateCronWebhook",
+		Query:  CreateCronWebhook_Operation,
+		Variables: &__CreateCronWebhookInput{
+			Input: input,
+		},
+	}
+
+	data_ = &CreateCronWebhookResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by DeleteChangeWebhook.
 const DeleteChangeWebhook_Operation = `
 mutation DeleteChangeWebhook ($input: ChangeWebhookDeleteInput!) {
@@ -676,6 +1500,49 @@ func DeleteChangeWebhook(
 	}
 
 	data_ = &DeleteChangeWebhookResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by DeleteCronWebhook.
+const DeleteCronWebhook_Operation = `
+mutation DeleteCronWebhook ($input: DeleteCronWebhookInput!) {
+	admin {
+		deleteCronWebhook(input: $input) {
+			__typename
+			... on DeleteCronWebhookPayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
+`
+
+// DeleteCronWebhook removes one owned cron-webhook by id.
+func DeleteCronWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	input DeleteCronWebhookInput,
+) (data_ *DeleteCronWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteCronWebhook",
+		Query:  DeleteCronWebhook_Operation,
+		Variables: &__DeleteCronWebhookInput{
+			Input: input,
+		},
+	}
+
+	data_ = &DeleteCronWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -756,6 +1623,89 @@ func ListChangeWebhooks(
 	}
 
 	data_ = &ListChangeWebhooksResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by ListCronWebhooks.
+const ListCronWebhooks_Operation = `
+query ListCronWebhooks {
+	admin {
+		allCronWebhooks {
+			nodes {
+				id
+				description
+			}
+		}
+	}
+}
+`
+
+// ListCronWebhooks returns every cron-webhook; the reconciler filters to the
+// ones this fleet owns by description marker.
+func ListCronWebhooks(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *ListCronWebhooksResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ListCronWebhooks",
+		Query:  ListCronWebhooks_Operation,
+	}
+
+	data_ = &ListCronWebhooksResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateCronWebhook.
+const UpdateCronWebhook_Operation = `
+mutation UpdateCronWebhook ($input: UpdateCronWebhookInput!) {
+	admin {
+		updateCronWebhook(input: $input) {
+			__typename
+			... on UpdateCronWebhookPayload {
+				cronWebhook {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
+`
+
+// UpdateCronWebhook patches one cron-webhook (currently unused by reconciler
+// but generated for completeness so callers can patch without delete+recreate).
+func UpdateCronWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	input UpdateCronWebhookInput,
+) (data_ *UpdateCronWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateCronWebhook",
+		Query:  UpdateCronWebhook_Operation,
+		Variables: &__UpdateCronWebhookInput{
+			Input: input,
+		},
+	}
+
+	data_ = &UpdateCronWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
