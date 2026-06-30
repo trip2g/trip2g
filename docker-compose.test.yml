@@ -429,6 +429,21 @@ services:
       retries: 10
       start_period: 10s
 
+  # Deterministic Krisp API stub for the krisp-ingest e2e test.
+  # Serves synthetic meetings and block-tree transcripts. See cmd/krispmock/main.go.
+  krisp-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.krispmock
+    container_name: trip2g-test-krispmock
+    ports:
+      - "29092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9092/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   # Deterministic OpenAI-compatible LLM stub for fleet e2e tests.
   # Responds to POST /v1/chat/completions: call 1 → write_note to segments/,
   # call 2+ → finish. No external deps. See cmd/llmmock/main.go.
@@ -460,6 +475,8 @@ services:
         condition: service_healthy
       llm-mock:
         condition: service_healthy
+      krisp-mock:
+        condition: service_healthy
     ports:
       - "29090:9090"
     environment:
@@ -478,6 +495,10 @@ services:
       - TRIP2G_FLEET_TOKEN_CEILING=100000
       - TRIP2G_FLEET_STEP_CEILING=25
       - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
+      - TRIP2G_FLEET_ALLOWED_PROGRAMS=python
+      # Krisp mock credentials forwarded to code executor via env_passthrough in the role.
+      - KRISP_TOKEN=test-krisp-token
+      - KRISP_BASE_URL=http://krisp-mock:9092
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
       interval: 5s
