@@ -429,12 +429,12 @@ services:
       retries: 10
       start_period: 10s
 
-  # Deterministic Krisp API stub for the krisp-ingest e2e test.
-  # Serves synthetic meetings and block-tree transcripts. See cmd/krispmock/main.go.
+  # Krisp API stub (cmd/mockserver + configs/krisp.jsonnet)
   krisp-mock:
     build:
       context: .
-      dockerfile: Dockerfile.krispmock
+      dockerfile: Dockerfile.mockserver
+    command: ["--config", "/configs/krisp.jsonnet", "--listen", ":9092"]
     container_name: trip2g-test-krispmock
     ports:
       - "29092:9092"
@@ -444,13 +444,12 @@ services:
       timeout: 3s
       retries: 5
 
-  # Deterministic OpenAI-compatible LLM stub for fleet e2e tests.
-  # Responds to POST /v1/chat/completions: call 1 → write_note to segments/,
-  # call 2+ → finish. No external deps. See cmd/llmmock/main.go.
+  # OpenAI-compatible stub (cmd/mockserver + configs/llm.jsonnet)
   llm-mock:
     build:
       context: .
-      dockerfile: Dockerfile.llmmock
+      dockerfile: Dockerfile.mockserver
+    command: ["--config", "/configs/llm.jsonnet", "--listen", ":9091"]
     container_name: trip2g-test-llmmock
     ports:
       - "29091:9091"

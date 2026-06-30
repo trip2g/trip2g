@@ -1,0 +1,16 @@
+FROM golang:1.26 AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /mockserver ./cmd/mockserver
+
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /mockserver /mockserver
+COPY cmd/mockserver/configs/*.jsonnet /configs/
+ENTRYPOINT ["/mockserver"]
