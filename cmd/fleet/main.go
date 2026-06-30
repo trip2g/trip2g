@@ -35,11 +35,12 @@ func main() {
 
 // cliFlags holds the parsed command-line state for a single invocation.
 type cliFlags struct {
-	cfg        fleet.Config
-	dryRun     bool
-	oncePath   string // non-empty → one-shot mode; daemon must NOT start
-	vaultDir   string // KB root for --once (default ".")
-	targetPath string // optional note in the vault to use as change_file context
+	cfg              fleet.Config
+	dryRun           bool
+	oncePath         string // non-empty → one-shot mode; daemon must NOT start
+	vaultDir         string // KB root for --once (default ".")
+	targetPath       string // optional note in the vault to use as change_file context
+	interpretersPath string // non-empty → override embedded interpreters.json
 }
 
 func run() error {
@@ -349,6 +350,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"comma-separated allowed tools")
 	fs.StringVar(&allowedPrograms, "allowed-programs", "",
 		"comma-separated programs allowed for code execution (empty = disabled; e.g. python,bash)")
+	fs.IntVar(&cli.cfg.MaxStdoutBytes, "max-stdout-bytes", 1<<20,
+		"stdout cap per code child (bytes)")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
 
@@ -359,6 +362,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"vault directory for the local file KB (used with --once)")
 	fs.StringVar(&cli.targetPath, "target", "",
 		"note path in the vault to populate change_file context (used with --once)")
+	fs.StringVar(&cli.interpretersPath, "interpreters", "",
+		"path to interpreters JSON; replaces embedded defaults")
 
 	ef := appconfig.New(appconfig.EnvFlagConfig{
 		FlagSet:           fs,
@@ -369,6 +374,12 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 
 	if err := ef.Parse(ctx, os.Args[1:]); err != nil {
 		return cliFlags{}, err
+	}
+
+	if cli.interpretersPath != "" {
+		if err := agentruntime.LoadInterpretersFile(cli.interpretersPath); err != nil {
+			return cliFlags{}, fmt.Errorf("fleet: load interpreters: %w", err)
+		}
 	}
 
 	// OPENAI_API_KEY fallback for --once offline convenience.

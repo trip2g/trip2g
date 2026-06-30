@@ -265,12 +265,10 @@ func TestRoleValidate_ExecutorInvalidValue(t *testing.T) {
 	require.Contains(t, err.Error(), "executor must be llm|code")
 }
 
-func TestRoleValidate_CodeExecutorRequiresWritePatterns(t *testing.T) {
+func TestRoleValidate_CodeExecutorAllowsEmptyWritePatterns(t *testing.T) {
 	r := validCodeRole()
 	r.WritePatterns = nil
-	err := r.Validate(nil)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "write_patterns")
+	require.NoError(t, r.Validate(nil))
 }
 
 func TestRoleValidate_CodeExecutorRequiresFencedBlock(t *testing.T) {
@@ -283,15 +281,15 @@ func TestRoleValidate_CodeExecutorRequiresFencedBlock(t *testing.T) {
 
 func TestRoleValidate_CodeExecutorUnknownFenceLang(t *testing.T) {
 	r := validCodeRole()
-	r.Body = "```ruby\nputs 'hi'\n```"
+	r.Body = "```haskell\nputs 'hi'\n```"
 	err := r.Validate(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "fence language")
-	require.Contains(t, err.Error(), "ruby")
+	require.Contains(t, err.Error(), "haskell")
 }
 
 func TestRoleValidate_CodeExecutorSupportedFenceLangs(t *testing.T) {
-	langs := []string{"python", "py", "bash", "sh", "js", "javascript", "node"}
+	langs := []string{"python", "py", "bash", "sh", "js", "javascript", "node", "ruby", "rb", "php", "pl", "perl"}
 	for _, lang := range langs {
 		t.Run("lang="+lang, func(t *testing.T) {
 			r := validCodeRole()

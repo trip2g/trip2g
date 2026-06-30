@@ -22,6 +22,7 @@ type CodeInput struct {
 	Input           []byte        // delivery bag JSON written to $FLEET_INPUT
 	EnvPassthrough  []string      // exact parent env var names forwarded to child
 	EnvPrefix       []string      // parent env var name prefixes forwarded to child
+	MaxStdoutBytes  int           // stdout cap per code child; 0 → 1 MiB default
 }
 
 // RunCode executes a code role. It:
@@ -40,10 +41,14 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	lang, code := extractFirstFencedBlock(in.Body)
-	if code == "" {
+	// extractAllFencedBlocks collects all blocks in document order; v1 runs only
+	// the first block. Future pipe support will run multiple blocks sequentially.
+	blocks := extractAllFencedBlocks(in.Body)
+	if len(blocks) == 0 {
 		return nil, errors.New("coderun: no fenced code block found in rendered body")
 	}
+	lang := blocks[0].Lang
+	code := blocks[0].Code
 
 	program := in.Program
 	if program == "" {
@@ -67,6 +72,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		Timeout:        in.Timeout,
 		EnvPassthrough: in.EnvPassthrough,
 		EnvPrefix:      in.EnvPrefix,
+		MaxStdoutBytes: in.MaxStdoutBytes,
 	})
 	if runErr != nil {
 		return nil, fmt.Errorf("coderun: %w", runErr)

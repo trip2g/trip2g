@@ -487,6 +487,9 @@ linters:
       - path: 'internal/gitapi/'
         linters:
           - gosec  # Git operations require subprocess calls which are legitimate
+      - path: 'internal/agentruntime/coderun\.go'
+        linters:
+          - gosec  # code runner legitimately execs operator-allowlisted interpreters
       - path: 'internal/mdloader/highlight/'
         linters:
           - gochecknoglobals  # Package-level variables needed for goldmark extension registration

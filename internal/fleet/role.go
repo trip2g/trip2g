@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"trip2g/internal/agentruntime"
 	"trip2g/internal/webhookutil"
 )
 
@@ -157,10 +158,8 @@ func (r Role) Validate(offered []string) error {
 			}
 		}
 	case executorCode:
-		// Code path: require a write scope and a resolvable fenced program block.
-		if len(r.WritePatterns) == 0 {
-			return fmt.Errorf("role %s: executor:code requires at least one write_patterns entry", r.NotePath)
-		}
+		// write_patterns may be empty for read-only or side-effect-only roles.
+		// Tip: add at least a log write_pattern (e.g. logs/**) so execution is recorded.
 		lang, found := roleFenceLang(r.Body)
 		if !found {
 			return fmt.Errorf("role %s: executor:code body must contain a fenced code block (```lang...```)", r.NotePath)
@@ -199,13 +198,9 @@ func roleFenceLang(body string) (string, bool) {
 }
 
 // resolveFenceLang reports whether a fence language tag maps to a supported
-// code executor program (python, bash, or node).
+// code executor program via the interpreter registry.
 func resolveFenceLang(lang string) bool {
-	switch strings.ToLower(lang) {
-	case "python", "py", "bash", "sh", "js", "javascript", "node":
-		return true
-	}
-	return false
+	return agentruntime.FenceLangKnown(lang)
 }
 
 func contains(set []string, v string) bool {

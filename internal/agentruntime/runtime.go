@@ -340,7 +340,9 @@ func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
 }
 
 // buildInvokers constructs the extension tool registry. When allowedPrograms is
-// non-empty, exec is registered. future: add MCP server tool invokers here.
+// non-empty, exec is registered.
+// Future MCP tools: add invokers here, gated by the same allowedPrograms mechanism
+// or a dedicated per-tool allowlist. Never add tools unconditionally.
 func buildInvokers(allowedPrograms []string) map[string]toolInvoker {
 	if len(allowedPrograms) == 0 {
 		return nil
