@@ -119,3 +119,51 @@ mutation DeleteCronWebhook($input: DeleteCronWebhookInput!) {
     }
   }
 }
+
+# SearchScoped searches notes by query string using the scoped (Bearer) lane.
+# Only the path is fetched — the caller decides what to read from found notes.
+query SearchScoped($q: String!) {
+  search(input: {query: $q}) {
+    nodes {
+      document {
+        ... on PublicNote {
+          path
+        }
+      }
+    }
+  }
+}
+
+# NoteContentScoped fetches raw markdown via notePaths, not the note() query
+# which returns rendered HTML. Using notePaths ensures the returned string is
+# the same raw markdown that Write/Patch operate on, so a find-string derived
+# from Read round-trips correctly through Patch. notePaths is scope-enforced
+# by filterNotePathsByScope (F1 fix), so read_patterns are respected — an
+# out-of-scope path returns an empty list.
+query NoteContentScoped($filter: NotePathsFilter!) {
+  notePaths(filter: $filter) {
+    content
+  }
+}
+
+# UpdateNotesScoped applies upsert/patch/hide changes via the scoped token.
+# The union covers every outcome so the caller can map each variant to an error.
+mutation UpdateNotesScoped($input: UpdateNotesInput!) {
+  updateNotes(input: $input) {
+    __typename
+    ... on UpdateNotesSuccessPayload {
+      paths
+    }
+    ... on UpdateNotesPatchNotFoundPayload {
+      path
+      find
+    }
+    ... on UpdateNotesHashMismatchPayload {
+      path
+      actualHash
+    }
+    ... on ErrorPayload {
+      message
+    }
+  }
+}

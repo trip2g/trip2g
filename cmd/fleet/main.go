@@ -66,11 +66,10 @@ func run() error {
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	client := fleet.NewHTTPClient(cli.cfg.Trip2gBaseURL, httpClient)
 	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.JWTSecret, cli.cfg.AdminEmail, httpClient)
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
 
-	f := fleet.NewFleet(cli.cfg, client, llm)
+	f := fleet.NewFleet(cli.cfg, httpClient, llm)
 	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
 
 	// --dry-run: connect, print + flag each role's resolved config, then exit
