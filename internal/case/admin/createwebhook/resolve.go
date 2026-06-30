@@ -16,6 +16,7 @@ import (
 )
 
 type Env interface {
+	IsDevMode() bool
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	InsertWebhook(ctx context.Context, params db.InsertWebhookParams) (db.ChangeWebhook, error)
 }
@@ -78,8 +79,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// F9(a): require https when the api_token will be sent in the body.
+	// Dev mode exempts Docker-internal URLs (e.g. compose service names) that
+	// are not loopback addresses but are still within a trusted network.
 	if input.PassAPIKey != nil && *input.PassAPIKey {
-		if msg := webhookutil.RequireHTTPS(input.URL); msg != "" {
+		if msg := webhookutil.RequireHTTPSUnlessDevMode(input.URL, env.IsDevMode()); msg != "" {
 			return &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "url", Value: msg}}}, nil
 		}
 	}

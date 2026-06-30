@@ -30,3 +30,13 @@ func TestRequireHTTPS(t *testing.T) {
 		})
 	}
 }
+
+func TestRequireHTTPSUnlessDevMode(t *testing.T) {
+	// Dev mode bypasses the check (Docker-internal compose URLs are not loopback).
+	require.Empty(t, RequireHTTPSUnlessDevMode("http://fleet:9099/deliver", true))
+	require.Empty(t, RequireHTTPSUnlessDevMode("http://example.com/hook", true))
+	// Production (devMode=false) delegates to RequireHTTPS.
+	require.NotEmpty(t, RequireHTTPSUnlessDevMode("http://example.com/hook", false))
+	require.Empty(t, RequireHTTPSUnlessDevMode("https://example.com/hook", false))
+	require.Empty(t, RequireHTTPSUnlessDevMode("http://localhost/hook", false))
+}

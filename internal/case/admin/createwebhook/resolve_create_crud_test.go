@@ -21,6 +21,8 @@ func (m *mockEnv) CurrentAdminUserToken(_ context.Context) (*usertoken.Data, err
 	return &usertoken.Data{ID: 1, Role: "admin"}, nil
 }
 
+func (m *mockEnv) IsDevMode() bool { return false }
+
 func (m *mockEnv) InsertWebhook(_ context.Context, params db.InsertWebhookParams) (db.ChangeWebhook, error) {
 	m.inserted = &params
 	return db.ChangeWebhook{ID: 7}, nil
