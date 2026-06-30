@@ -125,17 +125,35 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: render: %v", i+1, rerr))
 			continue
 		}
-		res, runErr := agentruntime.Run(runCtx, agentruntime.Input{
-			Instruction:   instruction,
-			ReadPatterns:  role.ReadPatterns,
-			WritePatterns: role.WritePatterns,
-			Tools:         role.Tools,
-			Model:         orDefault(role.Model, f.cfg.DefaultModel),
-			MaxTokens:     clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
-			MaxSteps:      clampBudget(role.MaxSteps, f.cfg.StepCeiling),
-			LLM:           f.llm,
-			KB:            newRemoteKB(f.client, payload.APIToken, overlay),
-		})
+		var res *agentruntime.Result
+		var runErr error
+		if role.Executor == executorCode {
+			// Code executor: body already rendered to a program; run it deterministically.
+			// The run context (runCtx) already carries the role timeout — Timeout: 0
+			// means "use ctx only" so we don't double-apply the deadline.
+			res, runErr = f.codeRunner(runCtx, agentruntime.CodeInput{
+				Body:            instruction,
+				WritePatterns:   role.WritePatterns,
+				KB:              newRemoteKB(f.client, payload.APIToken, overlay),
+				AllowedPrograms: f.cfg.AllowedPrograms,
+				Input:           buildInputBag(rc),
+				EnvPassthrough:  role.EnvPassthrough,
+				EnvPrefix:       role.EnvPrefix,
+			})
+		} else {
+			res, runErr = agentruntime.Run(runCtx, agentruntime.Input{
+				Instruction:     instruction,
+				ReadPatterns:    role.ReadPatterns,
+				WritePatterns:   role.WritePatterns,
+				Tools:           role.Tools,
+				Model:           orDefault(role.Model, f.cfg.DefaultModel),
+				MaxTokens:       clampBudget(role.MaxTokens, f.cfg.TokenCeiling),
+				MaxSteps:        clampBudget(role.MaxSteps, f.cfg.StepCeiling),
+				AllowedPrograms: f.cfg.AllowedPrograms,
+				LLM:             f.llm,
+				KB:              newRemoteKB(f.client, payload.APIToken, overlay),
+			})
+		}
 		if runErr != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: %v", i+1, runErr))
 			continue
@@ -182,6 +200,21 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		TokensUsed: totalTokens,
 		Steps:      totalSteps,
 	})
+}
+
+// buildInputBag marshals the trigger render context into the JSON bag delivered
+// to code programs via $FLEET_INPUT. It carries only non-secret trigger data
+// (the same fields exposed to Jet templates). The scoped write token is never
+// included.
+func buildInputBag(rc renderCtx) []byte {
+	bag := map[string]any{
+		"changed_files":  rc.ChangedFiles,
+		"change_file":    rc.ChangeFile,
+		"attached_notes": rc.AttachedNotes,
+		"depth":          rc.Depth,
+	}
+	data, _ := json.Marshal(bag)
+	return data
 }
 
 // fanOut expands the base render context into one context per for_each item,

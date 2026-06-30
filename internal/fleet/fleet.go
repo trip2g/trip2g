@@ -1,6 +1,7 @@
 package fleet
 
 import (
+	"context"
 	"sync"
 
 	"trip2g/internal/agentruntime"
@@ -15,11 +16,21 @@ type Fleet struct {
 
 	mu       sync.RWMutex
 	registry map[string]Role // urlKey(notePath) -> Role
+
+	// codeRunner is the code-role executor. Defaults to agentruntime.RunCode.
+	// Tests may inject a stub for deterministic testing without subprocess runs.
+	codeRunner func(context.Context, agentruntime.CodeInput) (*agentruntime.Result, error)
 }
 
-// NewFleet builds a Fleet with an empty registry.
+// NewFleet builds a Fleet with an empty registry and the default code runner.
 func NewFleet(cfg Config, client Client, llm agentruntime.LLM) *Fleet {
-	return &Fleet{cfg: cfg, client: client, llm: llm, registry: map[string]Role{}}
+	return &Fleet{
+		cfg:        cfg,
+		client:     client,
+		llm:        llm,
+		registry:   map[string]Role{},
+		codeRunner: agentruntime.RunCode,
+	}
 }
 
 // SetRoles atomically swaps the live role registry (called after each poll).

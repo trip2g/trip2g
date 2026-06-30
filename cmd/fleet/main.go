@@ -309,6 +309,7 @@ func syncOnce(ctx context.Context, f *fleet.Fleet, d *fleet.Discovery, r *fleet.
 func parseFlags(ctx context.Context) (cliFlags, error) {
 	var cli cliFlags
 	var offered string
+	var allowedPrograms string
 	var poll int
 
 	fs := flag.NewFlagSet("fleet", flag.ContinueOnError)
@@ -346,6 +347,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"role-note folder (LIKE prefix)")
 	fs.StringVar(&offered, "offered-tools", "search,read_note,patch_note,write_note",
 		"comma-separated allowed tools")
+	fs.StringVar(&allowedPrograms, "allowed-programs", "",
+		"comma-separated programs allowed for code execution (empty = disabled; e.g. python,bash)")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
 
@@ -374,6 +377,7 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	}
 
 	cli.cfg.OfferedTools = splitCSV(offered)
+	cli.cfg.AllowedPrograms = splitCSV(allowedPrograms)
 	cli.cfg.PollInterval = time.Duration(poll) * time.Second
 	return cli, nil
 }

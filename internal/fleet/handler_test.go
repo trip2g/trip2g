@@ -423,6 +423,114 @@ func TestServeDelivery_ForEach_AggregatesCappedStatus(t *testing.T) {
 		"aggregate status must reflect the capped item, not the last completed one")
 }
 
+// newCodeRoleFleet builds a Fleet with a code-executor role and a stub codeRunner.
+func newCodeRoleFleet(stubRunner func(context.Context, agentruntime.CodeInput) (*agentruntime.Result, error)) *Fleet {
+	role := Role{
+		NotePath:      "roles/code.md",
+		Mode:          "change",
+		Executor:      "code",
+		WritePatterns: []string{"boards/**"},
+		Body:          "```bash\necho hi\n```",
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+		AllowedPrograms: []string{"bash"},
+	}
+	f := NewFleet(cfg, &ClientMock{}, nil) // llm=nil is fine for code roles
+	f.codeRunner = stubRunner
+	f.SetRoles([]Role{role})
+	return f
+}
+
+// TestServeDelivery_CodeRole_DispatchesRunCode asserts that a role with
+// executor:code invokes the codeRunner (not agentruntime.Run), and that the
+// response reports TokensUsed=0 (code roles have no LLM spend).
+func TestServeDelivery_CodeRole_DispatchesRunCode(t *testing.T) {
+	var runCodeCalled bool
+	var receivedWritePatterns []string
+
+	stub := func(_ context.Context, in agentruntime.CodeInput) (*agentruntime.Result, error) {
+		runCodeCalled = true
+		receivedWritePatterns = in.WritePatterns
+		return &agentruntime.Result{
+			Status:     agentruntime.StatusCompleted,
+			Answer:     "code done",
+			TokensUsed: 0,
+			Steps:      1,
+		}, nil
+	}
+
+	f := newCodeRoleFleet(stub)
+	key := urlKey("roles/code.md")
+	body, _ := json.Marshal(map[string]any{
+		"depth":       0,
+		"instruction": "run code",
+		"api_token":   "scoped-token",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body))
+	role, ok := f.roleByKey(key)
+	require.True(t, ok)
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.True(t, runCodeCalled, "code executor role must invoke codeRunner, not agentruntime.Run")
+	require.Equal(t, []string{"boards/**"}, receivedWritePatterns)
+
+	var resp webhookutil.AgentResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.TokensUsed, "code roles have zero LLM token spend")
+	require.Equal(t, agentruntime.StatusCompleted, resp.Status)
+}
+
+// TestServeDelivery_CodeRole_PassesEnvPassthrough asserts that env_passthrough
+// and env_prefix declared on the role are threaded into the CodeInput.
+func TestServeDelivery_CodeRole_PassesEnvPassthrough(t *testing.T) {
+	var receivedEnvPassthrough []string
+	var receivedEnvPrefix []string
+
+	stub := func(_ context.Context, in agentruntime.CodeInput) (*agentruntime.Result, error) {
+		receivedEnvPassthrough = in.EnvPassthrough
+		receivedEnvPrefix = in.EnvPrefix
+		return &agentruntime.Result{Status: agentruntime.StatusCompleted}, nil
+	}
+
+	role := Role{
+		NotePath:       "roles/envcode.md",
+		Mode:           "change",
+		Executor:       "code",
+		WritePatterns:  []string{"notes/**"},
+		Body:           "```bash\necho hi\n```",
+		EnvPassthrough: []string{"MY_TOKEN"},
+		EnvPrefix:      []string{"KRISP_"},
+	}
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		TokenCeiling: 100000, StepCeiling: 25,
+		AllowedPrograms: []string{"bash"},
+	}
+	f := NewFleet(cfg, &ClientMock{}, nil)
+	f.codeRunner = stub
+	f.SetRoles([]Role{role})
+
+	key := urlKey("roles/envcode.md")
+	body, _ := json.Marshal(map[string]any{
+		"depth": 0, "api_token": "tok",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body))
+	r, ok := f.roleByKey(key)
+	require.True(t, ok)
+	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(r)))
+	rec := httptest.NewRecorder()
+	f.ServeDelivery(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, []string{"MY_TOKEN"}, receivedEnvPassthrough)
+	require.Equal(t, []string{"KRISP_"}, receivedEnvPrefix)
+}
+
 func TestClampBudget(t *testing.T) {
 	require.Equal(t, 4000, clampBudget(4000, 100000)) // frontmatter wins under ceiling
 	require.Equal(t, 100, clampBudget(4000, 100))     // ceiling wins
