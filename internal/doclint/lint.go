@@ -32,17 +32,19 @@ type lintLine struct {
 }
 
 // Run runs the DB-free linter over dir, writes sorted results to w and returns
-// exit code 1 if any warnings were found, 0 if clean.
+// exit code 1 if any warnings (level >= NoteWarningWarning) were found, 0 if
+// only info-level (advisory) findings or none.
 // log may be nil (falls back to DummyLogger).
 // It is a thin wrapper around RunWithOptions with an empty Options{}.
-func Run(ctx context.Context, dir string, w io.Writer, log logger.Logger) (exitCode int, err error) {
+func Run(ctx context.Context, dir string, w io.Writer, log logger.Logger) (int, error) {
 	return RunWithOptions(ctx, dir, w, log, Options{})
 }
 
 // RunWithOptions is the full entry-point for the DB-free linter.
-// Writes sorted, non-baselined results to w and returns exit code 1 if any
-// non-baselined warnings remain, 0 if clean.
-func RunWithOptions(ctx context.Context, dir string, w io.Writer, log logger.Logger, opts Options) (exitCode int, err error) {
+// All non-baselined findings are printed; exit code 1 is returned only when at
+// least one printed finding has level >= NoteWarningWarning. Info-level
+// findings are advisory: they are printed but do not cause a non-zero exit.
+func RunWithOptions(ctx context.Context, dir string, w io.Writer, log logger.Logger, opts Options) (int, error) {
 	if log == nil {
 		log = &logger.DummyLogger{}
 	}
@@ -64,11 +66,16 @@ func RunWithOptions(ctx context.Context, dir string, w io.Writer, log logger.Log
 		}
 	}
 
+	var hasWarning bool
 	for _, line := range newLines {
 		fmt.Fprintf(w, "%s:0: %s %s\n", line.path, levelStr(line.level), line.message)
+		if line.level >= model.NoteWarningWarning {
+			hasWarning = true
+		}
 	}
 
-	if len(newLines) > 0 {
+	// Info-level findings are advisory: printed but do not fail the run.
+	if hasWarning {
 		return 1, nil
 	}
 	return 0, nil
@@ -142,32 +149,18 @@ func collectWarnings(ctx context.Context, dir string, log logger.Logger) ([]lint
 				continue
 			}
 
-			// Ambiguous bare wikilink: basename maps to >1 note.
-			// When ambiguous, resolution is non-deterministic (Go map order); we
-			// only report ambiguity, not a cross-language leak (which would be racy).
+			// The resolver picks a bare wikilink deterministically (shortest
+			// path-depth wins, see model.Note resolution), so multi-candidate
+			// basenames are not reported as errors — only genuine cross-language
+			// leaks are. The linter otherwise surfaces loader-native warnings.
 			basename := strings.ToLower(target)
 			candidates := nvs.BasenameMap[basename]
-			if len(candidates) > 1 {
-				paths := make([]string, len(candidates))
-				for i, c := range candidates {
-					paths[i] = c.Path
-				}
-				sort.Strings(paths) // deterministic candidate order
-				lines = append(lines, lintLine{
-					path: note.Path,
-					message: fmt.Sprintf(
-						"ambiguous bare wikilink [[%s]]: %d candidates (%s)",
-						target, len(candidates), strings.Join(paths, ", "),
-					),
-					level: model.NoteWarningWarning,
-				})
-			}
 
 			// Cross-language leak: bare wikilink in an en/ note resolves
 			// under ru/ (or vice-versa), keyed on path prefix not frontmatter lang.
 			// Only checked when the wikilink is UNAMBIGUOUS (exactly one candidate);
-			// ambiguous links are already reported above, and their resolution is
-			// non-deterministic (map-order), which would produce a flaky baseline.
+			// a multi-candidate basename resolves by shortest-depth, which is
+			// deterministic but language-blind, so we do not flag those here.
 			if noteLang != "" && len(candidates) == 1 {
 				other := otherLang(noteLang)
 				if strings.HasPrefix(permalink, "/"+other+"/") || permalink == "/"+other {
@@ -271,6 +264,8 @@ func levelStr(l model.NoteWarningLevel) string {
 		return "warning"
 	case model.NoteWarningCritical:
 		return "critical"
+	case model.NoteWarningInfo:
+		return "info"
 	default:
 		return "info"
 	}

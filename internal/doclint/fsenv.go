@@ -24,19 +24,21 @@ type fsEnv struct {
 	log logger.Logger
 }
 
-// compile-time check
+// compile-time check.
 var _ noteloader.Env = (*fsEnv)(nil)
 
 func newFsEnv(dir string, log logger.Logger) *fsEnv {
 	return &fsEnv{dir: dir, log: log}
 }
 
-// noteExts is the set of file extensions treated as note sources.
-var noteExts = map[string]bool{
-	".md":         true,
-	".canvas":     true,
-	".base":       true,
-	".excalidraw": true,
+// noteExtSet returns the set of file extensions treated as note sources.
+func noteExtSet() map[string]bool {
+	return map[string]bool{
+		".md":         true,
+		".canvas":     true,
+		".base":       true,
+		".excalidraw": true,
+	}
 }
 
 // RawNotes walks dir and returns every *.md, *.canvas, *.base, *.excalidraw file
@@ -45,6 +47,7 @@ var noteExts = map[string]bool{
 func (e *fsEnv) RawNotes(_ context.Context) ([]noteloader.RawNote, error) {
 	var notes []noteloader.RawNote
 	var counter int64
+	exts := noteExtSet()
 
 	err := filepath.WalkDir(e.dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -65,7 +68,7 @@ func (e *fsEnv) RawNotes(_ context.Context) ([]noteloader.RawNote, error) {
 		isHTMLJSONExt := strings.HasSuffix(rel, ".html.json")
 		isLayout := strings.HasPrefix(rel, "_layouts/") && (isHTMLExt || isHTMLJSONExt)
 
-		if !noteExts[ext] && !isLayout {
+		if !exts[ext] && !isLayout {
 			return nil
 		}
 
