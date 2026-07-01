@@ -42,23 +42,6 @@ services:
       retries: 30
       start_period: 300s
 
-  # Local cross-encoder reranker — bge-reranker-v2-m3 (F3). Optional second stage.
-  reranker:
-    build: ./reranker-server
-    container_name: trip2g-vecbench-reranker
-    ports:
-      - "11437:8000"
-    volumes:
-      - ${HOME}/models/reranker:/data
-    environment:
-      - MODEL_NAME=BAAI/bge-reranker-v2-m3
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 300s
-
   app:
     build:
       context: .
@@ -68,8 +51,6 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_healthy
-      reranker:
         condition: service_healthy
     ports:
       - "21081:21081"
@@ -85,9 +66,7 @@ services:
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
       # bge-m3 (1024d) baseline for the benchmark
-      # Reranker is OFF by default: it measured strictly worse on this corpus
-      # (see docs/dev/search_refactoring.md F3). Flip "enabled" to true to A/B it.
-      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1", "reranker": {"enabled": false, "base_url": "http://reranker:8000/rerank", "model": "BAAI/bge-reranker-v2-m3"}}}'
+      - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
 
       # MinIO (isolated bucket; app auto-creates it on first boot)
       - MINIO_ENDPOINT=minio:22000

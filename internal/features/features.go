@@ -46,7 +46,7 @@ func Parse(jsonStr string) Features {
 	}
 
 	// Check required environment variables and parse models for enabled features
-	if f.VectorSearch.Enabled { //nolint:nestif // feature validation needs nested checks for sub-options
+	if f.VectorSearch.Enabled {
 		// OPENAI_API_KEY is only required when using the OpenAI endpoint (base_url not set).
 		// When base_url is set (e.g. local Ollama), no API key is needed.
 		if f.VectorSearch.BaseURL == "" && os.Getenv("OPENAI_API_KEY") == "" {
@@ -58,19 +58,6 @@ func Parse(jsonStr string) Features {
 			panic(fmt.Sprintf("invalid vector_search.model: %v", modelErr))
 		}
 		f.VectorSearch.Model = model
-
-		// Reranker defaults (only meaningful when enabled).
-		if f.VectorSearch.Reranker.Enabled {
-			if f.VectorSearch.Reranker.BaseURL == "" {
-				panic("vector_search.reranker.base_url is required when reranker.enabled=true")
-			}
-			if f.VectorSearch.Reranker.TopN <= 0 {
-				f.VectorSearch.Reranker.TopN = 50
-			}
-			if f.VectorSearch.Reranker.OutputK <= 0 {
-				f.VectorSearch.Reranker.OutputK = 20
-			}
-		}
 	}
 
 	return f
