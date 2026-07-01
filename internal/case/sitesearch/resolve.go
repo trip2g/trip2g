@@ -12,7 +12,6 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/openai"
-	"trip2g/internal/reranker"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
 
@@ -81,9 +80,6 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 			results = mergeResults(results, vectorResults)
 		}
 	}
-
-	// Second-stage cross-encoder rerank of the fused candidates (F3, optional).
-	results = rerankResults(ctx, env, input.Query, results)
 
 	// Filter results based on permissions
 	conn := model.SearchConnection{}
@@ -228,64 +224,6 @@ func snippetFromChunk(content string, maxLen int) string {
 		content += "..."
 	}
 	return content
-}
-
-// rerankResults applies an optional cross-encoder rerank to the fused candidate
-// set (F3). It reorders the top-N results by query-document relevance and keeps
-// OutputK. On any error it returns the input unchanged (graceful degradation),
-// matching how a failing vector lane degrades to text-only.
-func rerankResults(ctx context.Context, env Env, query string, results []appmodel.SearchResult) []appmodel.SearchResult {
-	cfg := env.Features().VectorSearch.Reranker
-	if !cfg.Enabled || len(results) < 2 {
-		return results
-	}
-
-	n := cfg.TopN
-	if n > len(results) {
-		n = len(results)
-	}
-	head := results[:n]
-
-	docs := make([]string, len(head))
-	for i, r := range head {
-		title := ""
-		snippet := ""
-		if r.NoteView != nil {
-			title = r.NoteView.Title
-			// Keep the passage near the cross-encoder's input window (~512 tokens).
-			// Longer passages measured strictly worse (see docs/dev/search_refactoring.md).
-			snippet = generateSnippet(r.NoteView, 512)
-		}
-		docs[i] = title + "\n" + snippet
-	}
-
-	order, err := reranker.New(cfg.BaseURL, cfg.Model).Rerank(ctx, query, docs)
-	if err != nil || len(order) == 0 {
-		env.Logger().Warn("rerank failed", "error", err)
-		return results
-	}
-
-	reordered := make([]appmodel.SearchResult, 0, len(results))
-	seen := make([]bool, len(head))
-	for _, idx := range order {
-		if idx >= 0 && idx < len(head) && !seen[idx] {
-			seen[idx] = true
-			reordered = append(reordered, head[idx])
-		}
-	}
-	// Keep any head items the reranker dropped, in their original order.
-	for i, r := range head {
-		if !seen[i] {
-			reordered = append(reordered, r)
-		}
-	}
-	// Preserve the tail beyond TopN unchanged.
-	reordered = append(reordered, results[n:]...)
-
-	if cfg.OutputK > 0 && len(reordered) > cfg.OutputK {
-		reordered = reordered[:cfg.OutputK]
-	}
-	return reordered
 }
 
 // mergeResults combines text and vector search results using Reciprocal Rank Fusion (RRF).
