@@ -8,6 +8,40 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.8.0 (2026-07-01)
+
+### Fleet agent runtime
+
+- **What.** Trip2g notes can now trigger LLM agents. You write "role notes" in a folder (default `roles/`) — frontmatter is the config (model, tools, read/write path patterns, trigger, budget limits, concurrency policy), body is the instruction rendered as a Jet template against the trigger context. The `fleet` daemon discovers role notes, reconciles change/cron webhooks to itself, and when a trigger fires runs a scoped agent loop with tools: search, read_note, patch_note, write_note. An optional `executor: code` tool (e.g., Python) is off by default and gated by `--allowed-programs` / `TRIP2G_FLEET_ALLOWED_PROGRAMS`.
+- **Why.** A vault becomes an automation surface — transcript ingestion, knowledge-base construction, triage, summaries — without external orchestration. Trip2g stays a plain event source; the fleet is the only moving part.
+- **How.** The `fleet` binary ships inside the trip2g image at `/fleet` and as a standalone downloadable. Configure with `TRIP2G_FLEET_*` env vars (or `cmd/fleet` flags); auth uses an admin HAT minted from the app's JWT secret. Guide: [[en/agents_how_it_works]].
+
+### Downloadable binaries with checksums
+
+- **What.** Prebuilt archives are now attached to every GitHub Release: linux amd64/arm64, macOS arm64/amd64, Windows amd64. Each archive contains `trip2g-server` and `fleet`, plus a `.sha256` checksum file.
+- **Why.** Run trip2g without Docker — a single binary on any of the five supported platforms.
+- **How.** Download the archive for your OS from the Release page, verify with `sha256sum -c *.sha256`, extract, and run. macOS binaries are unsigned; Gatekeeper warns on first launch (right-click the binary and choose Open to allow it).
+
+### `trip2g lint docs`
+
+- **What.** A new `lint docs` subcommand runs the real note-loader over a docs tree and reports issues: cross-language wikilink leaks (a `ru/` note linking to an `en/` page), layout render errors, and broken links (advisory). It replaces the old `check-doc-lang-links.sh` bash script and is now wired into CI.
+- **Why.** Catches publish-time problems before they go live: a Russian note accidentally linking to an English page, a layout that fails to render.
+- **How.** `trip2g lint docs` (or `go run -tags dev ./cmd/server lint docs` from source). Exit code is non-zero on warnings; broken links to not-yet-created notes are advisory and do not block the check.
+
+### Pure-Go SQLite driver and database metrics
+
+- **What.** The SQLite driver switched from CGO-based mattn/go-sqlite3 to pure-Go modernc. Three Prometheus metrics are now exposed on the existing metrics endpoint: DB connection pool stats, database file size, and WAL file size. Double-quoted string literals in SQL are rejected at startup (`_dqs` pragma) to surface typos early.
+- **Why.** No CGO means cross-platform binaries without a C toolchain (this enabled item 2 above). The metrics give operators visibility into DB pressure before it becomes an outage.
+- **How.** Metrics appear on the existing internal metrics endpoint with no config change. The `_dqs` rejection may surface existing SQL typos on upgrade; check startup logs if the server refuses to start.
+
+### Search: cross-encoder reranker removed
+
+- **What.** The optional second-stage cross-encoder reranker (shipped off-by-default in a prior release) is removed, along with the Python sidecar (`reranker-server/`).
+- **Why.** Two rounds of benchmarking showed it hurt search quality: nDCG dropped from 0.9221 to 0.8881 with 512-char passages and to ~0.39 with full-note passages. The cross-encoder over-weighted surface term overlap and promoted near-neighbour distractors that the existing bi-encoder + BM25 + RRF first stage had correctly ranked lower. Rationale is in `docs/dev/reranker.md`.
+- **How.** Nothing to do. The feature was off by default. Any existing `vector_search.reranker.*` config keys are now ignored.
+
+---
+
 ## v0.7.1 (2026-06-26)
 
 ### Wide pages (`wide: true`)
