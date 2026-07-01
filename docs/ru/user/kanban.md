@@ -126,5 +126,5 @@ layout: kanban
 ## Подробнее
 
 - [[templates|Кастомные шаблоны]] — как работают файлы `_layouts/` в trip2g
-- [[publishing|Публикация заметок]] — основы frontmatter
+- [[en/user/publishing|Публикация заметок]] — основы frontmatter
 - [[change_webhooks|Вебхуки при изменении заметок]] — вебхуки изменений, вебхуки по расписанию и MCP-сервер

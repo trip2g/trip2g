@@ -88,6 +88,18 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["title"] = reflect.ValueOf(note.Title)
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{}})
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{{}})
+	// Stub namespaces that custom layouts call but that require a live HTTP
+	// request context to populate. No-op functions return zero values so
+	// layouts render without errors during smoke-checks.
+	vars["defaultTemplate"] = reflect.ValueOf(map[string]interface{}{
+		"UserSpaceScripts": func() string { return "" },
+		"Header":           func() string { return "" },
+		"Footer":           func() string { return "" },
+		"Styles":           func() string { return "" },
+	})
+	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
+		"IsAdmin": func() bool { return false },
+	})
 
 	if err := view.Execute(io.Discard, vars, nil); err != nil {
 		return &model.NoteWarning{

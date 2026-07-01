@@ -29,6 +29,9 @@ jobs:
       - name: Run golangci-lint
         run: go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run --build-tags dev
 
+      - name: Lint docs (trip2g lint docs)
+        run: go run -tags dev ./cmd/server lint docs
+
   test:
     runs-on: ubuntu-latest
     steps:

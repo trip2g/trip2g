@@ -15,7 +15,7 @@ lang_redirect: "[[en/user/kanban-demo]]"
 ## В работе
 
 - [ ] Перевести онбординг — см. [[multilang]]
-- [ ] Причесать доку [[publishing|публикации]]
+- [ ] Причесать доку [[en/user/publishing|публикации]]
 
 ## Готово
 

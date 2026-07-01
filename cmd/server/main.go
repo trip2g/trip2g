@@ -248,6 +248,13 @@ type app struct {
 
 //nolint:funlen // boot sequence split into read-only (Block A) and writer (Block B) phases
 func main() {
+	// Subcommand dispatch — must happen before appconfig/DB init so these paths
+	// never open SQLite or require environment configuration.
+	if len(os.Args) > 1 && os.Args[1] == "lint" {
+		runLint(os.Args[2:])
+		return // runLint calls os.Exit, but return satisfies the compiler
+	}
+
 	if err := defaulttemplate.Init(); err != nil {
 		panic(fmt.Errorf("failed to init default template i18n: %w", err))
 	}
