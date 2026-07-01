@@ -1,7 +1,15 @@
 name: Release Binaries
 
-# Builds cross-platform server binaries and attaches them to the GitHub Release
-# on every v* tag push. Docker remains the recommended server deploy method.
+# Builds cross-platform binaries and attaches them (with .sha256 checksums) to
+# the GitHub Release on every v* tag push, so the server can be downloaded and
+# run directly without Docker. Docker remains the recommended deploy method.
+#
+# The server binary embeds the built $mol frontend (assets/embed.go, non-dev
+# build). Those bundles (assets/ui/{admin,user,forms}/-/web.js*) are gitignored
+# build artifacts, so the "frontend" job builds them once (mirroring the
+# Dockerfile frontend stage) and shares them via an artifact; every target then
+# cross-compiles with CGO_ENABLED=0 (pure-Go, incl. modernc sqlite).
+#
 # macOS binaries are unsigned/unnotarized — Gatekeeper will warn on first run.
 
 on:
@@ -12,8 +20,45 @@ permissions:
   contents: write  # needed to create/upload GitHub Release assets
 
 jobs:
+  frontend:
+    name: Build frontend bundles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend stage and extract $mol bundles
+        # Reuse the proven Dockerfile `frontend` stage rather than re-deriving the
+        # $mol build here. It outputs the built bundles at /mam/trip2g (the path
+        # the builder stage copies to assets/ui); we extract them the same way.
+        run: |
+          set -eux
+          docker build --target frontend -t trip2g-frontend .
+          cid=$(docker create trip2g-frontend)
+          docker cp "$cid:/mam/trip2g/." assets/ui/
+          docker rm "$cid"
+
+      - name: Package built bundles
+        run: |
+          set -eux
+          tar czf frontend-assets.tar.gz \
+            assets/ui/admin/-/web.js assets/ui/admin/-/web.locale* \
+            assets/ui/user/-/web.js  assets/ui/user/-/web.locale* \
+            assets/ui/forms/-/web.js assets/ui/forms/-/web.locale*
+
+      - name: Upload bundles artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-assets
+          path: frontend-assets.tar.gz
+          retention-days: 1
+
   build:
     name: Build ${{ matrix.goos }}_${{ matrix.goarch }}
+    needs: frontend
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,8 +73,6 @@ jobs:
             goarch: arm64
           - goos: windows
             goarch: amd64
-          - goos: windows
-            goarch: arm64
 
     steps:
       - name: Checkout code
@@ -43,45 +86,63 @@ jobs:
           go-version: '1.26'
           cache: true
 
-      - name: Prepare generated files
-        run: go generate ./...
+      - name: Download frontend bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-assets
 
-      - name: Set binary name
+      - name: Restore frontend bundles
+        run: tar xzf frontend-assets.tar.gz
+
+      - name: Prepare generated files
+        run: go generate ./onboarding-vault
+
+      - name: Set names
         id: names
         run: |
           VERSION="${{ github.ref_name }}"
           ARTIFACT="trip2g_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
-          BINARY="trip2g-server"
+          SERVER="trip2g-server"
+          FLEET="fleet"
           if [ "${{ matrix.goos }}" = "windows" ]; then
-            BINARY="trip2g-server.exe"
+            SERVER="trip2g-server.exe"
+            FLEET="fleet.exe"
             ARCHIVE="${ARTIFACT}.zip"
           else
             ARCHIVE="${ARTIFACT}.tar.gz"
           fi
-          echo "artifact=${ARTIFACT}" >> "$GITHUB_OUTPUT"
-          echo "binary=${BINARY}" >> "$GITHUB_OUTPUT"
-          echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+          {
+            echo "server=${SERVER}"
+            echo "fleet=${FLEET}"
+            echo "archive=${ARCHIVE}"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Build binary
+      - name: Build binaries
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
         run: |
-          go build \
-            -ldflags="-s -w -X main.GitCommit=${{ github.ref_name }}" \
-            -o "${{ steps.names.outputs.binary }}" \
-            ./cmd/server
+          set -eux
+          go build -ldflags="-s -w -X main.GitCommit=${{ github.ref_name }}" \
+            -o "${{ steps.names.outputs.server }}" ./cmd/server
+          go build -ldflags="-s -w" \
+            -o "${{ steps.names.outputs.fleet }}" ./cmd/fleet
 
       - name: Package archive (tar.gz)
         if: matrix.goos != 'windows'
-        run: tar czf "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.binary }}"
+        run: tar czf "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.server }}" "${{ steps.names.outputs.fleet }}"
 
       - name: Package archive (zip)
         if: matrix.goos == 'windows'
-        run: zip "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.binary }}"
+        run: zip "${{ steps.names.outputs.archive }}" "${{ steps.names.outputs.server }}" "${{ steps.names.outputs.fleet }}"
+
+      - name: Checksum
+        run: sha256sum "${{ steps.names.outputs.archive }}" > "${{ steps.names.outputs.archive }}.sha256"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.names.outputs.archive }}
+          files: |
+            ${{ steps.names.outputs.archive }}
+            ${{ steps.names.outputs.archive }}.sha256
