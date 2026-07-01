@@ -9,7 +9,7 @@ A common question: "How is your SEO?" Short answer: the same as anywhere else. H
 
 trip2g renders HTML the moment your markdown loads. Visitors get a ready page from cache. It behaves like a static site generator — without the manual build step. No browser-side JavaScript frameworks. Google's bot sees the same page a real visitor does.
 
-In terms of speed it is close to [[Quartz]] and other static generators. The difference: you can hide part of the content behind a paywall. A static generator serves everyone identical pages. trip2g checks access and shows the full text only to those who paid.
+In terms of speed it is close to [[ru/user/Quartz|Quartz]] and other static generators. The difference: you can hide part of the content behind a paywall. A static generator serves everyone identical pages. trip2g checks access and shows the full text only to those who paid.
 
 ### Compared to WordPress
 
@@ -21,7 +21,7 @@ In terms of speed it is close to [[Quartz]] and other static generators. The dif
 | Meta tags | Plugin (Yoast, RankMath) | Via note properties |
 | Caching | Needs setup | Built in |
 
-There is no fundamental SEO difference [[Wordpress|compared to WordPress]]. The difference is convenience: fewer settings, fewer plugins, less hassle.
+There is no fundamental SEO difference [[ru/user/Wordpress|compared to WordPress]]. The difference is convenience: fewer settings, fewer plugins, less hassle.
 
 ### What trip2g does automatically
 
