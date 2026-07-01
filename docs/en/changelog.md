@@ -12,14 +12,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Fleet agent runtime
 
-- **What.** Trip2g notes can now trigger LLM agents. You write "role notes" in a folder (default `roles/`) — frontmatter is the config (model, tools, read/write path patterns, trigger, budget limits, concurrency policy), body is the instruction rendered as a Jet template against the trigger context. The `fleet` daemon discovers role notes, reconciles change/cron webhooks to itself, and when a trigger fires runs a scoped agent loop with tools: search, read_note, patch_note, write_note. An optional `executor: code` tool (e.g., Python) is off by default and gated by `--allowed-programs` / `TRIP2G_FLEET_ALLOWED_PROGRAMS`.
-- **Why.** A vault becomes an automation surface — transcript ingestion, knowledge-base construction, triage, summaries — without external orchestration. Trip2g stays a plain event source; the fleet is the only moving part.
+- **What.** Trip2g notes can now trigger LLM agents. You write "role notes" in a folder (default `roles/`): frontmatter is the config (model, tools, read/write path patterns, trigger, budget limits, concurrency policy), body is the instruction rendered as a Jet template against the trigger context. The `fleet` daemon discovers role notes, reconciles change/cron webhooks to itself, and when a trigger fires runs a scoped agent loop with tools: search, read_note, patch_note, write_note. An optional `executor: code` tool (e.g., Python) is off by default and gated by `--allowed-programs` / `TRIP2G_FLEET_ALLOWED_PROGRAMS`.
+- **Why.** A vault becomes an automation surface (transcript ingestion, knowledge-base construction, triage, summaries) without external orchestration. Trip2g stays a plain event source; the fleet is the only moving part.
 - **How.** The `fleet` binary ships inside the trip2g image at `/fleet` and as a standalone downloadable. Configure with `TRIP2G_FLEET_*` env vars (or `cmd/fleet` flags); auth uses an admin HAT minted from the app's JWT secret. Guide: [[en/agents_how_it_works]].
 
 ### Downloadable binaries with checksums
 
 - **What.** Prebuilt archives are now attached to every GitHub Release: linux amd64/arm64, macOS arm64/amd64, Windows amd64. Each archive contains `trip2g-server` and `fleet`, plus a `.sha256` checksum file.
-- **Why.** Run trip2g without Docker — a single binary on any of the five supported platforms.
+- **Why.** Run trip2g without Docker: a single binary on any of the five supported platforms.
 - **How.** Download the archive for your OS from the Release page, verify with `sha256sum -c *.sha256`, extract, and run. macOS binaries are unsigned; Gatekeeper warns on first launch (right-click the binary and choose Open to allow it).
 
 ### `trip2g lint docs`
@@ -28,11 +28,11 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** Catches publish-time problems before they go live: a Russian note accidentally linking to an English page, a layout that fails to render.
 - **How.** `trip2g lint docs` (or `go run -tags dev ./cmd/server lint docs` from source). Exit code is non-zero on warnings; broken links to not-yet-created notes are advisory and do not block the check.
 
-### Pure-Go SQLite driver and database metrics
+### Database metrics and stricter SQL
 
-- **What.** The SQLite driver switched from CGO-based mattn/go-sqlite3 to pure-Go modernc. Three Prometheus metrics are now exposed on the existing metrics endpoint: DB connection pool stats, database file size, and WAL file size. Double-quoted string literals in SQL are rejected at startup (`_dqs` pragma) to surface typos early.
-- **Why.** No CGO means cross-platform binaries without a C toolchain (this enabled item 2 above). The metrics give operators visibility into DB pressure before it becomes an outage.
-- **How.** Metrics appear on the existing internal metrics endpoint with no config change. The `_dqs` rejection may surface existing SQL typos on upgrade; check startup logs if the server refuses to start.
+- **What.** Three new Prometheus metrics are now exposed on the existing internal metrics endpoint: DB connection pool stats, database file size, and WAL file size. Double-quoted string literals in SQL are rejected at startup via the `_dqs` pragma to surface typos early. The last direct `mattn/go-sqlite3` import was dropped from test tooling; the app has run on pure-Go modernc since well before this release.
+- **Why.** The metrics give operators visibility into DB pressure before it becomes an outage. The `_dqs` pragma turns a class of silent SQL bugs into a startup error.
+- **How.** Metrics appear on the existing internal metrics endpoint with no config change. The `_dqs` rejection may surface a pre-existing SQL typo on upgrade; check startup logs if the server refuses to start.
 
 ### Search: cross-encoder reranker removed
 
@@ -46,14 +46,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Wide pages (`wide: true`)
 
-- **What.** Any note can now render full-width by adding `wide: true` to its frontmatter — the page drops both sidebars and the narrow reading column so the content fills the whole main area.
-- **Why.** Wide content — kanban boards, big Mermaid diagrams, large tables — was cramped in the default 65ch reading column.
+- **What.** Any note can now render full-width by adding `wide: true` to its frontmatter. The page drops both sidebars and the narrow reading column so the content fills the whole main area.
+- **Why.** Wide content (kanban boards, big Mermaid diagrams, large tables) was cramped in the default 65ch reading column.
 - **How.** Add `wide: true` to the note's frontmatter. Guide: [[en/user/default-template]].
 
-### Live layout preview tool: `trip2g-preview` — replaces `renderlayout.py` (`19483421`, `d0fe4179`)
+### Live layout preview tool: `trip2g-preview`, replaces `renderlayout.py` (`19483421`, `d0fe4179`)
 
-- **What.** A new standalone node CLI, `scripts/trip2g-preview.mjs`, renders a Jet layout against a note via `/_system/renderlayout` and adds a `--watch` mode: it re-POSTs on every save while a browser parked on the `?live` URL reloads itself. It replaces the old `scripts/renderlayout.py` (removed) — no Python dependency.
-- **Why.** Tightens the layout-developer loop: edit a `_layouts/*.html`, see the result live, catch Jet errors in the terminal. It targets any server — a local memcli (auto-reads `data.json`) or a remote/staging instance via `--api-url`/`--api-key`.
+- **What.** A new standalone node CLI, `scripts/trip2g-preview.mjs`, renders a Jet layout against a note via `/_system/renderlayout` and adds a `--watch` mode: it re-POSTs on every save while a browser parked on the `?live` URL reloads itself. It replaces the old `scripts/renderlayout.py` (removed). No Python dependency.
+- **Why.** Tightens the layout-developer loop: edit a `_layouts/*.html`, see the result live, catch Jet errors in the terminal. It targets any server: a local memcli (auto-reads `data.json`) or a remote/staging instance via `--api-url`/`--api-key`.
 - **How.** `node scripts/trip2g-preview.mjs --watch --layout-file _layouts/article.html --note-path /about`, then open the printed `?live` URL (with memcli, run `memcli open` first so the browser is signed in). Guide: [[en/user/renderlayout]]; the two local design loops are documented in `docs/dev/local_design_iteration.md`.
 
 ### memcli: isolated instances with `--name` (`5f0542f8`, `353841e0`)
@@ -104,90 +104,90 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## v0.6.1 — 2026-06-22
+## v0.6.1 (2026-06-22)
 
 ### Live updates in the Obsidian plugin (plugin v0.5.0)
 
-- **What.** The trip2g sync plugin now consumes the `noteChanges` subscription (shipped in v0.6.0) and pulls server-side changes into your vault in real time — no sync click, no waiting for the periodic check.
-- **Why.** For multi-device and agent-driven editing, a change made on the server (or another device) shows up in Obsidian within a second instead of after the next poll. It's a UX win — instant freshness and less idle traffic — not a raw-speed change: the underlying note-list query was already a ~10 ms indexed read.
+- **What.** The trip2g sync plugin now consumes the `noteChanges` subscription (shipped in v0.6.0) and pulls server-side changes into your vault in real time. No sync click, no waiting for the periodic check.
+- **Why.** For multi-device and agent-driven editing, a change made on the server (or another device) shows up in Obsidian within a second instead of after the next poll. The benefit is instant freshness and less idle traffic. This is a UX change, not a backend speed gain: the underlying note-list query was already a ~10 ms indexed read.
 - **How.** Update the plugin to 0.5.0 (via BRAT), turn on **Two-way sync**, then set **Live pull patterns** in the plugin settings (include/exclude globs, e.g. `**`, or `blog/**` excluding `drafts/**`). Safety is preserved: local edits are never overwritten (you get a conflict prompt), and server-side deletions ask before removing locally. The 60-second background poll becomes a lighter 5-minute reconciliation backstop. User docs: [`docs/en/user/two-way-sync.md`](./en/user/two-way-sync.md). The story: [`docs/en/thoughts/sync-benchmark.md`](./en/thoughts/sync-benchmark.md).
 
 ### Much faster bulk and CLI sync of notes with assets
 
 - **What.** Syncing many notes that embed images is dramatically faster from the CLI and browser-sync. A cold push of 2000 notes with 2000 images dropped from **231.8 s to 8.8 s (~26×)**.
-- **Why.** Each asset upload was triggering a full server-side note reload, because the CLI and browser-sync didn't batch uploads the way the Obsidian plugin already did — one missing flag (`skipCommit`) turned 2000 uploads into 2000 full reloads.
+- **Why.** Each asset upload was triggering a full server-side note reload, because the CLI and browser-sync didn't batch uploads the way the Obsidian plugin already did. One missing flag (`skipCommit`) turned 2000 uploads into 2000 full reloads.
 - **How.** No action needed beyond updating to plugin/CLI 0.5.0. The interactive Obsidian plugin was already unaffected.
 
 ### Stability: the real-time subscription could crash the server (`c283963b`)
 
 - **What.** A race in the in-process event bus behind the `noteChanges` subscription could panic the whole server when a subscriber disconnected during a save (`send on closed channel`).
-- **Why.** It never fired while nothing subscribed, but the new live-pull plugin connects and disconnects routinely — making it a real risk for anyone running the subscription.
+- **Why.** It never fired while nothing subscribed, but the new live-pull plugin connects and disconnects routinely, making it a real risk for anyone running the subscription.
 - **How.** No action needed; the bus now uses a per-subscriber done channel and is race-tested under stress. A **Sync now** command was also added to the plugin (command palette).
 
 ---
 
-## v0.6.0 — 2026-06-17
+## v0.6.0 (2026-06-17)
 
 ### Mermaid diagrams
 
-- **What.** A ` ```mermaid ` fenced code block in any note renders as a diagram on the published page — flowcharts, sequence diagrams, pie charts, Gantt charts, class diagrams, state diagrams, ER diagrams, and every other type Mermaid supports.
-- **Why.** Write diagrams the same way Obsidian renders them — the block just works.
+- **What.** A ` ```mermaid ` fenced code block in any note renders as a diagram on the published page: flowcharts, sequence diagrams, pie charts, Gantt charts, class diagrams, state diagrams, ER diagrams, and every other type Mermaid supports.
+- **Why.** Write diagrams the same way Obsidian renders them. The block just works.
 - **How.** Add a code block with the `mermaid` language tag and paste your diagram syntax. The Mermaid library loads lazily and only on pages that contain a `mermaid` block; pages without diagrams pay no loading cost. User docs: [`docs/en/user/mermaid.md`](./en/user/mermaid.md), [`docs/ru/user/mermaid.md`](./ru/user/mermaid.md).
 
 ### Charts from `datachart` blocks (`7cadad3e`, `cb1403f5`)
 
 - **What.** A ` ```datachart ` fenced code block becomes an interactive chart on the published page, powered by Apache ECharts. Data can come from four sources: `inline` rows bundled in the block, a vault file referenced via a frontmatter `[[wikilink]]` (`frontmatter`), an external HTTP-JSON endpoint fetched on the server and cached (`url`), or your site's own content via SQL (`internal`, coming soon). URL fetch errors are recorded and surfaced to authors so a broken endpoint is visible at sync time, not only in the browser (`97997bb4`).
-- **Why.** Publish live charts as naturally as you write any other Obsidian note. The ECharts widget loads lazily — only on pages that contain a `datachart` block.
+- **Why.** Publish live charts as naturally as you write any other Obsidian note. The ECharts widget loads lazily, only on pages that contain a `datachart` block.
 - **How.** Add a fenced block with the language tag `datachart` containing a JSON object with `data` and `config` keys. The `config` object is passed directly to ECharts, so any chart type and option it supports works here. User docs: [`docs/en/user/chartdata.md`](./en/user/chartdata.md), [`docs/ru/user/chartdata.md`](./ru/user/chartdata.md).
 
-### MCP Federation — admin topology endpoint and configurable `kb_id` (`4485b6cd`, `5c7492ae`)
+### MCP Federation: admin topology endpoint and configurable `kb_id` (`4485b6cd`, `5c7492ae`)
 
-- **What.** Two additions to the federation layer introduced in v0.4.1. A new admin-gated `GET /_system/federation/admin` endpoint returns the full federation topology — all registered KB peers, their scopes, and their reachability status. The `kb_id` for your instance is now configurable; if not set explicitly it falls back to the public URL host.
+- **What.** Two additions to the federation layer introduced in v0.4.1. A new admin-gated `GET /_system/federation/admin` endpoint returns the full federation topology: all registered KB peers, their scopes, and their reachability status. The `kb_id` for your instance is now configurable; if not set explicitly it falls back to the public URL host.
 - **Why.** Operators running multiple federated instances can inspect the topology without digging through the database. A configurable `kb_id` lets you assign a stable, human-readable identifier that stays correct regardless of which domain the instance answers on.
 - **How.** The topology endpoint is admin-only (requires an admin API key or session). Set `kb_id` in your instance config to override the default host-derived value. No changes needed to existing federation setups.
 
 ### Live note-change SSE subscriptions (`854c56b0`)
 
 - **What.** A new `noteChanges` GraphQL subscription streams note upsert and removal events to connected clients over SSE, with optional glob filtering. Each event carries the changed HTML selectors diff so clients can patch the DOM without a full page reload.
-- **Why.** Enables live-updating UIs — an admin editor, a preview pane, or a custom dashboard — that reflect vault changes the moment they land on the server.
+- **Why.** Enables live-updating UIs (an admin editor, a preview pane, or a custom dashboard) that reflect vault changes the moment they land on the server.
 - **How.** Subscribe to `noteChanges(glob: "posts/**")` via the GraphQL SSE endpoint. The `changedHtmlSelectors` field on each event lists the CSS selectors whose rendered HTML changed, making surgical DOM updates possible.
 
 ### In-browser editor: Ctrl+Click wikilink navigation (`a065fea2`)
 
 - **What.** In the in-browser file editor (introduced in v0.5.0), Ctrl+Click (or Cmd+Click on macOS) on a wikilink opens the linked note directly.
 - **Why.** Matches the Obsidian editing experience and removes the need to search for a linked file manually.
-- **How.** Open the editor, hover over any `[[wikilink]]` — the cursor changes to a pointer. Ctrl+Click to navigate.
+- **How.** Open the editor, hover over any `[[wikilink]]`; the cursor changes to a pointer. Ctrl+Click to navigate.
 
 ---
 
-## v0.5.1 — 2026-05-27
+## v0.5.1 (2026-05-27)
 
 ### Per-webhook secrets injected into delivery payload (`0b72acf2`)
 
-- **What.** Each change webhook and cron webhook now has a **Secrets** panel in the admin. Add named key-value pairs (e.g. `auth_token`, `api_key`) — they are stored encrypted and sent in every delivery payload under `payload.secrets`. The webhook consumer can read them without any extra API calls.
-- **Why.** Cron webhooks are the foundation of a plugin system. A plugin is a web server (or serverless function) that receives a payload with a short-lived API token and processes it — often in the background — then patches the vault when ready. Because plugins are stateless, they have no safe place to store their own credentials. Secrets solve this: trip2g holds them encrypted and delivers them on every call, so the plugin stays credential-free on its end. A plugin that needs more time can use the API token to push updates back asynchronously; secrets give it everything else it needs to talk to external services.
+- **What.** Each change webhook and cron webhook now has a **Secrets** panel in the admin. Add named key-value pairs (e.g. `auth_token`, `api_key`); they are stored encrypted and sent in every delivery payload under `payload.secrets`. The webhook consumer can read them without any extra API calls.
+- **Why.** Cron webhooks are the foundation of a plugin system. A plugin is a web server (or serverless function) that receives a payload with a short-lived API token and processes it (often in the background), then patches the vault when ready. Because plugins are stateless, they have no safe place to store their own credentials. Secrets solve this: trip2g holds them encrypted and delivers them on every call, so the plugin stays credential-free on its end. A plugin that needs more time can use the API token to push updates back asynchronously; secrets give it everything else it needs to talk to external services.
 - **How.** Open Admin → Change Webhooks (or Cron Webhooks) → select a webhook → scroll to the **Secrets** section. Enter a name and value, click **Add Secret**. To update a value, type in the row's value field and click **Save**. To remove, click the trash icon (confirm on second click). Secrets appear in the delivery payload as `{ "secrets": { "auth_token": "...", "api_key": "..." } }`.
 
-## v0.5.0 — 2026-05-26
+## v0.5.0 (2026-05-26)
 
 ### In-browser file editor (admin)
 
 - **What.** Admins can now edit any page right on the site. An editor icon appears in the top-right of the admin panel and next to the search on every page. Open it to browse every uploaded file as a folder tree, view and edit any one, and save. You can also roll a file back to an earlier version.
-- **Why.** Fix a typo or update a page in seconds — no Obsidian, no re-sync.
+- **Why.** Fix a typo or update a page in seconds. No Obsidian, no re-sync.
 - **How.** Click the editor icon (admins only). The current page's note opens by default; pick any other file from the tree on the left. Edits stay in your browser until you press **Save**, and the versions panel lets you load and restore an older version.
 
 ### Public hub of curated bases
 
-- **What.** A `hub/` section with a bilingual index of the knowledge bases reachable through the hub (first entry: the Nick Senin Journal — filtered Code with Claude 2026 cases).
+- **What.** A `hub/` section with a bilingual index of the knowledge bases reachable through the hub (first entry: the Nick Senin Journal (filtered Code with Claude 2026 cases)).
 - **Why.** A browsable, public entry point to federated bases.
 - **How.** See [`docs/en/hub/_index.md`](./en/hub/_index.md); add your own with [`docs/en/hub/_create.md`](./en/hub/_create.md).
 
-## v0.4.1 — 2026-05-25
+## v0.4.1 (2026-05-25)
 
-### MCP Federation — one hub across many knowledge bases
+### MCP Federation: one hub across many knowledge bases
 
 - **What.** Your instance can act as a federation hub. A **KB-note** (a note with `mcp_federation_kb_url` in frontmatter) registers another MCP-compatible base, and `federated_search` / `federated_similar` / `federated_note_html` reach across all of them through your single MCP endpoint. Public bases need no auth; private peers use a shared HMAC secret.
-- **Why.** One endpoint, one auth surface — your agent searches your own notes, partner instances, and external adapters (GitHub, Telegram) together, without rewiring `.mcp.json`.
+- **Why.** One endpoint, one auth surface: your agent searches your own notes, partner instances, and external adapters (GitHub, Telegram) together, without rewiring `.mcp.json`.
 - **How.**
   - User docs: [`docs/en/user/federation.md`](./en/user/federation.md), [`docs/ru/user/federation.md`](./ru/user/federation.md)
   - Public base: create a note with `mcp_federation_kb_url` (+ optional `mcp_federation_kb_id`) and `free: true`.
@@ -195,9 +195,9 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Canvas files (Base & Excalidraw coming later)
 
-- **What.** `.canvas` files sync and render. `.base` and `.excalidraw` files are accepted by sync too, but rendering them is planned for later — for now they show a clear placeholder instead of breaking the page.
+- **What.** `.canvas` files sync and render. `.base` and `.excalidraw` files are accepted by sync too, but rendering them is planned for later; for now they show a clear placeholder instead of breaking the page.
 - **Why.** Canvas vaults work today; Base and Excalidraw vaults sync without errors while full support is on the way.
-- **How.** Just sync — the plugin and CLI accept all three extensions; Canvas renders now.
+- **How.** Just sync. The plugin and CLI accept all three extensions; Canvas renders now.
 
 ### Telegram navigation & canvas bots
 
@@ -216,15 +216,15 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.**
   - Accepts `.canvas`, `.base`, and `.excalidraw` files.
   - Surfaces GraphQL error details on a failed push (no more silent failures).
-  - **New `--exclude <glob>` flag** (repeatable). Excluded paths are never pushed; if they already exist on the server they are **hidden**. A bare name like `dev` matches that directory and everything under it. Default: nothing is excluded — everything uploads.
-- **Why.** Keep test/demo or internal folders (e.g. `dev/`, `demo/`) in your repo but out of the published site — and reversibly hide them on the server.
+  - **New `--exclude <glob>` flag** (repeatable). Excluded paths are never pushed; if they already exist on the server they are **hidden**. A bare name like `dev` matches that directory and everything under it. Default: nothing is excluded. Everything uploads.
+- **Why.** Keep test/demo or internal folders (e.g. `dev/`, `demo/`) in your repo but out of the published site, and reversibly hide them on the server.
 - **How.** `trip2g-sync ./docs --exclude dev --exclude demo`. Re-including a path re-publishes and automatically unhides it.
 
 ---
 
-## v0.4.0 — 2026-05-21
+## v0.4.0 (2026-05-21)
 
-### updateNotes mutation — atomic find/replace across notes
+### updateNotes mutation: atomic find/replace across notes
 
 - **What.** New GraphQL mutation that patches multiple notes in one transaction via a `PathMap` of `{path → [{find, replace}]}`.
 - **Why.** Lets external tools, agents, and scripts apply consistent edits across a vault without orchestrating per-note round-trips. Avoids partial states when one of the replacements fails.
@@ -233,7 +233,7 @@ Older tags (`v0.2.0` and below) live in git history only.
   - Example: send `updateNotes(input: { pathMap: { "notes/post.md": [{ find: "old", replace: "new" }] } })`.
   - End-to-end spec: `e2e/updatenotes/*` (see `test(e2e): add updateNotes e2e spec and demo fixture`).
 
-### Forms admin — submit processing
+### Forms admin: submit processing
 
 - **What.** New `markFormSubmitProcessed` mutation and `processed` fields on form submits; admin can mark a submit as handled, the UI hides processed entries by default.
 - **Why.** Closes the form-handling loop inside the admin instead of forcing external triggers.
@@ -242,13 +242,13 @@ Older tags (`v0.2.0` and below) live in git history only.
   - Dev reference: [`docs/dev/forms.md`](./dev/forms.md)
   - Use `can_submit` / `success_url` frontmatter on form notes to gate submissions and customize the thank-you page.
 
-### Layout smoke-render — surface Jet runtime errors at load
+### Layout smoke-render: surface Jet runtime errors at load
 
 - **What.** When notes are loaded, each parsed Jet layout is executed against up to **10 first notes** that select it via frontmatter `layout:`. Runtime errors and panics become `NoteWarning` entries on the layout.
-- **Why.** Previously, a broken layout that *parsed* (e.g. `{{ note.NoSuchField }}`) only failed when a user opened the page in the browser. Agents pushing notes had no signal. Smoke-render moves the failure to load time so warnings show up in the same channel as parse errors — visible via `pushNotes` / admin layout listings without a browser request.
+- **Why.** Previously, a broken layout that *parsed* (e.g. `{{ note.NoSuchField }}`) only failed when a user opened the page in the browser. Agents pushing notes had no signal. Smoke-render moves the failure to load time so warnings show up in the same channel as parse errors, visible via `pushNotes` / admin layout listings without a browser request.
 - **How.** Automatic; no flags. Watch for `smoke render error` / `smoke render panic` in layout warnings after a sync. Layouts without parsed templates and layouts no note uses are skipped.
 
-### Template debugging — `Meta.Debug()` and global `debug()`
+### Template debugging: `Meta.Debug()` and global `debug()`
 
 - **What.** Inside Jet templates: `{{ Meta.Debug() }}` dumps note metadata; global `{{ debug(<any>) }}` prints type, value, and the method set of any expression via reflection.
 - **Why.** Removes the "guess what the template sees" loop when authoring layouts and components.
@@ -256,10 +256,10 @@ Older tags (`v0.2.0` and below) live in git history only.
   - User docs: [`docs/en/user/jet.md`](./en/user/jet.md), [`docs/ru/user/jet.md`](./ru/user/jet.md) (debugging section).
   - Example: `{{ debug(note.M()) }}` or `{{ debug(note.Title) }}`.
 
-### `renderlayout.py` CLI — render a layout against a note
+### `renderlayout.py` CLI: render a layout against a note
 
 - **What.** Standalone script in `scripts/renderlayout.py` plus a `check_templates` agent skill.
-- **Why.** Lets you preview layouts and reproduce template issues from the terminal — useful in CI and when iterating on `_layouts/`.
+- **Why.** Lets you preview layouts and reproduce template issues from the terminal, useful in CI and when iterating on `_layouts/`.
 - **How.**
   - User docs: [`docs/en/user/renderlayout.md`](./en/user/renderlayout.md), [`docs/ru/user/renderlayout.md`](./ru/user/renderlayout.md)
   - Skill: [`docs/skills/check_templates.md`](./skills/check_templates.md)
@@ -276,7 +276,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## v0.3.1 — historical (backfill)
+## v0.3.1 (historical backfill)
 
 ### Forms in notes (initial)
 
@@ -311,7 +311,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 ### Onboarding vault: agent config files
 
 - **What.** Vault download now ships with `.mcp.json`, `codex.json`, antigravity config and `AGENTS.md`.
-- **Why.** Drop-in setup for AI agents over an Obsidian vault — no manual wiring.
+- **Why.** Drop-in setup for AI agents over an Obsidian vault. No manual wiring.
 - **How.** Download the onboarding vault; configs are already inside.
 
 ### Cronjobs lock by default
@@ -327,7 +327,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## v0.3.0 — historical (backfill)
+## v0.3.0 (historical backfill)
 
 ### Self-hosted deployment path documented
 
@@ -344,7 +344,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 ### Vault-based layout sections
 
 - **What.** Header / footer / sidebar can be sourced from vault notes.
-- **Why.** Authors edit chrome the same way they edit content — no template hacks.
+- **Why.** Authors edit chrome the same way they edit content. No template hacks.
 - **How.** Place notes in the conventional paths (see `docs/dev/default_template.md`).
 
 ### Vault-based frontmatter patches
