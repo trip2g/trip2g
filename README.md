@@ -1,15 +1,50 @@
 # trip2g
 
+**Publish your Obsidian vault as a website. Self-hosted MCP memory for AI agents.**
+
+Write in Obsidian, press Sync, your notes are live. The same self-hosted hub serves readers a website and serves agents an MCP endpoint, publishes to Telegram, and gates paid content. Under the hood it is a Markdown Operating System: every note is a file, and one note is both a web page for a human and a tool call for an agent.
+
+[![CI](https://github.com/trip2g/trip2g/actions/workflows/ci.yml/badge.svg)](https://github.com/trip2g/trip2g/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/trip2g/trip2g)](https://github.com/trip2g/trip2g/releases)
+[![GitHub stars](https://img.shields.io/github/stars/trip2g/trip2g?style=flat)](https://github.com/trip2g/trip2g/stargazers)
 [![Go](https://img.shields.io/badge/go-1.26-blue.svg)](https://golang.org)
 
-**Markdown Operating System.** A self-hosted server where every note is a file, the shared knowledge base is the kernel, and the same note is served two ways: to a human as a web page, to an agent as an MCP call. Obsidian vaults and Telegram channels go in; a website, an MCP endpoint, hub-to-hub federation, and note-triggered agents come out.
+**Why trip2g**
 
-trip2g is a live, multi-tenant server for markdown (Go, SQLite, MIT, no SaaS in the middle), not a local editor like Obsidian or a static build like Quartz.
+- **Your notes work twice.** One markdown file renders as a page for readers and answers `search` / `note_html` calls from any MCP client. No export step, no copy of your knowledge locked in a vector store you can't read.
+- **Your data stays yours.** Plain markdown, a git-cloneable vault, every edit a readable diff. No SaaS in the middle, and you can move out any time with `git clone`.
+- **One process to run.** A single Go binary on SQLite. It starts the same on a laptop, a small VM, or a container. MIT licensed.
 
-[Try the public hub →](#try-it-now) · [Self-host](#self-host) · [Docs](https://trip2g.com/en/user)
-
+<!-- DEMO GIF placeholder: ~15 seconds, edit a note in Obsidian, press Sync, refresh the page, then ask an MCP client about the change.
+     Drop the recording at docs/assets/demo.gif and replace this comment with:
+     ![15 second demo: edit in Obsidian, sync, the page and the agent both see it](docs/assets/demo.gif) -->
 ![trip2g landing](docs/assets/screenshot.webp)
+
+## Quickstart
+
+**See it work in 30 seconds.** Add the public knowledge hub to any MCP client and ask it a question. It searches all connected bases and answers with sources:
+
+```json
+{
+  "mcpServers": {
+    "trip2g": {
+      "url": "https://trip2g.com/_system/mcp"
+    }
+  }
+}
+```
+
+**Run your own hub:**
+
+```bash
+git clone https://github.com/trip2g/trip2g && cd trip2g
+docker compose up
+```
+
+Prefer no terminal? Get a [free cloud instance](https://simplecloud.2pub.me). All the options (single binary, Docker Compose, fly.io) are in the [self-host guide](https://trip2g.com/en/user/selfhosted).
+
+[Docs](https://trip2g.com/en/user) · [Getting started](https://trip2g.com/en/user/getting-started) · [MCP tools](https://trip2g.com/en/user/mcp) · [Self-host](#self-host) · [Contributing](CONTRIBUTING.md)
 
 ---
 
@@ -68,26 +103,6 @@ trip2g borrows the operating-system vocabulary because the primitives line up. E
 | Process executor | internal LLM run loop (`agentruntime`), tool allowlist + caps | branch |
 | Package manager | role-as-note: drop a note, `fleet` registers the agent | branch |
 | Resource limits | non-overridable token + step caps per run | branch |
-
----
-
-## Try it now
-
-Add the public knowledge hub to your MCP client:
-
-```json
-{
-  "mcpServers": {
-    "trip2g": {
-      "url": "https://trip2g.com/_system/mcp"
-    }
-  }
-}
-```
-
-Ask it a question. It searches all connected bases and returns answers with sources.
-
-Want your own? [Free cloud instance](https://simplecloud.2pub.me), no terminal needed.
 
 ---
 
