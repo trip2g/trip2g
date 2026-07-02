@@ -42,6 +42,33 @@ The lesson is not "the note is bad." It is that the note is a correction for a w
 
 A couple of nano-specific quirks worth noting: it over-specifies its calls, passing about seven arguments to `note_html` (every id field plus `match_id` plus `toc_path` at once) where Haiku passes two. Harmless, since the server resolves any single identifier, but it shows nano does not try to trim the call itself. And nano leaned on `expand` more than Haiku did, doing more structural navigation before committing to a read.
 
+## What it costs in money
+
+Tokens are the mechanism, but the bill is what you pay, and input and output are priced differently. I used Claude Haiku 4.5 at $1.00 per million input tokens and $5.00 per million output (Anthropic's published pricing), and gpt-5.4-nano at $0.05 input and $0.40 output (the OpenRouter rate at run time).
+
+| Model | Variant | $/query | $/1,000 queries |
+|-------|---------|---------|-----------------|
+| Haiku 4.5 | with note | $0.0204 | $20.37 |
+| Haiku 4.5 | without | $0.0220 | $22.05 |
+| nano | with note | $0.00100 | $1.00 |
+| nano | without | $0.00078 | $0.78 |
+
+Two things surprised me here, both worth stating plainly.
+
+First, input dominates the bill, not output. In this workload input tokens are around 80% of the cost, even though output is priced five to eight times higher per token. The reason is structural: every section or note the model reads comes back as input on the next turn, so a big read is a big input charge, while the model's own answers are short. What moves money is the number of round-trips and how much each read dumps into context, which is exactly what the note controls.
+
+Second, the note itself is a recurring input cost. It rides in the context on every call, so the real question is whether the per-call saving beats the per-call cost of carrying it. For Haiku it does: cutting a quarter of the tool calls removes more input than the note adds, so the note-guided run is about 8% cheaper, roughly $1.68 less per thousand queries. For nano it does not: nano was already frugal, so the note removes little while adding its own weight, and the guided run costs about 29% more, roughly 22 cents more per thousand queries.
+
+So the note is not free, and on an already-careful model it is a small net cost. It earns its keep on the wasteful models, where it cuts both the round-trips and the whole-note dumps that actually drive the bill. Since you do not choose which model connects to a public endpoint, paying a few cents per thousand queries on the frugal ones to cap the expensive tail is a trade worth making.
+
+## How the note reaches the model
+
+One honest limit on all of the above: this benchmark puts the note in the model's system prompt directly. It does not run a real MCP client handshake. So strictly, I measured "the note is in context", not "a real client fetched it and showed it to the model".
+
+That is a fair stand-in, because of where the note lands in a real setup. trip2g's server returns the note in the standard MCP `instructions` field of the `initialize` response, which is exactly the field a spec-compliant client is meant to surface into the model's context on connect. Putting the note in the system prompt models what a well-behaved client does with that field.
+
+I tried to confirm it end to end and got partway. Claude Code connects to the base cleanly as an HTTP MCP server, so the handshake works against a real client, but the account I tested with was out of credit, so I could not watch it actually answer a question. Codex runs but was too slow and token-heavy to measure headless in the time I gave it. So what is confirmed is that the server hands the note over in the right field and a real client connects to it; what is still pending is a live trace of a named client surfacing that field and then following the cheap loop. Treat these numbers as the ceiling for a client that surfaces `initialize.instructions`, not a promise that every client does.
+
 ## How the note earns it
 
 The note teaches one loop, and the loop is the whole trick:
@@ -66,14 +93,6 @@ Accuracy did not move. Both variants found the right note on every retrieval que
 One question cost more with the note than without. On "how do I publish a vault", the guided model kept drilling for the exact section (7+ calls) while the bare model stopped at a coarser answer sooner. Biasing toward precise section reads occasionally costs an extra call. It is a real trade, small, and worth it for the dump reduction everywhere else.
 
 And one question was a wash by design, at least for Haiku: "what does `expand` do" got answered from memory by both Haiku variants, because the model already knows what "expand" means in the abstract. A generic-knowledge question is not a retrieval test, so I scored it separately. nano, for what it is worth, searched even for that one rather than trusting its memory.
-
-## How the instructions reach the model
-
-One honest caveat about what this benchmark does and does not prove. The WITH variant puts the note straight into the model's system prompt. It does not run a live MCP client handshake, so strictly speaking I measured "the note is in context", not "a real client fetched it and showed it to the model".
-
-That is still a fair proxy, because of where the note lands in a real setup. trip2g's server returns the note content in the standard MCP `instructions` field of the `initialize` result. That is exactly the field a spec-compliant client (Claude Code, Cursor, and others) surfaces into the model's context when it connects. Injecting the note into the system prompt models what a well-behaved client does with `initialize.instructions`.
-
-The caveat on the caveat: the real benefit depends on the client actually surfacing that field. Some clients truncate the instructions or place them where the model weights them less. So these numbers are the ceiling for a compliant client, not a promise for every one.
 
 ## Method, so you can redo it
 

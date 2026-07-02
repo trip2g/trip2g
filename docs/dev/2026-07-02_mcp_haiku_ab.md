@@ -108,11 +108,40 @@ The note is not a universal win. It is a **correction for a wasteful default.** 
 | Section-read rate | 100% | 96% |
 | Correct | 100% | 100% |
 
-## Cost
+## Cost in dollars, not just tokens
 
-- haiku: 733,569 in + 36,473 out tokens across 48 runs ≈ $0.92 (Haiku 4.5 ~$1/M in, ~$5/M out).
-- nano: 590,560 in + 25,483 out tokens across 48 runs ≈ $0.04 (nano ~$0.05/M in, ~$0.40/M out).
-- Combined ≈ $0.96, well under the $2-per-model cap.
+Input and output bill at different rates, so the token deltas above do not translate 1:1 to money. Prices used (per million tokens): Claude Haiku 4.5 **$1.00 input / $5.00 output** (Anthropic published pricing, verified 2026-07-02); gpt-5.4-nano **$0.05 input / $0.40 output** (OpenRouter listed rate at run time — the figure I actually applied).
+
+Per-query and per-1,000-query cost, retrieval questions only:
+
+| Model | Variant | Avg in tok | Avg out tok | $/query | $/1,000 queries |
+|-------|---------|-----------|------------|---------|-----------------|
+| Haiku 4.5 | with note | 16,487 | 778 | $0.0204 | **$20.37** |
+| Haiku 4.5 | without | 17,859 | 837 | $0.0220 | **$22.05** |
+| nano | with note | 15,585 | 558 | $0.00100 | **$1.00** |
+| nano | without | 11,140 | 554 | $0.00078 | **$0.78** |
+
+**The economic verdict differs by model, and on two counts it is the opposite of the naive intuition.**
+
+1. **Input dominates cost here, not output.** In this workload input tokens are 78–81% of the bill, even though output is priced 5–8x higher per token. The reason: each `note_html`/`expand` result comes back as *input* on the next turn (the whole tool result rides in context), while the model's own replies are short. So the lever that moves money is round-trips and how much each tool result dumps into context, not output length.
+
+2. **The note is a recurring input cost.** It rides in the system prompt on every call (a real client gets it once via `initialize.instructions` and then carries it in context). So the question is whether the per-call saving beats the per-call cost of carrying the note.
+
+- **Haiku: the note pays for itself.** 26% fewer tool calls means fewer big tool-result inputs, which more than offsets the note's own input tokens. Net: **8% cheaper with the note** ($20.37 vs $22.05 per 1,000 queries, about $1.68 saved per 1,000).
+- **nano: the note costs money.** nano was already frugal (few dumps, near-100% section reads), so the note removes little waste while adding its own input tokens plus a nudge to explore more. Net: **29% more expensive with the note** ($1.00 vs $0.78 per 1,000, about $0.22 more per 1,000).
+
+Both are small absolute numbers at this scale, but the sign flips: ship the note and a wasteful model gets cheaper while a frugal one gets slightly dearer. Since you rarely control which model connects to a public endpoint, the note is still the right default — it caps the expensive tail at the price of a few cents per thousand queries on the frugal models.
+
+Total benchmark spend: haiku 733,569 in + 36,473 out ≈ $0.92; nano 590,560 in + 25,483 out ≈ $0.04. Combined ≈ **$0.96**, under the $2-per-model cap.
+
+## How real MCP clients (Claude Code / Codex) behave
+
+The benchmark injects the note into the system prompt; it does not drive a real MCP client. I ran a bounded live check to narrow that gap.
+
+- **Claude Code (v2.1.198): connection confirmed, inference not measured.** Adding the base as an HTTP MCP server (`claude mcp add --transport http`) connected cleanly (`✔ Connected`), so the transport and the server's `initialize` / `tools/list` handshake work with a real spec-compliant client. Driving an actual query failed on an account-credit limit ("Credit balance is too low"), so whether Claude Code forwards `initialize.instructions` into the model context, and whether the model then takes the cheap path, is **not measured here**.
+- **Codex CLI: not measured.** The CLI runs, but headless it is slow and token-heavy (a trivial prompt spent ~35k tokens), and wiring up the full MCP retrieval loop headless was out of scope for a bounded check. Marked not measured rather than forcing a number.
+
+**Confirmed vs pending.** Confirmed: the server returns the note in the standard MCP `instructions` field of the `initialize` result (`internal/case/mcp/resolve.go:154`, `result["instructions"] = content`), and a real client (Claude Code) connects and completes the handshake against it. Pending: an end-to-end measurement showing a named client surfacing that field into the model and the model following the cheap loop. The system-prompt injection in this benchmark models the ceiling for a client that surfaces `initialize.instructions`; the two live clients here neither confirm nor refute that they do so.
 
 ## Reproduce
 
