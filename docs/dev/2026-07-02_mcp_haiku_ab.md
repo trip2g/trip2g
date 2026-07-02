@@ -138,10 +138,18 @@ Total benchmark spend: haiku 733,569 in + 36,473 out ≈ $0.92; nano 590,560 in 
 
 The benchmark injects the note into the system prompt; it does not drive a real MCP client. I ran a bounded live check to narrow that gap.
 
-- **Claude Code (v2.1.198): connection confirmed, inference not measured.** Adding the base as an HTTP MCP server (`claude mcp add --transport http`) connected cleanly (`✔ Connected`), so the transport and the server's `initialize` / `tools/list` handshake work with a real spec-compliant client. Driving an actual query failed on an account-credit limit ("Credit balance is too low"), so whether Claude Code forwards `initialize.instructions` into the model context, and whether the model then takes the cheap path, is **not measured here**.
+- **Claude Code (v2.1.198): confirmed on subscription auth, cheap path observed.** Run the CLI on its logged-in Claude subscription (flat billing) rather than a per-token API key by unsetting `ANTHROPIC_API_KEY` in the subprocess env — with the key set, `claude` bills the console/API path and fails on "Credit balance is too low"; with it unset, `claude` falls back to the OAuth subscription credentials and runs. Added the base as an HTTP MCP server at local scope (`claude mcp add --transport http`), which connected (`✔ Connected`), then asked benchmark questions with `--output-format stream-json --verbose` to see tool calls. On "how do I set up federation with a private peer using an HMAC secret", the trace was:
+
+  ```
+  mcp__trip2g-docs__search    {"query": "federation private peer HMAC secret setup"}
+  mcp__trip2g-docs__note_html {"pid": 658, "toc_path": ["Adding a private peer (two-step exchange)"]}
+  ```
+
+  That is exactly the cheap path the note teaches: `search` for a pointer, then `note_html` with the matched `toc_path` to read one section, no whole-note dump. It answered correctly and cited the note. So a real, spec-compliant client on subscription auth drives the drill-down loop end to end.
+
 - **Codex CLI: not measured.** The CLI runs, but headless it is slow and token-heavy (a trivial prompt spent ~35k tokens), and wiring up the full MCP retrieval loop headless was out of scope for a bounded check. Marked not measured rather than forcing a number.
 
-**Confirmed vs pending.** Confirmed: the server returns the note in the standard MCP `instructions` field of the `initialize` result (`internal/case/mcp/resolve.go:154`, `result["instructions"] = content`), and a real client (Claude Code) connects and completes the handshake against it. Pending: an end-to-end measurement showing a named client surfacing that field into the model and the model following the cheap loop. The system-prompt injection in this benchmark models the ceiling for a client that surfaces `initialize.instructions`; the two live clients here neither confirm nor refute that they do so.
+**Confirmed vs pending.** Confirmed: the server returns the note in the standard MCP `instructions` field of the `initialize` result (`internal/case/mcp/resolve.go:154`, `result["instructions"] = content`); a real client (Claude Code, on subscription billing) connects, completes the handshake, and its model follows the taught `search` → `note_html(toc_path)` loop against the live base. One honest limit: a single trace cannot fully separate "the client surfaced `initialize.instructions` and the model obeyed it" from "the model would have drilled down on its own" — the benchmark's own WITHOUT arm shows models take the cheap path some of the time unprompted. What the live run establishes is that the loop works in a real client on the subscription billing path that actually matters for deployment; the A/B quantifies how much the note shifts that behavior in a controlled setting.
 
 ## Reproduce
 
