@@ -64,7 +64,9 @@ func noteLang(n *NoteView) string {
 
 // pickBareCandidate resolves a bare [[Name]] link among candidates sharing the
 // basename. Global mode (default) keeps only the global-shallowest step, matching
-// Obsidian. Scoped mode (opt-in) applies the ladder: same folder as source →
+// Obsidian; among candidates at equal depth, same-language ones are preferred so
+// that [[bar]] in ru/foo.md resolves to ru/bar.md when both en/bar.md and
+// ru/bar.md exist. Scoped mode (opt-in) applies the ladder: same folder as source →
 // same language as source (shallowest) → global shallowest. Every step breaks
 // ties lexicographically by path.
 func (nvs *NoteViews) pickBareCandidate(source *NoteView, candidates []*NoteView) *NoteView {
@@ -92,6 +94,19 @@ func (nvs *NoteViews) pickBareCandidate(source *NoteView, candidates []*NoteView
 		}
 	}
 
+	// Global mode: shallowest wins. Among candidates at the same shallowest
+	// depth, prefer same-language ones to avoid spurious cross-language warnings.
+	if source != nil {
+		if lang := noteLang(source); lang != "" {
+			globalBest := shallowestNote(candidates)
+			globalDepth := strings.Count(globalBest.Path, "/")
+			if sameLangAtDepth := filterNotes(candidates, func(c *NoteView) bool {
+				return noteLang(c) == lang && strings.Count(c.Path, "/") == globalDepth
+			}); len(sameLangAtDepth) > 0 {
+				return shallowestNote(sameLangAtDepth)
+			}
+		}
+	}
 	return shallowestNote(candidates)
 }
 
