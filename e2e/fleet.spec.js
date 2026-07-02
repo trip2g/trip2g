@@ -110,7 +110,9 @@ test.describe.serial('Fleet LLM pipeline (dockerized)', () => {
     'Write your analysis to segments/sample.md.',
   ].join('\n');
 
-  test.beforeAll({ timeout: 90000 }, async ({ request }) => {
+  test.beforeAll(async ({ request }) => {
+    // Extend this hook's timeout (beforeAll requires test.setTimeout, not options arg).
+    test.setTimeout(90000);
     // Use the API-based sign-in (faster than browser UI, no locator waiting).
     // graphqlSignIn returns a raw JWT; construct the cookie header from it.
     const token = await graphqlSignIn(request, 'hello@example.com', '111111', { useCache: false });

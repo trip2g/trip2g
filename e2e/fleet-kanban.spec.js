@@ -18,6 +18,7 @@
 
 import { test, expect } from '@playwright/test';
 import { spawn } from 'child_process';
+import { unlinkSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { signInAsAdmin } from './helpers/auth.js';
@@ -76,6 +77,8 @@ async function waitJobs(request) {
 // ---------------------------------------------------------------------------
 
 test.describe.serial('Fleet kanban vertical slice', () => {
+  // go build + fleet reconcile + agent triage: needs more than the default 30 s.
+  test.setTimeout(120000);
   /** @type {string} Admin session cookie (trip2g_e2e=...). */
   let cookie;
   /** @type {string} Full-admin API key value (for X-Api-Key header). */
@@ -84,6 +87,8 @@ test.describe.serial('Fleet kanban vertical slice', () => {
   let stub;
   /** @type {import('child_process').ChildProcess} */
   let fleetProc;
+  /** @type {string} Path to the pre-built fleet binary. */
+  let fleetBin;
 
   // Seeded board content — card is already @status:doing so the stub's find
   // matches immediately when the fleet fires on the user edit.
@@ -122,6 +127,8 @@ test.describe.serial('Fleet kanban vertical slice', () => {
   ].join('\n');
 
   test.beforeAll(async ({ browser, request }) => {
+    // Extend this hook's timeout to cover go build + fleet reconcile.
+    test.setTimeout(120000);
     // signInAsAdmin needs a Page, not a Browser — create one and close after.
     const page = await browser.newPage();
     cookie = await signInAsAdmin(page);
@@ -182,6 +189,23 @@ test.describe.serial('Fleet kanban vertical slice', () => {
     await waitJobs(request);
 
     // -----------------------------------------------------------------------
+    // Pre-build the fleet binary so `go run` cold-compile time (~10-30 s) does
+    // not eat into the reconcile poll budget.
+    // -----------------------------------------------------------------------
+    fleetBin = `/tmp/fleet-e2e-${process.pid}`;
+    await new Promise((resolve, reject) => {
+      const proc = spawn('go', ['build', '-o', fleetBin, './cmd/fleet'], {
+        cwd: REPO_ROOT,
+        stdio: 'pipe',
+      });
+      proc.stderr?.pipe(process.stderr);
+      proc.on('close', (code) => {
+        if (code !== 0) reject(new Error(`go build ./cmd/fleet exited ${code}`));
+        else resolve();
+      });
+    });
+
+    // -----------------------------------------------------------------------
     // Start the deterministic stub LLM.
     // Call 1 → patch_note({path, find: '@status:doing', replace: '@status:doing @triaged'})
     // Call 2+ → finish({answer: 'triaged'})
@@ -199,9 +223,8 @@ test.describe.serial('Fleet kanban vertical slice', () => {
     // stdio: 'pipe' keeps fleet output out of the test runner unless debugging.
     // -----------------------------------------------------------------------
     fleetProc = spawn(
-      'go',
+      fleetBin,
       [
-        'run', './cmd/fleet',
         '-fleet-id', 'e2e',
         '-listen', '127.0.0.1:9099',
         '-callback-url', `http://${FLEET_CALLBACK_HOST}:9099`,
@@ -240,6 +263,7 @@ test.describe.serial('Fleet kanban vertical slice', () => {
   test.afterAll(async () => {
     if (fleetProc) fleetProc.kill('SIGTERM');
     if (stub) stub.server.close();
+    if (fleetBin) try { unlinkSync(fleetBin); } catch {}
   });
 
   test('user edit → agent triage → one delivery, board updated, no re-trigger', async ({ request }) => {
@@ -278,7 +302,7 @@ test.describe.serial('Fleet kanban vertical slice', () => {
           `, { f: { paths: [BOARD_PATH] } });
           return d.notePaths[0]?.content ?? '';
         },
-        { timeout: 30000, intervals: [1000] },
+        { timeout: 60000, intervals: [1000] },
       )
       .toContain('@status:doing @triaged');
 
