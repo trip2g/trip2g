@@ -197,18 +197,29 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 
 	policy := spec.Sandbox.withDefaults(spec.Timeout)
 	sandboxed := policy.Mode != SandboxOff
+
+	// Fail-closed: when the enforcing mode is requested but the OS cannot
+	// sandbox at all, REFUSE the run — never run untrusted code unconfined.
 	if sandboxed && !sandboxSupportedOS {
+		if policy.Mode.enforcing() {
+			return "", "", false, fmt.Errorf("coderun: sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
+		}
 		warnSandboxFallback("unsupported OS", nil)
 		sandboxed = false
 	}
 
 	var cmd *exec.Cmd
 	if sandboxed {
-		var sbErr error
-		cmd, sbErr = sandboxCommand(runCtx, fullArgv, workDir, policy)
+		sbCmd, sbErr := sandboxCommand(runCtx, fullArgv, workDir, policy)
 		if sbErr != nil {
+			// Enforcing mode: a sandbox that cannot be built refuses the run.
+			if policy.Mode.enforcing() {
+				return "", "", false, fmt.Errorf("coderun: sandbox setup failed: %w", sbErr)
+			}
 			warnSandboxFallback("sandbox setup failed", sbErr)
 			sandboxed = false
+		} else {
+			cmd = sbCmd
 		}
 	}
 	if !sandboxed {
@@ -219,9 +230,14 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 
 	runErr := cmd.Run()
 	// A sandboxed command that failed to START never ran the child: namespace
-	// creation was denied (e.g. unprivileged userns disabled). Degrade to the
-	// pre-sandbox behavior with a warning instead of failing every code run.
+	// creation was denied (e.g. unprivileged userns disabled) or a confinement
+	// step failed. Enforcing mode REFUSES the run (the code never ran, so this
+	// is a clean failure, not a partial one). BestEffort degrades to plain
+	// execution with a per-run warning.
 	if runErr != nil && sandboxed && cmd.ProcessState == nil && runCtx.Err() == nil {
+		if policy.Mode.enforcing() {
+			return "", "", false, fmt.Errorf("coderun: sandboxed child failed to start; refusing to run unsandboxed: %w", runErr)
+		}
 		warnSandboxFallback("sandboxed child failed to start", runErr)
 		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
 		prepareCmd(cmd, workDir, env, &outBuf, &errBuf, limit)
