@@ -1,0 +1,9 @@
+.content__body li input[type="checkbox"]:not(:disabled) {
+	cursor: pointer;
+}
+
+[trip2g_user_tasklist_error] {
+	color: var(--color-error, #c0392b);
+	font-size: 0.875rem;
+	margin-top: 0.5rem;
+}

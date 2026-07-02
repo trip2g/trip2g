@@ -226,6 +226,12 @@ func (n *Note) HasCharts() bool {
 	return len(n.nv.Charts) > 0
 }
 
+// HasTaskListItems reports whether the note contains GFM task checkboxes.
+// Drives the conditional admin task-list mount on note pages.
+func (n *Note) HasTaskListItems() bool {
+	return n.nv.HasTaskListItems()
+}
+
 // HasCodeLanguage reports whether the note contains a fenced code block with the
 // given language (case-insensitive). Drives conditional loading of per-language
 // widget scripts (e.g. mermaid).

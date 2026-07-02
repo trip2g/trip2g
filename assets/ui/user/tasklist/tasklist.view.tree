@@ -1,0 +1,5 @@
+$trip2g_user_tasklist $mol_view
+	sub /
+	Error $mol_view
+		sub /
+			<= error_message \
