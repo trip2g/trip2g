@@ -13,6 +13,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -79,7 +80,7 @@ func run() error {
 	// --dry-run: connect, print + flag each role's resolved config, then exit
 	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
 	if cli.dryRun {
-		runDryRun(ctx, lg, discovery, cli.cfg)
+		runDryRun(ctx, lg, discovery, cli.cfg, os.Stdout)
 		return nil
 	}
 
@@ -113,11 +114,14 @@ func run() error {
 		case srvListenErr := <-srvErrCh:
 			return fmt.Errorf("http server: %w", srvListenErr)
 		case <-ctx.Done():
-			_ = gracefulShutdown(lg, srv, reconciler.Deregister, cli.cfg.KeepWebhooksOnShutdown, cli.cfg.ShutdownGrace)
+			shutdownErr := gracefulShutdown(lg, srv, reconciler.Deregister, cli.cfg.KeepWebhooksOnShutdown, cli.cfg.ShutdownGrace)
 			select {
 			case srvListenErr := <-srvErrCh:
 				return fmt.Errorf("http server: %w", srvListenErr)
 			default:
+				if shutdownErr != nil {
+					return fmt.Errorf("graceful shutdown: %w", shutdownErr)
+				}
 				return nil
 			}
 		case <-ticker.C:
@@ -446,12 +450,12 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 // runDryRun discovers (parses) every role over the admin lane, prints each
 // role's resolved config with a flag on any that fail Validate, and returns
 // without touching webhooks. It is the fleet's pre-flight doctor.
-func runDryRun(ctx context.Context, lg logger.Logger, d *fleet.Discovery, cfg fleet.Config) {
+func runDryRun(ctx context.Context, lg logger.Logger, d *fleet.Discovery, cfg fleet.Config, out io.Writer) {
 	roles, errs := d.DiscoverParsed(ctx)
 	for _, e := range errs {
 		lg.Warn("dry-run: parse error", "err", e)
 	}
-	fmt.Fprint(os.Stdout, reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
+	fmt.Fprint(out, reportRoles(roles, cfg.OfferedTools, cfg.DefaultModel))
 }
 
 // reportRoles renders a human-readable resolved-config report for each role,

@@ -365,3 +365,32 @@ func TestEffectiveGrace_FloorsNonPositive(t *testing.T) {
 	require.Equal(t, 30*time.Second, effectiveGrace(-5), "negative must floor to 30s")
 	require.Equal(t, 45*time.Second, effectiveGrace(45), "positive must pass through")
 }
+
+// TestGracefulShutdown_DrainFailureReturnsError asserts that a drain that
+// cannot finish within the grace window surfaces a non-nil error (run()
+// propagates it so a supervisor can tell a failed drain from a clean exit).
+func TestGracefulShutdown_DrainFailureReturnsError(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	defer close(release)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		close(entered)
+		<-release
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv, addr := newIdleTestServer(t, mux)
+
+	go func() {
+		resp, httpErr := http.Get("http://" + addr + "/")
+		if httpErr == nil {
+			resp.Body.Close()
+		}
+	}()
+	<-entered // handler now stuck past any 50ms grace
+
+	err := gracefulShutdown(&logger.DummyLogger{}, srv, nil, false, 50*time.Millisecond)
+	require.Error(t, err, "drain incomplete within grace must be reported, not swallowed")
+}
