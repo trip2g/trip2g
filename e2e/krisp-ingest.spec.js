@@ -26,7 +26,6 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { graphqlSignIn } from './helpers/auth.js';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
@@ -73,7 +72,7 @@ async function gqlApi(request, apiKey, query, variables = {}) {
 // had: double-quoted Python vs the doc's single quotes).
 // ---------------------------------------------------------------------------
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = process.cwd();
 const roleSeed = fs.readFileSync(
   path.join(REPO_ROOT, 'docs/fleet/krisp/roles/transcript-ingest.md'),
   'utf8',

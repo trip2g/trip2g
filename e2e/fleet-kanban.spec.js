@@ -19,14 +19,13 @@
 import { test, expect } from '@playwright/test';
 import { spawn } from 'child_process';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { signInAsAdmin } from './helpers/auth.js';
 import { startStubLLM } from './helpers/stub-llm.js';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:20081';
 const GRAPHQL_URL = `${APP_URL}/_system/graphql`;
 // REPO_ROOT is the worktree root — where go run ./cmd/fleet will be executed.
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = process.cwd();
 
 // FLEET_CALLBACK_HOST controls the callback URL the fleet registers with trip2g.
 // Pure-host run: 127.0.0.1 (default). Docker compose run (app in container,
