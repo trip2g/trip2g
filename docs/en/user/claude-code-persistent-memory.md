@@ -1,30 +1,56 @@
 ---
 title: "Persistent memory for Claude Code: a self-hosted setup that survives sessions"
-description: "Give Claude Code long-term memory it keeps between sessions: a local trip2g server over MCP, memory stored as markdown notes you can read and edit. Setup, verification, FAQ."
+description: "Claude Code has native memory (CLAUDE.md + auto memory) that is machine-local. This guide covers native memory first, then a self-hosted trip2g server for memory shared across machines and a team, over MCP."
 free: true
 lang_redirect: "[[ru/user/claude-code-persistent-memory]]"
 ---
 
 Every new Claude Code session starts blank. You explain the project layout again, the decision you made last Tuesday again, the gotcha in the build script again. Two minutes of re-explaining per session turns into hours per month, and the agent still repeats mistakes it already solved once.
 
-This guide fixes that with a self-hosted memory server: at the end you have a local trip2g instance Claude Code talks to over MCP, where every durable fact is a markdown note. Claude writes notes as it works and searches them in later sessions. You can open the same notes in Obsidian or a browser and see exactly what your agent remembers.
+The honest first answer surprises most people: **Claude Code already has memory built in.** Before reaching for any server or plugin, you should know what native memory does, and the one thing it does not do. This guide covers native memory first, then shows the self-hosted trip2g route for the case native memory cannot cover: memory that is durable, shared across machines, and shared with a team.
 
 *Updated: July 2026.*
 
-## Ways to give Claude Code memory
+## Start here: Claude Code's native memory
 
-Be honest about the alternatives first, because for some setups a simpler option is the right call:
+Claude Code has two native memory layers, and for a solo developer on one machine they are often enough.
 
-| Method | Effort | Memory form | Cross-machine | Best for |
+**`CLAUDE.md` (you write it).** A markdown file in your project (or `~/.claude/CLAUDE.md` for global rules) loaded into every session. This is where your instructions live: coding style, commit conventions, commands to run. You maintain it; it travels with the repo through git.
+
+**Auto memory (Claude writes it).** Since late 2025, Claude Code also keeps its own notebook. As it works it saves build commands, debugging insights, and architecture notes to `~/.claude/projects/<encoded-path>/memory/MEMORY.md`, and injects that file into the system prompt at the start of every session. `MEMORY.md` stays a concise index under 200 lines (that is the load cap at startup); when notes pile up, Claude spills detail into topic files like `debugging.md` next to it. It is on by default; run `/memory` to browse or toggle it. You can also scope rules to paths with `.claude/rules/*.md`.
+
+**Be clear about what native memory does not do**, because this is exactly the gap the tools below fill:
+
+- **It is machine-local.** Auto memory lives under `~/.claude/` on one computer and never touches git. Switch laptops and your agent's accumulated notes do not come with you.
+- **It is not shared with a team.** There is no built-in way for a teammate's Claude to read what yours learned.
+- **It is best-effort.** Anthropic's own docs note there is no guarantee of strict compliance with what is written; Claude decides what is worth saving and may not reload it perfectly.
+- **It does not scale by search.** `MEMORY.md` is loaded whole up to the cap, not queried; past a couple hundred lines the tail is not guaranteed in context.
+
+If you work solo on one machine, enable auto memory, keep your conventions in `CLAUDE.md`, and you may not need anything else. Local plugins like MemPalace (MIT, on-device, roughly a millisecond-scale query) or claude-mem (AGPL-3.0, hooks plus SQLite/FTS5) add search on top while staying single-machine.
+
+## When you need more than native memory
+
+Reach past native memory when one of these is true:
+
+- your memory must **follow you across machines** (desktop, laptop, CI);
+- a **team** should share one memory the agent reads;
+- you want memory that is **durable and versioned**, auditable like documents, and recoverable;
+- you want the same memory **queryable over MCP and browsable as a website**.
+
+That is where a self-hosted server earns its place. The rest of this guide sets up trip2g for exactly that: memory as markdown notes on a server you control, shared across machines and teammates, read by the agent over MCP.
+
+## The options at a glance
+
+| Method | Effort | Memory form | Cross-machine / team | Best for |
 |---|---|---|---|---|
-| `CLAUDE.md` (built-in) | none | one markdown file, loaded every session | via git | project conventions, short and stable facts |
-| Official `@modelcontextprotocol/server-memory` | 1 minute | knowledge graph in a local JSONL file | no | quick local memory on one machine |
-| Mem0 and similar | minutes to hours | auto-extracted facts + embeddings | yes | zero-discipline capture, managed cloud |
-| trip2g (this guide) | ~10 minutes | markdown notes on your own server | yes | memory you read, edit, share, and version |
+| `CLAUDE.md` (built-in) | none | one markdown file, loaded every session | via git | your instructions and conventions |
+| Auto memory (built-in) | none (on by default) | `MEMORY.md` + topic files, machine-local | no | zero-effort per-machine learning |
+| MemPalace / claude-mem | minutes | local store (MIT / AGPL-3.0) | no | on-device search, still one machine |
+| Official `@modelcontextprotocol/server-memory` | 1 minute | knowledge graph in a local JSONL file | no | quick local graph memory |
+| Mem0 | minutes to hours | auto-extracted facts + embeddings | yes (cloud or self-host) | zero-discipline capture, managed cloud |
+| trip2g (this guide) | ~10 minutes | markdown notes on your own server | **yes** | shared, durable, published memory you can read and edit |
 
-If all you need is "remember the coding style", put it in `CLAUDE.md` and stop here. Claude Code loads it automatically and it costs nothing.
-
-Come back to this guide when memory outgrows one file: when you want search instead of one always-loaded blob, history of what changed, several machines or teammates sharing one memory, and the ability to audit it like normal documents.
+trip2g's honest lane is the last row's difference: not "another local memory," but memory that is shared and publishable. For a single machine, native auto memory or a local plugin is often the right, cheaper call, and the concession is real.
 
 ## Prerequisites
 
@@ -115,6 +141,17 @@ and quote what you find.
 
 If the search comes back with the fact you just wrote, memory works end to end: file → sync → index → MCP recall. If `/mcp` shows a connection error, check the adapter path is absolute and the token starts with `t2g_`.
 
+For a stronger, cross-session probe (the test that actually proves persistence): tell Claude to remember something specific, then close the session entirely and open a fresh one:
+
+```
+Session 1: "Remember that this project deploys with `make ship`, not `make deploy`.
+            Write it to memory."
+(close Claude Code, reopen in the same project)
+Session 2: "How do I deploy this project?"
+```
+
+If Session 2 answers `make ship` without you re-explaining, memory survived a real session boundary. Run the same probe on a second machine (with `TRIP2G_MCP_URL` pointed at a shared instance) and the answer still holds, which is the thing native auto memory cannot do.
+
 ## Step 5. Teach Claude to use it
 
 Memory only compounds if the agent writes to it. Add rules to your `CLAUDE.md`:
@@ -132,7 +169,7 @@ From now on, sessions start with recall instead of re-explanation. The retrieval
 ## The friction, admitted
 
 - **You run a server.** Docker must be up for memory to be reachable. The official memory server and `CLAUDE.md` have no such dependency.
-- **Nothing is captured automatically.** If neither you nor the agent writes a note, nothing is remembered. Tools like Mem0 extract facts from conversation without being asked; trip2g trades that convenience for memory you can audit.
+- **Nothing is captured into the shared base automatically.** Native auto memory does save notes on its own, but only to the local machine. For memory to reach the shared, cross-machine base, you (or the agent, once instructed) write a note. Mem0 extracts facts from conversation without being asked; trip2g trades that convenience for memory you can audit and share.
 - **Two credentials.** The admin API key (sync) and the personal token (MCP) are different things, and the error messages when you swap them are not great yet.
 
 ## Beyond one machine
@@ -145,10 +182,13 @@ Everything above runs on localhost, but the server does not have to be local. Po
 `CLAUDE.md` is one file loaded into every session whole; it costs context every time and does not scale past a few hundred lines. The memory server is searched on demand: hundreds of notes cost nothing until one is actually needed.
 
 **How is this different from Claude Code's auto memory?**
-Claude Code's built-in memory keeps its notes per project on one machine. A memory server is a database with search, versions, and access control, shared across machines and agents. They combine well: keep habits in `CLAUDE.md`, knowledge in the server.
+Auto memory (`~/.claude/projects/<hash>/memory/MEMORY.md`) is machine-local, best-effort, and loaded whole up to a ~200-line cap; it is not shared with other machines or teammates and is not searched. A memory server is a database with search, versions, and access control, shared across machines and agents. They combine well: let auto memory handle per-machine habits, and use the server for durable, shared knowledge.
+
+**If Claude Code already has memory, why run a server at all?**
+For a solo developer on one machine, you often should not; enable auto memory and keep conventions in `CLAUDE.md`. Run a server when memory must cross machines, be shared with a team, be versioned and auditable, or double as a browsable website. Those four are the whole reason this page exists.
 
 **Does Claude write memories on its own?**
-Only if instructed (Step 5). This is deliberate: the memory contains what was intentionally recorded, and nothing else. If you want automatic capture, Mem0 is the better tool and we say so above.
+Into native auto memory, yes, on the local machine. Into the shared trip2g base, only if instructed (Step 5), which is deliberate: the shared memory contains what was intentionally recorded. If you want automatic extraction from conversation, Mem0 is the better tool and we say so above.
 
 **Can I edit what Claude remembers?**
 Yes. Memory notes are files in `./memory-vault`; edit them in Obsidian or any editor, and the watcher syncs the change in ~500 ms. Deleting the file deletes the memory.

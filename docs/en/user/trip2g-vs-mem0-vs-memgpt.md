@@ -11,6 +11,8 @@ There is no best overall; there is a best fit per constraint. This page gives ea
 
 *Updated: July 2026. Competitor claims are taken from their own docs and repos, as of this date.*
 
+**Before any framework, check the baseline.** If your agent is Claude Code, it already has native memory: `CLAUDE.md` plus auto memory (Claude's own notes under `~/.claude/`), on by default. It is free and needs no setup, but it is machine-local, best-effort, and not shared with a team, so it is not in the matrix below as a framework. If you work solo on one machine, native memory (or a local plugin like MemPalace, MIT, on-device) may be all you need; the tools here earn their place when memory must be shared, durable, or queryable at scale. See [[en/user/claude-code-persistent-memory|persistent memory for Claude Code]] for the native-first walkthrough.
+
 ## Decision matrix
 
 | | Mem0 | Letta (MemGPT) | Zep | trip2g |
@@ -32,7 +34,7 @@ Read the losing rows honestly. trip2g does not extract memories automatically, p
 
 Mem0 sits between your agent and an LLM, watches the conversation, extracts facts, and serves them back later. It is the most popular option by community size, it has a managed cloud for zero-ops adoption, and its self-reported LOCOMO numbers beat naive long-context baselines while cutting tokens.
 
-The tradeoff: extraction is itself an LLM pipeline. You pay per-message extraction calls, and what lands in memory is the extractor's judgment, not yours; auditing why the agent "remembers" something means digging through a dashboard rather than reading a document.
+The tradeoff: extraction is itself an LLM pipeline. You pay per-message extraction calls, and what lands in memory is the extractor's judgment, not yours; auditing why the agent "remembers" something means digging through a dashboard rather than reading a document. On cost: the managed free tier is capped (on the order of 10k stored memories and 1k retrievals per month as of July 2026), graph memory is a paid feature, and self-hosting brings up its own stack (Docker plus a vector store such as Qdrant, and a local model runner for extraction).
 
 **Pick Mem0 when** you want memory that accumulates with zero authoring discipline, you are fine with an extraction pipeline in the loop, and a managed cloud is a plus rather than a concern.
 
