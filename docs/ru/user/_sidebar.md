@@ -57,6 +57,7 @@ title: "Навигация"
 - [[ru/user/renderlayout|Превью лейаута]]
 - [[ru/user/change_webhooks|Вебхуки при изменении]]
 - [[ru/user/cron_webhooks|Вебхуки по расписанию]]
+- [[ru/user/fleet|Флит: агентский сайдкар]]
 - [[ru/user/update_notes|updateNotes: редактирование через API]]
 - [[ru/user/forms|Формы в заметках]]
 - [[ru/user/Knowlume Adapter|Knowlume Adapter]]

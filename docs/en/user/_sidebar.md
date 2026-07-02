@@ -50,6 +50,7 @@ title: "Navigation"
 ### Automation
 
 - [[en/user/webhooks|Webhooks & automation]]
+- [[en/user/fleet|Fleet: the agent sidecar]]
 - [[en/user/forms|Forms in notes]]
 - [[en/user/update_notes|updateNotes: programmatic editing]]
 - [[en/user/knowlume-adapter|Knowlume Adapter]]
