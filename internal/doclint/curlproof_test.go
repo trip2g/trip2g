@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/CloudyKit/jet/v6"
-	"github.com/valyala/fasthttp"
 
 	"trip2g/internal/logger"
 	"trip2g/internal/mdchunk"
@@ -25,8 +24,9 @@ type pubEnv struct {
 func (pubEnv) PublicURL() string { return "https://trip2g.com" }
 
 // TestCurlProof_ContentTypeNotes loads the real docs/ vault and renders the SEO
-// notes exactly as the request path does, printing the Content-Type + body so a
-// human (and the PR) can see /robots.txt, /llms.txt, and a normal note behave.
+// notes exactly as the request path does, confirming Content-Type + body for
+// /robots.txt (content_type frontmatter + robots layout), /llms.txt
+// (content_type frontmatter, no layout), and a normal note (default text/html).
 func TestCurlProof_ContentTypeNotes(t *testing.T) {
 	ctx := context.Background()
 	env := pubEnv{newFsEnv("../../docs", &logger.DummyLogger{})}
@@ -37,10 +37,15 @@ func TestCurlProof_ContentTypeNotes(t *testing.T) {
 	nvs := ldr.NoteViews()
 	layouts := ldr.Layouts()
 
-	// --- /robots.txt: served via the `robots` Jet layout ---
+	// --- /robots.txt: content_type frontmatter + robots Jet layout ---
 	robots := nvs.GetByPath("/robots.txt")
 	if robots == nil {
 		t.Fatal("no note at /robots.txt (docs/robots.md slug)")
+	}
+	robotsNote := templateviews.NewNote(robots)
+	robotsCT := robotsNote.M().GetString("content_type", "")
+	if !strings.HasPrefix(robotsCT, "text/plain") {
+		t.Errorf("robots frontmatter content_type = %q, want text/plain", robotsCT)
 	}
 	if robots.Layout != "robots" {
 		t.Fatalf("robots note layout = %q, want robots", robots.Layout)
@@ -49,24 +54,19 @@ func TestCurlProof_ContentTypeNotes(t *testing.T) {
 	if !ok || layout.View == nil {
 		t.Fatal("robots layout not loaded")
 	}
-	rc := &fasthttp.RequestCtx{}
-	rc.SetContentType("text/html; charset=utf-8")
+	// Render through the layout (body-only, no HTTP ctx) to confirm the Sitemap line.
 	vars := make(jet.VarMap)
-	vars["note"] = reflect.ValueOf(templateviews.NewNote(robots))
+	vars["note"] = reflect.ValueOf(robotsNote)
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(nvs, ""))
 	vars["title"] = reflect.ValueOf(robots.Title)
 	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
-	vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{Ctx: rc})
-	if err := layout.View.Execute(rc, vars, nil); err != nil {
+	var robotsBuf strings.Builder
+	if err := layout.View.Execute(&robotsBuf, vars, nil); err != nil {
 		t.Fatalf("execute robots layout: %v", err)
 	}
-	robotsBody := string(rc.Response.Body())
-	robotsCT := string(rc.Response.Header.ContentType())
+	robotsBody := robotsBuf.String()
 	t.Logf("\n=== curl -i https://trip2g.com/robots.txt ===\nContent-Type: %s\n\n%s\n", robotsCT, robotsBody)
 
-	if !strings.HasPrefix(robotsCT, "text/plain") {
-		t.Errorf("robots Content-Type = %q, want text/plain", robotsCT)
-	}
 	if !strings.Contains(robotsBody, "User-agent: *") {
 		t.Error("robots body missing User-agent")
 	}
@@ -74,7 +74,7 @@ func TestCurlProof_ContentTypeNotes(t *testing.T) {
 		t.Error("robots body missing absolute Sitemap line")
 	}
 
-	// --- /llms.txt: served via the content_type frontmatter (plain note) ---
+	// --- /llms.txt: content_type frontmatter, no layout → raw body ---
 	llms := nvs.GetByPath("/llms.txt")
 	if llms == nil {
 		t.Fatal("no note at /llms.txt (docs/llms.md slug)")
@@ -93,7 +93,7 @@ func TestCurlProof_ContentTypeNotes(t *testing.T) {
 		t.Error("llms body missing the llms.txt summary")
 	}
 
-	// --- a normal note still serves text/html (no content_type, no plain layout) ---
+	// --- a normal note has no content_type → default text/html render path ---
 	var normal string
 	for _, n := range nvs.List {
 		if n.Layout == "" && n.Free && templateviews.NewNote(n).M().GetString("content_type", "") == "" &&

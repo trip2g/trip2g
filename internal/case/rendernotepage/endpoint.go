@@ -172,17 +172,17 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layout = resp.Config.DefaultLayout
 	}
 
-	// content_type frontmatter with no HTML layout: serve the raw markdown/text
-	// body directly (no HTML wrapper), like custom layouts render straight to ctx.
-	// A Jet layout can instead call response.SetContentType(); this branch handles
-	// the pure-note case (e.g. robots.txt/llms.txt served as plain notes). Skips
-	// the page cache, which only stores gzipped text/html.
-	if layout == "" && resp.NoteView != nil && resp.Note != nil {
-		if ct := strings.TrimSpace(resp.NoteView.M().GetString("content_type", "")); ct != "" {
-			ctx.SetContentType(ct)
-			ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
-			return nil, nil
-		}
+	// content_type frontmatter: the note declares its own Content-Type so the
+	// render path serves it as the specified MIME type instead of text/html.
+	// Two sub-cases, both skip the page cache (which only stores text/html):
+	//   - content_type + layout: render the Jet layout (body from template,
+	//     e.g. robots.md → robots layout emits the robots.txt body); the
+	//     frontmatter content_type is applied before execute so the response
+	//     carries the right MIME type.
+	//   - content_type + no layout: serve the raw note body (frontmatter
+	//     stripped), e.g. llms.md → plain text.
+	if handled, ctErr := handleContentTypeNote(ctx, env, resp, layout); handled || ctErr != nil {
+		return nil, ctErr
 	}
 
 	// Anonymous page cache: serve pre-gzipped bytes to gzip-accepting anonymous
@@ -216,6 +216,31 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	defaulttemplate.WriteRender(ctx, dtCtx)
 	fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 	return nil, nil
+}
+
+// handleContentTypeNote serves a note whose frontmatter declares a custom
+// content_type. Content-Type is set from frontmatter (single declarative source
+// of truth). If the note has a layout the body is produced by executing the Jet
+// layout (e.g. robots.md → robots layout → robots.txt body). Without a layout
+// the raw note body is served with frontmatter stripped (e.g. llms.md). Both
+// paths skip the page cache (which only stores text/html).
+// Returns (true, nil) when the response is fully written, (false, nil) when
+// content_type is not set, or (false, err) on layout error.
+func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, layout string) (bool, error) {
+	if resp.NoteView == nil || resp.Note == nil {
+		return false, nil
+	}
+	ct := strings.TrimSpace(resp.NoteView.M().GetString("content_type", ""))
+	if ct == "" {
+		return false, nil
+	}
+	ctx.SetContentType(ct)
+	if layout != "" {
+		_, err := renderLayout(ctx, env, resp, layout)
+		return true, err
+	}
+	ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
+	return true, nil
 }
 
 func unsupportedFileExt(path string) string {
@@ -360,10 +385,6 @@ func renderLayout(
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
 	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
-	// response lets a layout override the Content-Type
-	// ({{ response.SetContentType("application/json") }}) so it can emit JSON,
-	// RSS, XML, plain text, etc. instead of the default text/html.
-	vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{Ctx: ctx})
 
 	headInjections := []db.HtmlInjection{}
 	bodyEndInjections := []db.HtmlInjection{}

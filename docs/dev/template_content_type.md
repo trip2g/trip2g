@@ -1,128 +1,90 @@
-# Content-Type из шаблона
+# Content-Type для заметок
 
-## Концепция
+**TL;DR:** Frontmatter-поле `content_type` задаёт MIME-тип ответа. Это единственный и декларативный способ — никакого `response.SetContentType()` в шаблонах нет.
 
-Jet-шаблон может задавать Content-Type ответа через переменную `response`. Это позволяет отдавать из шаблона не только HTML, но и RSS, JSON, XML, CSV и любой другой текстовый формат.
+## Механизм
+
+Заметка объявляет `content_type:` во frontmatter:
+
+```yaml
+---
+slug: /robots.txt
+layout: robots
+content_type: text/plain; charset=utf-8
+---
+```
+
+Render-path в `rendernotepage/endpoint.go` проверяет это поле и, если оно задано:
+
+1. Устанавливает `Content-Type` из frontmatter.
+2. Если у заметки есть `layout` — рендерит через Jet-шаблон (тело формирует шаблон, например `robots.html` с `{{ publicURL }}/sitemap.xml`).
+3. Если `layout` не задан — отдаёт тело заметки как есть (frontmatter вырезается через `mdchunk.StripFrontmatter`).
+4. Оба варианта обходят page cache (он хранит только `text/html`).
+
+## Примеры
+
+### robots.txt (`content_type` + `layout`)
+
+`robots.md`:
+
+```yaml
+---
+slug: /robots.txt
+layout: robots
+content_type: text/plain; charset=utf-8
+free: true
+search: false
+---
+```
+
+`_layouts/robots.html`:
+
+```
+User-agent: *
+Disallow:
+
+Sitemap: {{ publicURL }}/sitemap.xml
+```
+
+Результат: `/robots.txt` отдаётся как `text/plain`, тело — вывод шаблона (абсолютная Sitemap-ссылка через `publicURL`).
+
+### llms.txt (`content_type`, без layout)
+
+`llms.md`:
+
+```yaml
+---
+slug: /llms.txt
+content_type: text/plain; charset=utf-8
+free: true
+search: false
+---
+# trip2g
+...
+```
+
+Результат: `/llms.txt` отдаётся как `text/plain`, тело — текст заметки без frontmatter.
+
+## Почему не `response.SetContentType()` в шаблоне
+
+Ранее рассматривался вариант с переменной `response` в Jet-шаблоне:
 
 ```jet
-{{ response.SetContentType("application/rss+xml") }}
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-  ...
-</rss>
+{{ response.SetContentType("text/plain") }}...
 ```
 
-## Зачем
+Отказались: Content-Type — это атрибут ресурса, а не поведение шаблона. Декларировать его в frontmatter чище — один источник правды, никакого импедансного несоответствия между шаблоном и его MIME-типом.
 
-Сейчас Content-Type всегда `text/html` — задаётся хардкодом в `rendernotepage/endpoint.go`. Кастомные layouts уже позволяют писать произвольный вывод (рендер идёт напрямую в `ctx`, HTML-обёртка не применяется), но Content-Type поменять нельзя.
+## Что реализовано
 
-Примеры использования:
-- Кастомный RSS: пользователь сам определяет какие заметки попадают в фид и как они форматируются
-- JSON API endpoint из заметки
-- XML-экспорт
-- CSV-дамп через шаблон
+| Файл | Роль |
+|------|------|
+| `rendernotepage/endpoint.go` | `handleContentTypeNote()` — проверяет frontmatter, ставит Content-Type, рендерит через layout или отдаёт raw |
+| `rendernotepage/pagecache.go` | Пропускает кэширование для не-`text/html` ответов |
+| `docs/_layouts/robots.html` | Шаблон для robots.txt (использует `publicURL`) |
+| `onboarding-vault/_layouts/robots.html` | То же, в онбординг-хранилище |
+| `docs/robots.md` | Заметка `/robots.txt` для trip2g.com |
+| `onboarding-vault/robots.md` | Заметка `/robots.txt` для новых сайтов по умолчанию |
+| `docs/llms.md` | Заметка `/llms.txt` (plain, без layout) |
 
-**Существующий RSS** (`handleRSSFeed` middleware) остаётся — он автоматически создаёт `.rss.xml` для любой заметки по её ссылкам. Шаблонный подход — дополнение для случаев когда нужен кастомный фид.
-
-## Как будет работать
-
-### Template variable `response`
-
-В `renderLayout()` в переменные шаблона добавляется `response`:
-
-```go
-vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{Ctx: ctx})
-```
-
-### Структура ResponseWriter
-
-```go
-// internal/templateviews/response_writer.go
-
-type ResponseWriter struct {
-    Ctx *fasthttp.RequestCtx
-}
-
-func (rw *ResponseWriter) SetContentType(ct string) string {
-    rw.Ctx.SetContentType(ct)
-    return ""
-}
-```
-
-Возвращает пустую строку чтобы вызов не выводил ничего в шаблоне.
-
-### Использование в шаблоне
-
-```jet
-{{ response.SetContentType("application/json") }}
-{
-  "title": "{{ note.Title() }}",
-  "url": "{{ note.Permalink() }}"
-}
-```
-
-```jet
-{{ response.SetContentType("application/rss+xml") }}
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-<channel>
-  <title>{{ note.Title() }}</title>
-  <link>{{ nvs.ResolveURL(note) }}</link>
-  {{ range i, item := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().Limit(20).All() }}
-  <item>
-    <title>{{ item.Title() }}</title>
-    <link>{{ item.Permalink() }}</link>
-    <pubDate>{{ item.CreatedAt().Format("Mon, 02 Jan 2006 15:04:05 -0700") }}</pubDate>
-  </item>
-  {{ end }}
-</channel>
-</rss>
-```
-
-### Escape-хелперы
-
-Для безопасной вставки в JSON/XML зарегистрировать глобальные функции в `layoutloader/loader.go`:
-
-```go
-views.AddGlobalFunc("json_escape", func(a jet.Arguments) reflect.Value {
-    var s string
-    a.ParseInto(&s)
-    b, _ := json.Marshal(s)
-    return reflect.ValueOf(string(b[1 : len(b)-1])) // без кавычек
-})
-
-views.AddGlobalFunc("xml_escape", func(a jet.Arguments) reflect.Value {
-    var s string
-    a.ParseInto(&s)
-    // html.EscapeString работает для XML тоже
-    return reflect.ValueOf(html.EscapeString(s))
-})
-```
-
-Использование:
-
-```jet
-<title>{{ note.Title() | xml_escape }}</title>
-```
-
-## Что нужно изменить
-
-| Файл | Изменение |
-|------|-----------|
-| `internal/templateviews/response_writer.go` | Новый файл: `ResponseWriter` struct |
-| `internal/case/rendernotepage/endpoint.go` | Передавать `vars["response"]` в `renderLayout()` |
-| `internal/layoutloader/loader.go` | Зарегистрировать `json_escape`, `xml_escape` |
-
-Rendering pipeline уже правильный: когда layout используется, вывод идёт напрямую в `ctx` без HTML-обёртки (`processed == true` → `return nil, nil`). Достаточно добавить `response` переменную.
-
-## Статус
-
-- [x] Реализовано.
-  - `internal/templateviews/response_writer.go` — `ResponseWriter` с `SetContentType`.
-  - `rendernotepage/endpoint.go` — переменные `response` и `publicURL` в `renderLayout`;
-    плюс ветка для plain-контента: заметка с `content_type` во фронтматтере и без
-    HTML-лейаута отдаётся как сырой markdown/текст (без HTML-обёртки).
-  - `rendernotepage/pagecache.go` — page cache пропускает ответы с не-`text/html`
-    Content-Type (не гзипует и не кэширует их как HTML).
-  - Escape-хелперы `json_escape`/`xml_escape` пока не добавлены (не требовались
-    для robots.txt / llms.txt); добавить при появлении JSON/XML-лейаутов.
+Escape-хелперы `json_escape`/`xml_escape` пока не добавлены (не требовались); добавить при появлении JSON/XML-лейаутов.

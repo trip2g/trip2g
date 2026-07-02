@@ -87,9 +87,6 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["nvs"] = reflect.ValueOf(nvsWrap)
 	vars["title"] = reflect.ValueOf(note.Title)
 	vars["publicURL"] = reflect.ValueOf("")
-	// response is the Content-Type control layouts may call. A nil-Ctx
-	// ResponseWriter is a safe no-op during smoke render (SetContentType returns "").
-	vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{})
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{}})
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{{}})
 	// Stub namespaces that custom layouts call but that require a live HTTP
