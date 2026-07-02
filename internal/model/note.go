@@ -313,6 +313,10 @@ type NoteViews struct {
 	// then lexicographically by path — see mdloader buildBasenameIndex.
 	BasenameMap map[string][]*NoteView `json:"-"`
 
+	// WikilinkResolution selects the bare-wikilink resolution strategy.
+	// Zero value ("") means the default scoped ladder.
+	WikilinkResolution WikilinkResolution `json:"-"`
+
 	Sitemap []byte `json:"-"`
 
 	Subgraphs map[string]*NoteSubgraph `json:"-"`
@@ -1161,9 +1165,9 @@ func (nvs *NoteViews) Sidebars(note *NoteView) []*NoteView {
 	return res
 }
 
-// ResolveWikilinkTarget resolves a wikilink target string to a NoteView using
-// Obsidian-compatible resolution: relative paths, global basename lookup,
-// and directory-walk for paths containing "/".
+// ResolveWikilinkTarget resolves a wikilink target string to a NoteView:
+// relative paths, bare-basename lookup (scoped ladder, see pickBareCandidate
+// and WikilinkResolution), and directory-walk for paths containing "/".
 // Returns nil when the target cannot be resolved.
 func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *NoteView {
 	// Branch 1: Explicit relative paths (./file or ../file).
@@ -1185,26 +1189,11 @@ func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *No
 		return nil
 	}
 
-	// Branch 2: Simple filename (no path separator) — global basename lookup.
+	// Branch 2: Simple filename (no path separator) — basename lookup with the
+	// scoped ladder (same folder → same language → global shallowest).
 	if !strings.Contains(target, "/") {
 		targetBasename := strings.ToLower(target)
-		candidates := nvs.BasenameMap[targetBasename]
-		if len(candidates) == 1 {
-			return candidates[0]
-		}
-		if len(candidates) > 1 {
-			shortest := candidates[0]
-			shortestDepth := strings.Count(shortest.Path, "/")
-			for _, candidate := range candidates[1:] {
-				depth := strings.Count(candidate.Path, "/")
-				if depth < shortestDepth {
-					shortest = candidate
-					shortestDepth = depth
-				}
-			}
-			return shortest
-		}
-		return nil
+		return nvs.pickBareCandidate(source, nvs.BasenameMap[targetBasename])
 	}
 
 	// Branch 3: Path with "/" — relative path resolution (walk up directory tree).

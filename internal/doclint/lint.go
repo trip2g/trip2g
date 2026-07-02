@@ -133,7 +133,7 @@ func collectWarnings(ctx context.Context, dir string, log logger.Logger) ([]lint
 		}
 
 		// --- lint-added checks on ResolvedLinks ---
-		noteLang := pathLangPrefix(note.Path)
+		noteLang := model.PathLangPrefix(note.Path)
 
 		// Collect targets to iterate in sorted order (map iteration is non-deterministic).
 		targets := make([]string, 0, len(note.ResolvedLinks))
@@ -149,21 +149,17 @@ func collectWarnings(ctx context.Context, dir string, log logger.Logger) ([]lint
 				continue
 			}
 
-			// The resolver picks a bare wikilink deterministically (shortest
-			// path-depth wins, see model.Note resolution), so multi-candidate
-			// basenames are not reported as errors — only genuine cross-language
-			// leaks are. The linter otherwise surfaces loader-native warnings.
-			basename := strings.ToLower(target)
-			candidates := nvs.BasenameMap[basename]
-
 			// Cross-language leak: bare wikilink in an en/ note resolves
 			// under ru/ (or vice-versa), keyed on path prefix not frontmatter lang.
-			// Only checked when the wikilink is UNAMBIGUOUS (exactly one candidate);
-			// a multi-candidate basename resolves by shortest-depth, which is
-			// deterministic but language-blind, so we do not flag those here.
-			if noteLang != "" && len(candidates) == 1 {
+			// The resolver picks bare wikilinks via a deterministic lang-aware
+			// ladder (same folder → same language → global shallowest, see
+			// model.NoteViews.ResolveWikilinkTarget), so a bare link that still
+			// lands under the other language prefix has no same-lang candidate
+			// at all — a genuine leak, flagged regardless of candidate count.
+			// It usually signals a missing translation.
+			if noteLang != "" {
 				other := otherLang(noteLang)
-				if strings.HasPrefix(permalink, "/"+other+"/") || permalink == "/"+other {
+				if other != "" && (strings.HasPrefix(permalink, "/"+other+"/") || permalink == "/"+other) {
 					lines = append(lines, lintLine{
 						path: note.Path,
 						message: fmt.Sprintf(
@@ -232,18 +228,6 @@ func loadBaseline(baselineFile string) (map[string]bool, error) {
 		}
 	}
 	return set, scanner.Err()
-}
-
-// pathLangPrefix returns "en" or "ru" if the relative note path starts with
-// that prefix, otherwise "".
-func pathLangPrefix(path string) string {
-	if strings.HasPrefix(path, "en/") {
-		return "en"
-	}
-	if strings.HasPrefix(path, "ru/") {
-		return "ru"
-	}
-	return ""
 }
 
 // otherLang returns the opposite language code for en/ru pairs.

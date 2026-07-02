@@ -34,3 +34,12 @@ func validateURLNormalizationMethod(value string) error {
 
 	return nil
 }
+
+func validateWikilinkResolution(value string) error {
+	r := model.WikilinkResolution(value)
+	if !r.Valid() {
+		return fmt.Errorf("unknown wikilink resolution mode: %s", value)
+	}
+
+	return nil
+}

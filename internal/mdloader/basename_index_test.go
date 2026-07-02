@@ -26,7 +26,7 @@ func TestBasenameIndexDeterministic(t *testing.T) {
 		Content: []byte(`Русская тема.`),
 	}}
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		pages, err := mdloader.Load(mdloader.Options{
 			Sources: sourceFiles,
 			Log:     &log,

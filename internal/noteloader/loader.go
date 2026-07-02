@@ -145,6 +145,9 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	if siteConfig.URLNormalizationMethod.Valid() {
 		l.config.URLNormalizationMethod = siteConfig.URLNormalizationMethod
 	}
+	if siteConfig.WikilinkResolution.Valid() {
+		l.config.WikilinkResolution = siteConfig.WikilinkResolution
+	}
 
 	// Load frontmatter patches from database before loading notes
 	patches, err := l.env.LoadFrontmatterPatches(ctx)

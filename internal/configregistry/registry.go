@@ -44,6 +44,7 @@ const (
 	ConfigDefaultLayout          = "default_layout"
 	ConfigRobotsTxt              = "robots_txt"
 	ConfigURLNormalizationMethod = "url_normalization_method"
+	ConfigWikilinkResolution     = "wikilink_resolution"
 	ConfigKBID                   = "kb_id"
 )
 
@@ -92,6 +93,17 @@ var (
 			Validate:   validateURLNormalizationMethod,
 			SetupFunc: func(cfg *model.SiteConfig, v string) {
 				cfg.URLNormalizationMethod = model.URLNormalizationMethod(v)
+			},
+		},
+		ConfigWikilinkResolution: {
+			ConfigMeta: ConfigMeta{
+				ID:          ConfigWikilinkResolution,
+				Description: "Bare wikilink resolution: scoped (same folder → same language → shallowest) or global (legacy shallowest-only).",
+			},
+			Default:  string(model.DefaultWikilinkResolution),
+			Validate: validateWikilinkResolution,
+			SetupFunc: func(cfg *model.SiteConfig, v string) {
+				cfg.WikilinkResolution = model.WikilinkResolution(v)
 			},
 		},
 		ConfigKBID: {
