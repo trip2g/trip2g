@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	llsys "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
 
@@ -78,8 +79,10 @@ func runSandboxChild(encoded string) error {
 	}
 
 	// go-landlock also sets NO_NEW_PRIVS internally, but keep it explicit so
-	// the guarantee holds even when Landlock degrades to a no-op.
-	if pErr := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); pErr != nil {
+	// the guarantee holds even when Landlock degrades to a no-op. Must be the
+	// all-threads variant: prctl is per-thread and the Go runtime may exec
+	// from a different OS thread than the one that ran a plain prctl.
+	if pErr := llsys.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); pErr != nil {
 		return fmt.Errorf("prctl no_new_privs: %w", pErr)
 	}
 
