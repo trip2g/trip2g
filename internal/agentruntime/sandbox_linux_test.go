@@ -292,6 +292,7 @@ func TestSandbox_RlimitsApplied(t *testing.T) {
 // an environment where the probe already failed — covered indirectly: an OFF
 // policy and a NATIVE policy must both produce a working run end-to-end.
 func TestSandbox_ModesBothExecute(t *testing.T) {
+	requireSandboxSupport(t)
 	for _, mode := range []SandboxMode{SandboxOff, SandboxNative} {
 		stdout, stderr, _, runErr := RunBlock(context.Background(), CodeSpec{
 			Program: "bash",
