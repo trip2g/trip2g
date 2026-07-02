@@ -112,14 +112,21 @@ The note is not a universal win. It is a **correction for a wasteful default.** 
 
 Input and output bill at different rates, so the token deltas above do not translate 1:1 to money. Prices used (per million tokens): Claude Haiku 4.5 **$1.00 input / $5.00 output** (Anthropic published pricing, verified 2026-07-02); gpt-5.4-nano **$0.05 input / $0.40 output** (OpenRouter listed rate at run time — the figure I actually applied).
 
-Per-query and per-1,000-query cost, retrieval questions only:
+Per-1,000-query cost with the delta, retrieval questions only:
 
-| Model | Variant | Avg in tok | Avg out tok | $/query | $/1,000 queries |
-|-------|---------|-----------|------------|---------|-----------------|
-| Haiku 4.5 | with note | 16,487 | 778 | $0.0204 | **$20.37** |
-| Haiku 4.5 | without | 17,859 | 837 | $0.0220 | **$22.05** |
-| nano | with note | 15,585 | 558 | $0.00100 | **$1.00** |
-| nano | without | 11,140 | 554 | $0.00078 | **$0.78** |
+| Model | $/1k without | $/1k with note | Δ |
+|-------|-------------|----------------|---|
+| Haiku 4.5 | $22.05 | $20.37 | **−8% (cheaper)** |
+| nano | $0.78 | $1.00 | **+29% (more expensive)** |
+
+Per-query and per-token detail behind those figures:
+
+| Model | Variant | Avg in tok | Avg out tok | $/query |
+|-------|---------|-----------|------------|---------|
+| Haiku 4.5 | with note | 16,487 | 778 | $0.0204 |
+| Haiku 4.5 | without | 17,859 | 837 | $0.0220 |
+| nano | with note | 15,585 | 558 | $0.00100 |
+| nano | without | 11,140 | 554 | $0.00078 |
 
 **The economic verdict differs by model, and on two counts it is the opposite of the naive intuition.**
 

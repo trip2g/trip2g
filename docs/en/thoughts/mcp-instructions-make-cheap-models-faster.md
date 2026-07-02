@@ -46,12 +46,12 @@ A couple of nano-specific quirks worth noting: it over-specifies its calls, pass
 
 Tokens are the mechanism, but the bill is what you pay, and input and output are priced differently. I used Claude Haiku 4.5 at $1.00 per million input tokens and $5.00 per million output (Anthropic's published pricing), and gpt-5.4-nano at $0.05 input and $0.40 output (the OpenRouter rate at run time).
 
-| Model | Variant | $/query | $/1,000 queries |
-|-------|---------|---------|-----------------|
-| Haiku 4.5 | with note | $0.0204 | $20.37 |
-| Haiku 4.5 | without | $0.0220 | $22.05 |
-| nano | with note | $0.00100 | $1.00 |
-| nano | without | $0.00078 | $0.78 |
+| Model | $/1k without | $/1k with note | Δ |
+|-------|-------------|----------------|---|
+| Haiku 4.5 | $22.05 | $20.37 | **−8% (cheaper)** |
+| nano | $0.78 | $1.00 | **+29% (more expensive)** |
+
+(Per query: Haiku $0.0220 without vs $0.0204 with; nano $0.00078 without vs $0.00100 with.)
 
 Two things surprised me here, both worth stating plainly.
 
