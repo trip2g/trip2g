@@ -20,6 +20,7 @@ require (
 	github.com/gotd/td v0.139.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/kr/pretty v0.3.1
+	github.com/landlock-lsm/go-landlock v0.9.0
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0
 	github.com/minio/minio-go/v7 v7.0.91
@@ -45,6 +46,7 @@ require (
 	golang.org/x/crypto v0.51.0
 	golang.org/x/net v0.54.0
 	golang.org/x/sync v0.20.0
+	golang.org/x/sys v0.44.0
 	golang.org/x/text v0.37.0
 	gopkg.in/yaml.v3 v3.0.1
 	maragu.dev/goqite v0.3.1
@@ -364,7 +366,6 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
@@ -383,6 +384,7 @@ require (
 	gorm.io/driver/bigquery v1.2.0 // indirect
 	gorm.io/gorm v1.25.12 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.77 // indirect
 	modernc.org/libc v1.73.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

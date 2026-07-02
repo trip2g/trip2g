@@ -29,6 +29,8 @@ import (
 )
 
 func main() {
+	// Re-exec'd sandbox child? Confine and exec the interpreter; never returns.
+	agentruntime.MaybeRunSandboxChild()
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "fleet:", err)
 		os.Exit(1)
@@ -200,8 +202,12 @@ func runOnce(ctx context.Context, cli cliFlags) error {
 		Model:         model,
 		MaxTokens:     maxTokens,
 		MaxSteps:      maxSteps,
-		LLM:           llm,
-		KB:            kb,
+		Sandbox: agentruntime.SandboxPolicy{
+			Mode:    agentruntime.SandboxMode(cli.cfg.Sandbox),
+			Network: cli.cfg.SandboxNetwork,
+		},
+		LLM: llm,
+		KB:  kb,
 	})
 	if runErr != nil {
 		return fmt.Errorf("once: run: %w", runErr)
@@ -284,6 +290,11 @@ func validateConfig(cfg fleet.Config) error {
 	}
 	if len(cfg.OfferedTools) == 0 {
 		return errors.New("fleet: OfferedTools must be non-empty; use --offered-tools")
+	}
+	// Empty means the safe default (native); see SandboxPolicy.withDefaults.
+	if cfg.Sandbox != "" && cfg.Sandbox != string(agentruntime.SandboxNative) && cfg.Sandbox != string(agentruntime.SandboxOff) {
+		return fmt.Errorf("fleet: Sandbox must be %q or %q (got %q); use --sandbox",
+			agentruntime.SandboxNative, agentruntime.SandboxOff, cfg.Sandbox)
 	}
 	return nil
 }
@@ -395,6 +406,11 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"comma-separated programs allowed for code execution (empty = disabled; e.g. python,bash)")
 	fs.IntVar(&cli.cfg.MaxStdoutBytes, "max-stdout-bytes", 1<<20,
 		"stdout cap per code child (bytes)")
+	fs.StringVar(&cli.cfg.Sandbox, "sandbox", "native",
+		"code-exec sandbox mode: native|off (native = no network + Landlock FS confinement + rlimits + "+
+			"no-new-privs; Linux-only, falls back with a warning when unsupported)")
+	fs.BoolVar(&cli.cfg.SandboxNetwork, "sandbox-network", false,
+		"allow host network access inside the code-exec sandbox")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
 	fs.IntVar(&graceSeconds, "shutdown-grace-seconds", 30,

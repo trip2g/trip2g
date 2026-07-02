@@ -100,6 +100,7 @@ type CodeSpec struct {
 	EnvPassthrough []string      // exact parent env var names to forward to child
 	EnvPrefix      []string      // parent env var name prefixes to forward to child
 	MaxStdoutBytes int           // stdout cap; 0 → 1 MiB default
+	Sandbox        SandboxPolicy // OS-level isolation; zero value = safe default (native)
 }
 
 // codeOutput is the stdout JSON contract that every code program must emit.
@@ -167,24 +168,48 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	// gosec G204 (excluded for this file in .golangci): runs an operator-
 	// allowlisted interpreter (allowed_programs) on the role's rendered code —
 	// executing that code IS the feature, and it's off by default.
-	cmd := exec.CommandContext(runCtx, interp.Cmd[0], append(interp.Cmd[1:], codeFile)...)
-	cmd.Dir = workDir
+	fullArgv := append(append([]string{}, interp.Cmd...), codeFile)
 	// Secret-scrub: build an explicit MINIMAL env. NEVER nil (inherits parent)
 	// or os.Environ() (exposes all secrets). The base is PATH + FLEET_INPUT only.
 	// Selective pass-through adds only explicitly declared vars/prefixes on top.
-	cmd.Env = buildChildEnv(inputFile, spec.EnvPassthrough, spec.EnvPrefix)
-
+	env := buildChildEnv(inputFile, spec.EnvPassthrough, spec.EnvPrefix)
 	limit := spec.MaxStdoutBytes
 	if limit == 0 {
 		limit = 1 << 20
 	}
+
+	policy := spec.Sandbox.withDefaults(spec.Timeout)
+	sandboxed := policy.Mode != SandboxOff
+	if sandboxed && !sandboxSupportedOS {
+		warnSandboxFallback("unsupported OS", nil)
+		sandboxed = false
+	}
+
+	var cmd *exec.Cmd
+	if sandboxed {
+		var sbErr error
+		cmd, sbErr = sandboxCommand(runCtx, fullArgv, workDir, policy)
+		if sbErr != nil {
+			warnSandboxFallback("sandbox setup failed", sbErr)
+			sandboxed = false
+		}
+	}
+	if !sandboxed {
+		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
+	}
 	var outBuf, errBuf limitedBuffer
-	outBuf.limit = limit
-	errBuf.limit = limit
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &errBuf
+	prepareCmd(cmd, workDir, env, &outBuf, &errBuf, limit)
 
 	runErr := cmd.Run()
+	// A sandboxed command that failed to START never ran the child: namespace
+	// creation was denied (e.g. unprivileged userns disabled). Degrade to the
+	// pre-sandbox behavior with a warning instead of failing every code run.
+	if runErr != nil && sandboxed && cmd.ProcessState == nil && runCtx.Err() == nil {
+		warnSandboxFallback("sandboxed child failed to start", runErr)
+		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
+		prepareCmd(cmd, workDir, env, &outBuf, &errBuf, limit)
+		runErr = cmd.Run()
+	}
 	outStr := outBuf.String()
 	errStr := errBuf.String()
 
@@ -199,6 +224,17 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		return outStr, errStr, false, fmt.Errorf("coderun: non-zero exit: %s", msg)
 	}
 	return outStr, errStr, false, nil
+}
+
+// prepareCmd applies the run wiring shared by the sandboxed and plain paths:
+// workdir, scrubbed env, and fresh capped stdout/stderr buffers.
+func prepareCmd(cmd *exec.Cmd, workDir string, env []string, outBuf, errBuf *limitedBuffer, limit int) {
+	cmd.Dir = workDir
+	cmd.Env = env
+	*outBuf = limitedBuffer{limit: limit}
+	*errBuf = limitedBuffer{limit: limit}
+	cmd.Stdout = outBuf
+	cmd.Stderr = errBuf
 }
 
 // parseCodeOutput parses the code child's stdout JSON into []AgentChange +
