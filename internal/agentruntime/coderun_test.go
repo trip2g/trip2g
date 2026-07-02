@@ -17,6 +17,7 @@ import (
 // TestRunBlock_BashEchoWriteJSON runs a bash one-liner that emits a write JSON
 // and asserts the output is returned verbatim.
 func TestRunBlock_BashEchoWriteJSON(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	code := `echo '{"changes":[{"path":"notes/a.md","content":"hello"}],"answer":"done"}'`
 	stdout, stderr, timedOut, err := RunBlock(context.Background(), CodeSpec{
 		Program: "bash",
@@ -31,6 +32,7 @@ func TestRunBlock_BashEchoWriteJSON(t *testing.T) {
 
 // TestRunBlock_NonZeroExit asserts a failing script returns an error with stderr.
 func TestRunBlock_NonZeroExit(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	code := `echo "oops" >&2; exit 1`
 	_, stderr, timedOut, err := RunBlock(context.Background(), CodeSpec{
 		Program: "bash",
@@ -44,6 +46,7 @@ func TestRunBlock_NonZeroExit(t *testing.T) {
 // TestRunBlock_TimeoutKills asserts a long-running script is killed when the
 // per-spec timeout fires.
 func TestRunBlock_TimeoutKills(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	_, _, timedOut, err := RunBlock(context.Background(), CodeSpec{
 		Program: "bash",
 		Code:    "sleep 60",
@@ -58,6 +61,7 @@ func TestRunBlock_TimeoutKills(t *testing.T) {
 // secret-scrub guarantee: cmd.Env is an explicit minimal allowlist
 // (PATH + FLEET_INPUT only), never nil (inherits parent) or os.Environ().
 func TestRunBlock_SecretScrub(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	const sentinel = "FLEET_CODERUN_TEST_SENTINEL"
 	t.Setenv(sentinel, "PARENT_SECRET_VALUE")
 
@@ -82,6 +86,7 @@ fi`
 // TestRunBlock_FleetInputWritten asserts the delivery bag is accessible via
 // $FLEET_INPUT in the child (the bag JSON is written to a temp file).
 func TestRunBlock_FleetInputWritten(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	bag := []byte(`{"depth":3}`)
 	code := `python3 -c "
 import json, os
@@ -147,6 +152,7 @@ func TestParseCodeOutput_EmptyChanges(t *testing.T) {
 // TestRunCode_EndToEnd runs a bash script that emits a write change and asserts
 // the change is applied via ScopedKB.
 func TestRunCode_EndToEnd(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	kb := newMemKB(nil)
 	body := "```bash\necho '{\"changes\":[{\"path\":\"notes/a.md\",\"content\":\"generated\"}],\"answer\":\"ok\"}'\n```"
 
@@ -169,6 +175,7 @@ func TestRunCode_EndToEnd(t *testing.T) {
 // TestRunCode_ScopeEnforcement asserts writes outside write_patterns are denied
 // and not applied — exec/code is NOT a scope bypass.
 func TestRunCode_ScopeEnforcement(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	kb := newMemKB(nil)
 	// Script tries to write two files: one in scope and one out of scope.
 	script := `echo '{"changes":[{"path":"notes/in.md","content":"in"},{"path":"other/out.md","content":"out"}],"answer":"tried"}'`
@@ -302,6 +309,7 @@ func TestRun_ExecToolGatedByAllowedPrograms(t *testing.T) {
 // with a bash one-liner, then finishes. Asserts the write is applied via
 // ScopedKB and recorded in res.Changes.
 func TestRun_ExecToolRunsAndApplies(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	kb := newMemKB(nil)
 	bashCode := `echo '{"changes":[{"path":"notes/exec.md","content":"from exec"}],"answer":"wrote"}'`
 
@@ -342,6 +350,7 @@ func TestRun_ExecToolRunsAndApplies(t *testing.T) {
 // with a write targeting a path outside write_patterns. The write must be
 // denied (recorded in res.Denials) and not reach the KB.
 func TestRun_ExecToolDeniedOutOfScope(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	kb := newMemKB(nil)
 	bashCode := `echo '{"changes":[{"path":"secret/x.md","content":"leak"}],"answer":"tried"}'`
 
@@ -556,6 +565,7 @@ func TestInterpreterRegistry_ConcurrentAccess(t *testing.T) {
 }
 
 func TestMaxStdoutBytesFromConfig(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	code := `printf '%0.s1234567890' {1..10}` // writes 100 bytes
 	stdout, _, _, err := RunBlock(context.Background(), CodeSpec{
 		Program:        "bash",
@@ -569,6 +579,7 @@ func TestMaxStdoutBytesFromConfig(t *testing.T) {
 // TestRunBlock_WorkdirIsolation asserts each RunBlock call gets a clean working
 // directory with no files from a previous run.
 func TestRunBlock_WorkdirIsolation(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	// First run creates a file in its workdir.
 	code1 := `echo '{"changes":[],"answer":"run1"}'`
 	_, _, _, err := RunBlock(context.Background(), CodeSpec{Program: "bash", Code: code1})
@@ -590,6 +601,7 @@ func TestRunBlock_WorkdirIsolation(t *testing.T) {
 // complements TestRunBlock_SecretScrub with a differently-named sentinel to
 // rule out any pattern-matching false negatives.
 func TestRunBlock_ParentSecretAbsent(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	t.Setenv("FLEET_SECRET_LEAK_TEST", "must-not-appear-in-child")
 
 	code := `if [ -z "${FLEET_SECRET_LEAK_TEST}" ]; then
@@ -637,6 +649,7 @@ func TestRunCode_RequiresKB(t *testing.T) {
 // This proves the deny-by-default + explicit-opt-in contract: secrets not
 // declared in env_passthrough or env_prefix do NOT reach the child.
 func TestRunBlock_EnvPassthrough(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	t.Setenv("FLEET_ENVTEST_FOO", "1")
 	t.Setenv("FLEET_ENVTEST_BAR_X", "2")
 	t.Setenv("FLEET_ENVTEST_SECRET", "should-not-appear")
@@ -673,6 +686,7 @@ print(json.dumps({'changes':[],'answer':json.dumps(got)}))
 // from the child. (bash injects a few vars of its own like SHLVL, so we check
 // for the sentinel specifically rather than asserting zero extra vars.)
 func TestRunBlock_EnvPassthroughBaseOnly(t *testing.T) {
+	skipIfSandboxUnsupported(t)
 	t.Setenv("FLEET_ENVTEST_EXTRA", "should-not-appear")
 
 	code := `if [ -z "${FLEET_ENVTEST_EXTRA}" ]; then
