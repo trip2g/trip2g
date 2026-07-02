@@ -1,0 +1,4069 @@
+{
+ "with": [
+  {
+   "tool_calls": 5,
+   "in_tok": 15224,
+   "out_tok": 708,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "federation private peer HMAC secret"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 1183
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 1183
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/federation",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": []
+     },
+     "out_len": 294
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 350,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "To set up federation with a **private peer using an HMAC secret** (two-step exchange), follow the steps in **\u201cAdding a private peer (two-step exchange)\u201d**:\n\n### Step 1: Peer generates an inbound secret for you\nOn **Bob\u2019s side**, go to:\n**Admin \u2192 Federation \u2192 Add inbound secret**\n\n- Pick a short **key id (`kid`)** (example: `alice-2026`)\n- Optionally select which subgraphs you may access\n- Click **Generate**\n- Bob gets the **secret hex once** and sends you **both**:\n  - `kid`\n  - `secretHex`\n  \nS"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 5925,
+   "out_tok": 491,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 1183
+    },
+    {
+     "final": "To set up **federation with a private peer using an HMAC secret** (one-time two-step key exchange), do it **per direction** (outbound = you query them; inbound = they query you):\n\n### 1) Generate the outbound secret (you \u2192 private peer)\n1. On **your** trip2g Admin, open **Federation**.\n2. Add the peer pointing at their MCP endpoint (their base URL / `/_system/mcp`).\n3. Create/generate an **HMAC secret** for authenticating *your* hub to that **private** peer.\n4. You\u2019ll get a `kid` and `secretHex`"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 18731,
+   "out_tok": 462,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "set up federation with a private peer using an HMAC secret"
+     },
+     "out_len": 1585
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p1204:c8",
+      "note_id": 4,
+      "path": "en/user/federation.md",
+      "pid": 4,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/federation.md",
+      "pid": 4,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/federation.md",
+      "pid": 4,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/federation.md",
+      "pid": 4,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/federation",
+      "note_id": 4,
+      "path": "en/user/federation.md",
+      "pid": 4,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 3,
+      "query": "Adding a private peer (two-step exchange) HMAC secret"
+     },
+     "out_len": 1362
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c5",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 1172
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 14401,
+   "out_tok": 429,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "MCP server exposed tools list note_html search expand similar"
+     },
+     "out_len": 1250
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/mcp.md",
+      "match_id": "p530:c8",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "Tools exposed by MCP"
+      ]
+     },
+     "out_len": 818
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/mcp.md",
+      "match_id": "p530:c8",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "Tools exposed by MCP"
+      ]
+     },
+     "out_len": 818
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "en/user/mcp.md",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": []
+     },
+     "out_len": 314
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/mcp.md",
+      "match_id": "",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "Methods"
+      ]
+     },
+     "out_len": 8068
+    },
+    {
+     "final": "The trip2g MCP server exposes these main tools/methods:\n\n- `search(query)` \u2014 vector search across the knowledge base (returns slim snippets with a `toc_path` per match)\n- `expand(pid, toc_path?)` \u2014 walk a note\u2019s table of contents level-by-level\n- `note_html(path, toc_path?)` \u2014 load the full note, or a specific section by `toc_path`\n- `similar(path)` \u2014 find notes similar to the given note\n- `instructions()` \u2014 author-defined AI instructions\n- `editor_role()` \u2014 answer style instructions\n- `graphql_"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 24543,
+   "out_tok": 459,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "MCP server exposes tools list"
+     },
+     "out_len": 1683
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/memcli",
+      "match_id": "p1194:c8",
+      "note_id": 1194,
+      "path": "en/memcli.md",
+      "pid": 1194,
+      "toc_path": [
+       "Auto-detected when stdin is piped (e.g. from an MCP client)"
+      ]
+     },
+     "out_len": 1188
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g MCP server tools/list methods"
+     },
+     "out_len": 1609
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "p530:c15",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "MCP Federation",
+       "Expose tools"
+      ]
+     },
+     "out_len": 931
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "p530:c15",
+      "note_id": 530,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "MCP Federation"
+      ]
+     },
+     "out_len": 931
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c0",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Federated tools"
+      ]
+     },
+     "out_len": 784
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "mcp methods exposed six methods trip2g mcp_method list"
+     },
+     "out_len": 951
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c0",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Federated tools",
+       "Your hub always exposes six MCP methods"
+      ]
+     },
+     "out_len": 784
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 16234,
+   "out_tok": 448,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "MCP server tools exposed what tools does trip2g MCP server expose"
+     },
+     "out_len": 1341
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "p677:c0",
+      "note_id": 4,
+      "path": "en/user/mcp.md",
+      "pid": 4,
+      "toc_path": [
+       "Tools"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/mcp.md",
+      "pid": 4,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 3,
+      "query": "trip2g mcp tools Tools list functions"
+     },
+     "out_len": 984
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 320,
+      "href": "https://trip2g.com/mcp_instructions",
+      "match_id": "p120:c1",
+      "note_id": 1,
+      "path": "mcp-instructions.md",
+      "pid": 120,
+      "toc_path": [
+       "Available tools"
+      ]
+     },
+     "out_len": 801
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 320,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c10",
+      "note_id": 3,
+      "path": "en/user/agent_memory",
+      "pid": 1189,
+      "toc_path": []
+     },
+     "out_len": 1205
+    },
+    {
+     "final": "Trip2g\u2019s MCP server exposes these main tools (as described in the docs):\n\n- **`search(query)`** \u2014 searches trip2g memory/notes and returns slim matches (snippet + heading breadcrumb + `toc_path`).  \n- **`expand(pid, toc_path?)`** \u2014 navigates the note structure (TOC) level-by-level to list subsections/children.  \n- **`note_html(pid, toc_path?)`** \u2014 reads a note (or, when given `toc_path`, reads only the specific section).  \n\nSource: https://trip2g.com/en/user/agent_memory"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 22643,
+   "out_tok": 825,
+   "dumps": 3,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "publish Obsidian vault website trip2g"
+     },
+     "out_len": 1601
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/getting_started",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": []
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Setup at a glance"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Setup at a glance",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Setup at a glance",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "final": "To publish your Obsidian vault as a website with trip2g:\n\n1) **Get an instance + sign in**\n- trip2g requires a personal running \u201cinstance\u201d (your site).\n- Open the instance, click **Login**, enter your email, then paste the code from email into the site.  \n  Source: https://trip2g.com/en/user/getting_started (sections **Sign in**, **Setup at a glance**)\n\n2) **Configure the admin panel**\n- In the admin panel, enable **Show Draft Versions** (so changes appear right after syncing).\n- Set your **Time"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 8080,
+   "out_tok": 398,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "publish an Obsidian vault as a website trip2g connect vault website"
+     },
+     "out_len": 1413
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/index_v1",
+      "match_id": "p670:c0",
+      "note_id": 670,
+      "path": "index_v1.md",
+      "pid": 670,
+      "toc_path": [
+       "Setup"
+      ]
+     },
+     "out_len": 171
+    },
+    {
+     "final": "To publish your **Obsidian vault as a website with trip2g**:\n\n1. **Create an instance / sign up** (or install trip2g on your own server).  \n   https://simplecloud.2pub.me (link from the docs)\n\n2. **Set up the admin panel** in your trip2g instance.\n\n3. **Install the trip2g Obsidian plugin** (the docs mention installing it via BRAT).\n\n4. **Create an API key** in trip2g.\n\n5. **Connect your Obsidian plugin to that API key**, so your vault can sync.\n\n6. **Write/update notes in Obsidian and sync** \u2014 y"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 26074,
+   "out_tok": 759,
+   "dumps": 3,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "publish Obsidian vault as a website trip2g"
+     },
+     "out_len": 1690
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Setup at a glance"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 500,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/getting_started",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 96
+    },
+    {
+     "final": "To publish your Obsidian vault as a website with **trip2g**, follow this \u201cgetting started\u201d flow:\n\n1. **Get an instance (a running trip2g site)**  \n   Your instance is a personal site that\u2019s already running. Then **Sign in by email** (copy the code from email and paste it on the site).  \n   https://trip2g.com/en/user/getting_started\n\n2. **Configure the admin panel**\n   - Enable **Show Draft Versions** (so changes appear immediately after sync).\n   - Set your **timezone** (important for Telegram s"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 18866,
+   "out_tok": 646,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "subgraph access control trip2g"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/protocol",
+      "match_id": "p892:c9",
+      "note_id": 892,
+      "path": "en/user/protocol.md",
+      "pid": 892,
+      "toc_path": [
+       "How trip2g works"
+      ]
+     },
+     "out_len": 1199
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c1",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 1205
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "subgraph decides which notes that search returns access control"
+     },
+     "out_len": 1417
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/context_separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation",
+       "Two axes you set independently"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "final": "In trip2g, a **subgraph** is the part of a knowledge base (KB) that is made visible to others during **federated searching**.\n\n### What a subgraph is\ntrip2g separates access control into two independent axes:\n\n- **Federation edge (who may search whom):** a directed link `A \u2192 B` that grants A\u2019s agent permission to search B.\n- **Subgraph (what is visible):** the **subgraph decides which notes** B will return to A\u2019s search requests.\n\nSo even if a base has a valid federation edge, a **subgraph bound"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 9435,
+   "out_tok": 468,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "subgraph access control trip2g"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c1",
+      "note_id": 0,
+      "path": "en/user/context-separation",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 1205
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/federation",
+      "pid": 892,
+      "toc_path": [
+       "MCP Federation",
+       "Subgraphs and access control"
+      ]
+     },
+     "out_len": 9748
+    },
+    {
+     "final": "In trip2g, a **subgraph** is a *scope label* you attach to notes so that only certain readers/tenants can see them.\n\n### What a subgraph is\nNotes can include frontmatter like:\n\n```yaml\nsubgraphs: tier-name\n```\n\nThis doesn\u2019t change how you write the note in Obsidian; it changes **who can see the note on the published website** (and therefore who can discover it via search/feeds, unless they\u2019re authorized).\n\n### How access control works (visibility rules)\ntrip2g uses frontmatter to decide visibili"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 14158,
+   "out_tok": 499,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "subgraph access control trip2g"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c1",
+      "note_id": 0,
+      "path": "en/user/context-separation.md",
+      "pid": 0,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 1205
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/federation.md",
+      "pid": 0,
+      "toc_path": [
+       "Federation",
+       "Subgraph and access control"
+      ]
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/context-separation.md",
+      "pid": 0,
+      "toc_path": [
+       "An edge says who may search. A subgraph = what's visible while doing so."
+      ]
+     },
+     "out_len": 8513
+    },
+    {
+     "final": "In trip2g, a **subgraph** is a *scope* label on your notes that determines **which notes are allowed to be returned** when another base is searching you through federation.\n\nAccess control works as **two independent axes**:\n\n1. **Federation edge (who may search)**  \n   A federation edge is a directed link **`A \u2192 B`**. It grants permission for **A to search B** (direction matters\u2014`A \u2192 B` does not allow `B \u2192 A`).  \n   (See: https://trip2g.com/en/user/context-separation)\n\n2. **Subgraph (what is vis"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 13713,
+   "out_tok": 546,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "toc_path drill-down"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "toc_path drill-down"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/token_economy",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "toc_path drill-down"
+      ]
+     },
+     "out_len": 158
+    },
+    {
+     "final": "trip2g\u2019s **`toc_path` drill-down** saves tokens by letting an AI agent fetch **only the specific section it needs**, instead of loading whole notes (or \u201cgrep-like\u201d windows).\n\nConcretely, the docs explain that:\n\n- If you \u201cdump whole notes into context,\u201d the agent pays tokens for **text it will never use**.\n- \u201c`grep -A/-B`\u201d style retrieval is wasteful because it returns a **fixed line window** around a match that may:\n  - include unrelated text from adjacent sections,\n  - cut off mid-sentence,\n  -"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 13808,
+   "out_tok": 547,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file",
+       "Why `toc_path` saves tokens"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 650,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file",
+       "Why `toc_path` saves tokens"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/token_economy",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file"
+      ]
+     },
+     "out_len": 180
+    },
+    {
+     "final": "The token-economy **toc_path drill-down** saves tokens because it lets an AI agent fetch **one specific section of a note** (by its table-of-contents path) instead of dumping an entire file (or even a fixed line-window around a match).\n\nIn the \u201cToken Economy: pull the exact section, not the whole file\u201d guide, trip2g explains that alternatives like `grep -A/-B` return a **fixed-size window** that:\n- doesn\u2019t respect section boundaries,\n- may include unrelated adjacent content,\n- and can return **o"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 17041,
+   "out_tok": 589,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file",
+       "Why `toc_path` is token-efficient"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file",
+       "How `toc_path` drill-down works"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/Token Economy.md",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": []
+     },
+     "out_len": 243
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/Token Economy.md",
+      "match_id": "",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Precise section retrieval"
+      ]
+     },
+     "out_len": 890
+    },
+    {
+     "final": "The **token-economy `toc_path` drill-down** saves tokens because it lets an agent fetch **only the specific section it needs**, instead of dumping the whole note (or big regex windows around matches).\n\nFrom the docs:\n\n- `search(query)` returns matches that include `matches[].toc_path` (the heading hierarchy to the matching section).\n- Then `note_html(pid=N, toc_path=match.toc_path)` retrieves **only that section\u2019s HTML**.\n\nToken contrast given in the guide:\n- **One section ~300 tokens**\n- **Whol"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 14516,
+   "out_tok": 683,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer search find exact section"
+     },
+     "out_len": 1354
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer",
+       "how search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer",
+       "how search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer",
+       "how search finds the exact section",
+       "Resolving fuzzy pointer to exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "en/user/search.md",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/search.md",
+      "pid": 0,
+      "toc_path": [
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 3345
+    },
+    {
+     "final": "### What is a fuzzy pointer?\nIn trip2g, *semantic (vector) search* doesn\u2019t return an \u201cexact line/paragraph location\u201d in a document. Instead, it returns a **fuzzy pointer**: a *heading breadcrumb* that points to **the right section**, not the precise paragraph yet.\n\nWhen trip2g indexes a note, it splits the note into chunks, and each chunk is prepended with a breadcrumb like:\n\n`{title} > {h1} > {h2} > ... > (section text)`\n\nSo the fuzzy pointer looks like \u201cthe answer is somewhere around here\u201d by "
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 5733,
+   "out_tok": 398,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer how does search find the exact section toc_path match_id"
+     },
+     "out_len": 1337
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c6",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How AI agents use this"
+      ]
+     },
+     "out_len": 1204
+    },
+    {
+     "final": "A **fuzzy pointer** (in trip2g\u2019s context) is a way to point an AI agent to the **right place in a note using a section \u201cbreadcrumb\u201d (TOC path)** rather than an exact sentence/byte/line offset.\n\n### Why it\u2019s \u201cfuzzy\u201d\nThe pointer is **not exact at sentence-level**\u2014it targets the **section**. This is intentional:\n\n- **Sentence-level pointers are fragile**: if you edit the note text, line numbers shift and stored pointers can become stale.\n- **Section-level pointers are stable**: as long as the **hea"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 5806,
+   "out_tok": 407,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer search find exact section toc_path match"
+     },
+     "out_len": 1428
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c6",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section"
+      ]
+     },
+     "out_len": 1204
+    },
+    {
+     "final": "### What is a **fuzzy pointer**?\nA fuzzy pointer is the search result\u2019s way of telling you **which note section (heading path)** matched\u2014*but not the exact sentence/line*. In other words, the pointer is \u201cfuzzy\u201d at the **sentence level** and precise at the **section (heading) level**.\n\nThe docs explain why:\n- **Sentence-level pointers are unstable**: changing text shifts line numbers, so sentence pointers become stale.\n- **Section-level pointers are stable**: as long as the **heading exists**, th"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 22718,
+   "out_tok": 393,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "connect trip2g to Telegram for publishing"
+     },
+     "out_len": 1566
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/protocol",
+      "match_id": "p892:c6",
+      "note_id": 892,
+      "path": "en/user/protocol.md",
+      "pid": 892,
+      "toc_path": [
+       "Telegram"
+      ]
+     },
+     "out_len": 1203
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "Telegram publishing connect bot MTProto trip2g Telegram settings"
+     },
+     "out_len": 1434
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p893:c7",
+      "note_id": 893,
+      "path": "en/user/telegram.md",
+      "pid": 893,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 1188
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram",
+      "note_id": 893,
+      "path": "en/user/telegram.md",
+      "pid": 893,
+      "toc_path": []
+     },
+     "out_len": 308
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram",
+      "note_id": 893,
+      "path": "en/user/telegram.md",
+      "pid": 893,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 104
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 600,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p893:c7",
+      "note_id": 893,
+      "path": "en/user/telegram.md",
+      "pid": 893,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 1188
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "site to Telegram connect tg_post tg_date how to set"
+     },
+     "out_len": 1302
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 18207,
+   "out_tok": 694,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "connect trip2g to Telegram publishing"
+     },
+     "out_len": 1605
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/telegram_blog_from_obsidian",
+      "match_id": "p892:c6",
+      "note_id": 0,
+      "path": "en/user/telegram_blog_from_obsidian",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "MTProto connect Telegram trip2g publishing"
+     },
+     "out_len": 1486
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/telegram_account_risks",
+      "match_id": "p1171:c0",
+      "note_id": 0,
+      "path": "en/telegram_account_risks",
+      "pid": 1171,
+      "toc_path": [
+       ""
+      ]
+     },
+     "out_len": 773
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g Telegram publishing connect bot token"
+     },
+     "out_len": 1514
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c3",
+      "note_id": 0,
+      "path": "en/user/telegram",
+      "pid": 537,
+      "toc_path": []
+     },
+     "out_len": 1183
+    },
+    {
+     "final": "To publish to Telegram from trip2g, you set up a Telegram bot and then connect the bot to a Telegram channel.\n\n### 1) Create a bot (via @BotFather)\n1. Open **@BotFather** in Telegram.\n2. Send **/newbot**.\n3. Choose a name and an username ending with **`_bot`**.\n4. Copy the **bot token** you receive.\n\n### 2) Add/connect the bot in trip2g\nIn trip2g, go to the Telegram publishing settings and:\n1. Click **+ Add**\n2. Paste the **Token** (the value from BotFather)\n3. Enter a description (e.g. \u201cMain bo"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 21427,
+   "out_tok": 872,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "connect trip2g to Telegram for publishing"
+     },
+     "out_len": 1512
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/",
+      "match_id": "p1171:c0",
+      "note_id": 1171,
+      "path": "en/telegram_account_risks.md",
+      "pid": 1171,
+      "toc_path": [
+       "Telegram account risks (third-party client auth)"
+      ]
+     },
+     "out_len": 773
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "Telegram publishing connect MTProto login password"
+     },
+     "out_len": 1144
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c0",
+      "note_id": 537,
+      "path": "en/telegram.md",
+      "pid": 537,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 489
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c0",
+      "note_id": 537,
+      "path": "en/telegram.md",
+      "pid": 537,
+      "toc_path": [
+       "Telegram publishing",
+       "How publishing works"
+      ]
+     },
+     "out_len": 489
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram",
+      "note_id": 537,
+      "path": "en/telegram.md",
+      "pid": 537,
+      "toc_path": []
+     },
+     "out_len": 278
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 537,
+      "path": "en/telegram.md",
+      "pid": 537,
+      "toc_path": [
+       "Telegram publishing",
+       "Set up a bot"
+      ]
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "To publish from trip2g to Telegram, you connect **a Telegram bot** and then **bind channels to note tags**.\n\n### 1) Create the bot (BotFather)\n1. Open **@BotFather** in Telegram\n2. Send **/newbot**\n3. Enter a name and a username ending with **`_bot`** (e.g. `myposts_bot`)\n4. Copy the **bot token** (keep it private)\n\n### 2) Add the bot token in trip2g\n1. Open trip2g **admin panel**\n2. Go to **TG bots**\n3. Click **+ Add**\n4. Paste the token into **Token**\n5. Enter a description (e.g. \u201cMain bot\u201d)\n\n"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 5731,
+   "out_tok": 360,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool what does it do when should I use it"
+     },
+     "out_len": 1453
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 1190,
+      "path": "en/user/expand.md",
+      "pid": 1190,
+      "toc_path": [
+       "expand: level-by-level TOC navigation"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The **`expand`** tool helps you navigate a note\u2019s **table of contents (TOC) progressively**\u2014**one level at a time** (\u201cprogressive disclosure\u201d).\n\n**What it does**\n- `expand` returns the **direct children** of a TOC node.\n- If you call it without a `toc_path` (or with `[]`), it lists the **top-level sections**.\n- If you pass a specific `toc_path`, it lists only the **subsections under that section**.\n- This lets you \u201cdescend\u201d to the exact leaf section you need, so you can then read just that part "
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 5621,
+   "out_tok": 363,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool what does it do when should I use it toc_path children"
+     },
+     "out_len": 1219
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 1190,
+      "path": "en/user/expand",
+      "pid": 1190,
+      "toc_path": [
+       "expand tool what does it do and when should I use it?"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The **`expand`** tool lets you **navigate a note\u2019s table of contents (TOC) step-by-step** (\u201cprogressive disclosure\u201d). Instead of loading an entire note, it returns the **direct children** of a TOC node so you can drill down only into the section you need. This is used for **token economy**: reading one section is much cheaper and keeps the relevant content near the top of the context for better recall.\n\n**How it\u2019s used**\n- Call `expand(pid=N)` (or omit `toc_path` / pass `[]`) \u2192 returns the note\u2019"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 7832,
+   "out_tok": 374,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool do and when should I use it"
+     },
+     "out_len": 1366
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "",
+      "match_id": "p1190:c0",
+      "note_id": 0,
+      "path": "",
+      "pid": 0,
+      "toc_path": [
+       "expand: level-by-level TOC navigation"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 300,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 0,
+      "path": "en/user/expand.md",
+      "pid": 1190,
+      "toc_path": [
+       "expand: level-by-level TOC navigation"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The `expand` tool lists a note\u2019s **table-of-contents (TOC) nodes step-by-step**\u2014it performs **progressive disclosure**.\n\n- It returns the **direct children** of a given TOC heading.\n- You start at the top level, then \u201cdescend\u201d by asking `expand` for the next level only where you need it.\n- This lets you find the exact subsection (leaf) to read, **without loading the whole note or its entire flat TOC**, which is much cheaper in tokens.\n\n**When to use it**\n- When you\u2019ve searched and got an approxi"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 2
+  }
+ ],
+ "without": [
+  {
+   "tool_calls": 3,
+   "in_tok": 5557,
+   "out_tok": 632,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 658,
+      "path": "en/user/federation.md",
+      "pid": 658,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 1183
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/hub",
+      "match_id": "p1109:c4",
+      "note_id": 1109,
+      "path": "en/user/hub.md",
+      "pid": 1109,
+      "toc_path": [
+       "Private peers"
+      ]
+     },
+     "out_len": 1201
+    },
+    {
+     "final": "To set up federation with a **private peer** using an **HMAC secret**, you do a **one-time key exchange** where **each side generates a secret for the other direction**, then you paste those values into the Admin \u2192 **Federation** settings.\n\n## 1) Generate the secret on your side for the peer (outbound)\nOn **your hub**, go to **Admin \u2192 Federation** and add your peer as a **private peer**. When prompted, **generate a secret** for the peer\u2019s inbound direction.\n\nThis will give you two values (names "
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 12426,
+   "out_tok": 465,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/federation.md",
+      "match_id": "p658:c4",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 800,
+      "href": "https://trip2g.com/en/user/federation.md",
+      "match_id": "p658:c4",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/hub.md",
+      "match_id": "p1109:c4",
+      "note_id": 3,
+      "path": "en/user/hub.md",
+      "pid": 3,
+      "toc_path": [
+       "Private peers"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/hub.md",
+      "match_id": "",
+      "note_id": 3,
+      "path": "en/user/hub.md",
+      "pid": 3,
+      "toc_path": [
+       "Private peers"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "Admin Federation private peers require a shared HMAC secret paste it in Admin"
+     },
+     "out_len": 1566
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": []
+     },
+     "out_len": 29
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 11345,
+   "out_tok": 649,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p658:c4",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/hub",
+      "match_id": "p1109:c4",
+      "note_id": 3,
+      "path": "en/user/hub.md",
+      "pid": 1,
+      "toc_path": [
+       "Private peers \u2014 require a shared HMAC secret"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/federation",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 125
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 800,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 1,
+      "path": "en/user/federation.md",
+      "pid": 1,
+      "toc_path": [
+       "Federation"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 800,
+      "href": "https://trip2g.com/en/user/hub",
+      "match_id": "p1109:c4",
+      "note_id": 3,
+      "path": "en/user/hub.md",
+      "pid": 1,
+      "toc_path": [
+       "Private peers \u2014 require a shared HMAC secret"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "final": "I can\u2019t retrieve the actual federation/HMAC setup instructions from the knowledge base right now\u2014the MCP `note_html` calls are returning only placeholder text (\u201cEverything is a note.\u201d) instead of the document contents, so I don\u2019t have the steps to cite.\n\nWhat I *can* confirm from the search snippets is this general rule:\n\n- **Private peers require a shared HMAC secret** (public bases need no secret).\n- **You and the private peer each generate a secret for the other side and paste it into** **Adm"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 18202,
+   "out_tok": 526,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g MCP server exposes tools"
+     },
+     "out_len": 1643
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools"
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools",
+       ""
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools",
+       ""
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools",
+       ""
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools",
+       "expand(pid, toc_path?)"
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools",
+       ""
+      ]
+     },
+     "out_len": 1192
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 800,
+      "href": "https://trip2g.com/en/user/agent_memory",
+      "match_id": "p1189:c9",
+      "note_id": 1189,
+      "path": "en/user/agent-memory.md",
+      "pid": 1189,
+      "toc_path": [
+       "Available tools"
+      ]
+     },
+     "out_len": 1192
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 9636,
+   "out_tok": 374,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g MCP server expose tools"
+     },
+     "out_len": 1674
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "p530:c0",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": []
+     },
+     "out_len": 610
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": []
+     },
+     "out_len": 314
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "Methods"
+      ]
+     },
+     "out_len": 256
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 530,
+      "toc_path": [
+       "Methods"
+      ]
+     },
+     "out_len": 8068
+    },
+    {
+     "final": "The trip2g MCP server exposes these tools/methods (function signatures as documented):\n\n- `search(query)`\n- `expand(pid, toc_path?)`\n- `note_html(path, toc_path?)`\n- `similar(path)`\n- `instructions()`\n- `editor_role()`\n- `graphql_introspection(pattern)` *(requires admin tools enabled on the API key)*\n- `graphql_request(query, variables?)` *(requires admin tools enabled on the API key)*\n\nSource: trip2g \u201cMCP Server\u201d docs \u2192 **Methods** table. https://trip2g.com/en/user/mcp"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 6286,
+   "out_tok": 293,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g MCP server expose tools"
+     },
+     "out_len": 1674
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "p530:c0",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 1,
+      "toc_path": [
+       "MCP Server"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 1,
+      "toc_path": [
+       "MCP Server"
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp",
+      "note_id": 1,
+      "path": "en/user/mcp.md",
+      "pid": 1,
+      "toc_path": []
+     },
+     "out_len": 124
+    },
+    {
+     "final": "The trip2g MCP server does **not** appear to expose a fixed, named set of MCP \u201ctools\u201d in the documentation I found. The page simply states: **\u201cEverything is a note.\u201d** (i.e., the server\u2019s capabilities are note-/content-driven rather than a clearly enumerated tools list).  \n\nSource: https://trip2g.com/en/user/mcp (MCP Server section)"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 11718,
+   "out_tok": 496,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g publish Obsidian vault website"
+     },
+     "out_len": 1603
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 1,
+      "path": "en/user/getting-started.md",
+      "pid": 1,
+      "toc_path": []
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/marketing/landings/02_obsidian_sync_alternative",
+      "match_id": "p1126:c1",
+      "note_id": 2,
+      "path": "marketing/landings/02-obsidian-sync-alternative.md",
+      "pid": 2,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 450,
+      "href": "https://trip2g.com/marketing/landings/02_obsidian_sync_alternative",
+      "match_id": "p1126:c1",
+      "note_id": 2,
+      "path": "marketing/landings/02-obsidian-sync-alternative.md",
+      "pid": 2,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 450,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 1,
+      "path": "en/user/getting-started.md",
+      "pid": 1,
+      "toc_path": [
+       "Everything is a note."
+      ]
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/getting_started",
+      "note_id": 1,
+      "path": "en/user/getting-started.md",
+      "pid": 1,
+      "toc_path": []
+     },
+     "out_len": 124
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 800,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "",
+      "note_id": 1,
+      "path": "en/user/getting-started.md",
+      "pid": 1,
+      "toc_path": []
+     },
+     "out_len": 29
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/use_cases",
+      "match_id": "p540:c1",
+      "note_id": 3,
+      "path": "en/user/use-cases.md",
+      "pid": 3,
+      "toc_path": []
+     },
+     "out_len": 0
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 14921,
+   "out_tok": 459,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g publish Obsidian vault website"
+     },
+     "out_len": 1603
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/getting_started",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 96
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": []
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/marketing/landings/02_obsidian_sync_alternative",
+      "match_id": "p1126:c1",
+      "note_id": 1126,
+      "path": "marketing/landings/02-obsidian-sync-alternative.md",
+      "pid": 1126,
+      "toc_path": []
+     },
+     "out_len": 1056
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g plugin BRAT API key connect plugin publish"
+     },
+     "out_len": 1344
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2500,
+      "href": "https://trip2g.com/en/user/hosting",
+      "match_id": "p106:c2",
+      "note_id": 106,
+      "path": "en/user/hosting.md",
+      "pid": 106,
+      "toc_path": []
+     },
+     "out_len": 955
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2500,
+      "href": "https://trip2g.com/docs/onboarding",
+      "match_id": "p917:c19",
+      "note_id": 917,
+      "path": "en/changelog.md",
+      "pid": 917,
+      "toc_path": []
+     },
+     "out_len": 827
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 17685,
+   "out_tok": 501,
+   "dumps": 3,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "publish Obsidian vault as a website trip2g"
+     },
+     "out_len": 1690
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 600,
+      "href": "https://trip2g.com/en/user/getting_started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Setup at a glance"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/getting-started",
+      "match_id": "p528:c0",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/getting_started",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": []
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/getting-started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Create a test vault"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/getting-started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/getting-started",
+      "match_id": "",
+      "note_id": 528,
+      "path": "en/user/getting-started.md",
+      "pid": 528,
+      "toc_path": [
+       "Getting started",
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 7210
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 13661,
+   "out_tok": 616,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g subgraph access control"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/protocol",
+      "match_id": "p892:c9",
+      "note_id": 0,
+      "path": "en/user/protocol.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 1199
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 250,
+      "href": "https://trip2g.com/en/user/context_separation",
+      "match_id": "p1165:c0",
+      "note_id": 0,
+      "path": "en/user/context-separation.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 220,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c0",
+      "note_id": 0,
+      "path": "en/user/context-separation.md",
+      "pid": 0,
+      "toc_path": [
+       "Mechanics"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 260,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/federation.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 260,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/context-separation.md",
+      "pid": 0,
+      "toc_path": [
+       "Mechanics",
+       "subgraphs and access control"
+      ]
+     },
+     "out_len": 8513
+    },
+    {
+     "final": "In trip2g, a **subgraph** is a **label grouping of notes** that determines what a remote search is allowed to return. Each note can carry a `subgraph:` label, and when a federated search is authorized, the peer returns **only the notes in the subgraphs that were granted**.\n\n**How access control works (two independent controls):**\n1. **Federation edge (who may search):**  \n   A federation edge is a directed link `A \u2192 B` meaning **A\u2019s agent may search B**. Direction matters\u2014`A \u2192 B` does *not* impl"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 9879,
+   "out_tok": 753,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g subgraph access control"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/protocol",
+      "match_id": "p892:c9",
+      "note_id": 892,
+      "path": "en/user/protocol.md",
+      "pid": 892,
+      "toc_path": [
+       "How trip2g works"
+      ]
+     },
+     "out_len": 1199
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/context_separation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 500,
+      "href": "https://trip2g.com/en/user/context-separation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation",
+       "Mechanics"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 650,
+      "href": "https://trip2g.com/en/user/federation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/federation",
+      "pid": 1165,
+      "toc_path": [
+       "MCP Federation",
+       "Subgraphs and access control"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "final": "In **trip2g**, a **subgraph** is a *scoped slice of your knowledge base* that determines **which notes are eligible to be returned during federated access** (i.e., when another trip2g/node is allowed to search your node).\n\n### What a subgraph is\n- A **federation edge** answers: **\u201cWho is allowed to search whom?\u201d**\n- A **subgraph** answers: **\u201cWhen they search, what subset of notes do they actually get?\u201d**\n\nSo even if another node has the right to search you (has an edge), a **subgraph controls t"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 9863,
+   "out_tok": 690,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g subgraph access control"
+     },
+     "out_len": 1562
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 120,
+      "href": "https://trip2g.com/en/user/context_separation",
+      "match_id": "p1165:c0",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 120,
+      "href": "https://trip2g.com/en/user/protocol",
+      "match_id": "p892:c9",
+      "note_id": 892,
+      "path": "en/user/protocol.md",
+      "pid": 892,
+      "toc_path": [
+       "How trip2g works"
+      ]
+     },
+     "out_len": 1199
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 140,
+      "href": "https://trip2g.com/en/user/mcp",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/mcp.md",
+      "pid": 4,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "site:trip2g.com \"subgraph\" \"access\" control"
+     },
+     "out_len": 1206
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 140,
+      "href": "https://trip2g.com/en/user/context_separation",
+      "match_id": "",
+      "note_id": 1165,
+      "path": "en/user/context-separation.md",
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 8513
+    },
+    {
+     "final": "In trip2g, a **subgraph** is a way to **partition your notes into scoped \u201cvisibility slices\u201d** for federated search.\n\n### What is a subgraph in trip2g?\n- Every note can have a **`subgraph:` label**.\n- When another base searches yours over federation, **only notes that belong to the subgraphs included in that federation connection are returned**.\n\n> \u201cEvery note can carry a `subgraph:` label\u2026 the peer returns only notes in those subgraphs.\u201d (source: https://trip2g.com/en/user/context_separation)\n\n"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 5902,
+   "out_tok": 411,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "toc_path drill-down save tokens"
+     },
+     "out_len": 1418
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/Token Economy",
+      "match_id": "p1104:c0",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 250,
+      "href": "https://trip2g.com/en/user/Token Economy",
+      "match_id": "",
+      "note_id": 1104,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "The problem with grep -A/-B and whole-file dumps"
+      ]
+     },
+     "out_len": 7013
+    },
+    {
+     "final": "The `toc_path` drill-down saves tokens by fetching **only the matched section of a note**, instead of loading the whole note (or large text windows around a match).\n\nConcretely:\n\n- **`search(query)`** returns results that include a **precise `matches[].toc_path`** pointing to the heading hierarchy that contains the match.\n- Then **`note_html(pid=N, toc_path=match.toc_path)`** retrieves **just that one section\u2019s HTML**, typically far smaller (e.g., ~300 tokens vs ~3000 for the whole note).\n\nThis "
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 5967,
+   "out_tok": 419,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 120,
+      "href": "https://trip2g.com/en/user/Token Economy.md",
+      "match_id": "p1104:c0",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy",
+       "toc_path drill-down"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 180,
+      "href": "https://trip2g.com/en/user/Token Economy.md",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/Token Economy.md",
+      "pid": 0,
+      "toc_path": [
+       "Token Economy",
+       "toc_path drill-down"
+      ]
+     },
+     "out_len": 7013
+    },
+    {
+     "final": "The `toc_path` drill-down saves tokens by **fetching only the exact heading section that matched**, instead of dumping whole notes (or fixed line windows).\n\nConcretely:\n\n- `search(query)` returns match metadata including `matches[].toc_path`, i.e. the **heading hierarchy path to the relevant section**.\n- Then `note_html(pid=N, toc_path=match.toc_path)` loads **only that section\u2019s HTML**, not the entire note.\n- The doc contrasts this with whole-file reads:\n  - Example: a ~3000-token note with onl"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 9084,
+   "out_tok": 509,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "token economy toc_path drill-down save tokens how does it work"
+     },
+     "out_len": 1459
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 600,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "toc_path"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 900,
+      "href": "https://trip2g.com/en/user/token_economy",
+      "match_id": "p1104:c0",
+      "note_id": 1,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy",
+       "toc_path"
+      ]
+     },
+     "out_len": 762
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/token_economy",
+      "note_id": 1,
+      "path": "en/user/Token Economy.md",
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy"
+      ]
+     },
+     "out_len": 136
+    },
+    {
+     "final": "The **`toc_path` drill-down saves tokens** by letting the system fetch **only the specific structural section you need** from a note\u2014rather than loading an entire note (or a coarse fixed line window).\n\nFrom the \u201cToken Economy\u201d doc:\n\n- If an agent \u201cdumps whole notes into context,\u201d it \u201cwastes tokens on text it will never use.\u201d\n- `toc_path` enables **structural section retrieval**, meaning you pull \u201conly what they need\u201d by navigating the note\u2019s table-of-contents hierarchy to the exact section bound"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 14913,
+   "out_tok": 556,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer exact section search find the exact section"
+     },
+     "out_len": 1540
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": []
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "What a fuzzy pointer is"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1400,
+      "href": "https://trip2g.com/en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2000,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2200,
+      "href": "https://trip2g.com/en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How search finds the exact section",
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 2600,
+      "href": "https://trip2g.com/en/user/Fuzzy Pointer.md",
+      "match_id": "p1103:c0",
+      "note_id": 1103,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 14615,
+   "out_tok": 908,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer search find exact section"
+     },
+     "out_len": 1354
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 120,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 160,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section",
+       "What a fuzzy pointer is"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section",
+       "How to resolve a fuzzy pointer to the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 260,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section",
+       "How to resolve a fuzzy pointer to the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 320,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section",
+       "How to resolve a fuzzy pointer to the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 420,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section",
+       "How to resolve a fuzzy pointer to the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "final": "### What is a fuzzy pointer?\nA **fuzzy pointer** is what vector/semantic search returns instead of an exact paragraph location. It\u2019s a **heading breadcrumb** that points to \u201cthe right vicinity\u201d in a document\u2014i.e., *which note and which section hierarchy the match is in*\u2014not the exact line/paragraph match.\n\nThe doc describes it like this: when the system indexes a note, it **splits the note into chunks**, and each chunk gets a breadcrumb prefix of the form:\n\n`{title} > {h1} > {h2} ...`\n\nSo a resu"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 10436,
+   "out_tok": 686,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "fuzzy pointer exact section how does search find the exact section"
+     },
+     "out_len": 1475
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer",
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1200,
+      "href": "https://trip2g.com/en/user/fuzzy_pointer",
+      "match_id": "p1103:c0",
+      "note_id": 1,
+      "path": "en/user/Fuzzy Pointer.md",
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer",
+       "How search finds the exact section"
+      ]
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 1600,
+      "href": "https://trip2g.com/en/user/search.md",
+      "match_id": "",
+      "note_id": 5,
+      "path": "en/user/search.md",
+      "pid": 5,
+      "toc_path": [
+       "search"
+      ]
+     },
+     "out_len": 8861
+    },
+    {
+     "final": "### What is a *fuzzy pointer*?\nA *fuzzy pointer* is what the search system returns instead of an exact location in the document. In practice, it\u2019s a **heading \u201cbreadcrumb\u201d** (e.g., `Document title > H1 > H2`) that points to *where the answer likely lives*, not the exact paragraph. The docs describe it as: search returns \u201ca heading breadcrumb that says *the answer is somewhere around here*,\u201d and that\u2019s intentional. Then the system can \u201cresolve it to the exact paragraph on demand.\u201d  \nSource: **\u201cFu"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 11452,
+   "out_tok": 419,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g connect Telegram publishing"
+     },
+     "out_len": 1463
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c1",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 3,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c1",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 3,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 3,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "",
+      "match_id": "p537:c1",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 3,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 3,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 3,
+      "query": "en/user/telegram.md Add bot token in admin panel TG"
+     },
+     "out_len": 948
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c3",
+      "note_id": 2,
+      "path": "en/user/telegram.md",
+      "pid": 2,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 11605,
+   "out_tok": 481,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g connect to Telegram publishing"
+     },
+     "out_len": 1543
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p892:c6",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p892:c6",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 400,
+      "href": "/en/user/telegram",
+      "match_id": "",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram",
+      "note_id": 4,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "final": "I found the relevant Trip2g documentation page **\u201cTelegram publishing\u201d** here:\n\n- https://trip2g.com/en/user/telegram\n\nHowever, I\u2019m currently unable to load the contents of that page from the knowledge base (tool errors: \u201cNote not found\u201d), so I can\u2019t extract the exact step-by-step instructions to answer your question reliably.\n\nIf you paste the text (or screenshots) of the \u201cTelegram publishing\u201d section from that page, I\u2019ll translate it into clear step-by-step setup instructions for connecting tr"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 8787,
+   "out_tok": 785,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "trip2g connect Telegram publishing"
+     },
+     "out_len": 1463
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c1",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": [
+       "Telegram publishing"
+      ]
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "p537:c1",
+      "note_id": 3,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/telegram",
+      "match_id": "",
+      "note_id": 0,
+      "path": "en/user/telegram.md",
+      "pid": 0,
+      "toc_path": []
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "To connect **trip2g** to **Telegram** for publishing:\n\n1) **Create a bot**\n- In Telegram, open **@BotFather**\n- Send **/newbot**\n- Choose a name and a username ending in **_bot**\n- Copy the **bot token** (keep it private)  \n(Source: \u201cSet up a bot\u201d in https://trip2g.com/en/user/telegram)\n\n2) **Add the bot to trip2g**\n- Open the trip2g **admin panel**\n- Go to **TG bots** \u2192 **+ Add**\n- Paste the **token** into **Token**\n- Add a description and save (refresh to see it in the list)  \n(Source: \u201cSet up"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 3337,
+   "out_tok": 338,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool does and when should I use it"
+     },
+     "out_len": 1366
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 2,
+      "path": "en/user/expand.md",
+      "pid": 1190,
+      "toc_path": [
+       "expand: level-by-level TOC navigation"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The **`expand`** tool lets you navigate a note\u2019s **table of contents (TOC) level-by-level**\u2014a technique called *progressive disclosure*. Instead of loading the whole note (or a flat TOC), it returns the **direct children of a specific TOC node**, so you can \u201cdescend\u201d the section tree only as far as needed. This is meant to save context/compute (\u201ctoken economy\u201d).  \n\n**When to use it**\n- When you want to find the exact section you need in a large note, but don\u2019t want to read the entire thing.\n- Wh"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 3404,
+   "out_tok": 362,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool what does it do when should I use it"
+     },
+     "out_len": 1453
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 1,
+      "path": "en/user/expand.md",
+      "pid": 1190,
+      "toc_path": [
+       "expand"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The **`expand`** tool lets you **navigate a note\u2019s table of contents (TOC) level-by-level** using *progressive disclosure*: it returns the **direct child sections** of a specified TOC node, so you only read the part you need (instead of loading the whole note or its entire flattened TOC).\n\n### When should you use it?\nUse `expand` when:\n- You find a note that likely contains the answer, but you **don\u2019t know the exact section/subsection**.\n- You want to **drill down** through the TOC tree (e.g., t"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 3412,
+   "out_tok": 337,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "detail_limit": 3,
+      "limit": 6,
+      "query": "expand tool what does it do when should I use it"
+     },
+     "out_len": 1453
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "context_words": 200,
+      "href": "https://trip2g.com/en/user/expand",
+      "match_id": "p1190:c0",
+      "note_id": 1190,
+      "path": "en/user/expand.md",
+      "pid": 1190,
+      "toc_path": [
+       "expand: level-by-level TOC navigation"
+      ]
+     },
+     "out_len": 798
+    },
+    {
+     "final": "The **`expand`** tool lets an agent **navigate a note\u2019s Table of Contents one level at a time** (\u201cprogressive disclosure\u201d). It returns the **direct child sections** of a given TOC node so you can drill down to the exact part you need **without loading the whole note or the entire flat TOC**. This is mainly about **token economy** (reading only the relevant section is much cheaper).  \n\n**When to use it**\n- When you found a note in search results and want to **locate the right subsection**, but yo"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 2
+  }
+ ]
+}

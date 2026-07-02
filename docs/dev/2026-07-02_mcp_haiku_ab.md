@@ -1,8 +1,8 @@
-# MCP instructions A/B: does a note make Haiku search the docs better? (2026-07-02)
+# MCP instructions A/B: does a note make a cheap model search the docs better? (2026-07-02)
 
-**TL;DR:** Yes, on the metric that matters. With the docs-base `initialize` instructions note in its system prompt, `claude-haiku-4.5` used **26% fewer tool calls**, triggered **41% fewer whole-note dumps**, and read the exact section instead of the whole note **71% of the time vs 29%** (+43 pp). Answer accuracy was identical (87.5% both) — the note does not make a cheap model find *more* answers, it makes it find them *cheaper*. Total spend for all 48 runs: ~$0.92.
+**TL;DR:** Yes, on the metric that matters, and it holds across two different cheap models. With the docs-base `initialize` instructions note in its system prompt, `claude-haiku-4.5` used **26% fewer tool calls**, triggered **41% fewer whole-note dumps**, and read the exact section instead of the whole note **71% of the time vs 29%**. `gpt-5.4-nano` (see the nano section below) shows the same direction with its own model-specific quirks. Answer accuracy was a tie in both cases: the note does not make a cheap model find *more* answers, it makes it find them *cheaper*.
 
-Live A/B against `https://trip2g.com/_system/mcp` with real tool execution. Harness: `scripts` reproduced below; raw runs in `2026-07-02_mcp_haiku_ab_results.json`.
+Live A/B against `https://trip2g.com/_system/mcp` with real tool execution. Raw runs in `2026-07-02_mcp_haiku_ab_results.json` (haiku) and `2026-07-02_mcp_nano_ab_results.json` (nano); harness in `2026-07-02_mcp_haiku_ab_harness.py`.
 
 ## Method
 
@@ -14,6 +14,14 @@ Live A/B against `https://trip2g.com/_system/mcp` with real tool execution. Harn
 - Loop cap: 8 tool-call rounds per run.
 
 Questions: federation with an HMAC secret; what the MCP server exposes; publishing an Obsidian vault; what a subgraph is and how ACL works; how `toc_path` drill-down saves tokens; what a fuzzy pointer is; connecting Telegram; what `expand` does.
+
+## How the instructions reach the model (validity note)
+
+The WITH variant puts the note directly into the model's system prompt. It does **not** run a live MCP client handshake, so read the numbers as "the note is in context" rather than "a real client fetched it".
+
+This is a valid proxy because of where the note lands in a real setup. trip2g's `handleInitialize` returns the note content in the standard MCP `instructions` field of the `initialize` result (`internal/case/mcp/resolve.go:154`, `result["instructions"] = content`). That is exactly the field a spec-compliant MCP client (Claude Code, Cursor, and others) surfaces into the model's context at connect time. Putting the note in the system prompt models what a well-behaved client does with `initialize.instructions`.
+
+Caveat: the real-world benefit depends on the client actually surfacing that field. Some clients truncate the instructions, place them somewhere the model weights less, or ignore them. So these numbers are the *ceiling* for a compliant client, not a guarantee for every client.
 
 ## Metrics
 
@@ -65,10 +73,47 @@ Question 8 ("what does `expand` do") is excluded from this table: in every run o
 | Section-read rate | 62.5% | 25% |
 | Correct (found right note) | 87.5% | 87.5% |
 
+## Second model: gpt-5.4-nano
+
+Same harness, same 8 questions x 3 reps x 2 variants, model swapped to `openai/gpt-5.4-nano`. And the result is genuinely different, so it is worth stating plainly: **the note helps nano much less than haiku, and on tokens it hurts.**
+
+### nano — retrieval questions (7 x 3 = 21 runs per variant)
+
+| Metric | With note | Without note | Delta |
+|--------|-----------|--------------|-------|
+| Avg tool calls | 5.14 | 6.05 | 15% fewer |
+| Avg tokens | 16,143 | 11,694 | **38% MORE** |
+| Avg whole-note dumps | 0.52 | 0.52 | no change |
+| Section-read rate | 100% | 95% | +5 pp |
+| Right answer found | 100% | 100% | tie |
+
+### Why nano behaves differently
+
+- **nano is already frugal by default.** Without any note it read by section 95% of the time and dumped a whole note only 0.52 times per question — already near the floor haiku only reached *with* the note. nano does not need to be told to use `toc_path`; it does it on its own.
+- **So the note has little dump/section headroom to recover** (dumps unchanged, section-read already at 95%), and its main measurable effect is to **add its own ~500 tokens to every turn's context** plus nudge nano toward more exploration. Net tokens go up 38%, not down.
+- **Model-specific quirks:** nano over-specifies calls — it passes ~7 arguments per `note_html` (every id field plus `match_id` plus `toc_path` at once) where haiku passes ~2. Harmless (the server resolves any one identifier), but it shows nano does not try to minimize the call itself. nano also leaned on `expand` more (21 calls total across all runs vs haiku's 12), doing more structural navigation.
+- Both models: no question was answered from memory in the nano runs (unlike haiku, which guessed the "what does expand do" question from memory in both variants — nano searched even for that one).
+
+### The honest cross-model reading
+
+The note is not a universal win. It is a **correction for a wasteful default.** haiku, left alone, reads whole notes and burns extra round-trips; the note fixes that (26% fewer calls, 41% fewer dumps). nano already reads by section, so the note buys it a small tool-call reduction (15%) at the cost of more tokens. If your agent model is already disciplined, the note mostly costs context; if it is wasteful, the note pays for itself many times over. Since you rarely control which model connects to a public MCP endpoint, shipping the note is still the right default: it caps the downside for the wasteful models and costs the frugal ones a few hundred tokens.
+
+### nano — all-questions aggregate (24 runs per variant)
+
+| Metric | With | Without |
+|--------|------|---------|
+| Avg tool calls | 4.79 | 5.54 |
+| Avg tokens | 14,970 | 10,698 |
+| Avg dumps | 0.46 | 0.46 |
+| Section-read rate | 100% | 96% |
+| Correct | 100% | 100% |
+
 ## Cost
 
-733,569 input + 36,473 output tokens across all 48 runs. At Haiku 4.5 rates (~$1/M in, ~$5/M out) that is ~$0.92. Well under the $2 cap.
+- haiku: 733,569 in + 36,473 out tokens across 48 runs ≈ $0.92 (Haiku 4.5 ~$1/M in, ~$5/M out).
+- nano: 590,560 in + 25,483 out tokens across 48 runs ≈ $0.04 (nano ~$0.05/M in, ~$0.40/M out).
+- Combined ≈ $0.96, well under the $2-per-model cap.
 
 ## Reproduce
 
-The harness (`ab.py`): fetches live tool schemas, runs each question through the OpenAI-format chat-completions loop with real MCP tool execution, and logs calls/tokens/dumps/section-reads per run. Raw output: `2026-07-02_mcp_haiku_ab_results.json`. The instructions note under test: `docs/_mcp_initialize.md`. How to write such a note: `docs/dev/mcp_instructions_guide.md`.
+The harness (`2026-07-02_mcp_haiku_ab_harness.py`): fetches live tool schemas, runs each question through the OpenAI-format chat-completions loop with real MCP tool execution, and logs calls/tokens/dumps/section-reads per run. Swap the `MODEL` constant to change model. Raw output: `2026-07-02_mcp_haiku_ab_results.json` and `2026-07-02_mcp_nano_ab_results.json`. The instructions note under test: `docs/_mcp_initialize.md`. How to write such a note: `docs/dev/mcp_instructions_guide.md`.
