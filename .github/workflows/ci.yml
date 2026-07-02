@@ -50,6 +50,18 @@ jobs:
       - name: Run tests
         run: go test -tags dev ./...
 
+      # The sandbox enforcement tests self-skip on kernels without unprivileged
+      # userns/Landlock, so a plain run can go green without executing them.
+      # This privileged lane sets SANDBOX_TESTS_REQUIRED=1: unsupported → FAIL.
+      - name: Sandbox enforcement tests (privileged, skip forbidden)
+        run: >
+          docker run --rm --privileged
+          -v "$PWD":/src -w /src
+          -v "$(go env GOMODCACHE)":/go/pkg/mod
+          -e SANDBOX_TESTS_REQUIRED=1
+          -e GOFLAGS=-buildvcs=false
+          golang:1.26 go test ./internal/agentruntime/ -run TestSandbox -v
+
   e2e:
     runs-on: ubuntu-latest
     needs: [lint, test]

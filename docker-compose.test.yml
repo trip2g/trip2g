@@ -507,5 +507,22 @@ services:
       retries: 10
       start_period: 15s
 
+  # Sandbox enforcement tests under a privileged container where userns +
+  # Landlock are guaranteed: SANDBOX_TESTS_REQUIRED=1 turns kernel-support
+  # skips into failures. Not part of the default e2e stack — run explicitly:
+  #   docker compose -f docker-compose.test.yml run --rm sandbox-test
+  sandbox-test:
+    image: golang:1.26
+    container_name: trip2g-test-sandbox
+    privileged: true
+    profiles: ["sandbox"]
+    working_dir: /src
+    volumes:
+      - .:/src
+    environment:
+      - SANDBOX_TESTS_REQUIRED=1
+      - GOFLAGS=-buildvcs=false
+    command: ["go", "test", "./internal/agentruntime/", "-run", "TestSandbox", "-v"]
+
 volumes:
   test-data:
