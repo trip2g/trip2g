@@ -24,6 +24,7 @@ namespace $.$$ {
 			notePaths(filter: $filter) {
 				id
 				content
+				latestContentHash
 				latestNoteView {
 					versionId
 				}
@@ -86,16 +87,6 @@ namespace $.$$ {
 			if (count > 1) break
 		}
 		return count
-	}
-
-	// Same content hash as the server's updatenotes.hashContent:
-	// base64url(sha256(content)), padding kept.
-	function content_hash(content: string): string {
-		const bytes = new TextEncoder().encode(content)
-		const digest = $mol_wire_sync(crypto.subtle).digest('SHA-256', bytes) as ArrayBuffer
-		let bin = ''
-		for (const byte of new Uint8Array(digest)) bin += String.fromCharCode(byte)
-		return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_')
 	}
 
 	export class $trip2g_user_tasklist extends $.$trip2g_user_tasklist {
@@ -223,9 +214,12 @@ namespace $.$$ {
 			if (count_occurrences(content, item.text) === 1) {
 				change = { patch: { path, find: item.text, replace: new_line } }
 			} else {
-				// The line is not unique — compare-and-swap the whole note.
+				// The line is not unique — compare-and-swap the whole note using the
+				// server's authoritative content hash from the same fetch.
+				const expected_hash: string | undefined = row?.latestContentHash
+				if (!expected_hash) throw new Error('Note content unavailable')
 				lines[item.line - 1] = new_line + (raw_line.endsWith('\r') ? '\r' : '')
-				change = { upsert: { path, content: lines.join('\n'), expectedHash: content_hash(content) } }
+				change = { upsert: { path, content: lines.join('\n'), expectedHash: expected_hash } }
 			}
 
 			const result = save_mutate({ input: { changes: [change] } })
