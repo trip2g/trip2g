@@ -55,10 +55,6 @@ type loader struct {
 
 	config Config
 
-	// basenameIndex maps lowercase basename (without extension) to notes
-	// Used for O(1) lookup in extractInLinks instead of O(n) iteration
-	basenameIndex map[string][]*model.NoteView
-
 	noteCache func(source SourceFile) *model.NoteView
 
 	// publicURL is the main domain base URL used for cross-domain link resolution.
@@ -78,6 +74,7 @@ type Config struct {
 	FreeParagraphs         int // Default number of free paragraphs from config
 	SoftWraps              bool
 	URLNormalizationMethod model.URLNormalizationMethod
+	WikilinkResolution     model.WikilinkResolution
 }
 
 type Options struct {
@@ -121,6 +118,7 @@ func Load(options Options) (*model.NoteViews, error) {
 	}
 
 	ldr.nvs.Version = options.Version
+	ldr.nvs.WikilinkResolution = options.Config.WikilinkResolution
 	ldr.linkResolver.nvs = ldr.nvs
 	ldr.linkResolver.log = options.Log
 	ldr.linkResolver.chartData = options.ChartData
@@ -446,6 +444,8 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 // buildBasenameIndex creates a map from lowercase basename to notes
 // for O(1) lookup in extractInLinks instead of O(n) iteration per link.
 // Also exposes it on NoteViews.BasenameMap for use by the template layer.
+// Each candidate slice is sorted by (path depth asc, path asc) so wikilink
+// resolution never depends on Go map iteration order.
 func (ldr *loader) buildBasenameIndex() {
 	ldr.nvs.BasenameMap = make(map[string][]*model.NoteView, len(ldr.nvs.PathMap))
 	for path, note := range ldr.nvs.PathMap {
@@ -453,10 +453,18 @@ func (ldr *loader) buildBasenameIndex() {
 		key := strings.ToLower(filename)
 		ldr.nvs.BasenameMap[key] = append(ldr.nvs.BasenameMap[key], note)
 	}
-	ldr.basenameIndex = ldr.nvs.BasenameMap
+	for _, notes := range ldr.nvs.BasenameMap {
+		sort.Slice(notes, func(i, j int) bool {
+			di := strings.Count(notes[i].Path, "/")
+			dj := strings.Count(notes[j].Path, "/")
+			if di != dj {
+				return di < dj
+			}
+			return notes[i].Path < notes[j].Path
+		})
+	}
 }
 
-//nolint:funlen // 1 line over limit; splitting would harm readability
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
 		if p.Ast() == nil {
@@ -486,159 +494,22 @@ func (ldr *loader) extractInLinks() error {
 				return ast.WalkContinue, nil
 			}
 
-			// Handle explicit relative paths first (./file or ../file)
-			//nolint:nestif // complex path resolution with multiple cases
-			if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
-				dir := filepath.Dir(p.Path)
-				if dir == "." {
-					dir = ""
+			if pp := ldr.nvs.ResolveWikilinkTarget(p, target); pp != nil {
+				// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
+				// Use Permalink for regular pages (already transliterated)
+				// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
+				if pp.Slug != "" {
+					p.ResolvedLinks[target] = pp.PermalinkOriginal
+				} else {
+					p.ResolvedLinks[target] = pp.Permalink
 				}
-
-				// Clean and join the relative path
-				resolvedPath := filepath.Join(dir, target)
-				resolvedPath = filepath.Clean(resolvedPath)
-
-				// Try with and without .md extension
-				pp, found := ldr.nvs.PathMap[resolvedPath+".md"]
-				if !found {
-					pp, found = ldr.nvs.PathMap[resolvedPath]
-				}
-
-				if found {
-					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
-					// Use Permalink for regular pages (already transliterated)
-					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
-					if pp.Slug != "" {
-						p.ResolvedLinks[target] = pp.PermalinkOriginal
-					} else {
-						p.ResolvedLinks[target] = pp.Permalink
-					}
-					pp.InLinks[p.Permalink] = struct{}{}
-
-					return ast.WalkContinue, nil
-				}
-
-				// Not found, fall through to mark as broken
-				_, assetExists := p.AssetReplaces[target]
-				if !assetExists {
-					if resolveAsImage(link) {
-						p.AddWarning(model.NoteWarningInfo, "broken image link: %s", target)
-					} else {
-						p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
-					}
-				}
+				pp.InLinks[p.Permalink] = struct{}{}
 
 				return ast.WalkContinue, nil
 			}
 
-			// Obsidian behavior: For simple filenames (no path separators),
-			// use GLOBAL resolution with shortest-path priority.
-			// For paths with '/', use relative path resolution.
-			isSimpleFilename := !strings.Contains(target, "/")
-
-			//nolint:nestif // complex filename resolution with candidate matching
-			if isSimpleFilename {
-				// Global filename resolution (Obsidian behavior)
-				// Use pre-built index for O(1) lookup instead of O(n) iteration
-				// Note: target comes without .md extension, so just lowercase it
-				targetBasename := strings.ToLower(target)
-				candidates := ldr.basenameIndex[targetBasename]
-
-				// If we found exactly one match, use it
-				if len(candidates) == 1 {
-					pp := candidates[0]
-					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
-					// Use Permalink for regular pages (already transliterated)
-					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
-					if pp.Slug != "" {
-						p.ResolvedLinks[target] = pp.PermalinkOriginal
-					} else {
-						p.ResolvedLinks[target] = pp.Permalink
-					}
-					pp.InLinks[p.Permalink] = struct{}{}
-
-					return ast.WalkContinue, nil
-				}
-
-				// If multiple matches, prioritize by shortest path from root
-				if len(candidates) > 1 {
-					shortest := candidates[0]
-					shortestDepth := strings.Count(shortest.Path, "/")
-
-					for _, candidate := range candidates[1:] {
-						depth := strings.Count(candidate.Path, "/")
-						if depth < shortestDepth {
-							shortest = candidate
-							shortestDepth = depth
-						}
-					}
-
-					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
-					// Use Permalink for regular pages (already transliterated)
-					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
-					if shortest.Slug != "" {
-						p.ResolvedLinks[target] = shortest.PermalinkOriginal
-					} else {
-						p.ResolvedLinks[target] = shortest.Permalink
-					}
-					shortest.InLinks[p.Permalink] = struct{}{}
-
-					return ast.WalkContinue, nil
-				}
-
-				// No matches found in global search, fall through to mark as broken
-			} else {
-				// Path contains '/', use relative path resolution (walking up the directory tree)
-				// Path: content
-				// second.md: [[nested/first]]
-				// nested/first.md: [[second]]
-
-				dir := filepath.Dir(p.Path)
-				if dir == "." {
-					dir = ""
-				}
-
-				dirParts := strings.Split(dir, "/")
-
-				for i := len(dirParts); i >= 0; i-- {
-					targetParts := append([]string{}, dirParts[:i]...)
-					targetParts = append(targetParts, target)
-
-					targetPermalink := strings.Join(targetParts, "/")
-
-					pp, found := ldr.nvs.PathMap[targetPermalink+".md"]
-					if !found {
-						pp, found = ldr.nvs.PathMap[targetPermalink]
-					}
-
-					// if p.Path == "эксперимент.md" {
-					// 	fmt.Println("targetPermalink", targetPermalink, "target", target)
-					// 	fmt.Println(ldr.nvs.PathMap)
-					// }
-
-					if found {
-						// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
-						// Use Permalink for regular pages (already transliterated)
-						// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
-						if pp.Slug != "" {
-							p.ResolvedLinks[target] = pp.PermalinkOriginal
-						} else {
-							p.ResolvedLinks[target] = pp.Permalink
-						}
-						pp.InLinks[p.Permalink] = struct{}{}
-
-						return ast.WalkContinue, nil
-					}
-				}
-			}
-
-			_, assetExists := p.AssetReplaces[target]
-			if !assetExists {
-				if resolveAsImage(link) {
-					p.AddWarning(model.NoteWarningInfo, "broken image link: %s", target)
-				} else {
-					p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
-				}
+			if _, assetExists := p.AssetReplaces[target]; !assetExists {
+				p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
 			}
 
 			return ast.WalkContinue, nil
@@ -847,15 +718,17 @@ func (ldr *loader) applyFrontmatterPatches(
 	return result.RawMeta, applied
 }
 
-// resolveWikilinkTarget resolves a wikilink target string to a NoteView.
-// Replicates the resolution logic from extractInLinks() without AST walking.
-// Returns nil if the target cannot be resolved.
-func (ldr *loader) resolveWikilinkTarget(source *model.NoteView, target string) *model.NoteView {
-	return ldr.nvs.ResolveWikilinkTarget(source, target)
-}
-
 func (ldr *loader) resolveLangRedirects() {
-	for _, p := range ldr.nvs.PathMap {
+	// Iterate in sorted path order so lang groups (and their symmetric-pair
+	// wiring) are built deterministically, independent of Go map order.
+	paths := make([]string, 0, len(ldr.nvs.PathMap))
+	for path := range ldr.nvs.PathMap {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	for _, path := range paths {
+		p := ldr.nvs.PathMap[path]
 		if len(p.LangRedirectTargets) == 0 {
 			continue
 		}
@@ -863,10 +736,15 @@ func (ldr *loader) resolveLangRedirects() {
 		seen := make(map[string]struct{})
 
 		for _, target := range p.LangRedirectTargets {
-			resolved := ldr.resolveWikilinkTarget(p, target)
+			resolved := ldr.nvs.ResolveLangRedirectTarget(p, target)
 			if resolved == nil {
 				p.AddWarning(model.NoteWarningWarning,
 					"lang_redirect target not found: %s", target)
+				continue
+			}
+			if resolved == p {
+				p.AddWarning(model.NoteWarningWarning,
+					"lang_redirect target %s resolves to the note itself", target)
 				continue
 			}
 			if resolved.Lang == "" {

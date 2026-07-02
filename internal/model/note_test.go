@@ -906,9 +906,10 @@ func TestNoteViewsResolveWikilinkTarget(t *testing.T) {
 		require.Equal(t, "notes/sub/Nested.md", got.Path)
 	})
 
-	t.Run("branch2 simple basename ambiguous picks shallowest", func(t *testing.T) {
+	t.Run("branch2 simple basename ambiguous prefers same folder", func(t *testing.T) {
 		got := nvs.ResolveWikilinkTarget(source, "Target")
-		require.NotNil(t, got) // both depth 1, picks one non-nil
+		require.NotNil(t, got)
+		require.Equal(t, "notes/Target.md", got.Path, "source is in notes/, sibling must win")
 	})
 
 	t.Run("branch3 path with slash", func(t *testing.T) {

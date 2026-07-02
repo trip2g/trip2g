@@ -309,8 +309,13 @@ type NoteViews struct {
 
 	// BasenameMap maps lowercase filename (without extension) to notes.
 	// Used for Obsidian-style global wikilink resolution.
-	// Multiple notes with the same basename are sorted by path depth (shallowest first).
+	// Candidate slices are sorted by path depth (shallowest first),
+	// then lexicographically by path — see mdloader buildBasenameIndex.
 	BasenameMap map[string][]*NoteView `json:"-"`
+
+	// WikilinkResolution selects the bare-wikilink resolution strategy.
+	// Zero value ("") means the default scoped ladder.
+	WikilinkResolution WikilinkResolution `json:"-"`
 
 	Sitemap []byte `json:"-"`
 
@@ -1160,9 +1165,9 @@ func (nvs *NoteViews) Sidebars(note *NoteView) []*NoteView {
 	return res
 }
 
-// ResolveWikilinkTarget resolves a wikilink target string to a NoteView using
-// Obsidian-compatible resolution: relative paths, global basename lookup,
-// and directory-walk for paths containing "/".
+// ResolveWikilinkTarget resolves a wikilink target string to a NoteView:
+// relative paths, bare-basename lookup (scoped ladder, see pickBareCandidate
+// and WikilinkResolution), and directory-walk for paths containing "/".
 // Returns nil when the target cannot be resolved.
 func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *NoteView {
 	// Branch 1: Explicit relative paths (./file or ../file).
@@ -1184,26 +1189,11 @@ func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *No
 		return nil
 	}
 
-	// Branch 2: Simple filename (no path separator) — global basename lookup.
+	// Branch 2: Simple filename (no path separator) — basename lookup with the
+	// scoped ladder (same folder → same language → global shallowest).
 	if !strings.Contains(target, "/") {
 		targetBasename := strings.ToLower(target)
-		candidates := nvs.BasenameMap[targetBasename]
-		if len(candidates) == 1 {
-			return candidates[0]
-		}
-		if len(candidates) > 1 {
-			shortest := candidates[0]
-			shortestDepth := strings.Count(shortest.Path, "/")
-			for _, candidate := range candidates[1:] {
-				depth := strings.Count(candidate.Path, "/")
-				if depth < shortestDepth {
-					shortest = candidate
-					shortestDepth = depth
-				}
-			}
-			return shortest
-		}
-		return nil
+		return nvs.pickBareCandidate(source, nvs.BasenameMap[targetBasename])
 	}
 
 	// Branch 3: Path with "/" — relative path resolution (walk up directory tree).
@@ -1227,6 +1217,31 @@ func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *No
 		}
 	}
 	return nil
+}
+
+// ResolveLangRedirectTarget resolves a lang_redirect wikilink. A lang_redirect
+// crosses languages by definition, so a bare target must never resolve to the
+// source note itself nor to a same-language sibling (which the scoped ladder's
+// same-folder step would otherwise pick — e.g. bare [[_index]] from
+// ru/_index.md resolving to itself instead of the root en index).
+//
+// Explicit paths ([[folder/Name]], [[./Name]]) stay fully deterministic and are
+// delegated unchanged. Only bare targets get the source/same-lang exclusion,
+// applied deterministically before the ladder runs.
+func (nvs *NoteViews) ResolveLangRedirectTarget(source *NoteView, target string) *NoteView {
+	if strings.Contains(target, "/") || strings.HasPrefix(target, ".") {
+		return nvs.ResolveWikilinkTarget(source, target)
+	}
+
+	candidates := nvs.BasenameMap[strings.ToLower(target)]
+	srcLang := noteLang(source)
+	filtered := filterNotes(candidates, func(c *NoteView) bool {
+		if c == source {
+			return false
+		}
+		return srcLang == "" || noteLang(c) != srcLang
+	})
+	return nvs.pickBareCandidate(source, filtered)
 }
 
 // func (nv NoteViews) Subgraphs() ([]string, error) {

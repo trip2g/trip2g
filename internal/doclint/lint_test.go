@@ -73,6 +73,37 @@ func TestLint_CrossLangLeak(t *testing.T) {
 	require.Contains(t, out, "en/article.md", "source note path must appear in output")
 }
 
+// TestLint_MultiCandidateLangAware verifies the lang-aware leak check on
+// multi-candidate basenames:
+//   - a bare link with a same-lang candidate resolves there and is NOT flagged,
+//   - a bare link whose candidates are all in the other language is a genuine
+//     leak and IS flagged (previously multi-candidate links were skipped).
+func TestLint_MultiCandidateLangAware(t *testing.T) {
+	dir := t.TempDir()
+
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "en"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "ru", "sub"), 0o750))
+
+	// [[shared]] has both en/ and ru/ candidates → resolves same-lang, clean.
+	writeFile(t, filepath.Join(dir, "en", "article.md"), "# Article\n\n[[shared]] [[leaky]]\n")
+	writeFile(t, filepath.Join(dir, "en", "shared.md"), "# Shared EN\n")
+	writeFile(t, filepath.Join(dir, "ru", "shared.md"), "# Shared RU\n")
+
+	// [[leaky]] has TWO candidates, both under ru/ → genuine cross-lang leak.
+	writeFile(t, filepath.Join(dir, "ru", "leaky.md"), "# Leaky RU\n")
+	writeFile(t, filepath.Join(dir, "ru", "sub", "leaky.md"), "# Leaky RU sub\n")
+
+	var buf strings.Builder
+	code, err := doclint.Run(context.Background(), dir, &buf, &logger.DummyLogger{})
+	require.NoError(t, err)
+	require.Equal(t, 1, code, "multi-candidate cross-lang leak must fail the run")
+
+	out := buf.String()
+	require.NotContains(t, out, "[[shared]]", "same-lang resolvable link must not be flagged")
+	require.Contains(t, out, "[[leaky]]", "all-other-lang multi-candidate link must be flagged")
+	require.Contains(t, out, "cross-language", "leak must be reported as cross-language")
+}
+
 // TestLint_FixtureDir runs the linter over testdata/lint/ — the dedicated
 // known-bad fixture directory — and asserts that every supported warning
 // category is reported and that clean.md produces no output.
@@ -109,9 +140,10 @@ func TestLint_FixtureDir(t *testing.T) {
 
 	t.Run("ambiguous_wikilink_is_silent", func(t *testing.T) {
 		// ru/foo.md links [[bar]]; both en/bar.md and ru/bar.md exist.
-		// Ambiguous bare wikilinks are resolved deterministically (shortest-path
-		// wins) and are no longer flagged as warnings — they do not appear in output.
+		// The scoped ladder resolves it to the same-lang ru/bar.md, so it is
+		// neither ambiguous nor a leak — it does not appear in output.
 		require.NotContains(t, out, "ambiguous bare wikilink", "ambiguous wikilink must not be reported")
+		require.NotContains(t, out, "[[bar]]", "same-lang resolvable wikilink must not be flagged")
 	})
 
 	t.Run("vault_patch_failure", func(t *testing.T) {
