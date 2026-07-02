@@ -75,6 +75,16 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 			wantErr: "OfferedTools",
 		},
 		{
+			name:    "sandbox_invalid_value",
+			mutate:  func(c *fleet.Config) { c.Sandbox = "chroot" },
+			wantErr: "Sandbox",
+		},
+		{
+			name:    "sandbox_off_ok",
+			mutate:  func(c *fleet.Config) { c.Sandbox = "off" },
+			wantErr: "",
+		},
+		{
 			name:    "all_fields_present",
 			mutate:  func(c *fleet.Config) {},
 			wantErr: "",

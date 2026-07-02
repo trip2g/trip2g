@@ -383,6 +383,7 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 			EnvPassthrough:  p.Role.EnvPassthrough,
 			EnvPrefix:       p.Role.EnvPrefix,
 			MaxStdoutBytes:  f.cfg.MaxStdoutBytes,
+			Sandbox:         f.sandboxPolicy(),
 		})
 	}
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
@@ -394,9 +395,18 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 		MaxTokens:       clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
 		MaxSteps:        clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
 		AllowedPrograms: f.cfg.AllowedPrograms,
+		Sandbox:         f.sandboxPolicy(),
 		LLM:             f.llm,
 		KB:              kb,
 	})
+}
+
+// sandboxPolicy maps the fleet-level sandbox config to the runtime policy.
+func (f *Fleet) sandboxPolicy() agentruntime.SandboxPolicy {
+	return agentruntime.SandboxPolicy{
+		Mode:    agentruntime.SandboxMode(f.cfg.Sandbox),
+		Network: f.cfg.SandboxNetwork,
+	}
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

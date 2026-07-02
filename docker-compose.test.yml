@@ -495,6 +495,8 @@ services:
       - TRIP2G_FLEET_STEP_CEILING=25
       - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
       - TRIP2G_FLEET_ALLOWED_PROGRAMS=python
+      # Krisp ingest role fetches from krisp-mock: opt in to network inside the sandbox.
+      - TRIP2G_FLEET_SANDBOX_NETWORK=true
       # Krisp mock credentials forwarded to code executor via env_passthrough in the role.
       - KRISP_TOKEN=test-krisp-token
       - KRISP_BASE_URL=http://krisp-mock:9092

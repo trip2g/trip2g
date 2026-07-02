@@ -53,6 +53,10 @@ type Input struct {
 	// enabled at execution time. An empty slice disables exec entirely.
 	AllowedPrograms []string
 
+	// Sandbox is the OS-level isolation policy for the exec tool's code runs.
+	// The zero value is the safe default (native where supported).
+	Sandbox SandboxPolicy
+
 	// MaxTokens is the NON-overridable per-run token hard-cap (safety floor).
 	// The model has no tool to change it; the loop enforces it. Must be > 0.
 	MaxTokens int
@@ -121,7 +125,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 
 	// Tool registry: extension invokers (exec + future MCP plug-ins) are called
 	// before the built-in switch in execTool. Built-in tools leave this nil-safe.
-	invokers := buildInvokers(in.AllowedPrograms)
+	invokers := buildInvokers(in.AllowedPrograms, in.Sandbox)
 
 	messages := []Message{
 		{
@@ -343,12 +347,12 @@ func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
 // non-empty, exec is registered.
 // Future MCP tools: add invokers here, gated by the same allowedPrograms mechanism
 // or a dedicated per-tool allowlist. Never add tools unconditionally.
-func buildInvokers(allowedPrograms []string) map[string]toolInvoker {
+func buildInvokers(allowedPrograms []string, sandbox SandboxPolicy) map[string]toolInvoker {
 	if len(allowedPrograms) == 0 {
 		return nil
 	}
 	return map[string]toolInvoker{
-		toolExec: makeExecInvoker(allowedPrograms),
+		toolExec: makeExecInvoker(allowedPrograms, sandbox),
 	}
 }
 
@@ -356,7 +360,7 @@ func buildInvokers(allowedPrograms []string) map[string]toolInvoker {
 // It runs the code via RunBlock (secret-scrubbed), parses stdout as write JSON,
 // and applies changes via the scoped KB — same write_patterns enforcement as
 // write_note. Out-of-scope writes are denied and recorded, not silently dropped.
-func makeExecInvoker(allowedPrograms []string) toolInvoker {
+func makeExecInvoker(allowedPrograms []string, sandbox SandboxPolicy) toolInvoker {
 	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
 		var args struct {
 			Program string `json:"program"`
@@ -371,6 +375,7 @@ func makeExecInvoker(allowedPrograms []string) toolInvoker {
 		stdout, _, _, runErr := RunBlock(ctx, CodeSpec{
 			Program: args.Program,
 			Code:    args.Code,
+			Sandbox: sandbox,
 			// No Input bag: exec tool runs inline; the model already has context.
 			// No Timeout: the call is bounded by the parent run context.
 		})

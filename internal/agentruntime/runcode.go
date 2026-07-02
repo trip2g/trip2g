@@ -23,6 +23,7 @@ type CodeInput struct {
 	EnvPassthrough  []string      // exact parent env var names forwarded to child
 	EnvPrefix       []string      // parent env var name prefixes forwarded to child
 	MaxStdoutBytes  int           // stdout cap per code child; 0 → 1 MiB default
+	Sandbox         SandboxPolicy // OS-level isolation; zero value = safe default (native)
 }
 
 // RunCode executes a code role. It:
@@ -73,6 +74,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		EnvPassthrough: in.EnvPassthrough,
 		EnvPrefix:      in.EnvPrefix,
 		MaxStdoutBytes: in.MaxStdoutBytes,
+		Sandbox:        in.Sandbox,
 	})
 	if runErr != nil {
 		return nil, fmt.Errorf("coderun: %w", runErr)
