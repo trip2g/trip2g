@@ -13,14 +13,15 @@
   color: var(--muted);
 }
 .@did__eyebrow::before { content: "// "; color: var(--accent); }
-.@did__text {
+/* Copy comes from the _index_payoff note (a single paragraph). */
+.@did__text p {
   font-family: var(--sans); font-size: 17px; line-height: 1.5;
   letter-spacing: -0.005em;
   color: color-mix(in oklab, var(--fg) 92%, transparent);
   margin: 0;
   max-width: 64ch;
 }
-.@did__text b { color: var(--fg); }
+.@did__text strong { color: var(--fg); }
 @media (max-width: 900px) {
   .@did { grid-template-columns: 1fr; padding: 24px 20px; }
 }
@@ -29,19 +30,13 @@
 {{ block @lid() }}
 <section class="@did">
   <div class="@did__eyebrow">then, the payoff</div>
-  <p class="@did__text">
-    <b>Join the network. Your agents will find the rest.</b>
-    Federate your hub with people you trust, and one agent question reaches every base they share with you.
-  </p>
+  <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
 </section>
 {{ end }}
 
 {{ block @lid_ru() }}
 <section class="@did">
   <div class="@did__eyebrow">а дальше</div>
-  <p class="@did__text">
-    <b>Присоединяйтесь к сети. Ваши агенты найдут остальное.</b>
-    Объедините хаб с теми, кому доверяете, — и один вопрос агенту дойдёт до всех баз, которыми с вами поделились.
-  </p>
+  <div class="@did__text">{{ yield mesh_section(path="ru/_index_payoff.md") }}</div>
 </section>
 {{ end }}

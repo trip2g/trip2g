@@ -15,7 +15,8 @@
   color: var(--muted);
 }
 .@did__eyebrow::before { content: "// "; color: var(--accent); }
-.@did__title {
+/* Copy comes from the _index_hero note body: h1 = title, first p = subline, last p = tagline. */
+.@did__copy h1 {
   font-family: var(--sans);
   font-weight: 800;
   font-size: 60px;
@@ -23,15 +24,7 @@
   letter-spacing: -0.025em;
   margin: 18px 0 0;
 }
-.@did__title-hl {
-  background: var(--accent);
-  color: var(--bg);
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 0.78em;
-  padding: 0 0.18em;
-}
-.@did__blurb {
+.@did__copy p {
   margin: 28px 0 0;
   font-family: var(--sans);
   font-size: 15px;
@@ -39,7 +32,7 @@
   max-width: 46ch;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
-.@did__tagline {
+.@did__copy p:last-child {
   margin: 18px 0 0;
   font-family: var(--mono);
   font-size: 12px;
@@ -47,7 +40,7 @@
   max-width: 52ch;
   color: var(--muted);
 }
-.@did__tagline::before { content: "// "; color: var(--accent); }
+.@did__copy p:last-child::before { content: "// "; color: var(--accent); }
 .@did__cta-row { margin-top: 28px; display: flex; }
 .@did__right {
   padding: 18px;
@@ -114,13 +107,9 @@
 <section class="@did">
   <div class="@did__left">
     <div class="@did__eyebrow">obsidian vault → live website</div>
-    <h1 class="@did__title">Publish your<br>Obsidian vault<br>as a website<br>in under a minute.</h1>
-    <p class="@did__blurb">
-      Write in Obsidian, press Sync, your notes are live. The same hub also publishes to Telegram, gates paid content, and answers reader questions over MCP.
-    </p>
-    <p class="@did__tagline">
-      A Markdown Operating System: one note, served to a human as a page and to an agent as a syscall.
-    </p>
+    <div class="@did__copy">
+      {{ yield mesh_section(path="_index_hero.md") }}
+    </div>
     <div class="@did__cta-row">
       {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="getting started", href="/en/user/getting_started", modifier="mesh-hero__cta")}}
@@ -151,13 +140,9 @@
 <section class="@did">
   <div class="@did__left">
     <div class="@did__eyebrow">хранилище obsidian → живой сайт</div>
-    <h1 class="@did__title">Опубликуйте<br>хранилище Obsidian<br>как сайт —<br>за минуту.</h1>
-    <p class="@did__blurb">
-      Пишете в Obsidian, жмёте Sync — заметки уже онлайн. Тот же хаб публикует в Telegram, закрывает платные материалы за пейволом и отвечает на вопросы читателей по MCP.
-    </p>
-    <p class="@did__tagline">
-      Markdown-операционка: одна заметка — и страница для человека, и системный вызов для агента.
-    </p>
+    <div class="@did__copy">
+      {{ yield mesh_section(path="ru/_index_hero.md") }}
+    </div>
     <div class="@did__cta-row">
       {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="первая заметка", href="/ru/user/nachalo_rabotyi", modifier="mesh-hero__cta")}}

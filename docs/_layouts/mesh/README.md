@@ -6,6 +6,24 @@
 
 The mesh theme for trip2g. Used on the main landing pages (`/` and `/ru`).
 
+## Where the landing copy lives
+
+The landing dogfoods trip2g's own content primitives: the words are **markdown notes**, not
+hardcoded HTML. The visible copy lives in hidden section notes (the `_` prefix keeps them out of
+listings/search and off standalone URLs):
+
+| Note | Rendered into |
+|------|---------------|
+| `_index_hero.md` / `ru/_index_hero.md` | hero left column (`hero.html`) |
+| `_index_getting_started.md` / `ru/_index_getting_started.md` | "0 → live site" steps (`how.html`) |
+| `_index_capabilities.md` / `ru/_index_capabilities.md` | 6-capability grid (`capabilities.html`) |
+| `_index_payoff.md` / `ru/_index_payoff.md` | federation payoff band (`network.html`) |
+
+The layout pulls each note's rendered body with `{{ yield mesh_section(path="…") }}`, which calls
+`nvs.ByPath(path).HTMLString()`. The layout only supplies structure and CSS; edit the markdown
+to change the words. Page `<title>`, meta description, and `og:image` come from the `_index.md`
+frontmatter (`title`, `description`, `og_image`), read in `index_layout`.
+
 ## How to create a page
 
 1. Create a Markdown note with a `layout` field in frontmatter:
@@ -60,8 +78,9 @@ Parameterized blocks available everywhere after `{{ import "_blocks" }}`:
 
 | Block | Parameters | Description |
 |-------|-----------|-------------|
-| `index_layout` | — | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS) |
+| `index_layout` | — | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS). Title/description/og:image read from the page note frontmatter (`title`, `description`, `og_image`). |
 | `section_header` | `lhs`, `rhs` | Section heading with left and right labels |
+| `mesh_section` | `path` | Transcludes a hidden section note's rendered body by vault path via `nvs.ByPath(path).HTMLString()`. The landing copy lives in `_index_*.md` notes; the layout supplies only structure and style. |
 | `how_step` | `num`, `title` | Numbered step with `{{ yield content }}` |
 | `compat_item` | `title`, `desc`, `state`, `state_class` | Compatibility table row with `{{ yield content }}` for icon |
 | `roadmap_col` | `title` | Roadmap column with `{{ yield content }}` |
