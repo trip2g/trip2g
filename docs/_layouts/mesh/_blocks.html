@@ -199,15 +199,6 @@
 </div>
 {{ end }}
 
-{{ block compat_item(title="", desc="", state="", state_class="") }}
-<div class="compat-item">
-  {{ yield content }}
-  <h4 class="compat-h">{{ title }}</h4>
-  <p class="compat-p">{{ desc }}</p>
-  <div class="compat-state {{ state_class }}">{{ state }}</div>
-</div>
-{{ end }}
-
 {{ block roadmap_col(cls="", label="") }}
 <div class="col {{ cls }}">
   <div class="col-h">{{ label }}</div>

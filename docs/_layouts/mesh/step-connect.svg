@@ -11,12 +11,12 @@
   </g>
   <g font-family="JetBrains Mono, monospace" font-size="8" fill="#f5f5f2" text-anchor="end">
     <text x="38" y="22">obsidian</text>
-    <text x="38" y="52">drive</text>
-    <text x="38" y="82">tg</text>
+    <text x="38" y="52">notes</text>
+    <text x="38" y="82">images</text>
   </g>
   <g font-family="JetBrains Mono, monospace" font-size="8" fill="#f5f5f2" text-anchor="start">
-    <text x="162" y="22">notion</text>
-    <text x="162" y="52">books</text>
-    <text x="162" y="82">courses</text>
+    <text x="162" y="22">pages</text>
+    <text x="162" y="52">wikilinks</text>
+    <text x="162" y="82">mcp</text>
   </g>
 </svg>
