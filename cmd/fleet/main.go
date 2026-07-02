@@ -296,9 +296,11 @@ func validateConfig(cfg fleet.Config) error {
 		return errors.New("fleet: OfferedTools must be non-empty; use --offered-tools")
 	}
 	// Empty means the safe default (native); see SandboxPolicy.withDefaults.
-	if cfg.Sandbox != "" && cfg.Sandbox != string(agentruntime.SandboxNative) && cfg.Sandbox != string(agentruntime.SandboxOff) {
-		return fmt.Errorf("fleet: Sandbox must be %q or %q (got %q); use --sandbox",
-			agentruntime.SandboxNative, agentruntime.SandboxOff, cfg.Sandbox)
+	switch cfg.Sandbox {
+	case "", string(agentruntime.SandboxNative), string(agentruntime.SandboxOff), string(agentruntime.SandboxBestEffort):
+	default:
+		return fmt.Errorf("fleet: Sandbox must be %q, %q or %q (got %q); use --sandbox",
+			agentruntime.SandboxNative, agentruntime.SandboxBestEffort, agentruntime.SandboxOff, cfg.Sandbox)
 	}
 	return nil
 }
@@ -411,8 +413,9 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	fs.IntVar(&cli.cfg.MaxStdoutBytes, "max-stdout-bytes", 1<<20,
 		"stdout cap per code child (bytes)")
 	fs.StringVar(&cli.cfg.Sandbox, "sandbox", "native",
-		"code-exec sandbox mode: native|off (native = no network + Landlock FS confinement + rlimits + "+
-			"no-new-privs; Linux-only, falls back with a warning when unsupported)")
+		"code-exec sandbox mode: native|besteffort|off (native = PID+mount+net namespaces + private /proc + "+
+			"Landlock FS confinement + rlimits + no-new-privs, Linux-only, FAILS CLOSED when unsupported; "+
+			"besteffort degrades to UNSANDBOXED with a per-run warning; off disables isolation)")
 	fs.BoolVar(&cli.cfg.SandboxNetwork, "sandbox-network", false,
 		"allow host network access inside the code-exec sandbox")
 	fs.IntVar(&poll, "poll-seconds", 30,

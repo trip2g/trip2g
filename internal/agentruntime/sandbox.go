@@ -2,7 +2,6 @@ package agentruntime
 
 import (
 	"log/slog"
-	"sync"
 	"time"
 )
 
@@ -11,15 +10,28 @@ type SandboxMode string
 
 const (
 	// SandboxOff disables OS-level isolation (pre-sandbox behavior: scrubbed
-	// env + throwaway workdir + timeout only).
+	// env + throwaway workdir + timeout only). Untrusted code runs unconfined —
+	// only choose this for fully trusted code.
 	SandboxOff SandboxMode = "off"
-	// SandboxNative is the Tier-0 posture (see docs/dev/process_isolation.md
-	// and the 2026-07-02 sandbox research): empty network namespace, Landlock
+	// SandboxNative is the enforcing Tier-0 posture (see
+	// docs/dev/process_isolation.md and the 2026-07-02 sandbox research):
+	// empty network + PID + mount namespaces, a private /proc, Landlock
 	// filesystem confinement to the run workdir, rlimits, NO_NEW_PRIVS, and a
-	// drop to an unprivileged uid when the daemon runs as root. Pure-Go,
-	// Linux-only; unsupported platforms/kernels fall back with a warning.
+	// drop to an unprivileged uid. Pure-Go, Linux-only. FAIL-CLOSED: if the
+	// sandbox cannot be built or the child fails to start, the run is REFUSED —
+	// untrusted code is never executed unconfined.
 	SandboxNative SandboxMode = "native"
+	// SandboxBestEffort attempts the native posture but degrades to UNSANDBOXED
+	// execution (with a per-run warning) when the sandbox cannot be built or
+	// started. This runs untrusted code without isolation on unsupported
+	// kernels — it is NEVER the default and must be opted into explicitly.
+	SandboxBestEffort SandboxMode = "besteffort"
 )
+
+// enforcing reports whether the mode refuses to run when the sandbox cannot be
+// applied (fail-closed). Only SandboxNative enforces; SandboxBestEffort falls
+// back and SandboxOff never sandboxes.
+func (m SandboxMode) enforcing() bool { return m == SandboxNative }
 
 // SandboxPolicy configures the sandbox applied around one code run. The zero
 // value means the safe default (SandboxNative where supported, network off).
@@ -81,6 +93,7 @@ type sandboxChildSpec struct {
 	Argv          []string `json:"argv"`
 	WorkDir       string   `json:"workdir"`
 	RODirs        []string `json:"ro_dirs"`
+	ROFiles       []string `json:"ro_files"`
 	RWDirs        []string `json:"rw_dirs"`
 	RWFiles       []string `json:"rw_files"`
 	CPUSeconds    int      `json:"cpu_seconds"`
@@ -88,15 +101,14 @@ type sandboxChildSpec struct {
 	FileSizeBytes int64    `json:"file_size_bytes"`
 	MaxProcs      int      `json:"max_procs"`
 	MaxOpenFiles  int      `json:"max_open_files"`
+	DropUID       int      `json:"drop_uid"` // >0 → setuid to this uid after mounts (root path)
+	DropGID       int      `json:"drop_gid"` // >0 → setgid to this gid after mounts (root path)
 }
 
-//nolint:gochecknoglobals // one-shot warning gate; package-level by design
-var sandboxWarnOnce sync.Once
-
-// warnSandboxFallback logs (once per process) that code execution is running
-// WITHOUT the sandbox so operators see the degraded posture in the logs.
+// warnSandboxFallback logs (per run, NOT once) that a SandboxBestEffort run is
+// executing WITHOUT OS-level isolation so operators see every degraded run in
+// the logs. SandboxNative never reaches this path — it fails closed.
 func warnSandboxFallback(reason string, err error) {
-	sandboxWarnOnce.Do(func() {
-		slog.Warn("coderun: sandbox unavailable, executing without OS-level isolation", "reason", reason, "err", err)
-	})
+	//nolint:sloglint // pure helper with no scoped logger; operator-facing degraded-posture warning
+	slog.Warn("coderun: sandbox unavailable, executing WITHOUT OS-level isolation (besteffort mode)", "reason", reason, "err", err)
 }
