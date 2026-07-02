@@ -309,7 +309,8 @@ type NoteViews struct {
 
 	// BasenameMap maps lowercase filename (without extension) to notes.
 	// Used for Obsidian-style global wikilink resolution.
-	// Multiple notes with the same basename are sorted by path depth (shallowest first).
+	// Candidate slices are sorted by path depth (shallowest first),
+	// then lexicographically by path — see mdloader buildBasenameIndex.
 	BasenameMap map[string][]*NoteView `json:"-"`
 
 	Sitemap []byte `json:"-"`
