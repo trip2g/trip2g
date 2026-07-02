@@ -342,7 +342,9 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	require.Equal(t, "https://markavrelii.2pub.me/knigi/kniga_06", payload.Results[0].URL)
 	require.Equal(t, "source", payload.Results[0].Kind)
 	require.Len(t, payload.Results[0].Matches, 1)
-	require.Equal(t, "p32:m1", payload.Results[0].Matches[0].MatchID)
+	// No chunk resolved: match_id is omitted (never an unusable "m"-form id).
+	require.Empty(t, payload.Results[0].Matches[0].MatchID)
+	require.NotContains(t, result.Content[0].Text, "match_id:")
 	require.Contains(t, payload.Results[0].Matches[0].Snippet, "обидчику")
 }
 
@@ -914,6 +916,138 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Contains(t, result.Content[0].Text, "Лучший способ отомстить - не уподобляться обидчику.")
 		require.Contains(t, result.Content[0].Text, "Следующий фрагмент.")
 		require.NotContains(t, result.Content[0].Text, "FULL NOTE HTML")
+	})
+
+	t.Run("bad toc_path returns error with top-level sections, not the full note", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      `<div data-header="Интро"><h1>Интро</h1><p>FULL NOTE HTML</p></div>`,
+			Headings: appmodel.NoteViewHeadings{
+				{Text: "Интро", Level: 1, ID: "intro"},
+				{Text: "Раздел", Level: 1, ID: "razdel"},
+			},
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32, "toc_path": ["Переименованный заголовок"]}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 4,
+		})
+
+		require.NotNil(t, resp.Error)
+		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
+		require.Contains(t, resp.Error.Message, "section not found")
+		require.Contains(t, resp.Error.Message, "Интро")
+		require.Contains(t, resp.Error.Message, "Раздел")
+		require.NotContains(t, resp.Error.Message, "FULL NOTE HTML")
+	})
+
+	t.Run("bad match_id returns error, not the full note", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      `<div data-header="Интро"><h1>Интро</h1><p>FULL NOTE HTML</p></div>`,
+			Headings: appmodel.NoteViewHeadings{
+				{Text: "Интро", Level: 1, ID: "intro"},
+			},
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return nil
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		// Legacy "m"-form match_id that parseChunkMatchID cannot resolve.
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32, "match_id": "p32:m1"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 5,
+		})
+
+		require.NotNil(t, resp.Error)
+		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
+		require.Contains(t, resp.Error.Message, "no focused window")
+		require.NotContains(t, resp.Error.Message, "FULL NOTE HTML")
+	})
+
+	t.Run("bad match_id falls back to a valid toc_path", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      `<div data-header="Интро"><h1>Интро</h1><p>Section body.</p></div>`,
+			Headings: appmodel.NoteViewHeadings{
+				{Text: "Интро", Level: 1, ID: "intro"},
+			},
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return nil
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 32, "match_id": "p32:c9", "toc_path": ["Интро"]}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 6,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Section body.")
 	})
 
 	t.Run("returns error for non-existent note", func(t *testing.T) {
