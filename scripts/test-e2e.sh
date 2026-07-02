@@ -489,7 +489,9 @@ fi
 # Screenshot regression tests
 echo ""
 echo "📸 Running screenshot tests..."
-npx playwright test e2e/screenshots.spec.js || {
+SCREENSHOT_ARGS=()
+[ "$UPDATE_SNAPSHOTS" = "1" ] && SCREENSHOT_ARGS+=(--update-snapshots)
+npx playwright test e2e/screenshots.spec.js "${SCREENSHOT_ARGS[@]}" || {
   echo -e "${RED}✗ Screenshot tests failed${NC}"
   exit 1
 }

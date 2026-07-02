@@ -156,6 +156,14 @@
     "url": "http://localhost:20081/federation_kb_semi"
   },
   {
+    "path": "fleet/boards/sprint.md",
+    "url": "http://localhost:20081/fleet/boards/sprint"
+  },
+  {
+    "path": "fleet/roles/triage.md",
+    "url": "http://localhost:20081/fleet/roles/triage"
+  },
+  {
     "path": "folder/_banner.md",
     "url": "http://localhost:20081/folder/_banner"
   },
@@ -316,10 +324,6 @@
     "url": "http://localhost:20081/patch_tests/_vault_patch_free"
   },
   {
-    "path": "patch_tests/_vault-patch-malformed.md",
-    "url": "http://localhost:20081/patch_tests/_vault_patch_malformed"
-  },
-  {
     "path": "patch_tests/_vault-patch-multi.md",
     "url": "http://localhost:20081/patch_tests/_vault_patch_multi"
   },
@@ -450,6 +454,10 @@
   {
     "path": "software.md",
     "url": "http://localhost:20081/software"
+  },
+  {
+    "path": "tasklist.md",
+    "url": "http://localhost:20081/tasklist"
   },
   {
     "path": "team-status.md",
