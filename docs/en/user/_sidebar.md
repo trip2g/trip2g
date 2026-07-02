@@ -11,6 +11,7 @@ title: "Navigation"
 - [[en/user/fly|Deploy on fly.io]]
 - [[en/user/cli|CLI sync tool]]
 - [[en/user/markdown|Markdown syntax]]
+- [[en/user/wikilink-resolution|Wikilink resolution]]
 - [[en/user/publishing|Publishing notes]]
 - [[en/user/editor|In-browser editor]]
 - [[en/user/two-way-sync|Two-way sync]]

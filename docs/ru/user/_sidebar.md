@@ -11,6 +11,7 @@ title: "Навигация"
 - [[ru/user/fly|Развёртывание на fly.io]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
+- [[ru/user/wikilink-resolution|Разрешение вики-ссылок]]
 - [[ru/user/editor|Редактор в браузере]]
 - [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
 - [[ru/user/live-editing|Живое редактирование]]
