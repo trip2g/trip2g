@@ -1,0 +1,2368 @@
+{
+ "with": [
+  {
+   "tool_calls": 3,
+   "in_tok": 13606,
+   "out_tok": 727,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "private peer federation HMAC secret setup"
+     },
+     "out_len": 1543
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 658,
+      "match_id": "p658:c4"
+     },
+     "out_len": 1183
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! Here's how to set up federation with a private peer using an HMAC secret:\n\n## Two-Step HMAC Secret Exchange\n\nThe setup involves a secure key exchange between you and your peer over a trusted channel:\n\n### Step 1: Peer generates an inbound secret\nYour peer (e.g., Bob) goes to **Admin \u2192 Federation \u2192 Add inbound secret** and:\n- Picks a short key ID (e.g., `alice-2026`)\n- Optionally selects which subgraphs you can access\n- Clicks Generate\n- Sends you the `kid` and `secretHex` over a trusted"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 13607,
+   "out_tok": 713,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "private federation peer HMAC secret setup"
+     },
+     "out_len": 1543
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 658,
+      "match_id": "p658:c4"
+     },
+     "out_len": 1183
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! Here's how to set up federation with a private peer using an HMAC secret:\n\n## Two-Step HMAC Secret Exchange\n\nThe process involves your hub and the peer's hub exchanging secrets over a trusted channel:\n\n### **Step 1: Peer generates a secret for you**\nThe peer (Bob) goes to **Admin \u2192 Federation \u2192 Add inbound secret** and:\n- Picks a short key ID (e.g., `alice-2026`)\n- Optionally selects which subgraphs you can access\n- Clicks Generate\n- Shares the `kid` and `secretHex` with you over a trus"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 9627,
+   "out_tok": 567,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "private peer HMAC secret federation setup"
+     },
+     "out_len": 1543
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 658,
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! Here's how to set up federation with a private peer using an HMAC secret:\n\n## Two-Step Exchange Process\n\n**Step 1: Bob generates a secret for you**\n- Bob opens **Admin \u2192 Federation \u2192 Add inbound secret**\n- He picks a short key ID (e.g., `alice-2026`)\n- Optionally selects which subgraphs you may access\n- Clicks Generate and sends you the `kid` and `secretHex` over a trusted channel (like a direct message)\n\n**Step 2: You add an outbound secret**\n- In your admin \u2192 **Federation \u2192 Add outbou"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 20117,
+   "out_tok": 768,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "MCP server tools expose"
+     },
+     "out_len": 1470
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "MCP reference tools search note_html similar"
+     },
+     "out_len": 1729
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 530
+     },
+     "out_len": 18784
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 530,
+      "toc_path": [
+       "Custom tools and discovery"
+      ]
+     },
+     "out_len": 988
+    },
+    {
+     "final": "Based on the trip2g documentation, the **trip2g MCP server exposes the following tools**:\n\n## Core Tools\n\n| Tool | Description |\n|------|-------------|\n| **`search(query)`** | Vector search across the knowledge base. Returns slim snippets \u2014 a heading breadcrumb and precise `toc_path` per match, not full tables of contents |\n| **`expand(pid, toc_path?)`** | Walk a note's table of contents level by level. Returns direct children of a TOC node so you can drill down without loading the entire note |"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 9994,
+   "out_tok": 530,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "MCP server tools exposed"
+     },
+     "out_len": 1377
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/mcp.md"
+     },
+     "out_len": 18784
+    },
+    {
+     "final": "Perfect! Based on the trip2g user documentation, the **MCP server exposes the following tools**:\n\n## Core Tools\n\n1. **`search(query)`** \u2014 Vector search across the knowledge base. Returns slim snippets with a heading breadcrumb and a precise `toc_path` per match (not the full table of contents).\n\n2. **`expand(pid, toc_path?)`** \u2014 Walk a note's table of contents level by level. Returns direct children of a TOC node so you can drill down without loading the whole note.\n\n3. **`note_html(path, toc_pa"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 10043,
+   "out_tok": 485,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "MCP server tools expose"
+     },
+     "out_len": 1470
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 530
+     },
+     "out_len": 18784
+    },
+    {
+     "final": "Perfect! The trip2g MCP server exposes the following tools:\n\n## MCP Server Tools\n\n1. **`search(query)`** \u2014 Vector search across the knowledge base. Returns slim snippets with a heading breadcrumb and a precise `toc_path` per match, not the full table of contents.\n\n2. **`expand(pid, toc_path?)`** \u2014 Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the entire note.\n\n3. **`note_html(path, toc_path?)`** \u2014 Retrieve a full n"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 26165,
+   "out_tok": 1010,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "publish Obsidian vault website trip2g"
+     },
+     "out_len": 1601
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Getting started"
+      ]
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 528
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 1870
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Publish your first note"
+      ]
+     },
+     "out_len": 1107
+    },
+    {
+     "final": "Perfect! Now I have the key information. Here's how to publish an Obsidian vault as a website with trip2g:\n\n## Publishing an Obsidian Vault with trip2g\n\n**In brief:** Write notes in Obsidian, sync them via a plugin, and they appear on your website. Add `free: true` to make pages public.\n\n### Quick Setup (Under 1 Minute)\n\n1. **Get an instance** \u2014 See [hosting options](https://trip2g.com/en/user/hosting) to get a personal site running.\n\n2. **Sign in** \u2014 Go to your site URL, click Login, enter your"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 9,
+   "in_tok": 33062,
+   "out_tok": 1476,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "publish Obsidian vault website trip2g",
+      "limit": 6
+     },
+     "out_len": 1601
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "match_id": "p528:c0"
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 528
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "How the service works"
+      ]
+     },
+     "out_len": 307
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Sign in"
+      ]
+     },
+     "out_len": 399
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Configure the admin panel"
+      ]
+     },
+     "out_len": 1061
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 1870
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Publish your first note"
+      ]
+     },
+     "out_len": 1107
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 529,
+      "toc_path": [
+       "Hosting options"
+      ]
+     },
+     "out_len": 1612
+    },
+    {
+     "final": "Excellent! Now I have all the information needed. Here's a comprehensive guide:\n\n## How to Publish an Obsidian Vault with trip2g\n\nPublishing your vault is a straightforward process. Here's the step-by-step workflow:\n\n### 1. **Get a Running Instance**\nFirst, you need a trip2g instance. You have three options:\n- **Demo** \u2014 Try the free shared instance at [simplecloud.2pub.me](https://simplecloud.2pub.me) (good for testing, but not permanent)\n- **Managed hosting** \u2014 Email [alexes.dev@gmail.com](mai"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 22269,
+   "out_tok": 1102,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "publish Obsidian vault website trip2g",
+      "limit": 6
+     },
+     "out_len": 1601
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "match_id": "p528:c0"
+     },
+     "out_len": 667
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Setup at a glance"
+      ],
+      "context_words": 1000
+     },
+     "out_len": 428
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 528
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Create a test vault"
+      ]
+     },
+     "out_len": 318
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Sign in"
+      ]
+     },
+     "out_len": 399
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 1870
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 528,
+      "toc_path": [
+       "Publish your first note"
+      ]
+     },
+     "out_len": 1107
+    },
+    {
+     "final": "## Publishing Your Obsidian Vault with trip2g\n\nHere's the complete workflow:\n\n### 1. **Get an Instance**\nFirst, you need a running trip2g instance (your personal site). See the [hosting options](https://trip2g.com/en/user/hosting) to set one up.\n\n### 2. **Create a Test Vault**\nBefore connecting the plugin, create a fresh Obsidian vault. The plugin uploads everything in the configured folder, so a dedicated vault lets you experiment without publishing personal notes.\n\n### 3. **Sign In**\n- Open yo"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 13820,
+   "out_tok": 995,
+   "dumps": 3,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph access control",
+      "limit": 6
+     },
+     "out_len": 1588
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph definition trip2g",
+      "limit": 6
+     },
+     "out_len": 1245
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1059,
+      "toc_path": [
+       "Managing users via GraphQL"
+      ]
+     },
+     "out_len": 7964
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 8513
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1123,
+      "toc_path": [
+       "Digital sovereignty by design"
+      ]
+     },
+     "out_len": 9047
+    },
+    {
+     "final": "Perfect! I have comprehensive information. Let me provide a complete answer.\n\n## What is a Subgraph in trip2g?\n\nA **subgraph** is a labeled container for organizing which notes are visible to specific users or federation peers. It's defined by adding a `subgraph:` (or `subgraphs:`) key to a note's frontmatter:\n\n```yaml\n---\nsubgraph: premium\n---\n```\n\nOr multiple subgraphs:\n```yaml\n---\nsubgraphs: [premium, beta]\n---\n```\n\nOnce a note with a subgraph declaration is synced from Obsidian, the subgraph"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 10,
+   "in_tok": 36342,
+   "out_tok": 1364,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph access control"
+     },
+     "out_len": 1588
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph trip2g"
+     },
+     "out_len": 1494
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1059,
+      "toc_path": [
+       "Managing users via GraphQL"
+      ]
+     },
+     "out_len": 7964
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 892,
+      "match_id": "p892:c9"
+     },
+     "out_len": 1199
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 523
+     },
+     "out_len": 176
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 523,
+      "toc_path": [
+       "CLI"
+      ]
+     },
+     "out_len": 4390
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "match_id": "p1165:c0"
+     },
+     "out_len": 802
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 1165
+     },
+     "out_len": 201
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "toc_path": [
+       "Two axes you set independently"
+      ]
+     },
+     "out_len": 1581
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "toc_path": [
+       "A worked org example"
+      ]
+     },
+     "out_len": 1945
+    },
+    {
+     "final": "Perfect! Now I have comprehensive information. Let me provide a complete answer based on what I've read.\n\n## What is a Subgraph in trip2g?\n\nA **subgraph** is a labeled collection of notes used for access control. In trip2g, every note can carry a `subgraph:` label in its frontmatter, which determines who can access that note. This allows you to compartmentalize your knowledge base into separate access zones without creating separate instances.\n\n### Key characteristics:\n\n1. **Frontmatter declarat"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 30637,
+   "out_tok": 1128,
+   "dumps": 3,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph access control"
+     },
+     "out_len": 1588
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph trip2g what is"
+     },
+     "out_len": 1545
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1059,
+      "toc_path": [
+       "Managing users via GraphQL"
+      ]
+     },
+     "out_len": 7964
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "toc_path": [
+       "Context separation"
+      ]
+     },
+     "out_len": 8513
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 523,
+      "toc_path": [
+       "Advanced"
+      ]
+     },
+     "out_len": 11677
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "pid": 1165,
+      "toc_path": []
+     },
+     "out_len": 201
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1165,
+      "toc_path": [
+       "How you'd set this up"
+      ]
+     },
+     "out_len": 1054
+    },
+    {
+     "final": "Excellent! Now I have comprehensive information. Let me provide the user with a complete answer.\n\n## What is a Subgraph in trip2g?\n\nA **subgraph** is a label that you attach to notes to control access and visibility. It's a key part of trip2g's access control system. In the frontmatter of any note, you can declare one or more subgraphs:\n\n```yaml\n---\nsubgraph: premium\n---\n```\n\nOr multiple subgraphs at once:\n\n```yaml\n---\nsubgraphs: [premium, beta]\n---\n```\n\nSubgraphs are created automatically when "
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 10072,
+   "out_tok": 604,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down save tokens",
+      "limit": 6
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 1104,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file"
+      ]
+     },
+     "out_len": 7012
+    },
+    {
+     "final": "The answer is clear from the documentation! Here's how **`toc_path` drill-down saves tokens**:\n\n## The Token Savings\n\n**Without `toc_path` (anti-pattern):**\n- `search(\"worker pool\")` \u2192 `note_html(pid=42)` *(no toc_path)*\n- **Loads the entire note: ~3000 tokens**\n- Model recalls poorly because the answer lands in the middle of context\n\n**With `toc_path` drill-down (best practice):**\n- `search(\"worker pool\")` \u2192 extract `toc_path: [\"Goroutines\", \"Worker pool\"]` from the match\n- `note_html(pid=42, t"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 17707,
+   "out_tok": 751,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down context words"
+     },
+     "out_len": 1378
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "section reading tokens instead of whole note"
+     },
+     "out_len": 1618
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1104,
+      "toc_path": [
+       "Token Economy: pull the exact section, not the whole file"
+      ]
+     },
+     "out_len": 7012
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1168,
+      "toc_path": [
+       "Token economy: measured on this site"
+      ]
+     },
+     "out_len": 37311
+    },
+    {
+     "final": "Great! Now I have the full picture. Here's how the `toc_path` drill-down saves tokens:\n\n## The Core Idea\n\nThe **`toc_path` drill-down saves tokens by reading only the exact section you need, not the entire note.** Here's the concrete payoff:\n\n### The Numbers\nAccording to the benchmark on the trip2g docs:\n- **Reading one focused section: ~300 tokens**\n- **Reading the whole note: ~3,000 tokens**\n- **Median savings across real queries: 15\u00d7 cheaper**\n\nThis was measured across 8 real user questions ("
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 10199,
+   "out_tok": 512,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down saves tokens section"
+     },
+     "out_len": 1376
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "toc_path breadcrumb approximate section precise token efficient"
+     },
+     "out_len": 1391
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1104,
+      "toc_path": [
+       "Precise section retrieval"
+      ]
+     },
+     "out_len": 890
+    },
+    {
+     "final": "Perfect! Here's how the `toc_path` drill-down saves tokens:\n\n## Token Savings via toc_path Drill-Down\n\nThe key efficiency comes from **surgical section extraction instead of dumping entire notes**:\n\n- **One section: ~300 tokens**\n- **Full note: ~3,000 tokens**\n\n### How it works:\n\n1. **`search(query)`** returns results with `toc_path` \u2014 a breadcrumb pointing to the matching section\n2. **`note_html(pid=N, toc_path=match.toc_path)`** fetches *only that section's HTML*, not the whole file\n3. If you "
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 10159,
+   "out_tok": 530,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer search exact section"
+     },
+     "out_len": 1519
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section"
+      ]
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "## Summary\n\nA **fuzzy pointer** is a heading breadcrumb (like `Title > Section > Subsection`) that a vector search returns to identify *which section* contains a relevant answer, without pinpointing the exact paragraph.\n\n### How it works:\n\n1. **Vector search is imprecise.** When trip2g indexes a note, it splits it into chunks and prepends each chunk with its full heading path. The vector model finds matching chunks but can only return an approximate location.\n\n2. **The fuzzy pointer is that head"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 13866,
+   "out_tok": 640,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer search exact section"
+     },
+     "out_len": 1519
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1103,
+      "match_id": "p1103:c0"
+     },
+     "out_len": 806
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1103
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "## Fuzzy Pointer: Definition and How Search Finds the Exact Section\n\nA **fuzzy pointer** is a heading breadcrumb (like `Title > Section > Subsection`) that vector search returns to identify which part of a document contains the answer, *without pinpointing the exact paragraph*.\n\n### How It Works\n\n**The indexing:** When trip2g indexes a note, it splits it into chunks. Each chunk gets a heading breadcrumb prepended:\n```\n{title} > {h1} > {h2}\n\n...body of the section...\n```\n\nThis means the vector mo"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 11289,
+   "out_tok": 593,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer search exact section"
+     },
+     "out_len": 1519
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "toc_path breadcrumb match finding sections"
+     },
+     "out_len": 1309
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1103,
+      "toc_path": [
+       "Fuzzy Pointer: how search finds the exact section"
+      ]
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "## Answer\n\nA **fuzzy pointer** is a heading breadcrumb returned by vector search that tells you which note and which section contains an answer, but not the exact line or paragraph.\n\n### How it works:\n\nWhen trip2g indexes a note, it splits it into chunks and prepends each chunk with a breadcrumb:\n```\n{title} > {h1} > {h2}\n...body of the section...\n```\n\nThe vector model sees the full section path, so when you search for something like \"pool of workers Go\", the model finds the matching chunk and r"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 13590,
+   "out_tok": 666,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "Telegram publishing connect"
+     },
+     "out_len": 1461
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 537,
+      "match_id": "p537:c0"
+     },
+     "out_len": 489
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 537
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "Perfect! Here's how to connect trip2g to Telegram for publishing:\n\n## Setup Steps\n\n### 1. **Create a bot in BotFather**\n   - Open [@BotFather](https://telegram.me/BotFather) in Telegram\n   - Send `/newbot`\n   - Enter a display name for the bot\n   - Enter a username ending in `_bot` (e.g., `myposts_bot`)\n   - Copy and save the token (keep it private)\n\n### 2. **Add the bot to your admin panel**\n   - Open your trip2g admin panel\n   - Go to **TG bots**\n   - Click **+ Add**\n   - Paste the token\n   - "
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 10104,
+   "out_tok": 591,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "Telegram publishing trip2g connect",
+      "limit": 6
+     },
+     "out_len": 1489
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/telegram.md"
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "Perfect! I have the complete guide. Here's how to connect trip2g to Telegram for publishing:\n\n## Quick Summary\n\nThe process has two main stages: **create a bot** and **set up channels**.\n\n### 1. **Create and Add a Bot**\n- Open [@BotFather](https://telegram.me/BotFather) in Telegram\n- Send `/newbot` and follow the prompts to create a bot with a username ending in `_bot` (e.g., `myposts_bot`)\n- Copy the token it gives you\n- In your trip2g admin panel, go to **TG bots** \u2192 **+ Add** and paste the to"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 9955,
+   "out_tok": 576,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "Telegram publishing connection setup"
+     },
+     "out_len": 1335
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 537
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "Perfect! Here's how to connect trip2g to Telegram for publishing:\n\n## Quick Setup Overview\n\n1. **Create a bot** in Telegram with BotFather\n2. **Add the bot token** in your trip2g admin panel\n3. **Connect a Telegram channel** and grant the bot permissions\n4. **Mark notes** with publish properties and sync\n\n## Step-by-Step Guide\n\n### 1. Create a Bot\n- Open [@BotFather](https://telegram.me/BotFather) in Telegram\n- Send `/newbot`\n- Enter a display name and username (must end in `_bot`, e.g., `mypost"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "with",
+   "rep": 2
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 2498,
+   "out_tok": 554,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The `expand` tool walks a note's table of contents level by level, showing you the direct children of a TOC node without loading the entire note. Here's what it does and when to use it:\n\n## What it does\n\n`expand` returns a list of the top-level sections (or subsections at any level) of a note, with:\n- `title` \u2014 the heading text\n- `level` \u2014 nesting depth\n- `path` \u2014 the section path\n- `has_children` \u2014 whether it contains further subsections\n\nYou can descend progressively by passing a `toc_path` pa"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 0
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 2498,
+   "out_tok": 404,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The `expand` tool walks a note's table of contents level by level, showing you the direct children of a TOC node without loading the entire note.\n\n## What it does\n\n`expand` returns a list of the immediate subsections under a given heading, each with:\n- `title` \u2014 the section name\n- `level` \u2014 heading depth\n- `path` \u2014 the toc path to that section\n- `has_children` \u2014 whether it contains further subsections\n\n## When to use it\n\nUse `expand` in these situations:\n\n1. **Survey a note's structure first** \u2014"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 1
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 2498,
+   "out_tok": 492,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The `expand` tool walks a note's table of contents level by level. Here's what it does and when to use it:\n\n## What it does\n\n`expand` returns the **direct children** of a table of contents node\u2014the next level down in the hierarchy. Each child includes:\n- `title` \u2014 the section heading\n- `level` \u2014 the depth in the TOC\n- `path` \u2014 the section's path\n- `has_children` \u2014 whether it has subsections\n\n## When to use it\n\n**1. Survey a note's structure before reading**\nIf you retrieve a note in a search and"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "with",
+   "rep": 2
+  }
+ ],
+ "without": [
+  {
+   "tool_calls": 5,
+   "in_tok": 17935,
+   "out_tok": 826,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "HMAC secret federation configuration"
+     },
+     "out_len": 1384
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md"
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/federation.md"
+     },
+     "out_len": 294
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ],
+      "path": "en/user/federation.md"
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! Now I have the complete information. Let me provide you with the answer.\n\n## Setting Up Federation with a Private Peer Using HMAC Secret\n\nHere's the step-by-step process for setting up federation with a private peer:\n\n### **Step 1: Bob generates a secret for you**\n- Bob opens **Admin \u2192 Federation \u2192 Add inbound secret**\n- He picks a short key ID (e.g., `alice-2026`)\n- Optionally, he selects which of his subgraphs you may access\n- Bob clicks Generate and receives a secret hex\n- Bob sends "
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 6,
+   "in_tok": 26195,
+   "out_tok": 988,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "federation private peer HMAC secret setup"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/federation"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md"
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md",
+      "context_words": 2000
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/federation.md"
+     },
+     "out_len": 294
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md",
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! Now I have the complete information. Let me provide the answer:\n\n## How to Set Up Federation with a Private Peer Using an HMAC Secret\n\nFederation with a private peer uses a two-step secret exchange. Here's the process:\n\n### **Step 1: The Private Peer Generates a Secret for You**\nThe peer (Bob) goes to **Admin \u2192 Federation \u2192 Add inbound secret**, where he:\n- Picks a short key ID (e.g., `alice-2026`)\n- Optionally selects which subgraphs you can access\n- Clicks Generate\n- Sends you the `ki"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 18504,
+   "out_tok": 931,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "federation private peer HMAC secret"
+     },
+     "out_len": 1544
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/federation"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md"
+     },
+     "out_len": 15283
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/federation.md",
+      "toc_path": []
+     },
+     "out_len": 294
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/federation.md",
+      "toc_path": [
+       "Adding a private peer (two-step exchange)"
+      ]
+     },
+     "out_len": 2507
+    },
+    {
+     "final": "Perfect! I have the information needed. Let me provide you with a comprehensive answer.\n\n## How to Set Up Federation with a Private Peer Using an HMAC Secret\n\nSetting up federation with a private peer involves a **two-step key exchange** process. Here's how:\n\n### **Step 1: The Peer Generates a Secret for You**\n\nYour peer (Bob) does the following:\n1. Open **Admin \u2192 Federation \u2192 Add inbound secret**\n2. Pick a short key ID (e.g., `alice-2026`)\n3. Optionally select which of their subgraphs you may a"
+    }
+   ],
+   "q_idx": 0,
+   "question": "How do I set up federation with a private peer using an HMAC secret?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 9674,
+   "out_tok": 459,
+   "dumps": 0,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP server tools"
+     },
+     "out_len": 1650
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp_memory_server"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP server search expand note_html",
+      "limit": 5
+     },
+     "out_len": 1652
+    },
+    {
+     "final": "Based on the search results, I can see that the trip2g MCP server exposes **three tools**:\n\n1. **search** - for searching through notes\n2. **expand** - for navigating the table of contents structure\n3. **note_html** - for reading note content\n\nThese tools work together as part of trip2g's MCP memory server, which provides persistent, self-hosted memory for AI agents. According to the documentation, the server automatically indexes file changes (within about half a second) and allows agents to re"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 20388,
+   "out_tok": 781,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP server tools"
+     },
+     "out_len": 1650
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp_memory_server"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/agent-memory.md"
+     },
+     "out_len": 21395
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP tools search expand note_html"
+     },
+     "out_len": 1598
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/mcp.md"
+     },
+     "out_len": 18784
+    },
+    {
+     "final": "Perfect! I now have the complete information. Based on the documentation, here are the tools that the trip2g MCP server exposes:\n\n## Trip2g MCP Server Tools\n\nThe **trip2g MCP server** exposes the following tools:\n\n1. **`search(query)`** - Vector search across the knowledge base. Returns slim snippets with a heading breadcrumb and a precise `toc_path` per match (not the full table of contents)\n\n2. **`expand(pid, toc_path?)`** - Walk a note's table of contents level by level. Returns the direct ch"
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 28636,
+   "out_tok": 683,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP server tools expose"
+     },
+     "out_len": 1674
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/mcp"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP tools list functions"
+     },
+     "out_len": 1448
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/agent-memory.md",
+      "match_id": "p1189:c10"
+     },
+     "out_len": 1205
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/agent-memory.md",
+      "context_words": 1000
+     },
+     "out_len": 21395
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "search expand note_html tool What it does",
+      "limit": 5
+     },
+     "out_len": 1409
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g MCP endpoint tools table search expand note_html similar graphql",
+      "limit": 1
+     },
+     "out_len": 375
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 530
+     },
+     "out_len": 18784
+    }
+   ],
+   "q_idx": 1,
+   "question": "What tools does the trip2g MCP server expose?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 5,
+   "in_tok": 16298,
+   "out_tok": 1088,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Obsidian vault publish website"
+     },
+     "out_len": 1617
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md"
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": []
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": [
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 1870
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": [
+       "Publish your first note"
+      ]
+     },
+     "out_len": 1107
+    },
+    {
+     "final": "Perfect! Now I have the complete information. Let me provide you with a comprehensive answer.\n\n## How to Publish an Obsidian Vault as a Website with trip2g\n\nHere's the step-by-step process:\n\n### **Setup Overview**\nYour Obsidian vault becomes a website in under a minute by following these key steps: get an instance, sign in, configure settings, install the plugin, create an API key, connect the plugin, create an index note, sync, and make pages public.\n\n### **Step 1: Get an Instance**\nFirst, you "
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 8433,
+   "out_tok": 694,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "Obsidian vault publish trip2g website"
+     },
+     "out_len": 1628
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md"
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/use-cases.md"
+     },
+     "out_len": 3080
+    },
+    {
+     "final": "Perfect! I have the information you need. Let me provide you with a comprehensive answer:\n\n## How to Publish an Obsidian Vault with trip2g\n\ntrip2g turns your Obsidian vault into a website in under a minute. Here's the complete process:\n\n### **Setup at a Glance**\n1. Get an instance\n2. Sign in by email\n3. Configure the admin panel\n4. Install plugin via BRAT\n5. Create an API key\n6. Connect the plugin to your site\n7. Create an _index note\n8. Sync your notes\n9. Add `free: true` to make pages public\n\n"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 24428,
+   "out_tok": 1221,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Obsidian vault publish website"
+     },
+     "out_len": 1617
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md"
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "context_words": 5000
+     },
+     "out_len": 7210
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/getting-started.md"
+     },
+     "out_len": 221
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": [
+       "Publish your first note"
+      ]
+     },
+     "out_len": 1107
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": [
+       "Next steps"
+      ]
+     },
+     "out_len": 948
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/getting-started.md",
+      "toc_path": [
+       "Install the Obsidian plugin"
+      ]
+     },
+     "out_len": 1870
+    },
+    {
+     "final": "Perfect! Now I have all the information. Let me provide a comprehensive answer.\n\n## How to Publish an Obsidian Vault as a Website with trip2g\n\nHere's the complete process:\n\n### **Setup at a Glance**\nThe workflow follows these steps:\n1. Get an instance\n2. Sign in by email\n3. Configure admin panel\n4. Install plugin via BRAT\n5. Create API key\n6. Connect plugin to site\n7. Create _index note\n8. Sync\n9. Add `free: true` property\n10. Page is public\n\n### **Detailed Steps**\n\n#### **1. Get an Instance and"
+    }
+   ],
+   "q_idx": 2,
+   "question": "How do I publish an Obsidian vault as a website with trip2g?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 7,
+   "in_tok": 20771,
+   "out_tok": 1016,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph trip2g"
+     },
+     "out_len": 1494
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "access control trip2g"
+     },
+     "out_len": 1419
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/protocol"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/advanced.md"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 892
+     },
+     "out_len": 9748
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 523
+     },
+     "out_len": 11677
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 248
+     },
+     "out_len": 5759
+    },
+    {
+     "final": "Perfect! Now I have comprehensive information. Let me provide you with a complete answer based on the documentation.\n\n## Answer\n\n### What is a Subgraph in trip2g?\n\nA **subgraph** in trip2g is a mechanism for controlling access to specific content within your knowledge base. It allows you to restrict notes to particular groups, teams, or tiers of subscribers. Here's how it works:\n\n**Defining a Subgraph:**\nYou specify a subgraph in a note's frontmatter using:\n```yaml\n---\nsubgraphs: tier-name\n---\n`"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 14,
+   "in_tok": 44075,
+   "out_tok": 928,
+   "dumps": 5,
+   "hit_path": true,
+   "hit_section": true,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph trip2g"
+     },
+     "out_len": 1494
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "access control trip2g"
+     },
+     "out_len": 1419
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/protocol"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/advanced.md"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/protocol.md"
+     },
+     "out_len": 9748
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/advanced.md"
+     },
+     "out_len": 11677
+    },
+    {
+     "tool": "expand",
+     "args": {
+      "path": "en/user/protocol.md",
+      "toc_path": []
+     },
+     "out_len": 308
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/protocol.md",
+      "toc_path": [
+       "The knowledge base node"
+      ]
+     },
+     "out_len": 1286
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/protocol.md",
+      "toc_path": [
+       "Federation: connecting nodes (optional)"
+      ]
+     },
+     "out_len": 909
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/advanced.md",
+      "toc_path": []
+     },
+     "out_len": 11677
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph tier subscriber access control frontmatter"
+     },
+     "out_len": 1436
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g sync --meta subgraph backend-team frontend"
+     },
+     "out_len": 1732
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/user_management.md"
+     },
+     "out_len": 7964
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/cli.md"
+     },
+     "out_len": 7294
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 9,
+   "in_tok": 28174,
+   "out_tok": 1200,
+   "dumps": 4,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph trip2g",
+      "limit": 5
+     },
+     "out_len": 1296
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "access control trip2g",
+      "limit": 5
+     },
+     "out_len": 1352
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/protocol.md"
+     },
+     "out_len": 9748
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/advanced.md"
+     },
+     "out_len": 11677
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/oidc.md"
+     },
+     "out_len": 9035
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "subgraph metadata tier access restrict",
+      "limit": 5
+     },
+     "out_len": 1288
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/context_separation.md"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/user_management.md"
+     },
+     "out_len": 7964
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "frontmatter subgraphs tier subscriber",
+      "limit": 5
+     },
+     "out_len": 1239
+    },
+    {
+     "final": "Perfect! Now I have comprehensive information. Let me provide the answer based on the sources.\n\n## What is a Subgraph in trip2g?\n\nA **subgraph** in trip2g is a named subset of your knowledge base used to organize and control access to content. When you add a `subgraph` (or `subgraphs`) property to a note's frontmatter, you're tagging that note as belonging to a specific tier or group. Subgraphs are created automatically when you sync a note with subgraph metadata.\n\n**Example:**\n```yaml\n---\nsubgr"
+    }
+   ],
+   "q_idx": 3,
+   "question": "What is a subgraph in trip2g and how does access control work?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 13661,
+   "out_tok": 749,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "toc_path drilling down context efficient"
+     },
+     "out_len": 1355
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 1104
+     },
+     "out_len": 7013
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 1190
+     },
+     "out_len": 5942
+    },
+    {
+     "final": "Perfect! Now I have the information needed to answer the question. Let me provide a comprehensive answer.\n\n## How the toc_path Drill-Down Saves Tokens\n\nThe `toc_path` drill-down saves tokens through **progressive, precise section retrieval** rather than loading entire notes. Here's how it works:\n\n### The Core Problem It Solves\n\nLoading whole notes wastes tokens on irrelevant content. A 3000-token note might contain only one relevant 300-token paragraph, forcing the agent to pay for 3000 tokens w"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 2,
+   "in_tok": 7299,
+   "out_tok": 551,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1104
+     },
+     "out_len": 7012
+    },
+    {
+     "final": "Perfect! I have the information needed. Let me provide a comprehensive answer:\n\n## How the token economy toc_path drill-down saves tokens\n\nThe `toc_path` drill-down saves tokens by enabling **precise section retrieval** instead of loading entire notes. Here's how it works:\n\n**The Problem:**\n- Loading a whole note wastes tokens on text that won't be used. For example, a 3000-token note might contain only one relevant paragraph (maybe 300 tokens), but the agent pays for all 3000 tokens.\n- Using `g"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 14718,
+   "out_tok": 757,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "token economy toc_path drill-down save tokens"
+     },
+     "out_len": 1446
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/token_economy"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1104
+     },
+     "out_len": 7012
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "pid": 1168
+     },
+     "out_len": 39096
+    },
+    {
+     "final": "Excellent! Now I have a comprehensive answer. Let me provide the user with a clear explanation.\n\n## How Token Economy + toc_path Drill-Down Saves Tokens\n\nThe `toc_path` drill-down saves tokens by enabling **precise section retrieval** instead of loading entire notes. Here's how it works:\n\n### The Problem with Whole-File Dumps\nWithout `toc_path`, an agent that loads a full note wastes tokens on irrelevant content. For example:\n- A 3,000-token note might contain only one relevant paragraph (300 to"
+    }
+   ],
+   "q_idx": 4,
+   "question": "How does the token economy toc_path drill-down save tokens?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 11694,
+   "out_tok": 804,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer"
+     },
+     "out_len": 1587
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "search find exact section toc_path"
+     },
+     "out_len": 1451
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/fuzzy_pointer"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/Fuzzy Pointer.md"
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "Perfect! Now I have the complete information. Let me provide you with a comprehensive answer.\n\n## What is a Fuzzy Pointer and How Search Finds the Exact Section\n\n### What is a Fuzzy Pointer?\n\nA **fuzzy pointer** is a heading breadcrumb returned by vector search that identifies the approximate location of information in a document. Rather than pinpointing an exact line or paragraph, it tells you \"the answer is somewhere around here\" by showing you which note and which section matched.\n\nHere's how"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 8585,
+   "out_tok": 697,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer"
+     },
+     "out_len": 1587
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "search find exact section"
+     },
+     "out_len": 1402
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/Fuzzy Pointer.md"
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "Perfect! Now I have a complete answer. Let me provide a comprehensive response:\n\n## What is a Fuzzy Pointer and How Search Finds the Exact Section\n\n### What a Fuzzy Pointer Is\n\nA **fuzzy pointer** is a heading breadcrumb returned by vector search that indicates \"the answer is somewhere around here\" rather than pinpointing an exact line or paragraph. This is intentional by design.\n\nWhen a note is indexed, it's split into chunks with heading breadcrumbs prepended:\n\n```\n{title} > {h1} > {h2}\n...bod"
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 11687,
+   "out_tok": 784,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "fuzzy pointer"
+     },
+     "out_len": 1587
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "search find exact section toc_path"
+     },
+     "out_len": 1451
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/fuzzy_pointer"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "note_id": 1103
+     },
+     "out_len": 6522
+    },
+    {
+     "final": "Excellent! Now I have the complete information. Let me provide a comprehensive answer.\n\n## Fuzzy Pointer: What It Is and How It Works\n\n### What is a Fuzzy Pointer?\n\nA **fuzzy pointer** is a heading breadcrumb returned by vector search that indicates *\"the answer is somewhere around here\"* rather than pointing to an exact line or paragraph. It's intentionally \"fuzzy\" but precise enough to identify the right section.\n\nWhen the system indexes a note, it splits it into chunks and prepends a heading "
+    }
+   ],
+   "q_idx": 5,
+   "question": "What is a fuzzy pointer and how does search find the exact section?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 8,
+   "in_tok": 22814,
+   "out_tok": 1016,
+   "dumps": 2,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram connect publish"
+     },
+     "out_len": 1309
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram integration"
+     },
+     "out_len": 1541
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/telegram_account_risks.md"
+     },
+     "out_len": 4598
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram API credentials setup"
+     },
+     "out_len": 1515
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram publishing setup guide"
+     },
+     "out_len": 1323
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g how to publish Telegram channel"
+     },
+     "out_len": 1499
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/telegram.md"
+     },
+     "out_len": 8962
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/telegram-blog-from-obsidian.md"
+     },
+     "out_len": 8381
+    },
+    {
+     "final": "Perfect! I now have comprehensive information about connecting trip2g to Telegram for publishing. Let me provide you with the answer.\n\n## How to Connect trip2g to Telegram for Publishing\n\nHere's the step-by-step process to connect trip2g to Telegram:\n\n### 1. **Create a Bot in BotFather**\n   - Open [@BotFather](https://telegram.me/BotFather) in Telegram\n   - Send the `/newbot` command\n   - Enter a display name for the bot\n   - Enter a username ending in `_bot` (e.g., `myposts_bot`)\n   - Copy the "
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 3,
+   "in_tok": 9769,
+   "out_tok": 649,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram publishing connect"
+     },
+     "out_len": 1459
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/telegram.md"
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "Perfect! I have the information you need. Here's how to connect trip2g to Telegram for publishing:\n\n## How to Connect trip2g to Telegram\n\n### 1. **Create a Bot in BotFather**\n   - Open [@BotFather](https://telegram.me/BotFather) in Telegram\n   - Send the command `/newbot`\n   - Enter a display name for the bot\n   - Enter a username ending in `_bot` (e.g., `myposts_bot`)\n   - Copy the token and keep it private\n\n### 2. **Add the Bot to the Admin Panel**\n   - Open the admin panel\n   - Go to **TG bot"
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 4,
+   "in_tok": 11307,
+   "out_tok": 759,
+   "dumps": 1,
+   "hit_path": true,
+   "hit_section": false,
+   "trace": [
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram publishing connection"
+     },
+     "out_len": 1303
+    },
+    {
+     "tool": "search",
+     "args": {
+      "query": "trip2g Telegram integration"
+     },
+     "out_len": 1510
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "href": "https://trip2g.com/en/user/telegram"
+     },
+     "out_len": 0
+    },
+    {
+     "tool": "note_html",
+     "args": {
+      "path": "en/user/telegram.md"
+     },
+     "out_len": 8962
+    },
+    {
+     "final": "Perfect! I have the complete information. Here's how to connect trip2g to Telegram for publishing:\n\n## How to Connect trip2g to Telegram for Publishing\n\nThe process involves 5 main steps:\n\n### 1. **Create a Bot in BotFather**\n   - Open [@BotFather](https://telegram.me/BotFather) in Telegram\n   - Send `/newbot`\n   - Enter a display name for the bot\n   - Enter a username ending in `_bot` (e.g., `myposts_bot`)\n   - Copy the token (keep it private)\n\n### 2. **Add the Bot to trip2g's Admin Panel**\n   "
+    }
+   ],
+   "q_idx": 6,
+   "question": "How do I connect trip2g to Telegram for publishing?",
+   "variant": "without",
+   "rep": 2
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 1600,
+   "out_tok": 381,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The **expand tool** is used to progressively explore a note's table of contents (TOC) structure level by level, rather than loading an entire note at once.\n\n## What it does:\n\nThe expand tool returns the direct children of a TOC node, showing:\n- **title** - the section name\n- **level** - hierarchy level\n- **path** - location in the structure\n- **has_children** - whether the section has subsections\n\n## When to use it:\n\n1. **For large notes** - When you have a note with a deep or complex structure,"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 0
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 1600,
+   "out_tok": 336,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The **expand** tool is used to navigate a note's table of contents (TOC) level by level in a progressive, hierarchical manner.\n\n## What it does:\n\nThe expand tool returns the **direct children** of a specific TOC node. You can:\n- Omit `toc_path` (or pass an empty array `[]`) to get the top-level sections of a note\n- Pass a `toc_path` to drill down and see that section's subsections\n- Each result shows the child's title, level, path, and whether it has further children\n\n## When to use it:\n\n1. **Ex"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 1
+  },
+  {
+   "tool_calls": 0,
+   "in_tok": 1600,
+   "out_tok": 397,
+   "dumps": 0,
+   "hit_path": false,
+   "hit_section": false,
+   "trace": [
+    {
+     "final": "The **expand** tool is used to walk through a note's table of contents (TOC) level by level, implementing a \"progressive disclosure\" approach. Here's what it does and when to use it:\n\n## What it does:\n\nThe expand tool returns the **direct children** of a table of contents node. You can:\n- Omit `toc_path` (or pass an empty array `[]`) to get the top-level sections of a note\n- Pass a `toc_path` to drill down and see the subsections of a specific section\n\nEach result includes:\n- `title` - the secti"
+    }
+   ],
+   "q_idx": 7,
+   "question": "What does the expand tool do and when should I use it?",
+   "variant": "without",
+   "rep": 2
+  }
+ ]
+}
