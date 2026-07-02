@@ -126,9 +126,9 @@ Both roles use `for_each: changed_files` and `max_depth: 3`. The chain terminate
 
 The raw transcript is written by a deterministic ingest step — not the LLM. This keeps the source auditable and re-processable: when the prompt or model improves, re-run the roles against the same raw note.
 
-### What's coming: the executor role kind
+### The code executor role kind
 
-A second role kind (`executor`) will run Python or shell code for steps that do not need a language model — pagination, field mapping, format conversion. Same role-note format, same trigger mechanism, no LLM cost or latency.
+A second role kind (`executor: code`) runs Python, Bash, or Node code for steps that do not need a language model — pagination, field mapping, format conversion. Same role-note format, same trigger mechanism, no LLM cost or latency. The program runs in an OS-level sandbox with a scrubbed environment, and its writes pass through the same `write_patterns` enforcement as `write_note`. See [[en/user/fleet|Fleet: the agent sidecar]] for the full reference and how to run the daemon.
 
 ## Honest limits
 
