@@ -111,7 +111,12 @@ func GenerateBaseline(ctx context.Context, dir string, baselineFile string, log 
 // collectWarnings loads the vault and returns all lint findings, sorted.
 func collectWarnings(ctx context.Context, dir string, log logger.Logger) ([]lintLine, error) {
 	env := newFsEnv(dir, log)
-	ldr := noteloader.New("lint", env, mdloader.Config{})
+	// Lint in scoped mode: a bare [[Name]] with a same-language target is the
+	// author's intent, so we only flag genuine cross-language leaks (no same-lang
+	// candidate). The site's runtime default is global, but scoped resolution
+	// gives the linter the language-aware "did you mean" signal it needs to
+	// distinguish a real leak from a link a bilingual vault resolves fine.
+	ldr := noteloader.New("lint", env, mdloader.Config{WikilinkResolution: model.WikilinkResolutionScoped})
 
 	if loadErr := ldr.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}); loadErr != nil {
 		return nil, fmt.Errorf("doclint: load failed: %w", loadErr)

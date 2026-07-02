@@ -62,6 +62,11 @@ else if req.method == "POST" && req.path == "/v1/chat/completions" then
 
   local bodyLen = std.length(req.body);
 
+  // Detect kanban triage scenario: instruction rendered from roles/triage.md embeds
+  // the board content which contains "@status:doing".  All other roles (e.g. the
+  // transcript agent) do not mention "@status:doing".
+  local isTriageCall = std.length(std.findSubstr("@status:doing", instructionContent)) > 0;
+
   local toolCall =
     if hasToolResult then
       {
@@ -69,7 +74,20 @@ else if req.method == "POST" && req.path == "/v1/chat/completions" then
         type: "function",
         "function": {
           name: "finish",
-          arguments: '{"answer":"done"}',
+          // Preserve scenario-specific answer so tests can distinguish if needed.
+          arguments: if isTriageCall then '{"answer":"triaged"}' else '{"answer":"done"}',
+        },
+      }
+    else if isTriageCall then
+      // Triage scenario: append @triaged to the @status:doing line via patch_note.
+      // Go marshals map keys alphabetically: "find" < "path" < "replace".
+      local triageArgs = { find: "@status:doing", path: "boards/sprint.md", replace: "@status:doing @triaged" };
+      {
+        id: "t1",
+        type: "function",
+        "function": {
+          name: "patch_note",
+          arguments: std.manifestJsonMinified(triageArgs),
         },
       }
     else
