@@ -92,7 +92,7 @@ var (
 		ConfigWikilinkResolution: {
 			ConfigMeta: ConfigMeta{
 				ID:          ConfigWikilinkResolution,
-				Description: "Bare wikilink resolution: scoped (same folder → same language → shallowest) or global (legacy shallowest-only).",
+				Description: "Bare wikilink resolution: global (default, Obsidian-compatible shallowest-only) or scoped (same folder → same language → shallowest).",
 			},
 			Default:  string(model.DefaultWikilinkResolution),
 			Validate: validateWikilinkResolution,

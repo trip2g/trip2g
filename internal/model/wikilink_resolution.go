@@ -10,16 +10,18 @@ import (
 type WikilinkResolution string
 
 const (
-	// WikilinkResolutionScoped is the default ladder:
+	// WikilinkResolutionScoped is the opt-in ladder:
 	// same folder → same language → global shallowest, ties broken by path.
 	WikilinkResolutionScoped WikilinkResolution = "scoped"
 
-	// WikilinkResolutionGlobal is the legacy rule: global shallowest path only
-	// (language- and folder-blind), ties broken by path.
+	// WikilinkResolutionGlobal is the default rule matching Obsidian: global
+	// shallowest path only (language- and folder-blind), ties broken by path.
+	// A bare [[note]] resolves to the root-most match even from a subfolder
+	// (see docs/dev/obsidian_links.md).
 	WikilinkResolutionGlobal WikilinkResolution = "global"
 
 	// DefaultWikilinkResolution is the default when no config is set.
-	DefaultWikilinkResolution = WikilinkResolutionScoped
+	DefaultWikilinkResolution = WikilinkResolutionGlobal
 )
 
 // Valid returns true if the resolution mode is a recognized user choice.
@@ -61,9 +63,10 @@ func noteLang(n *NoteView) string {
 }
 
 // pickBareCandidate resolves a bare [[Name]] link among candidates sharing the
-// basename. Scoped mode (default) applies the ladder: same folder as source →
-// same language as source (shallowest) → global shallowest. Global mode keeps
-// only the last step. Every step breaks ties lexicographically by path.
+// basename. Global mode (default) keeps only the global-shallowest step, matching
+// Obsidian. Scoped mode (opt-in) applies the ladder: same folder as source →
+// same language as source (shallowest) → global shallowest. Every step breaks
+// ties lexicographically by path.
 func (nvs *NoteViews) pickBareCandidate(source *NoteView, candidates []*NoteView) *NoteView {
 	if len(candidates) == 0 {
 		return nil
@@ -72,7 +75,7 @@ func (nvs *NoteViews) pickBareCandidate(source *NoteView, candidates []*NoteView
 		return candidates[0]
 	}
 
-	if nvs.WikilinkResolution != WikilinkResolutionGlobal && source != nil {
+	if nvs.WikilinkResolution == WikilinkResolutionScoped && source != nil {
 		srcDir := filepath.Dir(source.Path)
 		if sameDir := filterNotes(candidates, func(c *NoteView) bool {
 			return filepath.Dir(c.Path) == srcDir

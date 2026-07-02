@@ -13,6 +13,8 @@ import (
 // resolver must not depend on candidate order.
 func makeLadderNVS(notes map[string]string) *NoteViews {
 	nvs := NewNoteViews()
+	// These tests exercise the scoped ladder; global is the default, so opt in.
+	nvs.WikilinkResolution = WikilinkResolutionScoped
 	nvs.BasenameMap = make(map[string][]*NoteView)
 	for path, lang := range notes {
 		nv := &NoteView{Path: path, Permalink: "/" + strings.TrimSuffix(path, ".md"), Lang: lang}
@@ -119,7 +121,7 @@ func TestPickBareCandidateLadder(t *testing.T) {
 		require.Equal(t, "en/user/Topic.md", got.Path)
 	})
 
-	t.Run("legacy global knob restores shallowest-only behavior", func(t *testing.T) {
+	t.Run("global mode (explicit) uses shallowest-only behavior", func(t *testing.T) {
 		nvs := makeLadderNVS(map[string]string{
 			"Topic.md":          "",
 			"en/user/Topic.md":  "",
@@ -129,6 +131,18 @@ func TestPickBareCandidateLadder(t *testing.T) {
 		got := nvs.ResolveWikilinkTarget(nvs.PathMap["en/user/Source.md"], "Topic")
 		require.NotNil(t, got)
 		require.Equal(t, "Topic.md", got.Path, "global mode must ignore the same-folder candidate")
+	})
+
+	t.Run("default (unset) is global: root wins even from a subfolder", func(t *testing.T) {
+		nvs := makeLadderNVS(map[string]string{
+			"Topic.md":          "",
+			"en/user/Topic.md":  "",
+			"en/user/Source.md": "",
+		})
+		nvs.WikilinkResolution = "" // no config → Obsidian-compatible global default
+		got := nvs.ResolveWikilinkTarget(nvs.PathMap["en/user/Source.md"], "Topic")
+		require.NotNil(t, got)
+		require.Equal(t, "Topic.md", got.Path, "default must resolve [[Topic]] to root, not the same-folder note")
 	})
 }
 
