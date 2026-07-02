@@ -38,6 +38,17 @@ func (ctx *Ctx) ShouldEmitJSONLD() bool {
 	return true
 }
 
+// ShouldEmitSoftwareApplication reports whether the page should carry a
+// SoftwareApplication node — only the site landing page (permalink "/"), and
+// only when it already emits JSON-LD. Enables product rich results in search and
+// AI overviews.
+func (ctx *Ctx) ShouldEmitSoftwareApplication() bool {
+	if !ctx.ShouldEmitJSONLD() || ctx.Note == nil {
+		return false
+	}
+	return ctx.Note.Permalink() == "/"
+}
+
 // JSONLDType returns the schema.org @type for the page node.
 // Priority: explicit schema_type override, profile/person, home page, else BlogPosting.
 func (ctx *Ctx) JSONLDType() string {
