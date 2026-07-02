@@ -272,8 +272,10 @@ func fillPageCache(
 	if time.Since(renderStart) >= maxCacheableRender {
 		return
 	}
-	// A layout may have called response.SetContentType() to emit JSON/RSS/plain
-	// text; only cache text/html, since writeCachedPage always relabels hits as
+	// Notes with a content_type frontmatter field are served as plain text, JSON,
+	// CSV, etc. and skip caching earlier (handleContentTypeNote returns before
+	// the cacheable branch). This guard covers any remaining non-HTML responses
+	// (e.g. future edge cases) since writeCachedPage always relabels hits as
 	// text/html and the fill path gzips unconditionally.
 	if !bytes.HasPrefix(ctx.Response.Header.ContentType(), []byte("text/html")) {
 		return

@@ -57,6 +57,8 @@ title: "Navigation"
 - [[en/user/advanced|Custom domains, CLI, SEO]]
 - [[en/user/roadmap|Roadmap]]
 - [[en/user/seo|SEO]]
+- [[en/user/content_type|Custom Content-Type notes]]
+- [[en/user/robots_and_llm|robots.txt and llms.txt]]
 - [[en/typography|Typography & Markdown]]
 - [[en/user/frontmatter-patches|Frontmatter patches]]
 - [[en/user/search|How search works]]

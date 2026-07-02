@@ -27,7 +27,7 @@ There is no fundamental SEO difference [[ru/user/Wordpress|compared to WordPress
 
 **Sitemap.xml** — includes every public page, refreshed when content changes. Available at `/sitemap.xml`.
 
-**Robots.txt** — controlled from site settings. Open (everything indexable) by default; you can close the whole site or supply your own robots.txt.
+**Robots.txt** — publish a `robots.txt` note with `content_type: text/plain` and `slug: /robots.txt`. Everything is indexable if no note is present. See [[en/user/robots_and_llm|robots.txt and llms.txt]].
 
 **Clean URLs** — `/docs/seo` instead of `/page.php?id=123`.
 

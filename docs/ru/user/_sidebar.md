@@ -67,6 +67,8 @@ title: "Навигация"
 - [[ru/user/multilingual|Мультиязычность]]
 - [[ru/user/search|Как работает поиск]]
 - [[ru/user/seo|SEO]]
+- [[ru/user/content_type|Content-Type заметки]]
+- [[ru/user/robots_and_llm|robots.txt и llms.txt]]
 - [[ru/user/Бекапы|Бекапы]]
 - [[ru/user/cli|CLI]]
 - [[ru/user/releases|Релизы]]

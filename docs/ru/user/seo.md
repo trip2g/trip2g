@@ -27,7 +27,7 @@ trip2g генерирует HTML в момент загрузки markdown. По
 
 **Sitemap.xml** — включает все публичные страницы, обновляется при изменениях.
 
-**Robots.txt** — закрытые страницы исключены из индексации.
+**Robots.txt** — публикуйте заметку `robots.txt` с `content_type: text/plain` и `slug: /robots.txt`. Без такой заметки сайт открыт для индексации. Подробнее: [[ru/user/robots_and_llm|robots.txt и llms.txt]].
 
 **Чистые URL** — `/docs/seo` вместо `/page.php?id=123`.
 
