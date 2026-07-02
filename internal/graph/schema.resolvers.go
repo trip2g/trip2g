@@ -3003,8 +3003,13 @@ func (r *publicNoteResolver) URL(ctx context.Context, obj *model.PublicNote) (st
 	return r.env(ctx).PublicURL() + obj.Path, nil
 }
 
-// Tasklist is the resolver for the tasklist field.
-func (r *publicNoteResolver) Tasklist(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error) {
+// VersionID is the resolver for the versionId field.
+func (r *publicNoteResolver) VersionID(ctx context.Context, obj *model.PublicNote) (int64, error) {
+	panic(fmt.Errorf("not implemented: VersionID - versionId"))
+}
+
+// TaskList is the resolver for the taskList field.
+func (r *publicNoteResolver) TaskList(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error) {
 	if obj.NoteView == nil {
 		return []model.NoteTaskItem{}, nil
 	}

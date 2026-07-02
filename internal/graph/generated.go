@@ -790,7 +790,9 @@ type OfferResolver interface {
 type PublicNoteResolver interface {
 	URL(ctx context.Context, obj *model.PublicNote) (string, error)
 
-	Tasklist(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error)
+	VersionID(ctx context.Context, obj *model.PublicNote) (int64, error)
+
+	TaskList(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error)
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -32990,6 +32992,35 @@ func (ec *executionContext) fieldContext_PublicNote_html(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicNote_versionId(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicNote_versionId,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PublicNote().VersionID(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicNote_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PublicNote_toc(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33027,14 +33058,14 @@ func (ec *executionContext) fieldContext_PublicNote_toc(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _PublicNote_tasklist(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+func (ec *executionContext) _PublicNote_taskList(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PublicNote_tasklist,
+		ec.fieldContext_PublicNote_taskList,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.PublicNote().Tasklist(ctx, obj)
+			return ec.resolvers.PublicNote().TaskList(ctx, obj)
 		},
 		nil,
 		ec.marshalNNoteTaskItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItemᚄ,
@@ -33043,7 +33074,7 @@ func (ec *executionContext) _PublicNote_tasklist(ctx context.Context, field grap
 	)
 }
 
-func (ec *executionContext) fieldContext_PublicNote_tasklist(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PublicNote_taskList(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PublicNote",
 		Field:      field,
@@ -34009,10 +34040,12 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
 				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "versionId":
+				return ec.fieldContext_PublicNote_versionId(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
-			case "tasklist":
-				return ec.fieldContext_PublicNote_tasklist(ctx, field)
+			case "taskList":
+				return ec.fieldContext_PublicNote_taskList(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -36727,10 +36760,12 @@ func (ec *executionContext) fieldContext_SimilarNote_note(_ context.Context, fie
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
 				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "versionId":
+				return ec.fieldContext_PublicNote_versionId(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
-			case "tasklist":
-				return ec.fieldContext_PublicNote_tasklist(ctx, field)
+			case "taskList":
+				return ec.fieldContext_PublicNote_taskList(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -37296,10 +37331,12 @@ func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_favoriteNotes
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
 				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "versionId":
+				return ec.fieldContext_PublicNote_versionId(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
-			case "tasklist":
-				return ec.fieldContext_PublicNote_tasklist(ctx, field)
+			case "taskList":
+				return ec.fieldContext_PublicNote_taskList(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -39032,10 +39069,12 @@ func (ec *executionContext) fieldContext_User_favoriteNotes(_ context.Context, f
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
 				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "versionId":
+				return ec.fieldContext_PublicNote_versionId(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
-			case "tasklist":
-				return ec.fieldContext_PublicNote_tasklist(ctx, field)
+			case "taskList":
+				return ec.fieldContext_PublicNote_taskList(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -71448,12 +71487,7 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "toc":
-			out.Values[i] = ec._PublicNote_toc(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "tasklist":
+		case "versionId":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -71462,7 +71496,48 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._PublicNote_tasklist(ctx, field, obj)
+				res = ec._PublicNote_versionId(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "toc":
+			out.Values[i] = ec._PublicNote_toc(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "taskList":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PublicNote_taskList(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

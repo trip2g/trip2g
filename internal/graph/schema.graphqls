@@ -1413,9 +1413,10 @@ type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.No
   url: String! @goField(forceResolver: true)
   title: String!
   html: String!
+  versionId: Int64! @goField(forceResolver: true)
 
   toc: [NoteTocItem!]!
-  tasklist: [NoteTaskItem!]! @goField(forceResolver: true)
+  taskList: [NoteTaskItem!]! @goField(forceResolver: true)
 }
 
 union SearchResultDocument = PublicNote

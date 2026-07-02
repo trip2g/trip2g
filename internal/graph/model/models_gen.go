@@ -2038,14 +2038,15 @@ type OAuthURLPayload struct {
 }
 
 type PublicNote struct {
-	PathID   int64           `json:"pathId"`
-	Path     string          `json:"path"`
-	URL      string          `json:"url"`
-	Title    string          `json:"title"`
-	HTML     string          `json:"html"`
-	Toc      []NoteTocItem   `json:"toc"`
-	Tasklist []NoteTaskItem  `json:"tasklist"`
-	NoteView *model.NoteView `json:"-"`
+	PathID    int64           `json:"pathId"`
+	Path      string          `json:"path"`
+	URL       string          `json:"url"`
+	Title     string          `json:"title"`
+	HTML      string          `json:"html"`
+	VersionID int64           `json:"versionId"`
+	Toc       []NoteTocItem   `json:"toc"`
+	TaskList  []NoteTaskItem  `json:"taskList"`
+	NoteView  *model.NoteView `json:"-"`
 }
 
 func (PublicNote) IsSearchResultDocument() {}

@@ -8,7 +8,8 @@ namespace $.$$ {
 				role
 			}
 			note(input: $input) {
-				tasklist {
+				versionId
+				taskList {
 					index
 					line
 					checked
@@ -23,6 +24,9 @@ namespace $.$$ {
 			notePaths(filter: $filter) {
 				id
 				content
+				latestNoteView {
+					versionId
+				}
 			}
 		}
 	`)
@@ -121,14 +125,16 @@ namespace $.$$ {
 		}
 
 		items(): readonly TaskItem[] {
-			return this.snapshot().note?.tasklist ?? []
+			return this.snapshot().note?.taskList ?? []
 		}
 
-		// Version id of our last own save, advanced from updated[].versionId
-		// (kanban self-echo pattern: events at or below it are our own writes).
+		// Version id of the note as known to this page view. Initialised from
+		// the server-rendered snapshot, then advanced after each successful save.
+		// Used as an optimistic-concurrency baseline: if the server's current
+		// versionId differs before a write, the note has been edited elsewhere.
 		@$mol_mem
-		baseline_version_id(next?: number) {
-			return next ?? 0
+		page_version_id(next?: number) {
+			return next ?? Number(this.snapshot().note?.versionId ?? 0)
 		}
 
 		@$mol_mem
@@ -193,13 +199,21 @@ namespace $.$$ {
 			const path = this.note_path()
 
 			const res = content_request({ filter: { paths: [path] } })
-			const content: string | undefined = res.notePaths[0]?.content
+			const row = res.notePaths[0]
+			const content: string | undefined = row?.content
 			if (content == null) throw new Error('Note content unavailable')
+
+			// Version-based conflict detection: refuse to write if the note has
+			// been edited since this page view loaded (or since our last save).
+			const server_version = Number(row?.latestNoteView?.versionId ?? 0)
+			if (server_version && server_version !== this.page_version_id()) {
+				throw new Error('Заметка изменилась, обновите страницу')
+			}
 
 			const lines = content.split('\n')
 			const raw_line = lines[item.line - 1] ?? ''
 			if (raw_line.replace(/\r$/, '') !== item.text) {
-				throw new Error('Note changed since page load — reload the page')
+				throw new Error('Заметка изменилась, обновите страницу')
 			}
 
 			const new_line = toggle_marker(item.text, item.checked)
@@ -220,12 +234,12 @@ namespace $.$$ {
 			switch (payload.__typename) {
 				case 'UpdateNotesSuccessPayload': {
 					const version_id = Number(payload.updated[0]?.versionId ?? 0)
-					if (version_id) this.baseline_version_id(version_id)
+					if (version_id) this.page_version_id(version_id)
 					return
 				}
 				case 'UpdateNotesHashMismatchPayload':
 				case 'UpdateNotesPatchNotFoundPayload':
-					throw new Error('Note changed since page load — reload the page')
+					throw new Error('Заметка изменилась, обновите страницу')
 				case 'ErrorPayload':
 					throw new Error(payload.message)
 				default:
