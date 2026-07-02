@@ -3360,8 +3360,11 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 
 // NoteChanges is the resolver for the noteChanges field.
 func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error) {
-	// Auth: API key required.
-	if _, err := checkapikey.Resolve(ctx, r.DefaultEnv, "note_changes"); err != nil {
+	// Auth: instance API key, admin session, webhook shortapitoken, or a
+	// signed-in user session. Everything except a real instance API key is
+	// additionally ACL-filtered per emitted note (see filterChangesByACL).
+	bypassACL, err := noteChangesAuth(ctx, r.DefaultEnv)
+	if err != nil {
 		return nil, err
 	}
 
@@ -3386,7 +3389,11 @@ func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.Not
 				if !ok {
 					return
 				}
-				items := r.buildNoteChangeItems(ctx, batch)
+				changes := batch.Changes
+				if !bypassACL {
+					changes = filterChangesByACL(ctx, r.DefaultEnv, changes)
+				}
+				items := r.buildNoteChangeItems(ctx, changes)
 				if len(items) == 0 {
 					continue
 				}

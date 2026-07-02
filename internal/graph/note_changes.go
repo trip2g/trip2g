@@ -8,10 +8,10 @@ import (
 	"trip2g/internal/notebus"
 )
 
-func (r *subscriptionResolver) buildNoteChangeItems(ctx context.Context, batch notebus.Batch) []model.NoteChangeItem {
+func (r *subscriptionResolver) buildNoteChangeItems(ctx context.Context, changes []notebus.Change) []model.NoteChangeItem {
 	nvs := r.DefaultEnv.LatestNoteViews()
 	var items []model.NoteChangeItem
-	for _, change := range batch.Changes {
+	for _, change := range changes {
 		switch change.Event {
 		case "create", "update":
 			ev := model.NoteUpsertEvent{
