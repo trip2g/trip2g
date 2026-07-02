@@ -15,6 +15,13 @@ title: "Навигация"
 - [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
 - [[ru/user/live-editing|Живое редактирование]]
 
+### Примеры использования
+
+- [[ru/user/telegram-blog-from-obsidian|Блог в Telegram из Obsidian]]
+- [[ru/user/sell-obsidian-notes|Продажа доступа к заметкам]]
+- [[ru/user/team-knowledge-base-mcp|База знаний для агентов]]
+- [[ru/user/self-hosted-wiki-sqlite|Self-hosted вики на SQLite]]
+
 ### Telegram
 
 - [[ru/user/telegram|Публикация]]

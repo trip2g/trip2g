@@ -17,6 +17,13 @@ title: "Navigation"
 - [[en/user/live-editing|Live editing]]
 - [[en/user/releases|Releases]]
 
+### Use Cases
+
+- [[en/user/telegram-blog-from-obsidian|Telegram blog from Obsidian]]
+- [[en/user/sell-obsidian-notes|Sell access to your notes]]
+- [[en/user/team-knowledge-base-mcp|Team KB agents can query]]
+- [[en/user/self-hosted-wiki-sqlite|Self-hosted wiki on SQLite]]
+
 ### Reach Your Audience
 
 - [[en/user/telegram|Telegram publishing]]
