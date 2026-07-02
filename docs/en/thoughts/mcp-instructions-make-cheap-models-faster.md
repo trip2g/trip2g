@@ -98,6 +98,18 @@ One question cost more with the note than without. On "how do I publish a vault"
 
 And one question was a wash by design, at least for Haiku: "what does `expand` do" got answered from memory by both Haiku variants, because the model already knows what "expand" means in the abstract. A generic-knowledge question is not a retrieval test, so I scored it separately. nano, for what it is worth, searched even for that one rather than trusting its memory.
 
+## Every knowledge base is different, so describe yours
+
+There is no one true way to search a knowledge base. Mine is hybrid keyword-plus-vector with a section-drill-down loop, but yours might be pure RAG over vector chunks, a wikiLLM walking a wikilink graph, plain full-text, or some mix of all of them. Each is structured differently and rewards a different retrieval technique. An agent that connects cold cannot know which one it is looking at, so it guesses, and guessing is where the tokens and the wrong answers come from.
+
+trip2g's answer is to let the base author write the manual. You know how your base is built, so you write a short navigation instruction that describes how to search *this* base: its retrieval loop, its tools, its conventions, its failure modes. The agent stops guessing because you have handed it the technique. This benchmark measures one such note, but the point generalizes: the note is not trip2g-specific magic, it is you writing down the search method for your own knowledge so a connecting agent inherits it.
+
+And it is delivered for free. As shown above, a compliant client auto-surfaces this instruction through the MCP `initialize.instructions` field the moment it connects, so every agent that ever talks to your base starts with your manual already in context. If you run a base, the practical steps are in the dev note `docs/dev/mcp_instructions_guide.md` ("How to write good MCP instructions for your base"), and the note this benchmark tested is a worked example at `docs/_mcp_instructions.md`.
+
+## Why cheap Claude models take to this
+
+A hypothesis, not a proven claim, for why even the without-note Haiku reads by section as often as it does. Anthropic's [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) prepends each chunk's situating context, its section and heading, before embedding it, and the reference implementation generated that context with Claude 3 Haiku. So "this paragraph lives under this heading in this document" is a shape Claude models were trained to produce and consume. trip2g surfaces exactly that as the `toc_path` breadcrumb on every search match. The guess: `toc_path` is a familiar affordance the moment a Claude model sees the schema, which is why it drills down by section without being told. The instruction does not teach a foreign trick, it makes an already-familiar move the default rather than the exception.
+
 ## Method, so you can redo it
 
 Models: `claude-haiku-4.5` and `gpt-5.4-nano` over OpenRouter, tools set to the live MCP `search`, `note_html`, `expand`, `similar`. Variant A's system prompt was the note at `docs/_mcp_initialize.md` with its frontmatter stripped, exactly what the MCP `initialize` response serves. Variant B's was a single generic line. Eight questions spread across federation, publishing, access control, the token-economy tools, and Telegram; three runs each; forty-eight runs per model. A "dump" is a `note_html` result over 6,000 characters. Total spend was about $0.92 for Haiku and $0.04 for nano.
