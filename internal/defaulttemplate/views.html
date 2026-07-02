@@ -324,6 +324,9 @@ window.__trip2g_settings = {
 {% if specJSON := ctx.FormSpecJSON(); specJSON != nil %}
 <script id="form-spec" data-nvid="{%s= ctx.Note.VersionID() %}" type="application/json">{%z= specJSON %}</script>
 {% endif %}
+{% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}
+<script id="tasklist-meta" type="application/json">{"path":"{%s ctx.Note.Path() %}","versionId":"{%s ctx.Note.VersionID() %}"}</script>
+{% endif %}
 </article>
 {% endif %}
 {% endfunc %}

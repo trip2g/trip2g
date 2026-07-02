@@ -240,6 +240,13 @@ func (n *Note) HasAnyCodeBlock() bool {
 	return len(n.nv.CodeLanguages) > 0
 }
 
+// HasTaskListItems reports whether the note's raw markdown contains GFM task
+// list markers (- [ ] or - [x]). Drives conditional loading of the admin
+// task-list widget script.
+func (n *Note) HasTaskListItems() bool {
+	return n.nv.HasTaskListItems()
+}
+
 var langAliases = map[string]string{ //nolint:gochecknoglobals // package-level lookup table
 	"english":    "en",
 	"russian":    "ru",

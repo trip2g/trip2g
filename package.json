@@ -17,7 +17,8 @@
     "toc": "node assets/toc/esbuild.browser.mjs",
     "chart": "node assets/chart/esbuild.browser.mjs",
     "mermaid": "node assets/mermaid/esbuild.browser.mjs",
-    "codeblock": "node assets/codeblock/esbuild.browser.mjs"
+    "codeblock": "node assets/codeblock/esbuild.browser.mjs",
+    "tasklist": "node assets/tasklist/esbuild.browser.mjs"
   },
   "dependencies": {
     "@types/change-case": "^0.0.30",

@@ -625,6 +625,12 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 		if note.HasAnyCodeBlock() {
 			jsURLs = append(jsURLs, env.AssetURL("/assets/codeblock.js"))
 		}
+		// Task-list widget: admin-only — public/anonymous pages never load it.
+		// The page cache bails on any authenticated request (pagecache.go line 66),
+		// so this is safe: the cache key never varies on admin state.
+		if note.HasTaskListItems() && resp.UserToken != nil && resp.UserToken.IsAdmin() {
+			jsURLs = append(jsURLs, env.AssetURL("/assets/tasklist.js"))
+		}
 	}
 
 	// Build HTML injections map.
