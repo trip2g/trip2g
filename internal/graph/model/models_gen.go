@@ -1967,6 +1967,13 @@ type NotePathsFilter struct {
 	Paths []string `json:"paths,omitempty"`
 }
 
+type NoteTaskItem struct {
+	Index   int32  `json:"index"`
+	Line    int32  `json:"line"`
+	Checked bool   `json:"checked"`
+	Text    string `json:"text"`
+}
+
 type NoteTocItem struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
@@ -2037,6 +2044,7 @@ type PublicNote struct {
 	Title    string          `json:"title"`
 	HTML     string          `json:"html"`
 	Toc      []NoteTocItem   `json:"toc"`
+	Tasklist []NoteTaskItem  `json:"tasklist"`
 	NoteView *model.NoteView `json:"-"`
 }
 
@@ -2809,12 +2817,6 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
-}
-
-type WikilinkResolution struct {
-	Link string  `json:"link"`
-	Path *string `json:"path,omitempty"`
-	URL  *string `json:"url,omitempty"`
 }
 
 type AdminTelegramAccountAuthStateEnum string

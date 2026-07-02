@@ -789,6 +789,8 @@ type OfferResolver interface {
 }
 type PublicNoteResolver interface {
 	URL(ctx context.Context, obj *model.PublicNote) (string, error)
+
+	Tasklist(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error)
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -31259,6 +31261,122 @@ func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteTaskItem_index(ctx context.Context, field graphql.CollectedField, obj *model.NoteTaskItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteTaskItem_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteTaskItem_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteTaskItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteTaskItem_line(ctx context.Context, field graphql.CollectedField, obj *model.NoteTaskItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteTaskItem_line,
+		func(ctx context.Context) (any, error) {
+			return obj.Line, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteTaskItem_line(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteTaskItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteTaskItem_checked(ctx context.Context, field graphql.CollectedField, obj *model.NoteTaskItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteTaskItem_checked,
+		func(ctx context.Context) (any, error) {
+			return obj.Checked, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteTaskItem_checked(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteTaskItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteTaskItem_text(ctx context.Context, field graphql.CollectedField, obj *model.NoteTaskItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteTaskItem_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteTaskItem_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteTaskItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteTocItem_id(ctx context.Context, field graphql.CollectedField, obj *model.NoteTocItem) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32909,6 +33027,45 @@ func (ec *executionContext) fieldContext_PublicNote_toc(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicNote_tasklist(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicNote_tasklist,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PublicNote().Tasklist(ctx, obj)
+		},
+		nil,
+		ec.marshalNNoteTaskItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicNote_tasklist(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "index":
+				return ec.fieldContext_NoteTaskItem_index(ctx, field)
+			case "line":
+				return ec.fieldContext_NoteTaskItem_line(ctx, field)
+			case "checked":
+				return ec.fieldContext_NoteTaskItem_checked(ctx, field)
+			case "text":
+				return ec.fieldContext_NoteTaskItem_text(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteTaskItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Purchase_id(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -33854,6 +34011,8 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 				return ec.fieldContext_PublicNote_html(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
+			case "tasklist":
+				return ec.fieldContext_PublicNote_tasklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -36570,6 +36729,8 @@ func (ec *executionContext) fieldContext_SimilarNote_note(_ context.Context, fie
 				return ec.fieldContext_PublicNote_html(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
+			case "tasklist":
+				return ec.fieldContext_PublicNote_tasklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -37137,6 +37298,8 @@ func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_favoriteNotes
 				return ec.fieldContext_PublicNote_html(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
+			case "tasklist":
+				return ec.fieldContext_PublicNote_tasklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -38871,6 +39034,8 @@ func (ec *executionContext) fieldContext_User_favoriteNotes(_ context.Context, f
 				return ec.fieldContext_PublicNote_html(ctx, field)
 			case "toc":
 				return ec.fieldContext_PublicNote_toc(ctx, field)
+			case "tasklist":
+				return ec.fieldContext_PublicNote_tasklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
@@ -70207,6 +70372,60 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var noteTaskItemImplementors = []string{"NoteTaskItem"}
+
+func (ec *executionContext) _NoteTaskItem(ctx context.Context, sel ast.SelectionSet, obj *model.NoteTaskItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteTaskItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteTaskItem")
+		case "index":
+			out.Values[i] = ec._NoteTaskItem_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "line":
+			out.Values[i] = ec._NoteTaskItem_line(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "checked":
+			out.Values[i] = ec._NoteTaskItem_checked(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._NoteTaskItem_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var noteTocItemImplementors = []string{"NoteTocItem"}
 
 func (ec *executionContext) _NoteTocItem(ctx context.Context, sel ast.SelectionSet, obj *model.NoteTocItem) graphql.Marshaler {
@@ -71234,6 +71453,42 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "tasklist":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PublicNote_tasklist(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -81643,6 +81898,54 @@ func (ec *executionContext) marshalNNotePath2ᚕtrip2gᚋinternalᚋdbᚐNotePat
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNNotePath2trip2gᚋinternalᚋdbᚐNotePath(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNoteTaskItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItem(ctx context.Context, sel ast.SelectionSet, v model.NoteTaskItem) graphql.Marshaler {
+	return ec._NoteTaskItem(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteTaskItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItemᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteTaskItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteTaskItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItem(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
