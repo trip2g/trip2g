@@ -57,6 +57,8 @@ This base can be connected to peer knowledge bases. The federated variants mirro
 
 Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Results from a peer name their `kb_id` — keep passing it on every follow-up call.
 
+**Discovering connected bases.** For a browsable directory of the peers instead of blind fan-out, read the hub index: `search("hub")` or `note_html(path="en/hub/_index.md")`. It links one note per base (e.g. `en/hub/foragent.md`), and each of those names its `kb_id` in the frontmatter. Use that to pick a target for `federated_search(kb_id="foragent")` deliberately, rather than fanning out to every peer or waiting for a `kind: "federation_kb"` pointer to surface.
+
 ## Efficiency rules
 
 1. Section reads first: `search` → `note_html(toc_path=...)`. One section is ~300 tokens; a full note is 3,000+.

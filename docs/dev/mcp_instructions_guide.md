@@ -29,6 +29,7 @@ Order matters — a weak model weights the top of the prompt heaviest:
 - **Exact names only.** The tool is `expand`, not "extend"; the argument is `toc_path`, not "section". Copy names from `handleToolsList` in `resolve.go` — if the note and the schema disagree, the agent flips a coin.
 - **Imperative, not descriptive.** "Never open a note without `toc_path` on the first read", not "it is generally more efficient to…".
 - **Don't document fields that no longer exist.** The docs taught a removed `toc` search field for months (see `2026-07-02_vector_search_token_economy.md`, finding 3); an agent hunting for a phantom field burns a turn and then falls back to the expensive path.
+- **Link a browsable peer directory if you federate.** Blind `federated_search` fan-out and `kind: "federation_kb"` pointers only surface peers reactively. If your base has a `free: true` hub index (one note per peer, each carrying its `mcp_federation_kb_id`), point the instructions at it so the agent can look up a `kb_id` and target one base deliberately. trip2g's own note does this via `en/hub/_index.md`.
 
 ## Validate against the live endpoint
 
