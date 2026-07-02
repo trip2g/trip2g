@@ -53,7 +53,6 @@ func TestSiteConfigBuilder_DefaultsFromRegistry(t *testing.T) {
 	require.Equal(t, "%s", cfg.SiteTitleTemplate)
 	require.Equal(t, "UTC", cfg.Timezone)
 	require.Empty(t, cfg.DefaultLayout)
-	require.Equal(t, "opened", cfg.RobotsTxt)
 	require.True(t, cfg.ShowDraftVersions)
 	require.True(t, cfg.EnableRSS)
 	require.Equal(t, 820, cfg.VectorMinSimilarity)
@@ -67,7 +66,6 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 		strings: []db.AllLatestConfigStringsRow{
 			{ValueID: "site_title_template", Value: "%s — My Site"},
 			{ValueID: "timezone", Value: "Europe/Moscow"},
-			{ValueID: "robots_txt", Value: "closed"},
 		},
 		bools: []db.AllLatestConfigBoolsRow{
 			{ValueID: "show_draft_versions", Value: false},
@@ -83,7 +81,6 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 
 	require.Equal(t, "%s — My Site", cfg.SiteTitleTemplate)
 	require.Equal(t, "Europe/Moscow", cfg.Timezone)
-	require.Equal(t, "closed", cfg.RobotsTxt)
 	require.False(t, cfg.ShowDraftVersions)
 	require.False(t, cfg.EnableRSS)
 	require.Equal(t, 500, cfg.VectorMinSimilarity)

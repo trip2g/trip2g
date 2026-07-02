@@ -102,6 +102,7 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 			vars["note"] = reflect.ValueOf(noteView)
 		}
 		vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(nvs, "latest"))
+		vars["publicURL"] = reflect.ValueOf("")
 		// Set empty injection slices to prevent "identifier not available" errors
 		// in layouts that call {{ range injection := htmlInjectionsHead }}.
 		vars["htmlInjectionsHead"] = reflect.ValueOf([]struct{}{})

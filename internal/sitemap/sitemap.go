@@ -10,17 +10,73 @@ import (
 	"trip2g/internal/model"
 )
 
-const xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+const (
+	xmlns      = "http://www.sitemaps.org/schemas/sitemap/0.9"
+	xmlnsXHTML = "http://www.w3.org/1999/xhtml"
+)
 
 type urlset struct {
-	XMLName xml.Name   `xml:"urlset"`
-	XMLNS   string     `xml:"xmlns,attr"`
-	URLs    []urlEntry `xml:"url"`
+	XMLName    xml.Name   `xml:"urlset"`
+	XMLNS      string     `xml:"xmlns,attr"`
+	XMLNSXHTML string     `xml:"xmlns:xhtml,attr,omitempty"`
+	URLs       []urlEntry `xml:"url"`
 }
 
 type urlEntry struct {
-	Loc     string `xml:"loc"`
-	LastMod string `xml:"lastmod,omitempty"`
+	Loc        string      `xml:"loc"`
+	LastMod    string      `xml:"lastmod,omitempty"`
+	Alternates []xhtmlLink `xml:"xhtml:link,omitempty"`
+}
+
+// xhtmlLink is an <xhtml:link rel="alternate" hreflang="..." href="..."/>
+// language alternate for a URL, per the sitemap hreflang protocol.
+type xhtmlLink struct {
+	Rel      string `xml:"rel,attr"`
+	HrefLang string `xml:"hreflang,attr"`
+	Href     string `xml:"href,attr"`
+}
+
+// hreflangAlternates builds the language-alternate links for a note from its
+// LangGroup (hub + all language versions). Every URL in a language set lists the
+// full set plus x-default -> hub, per Google's guidance. Returns nil for notes
+// with no language group.
+func hreflangAlternates(note *model.NoteView, publicURL string) []xhtmlLink {
+	if note.LangGroup == nil {
+		return nil
+	}
+	group := note.LangGroup
+
+	var links []xhtmlLink
+	hubURL := publicURL + group.Hub.PermalinkEncoded()
+	if group.Hub.Lang != "" {
+		links = append(links, xhtmlLink{Rel: "alternate", HrefLang: group.Hub.Lang, Href: hubURL})
+	}
+	for _, lr := range group.Versions {
+		if lr.Note == nil || lr.Note == group.Hub || lr.Lang == "" {
+			continue
+		}
+		links = append(links, xhtmlLink{
+			Rel:      "alternate",
+			HrefLang: lr.Lang,
+			Href:     publicURL + lr.Note.PermalinkEncoded(),
+		})
+	}
+	if len(links) == 0 {
+		return nil
+	}
+	links = append(links, xhtmlLink{Rel: "alternate", HrefLang: "x-default", Href: hubURL})
+	return links
+}
+
+// hasAlternates returns the xhtml namespace URI when any entry carries hreflang
+// alternates (so the attribute is only declared when used), else "".
+func hasAlternates(urls []urlEntry) string {
+	for _, u := range urls {
+		if len(u.Alternates) > 0 {
+			return xmlnsXHTML
+		}
+	}
+	return ""
 }
 
 // Generate creates a sitemap.xml from NoteViews.
@@ -50,7 +106,8 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 		}
 
 		entry := urlEntry{
-			Loc: publicURL + note.PermalinkEncoded(),
+			Loc:        publicURL + note.PermalinkEncoded(),
+			Alternates: hreflangAlternates(note, publicURL),
 		}
 
 		if !note.CreatedAt.IsZero() {
@@ -61,8 +118,9 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 	}
 
 	set := urlset{
-		XMLNS: xmlns,
-		URLs:  urls,
+		XMLNS:      xmlns,
+		XMLNSXHTML: hasAlternates(urls),
+		URLs:       urls,
 	}
 
 	var buf bytes.Buffer

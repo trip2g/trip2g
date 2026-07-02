@@ -201,6 +201,38 @@ func StreamJSONLD(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line jsonld.html:13
 		}
 //line jsonld.html:13
+		if ctx.ShouldEmitSoftwareApplication() {
+//line jsonld.html:13
+			qw422016.N().S(`,{"@type":"SoftwareApplication"`)
+//line jsonld.html:13
+			if ctx.SiteName != "" {
+//line jsonld.html:13
+				qw422016.N().S(`,"name":`)
+//line jsonld.html:13
+				qw422016.N().Q(ctx.SiteName)
+//line jsonld.html:13
+			}
+//line jsonld.html:13
+			if ctx.JSONLDSiteURL() != "" {
+//line jsonld.html:13
+				qw422016.N().S(`,"url":`)
+//line jsonld.html:13
+				qw422016.N().Q(ctx.JSONLDSiteURL())
+//line jsonld.html:13
+			}
+//line jsonld.html:13
+			if note.Description() != "" {
+//line jsonld.html:13
+				qw422016.N().S(`,"description":`)
+//line jsonld.html:13
+				qw422016.N().Q(note.Description())
+//line jsonld.html:13
+			}
+//line jsonld.html:13
+			qw422016.N().S(`,"applicationCategory":"ProductivityApplication","operatingSystem":"Docker, Linux, macOS, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}`)
+//line jsonld.html:13
+		}
+//line jsonld.html:13
 		qw422016.N().S(`]}</script>
 `)
 //line jsonld.html:14

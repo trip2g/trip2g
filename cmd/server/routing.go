@@ -121,34 +121,6 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-const robotsTxtContentOpened = `User-agent: *
-Disallow:`
-
-const robotsTxtContentClosed = `User-agent: *
-Disallow: /`
-
-func (a *app) handleRobotsTxt(req *appreq.Request) bool {
-	if req.Path == "/robots.txt" {
-		req.Req.SetContentType("text/plain")
-		req.Req.SetStatusCode(http.StatusOK)
-
-		txt := a.SiteConfig(context.Background()).RobotsTxt
-
-		switch txt {
-		case "closed":
-			req.Req.SetBodyString(robotsTxtContentClosed)
-		case "opened":
-			req.Req.SetBodyString(robotsTxtContentOpened)
-		default:
-			req.Req.SetBodyString(txt)
-		}
-
-		return true
-	}
-
-	return false
-}
-
 func (a *app) handleRSSFeed(req *appreq.Request) bool {
 	if !strings.HasSuffix(req.Path, ".rss.xml") {
 		return false
@@ -243,7 +215,6 @@ func (a *app) prepareMiddlewares() []Middleware {
 			a.replicaForwarder.Forward(req.Req)
 			return true
 		},
-		a.handleRobotsTxt,
 		a.handleSitemap,
 		a.handleRSSFeed,
 		func(req *appreq.Request) bool {

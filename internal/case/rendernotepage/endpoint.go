@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/defaulttemplate"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/langdetect"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
 	"trip2g/internal/templateviews"
@@ -28,7 +29,7 @@ import (
 
 type Endpoint struct{}
 
-//nolint:gocognit,funlen // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
+//nolint:gocognit,funlen,gocyclo,cyclop // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
 	if err != nil {
@@ -65,6 +66,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
+		if layoutParams.MetaDescription == nil {
+			if desc := deriveMetaDescription(resp.Note); desc != "" {
+				layoutParams.MetaDescription = &desc
+			}
+		}
 		layoutParams.OGTags = buildOGTags(req, env, resp)
 
 		if resp.Note.Lang != "" {
@@ -166,6 +172,19 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layout = resp.Config.DefaultLayout
 	}
 
+	// content_type frontmatter: the note declares its own Content-Type so the
+	// render path serves it as the specified MIME type instead of text/html.
+	// Two sub-cases, both skip the page cache (which only stores text/html):
+	//   - content_type + layout: render the Jet layout (body from template,
+	//     e.g. robots.md → robots layout emits the robots.txt body); the
+	//     frontmatter content_type is applied before execute so the response
+	//     carries the right MIME type.
+	//   - content_type + no layout: serve the raw note body (frontmatter
+	//     stripped), e.g. llms.md → plain text.
+	if handled, ctErr := handleContentTypeNote(ctx, env, resp, layout); handled || ctErr != nil {
+		return nil, ctErr
+	}
+
 	// Anonymous page cache: serve pre-gzipped bytes to gzip-accepting anonymous
 	// readers and fill on a miss. This is the only branch that reaches a
 	// cacheable 200 note page; cacheDecision enforces every safety gate
@@ -197,6 +216,31 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	defaulttemplate.WriteRender(ctx, dtCtx)
 	fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 	return nil, nil
+}
+
+// handleContentTypeNote serves a note whose frontmatter declares a custom
+// content_type. Content-Type is set from frontmatter (single declarative source
+// of truth). If the note has a layout the body is produced by executing the Jet
+// layout (e.g. robots.md → robots layout → robots.txt body). Without a layout
+// the raw note body is served with frontmatter stripped (e.g. llms.md). Both
+// paths skip the page cache (which only stores text/html).
+// Returns (true, nil) when the response is fully written, (false, nil) when
+// content_type is not set, or (false, err) on layout error.
+func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, layout string) (bool, error) {
+	if resp.NoteView == nil || resp.Note == nil {
+		return false, nil
+	}
+	ct := strings.TrimSpace(resp.NoteView.M().GetString("content_type", ""))
+	if ct == "" {
+		return false, nil
+	}
+	ctx.SetContentType(ct)
+	if layout != "" {
+		_, err := renderLayout(ctx, env, resp, layout)
+		return true, err
+	}
+	ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
+	return true, nil
 }
 
 func unsupportedFileExt(path string) string {
@@ -340,6 +384,7 @@ func renderLayout(
 	vars["note"] = reflect.ValueOf(resp.NoteView)
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
+	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
 
 	headInjections := []db.HtmlInjection{}
 	bodyEndInjections := []db.HtmlInjection{}
@@ -462,10 +507,10 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 		"twitter:card": "summary_large_image",
 	}
 
-	// TODO: use a first paragraph as description
-	// if this note is free.
 	if resp.Note.Description != nil {
 		tags["og:description"] = *resp.Note.Description
+	} else if desc := deriveMetaDescription(resp.Note); desc != "" {
+		tags["og:description"] = desc
 	}
 
 	// Explicit frontmatter og_image/cover wins; otherwise fall back to the first

@@ -86,6 +86,7 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(note))
 	vars["nvs"] = reflect.ValueOf(nvsWrap)
 	vars["title"] = reflect.ValueOf(note.Title)
+	vars["publicURL"] = reflect.ValueOf("")
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{}})
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{{}})
 	// Stub namespaces that custom layouts call but that require a live HTTP
