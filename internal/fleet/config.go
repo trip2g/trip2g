@@ -29,6 +29,7 @@ type Config struct {
 	AllowedPrograms        []string      // programs allowed for code execution (empty = disabled)
 	MaxStdoutBytes         int           // stdout cap per code child (bytes); 0 → 1 MiB default
 	Sandbox                string        // code-exec sandbox mode: "native" (default, fail-closed) | "besteffort" | "off"
+	DebugListenAddr        string        // loopback-only debug HTTP surface for step-by-step block runs (empty = disabled; dev only)
 	SandboxNetwork         bool          // allow host network inside the code-exec sandbox
 	PollInterval           time.Duration // discovery/reconcile poll cadence
 	ShutdownGrace          time.Duration // max time to drain in-flight runs on shutdown
