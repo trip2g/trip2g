@@ -50,32 +50,29 @@ jobs:
       - name: Run tests
         run: go test -tags dev ./...
 
-  # Sandbox enforcement lane: runs the code-exec isolation tests on a runner
-  # that supports unprivileged user namespaces + Landlock. FLEET_SANDBOX_MUST_ENFORCE=1
-  # turns the tests' t.Skip guards into HARD FAILURES, so if a runner lacks
-  # userns/Landlock the job fails loudly instead of reporting a false "green"
-  # for tests that never actually ran. bash + python3 (the interpreters the
-  # probes use) ship on ubuntu-latest. Network is left BLOCKED here on purpose
-  # (no TRIP2G_FLEET_SANDBOX_NETWORK): TestSandbox_NetworkBlocked must enforce.
+  # Sandbox enforcement lane: runs the code-exec isolation tests inside a
+  # privileged Docker container so MS_REC|MS_PRIVATE remount of / is permitted.
+  # FLEET_SANDBOX_MUST_ENFORCE=1 turns the tests' t.Skip guards into HARD
+  # FAILURES, so a runner without userns/Landlock fails the build instead of
+  # quietly reporting "green" for tests that never ran. Network is left BLOCKED
+  # here on purpose (no TRIP2G_FLEET_SANDBOX_NETWORK): TestSandbox_NetworkBlocked
+  # must enforce. python3 is installed explicitly because the golang image is
+  # minimal; bash is already present.
   sandbox:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-          cache: true
-
-      - name: Prepare generated files
-        run: go generate ./...
-
-      - name: Run sandbox enforcement tests (must actually enforce)
-        env:
-          FLEET_SANDBOX_MUST_ENFORCE: "1"
-        run: go test -tags dev -race -run TestSandbox ./internal/agentruntime/...
+      - name: Run sandbox enforcement tests in privileged container
+        run: |
+          docker run --rm --privileged \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            -e FLEET_SANDBOX_MUST_ENFORCE=1 \
+            -e CGO_ENABLED=0 \
+            golang:1.26 \
+            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -race -tags dev -count=1 -timeout 120s ./internal/agentruntime/..."
 
   e2e:
     runs-on: ubuntu-latest
