@@ -416,3 +416,70 @@ func TestRun_TokenHardCapStopsLoop(t *testing.T) {
 		t.Fatalf("loop stopped by step guard, not the cap (steps=%d)", res.Steps)
 	}
 }
+
+// TestRun_MaxStepsExhaustionStatus asserts the step guard: a model that keeps
+// calling tools without ever finishing stops at MaxSteps with StatusMaxSteps.
+func TestRun_MaxStepsExhaustionStatus(t *testing.T) {
+	kb := newMemKB(map[string]string{"subjects/subj1/profile.md": "x"})
+	llm := &stubLLM{
+		fallback: ChatResult{
+			ToolCalls:        []ToolCall{toolCall("loop", toolReadNote, map[string]any{"path": "subjects/subj1/profile.md"})},
+			PromptTokens:     1,
+			CompletionTokens: 1,
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction:  "Loop forever.",
+		ReadPatterns: []string{"subjects/subj1/**"},
+		Model:        "test-model",
+		MaxTokens:    100000,
+		MaxSteps:     3,
+		LLM:          llm,
+		KB:           kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusMaxSteps, res.Status)
+	require.Equal(t, 3, res.Steps)
+}
+
+// budgetRecordingLLM wraps stubLLM and records the per-call remaining budget
+// passed through the BudgetedLLM hook.
+type budgetRecordingLLM struct {
+	stubLLM
+	budgets []int
+}
+
+func (b *budgetRecordingLLM) ChatWithBudget(
+	ctx context.Context, model string, messages []Message, tools []ToolDef, maxCompletionTokens int,
+) (ChatResult, error) {
+	b.budgets = append(b.budgets, maxCompletionTokens)
+	return b.Chat(ctx, model, messages, tools)
+}
+
+// TestRun_PassesRemainingBudgetToBudgetedLLM asserts the loop hands each call
+// the run's remaining token budget (MaxTokens minus tokens already spent).
+func TestRun_PassesRemainingBudgetToBudgetedLLM(t *testing.T) {
+	kb := newMemKB(nil)
+	llm := &budgetRecordingLLM{
+		stubLLM: stubLLM{
+			script: []ChatResult{
+				{ToolCalls: []ToolCall{toolCall("1", toolSearch, map[string]any{"query": "x"})}, PromptTokens: 100, CompletionTokens: 50},
+				{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})}, PromptTokens: 10, CompletionTokens: 5},
+			},
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction:  "Do a thing.",
+		ReadPatterns: []string{"**"},
+		Model:        "test-model",
+		MaxTokens:    1000,
+		MaxSteps:     10,
+		LLM:          llm,
+		KB:           kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Equal(t, []int{1000, 850}, llm.budgets)
+}

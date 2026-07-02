@@ -49,3 +49,10 @@ type ChatResult struct {
 type LLM interface {
 	Chat(ctx context.Context, model string, messages []Message, tools []ToolDef) (ChatResult, error)
 }
+
+// BudgetedLLM is an optional LLM extension: providers that can cap a single
+// completion receive the run's remaining token budget per call, so the
+// TokenCeiling binds at the provider, not just in the loop's post-hoc check.
+type BudgetedLLM interface {
+	ChatWithBudget(ctx context.Context, model string, messages []Message, tools []ToolDef, maxCompletionTokens int) (ChatResult, error)
+}
