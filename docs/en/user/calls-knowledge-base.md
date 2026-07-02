@@ -20,8 +20,8 @@ In this article:
 After processing 8 real calls from two and a half weeks, the vault contains:
 
 - **8 transcript notes** holding the raw, verbatim Krisp transcript, one per call, as the auditable source
-- **8 call notes** with an inferred title, a strong first paragraph, a link back to the raw transcript, a topic map with timecodes, decisions, and open questions
-- **220 concept notes**: people, tools, projects, terms, each with aliases and a list of mentions across calls
+- **8 call notes** with an inferred title, a strong first paragraph, a link back to the raw transcript, and a разбор where every topic pairs a one-line summary with the verbatim transcript segment quoted underneath, cited by timerange
+- **220 concept notes**: people, tools, projects, terms, each with aliases and mentions that quote the exact segment where the term came up
 - **9 daily notes**: action checkboxes on top, a dated log of the day below
 - **3 topic logs** for recurring themes, growing append-only with each new call
 
@@ -83,6 +83,8 @@ All LLM work is gpt-5.4-mini. It won a head-to-head benchmark against the cheape
 **Stage 2, Topic segmentation** (разметка тем). A change-webhook on `transcripts/**` triggers this role when a new transcript appears. It reads the transcript and marks topic boundaries with the coarse-granularity prompt: mark only major topic changes, take timecodes verbatim, small talk at the start is one topic. The same pass infers a title and tries to name the speakers, because Krisp's calendar title is unreliable. Inferred metadata gets `title_source: inferred` and `needs_review: true`, and you confirm by editing the note.
 
 **Stage 3, Extraction and distribution** (растаскивание заметок). The segments being written trigger the last role. It pulls typed concepts (people, orgs, projects, tools, terms), decisions, open questions, and actions from each segment; named entities only, so "the new employee" is not an entity. Cross-call dedup happens here, and it is the hard part: speech-to-text mangles names, and the run heard "Cloud Code" and "Клод Код" for Claude Code, and "век ромбс" for Backrooms. An alias table catches exact repeats for free; the rest go to one reconcile call per transcript that sees the candidates with context plus the existing glossary and answers MERGE or NEW, and every merge teaches the table new spellings. Then this role writes the results out with plain code: it updates concept notes, appends to topic logs, writes the daily-note action checkboxes, and writes the call разбор note that links back to the transcript from stage 1.
+
+**Provenance by quoting, not paraphrasing.** Every claim in the vault cites its source, and the citation is the source: because the boundaries are already computed, each topic slices its exact transcript lines and embeds them as a blockquote with a timerange link. The model's one-line summary sits above as the value-add; the verbatim quote sits below as evidence that cannot hallucinate. Concept mentions work the same way, they quote the segment where the term came up. You can see this on the CRISP concept note from the run: the summary reads cleanly, while the quote underneath preserves the raw speech-to-text ("...прогоняю и закидываю, например, там в Charge 5 или в Cloud..."), so the mishears stay visible in the evidence and never leak into the synthesis.
 
 Net: three roles, each woken by the note the previous one wrote. This is dogfooding, trip2g's own change-webhooks plus a fleet code executor building a knowledge base out of the same notes it lives in.
 
