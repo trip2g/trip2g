@@ -223,6 +223,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	LatestNoteViews() *model.NoteViews
+	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 	AllLiveNotes(ctx context.Context) ([]db.AllLiveNotesRow, error)
 	calculatechangeselectors.Env
 	RecentlyModifiedNoteVersionIDs(ctx context.Context) ([]int64, error)
