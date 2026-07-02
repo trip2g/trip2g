@@ -5,16 +5,16 @@ const NODES = [
   { id: "you",     label: "you + agent",     kind: "self",     x:  60,  y: 360, sub: "MCP" },
   { id: "obs",     label: "obsidian",        kind: "glyph",    x:  60,  y: 540, sub: "sync", icon: "obsidian" },
   { id: "youhub",  label: "your trip2g",     kind: "hub",      x: 320,  y: 450, sub: "cms · proxy" },
-  { id: "y_tg",    label: "telegram",        kind: "source",   x: 130,  y: 165, sub: "history" },
-  { id: "y_drive", label: "drive",           kind: "source",   x: 378,  y: 126, sub: "vector index" },
+  { id: "y_tg",    label: "telegram",        kind: "source",   x: 130,  y: 165, sub: "channel" },
+  { id: "y_drive", label: "articles",        kind: "source",   x: 378,  y: 126, sub: "vector index" },
   { id: "y_book1", label: "'thinking fast'", kind: "book",     x: 510,  y: 272, sub: "principles" },
   { id: "y_book2", label: "project · q3",    kind: "book",     x: 463,  y: 628, sub: "ideas" },
   { id: "y_raw",   label: "raw MCP",         kind: "external", x: 258,  y: 723, sub: "non-trip2g" },
   { id: "f_book",  label: "'infinity'",      kind: "book",     x: 1092, y:  96, sub: "principles" },
-  { id: "f_drive", label: "drive",           kind: "source",   x: 907,  y: 186, sub: "vector index" },
+  { id: "f_drive", label: "articles",        kind: "source",   x: 907,  y: 186, sub: "vector index" },
   { id: "f_proj",  label: "hr-2026",         kind: "book",     x: 819,  y: 557, sub: "resumes" },
-  { id: "f_other", label: "alice's notion",  kind: "external", x: 915,  y: 670, sub: "non-trip2g" },
-  { id: "f_tg",    label: "telegram",        kind: "source",   x: 1165, y: 672, sub: "history" },
+  { id: "f_other", label: "raw MCP",         kind: "external", x: 915,  y: 670, sub: "non-trip2g" },
+  { id: "f_tg",    label: "telegram",        kind: "source",   x: 1165, y: 672, sub: "channel" },
   { id: "frhub",   label: "alice.trip2g",    kind: "hub",      x: 1020, y: 450, sub: "cms · proxy" },
   { id: "friend",  label: "alice + agent",   kind: "peer",     x: 1188, y: 321, sub: "MCP" },
   { id: "friend2", label: "obsidian",        kind: "glyph",    x: 1227, y: 489, sub: "sync", icon: "obsidian" },
@@ -353,7 +353,7 @@ if (tryCopyBtn && tryPromptText) {
     { path: "en/user/monetization",      desc: "free: true / paid notes",               tag: "monetization",    size: "2.9K" },
     { path: "en/user/two_way_sync",      desc: "vault ⇄ server",                        tag: "sync",            size: "3.4K" },
     { path: "en/user/templates",         desc: "_layouts/, custom pages",               tag: "templates",       size: "8.0K" },
-    { path: "en/user/webhooks",          desc: "events · cron · adapters",              tag: "webhooks",        size: "4.6K" },
+    { path: "en/user/webhooks",          desc: "events · cron",                         tag: "webhooks",        size: "4.6K" },
     { path: "en/user/selfhosted",        desc: "self-host on your own server",          tag: "self-host",       size: "2.1K" },
     { path: "en/user/use_cases",         desc: "solo · friends · company · b2b",        tag: "use cases",       size: "7.3K" },
   ];
@@ -464,7 +464,7 @@ if (tryCopyBtn && tryPromptText) {
   requestAnimationFrame(renderTurbo);
 
   // Button: rectangle + square handle in bottom-right of graph frame
-  const graphFrame = mount.closest(".mesh-hero__graph") || mount.parentElement;
+  const graphFrame = mount.closest(".mesh-network__graph") || mount.parentElement;
   graphFrame.style.position = "relative";
 
   const btn = document.createElement("button");

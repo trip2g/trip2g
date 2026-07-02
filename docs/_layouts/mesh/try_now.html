@@ -104,7 +104,7 @@
 
 {{ block @lid() }}
 <header class="@did__header" id="try">
-  <span class="@did__header-lhs">try now · 5 minutes · no install</span>
+  <span class="@did__header-lhs">for AI agent users · 5 minutes · no install</span>
   <span class="@did__header-rhs">connect mcp → ask your agent → skip the landing</span>
 </header>
 <section class="@did">
@@ -169,8 +169,8 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
         <div>
           <h4 class="@did__step-title">Spin up your own hub</h4>
           <p class="@did__step-p">
-            Convinced? Get a free 100MB sandbox on our cloud — no docker, no terminal —
-            and start adding bases (Obsidian, Drive, TG). Self-host later when you outgrow it.
+            Convinced? Get a free 100MB sandbox on our cloud, no docker, no terminal,
+            and sync your Obsidian vault. Self-host later when you outgrow it.
           </p>
           <div class="@did__step-links">
             <a class="@did__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
@@ -184,19 +184,19 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
         <div>
           <h4 class="@did__step-title">Need more? Talk to us</h4>
           <p class="@did__step-p">
-            Federating a team or two companies, custom adapters, on-prem? Join the community
+            Federating a team or two companies, on-prem? Join the community
             or book a 30-min consultation — we'll walk through your topology.
           </p>
           <div class="@did__step-links">
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">community ↗</a>
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">book consult ↗</a>
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">github ↗</a>
+            <a class="@did__chip" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">community ↗</a>
+            <a class="@did__chip" href="mailto:alexes.dev@gmail.com">book consult ↗</a>
+            <a class="@did__chip" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
           </div>
         </div>
       </li>
     </ol>
     <div class="@did__footer">
-      {{yield mesh_button(label="start now →", href="/simple", modifier="mesh-try-now__cta")}}
+      {{yield mesh_button(label="connect your agent →", href="/simple", modifier="mesh-try-now__cta")}}
     </div>
   </div>
 </section>
@@ -204,7 +204,7 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
 
 {{ block @lid_ru() }}
 <header class="@did__header" id="try">
-  <span class="@did__header-lhs">попробовать · 5 минут · без установки</span>
+  <span class="@did__header-lhs">для пользователей AI-агентов · 5 минут · без установки</span>
   <span class="@did__header-rhs">подключить mcp → спросить агента → пропустить лендинг</span>
 </header>
 <section class="@did">
@@ -267,7 +267,7 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
           <h4 class="@did__step-title">Запустите свой хаб</h4>
           <p class="@did__step-p">
             Убедились? Получите бесплатный sandbox на 100MB в нашем облаке — без docker, без
-            терминала — и начните добавлять базы (Obsidian, Drive, TG). Перейдите на self-host, когда вырастете.
+            терминала — и синхронизируйте свой Obsidian vault. Перейдите на self-host, когда вырастете.
           </p>
           <div class="@did__step-links">
             <a class="@did__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
@@ -281,19 +281,19 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
         <div>
           <h4 class="@did__step-title">Нужно больше? Напишите нам</h4>
           <p class="@did__step-p">
-            Федерация команды или двух компаний, кастомные адаптеры, on-prem? Вступайте в сообщество
+            Федерация команды или двух компаний, on-prem? Вступайте в сообщество
             или запишитесь на 30-минутную консультацию — разберём вашу топологию.
           </p>
           <div class="@did__step-links">
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">сообщество ↗</a>
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">записаться ↗</a>
-            <a class="@did__chip" href="#" target="_blank" rel="noopener">github ↗</a>
+            <a class="@did__chip" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">сообщество ↗</a>
+            <a class="@did__chip" href="mailto:alexes.dev@gmail.com">записаться ↗</a>
+            <a class="@did__chip" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
           </div>
         </div>
       </li>
     </ol>
     <div class="@did__footer">
-      {{yield mesh_button(label="начать →", href="/ru/simple", modifier="mesh-try-now__cta")}}
+      {{yield mesh_button(label="подключить агента →", href="/ru/simple", modifier="mesh-try-now__cta")}}
     </div>
   </div>
 </section>

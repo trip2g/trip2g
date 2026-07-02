@@ -60,16 +60,14 @@ All components live in this directory. Each file defines a `@lid` (EN) and `@lid
 | File | Block (EN) | Block (RU) | Description |
 |------|-----------|-----------|-------------|
 | `bar.html` | `mesh_bar` | `mesh_bar_ru` | Top navigation bar with ⌘K MCP hint modal |
-| `hero.html` | `mesh_hero` | `mesh_hero_ru` | Hero section with animated graph and trace frames |
+| `hero.html` | `mesh_hero` | `mesh_hero_ru` | Type-led hero: copy from the `_index_hero` note + CTA row |
 | `capabilities.html` | `mesh_capabilities` | `mesh_capabilities_ru` | 6-card capability grid, each card links to its docs guide |
-| `network.html` | `mesh_network` | `mesh_network_ru` | Slim federation payoff band ("Join the network") |
+| `network.html` | `mesh_network` | `mesh_network_ru` | Federation payoff ("Join the network") + animated graph and trace frames |
 | `privacy.html` | `mesh_privacy` | `mesh_privacy_ru` | Data privacy section with SVG diagram |
 | `philo.html` | `mesh_philo` | `mesh_philo_ru` | Philosophy blurb |
 | `matrix.html` | `mesh_matrix` | `mesh_matrix_ru` | Red/blue pill matrix section |
 | `try_now.html` | `mesh_try_now` | `mesh_try_now_ru` | Try-now section with prompt box and steps |
 | `newsletter.html` | `mesh_newsletter` | `mesh_newsletter_ru` | Newsletter signup |
-| `trusted_by.html` | `mesh_trusted_by` | `mesh_trusted_by_ru` | Trusted-by channel grid |
-| `testimonials.html` | `mesh_testimonials` | `mesh_testimonials_ru` | Testimonials grid |
 | `foot.html` | `mesh_foot` | `mesh_foot_ru` | Footer with CTA and coda |
 
 ## Shared blocks (`_blocks.html`)
@@ -82,7 +80,6 @@ Parameterized blocks available everywhere after `{{ import "_blocks" }}`:
 | `section_header` | `lhs`, `rhs` | Section heading with left and right labels |
 | `mesh_section` | `path` | Transcludes a hidden section note's rendered body by vault path via `nvs.ByPath(path).HTMLString()`. The landing copy lives in `_index_*.md` notes; the layout supplies only structure and style. |
 | `how_step` | `num`, `title` | Numbered step with `{{ yield content }}` |
-| `compat_item` | `title`, `desc`, `state`, `state_class` | Compatibility table row with `{{ yield content }}` for icon |
 | `roadmap_col` | `title` | Roadmap column with `{{ yield content }}` |
 | `pricing_card` | `tag`, `title`, `price`, `period`, `cta_href`, `cta_class`, `cta_text`, `cls` | Pricing card with `{{ yield content }}` for feature list |
 

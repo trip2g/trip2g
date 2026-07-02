@@ -1,12 +1,7 @@
 {{ block _style_@lid() }}
 .@did {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  padding: 72px 40px 56px;
   border-bottom: 1px solid var(--rule);
-}
-.@did__left {
-  padding: 56px 40px 40px;
-  border-right: 1px solid var(--rule);
 }
 .@did__eyebrow {
   font-size: 11px;
@@ -23,13 +18,14 @@
   line-height: 0.96;
   letter-spacing: -0.025em;
   margin: 18px 0 0;
+  max-width: 22ch;
 }
 .@did__copy p {
   margin: 28px 0 0;
   font-family: var(--sans);
   font-size: 15px;
   line-height: 1.55;
-  max-width: 46ch;
+  max-width: 52ch;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
 .@did__copy p:last-child {
@@ -37,134 +33,43 @@
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.6;
-  max-width: 52ch;
+  max-width: 56ch;
   color: var(--muted);
 }
 .@did__copy p:last-child::before { content: "// "; color: var(--accent); }
-.@did__cta-row { margin-top: 28px; display: flex; }
-.@did__right {
-  padding: 18px;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 14px;
-  min-height: 540px;
-}
-.@did__frame {
-  border: 1px solid var(--rule);
-  background: rgba(245,245,242,0.02);
-  padding: 14px 16px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-}
-.@did__frame-head {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-bottom: 10px;
-  border-bottom: 1px dashed var(--rule);
-  margin-bottom: 10px;
-}
-.@did__live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-.@did__live::before {
-  content: ""; width: 6px; height: 6px; background: var(--accent);
-  animation: mesh-hero-blink 1.4s steps(2) infinite;
-}
-@keyframes mesh-hero-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.2; } }
-.@did__frame--graph svg { width: 100%; height: auto; min-height: 320px; display: block; }
-.@did__frame--trace { min-height: 200px; }
-.@did__trace-stream {
-  font-size: 11.5px;
-  line-height: 1.55;
-  color: var(--muted);
-  max-height: 160px;
-  overflow: hidden;
-}
-/* JS in _blocks.html injects elements with these legacy class names; keep them targetable. */
-.@did__trace-stream .log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
-.@did__trace-stream .log-line.is-on { opacity: 1; color: var(--fg); }
-.@did__trace-stream .log-num { color: var(--accent); font-weight: 700; }
-.@did__graph svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
-.@did__graph .mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
-.@did__graph .mg-pipe-flow {
-  stroke: var(--muted-2); stroke-width: 1;
-  stroke-dasharray: 5 7;
-  opacity: 0.5;
-  animation: mesh-hero-dashflow 1.6s linear infinite;
-}
-.@did__graph .mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.22; }
-@keyframes mesh-hero-dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
+.@did__cta-row { margin-top: 32px; display: flex; flex-wrap: wrap; }
 @media (max-width: 900px) {
-  .@did { grid-template-columns: 1fr; }
-  .@did__right { display: none; }
-  .@did__left { padding: 32px 20px 28px; border-right: 0; }
-  .@did__title { font-size: 38px; }
+  .@did { padding: 36px 20px 32px; }
+  .@did__copy h1 { font-size: 38px; }
 }
 {{ end }}
 
 {{ block @lid() }}
 <section class="@did">
-  <div class="@did__left">
-    <div class="@did__eyebrow">obsidian vault → live website</div>
-    <div class="@did__copy">
-      {{ yield mesh_section(path="_index_hero.md") }}
-    </div>
-    <div class="@did__cta-row">
-      {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="getting started", href="/en/user/getting_started", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
-    </div>
+  <div class="@did__eyebrow">obsidian vault → live website · mcp under the hood</div>
+  <div class="@did__copy">
+    {{ yield mesh_section(path="_index_hero.md") }}
   </div>
-  <div class="@did__right">
-    <div class="@did__frame mesh-hero__frame--graph mesh-hero__graph">
-      <div class="@did__frame-head">
-        <span>fig.01 · mesh.trace · query.route</span>
-        <span class="@did__live">LIVE</span>
-      </div>
-      <div id="mesh-svg-mount"></div>
-    </div>
-    <div class="@did__frame mesh-hero__frame--trace">
-      <div class="@did__frame-head">
-        <span>stdout · /var/log/mesh.trace</span>
-        <span style="color: var(--muted)">tail -f</span>
-      </div>
-      <div class="@did__trace-stream" id="trace-stream"></div>
-    </div>
+  <div class="@did__cta-row">
+    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
   </div>
 </section>
 {{ end }}
 
 {{ block @lid_ru() }}
 <section class="@did">
-  <div class="@did__left">
-    <div class="@did__eyebrow">хранилище obsidian → живой сайт</div>
-    <div class="@did__copy">
-      {{ yield mesh_section(path="ru/_index_hero.md") }}
-    </div>
-    <div class="@did__cta-row">
-      {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="первая заметка", href="/ru/user/nachalo_rabotyi", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
-      {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
-    </div>
+  <div class="@did__eyebrow">хранилище obsidian → живой сайт · mcp под капотом</div>
+  <div class="@did__copy">
+    {{ yield mesh_section(path="ru/_index_hero.md") }}
   </div>
-  <div class="@did__right">
-    <div class="@did__frame mesh-hero__frame--graph mesh-hero__graph">
-      <div class="@did__frame-head">
-        <span>fig.01 · mesh.trace · query.route</span>
-        <span class="@did__live">LIVE</span>
-      </div>
-      <div id="mesh-svg-mount"></div>
-    </div>
-    <div class="@did__frame mesh-hero__frame--trace">
-      <div class="@did__frame-head">
-        <span>stdout · /var/log/mesh.trace</span>
-        <span style="color: var(--muted)">tail -f</span>
-      </div>
-      <div class="@did__trace-stream" id="trace-stream"></div>
-    </div>
+  <div class="@did__cta-row">
+    {{yield mesh_button(label="начать →", href="/ru/user/nachalo_rabotyi", variant="primary", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="для AI-агентов →", href="/ru/simple", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
   </div>
 </section>
 {{ end }}

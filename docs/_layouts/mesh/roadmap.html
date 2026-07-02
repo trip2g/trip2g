@@ -64,20 +64,18 @@
       <li>Obsidian two-way sync <small>vault ⇄ hub</small></li>
       <li>MCP federation <small>hub ⇄ hub</small></li>
       <li>Per-base connect / pause <small>granular trust</small></li>
-      <li>Telegram &amp; Drive adapters <small>read + publish</small></li>
+      <li>Telegram publishing <small>vault → channel</small></li>
     </ul>
   {{ end }}
   {{ yield roadmap_col(cls="progress", label="in progress") content }}
     <ul>
       <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
-      <li>Notion adapter <small>workspace → bases</small></li>
       <li>Trust scopes &amp; audit log <small>per-peer permissions</small></li>
       <li>Webhooks · cron <small>events out</small></li>
     </ul>
   {{ end }}
   {{ yield roadmap_col(cls="planned", label="planned") content }}
     <ul>
-      <li>Linear / Slack archive adapters</li>
       <li>Org-grade SSO &amp; SCIM <small>company internal</small></li>
       <li>Encrypted-at-rest vaults <small>e2e for sensitive bases</small></li>
       <li>Mesh registry <small>discover public-by-choice peers</small></li>
@@ -95,20 +93,18 @@
       <li>Двусторонняя синхронизация Obsidian <small>vault ⇄ hub</small></li>
       <li>MCP federation <small>hub ⇄ hub</small></li>
       <li>Подключение / пауза на уровне базы <small>гранулярное доверие</small></li>
-      <li>Адаптеры Telegram &amp; Drive <small>чтение + публикация</small></li>
+      <li>Публикация в Telegram <small>vault → канал</small></li>
     </ul>
   {{ end }}
   {{ yield roadmap_col(cls="progress", label="в разработке") content }}
     <ul>
       <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
-      <li>Адаптер Notion <small>workspace → базы</small></li>
       <li>Области доверия &amp; журнал аудита <small>права на уровне peer'а</small></li>
       <li>Webhooks · cron <small>события наружу</small></li>
     </ul>
   {{ end }}
   {{ yield roadmap_col(cls="planned", label="запланировано") content }}
     <ul>
-      <li>Адаптеры Linear / Slack archive</li>
       <li>SSO &amp; SCIM для организаций <small>внутри компании</small></li>
       <li>Зашифрованные vault'ы <small>e2e для чувствительных баз</small></li>
       <li>Реестр mesh <small>поиск публичных peer'ов</small></li>

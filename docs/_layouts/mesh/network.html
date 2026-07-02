@@ -1,11 +1,16 @@
 {{ block _style_@lid() }}
 .@did {
-  padding: 32px 40px;
-  border-bottom: 1px solid var(--rule);
   display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 32px;
-  align-items: baseline;
+  grid-template-columns: 1fr 1.2fr;
+  border-bottom: 1px solid var(--rule);
+}
+.@did__left {
+  padding: 40px;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
 }
 .@did__eyebrow {
   font-family: var(--mono); font-size: 10px;
@@ -19,24 +24,115 @@
   letter-spacing: -0.005em;
   color: color-mix(in oklab, var(--fg) 92%, transparent);
   margin: 0;
-  max-width: 64ch;
+  max-width: 44ch;
 }
 .@did__text strong { color: var(--fg); }
+.@did__right {
+  padding: 18px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 14px;
+  min-height: 540px;
+}
+.@did__frame {
+  border: 1px solid var(--rule);
+  background: rgba(245,245,242,0.02);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.@did__frame-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--rule);
+  margin-bottom: 10px;
+}
+.@did__live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.@did__live::before {
+  content: ""; width: 6px; height: 6px; background: var(--accent);
+  animation: mesh-network-blink 1.4s steps(2) infinite;
+}
+@keyframes mesh-network-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.2; } }
+.@did__frame--graph svg { width: 100%; height: auto; min-height: 320px; display: block; }
+.@did__frame--trace { min-height: 200px; }
+.@did__trace-stream {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-height: 160px;
+  overflow: hidden;
+}
+/* JS in scripts.js injects elements with these legacy class names; keep them targetable. */
+.@did__trace-stream .log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
+.@did__trace-stream .log-line.is-on { opacity: 1; color: var(--fg); }
+.@did__trace-stream .log-num { color: var(--accent); font-weight: 700; }
+.@did__graph svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
+.@did__graph .mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
+.@did__graph .mg-pipe-flow {
+  stroke: var(--muted-2); stroke-width: 1;
+  stroke-dasharray: 5 7;
+  opacity: 0.5;
+  animation: mesh-network-dashflow 1.6s linear infinite;
+}
+.@did__graph .mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.22; }
+@keyframes mesh-network-dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
 @media (max-width: 900px) {
-  .@did { grid-template-columns: 1fr; padding: 24px 20px; }
+  .@did { grid-template-columns: 1fr; }
+  .@did__right { display: none; }
+  .@did__left { padding: 24px 20px; border-right: 0; }
 }
 {{ end }}
 
 {{ block @lid() }}
 <section class="@did">
-  <div class="@did__eyebrow">then, the payoff</div>
-  <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
+  <div class="@did__left">
+    <div class="@did__eyebrow">then, the payoff</div>
+    <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
+  </div>
+  <div class="@did__right">
+    <div class="@did__frame mesh-network__frame--graph mesh-network__graph">
+      <div class="@did__frame-head">
+        <span>fig.01 · mesh.trace · query.route</span>
+        <span class="@did__live">LIVE</span>
+      </div>
+      <div id="mesh-svg-mount"></div>
+    </div>
+    <div class="@did__frame mesh-network__frame--trace">
+      <div class="@did__frame-head">
+        <span>stdout · /var/log/mesh.trace</span>
+        <span style="color: var(--muted)">tail -f</span>
+      </div>
+      <div class="@did__trace-stream" id="trace-stream"></div>
+    </div>
+  </div>
 </section>
 {{ end }}
 
 {{ block @lid_ru() }}
 <section class="@did">
-  <div class="@did__eyebrow">а дальше</div>
-  <div class="@did__text">{{ yield mesh_section(path="ru/_index_payoff.md") }}</div>
+  <div class="@did__left">
+    <div class="@did__eyebrow">а дальше</div>
+    <div class="@did__text">{{ yield mesh_section(path="ru/_index_payoff.md") }}</div>
+  </div>
+  <div class="@did__right">
+    <div class="@did__frame mesh-network__frame--graph mesh-network__graph">
+      <div class="@did__frame-head">
+        <span>fig.01 · mesh.trace · query.route</span>
+        <span class="@did__live">LIVE</span>
+      </div>
+      <div id="mesh-svg-mount"></div>
+    </div>
+    <div class="@did__frame mesh-network__frame--trace">
+      <div class="@did__frame-head">
+        <span>stdout · /var/log/mesh.trace</span>
+        <span style="color: var(--muted)">tail -f</span>
+      </div>
+      <div class="@did__trace-stream" id="trace-stream"></div>
+    </div>
+  </div>
 </section>
 {{ end }}
