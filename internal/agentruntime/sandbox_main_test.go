@@ -8,7 +8,7 @@ import (
 )
 
 // sandboxAvailable is set once in TestMain before any test runs.
-var sandboxAvailable bool
+var sandboxAvailable bool //nolint:gochecknoglobals // probed once before test suite; shared across all tests in the package
 
 // TestMain hooks the sandbox re-exec protocol: sandboxed RunBlock re-execs
 // this test binary as the confined child, so the child branch must run before
