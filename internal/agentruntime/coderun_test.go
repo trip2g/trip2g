@@ -3,6 +3,7 @@ package agentruntime
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -512,12 +513,46 @@ func TestInterpretersJSON_Load(t *testing.T) {
 }
 
 func TestInterpretersJSON_Override(t *testing.T) {
-	orig := registry
-	t.Cleanup(func() { registry = orig })
+	t.Cleanup(func() { require.NoError(t, SetInterpretersJSON(defaultInterpretersJSON)) })
 	custom := []byte(`{"interpreters":[{"name":"bash","cmd":["bash"],"code_block_labels":["bash","sh"],"ext":".sh"}]}`)
 	require.NoError(t, SetInterpretersJSON(custom))
 	require.Equal(t, "bash", fenceLangToProgram("bash"))
 	require.Empty(t, fenceLangToProgram("python"))
+}
+
+// TestInterpreterRegistry_ConcurrentAccess exercises the registry under -race:
+// concurrent SetInterpretersJSON swaps against reads from every lookup path
+// (the same shape as a startup --interpreters override racing role runs).
+func TestInterpreterRegistry_ConcurrentAccess(t *testing.T) {
+	t.Cleanup(func() { require.NoError(t, SetInterpretersJSON(defaultInterpretersJSON)) })
+	custom := []byte(`{"interpreters":[{"name":"bash","cmd":["bash"],"code_block_labels":["bash","sh"],"ext":".sh"}]}`)
+
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			for i := range 100 {
+				data := custom
+				if i%2 == 0 {
+					data = defaultInterpretersJSON
+				}
+				if err := SetInterpretersJSON(data); err != nil {
+					t.Errorf("SetInterpretersJSON: %v", err)
+				}
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				FenceLangKnown("bash")
+				fenceLangToProgram("sh")
+				_, _ = programBinary("bash")
+			}
+		}()
+	}
+	wg.Wait()
+	require.True(t, FenceLangKnown("bash"))
 }
 
 func TestMaxStdoutBytesFromConfig(t *testing.T) {

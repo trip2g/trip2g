@@ -149,7 +149,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 			return res, nil
 		}
 
-		chat, err := in.LLM.Chat(ctx, in.Model, messages, tools)
+		chat, err := chatWithBudget(ctx, in.LLM, in.Model, messages, tools, in.MaxTokens-res.TokensUsed)
 		if err != nil {
 			return nil, fmt.Errorf("agentruntime: chat step %d: %w", step, err)
 		}
@@ -199,6 +199,15 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 	}
 
 	return res, nil
+}
+
+// chatWithBudget passes the run's remaining token budget to LLMs that support
+// per-call completion caps (BudgetedLLM); others get the plain Chat call.
+func chatWithBudget(ctx context.Context, llm LLM, model string, messages []Message, tools []ToolDef, remaining int) (ChatResult, error) {
+	if b, ok := llm.(BudgetedLLM); ok {
+		return b.ChatWithBudget(ctx, model, messages, tools, remaining)
+	}
+	return llm.Chat(ctx, model, messages, tools)
 }
 
 // execTool runs one tool call against the scoped KB and returns the textual
