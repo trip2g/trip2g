@@ -3005,7 +3005,10 @@ func (r *publicNoteResolver) URL(ctx context.Context, obj *model.PublicNote) (st
 
 // VersionID is the resolver for the versionId field.
 func (r *publicNoteResolver) VersionID(ctx context.Context, obj *model.PublicNote) (int64, error) {
-	panic(fmt.Errorf("not implemented: VersionID - versionId"))
+	if obj.NoteView == nil {
+		return 0, nil
+	}
+	return obj.NoteView.VersionID, nil
 }
 
 // TaskList is the resolver for the taskList field.
@@ -3017,8 +3020,8 @@ func (r *publicNoteResolver) TaskList(ctx context.Context, obj *model.PublicNote
 	items := make([]model.NoteTaskItem, 0, len(obj.NoteView.TaskList))
 	for _, item := range obj.NoteView.TaskList {
 		items = append(items, model.NoteTaskItem{
-			Index:   int32(item.Index), //nolint:gosec // task counts never overflow int32
-			Line:    int32(item.Line),  //nolint:gosec // line numbers never overflow int32
+			Index:   int32(item.Index),
+			Line:    int32(item.Line),
 			Checked: item.Checked,
 			Text:    item.Text,
 		})

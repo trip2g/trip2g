@@ -99,7 +99,7 @@ func buildLineStarts(src []byte) []int {
 
 // lineAt maps a byte offset to its 1-based line number and the full line text
 // (CR-stripped).
-func lineAt(src []byte, lineStarts []int, offset int) (lineNo int, text string) {
+func lineAt(src []byte, lineStarts []int, offset int) (int, string) {
 	idx := sort.Search(len(lineStarts), func(i int) bool {
 		return lineStarts[i] > offset
 	}) - 1

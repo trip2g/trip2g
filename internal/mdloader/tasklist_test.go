@@ -176,8 +176,8 @@ func TestTaskListHTMLOrderMatchesExtraction(t *testing.T) {
 	html := string(nv.HTML)
 	var htmlChecked []bool
 	for _, part := range strings.Split(html, "<input")[1:] {
-		tag := part[:strings.Index(part, ">")]
-		if !strings.Contains(tag, `type="checkbox"`) {
+		tag, _, found := strings.Cut(part, ">")
+		if !found || !strings.Contains(tag, `type="checkbox"`) {
 			continue
 		}
 		htmlChecked = append(htmlChecked, strings.Contains(tag, "checked"))
