@@ -87,12 +87,12 @@ nested second`),
 	require.NoError(t, err)
 	require.Len(t, pages.Map, 3)
 
-	// With the scoped resolution ladder (same folder first):
-	// - [[second]] from /nested/first.md resolves to local /nested/second, not root /second
+	// With the default global resolution (Obsidian shallowest-path):
+	// - [[second]] from /nested/first.md resolves to root /second (shallower than /nested/second)
 	// - [[nested/first]] from /second.md resolves to /nested/first (explicit path)
-	require.Equal(t, map[string]struct{}{}, pages.Map["/second"].InLinks)
+	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages.Map["/second"].InLinks)
 	require.Equal(t, map[string]struct{}{"/second": {}}, pages.Map["/nested/first"].InLinks)
-	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages.Map["/nested/second"].InLinks)
+	require.Equal(t, map[string]struct{}{}, pages.Map["/nested/second"].InLinks)
 
 	htmlSources := map[string]string{}
 
@@ -378,10 +378,10 @@ Found me! Path: /folder/dup.md`),
 		Content: []byte(`# Source File
 [[dup]]
 ---
-This should link to /folder/dup.md (same folder), not /dup.md (root)!`),
+Default (global): links to /dup.md (root). Scoped: /folder/dup.md (same folder).`),
 	}}
 
-	t.Run("scoped (default): same folder wins", func(t *testing.T) {
+	t.Run("default (global): closest to root wins", func(t *testing.T) {
 		pages, err := mdloader.Load(mdloader.Options{
 			Sources: sourceFiles,
 			Log:     &log,
@@ -393,18 +393,18 @@ This should link to /folder/dup.md (same folder), not /dup.md (root)!`),
 
 		resolvedLink, found := sourcePage.ResolvedLinks["dup"]
 		require.True(t, found, "Link 'dup' should be resolved")
-		require.Equal(t, "/folder/dup", resolvedLink, "Link should resolve to the same-folder sibling")
+		require.Equal(t, "/dup", resolvedLink, "Default must keep the Obsidian shallowest-path rule")
 
 		for _, warning := range sourcePage.Warnings {
 			require.NotContains(t, warning.Message, "broken link: dup", "Should not have broken link warning")
 		}
 	})
 
-	t.Run("legacy global knob: closest to root wins", func(t *testing.T) {
+	t.Run("scoped (opt-in): same folder wins", func(t *testing.T) {
 		pages, err := mdloader.Load(mdloader.Options{
 			Sources: sourceFiles,
 			Log:     &log,
-			Config:  mdloader.Config{WikilinkResolution: model.WikilinkResolutionGlobal},
+			Config:  mdloader.Config{WikilinkResolution: model.WikilinkResolutionScoped},
 		})
 		require.NoError(t, err)
 
@@ -413,7 +413,7 @@ This should link to /folder/dup.md (same folder), not /dup.md (root)!`),
 
 		resolvedLink, found := sourcePage.ResolvedLinks["dup"]
 		require.True(t, found, "Link 'dup' should be resolved")
-		require.Equal(t, "/dup", resolvedLink, "Global mode must keep the legacy shallowest-path rule")
+		require.Equal(t, "/folder/dup", resolvedLink, "Scoped mode must prefer the same-folder sibling")
 	})
 }
 
@@ -522,7 +522,7 @@ Found me! Path: /folder/dup.md`),
 	}, {
 		Path: "folder/source.md",
 		Content: []byte(`# Source File
-[[dup]] - stays local (same-folder wins)
+[[dup]] - resolves to root (global default, Obsidian-compatible)
 [[./dup]] - stays local
 [[folder/dup]] - explicit path from root
 ---
@@ -539,10 +539,10 @@ Testing relative path resolution`),
 	sourcePage := pages.Map["/folder/source"]
 	require.NotNil(t, sourcePage)
 
-	// [[dup]] should resolve to /folder/dup (same folder wins over root)
+	// [[dup]] should resolve to /dup (root wins under the global default)
 	resolvedLink1, found1 := sourcePage.ResolvedLinks["dup"]
 	require.True(t, found1, "Link 'dup' should be resolved")
-	require.Equal(t, "/folder/dup", resolvedLink1, "[[dup]] should resolve to /folder/dup (same folder)")
+	require.Equal(t, "/dup", resolvedLink1, "[[dup]] should resolve to /dup (root, global default)")
 
 	// [[./dup]] should resolve to /folder/dup (local, relative path)
 	resolvedLink2, found2 := sourcePage.ResolvedLinks["./dup"]
