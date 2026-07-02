@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>fleet dependency graph</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 1.5rem; color: #1a1a1a; }
+  h1 { font-size: 1.2rem; margin: 0 0 .25rem; }
+  .meta { color: #666; font-size: .85rem; margin-bottom: 1rem; }
+  #graph { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; overflow: auto; background: #fff; }
+  #graph svg { max-width: none; }
+  table { border-collapse: collapse; margin-top: 1rem; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  .sev-error { color: #b00020; font-weight: 600; }
+  .sev-warn { color: #a15c00; font-weight: 600; }
+  .sev-info { color: #666; }
+  .legend { margin: .5rem 0 1rem; }
+  .legend span.chip { display: inline-block; padding: .1rem .5rem; border-radius: 4px; margin-right: .5rem; font-size: .85rem; }
+  .legend .edge { color: #444; font-size: .85rem; margin-right: 1rem; }
+  pre { background: #f7f7f7; padding: 1rem; overflow: auto; }
+  .err { color: #b00020; }
+</style>
+</head>
+<body>
+<h1>fleet dependency graph</h1>
+<div class="meta" id="meta">loading&hellip;</div>
+<div class="legend" id="legend"></div>
+<div id="graph"></div>
+<div id="findings"></div>
+<script type="module">
+const PALETTE = ["#dbeafe", "#dcfce7", "#fef9c3", "#fae8ff", "#ffedd5", "#e0f2fe", "#f1f5f9"];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function nodeLabel(n) {
+  let badge = "";
+  if (n.mode === "change") badge = " ⚡";
+  else if (n.mode === "cron") badge = " ⏰";
+  else if (n.mode === "both") badge = " ⚡⏰";
+  if (n.for_each) badge += " ×N";
+  if (n.ghost) badge += " (ghost)";
+  if (!n.valid) badge += " (invalid)";
+  return n.note_path + badge;
+}
+
+function mermaidText(g) {
+  const id = {};
+  g.nodes.forEach((n, i) => { id[n.note_path] = "n" + i; });
+  const fleetClass = {};
+  g.fleets.forEach((f, i) => { fleetClass[f.id] = "fleet" + i; });
+
+  const lines = ["flowchart LR"];
+  for (const n of g.nodes) {
+    // Escape quotes for the mermaid label.
+    lines.push(`  ${id[n.note_path]}["${nodeLabel(n).replace(/"/g, "#quot;")}"]`);
+  }
+  // Human entry points: dangling trigger patterns get one implicit source node.
+  const dangling = g.findings.filter(f => f.kind === "dangling-trigger");
+  if (dangling.length) {
+    lines.push(`  human(["\u{1f464} human"])`);
+    for (const f of dangling) for (const n of f.nodes) lines.push(`  human --> ${id[n]}`);
+  }
+  for (const e of g.edges) {
+    const labels = [];
+    if (e.fanout) labels.push("×N");
+    if (e.maybe_excluded) labels.push("maybe-excluded");
+    const label = labels.length ? `|"${labels.join(", ")}"|` : "";
+    const arrow = e.kind === "trigger" ? "-->" : "-.->";
+    lines.push(`  ${id[e.from]} ${arrow}${label} ${id[e.to]}`);
+  }
+  g.fleets.forEach((f, i) => {
+    lines.push(`  classDef ${fleetClass[f.id]} fill:${PALETTE[i % PALETTE.length]},stroke:#64748b`);
+  });
+  lines.push("  classDef conflict fill:#fecaca,stroke:#b00020,stroke-width:2px");
+  lines.push("  classDef invalid fill:#fff,stroke:#b00020,stroke-dasharray:4");
+  lines.push("  classDef ghost fill:#e5e5e5,stroke:#999,stroke-dasharray:4");
+  for (const n of g.nodes) {
+    let cls = "";
+    if (n.fleet_ids && n.fleet_ids.length > 1) cls = "conflict";
+    else if (n.ghost) cls = "ghost";
+    else if (!n.valid) cls = "invalid";
+    else if (n.fleet_ids && n.fleet_ids.length === 1) cls = fleetClass[n.fleet_ids[0]];
+    if (cls) lines.push(`  class ${id[n.note_path]} ${cls}`);
+  }
+  return lines.join("\n");
+}
+
+function renderLegend(g) {
+  const el = document.getElementById("legend");
+  let html = g.fleets.map((f, i) =>
+    `<span class="chip" style="background:${PALETTE[i % PALETTE.length]}">fleet: ${esc(f.id)}</span>`).join("");
+  html += `<span class="edge">&mdash;&#9654; trigger</span><span class="edge">&#8943;&#9654; feed</span>`;
+  el.innerHTML = html;
+}
+
+function renderFindings(g) {
+  const el = document.getElementById("findings");
+  if (!g.findings.length) {
+    el.innerHTML = "<p>No findings — topology is clean.</p>";
+    return;
+  }
+  const rows = g.findings.map(f => `<tr>
+    <td class="sev-${esc(f.severity)}">${esc(f.severity)}</td>
+    <td>${esc(f.kind)}</td>
+    <td>${(f.nodes || []).map(esc).join("<br>")}</td>
+    <td>${esc(f.detail)}</td></tr>`).join("");
+  el.innerHTML = `<table><thead><tr><th>severity</th><th>kind</th><th>nodes</th><th>detail</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function main() {
+  const res = await fetch("graph.json");
+  if (!res.ok) throw new Error(`graph.json: HTTP ${res.status}: ${await res.text()}`);
+  const g = await res.json();
+  document.getElementById("meta").textContent =
+    `${g.nodes.length} roles, ${g.edges.length} edges, ${g.findings.length} findings — generated ${g.generated_at}`;
+  renderLegend(g);
+  renderFindings(g);
+  try {
+    const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs");
+    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "neutral" });
+    const { svg } = await mermaid.render("fleetgraph", mermaidText(g));
+    document.getElementById("graph").innerHTML = svg;
+  } catch (e) {
+    // CDN unreachable or render error: fall back to raw JSON.
+    document.getElementById("graph").innerHTML =
+      `<p class="err">graph render failed (${esc(e.message)}); raw graph.json:</p><pre>${esc(JSON.stringify(g, null, 2))}</pre>`;
+  }
+}
+main().catch(e => { document.getElementById("meta").innerHTML = `<span class="err">${esc(e.message)}</span>`; });
+</script>
+</body>
+</html>
