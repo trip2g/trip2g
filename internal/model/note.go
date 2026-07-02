@@ -1219,6 +1219,31 @@ func (nvs *NoteViews) ResolveWikilinkTarget(source *NoteView, target string) *No
 	return nil
 }
 
+// ResolveLangRedirectTarget resolves a lang_redirect wikilink. A lang_redirect
+// crosses languages by definition, so a bare target must never resolve to the
+// source note itself nor to a same-language sibling (which the scoped ladder's
+// same-folder step would otherwise pick — e.g. bare [[_index]] from
+// ru/_index.md resolving to itself instead of the root en index).
+//
+// Explicit paths ([[folder/Name]], [[./Name]]) stay fully deterministic and are
+// delegated unchanged. Only bare targets get the source/same-lang exclusion,
+// applied deterministically before the ladder runs.
+func (nvs *NoteViews) ResolveLangRedirectTarget(source *NoteView, target string) *NoteView {
+	if strings.Contains(target, "/") || strings.HasPrefix(target, ".") {
+		return nvs.ResolveWikilinkTarget(source, target)
+	}
+
+	candidates := nvs.BasenameMap[strings.ToLower(target)]
+	srcLang := noteLang(source)
+	filtered := filterNotes(candidates, func(c *NoteView) bool {
+		if c == source {
+			return false
+		}
+		return srcLang == "" || noteLang(c) != srcLang
+	})
+	return nvs.pickBareCandidate(source, filtered)
+}
+
 // func (nv NoteViews) Subgraphs() ([]string, error) {
 // 	subgraphs := make(map[string]struct{})
 //

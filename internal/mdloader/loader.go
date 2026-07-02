@@ -718,15 +718,17 @@ func (ldr *loader) applyFrontmatterPatches(
 	return result.RawMeta, applied
 }
 
-// resolveWikilinkTarget resolves a wikilink target string to a NoteView.
-// Replicates the resolution logic from extractInLinks() without AST walking.
-// Returns nil if the target cannot be resolved.
-func (ldr *loader) resolveWikilinkTarget(source *model.NoteView, target string) *model.NoteView {
-	return ldr.nvs.ResolveWikilinkTarget(source, target)
-}
-
 func (ldr *loader) resolveLangRedirects() {
-	for _, p := range ldr.nvs.PathMap {
+	// Iterate in sorted path order so lang groups (and their symmetric-pair
+	// wiring) are built deterministically, independent of Go map order.
+	paths := make([]string, 0, len(ldr.nvs.PathMap))
+	for path := range ldr.nvs.PathMap {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	for _, path := range paths {
+		p := ldr.nvs.PathMap[path]
 		if len(p.LangRedirectTargets) == 0 {
 			continue
 		}
@@ -734,10 +736,15 @@ func (ldr *loader) resolveLangRedirects() {
 		seen := make(map[string]struct{})
 
 		for _, target := range p.LangRedirectTargets {
-			resolved := ldr.resolveWikilinkTarget(p, target)
+			resolved := ldr.nvs.ResolveLangRedirectTarget(p, target)
 			if resolved == nil {
 				p.AddWarning(model.NoteWarningWarning,
 					"lang_redirect target not found: %s", target)
+				continue
+			}
+			if resolved == p {
+				p.AddWarning(model.NoteWarningWarning,
+					"lang_redirect target %s resolves to the note itself", target)
 				continue
 			}
 			if resolved.Lang == "" {
