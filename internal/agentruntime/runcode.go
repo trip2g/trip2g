@@ -27,57 +27,73 @@ type CodeInput struct {
 }
 
 // RunCode executes a code role. It:
-//  1. Extracts the first fenced code block from Body.
-//  2. Resolves the program (explicit override wins, then fence lang).
-//  3. Checks the program against AllowedPrograms (empty list = disabled).
-//  4. Runs the code via RunBlock (secret-scrubbed env, throwaway workdir).
-//  5. Parses stdout as {"changes":[...],"answer":"..."} JSON.
-//  6. Applies each change via ScopedKB(WritePatterns) — the same scope
+//  1. Extracts all fenced code blocks from Body (document order).
+//  2. Resolves each block's program (explicit override wins, then fence lang)
+//     and checks it against AllowedPrograms (empty list = disabled) up front,
+//     so a disallowed later block fails before any block runs.
+//  3. Runs the blocks as a pipeline via RunBlock (each in its own
+//     secret-scrubbed env + throwaway workdir): block i's stdout is block
+//     i+1's stdin, shell-pipe style. The first block gets no stdin; every
+//     block sees the delivery bag via $FLEET_INPUT. A non-zero exit stops the
+//     pipeline. Intermediate stdout is free-form.
+//  4. Parses the LAST block's stdout as {"changes":[...],"answer":"..."} JSON.
+//  5. Applies each change via ScopedKB(WritePatterns) — the same scope
 //     enforcement as write_note. Out-of-scope paths are denied, not written.
 //
-// Returns *Result with TokensUsed=0, Steps=1 on success. exec/code is NOT a
-// scope bypass: all writes go through write_patterns enforcement.
+// Returns *Result with TokensUsed=0, Steps=len(blocks) on success. exec/code
+// is NOT a scope bypass: all writes go through write_patterns enforcement.
 func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	if in.KB == nil {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	// extractAllFencedBlocks collects all blocks in document order; v1 runs only
-	// the first block. Future pipe support will run multiple blocks sequentially.
-	blocks := extractAllFencedBlocks(in.Body)
+	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
 		return nil, errors.New("coderun: no fenced code block found in rendered body")
 	}
-	lang := blocks[0].Lang
-	code := blocks[0].Code
 
-	program := in.Program
-	if program == "" {
-		program = fenceLangToProgram(lang)
-	}
-	if program == "" {
-		return nil, fmt.Errorf("coderun: fence language %q not supported (use python, bash, or node)", lang)
-	}
-
-	if !isAllowed(program, in.AllowedPrograms) {
-		if len(in.AllowedPrograms) == 0 {
-			return nil, errors.New("coderun: code execution disabled (set --allowed-programs)")
+	// Resolve + allowlist-check every block before running any: no partial
+	// side effects when a later block is misconfigured. The explicit Program
+	// override applies to every block; mixed-language pipelines leave it unset
+	// and label each fence.
+	programs := make([]string, len(blocks))
+	for i, b := range blocks {
+		program := in.Program
+		if program == "" {
+			program = fenceLangToProgram(b.Lang)
 		}
-		return nil, fmt.Errorf("coderun: program %q not in --allowed-programs %v", program, in.AllowedPrograms)
+		if program == "" {
+			return nil, fmt.Errorf("coderun: %sfence language %q not supported (use python, bash, or node)", blockPrefix(i, len(blocks)), b.Lang)
+		}
+		if !isAllowed(program, in.AllowedPrograms) {
+			if len(in.AllowedPrograms) == 0 {
+				return nil, errors.New("coderun: code execution disabled (set --allowed-programs)")
+			}
+			return nil, fmt.Errorf("coderun: %sprogram %q not in --allowed-programs %v", blockPrefix(i, len(blocks)), program, in.AllowedPrograms)
+		}
+		programs[i] = program
 	}
 
-	stdout, _, _, runErr := RunBlock(ctx, CodeSpec{
-		Program:        program,
-		Code:           code,
-		Input:          in.Input,
-		Timeout:        in.Timeout,
-		EnvPassthrough: in.EnvPassthrough,
-		EnvPrefix:      in.EnvPrefix,
-		MaxStdoutBytes: in.MaxStdoutBytes,
-		Sandbox:        in.Sandbox,
-	})
-	if runErr != nil {
-		return nil, fmt.Errorf("coderun: %w", runErr)
+	// Pipeline: in.Timeout bounds each block individually; ctx bounds the whole run.
+	var stdin []byte
+	var stdout string
+	for i, b := range blocks {
+		out, _, _, runErr := RunBlock(ctx, CodeSpec{
+			Program:        programs[i],
+			Code:           b.Code,
+			Stdin:          stdin,
+			Input:          in.Input,
+			Timeout:        in.Timeout,
+			EnvPassthrough: in.EnvPassthrough,
+			EnvPrefix:      in.EnvPrefix,
+			MaxStdoutBytes: in.MaxStdoutBytes,
+			Sandbox:        in.Sandbox,
+		})
+		if runErr != nil {
+			return nil, fmt.Errorf("coderun: %s%w", blockPrefix(i, len(blocks)), runErr)
+		}
+		stdout = out
+		stdin = []byte(out)
 	}
 
 	rawChanges, answer, perr := parseCodeOutput(stdout)
@@ -91,7 +107,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	scoped := NewScopedKB(in.KB, nil, in.WritePatterns)
 	res := &Result{
 		Status:     StatusCompleted,
-		Steps:      1,
+		Steps:      len(blocks),
 		TokensUsed: 0,
 		Answer:     answer,
 	}
@@ -113,6 +129,15 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		res.Changes = append(res.Changes, ch)
 	}
 	return res, nil
+}
+
+// blockPrefix returns "block i/n: " for multi-block pipelines and "" for a
+// single block, keeping single-block error messages unchanged.
+func blockPrefix(i, n int) string {
+	if n <= 1 {
+		return ""
+	}
+	return fmt.Sprintf("block %d/%d: ", i+1, n)
 }
 
 // isAllowed reports whether program is in the allowedPrograms list.

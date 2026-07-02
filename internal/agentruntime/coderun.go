@@ -1,6 +1,7 @@
 package agentruntime
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -112,6 +113,7 @@ func FenceLangKnown(lang string) bool {
 type CodeSpec struct {
 	Program        string        // canonical program name (python, bash, node, ...)
 	Code           string        // source text written to a per-run temp file
+	Stdin          []byte        // fed to the child's stdin (pipeline: prior block's stdout); nil → /dev/null
 	Input          []byte        // delivery bag JSON; nil or empty → "{}"
 	Timeout        time.Duration // per-run timeout; 0 = bounded by ctx only
 	EnvPassthrough []string      // exact parent env var names to forward to child
@@ -226,7 +228,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
 	}
 	var outBuf, errBuf limitedBuffer
-	prepareCmd(cmd, workDir, env, &outBuf, &errBuf, limit)
+	prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
 
 	runErr := cmd.Run()
 	// A sandboxed command that failed to START never ran the child: namespace
@@ -240,7 +242,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		}
 		warnSandboxFallback("sandboxed child failed to start", runErr)
 		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
-		prepareCmd(cmd, workDir, env, &outBuf, &errBuf, limit)
+		prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
 		runErr = cmd.Run()
 	}
 	outStr := outBuf.String()
@@ -260,10 +262,13 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 }
 
 // prepareCmd applies the run wiring shared by the sandboxed and plain paths:
-// workdir, scrubbed env, and fresh capped stdout/stderr buffers.
-func prepareCmd(cmd *exec.Cmd, workDir string, env []string, outBuf, errBuf *limitedBuffer, limit int) {
+// workdir, scrubbed env, stdin, and fresh capped stdout/stderr buffers.
+func prepareCmd(cmd *exec.Cmd, workDir string, env []string, stdin []byte, outBuf, errBuf *limitedBuffer, limit int) {
 	cmd.Dir = workDir
 	cmd.Env = env
+	if len(stdin) > 0 {
+		cmd.Stdin = bytes.NewReader(stdin)
+	}
 	*outBuf = limitedBuffer{limit: limit}
 	*errBuf = limitedBuffer{limit: limit}
 	cmd.Stdout = outBuf
@@ -314,6 +319,12 @@ func programBinary(name string) (string, error) {
 	return "", fmt.Errorf("coderun: unknown program %q", name)
 }
 
+// ProgramForFenceLang maps a Markdown fence language tag to its canonical
+// program name ("" = unknown). Exported for the fleet debug surface.
+func ProgramForFenceLang(lang string) string {
+	return fenceLangToProgram(lang)
+}
+
 // fenceLangToProgram maps a Markdown fence language tag to the canonical
 // program name used for allowlist checks (python, bash, node).
 // Returns "" for unrecognised tags.
@@ -324,15 +335,15 @@ func fenceLangToProgram(lang string) string {
 	return ""
 }
 
-// fencedBlock is one fenced code block extracted from a Markdown body.
-type fencedBlock struct {
+// FencedBlock is one fenced code block extracted from a Markdown body.
+type FencedBlock struct {
 	Lang string
 	Code string
 }
 
-// extractAllFencedBlocks returns all fenced code blocks from body in document order.
-func extractAllFencedBlocks(body string) []fencedBlock {
-	var blocks []fencedBlock
+// ExtractFencedBlocks returns all fenced code blocks from body in document order.
+func ExtractFencedBlocks(body string) []FencedBlock {
+	var blocks []FencedBlock
 	rest := body
 	for {
 		idx := strings.Index(rest, "```")
@@ -350,7 +361,7 @@ func extractAllFencedBlocks(body string) []fencedBlock {
 		if end == -1 {
 			break
 		}
-		blocks = append(blocks, fencedBlock{Lang: langStr, Code: content[:end]})
+		blocks = append(blocks, FencedBlock{Lang: langStr, Code: content[:end]})
 		rest = content[end+3:]
 	}
 	return blocks
@@ -360,7 +371,7 @@ func extractAllFencedBlocks(body string) []fencedBlock {
 // first fenced code block (```lang\n...\n```) in body.
 // Returns ("", "") when no complete block is found.
 func extractFirstFencedBlock(body string) (string, string) {
-	blocks := extractAllFencedBlocks(body)
+	blocks := ExtractFencedBlocks(body)
 	if len(blocks) == 0 {
 		return "", ""
 	}
