@@ -43,6 +43,8 @@ All components live in this directory. Each file defines a `@lid` (EN) and `@lid
 |------|-----------|-----------|-------------|
 | `bar.html` | `mesh_bar` | `mesh_bar_ru` | Top navigation bar with ⌘K MCP hint modal |
 | `hero.html` | `mesh_hero` | `mesh_hero_ru` | Hero section with animated graph and trace frames |
+| `capabilities.html` | `mesh_capabilities` | `mesh_capabilities_ru` | 6-card capability grid, each card links to its docs guide |
+| `network.html` | `mesh_network` | `mesh_network_ru` | Slim federation payoff band ("Join the network") |
 | `privacy.html` | `mesh_privacy` | `mesh_privacy_ru` | Data privacy section with SVG diagram |
 | `philo.html` | `mesh_philo` | `mesh_philo_ru` | Philosophy blurb |
 | `matrix.html` | `mesh_matrix` | `mesh_matrix_ru` | Red/blue pill matrix section |

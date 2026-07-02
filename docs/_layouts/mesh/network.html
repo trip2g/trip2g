@@ -1,0 +1,47 @@
+{{ block _style_@lid() }}
+.@did {
+  padding: 32px 40px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: baseline;
+}
+.@did__eyebrow {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted);
+}
+.@did__eyebrow::before { content: "// "; color: var(--accent); }
+.@did__text {
+  font-family: var(--sans); font-size: 17px; line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: color-mix(in oklab, var(--fg) 92%, transparent);
+  margin: 0;
+  max-width: 64ch;
+}
+.@did__text b { color: var(--fg); }
+@media (max-width: 900px) {
+  .@did { grid-template-columns: 1fr; padding: 24px 20px; }
+}
+{{ end }}
+
+{{ block @lid() }}
+<section class="@did">
+  <div class="@did__eyebrow">then, the payoff</div>
+  <p class="@did__text">
+    <b>Join the network. Your agents will find the rest.</b>
+    Federate your hub with people you trust, and one agent question reaches every base they share with you.
+  </p>
+</section>
+{{ end }}
+
+{{ block @lid_ru() }}
+<section class="@did">
+  <div class="@did__eyebrow">а дальше</div>
+  <p class="@did__text">
+    <b>Присоединяйтесь к сети. Ваши агенты найдут остальное.</b>
+    Объедините хаб с теми, кому доверяете, — и один вопрос агенту дойдёт до всех баз, которыми с вами поделились.
+  </p>
+</section>
+{{ end }}

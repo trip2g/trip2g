@@ -39,6 +39,15 @@
   max-width: 46ch;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
+.@did__tagline {
+  margin: 18px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 52ch;
+  color: var(--muted);
+}
+.@did__tagline::before { content: "// "; color: var(--accent); }
 .@did__cta-row { margin-top: 28px; display: flex; }
 .@did__right {
   padding: 18px;
@@ -104,13 +113,17 @@
 {{ block @lid() }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">Your second brain was always meant to be shared.</div>
-    <h1 class="@did__title">Join the network.<br>Your agents will<br>find the rest.</h1>
+    <div class="@did__eyebrow">obsidian vault → live website</div>
+    <h1 class="@did__title">Publish your<br>Obsidian vault<br>as a website<br>in under a minute.</h1>
     <p class="@did__blurb">
-      You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent: let's add it to the network. Your piece is the last missing part of the puzzle.
+      Write in Obsidian, press Sync, your notes are live. The same hub also publishes to Telegram, gates paid content, and answers reader questions over MCP.
+    </p>
+    <p class="@did__tagline">
+      A Markdown Operating System: one note, served to a human as a page and to an agent as a syscall.
     </p>
     <div class="@did__cta-row">
       {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="getting started", href="/en/user/getting_started", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
     </div>
@@ -137,13 +150,17 @@
 {{ block @lid_ru() }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">Второй мозг всегда должен был быть общим.</div>
-    <h1 class="@did__title">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
+    <div class="@did__eyebrow">хранилище obsidian → живой сайт</div>
+    <h1 class="@did__title">Опубликуйте<br>хранилище Obsidian<br>как сайт —<br>за минуту.</h1>
     <p class="@did__blurb">
-      У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
+      Пишете в Obsidian, жмёте Sync — заметки уже онлайн. Тот же хаб публикует в Telegram, закрывает платные материалы за пейволом и отвечает на вопросы читателей по MCP.
+    </p>
+    <p class="@did__tagline">
+      Markdown-операционка: одна заметка — и страница для человека, и системный вызов для агента.
     </p>
     <div class="@did__cta-row">
       {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="первая заметка", href="/ru/user/nachalo_rabotyi", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
     </div>

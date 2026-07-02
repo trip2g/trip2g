@@ -1,0 +1,151 @@
+{{ block _style_@lid() }}
+.@did {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+.@did__card {
+  padding: 28px 28px 24px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+  color: var(--fg);
+  text-decoration: none;
+}
+.@did__card:nth-child(3n) { border-right: 0; }
+.@did__card:nth-last-child(-n+3) { border-bottom: 0; }
+.@did__card:hover { background: rgba(245,245,242,0.04); }
+.@did__card:hover .@did__more { color: var(--accent); }
+.@did__tag {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+}
+.@did__h {
+  font-family: var(--sans);
+  font-weight: 700; font-size: 19px; letter-spacing: -0.015em;
+  margin: 0; line-height: 1.2;
+}
+.@did__p {
+  font-family: var(--sans); font-size: 14px; line-height: 1.5;
+  color: color-mix(in oklab, var(--fg) 80%, transparent);
+  margin: 0;
+}
+.@did__p code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: rgba(245,245,242,0.06);
+  padding: 1px 6px;
+}
+.@did__more {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+@media (max-width: 900px) {
+  .@did { grid-template-columns: 1fr; }
+  .@did__card { border-right: 0; }
+  .@did__card:nth-child(3n) { border-right: 0; }
+  .@did__card:nth-last-child(-n+3) { border-bottom: 1px solid var(--rule); }
+  .@did__card:last-child { border-bottom: 0; }
+}
+{{ end }}
+
+{{ block @lid() }}
+{{ yield section_header(lhs="what one hub does", rhs="6 capabilities · full guides in docs") }}
+<div class="@did">
+
+  <a class="@did__card" href="/en/user/two_way_sync">
+    <div class="@did__tag">[01] publish</div>
+    <h3 class="@did__h">Publish from Obsidian</h3>
+    <p class="@did__p">Your vault stays on your machine; sync pushes notes live, one-way or two-way.</p>
+    <span class="@did__more">two-way sync →</span>
+  </a>
+
+  <a class="@did__card" href="/en/user/telegram">
+    <div class="@did__tag">[02] telegram</div>
+    <h3 class="@did__h">Publish to Telegram</h3>
+    <p class="@did__p">Write once in Obsidian, post to your channel on a schedule, links stay intact.</p>
+    <span class="@did__more">telegram guide →</span>
+  </a>
+
+  <a class="@did__card" href="/en/user/monetization">
+    <div class="@did__tag">[03] paywall</div>
+    <h3 class="@did__h">Charge for content</h3>
+    <p class="@did__p">Leave <code>free: true</code> off and a note is subscriber-only; take payment via crypto, Patreon, or Boosty.</p>
+    <span class="@did__more">monetization →</span>
+  </a>
+
+  <a class="@did__card" href="/en/user/mcp">
+    <div class="@did__tag">[04] agents</div>
+    <h3 class="@did__h">An AI that answers from your notes</h3>
+    <p class="@did__p">Connect any MCP client and readers query your knowledge base directly.</p>
+    <span class="@did__more">mcp guide →</span>
+  </a>
+
+  <a class="@did__card" href="/en/user/templates">
+    <div class="@did__tag">[05] design</div>
+    <h3 class="@did__h">Make it look how you want</h3>
+    <p class="@did__p">Compose pages from frontmatter widgets, or drop in your own Jet templates.</p>
+    <span class="@did__more">templates →</span>
+  </a>
+
+  <a class="@did__card" href="/en/user/selfhosted">
+    <div class="@did__tag">[06] self-host</div>
+    <h3 class="@did__h">Run it yourself</h3>
+    <p class="@did__p">One Go process on SQLite; <code>docker compose up</code> on a laptop, a VM, or Fly.</p>
+    <span class="@did__more">self-hosting →</span>
+  </a>
+
+</div>
+{{ end }}
+
+{{ block @lid_ru() }}
+{{ yield section_header(lhs="что умеет один хаб", rhs="6 возможностей · подробности в документации") }}
+<div class="@did">
+
+  <a class="@did__card" href="/ru/user/dvukhstoronnyaya_sinkhronizaciya">
+    <div class="@did__tag">[01] публикация</div>
+    <h3 class="@did__h">Публикация из Obsidian</h3>
+    <p class="@did__p">Хранилище остаётся у вас; синхронизация отправляет заметки на сайт, в одну или в обе стороны.</p>
+    <span class="@did__more">двухсторонняя синхронизация →</span>
+  </a>
+
+  <a class="@did__card" href="/ru/user/telegram">
+    <div class="@did__tag">[02] telegram</div>
+    <h3 class="@did__h">Публикация в Telegram</h3>
+    <p class="@did__p">Пишете один раз в Obsidian, постите в канал по расписанию, ссылки не ломаются.</p>
+    <span class="@did__more">гайд по telegram →</span>
+  </a>
+
+  <a class="@did__card" href="/ru/user/monetization">
+    <div class="@did__tag">[03] пейвол</div>
+    <h3 class="@did__h">Платный доступ</h3>
+    <p class="@did__p">Уберите <code>free: true</code> — и заметка только для подписчиков; оплата через крипту, Patreon или Boosty.</p>
+    <span class="@did__more">монетизация →</span>
+  </a>
+
+  <a class="@did__card" href="/ru/user/mcp">
+    <div class="@did__tag">[04] агенты</div>
+    <h3 class="@did__h">ИИ, который отвечает по вашим заметкам</h3>
+    <p class="@did__p">Подключите любой MCP-клиент, и читатель спрашивает вашу базу знаний напрямую.</p>
+    <span class="@did__more">гайд по mcp →</span>
+  </a>
+
+  <a class="@did__card" href="/ru/user/templates">
+    <div class="@did__tag">[05] дизайн</div>
+    <h3 class="@did__h">Внешний вид под вас</h3>
+    <p class="@did__p">Собирайте страницы из виджетов во фронтматтере или подключите свои Jet-шаблоны.</p>
+    <span class="@did__more">шаблоны →</span>
+  </a>
+
+  <a class="@did__card" href="/ru/user/selfhosted">
+    <div class="@did__tag">[06] self-host</div>
+    <h3 class="@did__h">Свой сервер</h3>
+    <p class="@did__p">Один Go-процесс на SQLite; <code>docker compose up</code> на ноутбуке, VPS или Fly.</p>
+    <span class="@did__more">self-hosting →</span>
+  </a>
+
+</div>
+{{ end }}

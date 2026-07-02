@@ -35,6 +35,8 @@
   background: rgba(245,245,242,0.06);
   padding: 1px 6px;
 }
+.step-p a { color: var(--accent); text-decoration: none; }
+.step-p a:hover { color: var(--fg); }
 @media (max-width: 900px) {
   .how { grid-template-columns: 1fr; }
   .step { border-right: 0; border-bottom: 1px solid var(--rule); }
@@ -43,49 +45,49 @@
 {{ end }}
 
 {{ block @lid() }}
-{{ yield section_header(lhs="how it works", rhs="3 steps · under a minute") }}
+{{ yield section_header(lhs="from zero to live site", rhs="3 steps · about a minute") }}
 <div class="how">
-  {{ yield how_step(num="01 / install", title="Set up your hub") content }}
+  {{ yield how_step(num="01 / instance", title="Get an instance") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("./step-install.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">Self-host with <code>docker compose up</code> or grab a free sandbox — no terminal needed. MIT licensed.</p>
+    <p class="step-p">Grab a free sandbox, no terminal needed, or self-host with <code>docker compose up</code>. MIT licensed.</p>
   {{ end }}
-  {{ yield how_step(num="02 / connect", title="Connect your knowledge bases") content }}
+  {{ yield how_step(num="02 / plugin", title="Install the plugin, sign in") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">A base is a vault, a document source, or another hub. Obsidian and Telegram connect directly. For anything else, point an agent at it and it brings the content in as markdown. Pause any base any time.</p>
+    <p class="step-p">Add the trip2g sync plugin to Obsidian and paste your instance address. One-time setup.</p>
   {{ end }}
-  {{ yield how_step(num="03 / federate", title="Share with your community") content }}
+  {{ yield how_step(num="03 / sync", title="Press Sync. You're live") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">Your agent sees everything — your bases and the ones your trusted peers share with you. One question, many sources.</p>
+    <p class="step-p">Your notes render as fast pages with working wikilinks. Edit in Obsidian, sync again, the site updates. <a href="/en/user/getting_started">Full guide →</a></p>
   {{ end }}
 </div>
 {{ end }}
 
 {{ block @lid_ru() }}
-{{ yield section_header(lhs="как это работает", rhs="3 шага · за минуту") }}
+{{ yield section_header(lhs="от нуля до живого сайта", rhs="3 шага · около минуты") }}
 <div class="how">
-  {{ yield how_step(num="01 / install", title="Запустите хаб") content }}
+  {{ yield how_step(num="01 / instance", title="Возьмите инстанс") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">Свой сервер через <code>docker compose up</code> или бесплатный sandbox — без терминала. MIT лицензия.</p>
+    <p class="step-p">Бесплатный sandbox без терминала — или свой сервер через <code>docker compose up</code>. Лицензия MIT.</p>
   {{ end }}
-  {{ yield how_step(num="02 / connect", title="Подключите базы знаний") content }}
+  {{ yield how_step(num="02 / plugin", title="Установите плагин и войдите") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">База — это vault, источник документов или другой хаб. Obsidian и Telegram подключаются напрямую. Остальное затащит агент — как markdown. Любую базу можно отключить в любой момент.</p>
+    <p class="step-p">Добавьте плагин синхронизации trip2g в Obsidian и вставьте адрес инстанса. Настройка нужна один раз.</p>
   {{ end }}
-  {{ yield how_step(num="03 / federate", title="Поделитесь с сообществом") content }}
+  {{ yield how_step(num="03 / sync", title="Нажмите Sync — сайт живой") content }}
     <div class="step-diag" aria-hidden="true">
       <img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy">
     </div>
-    <p class="step-p">Агент видит всё — ваши базы и те, которыми поделились доверенные люди. Один вопрос — много источников.</p>
+    <p class="step-p">Заметки становятся быстрыми страницами с рабочими викиссылками. Правите в Obsidian, жмёте Sync — сайт обновился. <a href="/ru/user/nachalo_rabotyi">Полное руководство →</a></p>
   {{ end }}
 </div>
 {{ end }}
