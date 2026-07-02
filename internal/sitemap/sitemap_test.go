@@ -129,6 +129,31 @@ func TestGenerateForDomain_LastMod(t *testing.T) {
 	require.Contains(t, string(result), "<lastmod>2025-06-15T10:30:00Z</lastmod>")
 }
 
+func TestGenerate_HreflangAlternates(t *testing.T) {
+	en := &model.NoteView{Permalink: "/en/guide", PermalinkOriginal: "/en/guide", Free: true, Lang: "en"}
+	ru := &model.NoteView{Permalink: "/ru/guide", PermalinkOriginal: "/ru/guide", Free: true, Lang: "ru"}
+	group := &model.LangGroup{
+		Hub: en,
+		Versions: []model.LangRedirect{
+			{Lang: "en", Note: en, URL: "/en/guide"},
+			{Lang: "ru", Note: ru, URL: "/ru/guide"},
+		},
+	}
+	en.LangGroup = group
+	ru.LangGroup = group
+
+	nvs := &model.NoteViews{List: []*model.NoteView{en, ru}}
+
+	result, err := Generate(nvs, "https://example.com")
+	require.NoError(t, err)
+	xml := string(result)
+
+	require.Contains(t, xml, `xmlns:xhtml="http://www.w3.org/1999/xhtml"`)
+	require.Contains(t, xml, `<xhtml:link rel="alternate" hreflang="en" href="https://example.com/en/guide">`)
+	require.Contains(t, xml, `<xhtml:link rel="alternate" hreflang="ru" href="https://example.com/ru/guide">`)
+	require.Contains(t, xml, `<xhtml:link rel="alternate" hreflang="x-default" href="https://example.com/en/guide">`)
+}
+
 func TestGenerate(t *testing.T) {
 	tests := []struct {
 		name        string
