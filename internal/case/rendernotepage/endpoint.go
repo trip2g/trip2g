@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/defaulttemplate"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/langdetect"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
 	"trip2g/internal/templateviews"
@@ -28,7 +29,7 @@ import (
 
 type Endpoint struct{}
 
-//nolint:gocognit,funlen // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
+//nolint:gocognit,funlen,gocyclo,cyclop // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
 	if err != nil {
@@ -65,6 +66,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
+		if layoutParams.MetaDescription == nil {
+			if desc := deriveMetaDescription(resp.Note); desc != "" {
+				layoutParams.MetaDescription = &desc
+			}
+		}
 		layoutParams.OGTags = buildOGTags(req, env, resp)
 
 		if resp.Note.Lang != "" {
@@ -164,6 +170,19 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 	if layout == "" && resp.Config.DefaultLayout != "" {
 		layout = resp.Config.DefaultLayout
+	}
+
+	// content_type frontmatter with no HTML layout: serve the raw markdown/text
+	// body directly (no HTML wrapper), like custom layouts render straight to ctx.
+	// A Jet layout can instead call response.SetContentType(); this branch handles
+	// the pure-note case (e.g. robots.txt/llms.txt served as plain notes). Skips
+	// the page cache, which only stores gzipped text/html.
+	if layout == "" && resp.NoteView != nil && resp.Note != nil {
+		if ct := strings.TrimSpace(resp.NoteView.M().GetString("content_type", "")); ct != "" {
+			ctx.SetContentType(ct)
+			ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
+			return nil, nil
+		}
 	}
 
 	// Anonymous page cache: serve pre-gzipped bytes to gzip-accepting anonymous
@@ -340,6 +359,11 @@ func renderLayout(
 	vars["note"] = reflect.ValueOf(resp.NoteView)
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 	vars["title"] = reflect.ValueOf(resp.Title)
+	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
+	// response lets a layout override the Content-Type
+	// ({{ response.SetContentType("application/json") }}) so it can emit JSON,
+	// RSS, XML, plain text, etc. instead of the default text/html.
+	vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{Ctx: ctx})
 
 	headInjections := []db.HtmlInjection{}
 	bodyEndInjections := []db.HtmlInjection{}
@@ -462,10 +486,10 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 		"twitter:card": "summary_large_image",
 	}
 
-	// TODO: use a first paragraph as description
-	// if this note is free.
 	if resp.Note.Description != nil {
 		tags["og:description"] = *resp.Note.Description
+	} else if desc := deriveMetaDescription(resp.Note); desc != "" {
+		tags["og:description"] = desc
 	}
 
 	// Explicit frontmatter og_image/cover wins; otherwise fall back to the first

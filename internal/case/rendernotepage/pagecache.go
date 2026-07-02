@@ -1,6 +1,7 @@
 package rendernotepage
 
 import (
+	"bytes"
 	"net/http"
 	"time"
 
@@ -269,6 +270,12 @@ func fillPageCache(
 		return
 	}
 	if time.Since(renderStart) >= maxCacheableRender {
+		return
+	}
+	// A layout may have called response.SetContentType() to emit JSON/RSS/plain
+	// text; only cache text/html, since writeCachedPage always relabels hits as
+	// text/html and the fill path gzips unconditionally.
+	if !bytes.HasPrefix(ctx.Response.Header.ContentType(), []byte("text/html")) {
 		return
 	}
 

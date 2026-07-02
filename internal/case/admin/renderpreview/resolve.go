@@ -102,6 +102,11 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 			vars["note"] = reflect.ValueOf(noteView)
 		}
 		vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(nvs, "latest"))
+		vars["publicURL"] = reflect.ValueOf("")
+		// response is a no-op here (preview renders to a buffer, not an HTTP ctx),
+		// but exposing it prevents "identifier not available" errors for layouts
+		// that call response.SetContentType().
+		vars["response"] = reflect.ValueOf(&templateviews.ResponseWriter{})
 		// Set empty injection slices to prevent "identifier not available" errors
 		// in layouts that call {{ range injection := htmlInjectionsHead }}.
 		vars["htmlInjectionsHead"] = reflect.ValueOf([]struct{}{})

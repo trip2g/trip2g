@@ -117,4 +117,12 @@ Rendering pipeline уже правильный: когда layout использ
 
 ## Статус
 
-- [ ] Не реализовано
+- [x] Реализовано.
+  - `internal/templateviews/response_writer.go` — `ResponseWriter` с `SetContentType`.
+  - `rendernotepage/endpoint.go` — переменные `response` и `publicURL` в `renderLayout`;
+    плюс ветка для plain-контента: заметка с `content_type` во фронтматтере и без
+    HTML-лейаута отдаётся как сырой markdown/текст (без HTML-обёртки).
+  - `rendernotepage/pagecache.go` — page cache пропускает ответы с не-`text/html`
+    Content-Type (не гзипует и не кэширует их как HTML).
+  - Escape-хелперы `json_escape`/`xml_escape` пока не добавлены (не требовались
+    для robots.txt / llms.txt); добавить при появлении JSON/XML-лейаутов.
