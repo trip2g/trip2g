@@ -321,6 +321,9 @@ window.__trip2g_settings = {
   {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
   <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
+  {% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}
+  <div mol_view_root="$trip2g_user_tasklist" class="content__tasklist" data-pid="{%dl ctx.Note.PathID() %}" data-path="{%s ctx.Note.Path() %}"></div>
+  {% endif %}
 {% if specJSON := ctx.FormSpecJSON(); specJSON != nil %}
 <script id="form-spec" data-nvid="{%s= ctx.Note.VersionID() %}" type="application/json">{%z= specJSON %}</script>
 {% endif %}

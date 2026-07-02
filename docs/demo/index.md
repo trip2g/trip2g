@@ -87,6 +87,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 44. [[telegram_publish_message_link]] - note with telegram_publish_message_link (shows TG button)
 45. [[telegram_publish_message_link_parent]] - parent with alternatives pointing to TG note
 
+## Interactive
+46. [[tasklist]] - admin-clickable GFM task checkboxes (patch + hash-guarded paths)
+
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
 - `_sidebar.md` - global sidebar

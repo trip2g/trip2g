@@ -7,5 +7,6 @@ $trip2g_user $mol_view
 	Paywall $trip2g_user_paywall
 	Space $trip2g_user_space
 	Favorite $trip2g_user_favoritenote
+	Tasklist $trip2g_user_tasklist
 	Search $trip2g_user_search_test_view
 	SignInPaywall $trip2g_user_signinwall

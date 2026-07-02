@@ -14,6 +14,7 @@ namespace $.$$ {
 				paywall: this.Paywall(),
 				space: this.Space(),
 				favorite: this.Favorite(),
+				tasklist: this.Tasklist(),
 				search: this.Search(),
 				signinwall: this.SignInPaywall(),
 			}

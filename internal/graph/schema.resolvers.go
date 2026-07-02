@@ -3003,6 +3003,33 @@ func (r *publicNoteResolver) URL(ctx context.Context, obj *model.PublicNote) (st
 	return r.env(ctx).PublicURL() + obj.Path, nil
 }
 
+// VersionID is the resolver for the versionId field.
+func (r *publicNoteResolver) VersionID(ctx context.Context, obj *model.PublicNote) (int64, error) {
+	if obj.NoteView == nil {
+		return 0, nil
+	}
+	return obj.NoteView.VersionID, nil
+}
+
+// TaskList is the resolver for the taskList field.
+func (r *publicNoteResolver) TaskList(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error) {
+	if obj.NoteView == nil {
+		return []model.NoteTaskItem{}, nil
+	}
+
+	items := make([]model.NoteTaskItem, 0, len(obj.NoteView.TaskList))
+	for _, item := range obj.NoteView.TaskList {
+		items = append(items, model.NoteTaskItem{
+			Index:   int32(item.Index),
+			Line:    int32(item.Line),
+			Checked: item.Checked,
+			Text:    item.Text,
+		})
+	}
+
+	return items, nil
+}
+
 // Successful is the resolver for the successful field.
 func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil

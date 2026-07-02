@@ -1395,14 +1395,28 @@ type NoteTocItem {
   level: Int!
 }
 
+# One GFM task checkbox from the note source, in document order. index equals
+# the position of the rendered <input type=checkbox> in the note HTML, so a
+# client can map DOM checkbox i → tasklist[i] without parsing HTML.
+type NoteTaskItem {
+  index: Int!
+  # 1-based line number in the raw note source (frontmatter included)
+  line: Int!
+  checked: Boolean!
+  # exact source line text (CR-stripped)
+  text: String!
+}
+
 type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.NoteView") {
   pathId: Int64!
   path: String!
   url: String! @goField(forceResolver: true)
   title: String!
   html: String!
+  versionId: Int64! @goField(forceResolver: true)
 
   toc: [NoteTocItem!]!
+  taskList: [NoteTaskItem!]! @goField(forceResolver: true)
 }
 
 union SearchResultDocument = PublicNote

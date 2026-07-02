@@ -214,6 +214,11 @@ type NoteView struct {
 
 	Charts []NoteViewChart // extracted from ```chart fenced blocks
 
+	// TaskList holds GFM task checkboxes extracted from the AST, in document
+	// order (index i = i-th rendered checkbox). Drives the admin task-list
+	// widget on note pages.
+	TaskList []NoteViewTaskItem
+
 	// CodeLanguages is the set of fenced-code-block languages present in the
 	// note (lowercased). Drives conditional loading of per-language client
 	// widgets (e.g. mermaid). Charts have their own typed extraction (Charts).
@@ -581,6 +586,8 @@ func (n *NoteView) ExtractMetaData() error {
 	n.extractCharts()
 
 	n.extractCodeLanguages()
+
+	n.extractTaskList()
 
 	n.extractTOCDisplay()
 

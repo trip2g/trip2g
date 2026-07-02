@@ -1967,6 +1967,13 @@ type NotePathsFilter struct {
 	Paths []string `json:"paths,omitempty"`
 }
 
+type NoteTaskItem struct {
+	Index   int32  `json:"index"`
+	Line    int32  `json:"line"`
+	Checked bool   `json:"checked"`
+	Text    string `json:"text"`
+}
+
 type NoteTocItem struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
@@ -2031,13 +2038,15 @@ type OAuthURLPayload struct {
 }
 
 type PublicNote struct {
-	PathID   int64           `json:"pathId"`
-	Path     string          `json:"path"`
-	URL      string          `json:"url"`
-	Title    string          `json:"title"`
-	HTML     string          `json:"html"`
-	Toc      []NoteTocItem   `json:"toc"`
-	NoteView *model.NoteView `json:"-"`
+	PathID    int64           `json:"pathId"`
+	Path      string          `json:"path"`
+	URL       string          `json:"url"`
+	Title     string          `json:"title"`
+	HTML      string          `json:"html"`
+	VersionID int64           `json:"versionId"`
+	Toc       []NoteTocItem   `json:"toc"`
+	TaskList  []NoteTaskItem  `json:"taskList"`
+	NoteView  *model.NoteView `json:"-"`
 }
 
 func (PublicNote) IsSearchResultDocument() {}
@@ -2809,12 +2818,6 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
-}
-
-type WikilinkResolution struct {
-	Link string  `json:"link"`
-	Path *string `json:"path,omitempty"`
-	URL  *string `json:"url,omitempty"`
 }
 
 type AdminTelegramAccountAuthStateEnum string
