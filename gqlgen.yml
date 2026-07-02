@@ -128,6 +128,10 @@ autobind:
 models:
   UnreleasedChange:
     model: trip2g/internal/graph/model.UnreleasedChange
+  # Pinned: autobind would otherwise match the unrelated
+  # trip2g/internal/model.WikilinkResolution config enum by name.
+  WikilinkResolution:
+    model: trip2g/internal/graph/model.WikilinkResolution
   UnreleasedChangesConnection:
     model: trip2g/internal/graph/model.UnreleasedChangesConnection
   ID:
