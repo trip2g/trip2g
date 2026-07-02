@@ -1,0 +1,48 @@
+{{ block _style_@lid() }}
+/* Cards come from the _index_capabilities note: a bullet list, one <li> per capability,
+   each shaped as **[Name](url)** — benefit. The layout styles the list into a grid. */
+.@did ul {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule);
+  list-style: none;
+  margin: 0; padding: 0;
+}
+.@did li {
+  padding: 28px 28px 24px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--sans); font-size: 14px; line-height: 1.5;
+  color: color-mix(in oklab, var(--fg) 80%, transparent);
+}
+.@did li:nth-child(3n) { border-right: 0; }
+.@did li:nth-last-child(-n+3) { border-bottom: 0; }
+.@did li strong { display: block; margin-bottom: 8px; }
+.@did li strong a {
+  font-family: var(--sans); font-weight: 700; font-size: 18px;
+  letter-spacing: -0.015em; color: var(--fg); text-decoration: none;
+  line-height: 1.2;
+}
+.@did li strong a:hover { color: var(--accent); }
+.@did li code {
+  font-family: var(--mono); font-size: 12px;
+  background: rgba(245,245,242,0.06); padding: 1px 6px;
+}
+@media (max-width: 900px) {
+  .@did ul { grid-template-columns: 1fr; }
+  .@did li { border-right: 0; }
+  .@did li:nth-child(3n) { border-right: 0; }
+  .@did li:nth-last-child(-n+3) { border-bottom: 1px solid var(--rule); }
+  .@did li:last-child { border-bottom: 0; }
+}
+{{ end }}
+
+{{ block @lid() }}
+{{ yield section_header(lhs="what one hub does", rhs="6 capabilities · full guides in docs") }}
+<div class="@did">{{ yield mesh_section(path="_index_capabilities.md") }}</div>
+{{ end }}
+
+{{ block @lid_ru() }}
+{{ yield section_header(lhs="что умеет один хаб", rhs="6 возможностей · подробности в документации") }}
+<div class="@did">{{ yield mesh_section(path="ru/_index_capabilities.md") }}</div>
+{{ end }}

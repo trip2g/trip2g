@@ -1,91 +1,70 @@
 {{ block _style_@lid() }}
-.how {
+.how-diag {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border-bottom: 1px solid var(--rule);
 }
-.step {
-  padding: 32px 28px;
-  border-right: 1px solid var(--rule);
+.how-diag > div { padding: 24px 28px 0; border-right: 1px solid var(--rule); height: 124px; }
+.how-diag > div:last-child { border-right: 0; }
+.how-diag img { width: 100%; height: 100px; display: block; }
+/* Steps come from the _index_getting_started note: an ordered list, one <li> per step. */
+.how ol {
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule);
+  list-style: none;
+  margin: 0; padding: 0;
+  counter-reset: step;
 }
-.step:last-child { border-right: 0; }
-.step-num {
-  font-family: var(--mono);
-  font-size: 11px; letter-spacing: 0.16em;
-  color: var(--accent);
-}
-.step-h {
-  font-family: var(--sans);
-  font-weight: 700; font-size: 22px; letter-spacing: -0.015em;
-  margin: 0; line-height: 1.15;
-}
-.step-diag { height: 100px; }
-.step-diag svg, .step-diag img { width: 100%; height: 100%; display: block; }
-.step-p {
+.how li {
+  padding: 28px 28px 32px;
+  border-right: 1px solid var(--rule);
   font-family: var(--sans); font-size: 14px; line-height: 1.5;
   color: color-mix(in oklab, var(--fg) 80%, transparent);
-  margin: 0;
+  counter-increment: step;
 }
-.step-p code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: rgba(245,245,242,0.06);
-  padding: 1px 6px;
+.how li:last-child { border-right: 0; }
+.how li::before {
+  content: "0" counter(step);
+  display: block;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em;
+  color: var(--accent); margin-bottom: 12px;
 }
+.how li strong {
+  display: block;
+  font-family: var(--sans); font-weight: 700; font-size: 20px;
+  letter-spacing: -0.015em; color: var(--fg); margin-bottom: 8px;
+}
+.how li code {
+  font-family: var(--mono); font-size: 12px;
+  background: rgba(245,245,242,0.06); padding: 1px 6px;
+}
+.how li a { color: var(--accent); text-decoration: none; }
+.how li a:hover { color: var(--fg); }
 @media (max-width: 900px) {
-  .how { grid-template-columns: 1fr; }
-  .step { border-right: 0; border-bottom: 1px solid var(--rule); }
-  .step:last-child { border-bottom: 0; }
+  .how-diag { display: none; }
+  .how ol { grid-template-columns: 1fr; }
+  .how li { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .how li:last-child { border-bottom: 0; }
 }
 {{ end }}
 
 {{ block @lid() }}
-{{ yield section_header(lhs="how it works", rhs="3 steps · under a minute") }}
-<div class="how">
-  {{ yield how_step(num="01 / install", title="Set up your hub") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("./step-install.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">Self-host with <code>docker compose up</code> or grab a free sandbox — no terminal needed. MIT licensed.</p>
-  {{ end }}
-  {{ yield how_step(num="02 / connect", title="Connect your knowledge bases") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">A base is a vault, a document source, or another hub. Obsidian and Telegram connect directly. For anything else, point an agent at it and it brings the content in as markdown. Pause any base any time.</p>
-  {{ end }}
-  {{ yield how_step(num="03 / federate", title="Share with your community") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">Your agent sees everything — your bases and the ones your trusted peers share with you. One question, many sources.</p>
-  {{ end }}
+{{ yield section_header(lhs="from zero to live site", rhs="3 steps · about a minute") }}
+<div class="how-diag" aria-hidden="true">
+  <div><img src="{{ asset("./step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
 </div>
+<div class="how">{{ yield mesh_section(path="_index_getting_started.md") }}</div>
 {{ end }}
 
 {{ block @lid_ru() }}
-{{ yield section_header(lhs="как это работает", rhs="3 шага · за минуту") }}
-<div class="how">
-  {{ yield how_step(num="01 / install", title="Запустите хаб") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">Свой сервер через <code>docker compose up</code> или бесплатный sandbox — без терминала. MIT лицензия.</p>
-  {{ end }}
-  {{ yield how_step(num="02 / connect", title="Подключите базы знаний") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">База — это vault, источник документов или другой хаб. Obsidian и Telegram подключаются напрямую. Остальное затащит агент — как markdown. Любую базу можно отключить в любой момент.</p>
-  {{ end }}
-  {{ yield how_step(num="03 / federate", title="Поделитесь с сообществом") content }}
-    <div class="step-diag" aria-hidden="true">
-      <img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy">
-    </div>
-    <p class="step-p">Агент видит всё — ваши базы и те, которыми поделились доверенные люди. Один вопрос — много источников.</p>
-  {{ end }}
+{{ yield section_header(lhs="от нуля до живого сайта", rhs="3 шага · около минуты") }}
+<div class="how-diag" aria-hidden="true">
+  <div><img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
 </div>
+<div class="how">{{ yield mesh_section(path="ru/_index_getting_started.md") }}</div>
 {{ end }}

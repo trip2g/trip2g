@@ -4,19 +4,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Add this to your MCP servers — trip2g</title>
-  <meta name="description" content="Join the network. Your agents will find the rest. mcp:add https://trip2g.com/_system/mcp">
+  <!-- Title / description / og_image come from the _index note frontmatter. -->
+  {{ ogTitle := note.Title() }}
+  {{ ogDesc := note.Description() }}
+  {{ ogImage := note.OGImageURL() }}
+  {{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
+  <title>{{ ogTitle }}</title>
+  <meta name="description" content="{{ ogDesc }}">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Add this to your MCP servers — trip2g">
-  <meta property="og:description" content="Join the network. Your agents will find the rest. mcp:add https://trip2g.com/_system/mcp">
-  <meta property="og:image" content="{{ asset("og.png") }}">
+  <meta property="og:title" content="{{ ogTitle }}">
+  <meta property="og:description" content="{{ ogDesc }}">
+  <meta property="og:image" content="{{ ogImage }}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="{{ note.Permalink() }}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Add this to your MCP servers — trip2g">
-  <meta name="twitter:description" content="Join the network. Your agents will find the rest.">
-  <meta name="twitter:image" content="{{ asset("og.png") }}">
+  <meta name="twitter:title" content="{{ ogTitle }}">
+  <meta name="twitter:description" content="{{ ogDesc }}">
+  <meta name="twitter:image" content="{{ ogImage }}">
   <link rel="icon" href="{{ asset("favicon.png") }}" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -167,6 +172,13 @@
   <span class="lhs">{{ lhs }}</span>
   <span class="rhs">{{ rhs }}</span>
 </header>
+{{ end }}
+
+<!-- mesh_section transcludes a hidden section note's rendered body by vault path.
+     The landing copy lives in _index_*.md notes; the layout only supplies structure/style. -->
+{{ block mesh_section(path="") }}
+{{ sec := nvs.ByPath(path) }}
+{{ if sec }}{{ sec.HTMLString() | unsafe }}{{ end }}
 {{ end }}
 
 {{ block pricing_card(tag="", title="", price="", period="", cta_href="", cta_class="", cta_text="", cls="") }}

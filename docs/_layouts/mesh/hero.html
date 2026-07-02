@@ -15,7 +15,8 @@
   color: var(--muted);
 }
 .@did__eyebrow::before { content: "// "; color: var(--accent); }
-.@did__title {
+/* Copy comes from the _index_hero note body: h1 = title, first p = subline, last p = tagline. */
+.@did__copy h1 {
   font-family: var(--sans);
   font-weight: 800;
   font-size: 60px;
@@ -23,15 +24,7 @@
   letter-spacing: -0.025em;
   margin: 18px 0 0;
 }
-.@did__title-hl {
-  background: var(--accent);
-  color: var(--bg);
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 0.78em;
-  padding: 0 0.18em;
-}
-.@did__blurb {
+.@did__copy p {
   margin: 28px 0 0;
   font-family: var(--sans);
   font-size: 15px;
@@ -39,6 +32,15 @@
   max-width: 46ch;
   color: color-mix(in oklab, var(--fg) 85%, transparent);
 }
+.@did__copy p:last-child {
+  margin: 18px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 52ch;
+  color: var(--muted);
+}
+.@did__copy p:last-child::before { content: "// "; color: var(--accent); }
 .@did__cta-row { margin-top: 28px; display: flex; }
 .@did__right {
   padding: 18px;
@@ -104,13 +106,13 @@
 {{ block @lid() }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">Your second brain was always meant to be shared.</div>
-    <h1 class="@did__title">Join the network.<br>Your agents will<br>find the rest.</h1>
-    <p class="@did__blurb">
-      You have valuable knowledge. It's hard to write down, hard to explain. AI removes that barrier. Just tell your agent: let's add it to the network. Your piece is the last missing part of the puzzle.
-    </p>
+    <div class="@did__eyebrow">obsidian vault → live website</div>
+    <div class="@did__copy">
+      {{ yield mesh_section(path="_index_hero.md") }}
+    </div>
     <div class="@did__cta-row">
       {{yield mesh_button(label="start →", href="/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="getting started", href="/en/user/getting_started", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
     </div>
@@ -137,13 +139,13 @@
 {{ block @lid_ru() }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">Второй мозг всегда должен был быть общим.</div>
-    <h1 class="@did__title">Присоединяйся.<br>Твои агенты<br>найдут остальное.</h1>
-    <p class="@did__blurb">
-      У тебя есть ценные знания. Их тяжело написать, их тяжело объяснить. ИИ убирает этот порог. Просто расскажи своему агенту — давай закинем в базу и присоединяйся к сети. Твоя часть — последний недостающий пазл.
-    </p>
+    <div class="@did__eyebrow">хранилище obsidian → живой сайт</div>
+    <div class="@did__copy">
+      {{ yield mesh_section(path="ru/_index_hero.md") }}
+    </div>
     <div class="@did__cta-row">
       {{yield mesh_button(label="начать →", href="/ru/simple", variant="primary", modifier="mesh-hero__cta")}}
+      {{yield mesh_button(label="первая заметка", href="/ru/user/nachalo_rabotyi", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
       {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
     </div>
