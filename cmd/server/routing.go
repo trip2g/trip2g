@@ -121,32 +121,36 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-const robotsTxtContentOpened = `User-agent: *
-Disallow:`
-
-const robotsTxtContentClosed = `User-agent: *
-Disallow: /`
-
+// handleRobotsTxt serves a built-in default robots.txt for sites that ship no
+// robots note. A note published at /robots.txt (a plain-content note or a Jet
+// `robots` layout) takes precedence: this middleware defers to the note renderer
+// so the site owner fully controls the file. The built-in default allows all
+// crawlers and points them at the sitemap (absolute URL from PublicURL).
 func (a *app) handleRobotsTxt(req *appreq.Request) bool {
-	if req.Path == "/robots.txt" {
-		req.Req.SetContentType("text/plain")
-		req.Req.SetStatusCode(http.StatusOK)
-
-		txt := a.SiteConfig(context.Background()).RobotsTxt
-
-		switch txt {
-		case "closed":
-			req.Req.SetBodyString(robotsTxtContentClosed)
-		case "opened":
-			req.Req.SetBodyString(robotsTxtContentOpened)
-		default:
-			req.Req.SetBodyString(txt)
-		}
-
-		return true
+	if req.Path != "/robots.txt" {
+		return false
 	}
 
-	return false
+	// Defer to a published /robots.txt note when one exists.
+	if nvs := a.LiveNoteViews(); nvs != nil && nvs.GetByPath("/robots.txt") != nil {
+		return false
+	}
+
+	req.Req.SetContentType("text/plain")
+	req.Req.SetStatusCode(http.StatusOK)
+	req.Req.SetBodyString(defaultRobotsTxt(a.PublicURL()))
+
+	return true
+}
+
+// defaultRobotsTxt is the built-in robots.txt: allow all + an absolute Sitemap
+// pointer so crawlers discover the sitemap without a robots note.
+func defaultRobotsTxt(publicURL string) string {
+	txt := "User-agent: *\nDisallow:\n"
+	if publicURL != "" {
+		txt += "\nSitemap: " + strings.TrimRight(publicURL, "/") + "/sitemap.xml\n"
+	}
+	return txt
 }
 
 func (a *app) handleRSSFeed(req *appreq.Request) bool {

@@ -42,7 +42,6 @@ const (
 	ConfigSiteTitleTemplate      = "site_title_template"
 	ConfigTimezone               = "timezone"
 	ConfigDefaultLayout          = "default_layout"
-	ConfigRobotsTxt              = "robots_txt"
 	ConfigURLNormalizationMethod = "url_normalization_method"
 	ConfigKBID                   = "kb_id"
 )
@@ -80,11 +79,6 @@ var (
 			ConfigMeta: ConfigMeta{ID: ConfigDefaultLayout, Description: "Default layout for pages."},
 			Default:    "",
 			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.DefaultLayout = v },
-		},
-		ConfigRobotsTxt: {
-			ConfigMeta: ConfigMeta{ID: ConfigRobotsTxt, Description: "robots.txt content. Values: opened, closed, or custom text."},
-			Default:    "opened",
-			SetupFunc:  func(cfg *model.SiteConfig, v string) { cfg.RobotsTxt = v },
 		},
 		ConfigURLNormalizationMethod: {
 			ConfigMeta: ConfigMeta{ID: ConfigURLNormalizationMethod, Description: "URL normalization method for note permalinks."},

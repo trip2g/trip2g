@@ -144,10 +144,6 @@ namespace $.$$ {
 			return this.config_id() === 'timezone'
 		}
 
-		is_robots_txt_config(): boolean {
-			return this.config_id() === 'robots_txt'
-		}
-
 		override config_title(): string {
 			return this.config_id()
 		}
@@ -197,10 +193,6 @@ namespace $.$$ {
 			if (this.is_timezone_config()) {
 				controls.push(this.MyTimezoneButton())
 			}
-			if (this.is_robots_txt_config()) {
-				controls.push(this.RobotsOpenedButton())
-				controls.push(this.RobotsClosedButton())
-			}
 			return controls
 		}
 
@@ -210,14 +202,6 @@ namespace $.$$ {
 
 		set_my_timezone() {
 			this.edit_value_string(this.my_timezone())
-		}
-
-		set_robots_opened() {
-			this.edit_value_string('opened')
-		}
-
-		set_robots_closed() {
-			this.edit_value_string('closed')
 		}
 
 		@$mol_mem
