@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"path/filepath"
-	"sync"
 	"testing"
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
@@ -36,17 +35,14 @@ func TestWithTransaction(t *testing.T) {
 
 	// set app
 	a := &app{
-		log:          log,
-		conn:         conn,
-		writeConn:    conn,
+		appState: &appState{
+			log:       log,
+			conn:      conn,
+			writeConn: conn,
+		},
 		queries:      queries,
 		Queries:      queries,
 		WriteQueries: writeQueries,
-		graphTxs: &graphTransactions{
-			EnvMap: make(map[*app]*sql.Tx),
-		},
-		noteWriteMu: &sync.Mutex{},
-		assetsMu:    &sync.Mutex{},
 	}
 
 	// Create properly initialized fasthttp context

@@ -3,12 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/db"
@@ -28,11 +26,6 @@ type txEnvKeyType struct{}
 //nolint:gochecknoglobals // Context key for transactional env
 var txEnvKey = txEnvKeyType{}
 
-type graphTransactions struct {
-	sync.Mutex
-	EnvMap map[*app]*sql.Tx
-}
-
 func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
 	// TODO: add caching for this method
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)
@@ -42,6 +35,12 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	// The single write connection is held for the tx lifetime, so a second
+	// acquire on the same request would block forever waiting for it.
+	if txEnv := a.txEnvFromCtx(ctx); txEnv != nil {
+		return errors.New("nested transaction: request already has an open write transaction")
 	}
 
 	tx, err := a.writeConn.BeginTx(ctx, nil)
@@ -61,11 +60,6 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	// override the context with the new tx env
 	req.Env = &newEnv
 
-	a.graphTxs.Lock()
-	defer a.graphTxs.Unlock()
-
-	a.graphTxs.EnvMap[&newEnv] = tx
-
 	return nil
 }
 
@@ -75,20 +69,19 @@ func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
 		return fmt.Errorf("failed to get request from context: %w", err)
 	}
 
-	a.graphTxs.Lock()
-	defer a.graphTxs.Unlock()
-
 	envPtr, ok := req.Env.(*app)
 	if !ok {
 		return errors.New("failed to cast env to *app")
 	}
-	tx, ok := a.graphTxs.EnvMap[envPtr]
-	if !ok {
-		return fmt.Errorf("transactioned env not found for request: %v", req.Env)
+
+	tx := envPtr.currentTx
+	if tx == nil {
+		return errors.New("no open transaction on request env")
 	}
 
-	// Clean up the map entry regardless of commit/rollback
-	delete(a.graphTxs.EnvMap, envPtr)
+	// Restore the base env so nothing keeps using the finished tx scope and a
+	// later acquire on the same request sees a clean state.
+	req.Env = a
 
 	if commit {
 		commitErr := tx.Commit()

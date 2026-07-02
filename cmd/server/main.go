@@ -88,10 +88,27 @@ var _ replicareload.Env = (*app)(nil)
 // A longer interval reduces reload churn (bleve IO + note-loader work) on resource-constrained hosts.
 const replicaNoteReloadInterval = 5 * time.Second
 
+// app is the composition root behind every Env interface in the system. It
+// carries only the per-transaction scope: the query handles and tx swapped
+// when a tx env is created (`newEnv := *a` in AcquireTxEnvInRequest and
+// WithTransaction). Everything process-lifetime lives in the embedded
+// *appState and is shared by reference across all copies.
 type app struct {
+	*appState
+
 	*db.Queries
 	*db.WriteQueries
 
+	queries *db.Queries
+
+	currentTx *sql.Tx
+}
+
+// appState holds all process-lifetime state. It is embedded in app by
+// pointer, so per-transaction app copies share every field here by reference:
+// mutexes and atomics are safe as plain values, and adding a field cannot
+// reintroduce the copied-lock / copied-map bug class.
+type appState struct {
 	Storage
 	*dataencryption.Manager
 	*patreonjobs.PatreonJobs
@@ -121,48 +138,35 @@ type app struct {
 	fedHTTPClient     *fasthttp.Client
 
 	webhookTestCalls []webhookTestCall
-	webhookTestMu    *sync.Mutex
+	webhookTestMu    sync.Mutex
 
 	debugJobLog []debugJobRecord
-	debugJobMu  *sync.Mutex
+	debugJobMu  sync.Mutex
 
-	// noteWriteMu is a POINTER, not a value: app is shallow-copied per request
-	// (`newEnv := *a` in AcquireTxEnvInRequest/WithTransaction). A value mutex
-	// would be copied — defeating cross-request serialization and, worse,
-	// deadlocking if copied while locked. A pointer makes every copy share the
-	// one real mutex so plugin pushNotes and git apply/materialize truly serialize.
-	noteWriteMu *sync.Mutex
+	// noteWriteMu serializes plugin pushNotes and git apply/materialize.
+	noteWriteMu sync.Mutex
 
 	openaiClient *openai.Client
 
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
 	shutdown    context.CancelFunc
-	// Pointer so the per-request shallow copy (newEnv := *a) shares the one flag
-	// rather than copying a noCopy atomic value.
-	stopped *atomic.Bool
+	stopped     atomic.Bool
 	// ready reports whether the instance can fully serve, including writes. It
 	// flips true only after the writer slot is acquired and writer subsystems
 	// (queues, cron, patreon/boosty refresh) have started. /readyz returns 503
 	// until then so Nomad/Traefik route traffic only to fully-ready instances.
-	// Pointer for the same reason as stopped (shared across per-request copies).
-	ready          *atomic.Bool
+	ready          atomic.Bool
 	internalServer *fasthttp.Server
 	// appHandler holds the full public request handler once startServer has
 	// built it. The internal server's leader-side replica intake reads it to run
 	// forwarded writes through the real pipeline; nil (→ 503) until ready.
-	// Pointer (like stopped/ready) so per-request app copies share one atomic.
-	appHandler *atomic.Pointer[fasthttp.RequestHandler]
+	appHandler atomic.Pointer[fasthttp.RequestHandler]
 	ctx        context.Context
 
-	graphTxs *graphTransactions
-
-	queries   *db.Queries
 	conn      *sql.DB
 	writeConn *sql.DB
 	queueConn *sql.DB // separate connection for goqite so queue polling never blocks app writes
-
-	currentTx *sql.Tx
 
 	noteBus *notebus.Bus
 
@@ -203,10 +207,8 @@ type app struct {
 	// localAssetsFS serves note assets from the local-storage dir via the
 	// /_assets/ route. nil unless the local storage backend is active.
 	localAssetsFS *fasthttp.FS
-	// Pointer, not value: app is shallow-copied per request (newEnv := *a), and
-	// assetHashes is shared by reference. A copied value mutex would not guard
-	// the shared map, risking a fatal concurrent map write. See noteWriteMu.
-	assetsMu *sync.Mutex
+	// assetsMu guards assetHashes rebuilds.
+	assetsMu sync.Mutex
 
 	*configregistry.SiteConfigBuilder
 
@@ -314,48 +316,38 @@ func main() {
 	log.Info("using storage prefix", "prefix", config.Storage.Prefix)
 
 	a := &app{
-		Queries:      queries,
-		WriteQueries: writeQueries,
+		appState: &appState{
+			Storage: fileStorage,
+			Manager: initDataEncryptionManager(config),
 
-		Storage: fileStorage,
-		Manager: initDataEncryptionManager(config),
+			config: config,
 
-		config: config,
+			tokenManager: tokenManager,
 
-		tokenManager: tokenManager,
+			hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
+			tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
 
-		graphTxs: &graphTransactions{
-			EnvMap: make(map[*app]*sql.Tx),
+			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
+
+			log:     log,
+			noteBus: notebus.New(log),
+			conn:    conn,
+			// mail:    mailyak.New(mailAddr, mailAuth),
+
+			writeConn: writeConn,
+			queueConn: queueConn,
+
+			UserBans: userbans.New(queries),
+
+			nowpaymentsClient: nowpaymentsClient,
+
+			Client:        turnstile.New(config.Turnstile),
+			signinCounter: &requestemailsignin.SignInCounter{},
 		},
 
-		noteWriteMu:   &sync.Mutex{},
-		assetsMu:      &sync.Mutex{},
-		webhookTestMu: &sync.Mutex{},
-		debugJobMu:    &sync.Mutex{},
-		stopped:       &atomic.Bool{},
-		ready:         &atomic.Bool{},
-		appHandler:    &atomic.Pointer[fasthttp.RequestHandler]{},
-
-		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
-		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
-
-		purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
-
-		log:     log,
-		noteBus: notebus.New(log),
-		queries: queries,
-		conn:    conn,
-		// mail:    mailyak.New(mailAddr, mailAuth),
-
-		writeConn: writeConn,
-		queueConn: queueConn,
-
-		UserBans: userbans.New(queries),
-
-		nowpaymentsClient: nowpaymentsClient,
-
-		Client:        turnstile.New(config.Turnstile),
-		signinCounter: &requestemailsignin.SignInCounter{},
+		Queries:      queries,
+		WriteQueries: writeQueries,
+		queries:      queries,
 	}
 
 	if config.IsReadReplica() {

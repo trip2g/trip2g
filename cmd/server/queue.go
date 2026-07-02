@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-	"trip2g/internal/appreq"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -302,35 +300,12 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, job model.Backgro
 		Priority: job.Priority,
 	}
 
-	// First check context for transactional env (works for both HTTP and background jobs)
-	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
-		a.log.Debug("enqueueing in context tx env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
+	// Enqueue inside the open write transaction if one is visible from ctx
+	// (WithTransaction env, GraphQL request env) or the receiver itself.
+	if txEnv := a.txEnvFromCtx(ctx); txEnv != nil {
+		a.log.Debug("enqueueing in tx env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
 
 		_, err = jobs.CreateTx(ctx, txEnv.currentTx, aq.q, job.ID, gqMsg)
-		return err
-	}
-
-	// Fallback: check request context (for HTTP requests)
-	req, err := appreq.FromCtx(ctx)
-	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
-		return fmt.Errorf("failed to get request from context: %w", err)
-	}
-
-	if req != nil {
-		env, ok := req.Env.(*app)
-		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing in request env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
-
-			_, err = jobs.CreateTx(ctx, env.currentTx, aq.q, job.ID, gqMsg)
-			return err
-		}
-	}
-
-	// Fallback: check global app (should rarely be used now)
-	if a.currentTx != nil {
-		a.log.Debug("enqueueing in app.currentTx", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
-
-		_, err = jobs.CreateTx(ctx, a.currentTx, aq.q, job.ID, gqMsg)
 		return err
 	}
 
