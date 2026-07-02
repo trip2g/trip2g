@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"trip2g/internal/webhookutil"
@@ -32,8 +33,22 @@ type interpreterRegistry struct {
 	byName  map[string]*interpreter
 }
 
+// registry is guarded by registryMu: a startup --interpreters override may race
+// with concurrent role runs. Each *interpreterRegistry is immutable after build;
+// only the pointer swap needs the lock.
+//
 //nolint:gochecknoglobals // interpreter lookup built from embedded config (overridable via --interpreters); package-level by design
-var registry = mustBuildRegistry(defaultInterpretersJSON)
+var (
+	registryMu sync.RWMutex
+	registry   = mustBuildRegistry(defaultInterpretersJSON)
+)
+
+// currentRegistry returns the active immutable registry snapshot.
+func currentRegistry() *interpreterRegistry {
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+	return registry
+}
 
 // mustBuildRegistry panics if data cannot be parsed. Used at package init.
 func mustBuildRegistry(data []byte) *interpreterRegistry {
@@ -72,7 +87,9 @@ func SetInterpretersJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	registryMu.Lock()
 	registry = r
+	registryMu.Unlock()
 	return nil
 }
 
@@ -87,7 +104,7 @@ func LoadInterpretersFile(path string) error {
 
 // FenceLangKnown reports whether a Markdown fence label is registered.
 func FenceLangKnown(lang string) bool {
-	_, ok := registry.byLabel[strings.ToLower(lang)]
+	_, ok := currentRegistry().byLabel[strings.ToLower(lang)]
 	return ok
 }
 
@@ -131,7 +148,7 @@ type rawCodeChange struct {
 // Non-zero exit or context timeout returns an error; timedOut distinguishes
 // the two failure modes.
 func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) {
-	interp, ok := registry.byName[spec.Program]
+	interp, ok := currentRegistry().byName[spec.Program]
 	if !ok {
 		return "", "", false, fmt.Errorf("coderun: unknown program %q", spec.Program)
 	}
@@ -239,7 +256,7 @@ func parseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
 // programBinary resolves a program name to the binary to run via the interpreter
 // registry. Returns an error for unrecognized names so the caller can fail fast.
 func programBinary(name string) (string, error) {
-	if interp, ok := registry.byName[name]; ok {
+	if interp, ok := currentRegistry().byName[name]; ok {
 		return interp.Cmd[0], nil
 	}
 	return "", fmt.Errorf("coderun: unknown program %q", name)
@@ -249,7 +266,7 @@ func programBinary(name string) (string, error) {
 // program name used for allowlist checks (python, bash, node).
 // Returns "" for unrecognised tags.
 func fenceLangToProgram(lang string) string {
-	if interp, ok := registry.byLabel[strings.ToLower(lang)]; ok {
+	if interp, ok := currentRegistry().byLabel[strings.ToLower(lang)]; ok {
 		return interp.Name
 	}
 	return ""
