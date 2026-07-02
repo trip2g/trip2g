@@ -17,17 +17,17 @@ In this article:
 
 ## What you get
 
-After processing 8 real calls from two and a half weeks, the vault contains:
+Every call becomes a set of linked notes, and the vault grows with each one:
 
-- **8 transcript notes** holding the raw, verbatim Krisp transcript, one per call, as the auditable source
-- **8 call notes** with an inferred title, a strong first paragraph, a link back to the raw transcript, and a разбор where every topic pairs a one-line summary with the verbatim transcript segment quoted underneath, cited by timerange
-- **220 concept notes**: people, tools, projects, terms, each with aliases and mentions that quote the exact segment where the term came up
-- **9 daily notes**: action checkboxes on top, a dated log of the day below
-- **3 topic logs** for recurring themes, growing append-only with each new call
+- a **transcript note** holding the raw, verbatim Krisp transcript, the auditable source
+- a **call note** with an inferred title, a strong first paragraph, a link back to the raw transcript, and a разбор where every topic pairs a one-line summary with the verbatim transcript segment quoted underneath, cited by timerange
+- **concept notes** for the people, tools, projects, and terms it mentions, each with aliases and mentions that quote the exact segment where the term came up
+- a **daily note** with action checkboxes on top and a dated log of the day below
+- **topic logs** for recurring themes, growing append-only as the same subject returns
 
-Total cost of the run: $0.42 in LLM calls, about 5 cents per call. A long 50-minute call costs around 15 cents.
+It is cheap: about 5 cents per call in LLM calls, roughly 15 cents for a long 50-minute call. Re-runs cost nothing if you cache the responses.
 
-The difference from "summary plus chat bot" is what happens on call number two. A summary dies after you read it. Here the same knowledge lives in one note and accumulates evidence. The note for the project "Hermes" collected three mentions from three different calls, each adding a new angle: first a testing target, then "a strong OpenClaw clone", then an agent that keeps notes in Obsidian. Nobody wrote that note. It grew.
+The difference from "summary plus chat bot" is what happens on call number two. A summary dies after you read it. Here the same knowledge lives in one note and accumulates evidence. In the demo run below, the note for a project called "Hermes" collected three mentions from three different calls, each adding a new angle: first a testing target, then "a strong OpenClaw clone", then an agent that keeps notes in Obsidian. Nobody wrote that note. It grew.
 
 ## How it works
 
@@ -53,7 +53,7 @@ calls_count: 2
 - 20:01 [[2026-06-19_ai-agenty-hr-sourcing-automation|AI-агенты для HR]] — ...
 ```
 
-If someone says "I'll do it tomorrow" on the call, the checkbox lands on the next day's daily note. In the test run, June 13 has no calls at all, yet its daily note exists: one deferred task from June 12 lives there. On the published page, task checkboxes are interactive for the site admin, so ticking off the day happens right in the browser, and the state is saved back to the note.
+If someone says "I'll do it tomorrow" on the call, the checkbox lands on the next day's daily note. So a day with no calls can still have a daily note: it holds a task deferred from the day before. On the published page, task checkboxes are interactive for the site admin, so ticking off the day happens right in the browser, and the state is saved back to the note.
 
 **Topic logs: append-only, dated headings.** When a topic keeps coming back across calls, it gets a log note. Each new mention is appended under a `### [[YYYY-MM-DD]]` heading that links to the daily note. Old entries are never rewritten, only new ones added, so the note reads as the history of a thought:
 
@@ -70,7 +70,7 @@ If someone says "I'll do it tomorrow" on the call, the checkbox lands on the nex
 Продукт, который собеседник заканчивает и планирует тестировать. (...)
 ```
 
-That is the log for "коробка" from the test run: four entries, four calls, the idea visibly evolving over eleven days.
+That is a topic log from the demo run: each mention on its own dated line, the idea visibly evolving from call to call.
 
 ### The pipeline
 
@@ -105,7 +105,8 @@ Inside a note, wikilinks carry you sideways: from a daily entry to the call, fro
 
 You need Krisp (or any recorder that produces `Speaker | MM:SS` transcripts), an OpenRouter key, Python, and a trip2g instance. Start with the standalone script; move to the cascade once it works.
 
-1. **Ingest (record + store).** Krisp installs as a virtual microphone and speaker, so it records calls from any app and produces speaker-separated transcripts with timecodes. Fetch each call via the Krisp API and write it verbatim as a `transcripts/YYYY-MM-DD_slug.md` note. Decode the time from the id, not the clock: take the first 8 hex chars, `int(prefix, 16) << 16` gives milliseconds since epoch, convert to your timezone, and use it for `created_at`, filenames, and daily bucketing.
+0. **Get it.** The whole pipeline is packaged as a standalone repo, [`krisp_knowledge`](https://github.com/trip2g/krisp_knowledge). Clone it, copy `.env.example` to `.env`, and fill in `KRISP_TOKEN` and `OPENROUTER_API_KEY`. It ships a synthetic `example/` vault so you can see the output shape before running against your own calls.
+1. **Ingest (record + store).** Krisp installs as a virtual microphone and speaker, so it records calls from any app and produces speaker-separated transcripts with timecodes. The fetch step pulls each call via the Krisp API and writes it verbatim as a `transcripts/YYYY-MM-DD_slug.md` note. Time comes from the id, not the clock: take the first 8 hex chars, `int(prefix, 16) << 16` gives milliseconds since epoch, convert to your timezone, and use it for `created_at`, filenames, and daily bucketing.
 2. **Validate the transcript.** If timecodes appear less than once per ~20 lines, quarantine the call: on defective input the model invents timecodes, on normal input it never does.
 3. **Segment.** One gpt-5.4-mini call per transcript: `[MM:SS] topic` lines, major changes only, at least 2 minutes between topics, plus TITLE / SLUG / SPEAKERS lines for the metadata fallback.
 4. **Extract.** One call per 8-16 minute chunk: JSON list of typed concepts with aliases, a 1-3 sentence summary quoting only what was said here, plus actions with owner and due.
@@ -114,6 +115,6 @@ You need Krisp (or any recorder that produces `Speaker | MM:SS` transcripts), an
 7. **Review.** Open the site, tick checkboxes on the daily note, fix titles on `needs_review` notes. Your edits are the confirmation loop; the pipeline appends, you correct.
 8. **Go event-driven (optional).** Turn the three stages into fleet role-notes and wire change-webhooks: `transcripts/**` triggers segmentation, the segments trigger extraction. Now dropping a raw transcript into the vault builds the rest by itself.
 
-Budget note: cap your spend. The whole 8-call run above stayed at $0.42, and re-runs cost nothing if you cache raw LLM responses per stage.
+Budget note: cap your spend. At roughly 15 cents for a long call, a batch stays in the low dollars, and re-runs cost nothing if you cache raw LLM responses per stage.
 
 The stages generalize past calls. Only ingest is Krisp-specific; segment, extract, reconcile, emit work for any long text: books, YouTube, support threads. In the trip2g agent runtime (fleet) each stage is a role-note triggered by the note the previous stage wrote, so the pipeline itself lives in the same vault it builds.
