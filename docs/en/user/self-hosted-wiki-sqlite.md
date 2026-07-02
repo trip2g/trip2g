@@ -86,7 +86,7 @@ No `pg_dump`, no coordinating a database dump with a file-storage dump. One file
 
 ### Honest tradeoffs
 
-- **SQLite is single-writer.** For a personal or small-team wiki this is a non-issue; for very high concurrent write load a client-server database scales further.
+- **SQLite is single-writer.** For a personal or small-team wiki this is a non-issue: reads serve pre-rendered HTML at a few milliseconds regardless of vault size (see [[en/user/perfomance|performance]]). For heavier load trip2g has its own scaling answer, a [[en/user/read-replica|read replica]] (LiteFS plus write-forwarding) that serves reads locally and forwards writes to the leader, alongside continuous Litestream replication. A client-server database still scales further under extreme write concurrency, so weigh that if you expect it.
 - **Authoring is markdown in Obsidian.** If your contributors need a browser WYSIWYG editor, BookStack or Wiki.js fit them better.
 - **It is a live server.** DokuWiki on flat files or a static generator needs even less to run if you never want dynamic features. trip2g earns the server by giving you auth, paywalls, and an MCP endpoint the static options cannot.
 
