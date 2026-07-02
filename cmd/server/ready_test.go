@@ -1,7 +1,6 @@
 package main
 
 import (
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,10 +24,7 @@ func TestIsReady(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			a := &app{
-				stopped: &atomic.Bool{},
-				ready:   &atomic.Bool{},
-			}
+			a := &app{appState: &appState{}}
 			a.stopped.Store(tc.stopped)
 			a.ready.Store(tc.ready)
 

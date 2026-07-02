@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/deletesecret"
 	"trip2g/internal/case/admin/getsecret"
 	"trip2g/internal/case/admin/setsecret"
@@ -44,9 +45,36 @@ func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx
 }
 
+// txEnvFromCtx returns the transaction-scoped env visible from ctx or the
+// receiver, or nil when no write transaction is open. It checks the same
+// three channels the tx-aware call sites use: the explicit txEnvKey set by
+// WithTransaction, the request env swapped in by AcquireTxEnvInRequest, and
+// the receiver itself.
+func (a *app) txEnvFromCtx(ctx context.Context) *app {
+	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+		return txEnv
+	}
+	if req, err := appreq.FromCtx(ctx); err == nil {
+		if env, ok := req.Env.(*app); ok && env.currentTx != nil {
+			return env
+		}
+	}
+	if a.currentTx != nil {
+		return a
+	}
+	return nil
+}
+
 // WithTransaction runs the given function within a database transaction.
 // fn should return true to commit the transaction, false to rollback.
 func (a *app) WithTransaction(ctx context.Context, fn func(context.Context, *app) (bool, error)) error {
+	// The write pool has a single connection (db.Setup), so beginning a second
+	// transaction inside an open one blocks forever waiting for the connection
+	// the outer scope holds. Fail loudly instead.
+	if txEnv := a.txEnvFromCtx(ctx); txEnv != nil {
+		return errors.New("nested WithTransaction: a write transaction is already open")
+	}
+
 	// not sure but I guess transactions should run on writeConn
 	tx, err := a.writeConn.BeginTx(ctx, nil)
 	if err != nil {

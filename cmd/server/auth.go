@@ -38,14 +38,14 @@ func (a *app) setTokenValidator() {
 }
 
 func (a *app) UpsertAPIKeyLogAction(ctx context.Context, name string) error {
-	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+	if txEnv := a.txEnvFromCtx(ctx); txEnv != nil {
 		return txEnv.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
 	}
 	return a.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
 }
 
 func (a *app) UpsertAPIKeyLogIP(ctx context.Context, ip string) error {
-	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+	if txEnv := a.txEnvFromCtx(ctx); txEnv != nil {
 		return txEnv.WriteQueries.UpsertAPIKeyLogIP(ctx, ip)
 	}
 	return a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip)

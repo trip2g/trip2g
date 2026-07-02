@@ -53,7 +53,7 @@ func (emptyNoteLoaderEnv) ListAllSubgraphs(context.Context) ([]db.Subgraph, erro
 // appWithEmptyLoaders builds an app whose note loaders load nothing and whose
 // page cache holds one entry. Calling a Prepare* method must empty the cache.
 func appWithEmptyLoaders() *app {
-	a := &app{pageCache: pagecache.New()}
+	a := &app{appState: &appState{pageCache: pagecache.New()}}
 	a.latestNoteLoader = noteloader.New("latest", emptyNoteLoaderEnv{}, mdloader.Config{})
 	a.liveNoteLoader = noteloader.New("live", emptyNoteLoaderEnv{}, mdloader.Config{})
 	return a
