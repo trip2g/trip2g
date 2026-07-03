@@ -1,25 +1,24 @@
 package graph
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/fs"
+	"html/template"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/assets"
 	"trip2g/internal/fleet"
 	"trip2g/internal/fleet/trip2ggql"
 )
 
 // Server serves the fleet dependency graph on a localhost-only debug surface:
 //   - GET /graph.json — machine JSON (see docs/dev/2026-07-02_fleet_dependency_graph.md)
-//   - GET /mermaid.min.js — bundled Mermaid from trip2g/assets (no CDN)
-//   - GET / — self-contained HTML visualization
+//   - GET / — HTML visualization (loads Mermaid from the connected trip2g hub)
 //
 // It is an introspection tool — never mount it on the public delivery listener.
 type Server struct {
@@ -33,12 +32,11 @@ func NewServer(discovery *fleet.Discovery, gql graphql.Client, cfg fleet.Config)
 	return &Server{discovery: discovery, gql: gql, cfg: cfg}
 }
 
-// Handler returns the debug mux: / (UI), /graph.json (API),
-// /mermaid.min.js (bundled, no CDN dependency).
+// Handler returns the debug mux: / (UI) and /graph.json (API).
+// Mermaid is loaded from the connected trip2g hub — no local bundle needed.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graph.json", s.serveJSON)
-	mux.HandleFunc("/mermaid.min.js", serveMermaid)
 	mux.HandleFunc("/", s.serveUI)
 	return mux
 }
@@ -55,25 +53,23 @@ func (s *Server) serveJSON(w http.ResponseWriter, r *http.Request) {
 	_ = enc.Encode(g)
 }
 
-// serveMermaid reads mermaid.min.js out of the embedded assets FS and serves
-// it — same bundle the default template uses, no network required.
-func serveMermaid(w http.ResponseWriter, _ *http.Request) {
-	data, err := fs.ReadFile(assets.FS, "mermaid.min.js")
-	if err != nil {
-		http.Error(w, "mermaid.min.js not found in embedded assets", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-	_, _ = w.Write(data)
-}
-
 func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
+	tmpl, err := template.New("ui").Parse(string(UIHTML))
+	if err != nil {
+		http.Error(w, "template parse error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var buf bytes.Buffer
+	if err = tmpl.Execute(&buf, struct{ Trip2gBaseURL string }{s.cfg.Trip2gBaseURL}); err != nil {
+		http.Error(w, "render error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(UIHTML)
+	_, _ = w.Write(buf.Bytes())
 }
 
 // BuildGraph discovers roles and registry markers fresh (it is a debug

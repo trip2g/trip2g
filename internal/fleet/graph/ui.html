@@ -21,9 +21,9 @@
   pre { background: #f7f7f7; padding: 1rem; overflow: auto; }
   .err { color: #b00020; }
 </style>
-<!-- Mermaid is served by the fleet graph debug server from the embedded
-     trip2g assets bundle (no CDN required, works offline). -->
-<script src="/mermaid.min.js"></script>
+<!-- Mermaid is loaded from the trip2g hub that the fleet is connected to.
+     The hub already serves /assets/mermaid.min.js (same bundle, no CDN). -->
+<script src="{{.Trip2gBaseURL}}/assets/mermaid.min.js"></script>
 </head>
 <body>
 <h1>fleet dependency graph</h1>

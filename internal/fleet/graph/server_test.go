@@ -93,7 +93,12 @@ func newTestServer() *Server {
 		}
 		return "", errors.New("unexpected op " + op)
 	})
-	cfg := fleet.Config{FleetID: "f1", AgentsFolder: "roles/", OfferedTools: []string{"read_note", "write_note"}}
+	cfg := fleet.Config{
+		FleetID:       "f1",
+		AgentsFolder:  "roles/",
+		OfferedTools:  []string{"read_note", "write_note"},
+		Trip2gBaseURL: "http://hub.local:20081",
+	}
 	return NewServer(fleet.NewDiscovery(gql, cfg.AgentsFolder, cfg.OfferedTools), gql, cfg)
 }
 
@@ -148,13 +153,13 @@ func TestServerUI(t *testing.T) {
 	require.Contains(t, rec.Body.String(), "graph.json")
 }
 
-func TestServerMermaidJS(t *testing.T) {
+func TestServerUIMermaidURL(t *testing.T) {
 	s := newTestServer()
 	rec := httptest.NewRecorder()
-	s.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/mermaid.min.js", nil))
+	s.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 	require.Equal(t, 200, rec.Code)
-	require.Contains(t, rec.Header().Get("Content-Type"), "application/javascript")
-	require.Greater(t, rec.Body.Len(), 1000, "mermaid bundle must be non-trivial")
+	// Mermaid must be loaded from the hub, not from the fleet server itself.
+	require.Contains(t, rec.Body.String(), "http://hub.local:20081/assets/mermaid.min.js")
 }
 
 func TestParseFleetMarker(t *testing.T) {
