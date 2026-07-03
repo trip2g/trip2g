@@ -13,6 +13,9 @@ import (
 
 	"trip2g/internal/fastgql"
 
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/handler/testserver"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
@@ -175,6 +178,55 @@ func TestSSEHandler_CancelsContextOnDisconnect(t *testing.T) {
 		// Handler context was cancelled — success.
 	case <-time.After(5 * time.Second):
 		t.Fatal("handler context was not cancelled after client disconnect")
+	}
+}
+
+// TestSSEHandler_IdleSubscriptionKeepAliveDetectsDisconnect reproduces the
+// NoteChanges goroutine leak scenario end-to-end with gqlgen's real SSE
+// transport: a subscription that never produces events writes nothing, so a
+// silent client disconnect is only detected when keepalive pings are enabled
+// (fasthttp observes a dead connection only through a failed write/flush).
+// With KeepAlivePingInterval > 0 the operation context must be cancelled
+// shortly after the client goes away; with 0 (the pre-fix production wiring)
+// it never is and the subscription goroutine leaks forever.
+func TestSSEHandler_IdleSubscriptionKeepAliveDetectsDisconnect(t *testing.T) {
+	srv := testserver.New()
+	srv.AddTransport(transport.SSE{KeepAlivePingInterval: 20 * time.Millisecond})
+
+	ctxCancelled := make(chan struct{})
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		go func() {
+			<-ctx.Done()
+			close(ctxCancelled)
+		}()
+		return next(ctx)
+	})
+
+	handler := fastgql.NewSSEHandler(srv)
+	ln := startTestServer(t, handler)
+
+	// Client subscribes, then goes away without ever receiving an event.
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+ln.Addr().String()+"/graphql",
+		strings.NewReader(`{"query":"subscription { name }"}`))
+	require.NoError(t, err)
+
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		_, _ = io.ReadAll(resp.Body) // fails when the client ctx expires
+		resp.Body.Close()
+	}
+
+	select {
+	case <-ctxCancelled:
+		// Idle stream disconnect detected via keepalive ping — no leak.
+	case <-time.After(5 * time.Second):
+		t.Fatal("subscription context was not cancelled after client disconnect on an idle stream")
 	}
 }
 

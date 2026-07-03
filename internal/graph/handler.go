@@ -2,6 +2,8 @@ package graph
 
 import (
 	"context"
+	"time"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/logger"
 
@@ -47,6 +49,15 @@ func buildSkipTxMap(schema graphql.ExecutableSchema) map[string]struct{} {
 	return skipTxMutations
 }
 
+// sseTransport returns the SSE transport for subscriptions. The keepalive ping
+// is required: over fasthttp (internal/fastgql) a client disconnect is only
+// observable through a failed write/flush, so without periodic pings an idle
+// subscription stream never learns the client is gone — its context is never
+// cancelled and the resolver goroutine (plus its notebus subscriber) leaks.
+func sseTransport() transport.SSE {
+	return transport.SSE{KeepAlivePingInterval: 30 * time.Second}
+}
+
 func NewHandler(env Env) *handler.Server {
 	log := env.Logger()
 
@@ -66,7 +77,7 @@ func NewHandler(env Env) *handler.Server {
 
 	maxBodySize := int64(env.MaxRequestBodySize() * 1024 * 1024)
 
-	srv.AddTransport(transport.SSE{})
+	srv.AddTransport(sseTransport())
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{
