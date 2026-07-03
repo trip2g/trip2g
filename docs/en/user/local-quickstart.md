@@ -63,7 +63,7 @@ Building from source instead of the image: `make build` produces `./tmp/server`;
 
 ## 2. Mint an API key (dev flow)
 
-In `DEV=true` the server accepts a fixed sign-in code (`111111`, `000000` also works). Sign in as the owner, then create a key:
+In `DEV=true` the server accepts the fixed sign-in code `111111`. Sign in as the owner, then create a key:
 
 ```bash
 GQL=http://localhost:24081/graphql
@@ -138,7 +138,7 @@ Using this instance as AI-agent memory? See [[en/user/agent-memory]].
 
 ## Gotchas
 
-- **Dev sign-in code** is `111111` (also `000000`). Only with `DEV=true`.
+- **Dev sign-in code** is `111111`. Only with `DEV=true`.
 - **`route:` frontmatter** maps a note to a custom domain. Locally, view via the plain permalink (`/path/note`) or send a `Host:` header.
 - **Custom Jet layouts**: a note with `layout: <theme>/<page>` renders through `_layouts/<theme>/<page>.html`. If the template fails to parse, the server silently falls back to the default layout (HTTP 200), so the page "works" but looks wrong.
 - `{{/* ... */}}` block comments break the template engine in current builds. Don't put them in `_layouts/*.html`.
