@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +26,7 @@ import (
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
+	"trip2g/internal/fleet/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/zerologger"
 )
@@ -46,6 +48,7 @@ type cliFlags struct {
 	vaultDir         string // KB root for --once (default ".")
 	targetPath       string // optional note in the vault to use as change_file context
 	interpretersPath string // non-empty → override embedded interpreters.json
+	graphAddr        string // non-empty → serve the dependency-graph debug UI/JSON; loopback-only
 }
 
 func run() error {
@@ -87,6 +90,26 @@ func run() error {
 	}
 
 	reconciler := fleet.NewReconciler(adminGQL, cli.cfg)
+
+	// --graph-addr: localhost-only debug surface serving the dependency graph
+	// (GET / = UI, GET /graph.json = machine JSON). Internal introspection
+	// tool — refuse anything but a loopback bind, and never mount it on the
+	// public delivery listener.
+	var graphSrv *http.Server
+	if cli.graphAddr != "" {
+		if lerr := validateLoopbackAddr(cli.graphAddr); lerr != nil {
+			return fmt.Errorf("--graph-addr: %w", lerr)
+		}
+		gs := graph.NewServer(discovery, adminGQL, cli.cfg)
+		graphSrv = &http.Server{Addr: cli.graphAddr, Handler: gs.Handler(), ReadHeaderTimeout: 10 * time.Second}
+		go func() {
+			lg.Info("fleet graph debug UI listening", "addr", cli.graphAddr)
+			if gerr := graphSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
+				lg.Error("graph debug server failed", "err", gerr)
+			}
+		}()
+		defer func() { _ = graphSrv.Close() }()
+	}
 
 	// First sync before serving so the registry is populated.
 	syncOnce(ctx, lg, f, discovery, reconciler)
@@ -263,6 +286,23 @@ func parseFrontmatter(content string) (map[string]string, string, error) {
 	return meta, after, nil
 }
 
+// validateLoopbackAddr rejects any graph debug bind that is not loopback: the
+// graph surface has no auth and must never be reachable off-box.
+func validateLoopbackAddr(addr string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("must be host:port: %w", err)
+	}
+	if host == "localhost" {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() {
+		return fmt.Errorf("host %q is not loopback; bind 127.0.0.1, ::1 or localhost", host)
+	}
+	return nil
+}
+
 // normalizeCallbackURL strips trailing slashes so webhook URLs assemble cleanly.
 func normalizeCallbackURL(u string) string {
 	return strings.TrimRight(u, "/")
@@ -426,6 +466,9 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"do not deregister webhooks on shutdown (rolling deploys: trip2g keeps them and retries)")
 	fs.StringVar(&cli.cfg.LogLevel, "log-level", "info",
 		"log level: debug|info|warn|error")
+	fs.StringVar(&cli.graphAddr, "graph-addr", "",
+		"loopback-only debug listen address serving the fleet dependency graph "+
+			"(GET / = UI, GET /graph.json = JSON), e.g. 127.0.0.1:9092; empty = disabled")
 
 	// One-shot offline harness flags.
 	fs.StringVar(&cli.oncePath, "once", "",
