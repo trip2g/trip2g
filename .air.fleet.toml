@@ -1,0 +1,36 @@
+root = "."
+tmp_dir = "tmp"
+
+# Dev hot-reload config for the fleet sidecar (see `make airfleet`).
+# Runs cmd/fleet against a local `make air` hub with the dev defaults:
+#   - hub user-token secret = the dev default ("please-change-me-...")
+#   - graph UI  → http://127.0.0.1:9099/   (JSON at /graph.json)
+#   - code-block debug UI → http://127.0.0.1:9098/
+# LLM roles: export TRIP2G_FLEET_LLM_BASE_URL / TRIP2G_FLEET_LLM_API_KEY before running.
+[build]
+  cmd = "go build -tags=dev -o ./tmp/fleet ./cmd/fleet"
+  bin = "./tmp/fleet"
+  args_bin = [
+    "--trip2g-url", "http://localhost:8081",
+    "--callback-url", "http://localhost:9090",
+    "--jwt-secret", "please-change-me-to-something-secret",
+    "--fleet-secret", "dev-fleet-secret",
+    "--agents-folder", "roles/",
+    "--allowed-programs", "python,bash,node",
+    "--graph-addr", "127.0.0.1:9099",
+    "--debug-listen", "127.0.0.1:9098",
+  ]
+  delay = 500
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "out", "obsidian-sync", "infra", "test-results", "playwright-report", "docs", "demo"]
+  exclude_regex = ["_test.go", "easyjson"]
+  include_ext = ["go", "html"]
+  kill_delay = "2s"
+  log = "build-errors.log"
+  send_interrupt = true
+
+[log]
+  main_only = false
+  time = true
+
+[misc]
+  clean_on_exit = false
