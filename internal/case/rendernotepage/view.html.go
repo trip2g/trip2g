@@ -897,12 +897,12 @@ func StreamOnboarding(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:287
 		qw422016.N().S(`
           <h3>Сайт в процессе настройки</h3>
-          <p>Войдите как администратор, чтобы начать работу.</p>
+          <p>Войдите как администратор, чтобы начать работу. Нажмите иконку входа в правом верхнем углу страницы.</p>
 
           <hr>
 
           <h3>Site is being set up</h3>
-          <p>Log in as administrator to get started.</p>
+          <p>Log in as administrator to get started. Click the sign-in icon in the top-right corner of the page.</p>
           `)
 //line view.html:295
 	}
