@@ -26,10 +26,10 @@ Loading the entire note is worse. A 3000-token note contains one relevant paragr
 
 [[Fuzzy Pointer]] covers the full mechanism. The short version:
 
-1. `search(query)` returns results. Each result includes `toc` (the full heading hierarchy) and `matches[].toc_path` (the path to the matching section).
+1. `search(query)` returns results. Each match carries `matches[].toc_path` — the path to the matching section. Results are slim: no full heading hierarchy, structure unfolds on demand via [[expand]].
 2. `note_html(pid=N, toc_path=match.toc_path)` fetches only that section's HTML.
 
-The token contrast: one section is ~300 tokens. The full note is ~3000 tokens. If you need a sibling section, read it from the same `toc` — no second search call.
+The token contrast: one section is ~300 tokens. The full note is ~3000 tokens. If you need a sibling section, call `expand(pid=N)` — it lists the note's sections one level at a time, so you pay for one TOC level, not the whole tree.
 
 Read [[Fuzzy Pointer]] for the complete drill-down, including what `pid` is and how `toc_path` resolves when a section has no heading.
 
@@ -92,7 +92,7 @@ Liu et al., ["Lost in the Middle"](https://arxiv.org/abs/2307.03172) (TACL 2023)
 
 ```
 1. search(query)
-   → results with toc + matches[].toc_path
+   → results with matches[].toc_path
 
 2. For content: read toc_path on the best match
    → note_html(pid=N, toc_path=match.toc_path)
@@ -102,8 +102,8 @@ Liu et al., ["Lost in the Middle"](https://arxiv.org/abs/2307.03172) (TACL 2023)
    → result in structuredContent.data
 
 4. If you need a sibling section,
-   use toc items from the same search result
-   → no second search call
+   expand(pid=N, toc_path=[...]) lists that level's sections
+   → pick one, read it with note_html(toc_path=[...])
 ```
 
-Full MCP tool reference: [[mcp|MCP server]]. Section navigation details: [[Fuzzy Pointer]].
+Full MCP tool reference: [[mcp|MCP server]]. Section navigation details: [[Fuzzy Pointer]]. Level-by-level TOC walking: [[expand]].

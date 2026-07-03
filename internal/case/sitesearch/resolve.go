@@ -163,7 +163,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 		sim := dotSimilarity(embedding.Vector, c.Embedding)
 		candidates = append(candidates, scored{c.NotePath, c, sim})
 	}
-	env.Logger().Warn("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
+	env.Logger().Debug("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
 	sort.Slice(candidates, func(i, j int) bool {
 		if candidates[i].sim != candidates[j].sim {

@@ -36,11 +36,9 @@ The breadcrumb is the fuzzy pointer. It tells you *which note* and *which sectio
 
 ### The three-step drill-down
 
-**Step 1 — fuzzy match.** Vector search returns the top results. Each result includes:
-- the note's full table of contents (`toc` field — a structured list of every heading with its `path` array)
-- the breadcrumb path of the section that matched (`matches[].toc_path` — the innermost heading containing the matching chunk)
+**Step 1 — fuzzy match.** Vector search returns the top results. Each match carries the breadcrumb path of the section that matched: `matches[].toc_path` — the innermost heading containing the matching chunk. Results are slim: they don't carry the note's full table of contents. To survey the rest of the structure, walk it level by level with [[expand]].
 
-**Step 2 — locate via TOC.** The `toc_path` from the match pinpoints the section in the note's structure. For the example above it would be:
+**Step 2 — locate the section.** The `toc_path` from the match pinpoints the section in the note's structure. For the example above it would be:
 
 ```json
 ["Goroutines", "Worker pool"]
@@ -93,7 +91,7 @@ The recommended agent workflow for a trip2g knowledge base:
 
 ```
 1. search(query)
-   → results with toc + matches[].toc_path
+   → results with matches[].toc_path
 
 2. Read toc_path on the best match
    → identifies which section to load
@@ -102,7 +100,7 @@ The recommended agent workflow for a trip2g knowledge base:
    → returns only that section
 
 4. If you need a sibling section,
-   use toc items from the same search result
+   expand(pid=N, toc_path=[...]) lists that level's sections
    → navigate without a second search call
 ```
 
@@ -113,6 +111,6 @@ This workflow is described in full in [[mcp|MCP server]].
 ### Limitations
 
 - `pid` is the note's stable PathID returned in search results (distinct from `note_id`). It is the identifier you pass to `note_html`.
-- The breadcrumb path must match the note's current headings. If a heading was renamed after indexing, the path may not resolve until the next re-index.
+- The breadcrumb path must match the note's current headings. If a heading was renamed after indexing, the path may not resolve until the next re-index. In that case `note_html` returns an error listing the note's top-level sections — re-navigate with `expand` instead of loading the whole note.
 - If a section has no heading (body text between two headings), `toc_path` points to the nearest parent heading, not the paragraph itself.
 - Notes with no rendered heading sections at all produce a `toc_path` of `[]` (empty). This is distinct from single-chunk notes: a short note that has at least one heading still gets a non-empty path. The empty path means the note has no `data-header` sections, so the caller should read the whole note.

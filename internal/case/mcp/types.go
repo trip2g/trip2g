@@ -162,7 +162,7 @@ type SearchResultItem struct {
 }
 
 type SearchMatch struct {
-	MatchID      string       `json:"match_id"`
+	MatchID      string       `json:"match_id,omitempty"`
 	ChunkIndex   int          `json:"chunk_index,omitempty"`
 	Snippet      string       `json:"snippet"`
 	ContextWords int          `json:"context_words"`

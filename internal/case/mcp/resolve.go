@@ -226,7 +226,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
 					"toc_path": {
 						Type:        "array",
-						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use path from search result toc items.",
+						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand.",
 						Items:       &Property{Type: "string"},
 					},
 				},
@@ -498,7 +498,9 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, r.Title, r.NotePath, r.URL))
 			if len(r.Matches) > 0 {
 				sb.WriteString(fmt.Sprintf("   %s\n", r.Matches[0].Snippet))
-				sb.WriteString(fmt.Sprintf("   match_id: %s\n", r.Matches[0].MatchID))
+				if r.Matches[0].MatchID != "" {
+					sb.WriteString(fmt.Sprintf("   match_id: %s\n", r.Matches[0].MatchID))
+				}
 			}
 			sb.WriteString("\n")
 		}
@@ -611,25 +613,26 @@ func buildSearchPayload(
 		item := searchResultItemFromNote(r.NoteView, r.Score, noteURL)
 		if count < detailLimit {
 			// Full detail: include snippet Matches.
-			for i, snippet := range r.HighlightedContent {
-				matchID := fmt.Sprintf("p%d:m%d", r.NoteView.PathID, i+1)
-				chunkIndex := 0
+			for _, snippet := range r.HighlightedContent {
+				chunkIndex := -1 // -1 = no chunk resolved (chunk indices are 0-based)
 				if r.ChunkIndex != nil {
 					chunkIndex = *r.ChunkIndex
 				} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, snippet, chunks); ok {
 					chunkIndex = nearest
 				}
-				if chunkIndex > 0 || (r.ChunkIndex != nil && chunkIndex == 0) {
-					matchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
-				}
-				chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
-				item.Matches = append(item.Matches, SearchMatch{
-					MatchID:      matchID,
-					ChunkIndex:   chunkIndex,
+				match := SearchMatch{
 					Snippet:      snippet,
 					ContextWords: 10,
-					TOCPath:      tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent),
-				})
+				}
+				if chunkIndex >= 0 {
+					// Only chunk-based ids: note_html can't resolve anything else,
+					// so an unresolved snippet gets no match_id at all.
+					match.MatchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
+					match.ChunkIndex = chunkIndex
+				}
+				chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
+				match.TOCPath = tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent)
+				item.Matches = append(item.Matches, match)
 			}
 		}
 		// Beyond detailLimit: item.Matches stays nil (lightweight preview).
@@ -640,10 +643,10 @@ func buildSearchPayload(
 }
 
 // chunkContentByIndex returns the Content of the chunk for the given note at
-// chunkIndex, or "" when chunkIndex is 0 (meaning no chunk was resolved) or
-// the chunk is not found.
+// chunkIndex, or "" when chunkIndex is negative (meaning no chunk was resolved)
+// or the chunk is not found. Chunk indices are 0-based.
 func chunkContentByIndex(note *model.NoteView, chunkIndex int, chunks []model.NoteChunk) string {
-	if note == nil || chunkIndex == 0 || len(chunks) == 0 {
+	if note == nil || chunkIndex < 0 || len(chunks) == 0 {
 		return ""
 	}
 	for _, chunk := range chunks {
@@ -908,9 +911,16 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 
 	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
+	// A pointer miss must never silently dump the full note: that converts a
+	// ~300-token read into the whole-note anti-pattern. Fail loud and cheap.
 	if args.MatchID != "" {
 		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
 			return successResponse(id, textToolResult(focused))
+		}
+		if len(args.TocPath) == 0 {
+			log.Warn("match_id did not resolve", "path", note.Path, "match_id", args.MatchID)
+			return errorResponse(id, ErrCodeInvalidParams,
+				fmt.Sprintf("no focused window for match_id %q; %s", args.MatchID, topLevelSectionsNudge(note)))
 		}
 	}
 
@@ -919,9 +929,26 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		if sectionHTML != "" {
 			return successResponse(id, textToolResult(sectionHTML))
 		}
+		log.Warn("toc_path did not resolve", "path", note.Path, "toc_path", args.TocPath)
+		return errorResponse(id, ErrCodeInvalidParams,
+			fmt.Sprintf("section not found for toc_path [%s]; %s", strings.Join(args.TocPath, " > "), topLevelSectionsNudge(note)))
 	}
 
 	return successResponse(id, textToolResult(string(note.HTML)))
+}
+
+// topLevelSectionsNudge is the cheap (~30 token) expand-shaped hint returned on
+// a pointer miss instead of the full note.
+func topLevelSectionsNudge(note *model.NoteView) string {
+	children := tocChildren(note.Headings, nil)
+	if len(children) == 0 {
+		return "the note has no sections; call note_html without toc_path to read the whole note"
+	}
+	titles := make([]string, 0, len(children))
+	for _, c := range children {
+		titles = append(titles, c.Title)
+	}
+	return "top-level sections: " + strings.Join(titles, ", ") + " — navigate with expand or note_html(toc_path=[...])"
 }
 
 func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
