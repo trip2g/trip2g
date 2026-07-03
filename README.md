@@ -38,13 +38,15 @@ Write in Obsidian, press Sync, your notes are live. The same self-hosted hub ser
 **Run your own hub:**
 
 ```bash
-git clone https://github.com/trip2g/trip2g && cd trip2g
+git clone https://github.com/trip2g/trip2g && cd trip2g/quickstart
 docker compose up
 ```
 
-Prefer no terminal? Get a [free cloud instance](https://simplecloud.2pub.me). All the options (single binary, Docker Compose, fly.io) are in the [self-host guide](https://trip2g.com/en/user/selfhosted).
+Open http://localhost:8081, sign in with `owner@example.com` and code `111111`, and download the preconfigured Obsidian vault from the home page. One container, files on local disk, full-text search — no other services needed.
 
-[Docs](https://trip2g.com/en/user) · [Getting started](https://trip2g.com/en/user/getting-started) · [MCP tools](https://trip2g.com/en/user/mcp) · [Self-host](#self-host) · [Contributing](CONTRIBUTING.md)
+Prefer no terminal? Get a [free cloud instance](https://simplecloud.2pub.me). All the options (single binary, Docker Compose behind TLS, fly.io) are in the [self-host guide](https://trip2g.com/en/user/selfhosted).
+
+[Docs](https://trip2g.com/en/user) · [Getting started](https://trip2g.com/en/user/getting_started) · [MCP tools](https://trip2g.com/en/user/mcp) · [Self-host](#self-host) · [Contributing](CONTRIBUTING.md)
 
 ---
 
@@ -258,7 +260,7 @@ Group notes into paid products with [subgraph paywalls](https://trip2g.com/en/us
 
 | Source | Status |
 |--------|--------|
-| [Obsidian](https://trip2g.com/en/user/two-way-sync) | ready: vault stays local, two-way sync |
+| [Obsidian](https://trip2g.com/en/user/two_way_sync) | ready: vault stays local, two-way sync |
 | [Telegram](https://trip2g.com/en/user/telegram) | ready: channel publish + history mirror |
 | [RSS output](https://trip2g.com/en/user/rss) | ready: every base exposes feeds |
 | Notion | planned |
@@ -270,7 +272,7 @@ Group notes into paid products with [subgraph paywalls](https://trip2g.com/en/us
 ## Self-host
 
 ```bash
-docker compose up
+cd quickstart && docker compose up
 ```
 
 trip2g runs as one process on SQLite, with no database server to stand up, so a hub starts the same on a laptop, a small VM, or a container. When you need high availability, add read-only replicas that scale reads horizontally while a single leader takes the writes (on the `feat/read-replica` branch).
