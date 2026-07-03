@@ -143,6 +143,67 @@ func TestDebugRunBlock_SecretScrub(t *testing.T) {
 	require.Equal(t, "v=absent\n", resp.Stdout)
 }
 
+func TestDebugBlocks_InlineBody(t *testing.T) {
+	f := newDebugFleet()
+	r := httptest.NewRequest(http.MethodGet, "/debug/blocks?body="+
+		"%60%60%60bash%0Aecho+hi%0A%60%60%60%0A%60%60%60python%0Aprint('x')%0A%60%60%60", nil)
+	rec := httptest.NewRecorder()
+	f.DebugHandler().ServeHTTP(rec, r)
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp debugBlocksResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Len(t, resp.Blocks, 2)
+	require.Equal(t, 0, resp.Blocks[0].Index)
+	require.Equal(t, "bash", resp.Blocks[0].Lang)
+	require.Equal(t, "bash", resp.Blocks[0].Program)
+	require.Equal(t, 1, resp.Blocks[1].Index)
+	require.Equal(t, "python", resp.Blocks[1].Lang)
+	require.Equal(t, "python", resp.Blocks[1].Program)
+}
+
+func TestDebugBlocks_RoleLookup(t *testing.T) {
+	f := newDebugFleet()
+	f.SetRoles([]Role{{
+		NotePath: "roles/pipe.md", Executor: executorCode,
+		Body: "```bash\ncat\n```\n```bash\necho second\n```",
+	}})
+	r := httptest.NewRequest(http.MethodGet, "/debug/blocks?path=roles/pipe.md", nil)
+	rec := httptest.NewRecorder()
+	f.DebugHandler().ServeHTTP(rec, r)
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp debugBlocksResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Len(t, resp.Blocks, 2)
+	require.Equal(t, "bash", resp.Blocks[0].Lang)
+	require.Equal(t, "cat\n", resp.Blocks[0].Code)
+}
+
+func TestDebugBlocks_UnknownRole404(t *testing.T) {
+	f := newDebugFleet()
+	r := httptest.NewRequest(http.MethodGet, "/debug/blocks?path=roles/nope.md", nil)
+	rec := httptest.NewRecorder()
+	f.DebugHandler().ServeHTTP(rec, r)
+	require.Equal(t, http.StatusNotFound, rec.Code)
+}
+
+func TestDebugBlocks_NoContent400(t *testing.T) {
+	f := newDebugFleet()
+	r := httptest.NewRequest(http.MethodGet, "/debug/blocks", nil)
+	rec := httptest.NewRecorder()
+	f.DebugHandler().ServeHTTP(rec, r)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestDebugUI_ServesHTML(t *testing.T) {
+	f := newDebugFleet()
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	f.DebugHandler().ServeHTTP(rec, r)
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Header().Get("Content-Type"), "text/html")
+	require.Contains(t, rec.Body.String(), "debug/blocks")
+}
+
 func TestValidateLoopbackAddr(t *testing.T) {
 	for _, addr := range []string{"127.0.0.1:9091", "localhost:9091", "[::1]:9091", "127.1.2.3:0"} {
 		require.NoError(t, ValidateLoopbackAddr(addr), addr)

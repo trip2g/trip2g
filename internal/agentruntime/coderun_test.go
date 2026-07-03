@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ─── RunBlock ────────────────────────────────────────────────────────────────
-
 // TestRunBlock_BashEchoWriteJSON runs a bash one-liner that emits a write JSON
 // and asserts the output is returned verbatim.
 func TestRunBlock_BashEchoWriteJSON(t *testing.T) {
@@ -104,8 +102,6 @@ print('{\"changes\":[],\"answer\":\"depth=' + str(data['depth']) + '\"}')
 	require.Equal(t, "depth=3", answer)
 }
 
-// ─── parseCodeOutput ─────────────────────────────────────────────────────────
-
 func TestParseCodeOutput_WriteShape(t *testing.T) {
 	stdout := `{"changes":[{"path":"notes/a.md","content":"hello world"}],"answer":"written"}`
 	changes, answer, err := parseCodeOutput(stdout)
@@ -146,8 +142,6 @@ func TestParseCodeOutput_EmptyChanges(t *testing.T) {
 	require.Equal(t, "noop", answer)
 	require.Empty(t, changes)
 }
-
-// ─── RunCode ─────────────────────────────────────────────────────────────────
 
 // TestRunCode_EndToEnd runs a bash script that emits a write change and asserts
 // the change is applied via ScopedKB.
@@ -242,8 +236,6 @@ func TestRunCode_NoFencedBlock(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no fenced code block")
 }
-
-// ─── pipeline (multi-block) ──────────────────────────────────────────────────
 
 // TestRunBlock_StdinPiped asserts CodeSpec.Stdin is fed to the child's stdin.
 func TestRunBlock_StdinPiped(t *testing.T) {
@@ -363,8 +355,6 @@ func TestExtractFencedBlocks(t *testing.T) {
 	require.Equal(t, FencedBlock{Lang: "python", Code: "second\n"}, blocks[1])
 	require.Empty(t, ExtractFencedBlocks("no blocks here"))
 }
-
-// ─── exec tool via Run ───────────────────────────────────────────────────────
 
 // TestRun_ExecToolGatedByAllowedPrograms asserts:
 //  1. exec is NOT in the offered tool set when AllowedPrograms is empty.
@@ -576,8 +566,6 @@ func TestRun_DefaultToolCountUnchangedWithoutAllowedPrograms(t *testing.T) {
 		"AllowedPrograms=nil must not add exec to the offered set")
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
 func TestExtractFirstFencedBlock(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -761,8 +749,6 @@ func TestRunCode_RequiresKB(t *testing.T) {
 	require.Contains(t, err.Error(), "KB is required")
 }
 
-// ─── env pass-through ────────────────────────────────────────────────────────
-
 // TestRunBlock_EnvPassthrough asserts the selective env pass-through mechanism:
 //   - EnvPassthrough ["FOO"] + EnvPrefix ["BAR_"] → child gets FOO and BAR_X
 //   - but NOT SECRET (a parent var that matches neither list nor prefix).
@@ -828,6 +814,5 @@ fi`
 		"parent sentinel must NOT be inherited when EnvPassthrough and EnvPrefix are both empty")
 }
 
-// ─── verify env isolation does not depend on the test binary's environment ──
 // Tests in this file use t.Setenv which correctly restores values on cleanup.
 // The parent-env isolation under test is enforced by buildChildEnv in coderun.go.

@@ -1,6 +1,7 @@
 package fleet
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -19,6 +20,9 @@ import (
 // Enabled only via --debug-listen (loopback-only, see ValidateLoopbackAddr);
 // never mounted on the public delivery listener. It reuses RunBlock, so the
 // sandbox and secret-scrubbed env apply exactly as in real deliveries.
+
+//go:embed debug_ui.html
+var debugUIHTML []byte
 
 // debugRunBlockDefaultTimeout bounds an inline-body block run; role-based runs
 // use the role's own timeout.
@@ -48,11 +52,77 @@ type debugRunBlockResponse struct {
 	DurationMs  int64  `json:"duration_ms"`
 }
 
+// debugBlockInfo describes one fenced block in the list response.
+type debugBlockInfo struct {
+	Index   int    `json:"index"`
+	Lang    string `json:"lang"`
+	Program string `json:"program"`
+	Code    string `json:"code"`
+}
+
+// debugBlocksResponse is returned by GET /debug/blocks.
+type debugBlocksResponse struct {
+	Blocks []debugBlockInfo `json:"blocks"`
+}
+
 // DebugHandler returns the mux served on the localhost debug listener.
 func (f *Fleet) DebugHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/debug/run-block", f.serveDebugRunBlock)
+	mux.HandleFunc("/debug/blocks", f.serveDebugBlocks)
+	mux.HandleFunc("/", f.serveDebugUI)
 	return mux
+}
+
+// serveDebugUI serves the self-contained step-by-step debug UI.
+func (f *Fleet) serveDebugUI(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(debugUIHTML)
+}
+
+// serveDebugBlocks handles GET /debug/blocks.
+// Query params (mutually exclusive; path takes precedence):
+//
+//	?path=<role note path>  — parse blocks from a registered role's body
+//	?body=<markdown>        — parse blocks from inline markdown
+//
+// Returns {blocks:[{index,lang,program,code}]} for enumeration before stepping.
+func (f *Fleet) serveDebugBlocks(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "GET only", http.StatusMethodNotAllowed)
+		return
+	}
+	q := r.URL.Query()
+	var body string
+	if path := q.Get("path"); path != "" {
+		role, ok := f.roleByKey(urlKey(path))
+		if !ok {
+			http.Error(w, "unknown role "+path, http.StatusNotFound)
+			return
+		}
+		body = role.Body
+	} else if b := q.Get("body"); b != "" {
+		body = b
+	} else {
+		http.Error(w, "provide ?path=<role> or ?body=<markdown>", http.StatusBadRequest)
+		return
+	}
+
+	raw := agentruntime.ExtractFencedBlocks(body)
+	infos := make([]debugBlockInfo, len(raw))
+	for i, b := range raw {
+		infos[i] = debugBlockInfo{
+			Index:   i,
+			Lang:    b.Lang,
+			Program: agentruntime.ProgramForFenceLang(b.Lang),
+			Code:    b.Code,
+		}
+	}
+	writeJSON(w, http.StatusOK, debugBlocksResponse{Blocks: infos})
 }
 
 // serveDebugRunBlock handles POST /debug/run-block.
@@ -107,6 +177,8 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	start := time.Now()
+	// Runs a single block: RunBlock (single-block path, same as production).
+	// The caller feeds the previous block's stdout as Stdin to walk the pipeline.
 	stdout, stderr, _, runErr := agentruntime.RunBlock(r.Context(), agentruntime.CodeSpec{
 		Program:        program,
 		Code:           block.Code,
