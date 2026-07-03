@@ -897,26 +897,16 @@ func StreamOnboarding(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:287
 		qw422016.N().S(`
           <h3>Сайт в процессе настройки</h3>
-          <p>Войдите как администратор, чтобы начать работу.</p>
-          <p>
-            <a href="#!userspace=open" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Войти
-            </a>
-          </p>
+          <p>Войдите как администратор, чтобы начать работу. Нажмите иконку входа в правом верхнем углу страницы.</p>
 
           <hr>
 
           <h3>Site is being set up</h3>
-          <p>Log in as administrator to get started.</p>
-          <p>
-            <a href="#!userspace=open" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Log in
-            </a>
-          </p>
+          <p>Log in as administrator to get started. Click the sign-in icon in the top-right corner of the page.</p>
           `)
-//line view.html:305
+//line view.html:295
 	}
-//line view.html:305
+//line view.html:295
 	qw422016.N().S(`
 
         </div>
@@ -926,46 +916,46 @@ func StreamOnboarding(qw422016 *qt422016.Writer, resp *Response) {
 </div>
 
 `)
-//line view.html:313
+//line view.html:303
 }
 
-//line view.html:313
+//line view.html:303
 func WriteOnboarding(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:313
+//line view.html:303
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:313
+//line view.html:303
 	StreamOnboarding(qw422016, resp)
-//line view.html:313
+//line view.html:303
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:313
+//line view.html:303
 }
 
-//line view.html:313
+//line view.html:303
 func Onboarding(resp *Response) string {
-//line view.html:313
+//line view.html:303
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:313
+//line view.html:303
 	WriteOnboarding(qb422016, resp)
-//line view.html:313
+//line view.html:303
 	qs422016 := string(qb422016.B)
-//line view.html:313
+//line view.html:303
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:313
+//line view.html:303
 	return qs422016
-//line view.html:313
+//line view.html:303
 }
 
-//line view.html:315
+//line view.html:305
 func StreamLayoutError(qw422016 *qt422016.Writer, resp *Response, layoutName string, warnings []model.NoteWarning) {
-//line view.html:315
+//line view.html:305
 	qw422016.N().S(`
 
 <div class="noteview" id="noteview-layout">
   <div class="noteview__header">
     `)
-//line view.html:319
+//line view.html:309
 	StreamSidebar(qw422016, resp)
-//line view.html:319
+//line view.html:309
 	qw422016.N().S(`
 
     <div class="noteview__header-space"></div>
@@ -980,32 +970,32 @@ func StreamLayoutError(qw422016 *qt422016.Writer, resp *Response, layoutName str
       <div class="noteview__left-column">
         <div style="background: #fee; border: 1px solid #c00; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
           <h3 style="color: #c00; margin: 0 0 8px 0;">Layout Error: `)
-//line view.html:332
+//line view.html:322
 	qw422016.E().S(layoutName)
-//line view.html:332
+//line view.html:322
 	qw422016.N().S(`</h3>
           `)
-//line view.html:333
+//line view.html:323
 	for _, w := range warnings {
-//line view.html:333
+//line view.html:323
 		qw422016.N().S(`
           <pre style="background: #fff; padding: 8px; overflow-x: auto; margin: 8px 0;">`)
-//line view.html:334
+//line view.html:324
 		qw422016.E().S(w.Message)
-//line view.html:334
+//line view.html:324
 		qw422016.N().S(`</pre>
           `)
-//line view.html:335
+//line view.html:325
 	}
-//line view.html:335
+//line view.html:325
 	qw422016.N().S(`
         </div>
 
         <div class="noteview__markup prose prose-stone prose-lg">
           `)
-//line view.html:339
+//line view.html:329
 	qw422016.N().S(string(resp.NoteHTML()))
-//line view.html:339
+//line view.html:329
 	qw422016.N().S(`
         </div>
       </div>
@@ -1014,109 +1004,109 @@ func StreamLayoutError(qw422016 *qt422016.Writer, resp *Response, layoutName str
 </div>
 
 `)
-//line view.html:346
+//line view.html:336
 }
 
-//line view.html:346
+//line view.html:336
 func WriteLayoutError(qq422016 qtio422016.Writer, resp *Response, layoutName string, warnings []model.NoteWarning) {
-//line view.html:346
+//line view.html:336
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:346
+//line view.html:336
 	StreamLayoutError(qw422016, resp, layoutName, warnings)
-//line view.html:346
+//line view.html:336
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:346
+//line view.html:336
 }
 
-//line view.html:346
+//line view.html:336
 func LayoutError(resp *Response, layoutName string, warnings []model.NoteWarning) string {
-//line view.html:346
+//line view.html:336
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:346
+//line view.html:336
 	WriteLayoutError(qb422016, resp, layoutName, warnings)
-//line view.html:346
+//line view.html:336
 	qs422016 := string(qb422016.B)
-//line view.html:346
+//line view.html:336
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:346
+//line view.html:336
 	return qs422016
-//line view.html:346
+//line view.html:336
 }
 
-//line view.html:348
+//line view.html:338
 func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
-//line view.html:348
+//line view.html:338
 	qw422016.N().S(`
 `)
-//line view.html:349
+//line view.html:339
 	toc := resp.Note.TOC()
 
-//line view.html:349
+//line view.html:339
 	qw422016.N().S(`
 `)
-//line view.html:350
+//line view.html:340
 	if len(toc) > 0 {
-//line view.html:350
+//line view.html:340
 		qw422016.N().S(`
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
   `)
-//line view.html:353
+//line view.html:343
 		for _, item := range toc {
-//line view.html:353
+//line view.html:343
 			qw422016.N().S(`
     <div class="toc__item toc__item--level`)
-//line view.html:354
+//line view.html:344
 			qw422016.N().D(item.Level)
-//line view.html:354
+//line view.html:344
 			qw422016.N().S(`">
       <a href="#`)
-//line view.html:355
+//line view.html:345
 			qw422016.N().S(item.ID)
-//line view.html:355
+//line view.html:345
 			qw422016.N().S(`" class="toc__link">`)
-//line view.html:355
+//line view.html:345
 			qw422016.N().S(item.Text)
-//line view.html:355
+//line view.html:345
 			qw422016.N().S(`</a>
     </div>
   `)
-//line view.html:357
+//line view.html:347
 		}
-//line view.html:357
+//line view.html:347
 		qw422016.N().S(`
 </div>
 `)
-//line view.html:359
+//line view.html:349
 	}
-//line view.html:359
+//line view.html:349
 	qw422016.N().S(`
 `)
-//line view.html:360
+//line view.html:350
 }
 
-//line view.html:360
+//line view.html:350
 func WriteTableOfContents(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:360
+//line view.html:350
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:360
+//line view.html:350
 	StreamTableOfContents(qw422016, resp)
-//line view.html:360
+//line view.html:350
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:360
+//line view.html:350
 }
 
-//line view.html:360
+//line view.html:350
 func TableOfContents(resp *Response) string {
-//line view.html:360
+//line view.html:350
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:360
+//line view.html:350
 	WriteTableOfContents(qb422016, resp)
-//line view.html:360
+//line view.html:350
 	qs422016 := string(qb422016.B)
-//line view.html:360
+//line view.html:350
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:360
+//line view.html:350
 	return qs422016
-//line view.html:360
+//line view.html:350
 }
