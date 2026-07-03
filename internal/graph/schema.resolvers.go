@@ -3377,7 +3377,11 @@ func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) 
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				ch <- r.DefaultEnv.Now().Format(timeFormat)
+				select {
+				case ch <- r.DefaultEnv.Now().Format(timeFormat):
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
