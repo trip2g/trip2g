@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"trip2g/internal/fleet"
 )
 
 // Role mode values (mirrors internal/fleet role modes).
@@ -14,23 +16,15 @@ const (
 	modeBoth   = "both"
 )
 
-// Role is the graph's view of a parsed role note. The caller (fleet daemon or
-// CLI) maps its own role type into this shape; the package stays IO-free.
-type Role struct {
-	NotePath       string
-	FleetID        string // owning fleet; "" = unclaimed
-	Mode           string // "change" | "cron" | "both"
-	Executor       string
-	ForEach        string
-	Concurrency    string
-	MaxDepth       int
-	CronSchedule   string
-	TriggerInclude []string
-	TriggerExclude []string
-	TriggerOn      []string
-	ReadPatterns   []string
-	WritePatterns  []string
-	Errors         []string // parse/validate errors; non-empty = invalid role
+// RoleInput is one role note as seen by the graph derivation. It embeds
+// fleet.Role so the graph always sees every trigger-affecting field without a
+// separate copy that can drift. FleetID and Errors are the two graph-only
+// additions: owning fleet (from registry markers or daemon config) and
+// parse/validate errors that keep an invalid role visible as a flagged node.
+type RoleInput struct {
+	fleet.Role
+	FleetID string   // owning fleet; "" = unclaimed
+	Errors  []string // parse/validate errors; non-empty = invalid role
 }
 
 // Marker is one registry ownership marker parsed from a webhook description
@@ -44,7 +38,7 @@ type Marker struct {
 // Input is everything Derive needs. Markers/HasRegistry are optional: without
 // registry data, registered/drift/conflict-by-marker derivation is skipped.
 type Input struct {
-	Roles       []Role
+	Roles       []RoleInput
 	Markers     []Marker
 	HasRegistry bool
 	LooseErrors []string // parse errors not attributable to a note (kept as findings)
@@ -115,7 +109,7 @@ type Finding struct {
 func Derive(in Input) Graph {
 	g := Graph{GeneratedAt: in.GeneratedAt}
 	roles := slices.Clone(in.Roles)
-	slices.SortFunc(roles, func(a, b Role) int { return strings.Compare(a.NotePath, b.NotePath) })
+	slices.SortFunc(roles, func(a, b RoleInput) int { return strings.Compare(a.NotePath, b.NotePath) })
 
 	g.Edges = deriveEdges(roles)
 	g.Nodes = deriveNodes(roles, in.Markers, in.HasRegistry)
@@ -126,7 +120,7 @@ func Derive(in Input) Graph {
 
 // triggerable reports whether the role registers a change webhook that fires
 // on agent-producible events (agents create/update, never remove in v1).
-func triggerable(r Role) bool {
+func triggerable(r RoleInput) bool {
 	if r.Mode != modeChange && r.Mode != modeBoth {
 		return false
 	}
@@ -145,7 +139,7 @@ func overlapAnyPair(writes, matches []string) (EdgeVia, bool) {
 	return EdgeVia{}, false
 }
 
-func deriveEdges(roles []Role) []Edge {
+func deriveEdges(roles []RoleInput) []Edge {
 	var edges []Edge
 	for _, a := range roles {
 		for _, b := range roles {
@@ -167,7 +161,7 @@ func deriveEdges(roles []Role) []Edge {
 	return edges
 }
 
-func triggerEdge(a, b Role) (Edge, bool) {
+func triggerEdge(a, b RoleInput) (Edge, bool) {
 	if !triggerable(b) {
 		return Edge{}, false
 	}
@@ -182,7 +176,7 @@ func triggerEdge(a, b Role) (Edge, bool) {
 	}, true
 }
 
-func deriveNodes(roles []Role, markers []Marker, hasRegistry bool) []Node {
+func deriveNodes(roles []RoleInput, markers []Marker, hasRegistry bool) []Node {
 	markerFleets := map[string][]string{} // notePath -> fleet ids from markers
 	changeMarked := map[string]map[string]bool{}
 	cronMarked := map[string]map[string]bool{}
@@ -250,7 +244,7 @@ func deriveNodes(roles []Role, markers []Marker, hasRegistry bool) []Node {
 // cron, per mode) has a registry marker for the role's own fleet. Marker match
 // is by note path only; spec-version drift self-heals on the next reconcile
 // poll and is not flagged.
-func roleRegistered(r Role, changeMarked, cronMarked map[string]map[string]bool) bool {
+func roleRegistered(r RoleInput, changeMarked, cronMarked map[string]map[string]bool) bool {
 	if r.Mode == modeChange || r.Mode == modeBoth {
 		if !changeMarked[r.NotePath][r.FleetID] {
 			return false
@@ -281,7 +275,7 @@ func deriveFleets(nodes []Node) []Fleet {
 	return fleets
 }
 
-func deriveFindings(roles []Role, g Graph, in Input) []Finding {
+func deriveFindings(roles []RoleInput, g Graph, in Input) []Finding {
 	var out []Finding
 	out = append(out, invalidFindings(roles, in.LooseErrors)...)
 	out = append(out, cycleFindings(roles, g.Edges)...)
@@ -294,7 +288,7 @@ func deriveFindings(roles []Role, g Graph, in Input) []Finding {
 	return out
 }
 
-func invalidFindings(roles []Role, loose []string) []Finding {
+func invalidFindings(roles []RoleInput, loose []string) []Finding {
 	var out []Finding
 	for _, r := range roles {
 		if len(r.Errors) > 0 {
@@ -313,7 +307,7 @@ func invalidFindings(roles []Role, loose []string) []Finding {
 
 // effectiveDepth is the depth budget the reconciler registers: MaxDepth if set,
 // else the default 1.
-func effectiveDepth(r Role) int {
+func effectiveDepth(r RoleInput) int {
 	if r.MaxDepth > 0 {
 		return r.MaxDepth
 	}
@@ -322,7 +316,7 @@ func effectiveDepth(r Role) int {
 
 // fanoutOverlap reports whether the role fans out per delivery AND allows
 // overlapping runs ("" defaults to allow_overlap in the reconciler).
-func fanoutOverlap(r Role) bool {
+func fanoutOverlap(r RoleInput) bool {
 	return r.ForEach != "" && (r.Concurrency == "" || r.Concurrency == "allow_overlap")
 }
 
@@ -330,8 +324,8 @@ func fanoutOverlap(r Role) bool {
 // only (feed edges don't cause runs). Severity: WARN when the lap budget
 // (min effective max_depth over members) is 1 and no member fans out with
 // overlap allowed; ERROR otherwise (real token-burn risk).
-func cycleFindings(roles []Role, edges []Edge) []Finding {
-	byPath := map[string]Role{}
+func cycleFindings(roles []RoleInput, edges []Edge) []Finding {
+	byPath := map[string]RoleInput{}
 	for _, r := range roles {
 		byPath[r.NotePath] = r
 	}
@@ -344,7 +338,7 @@ func cycleFindings(roles []Role, edges []Edge) []Finding {
 		if e.From == e.To {
 			r := byPath[e.From]
 			out = append(out, Finding{
-				Severity: cycleSeverity([]Role{r}),
+				Severity: cycleSeverity([]RoleInput{r}),
 				Kind:     "self-trigger",
 				Nodes:    []string{e.From},
 				Detail: fmt.Sprintf("role's writes (%s) overlap its own trigger_include (%s); lap budget %d",
@@ -359,7 +353,7 @@ func cycleFindings(roles []Role, edges []Edge) []Finding {
 			continue
 		}
 		slices.Sort(scc)
-		members := make([]Role, 0, len(scc))
+		members := make([]RoleInput, 0, len(scc))
 		for _, p := range scc {
 			members = append(members, byPath[p])
 		}
@@ -377,7 +371,7 @@ func cycleFindings(roles []Role, edges []Edge) []Finding {
 	return out
 }
 
-func cycleSeverity(members []Role) string {
+func cycleSeverity(members []RoleInput) string {
 	lap := effectiveDepth(members[0])
 	fanout := false
 	for _, m := range members {
@@ -471,7 +465,7 @@ func ownershipFindings(nodes []Node) []Finding {
 // orphanWriteFindings flags write patterns no OTHER role's trigger_include (of
 // a triggerable role) or read_patterns overlaps. Often fine (logs,
 // human-facing output) — INFO only.
-func orphanWriteFindings(roles []Role) []Finding {
+func orphanWriteFindings(roles []RoleInput) []Finding {
 	var out []Finding
 	for _, a := range roles {
 		var orphans []string
@@ -509,7 +503,7 @@ func orphanWriteFindings(roles []Role) []Finding {
 
 // danglingTriggerFindings flags trigger_include patterns no role writes into —
 // rendered as human entry points, not errors.
-func danglingTriggerFindings(roles []Role) []Finding {
+func danglingTriggerFindings(roles []RoleInput) []Finding {
 	var out []Finding
 	for _, b := range roles {
 		if !triggerable(b) {
@@ -539,7 +533,7 @@ func danglingTriggerFindings(roles []Role) []Finding {
 	return out
 }
 
-func driftFindings(roles []Role, nodes []Node) []Finding {
+func driftFindings(roles []RoleInput, nodes []Node) []Finding {
 	registered := map[string]bool{}
 	for _, n := range nodes {
 		registered[n.NotePath] = n.Registered

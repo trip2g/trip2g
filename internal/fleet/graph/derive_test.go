@@ -5,17 +5,21 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"trip2g/internal/fleet"
 )
 
-// changeRole builds a minimal valid change-mode role for derive tests.
-func changeRole(path, fleetID string, writes, triggers []string) Role {
-	return Role{
-		NotePath:       path,
-		FleetID:        fleetID,
-		Mode:           "change",
-		TriggerOn:      []string{"create", "update"},
-		TriggerInclude: triggers,
-		WritePatterns:  writes,
+// changeRole builds a minimal valid change-mode RoleInput for derive tests.
+func changeRole(path, fleetID string, writes, triggers []string) RoleInput {
+	return RoleInput{
+		Role: fleet.Role{
+			NotePath:       path,
+			Mode:           "change",
+			TriggerOn:      []string{"create", "update"},
+			TriggerInclude: triggers,
+			WritePatterns:  writes,
+		},
+		FleetID: fleetID,
 	}
 }
 
@@ -42,7 +46,7 @@ func findingsOf(g Graph, kind string) []Finding {
 func TestDeriveTriggerEdge(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/topics/*"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 
 	trig := edgesOf(g, "trigger")
 	require.Len(t, trig, 1)
@@ -58,18 +62,21 @@ func TestDeriveNoTriggerEdgeWhenRemoveOnly(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/**"})
 	b.TriggerOn = []string{"remove"} // v1: agents never delete -> no edge
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	require.Empty(t, edgesOf(g, "trigger"))
 }
 
 func TestDeriveNoTriggerEdgeForCronOnlyTarget(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
-	b := Role{
-		NotePath: "roles/b.md", FleetID: "f1", Mode: "cron", CronSchedule: "@daily",
-		TriggerInclude: []string{"wiki/**"}, // present but unused in cron mode
-		ReadPatterns:   []string{"wiki/**"},
+	b := RoleInput{
+		Role: fleet.Role{
+			NotePath: "roles/b.md", Mode: "cron", CronSchedule: "@daily",
+			TriggerInclude: []string{"wiki/**"}, // present but unused in cron mode
+			ReadPatterns:   []string{"wiki/**"},
+		},
+		FleetID: "f1",
 	}
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	require.Empty(t, edgesOf(g, "trigger"))
 	// ...but the cron role still consumes state -> feed edge.
 	feed := edgesOf(g, "feed")
@@ -82,7 +89,7 @@ func TestDeriveFeedSuppressedByTriggerEdge(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/**"})
 	b.ReadPatterns = []string{"wiki/**"}
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	require.Len(t, edgesOf(g, "trigger"), 1)
 	require.Empty(t, edgesOf(g, "feed"))
 }
@@ -91,7 +98,7 @@ func TestDeriveMaybeExcluded(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/drafts/**"}, []string{"inbox/*"})
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/**"})
 	b.TriggerExclude = []string{"wiki/drafts/**"}
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	trig := edgesOf(g, "trigger")
 	require.Len(t, trig, 1)
 	require.True(t, trig[0].MaybeExcluded)
@@ -101,7 +108,7 @@ func TestDeriveFanoutBadge(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
 	a.ForEach = "changed_files"
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/**"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	trig := edgesOf(g, "trigger")
 	require.Len(t, trig, 1)
 	require.True(t, trig[0].Fanout)
@@ -109,7 +116,7 @@ func TestDeriveFanoutBadge(t *testing.T) {
 
 func TestDeriveSelfTrigger(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"wiki/**"})
-	g := Derive(Input{Roles: []Role{a}})
+	g := Derive(Input{Roles: []RoleInput{a}})
 
 	trig := edgesOf(g, "trigger")
 	require.Len(t, trig, 1)
@@ -125,7 +132,7 @@ func TestDeriveSelfTrigger(t *testing.T) {
 func TestDeriveSelfTriggerErrorWithDepth(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"wiki/**"})
 	a.MaxDepth = 3
-	g := Derive(Input{Roles: []Role{a}})
+	g := Derive(Input{Roles: []RoleInput{a}})
 	st := findingsOf(g, "self-trigger")
 	require.Len(t, st, 1)
 	require.Equal(t, "error", st[0].Severity)
@@ -134,7 +141,7 @@ func TestDeriveSelfTriggerErrorWithDepth(t *testing.T) {
 func TestDeriveCycle(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"b-in/**"}, []string{"a-in/**"})
 	b := changeRole("roles/b.md", "f1", []string{"a-in/**"}, []string{"b-in/**"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 
 	cyc := findingsOf(g, "cycle")
 	require.Len(t, cyc, 1)
@@ -146,7 +153,7 @@ func TestDeriveCycleErrorWithFanoutOverlap(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"b-in/**"}, []string{"a-in/**"})
 	a.ForEach = "changed_files" // default concurrency = allow_overlap
 	b := changeRole("roles/b.md", "f1", []string{"a-in/**"}, []string{"b-in/**"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	cyc := findingsOf(g, "cycle")
 	require.Len(t, cyc, 1)
 	require.Equal(t, "error", cyc[0].Severity)
@@ -157,7 +164,7 @@ func TestDeriveCycleNotFedByFeedEdges(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"b-in/**"}, []string{"a-in/**"})
 	a.ReadPatterns = []string{"ctx/**"}
 	b := changeRole("roles/b.md", "f1", []string{"ctx/**"}, []string{"b-in/**"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 	require.Empty(t, findingsOf(g, "cycle"))
 	require.Len(t, edgesOf(g, "feed"), 1)
 }
@@ -165,7 +172,7 @@ func TestDeriveCycleNotFedByFeedEdges(t *testing.T) {
 func TestDeriveOrphanWrite(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"logs/**", "wiki/**"}, []string{"inbox/*"})
 	b := changeRole("roles/b.md", "f1", nil, []string{"wiki/**"})
-	g := Derive(Input{Roles: []Role{a, b}})
+	g := Derive(Input{Roles: []RoleInput{a, b}})
 
 	orph := findingsOf(g, "orphan-write")
 	require.Len(t, orph, 1)
@@ -177,7 +184,7 @@ func TestDeriveOrphanWrite(t *testing.T) {
 
 func TestDeriveDanglingTrigger(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", nil, []string{"inbox/*"})
-	g := Derive(Input{Roles: []Role{a}})
+	g := Derive(Input{Roles: []RoleInput{a}})
 	dang := findingsOf(g, "dangling-trigger")
 	require.Len(t, dang, 1)
 	require.Equal(t, "info", dang[0].Severity)
@@ -186,8 +193,8 @@ func TestDeriveDanglingTrigger(t *testing.T) {
 
 func TestDeriveInvalidRoleKept(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", []string{"wiki/**"}, []string{"inbox/*"})
-	a.Errors = []string{"tool \"x\" not offered by this fleet"}
-	g := Derive(Input{Roles: []Role{a}})
+	a.Errors = []string{`tool "x" not offered by this fleet`}
+	g := Derive(Input{Roles: []RoleInput{a}})
 
 	require.Len(t, g.Nodes, 1)
 	require.False(t, g.Nodes[0].Valid)
@@ -206,7 +213,7 @@ func TestDeriveLooseErrors(t *testing.T) {
 func TestDeriveOwnershipConflict(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", nil, []string{"inbox/*"})
 	g := Derive(Input{
-		Roles:       []Role{a},
+		Roles:       []RoleInput{a},
 		Markers:     []Marker{{FleetID: "f1", NotePath: "roles/a.md"}, {FleetID: "f2", NotePath: "roles/a.md"}},
 		HasRegistry: true,
 	})
@@ -221,7 +228,7 @@ func TestDeriveOwnershipConflict(t *testing.T) {
 
 func TestDeriveUnclaimedRole(t *testing.T) {
 	a := changeRole("roles/a.md", "", nil, []string{"inbox/*"})
-	g := Derive(Input{Roles: []Role{a}})
+	g := Derive(Input{Roles: []RoleInput{a}})
 	uncl := findingsOf(g, "unclaimed-role")
 	require.Len(t, uncl, 1)
 	require.Equal(t, "warn", uncl[0].Severity)
@@ -231,7 +238,7 @@ func TestDeriveDrift(t *testing.T) {
 	registered := changeRole("roles/a.md", "f1", nil, []string{"inbox/*"})
 	unregistered := changeRole("roles/b.md", "f1", nil, []string{"inbox/*"})
 	g := Derive(Input{
-		Roles: []Role{registered, unregistered},
+		Roles: []RoleInput{registered, unregistered},
 		Markers: []Marker{
 			{FleetID: "f1", NotePath: "roles/a.md"},
 			{FleetID: "f1", NotePath: "roles/ghost.md"}, // stale webhook
@@ -255,14 +262,17 @@ func TestDeriveDrift(t *testing.T) {
 
 func TestDeriveDriftSkippedWithoutRegistry(t *testing.T) {
 	a := changeRole("roles/a.md", "f1", nil, []string{"inbox/*"})
-	g := Derive(Input{Roles: []Role{a}})
+	g := Derive(Input{Roles: []RoleInput{a}})
 	require.Empty(t, findingsOf(g, "drift"))
 }
 
 func TestDeriveCronRegisteredViaCronMarker(t *testing.T) {
-	c := Role{NotePath: "roles/c.md", FleetID: "f1", Mode: "cron", CronSchedule: "@daily"}
+	c := RoleInput{
+		Role:    fleet.Role{NotePath: "roles/c.md", Mode: "cron", CronSchedule: "@daily"},
+		FleetID: "f1",
+	}
 	g := Derive(Input{
-		Roles:       []Role{c},
+		Roles:       []RoleInput{c},
 		Markers:     []Marker{{FleetID: "f1", NotePath: "roles/c.md", Cron: true}},
 		HasRegistry: true,
 	})
@@ -275,7 +285,7 @@ func TestDeriveGeneratedAtAndOrdering(t *testing.T) {
 	now := time.Date(2026, 7, 2, 12, 0, 0, 0, time.UTC)
 	b := changeRole("roles/b.md", "f1", nil, []string{"inbox/*"})
 	a := changeRole("roles/a.md", "f1", nil, []string{"inbox/*"})
-	g := Derive(Input{Roles: []Role{b, a}, GeneratedAt: now})
+	g := Derive(Input{Roles: []RoleInput{b, a}, GeneratedAt: now})
 	require.Equal(t, now, g.GeneratedAt)
 	require.Equal(t, "roles/a.md", g.Nodes[0].NotePath)
 	require.Equal(t, "roles/b.md", g.Nodes[1].NotePath)

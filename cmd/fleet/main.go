@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
+	"trip2g/internal/fleet/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/zerologger"
 )
@@ -99,7 +100,7 @@ func run() error {
 		if lerr := validateLoopbackAddr(cli.graphAddr); lerr != nil {
 			return fmt.Errorf("--graph-addr: %w", lerr)
 		}
-		gs := fleet.NewGraphServer(discovery, adminGQL, cli.cfg)
+		gs := graph.NewServer(discovery, adminGQL, cli.cfg)
 		graphSrv = &http.Server{Addr: cli.graphAddr, Handler: gs.Handler(), ReadHeaderTimeout: 10 * time.Second}
 		go func() {
 			lg.Info("fleet graph debug UI listening", "addr", cli.graphAddr)
