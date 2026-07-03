@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"trip2g/internal/webhookutil"
@@ -27,57 +31,67 @@ type CodeInput struct {
 }
 
 // RunCode executes a code role. It:
-//  1. Extracts the first fenced code block from Body.
-//  2. Resolves the program (explicit override wins, then fence lang).
-//  3. Checks the program against AllowedPrograms (empty list = disabled).
-//  4. Runs the code via RunBlock (secret-scrubbed env, throwaway workdir).
-//  5. Parses stdout as {"changes":[...],"answer":"..."} JSON.
-//  6. Applies each change via ScopedKB(WritePatterns) — the same scope
+//  1. Extracts all fenced code blocks from Body (document order).
+//  2. Resolves each block's program (explicit override wins, then fence lang)
+//     and checks it against AllowedPrograms (empty list = disabled) up front,
+//     so a disallowed later block fails before any block runs.
+//  3. Single block: runs via RunBlock (same path as before).
+//     Multiple blocks: runs as a true streaming pipeline — blocks run
+//     concurrently, connected by io.Pipe (block i's stdout streams into
+//     block i+1's stdin). Sandbox decisions are resolved up front for all
+//     blocks; in enforcing mode, any block whose sandbox can't be built
+//     refuses the whole run before anything starts (no partial side effects).
+//     The last block's stdout is buffered (capped) to parse the JSON contract.
+//  4. Parses the LAST block's stdout as {"changes":[...],"answer":"..."} JSON.
+//  5. Applies each change via ScopedKB(WritePatterns) — the same scope
 //     enforcement as write_note. Out-of-scope paths are denied, not written.
 //
-// Returns *Result with TokensUsed=0, Steps=1 on success. exec/code is NOT a
-// scope bypass: all writes go through write_patterns enforcement.
+// Returns *Result with TokensUsed=0, Steps=len(blocks) on success. exec/code
+// is NOT a scope bypass: all writes go through write_patterns enforcement.
 func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	if in.KB == nil {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	// extractAllFencedBlocks collects all blocks in document order; v1 runs only
-	// the first block. Future pipe support will run multiple blocks sequentially.
-	blocks := extractAllFencedBlocks(in.Body)
+	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
 		return nil, errors.New("coderun: no fenced code block found in rendered body")
 	}
-	lang := blocks[0].Lang
-	code := blocks[0].Code
 
-	program := in.Program
-	if program == "" {
-		program = fenceLangToProgram(lang)
-	}
-	if program == "" {
-		return nil, fmt.Errorf("coderun: fence language %q not supported (use python, bash, or node)", lang)
+	programs, err := resolvePrograms(blocks, in)
+	if err != nil {
+		return nil, err
 	}
 
-	if !isAllowed(program, in.AllowedPrograms) {
-		if len(in.AllowedPrograms) == 0 {
-			return nil, errors.New("coderun: code execution disabled (set --allowed-programs)")
+	limit := in.MaxStdoutBytes
+	if limit == 0 {
+		limit = 1 << 20
+	}
+
+	var stdout string
+	if len(blocks) == 1 {
+		// Single block: use RunBlock for byte-identical behavior.
+		out, _, _, runErr := RunBlock(ctx, CodeSpec{
+			Program:        programs[0],
+			Code:           blocks[0].Code,
+			Input:          in.Input,
+			Timeout:        in.Timeout,
+			EnvPassthrough: in.EnvPassthrough,
+			EnvPrefix:      in.EnvPrefix,
+			MaxStdoutBytes: limit,
+			Sandbox:        in.Sandbox,
+		})
+		if runErr != nil {
+			return nil, fmt.Errorf("coderun: %w", runErr)
 		}
-		return nil, fmt.Errorf("coderun: program %q not in --allowed-programs %v", program, in.AllowedPrograms)
-	}
-
-	stdout, _, _, runErr := RunBlock(ctx, CodeSpec{
-		Program:        program,
-		Code:           code,
-		Input:          in.Input,
-		Timeout:        in.Timeout,
-		EnvPassthrough: in.EnvPassthrough,
-		EnvPrefix:      in.EnvPrefix,
-		MaxStdoutBytes: in.MaxStdoutBytes,
-		Sandbox:        in.Sandbox,
-	})
-	if runErr != nil {
-		return nil, fmt.Errorf("coderun: %w", runErr)
+		stdout = out
+	} else {
+		// Multi-block: true streaming pipeline.
+		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, nil)
+		if pipeErr != nil {
+			return nil, pipeErr
+		}
+		stdout = out
 	}
 
 	rawChanges, answer, perr := parseCodeOutput(stdout)
@@ -91,7 +105,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	scoped := NewScopedKB(in.KB, nil, in.WritePatterns)
 	res := &Result{
 		Status:     StatusCompleted,
-		Steps:      1,
+		Steps:      len(blocks),
 		TokensUsed: 0,
 		Answer:     answer,
 	}
@@ -113,6 +127,327 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		res.Changes = append(res.Changes, ch)
 	}
 	return res, nil
+}
+
+// resolvePrograms resolves and allowlist-checks every block's program before
+// any block runs: a disallowed later block must fail the whole run up front.
+func resolvePrograms(blocks []FencedBlock, in CodeInput) ([]string, error) {
+	programs := make([]string, len(blocks))
+	for i, b := range blocks {
+		program := in.Program
+		if program == "" {
+			program = fenceLangToProgram(b.Lang)
+		}
+		if program == "" {
+			return nil, fmt.Errorf("coderun: %sfence language %q not supported (use python, bash, or node)", blockPrefix(i, len(blocks)), b.Lang)
+		}
+		if !isAllowed(program, in.AllowedPrograms) {
+			if len(in.AllowedPrograms) == 0 {
+				return nil, errors.New("coderun: code execution disabled (set --allowed-programs)")
+			}
+			return nil, fmt.Errorf("coderun: %sprogram %q not in --allowed-programs %v", blockPrefix(i, len(blocks)), program, in.AllowedPrograms)
+		}
+		programs[i] = program
+	}
+	return programs, nil
+}
+
+// pipelineDebugTaps optionally captures each inter-block stdout for debug
+// stepping. nil in the production path (RunCode) — no allocation overhead.
+// The debug endpoint passes a pre-allocated slice of capped buffers when it
+// wants to capture intermediate outputs via io.TeeReader.
+type pipelineDebugTaps []*limitedBuffer
+
+// builtBlock is a fully prepared (not yet started) pipeline stage.
+type builtBlock struct {
+	cmd       *exec.Cmd
+	workDir   string
+	blockCtx  context.Context
+	cancel    context.CancelFunc
+	errBuf    limitedBuffer
+	sandboxed bool
+}
+
+// runPipeline runs len(blocks) > 1 as a true streaming pipeline: block i's
+// stdout feeds block i+1's stdin via io.Pipe, all blocks run concurrently.
+// Sandbox decisions are resolved for ALL blocks before any starts (enforcing
+// mode refuses the whole run if any block's sandbox can't be built).
+//
+// debugTaps is nil in the production path. When non-nil (debug endpoint only),
+// debugTaps[i] receives block i's stdout through io.TeeReader as it streams to
+// block i+1's stdin; the last block always goes to a capped buffer regardless.
+//
+// Returns the last block's captured stdout, or the earliest-index block error.
+func runPipeline(ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int, debugTaps pipelineDebugTaps) (string, error) {
+	n := len(blocks)
+
+	built, err := buildPipelineBlocks(ctx, blocks, programs, in, limit)
+	if err != nil {
+		return "", err
+	}
+	defer cleanupPipeline(built)
+
+	pipes := wirePipeline(built, limit, debugTaps)
+	defer closeAllPipes(pipes)
+
+	if startErr := startAll(built, pipes, n); startErr != nil {
+		return "", startErr
+	}
+
+	return waitPipeline(built, pipes, in.Sandbox, n)
+}
+
+// buildPipelineBlocks prepares all blocks upfront — any build failure tears
+// down already-built workdirs before returning, so no partial workdir leak.
+func buildPipelineBlocks(ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int) ([]builtBlock, error) {
+	n := len(blocks)
+	built := make([]builtBlock, 0, n)
+	for i, b := range blocks {
+		bb, err := buildBlockCmd(ctx, b.Code, programs[i], in)
+		if err != nil {
+			cleanupPipeline(built)
+			return nil, fmt.Errorf("coderun: %s%w", blockPrefix(i, n), err)
+		}
+		bb.errBuf.limit = limit
+		built = append(built, bb)
+	}
+	return built, nil
+}
+
+// wirePipeline connects consecutive blocks via io.Pipe and wires stdout/stderr;
+// returns the slice of pipe writers (one per inter-block connection).
+// debugTaps[i] — when non-nil — captures block i's stdout via TeeReader.
+func wirePipeline(built []builtBlock, limit int, debugTaps pipelineDebugTaps) []*io.PipeWriter {
+	n := len(built)
+	pipes := make([]*io.PipeWriter, n-1)
+	var lastBuf limitedBuffer
+	lastBuf.limit = limit
+
+	for i := range n - 1 {
+		pr, pw := io.Pipe()
+		pipes[i] = pw
+		var reader io.Reader = pr
+		if debugTaps != nil && debugTaps[i] != nil {
+			reader = io.TeeReader(pr, debugTaps[i])
+		}
+		built[i].cmd.Stdout = pw
+		built[i+1].cmd.Stdin = reader
+	}
+	built[n-1].cmd.Stdout = &lastBuf
+	for i := range built {
+		built[i].cmd.Stderr = &built[i].errBuf
+	}
+	// lastBuf is captured via the cmd.Stdout pointer; return it as part of the
+	// pipeline so waitPipeline can read it after Wait completes.
+	// Attach it to the last block's errBuf slot (limit already set) using a
+	// type alias trick is unnecessary — instead we return it via a closure.
+	// Simpler: stash lastBuf on the heap and return its pointer.
+	// Done: built[n-1].cmd.Stdout already points to &lastBuf. But lastBuf is a
+	// local. We allocate the lastBuf per-call in wirePipelineOut to avoid the
+	// escape; see wirePipeline usage below. Actually Go escapes the address
+	// automatically when taken (cmd.Stdout = &lastBuf), so this is safe.
+	return pipes
+}
+
+// startAll starts all built blocks. On failure, closes already-opened upstream
+// pipes with the start error so blocked readers drain.
+func startAll(built []builtBlock, pipes []*io.PipeWriter, n int) error {
+	for i := range built {
+		if sErr := built[i].cmd.Start(); sErr != nil {
+			for j := range i {
+				_ = pipes[j].CloseWithError(sErr)
+			}
+			return fmt.Errorf("coderun: %sstart failed: %w", blockPrefix(i, n), sErr)
+		}
+	}
+	return nil
+}
+
+// pipeWaitResult is one block's Wait() outcome.
+type pipeWaitResult struct {
+	idx int
+	err error
+}
+
+// waitPipeline waits for all blocks, cancels on any failure, and returns the
+// last block's stdout string or the earliest-index block error.
+func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPolicy, n int) (string, error) {
+	pipeCtx, pipeCancel := context.WithCancel(context.Background())
+	defer pipeCancel()
+
+	results := make(chan pipeWaitResult, n)
+	for i := range built {
+		go waitOne(i, built, pipes, n, sandbox, results)
+	}
+
+	errs := make([]error, n)
+	stderrs := make([]string, n)
+	for range n {
+		r := <-results
+		if r.err != nil {
+			errs[r.idx] = r.err
+			stderrs[r.idx] = built[r.idx].errBuf.String()
+			pipeCancel()
+		}
+	}
+	_ = pipeCtx // pipeCancel already deferred
+
+	// Return the earliest-index block failure.
+	for i, e := range errs {
+		if e != nil {
+			if built[i].blockCtx.Err() != nil {
+				return "", fmt.Errorf("coderun: %stimed out", blockPrefix(i, n))
+			}
+			msg := stderrs[i]
+			if msg == "" {
+				msg = e.Error()
+			}
+			return "", fmt.Errorf("coderun: %snon-zero exit: %s", blockPrefix(i, n), msg)
+		}
+	}
+
+	// All blocks succeeded; extract the last block's stdout via the Stdout pointer.
+	lastBuf, ok := built[n-1].cmd.Stdout.(*limitedBuffer)
+	if !ok || lastBuf == nil {
+		return "", errors.New("coderun: internal error: last block stdout not captured")
+	}
+	return lastBuf.String(), nil
+}
+
+// waitOne waits for block idx and sends its result on ch. Closes the
+// downstream pipe writer (if any) so the next block sees EOF.
+func waitOne(idx int, built []builtBlock, pipes []*io.PipeWriter, n int, sandbox SandboxPolicy, ch chan<- pipeWaitResult) {
+	werr := built[idx].cmd.Wait()
+	if idx < n-1 {
+		if werr != nil {
+			_ = pipes[idx].CloseWithError(werr)
+		} else {
+			_ = pipes[idx].Close()
+		}
+	}
+	// BestEffort mode: sandboxed child failed to start (ProcessState == nil).
+	// We can't fall back mid-pipeline — report it clearly.
+	if werr != nil && built[idx].sandboxed && built[idx].cmd.ProcessState == nil && built[idx].blockCtx.Err() == nil {
+		if !sandbox.Mode.enforcing() {
+			werr = fmt.Errorf("sandboxed child failed to start; pipeline cannot fall back mid-run: %w", werr)
+		}
+	}
+	ch <- pipeWaitResult{idx, werr}
+}
+
+// cleanupPipeline cancels all block contexts and removes all workdirs.
+func cleanupPipeline(built []builtBlock) {
+	for _, bb := range built {
+		bb.cancel()
+		_ = os.RemoveAll(bb.workDir)
+	}
+}
+
+// closeAllPipes closes all inter-block pipe writers. Safe to call after Wait.
+func closeAllPipes(pipes []*io.PipeWriter) {
+	for _, pw := range pipes {
+		if pw != nil {
+			_ = pw.Close()
+		}
+	}
+}
+
+// buildBlockCmd prepares one pipeline block: creates a throwaway workdir,
+// writes the code + input files, builds the scrubbed env, and resolves the
+// sandbox decision (enforcing: fail here on build error; bestEffort: fall back
+// to unsandboxed now so no rebuild is needed mid-stream).
+// The returned cmd has no Stdin/Stdout/Stderr wired — the caller does that.
+// The caller must call cancel() and os.RemoveAll(workDir) after the cmd exits.
+func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (builtBlock, error) {
+	interp, ok := currentRegistry().byName[program]
+	if !ok {
+		return builtBlock{}, fmt.Errorf("unknown program %q", program)
+	}
+
+	workDir, mkErr := os.MkdirTemp("", "fleet-coderun-*")
+	if mkErr != nil {
+		return builtBlock{}, fmt.Errorf("create workdir: %w", mkErr)
+	}
+	tear := func() { _ = os.RemoveAll(workDir) }
+
+	codeFile := filepath.Join(workDir, "run"+interp.Ext)
+	if wErr := os.WriteFile(codeFile, []byte(code), 0o600); wErr != nil {
+		tear()
+		return builtBlock{}, fmt.Errorf("write code file: %w", wErr)
+	}
+
+	inputData := in.Input
+	if len(inputData) == 0 {
+		inputData = []byte("{}")
+	}
+	inputFile := filepath.Join(workDir, "input.json")
+	if wErr := os.WriteFile(inputFile, inputData, 0o600); wErr != nil {
+		tear()
+		return builtBlock{}, fmt.Errorf("write input file: %w", wErr)
+	}
+
+	env := buildChildEnv(inputFile, in.EnvPassthrough, in.EnvPrefix)
+	fullArgv := append(append([]string{}, interp.Cmd...), codeFile)
+
+	blockCtx := ctx
+	cancel := context.CancelFunc(func() {})
+	if in.Timeout > 0 {
+		blockCtx, cancel = context.WithTimeout(ctx, in.Timeout)
+	}
+
+	policy := in.Sandbox.withDefaults(in.Timeout)
+	sandboxed := policy.Mode != SandboxOff
+
+	if sandboxed && !sandboxSupportedOS {
+		if policy.Mode.enforcing() {
+			cancel()
+			tear()
+			return builtBlock{}, fmt.Errorf("sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
+		}
+		warnSandboxFallback("unsupported OS", nil)
+		sandboxed = false
+	}
+
+	var cmd *exec.Cmd
+	if sandboxed {
+		sbCmd, sbErr := sandboxCommand(blockCtx, fullArgv, workDir, policy)
+		if sbErr != nil {
+			if policy.Mode.enforcing() {
+				cancel()
+				tear()
+				return builtBlock{}, fmt.Errorf("sandbox setup failed: %w", sbErr)
+			}
+			warnSandboxFallback("sandbox setup failed", sbErr)
+			sandboxed = false
+		} else {
+			cmd = sbCmd
+		}
+	}
+	if !sandboxed {
+		// gosec G204: operator-allowlisted interpreter on role's rendered code —
+		// executing that code IS the feature, off by default. Same rationale as RunBlock.
+		cmd = exec.CommandContext(blockCtx, fullArgv[0], fullArgv[1:]...) //nolint:gosec // allowlisted interpreter
+	}
+	cmd.Dir = workDir
+	cmd.Env = env
+	// Caller wires Stdin/Stdout/Stderr and calls cmd.Start().
+
+	return builtBlock{
+		cmd:       cmd,
+		workDir:   workDir,
+		blockCtx:  blockCtx,
+		cancel:    cancel,
+		sandboxed: sandboxed,
+	}, nil
+}
+
+// blockPrefix returns "block i/n: " for multi-block pipelines and "" for a
+// single block, keeping single-block error messages unchanged.
+func blockPrefix(i, n int) string {
+	if n <= 1 {
+		return ""
+	}
+	return fmt.Sprintf("block %d/%d: ", i+1, n)
 }
 
 // isAllowed reports whether program is in the allowedPrograms list.

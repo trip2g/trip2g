@@ -122,6 +122,24 @@ func run() error {
 	})
 	srv := &http.Server{Addr: cli.cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
+	// Optional loopback-only debug surface for step-by-step code-block runs.
+	// Separate server on a separate addr — never mounted on the public mux.
+	// validateConfig already rejected non-loopback addresses.
+	if cli.cfg.DebugListenAddr != "" {
+		dbgSrv := &http.Server{
+			Addr:              cli.cfg.DebugListenAddr,
+			Handler:           f.DebugHandler(),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+		go func() {
+			lg.Info("fleet debug listening (loopback only)", "addr", cli.cfg.DebugListenAddr)
+			if dbgErr := dbgSrv.ListenAndServe(); dbgErr != nil && dbgErr != http.ErrServerClosed {
+				lg.Error("debug server", "err", dbgErr)
+			}
+		}()
+		defer func() { _ = dbgSrv.Close() }()
+	}
+
 	srvErrCh := make(chan error, 1)
 	go func() {
 		lg.Info("fleet listening", "fleet_id", cli.cfg.FleetID, "addr", cli.cfg.ListenAddr, "callback", cli.cfg.CallbackURL)
@@ -335,6 +353,12 @@ func validateConfig(cfg fleet.Config) error {
 	if len(cfg.OfferedTools) == 0 {
 		return errors.New("fleet: OfferedTools must be non-empty; use --offered-tools")
 	}
+	// The debug surface must never bind a non-loopback interface.
+	if cfg.DebugListenAddr != "" {
+		if err := fleet.ValidateLoopbackAddr(cfg.DebugListenAddr); err != nil {
+			return err
+		}
+	}
 	// Empty means the safe default (native); see SandboxPolicy.withDefaults.
 	switch cfg.Sandbox {
 	case "", string(agentruntime.SandboxNative), string(agentruntime.SandboxOff), string(agentruntime.SandboxBestEffort):
@@ -458,6 +482,9 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 			"besteffort degrades to UNSANDBOXED with a per-run warning; off disables isolation)")
 	fs.BoolVar(&cli.cfg.SandboxNetwork, "sandbox-network", false,
 		"allow host network access inside the code-exec sandbox")
+	fs.StringVar(&cli.cfg.DebugListenAddr, "debug-listen", "",
+		"loopback-only debug listen address for step-by-step code-block runs "+
+			"(e.g. 127.0.0.1:9091; empty = disabled; dev only, never expose publicly)")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
 	fs.IntVar(&graceSeconds, "shutdown-grace-seconds", 30,

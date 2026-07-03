@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ─── RunBlock ────────────────────────────────────────────────────────────────
-
 // TestRunBlock_BashEchoWriteJSON runs a bash one-liner that emits a write JSON
 // and asserts the output is returned verbatim.
 func TestRunBlock_BashEchoWriteJSON(t *testing.T) {
@@ -104,8 +102,6 @@ print('{\"changes\":[],\"answer\":\"depth=' + str(data['depth']) + '\"}')
 	require.Equal(t, "depth=3", answer)
 }
 
-// ─── parseCodeOutput ─────────────────────────────────────────────────────────
-
 func TestParseCodeOutput_WriteShape(t *testing.T) {
 	stdout := `{"changes":[{"path":"notes/a.md","content":"hello world"}],"answer":"written"}`
 	changes, answer, err := parseCodeOutput(stdout)
@@ -146,8 +142,6 @@ func TestParseCodeOutput_EmptyChanges(t *testing.T) {
 	require.Equal(t, "noop", answer)
 	require.Empty(t, changes)
 }
-
-// ─── RunCode ─────────────────────────────────────────────────────────────────
 
 // TestRunCode_EndToEnd runs a bash script that emits a write change and asserts
 // the change is applied via ScopedKB.
@@ -243,7 +237,124 @@ func TestRunCode_NoFencedBlock(t *testing.T) {
 	require.Contains(t, err.Error(), "no fenced code block")
 }
 
-// ─── exec tool via Run ───────────────────────────────────────────────────────
+// TestRunBlock_StdinPiped asserts CodeSpec.Stdin is fed to the child's stdin.
+func TestRunBlock_StdinPiped(t *testing.T) {
+	skipIfSandboxUnsupported(t)
+	stdout, _, _, err := RunBlock(context.Background(), CodeSpec{
+		Program: "bash",
+		Code:    "cat",
+		Stdin:   []byte("piped-data"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "piped-data", stdout)
+}
+
+// TestRunCode_Pipeline_TwoBlocks pipes block 1's free-form stdout into block 2's
+// stdin; only the LAST block's stdout is parsed as the {changes,answer} contract.
+func TestRunCode_Pipeline_TwoBlocks(t *testing.T) {
+	skipIfSandboxUnsupported(t)
+	kb := newMemKB(nil)
+	body := "```bash\necho world\n```\n" +
+		"```bash\nread -r v; echo \"{\\\"changes\\\":[{\\\"path\\\":\\\"notes/p.md\\\",\\\"content\\\":\\\"$v\\\"}],\\\"answer\\\":\\\"got $v\\\"}\"\n```"
+
+	res, err := RunCode(context.Background(), CodeInput{
+		Body:            body,
+		WritePatterns:   []string{"notes/**"},
+		KB:              kb,
+		AllowedPrograms: []string{"bash"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Equal(t, 2, res.Steps, "Steps must equal number of blocks run")
+	require.Equal(t, "got world", res.Answer)
+	require.Equal(t, "world", kb.docs["notes/p.md"])
+}
+
+// TestRunCode_Pipeline_MixedLanguages pipes bash stdout into a python block:
+// each block resolves its own interpreter from its fence language.
+func TestRunCode_Pipeline_MixedLanguages(t *testing.T) {
+	skipIfSandboxUnsupported(t)
+	kb := newMemKB(nil)
+	body := "```bash\necho 41\n```\n" +
+		"```python\nimport sys, json\nn = int(sys.stdin.read()) + 1\nprint(json.dumps({\"changes\": [], \"answer\": str(n)}))\n```"
+
+	res, err := RunCode(context.Background(), CodeInput{
+		Body:            body,
+		WritePatterns:   []string{"notes/**"},
+		KB:              kb,
+		AllowedPrograms: []string{"bash", "python"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, res.Steps)
+	require.Equal(t, "42", res.Answer)
+}
+
+// TestRunCode_Pipeline_MiddleBlockFails asserts a non-zero exit in the middle
+// stops the pipeline, surfaces the failing block index + stderr, and applies
+// no changes.
+func TestRunCode_Pipeline_MiddleBlockFails(t *testing.T) {
+	skipIfSandboxUnsupported(t)
+	kb := newMemKB(nil)
+	body := "```bash\necho start\n```\n" +
+		"```bash\necho boom >&2; exit 1\n```\n" +
+		"```bash\necho '{\"changes\":[{\"path\":\"notes/x.md\",\"content\":\"never\"}],\"answer\":\"never\"}'\n```"
+
+	_, err := RunCode(context.Background(), CodeInput{
+		Body:            body,
+		WritePatterns:   []string{"notes/**"},
+		KB:              kb,
+		AllowedPrograms: []string{"bash"},
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "block 2/3")
+	require.Contains(t, err.Error(), "boom")
+	require.Empty(t, kb.docs, "no changes may be applied when the pipeline fails")
+}
+
+// TestRunCode_Pipeline_AllowlistCheckedUpfront asserts a disallowed program in
+// a LATER block fails the run before block 1 executes (no partial side effects).
+func TestRunCode_Pipeline_AllowlistCheckedUpfront(t *testing.T) {
+	kb := newMemKB(nil)
+	body := "```bash\necho start\n```\n```python\nprint('x')\n```"
+
+	_, err := RunCode(context.Background(), CodeInput{
+		Body:            body,
+		WritePatterns:   []string{"notes/**"},
+		KB:              kb,
+		AllowedPrograms: []string{"bash"}, // python not allowed
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "block 2")
+	require.Contains(t, err.Error(), "not in --allowed-programs")
+}
+
+// TestRunCode_Pipeline_InputBagAllBlocks asserts the delivery bag ($FLEET_INPUT)
+// is visible to every block in the pipeline, not just the first.
+func TestRunCode_Pipeline_InputBagAllBlocks(t *testing.T) {
+	skipIfSandboxUnsupported(t)
+	kb := newMemKB(nil)
+	body := "```bash\ncat \"$FLEET_INPUT\"\n```\n" +
+		"```bash\nread -r first; bag=$(cat \"$FLEET_INPUT\"); if [ \"$first\" = \"$bag\" ]; then a=same; else a=diff; fi; echo \"{\\\"changes\\\":[],\\\"answer\\\":\\\"$a\\\"}\"\n```"
+
+	res, err := RunCode(context.Background(), CodeInput{
+		Body:            body,
+		WritePatterns:   []string{"notes/**"},
+		KB:              kb,
+		AllowedPrograms: []string{"bash"},
+		Input:           []byte(`{"depth":7}`),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "same", res.Answer)
+}
+
+// TestExtractFencedBlocks asserts exported multi-block extraction in document order.
+func TestExtractFencedBlocks(t *testing.T) {
+	blocks := ExtractFencedBlocks("```bash\nfirst\n```\ntext\n```python\nsecond\n```")
+	require.Len(t, blocks, 2)
+	require.Equal(t, FencedBlock{Lang: "bash", Code: "first\n"}, blocks[0])
+	require.Equal(t, FencedBlock{Lang: "python", Code: "second\n"}, blocks[1])
+	require.Empty(t, ExtractFencedBlocks("no blocks here"))
+}
 
 // TestRun_ExecToolGatedByAllowedPrograms asserts:
 //  1. exec is NOT in the offered tool set when AllowedPrograms is empty.
@@ -455,8 +566,6 @@ func TestRun_DefaultToolCountUnchangedWithoutAllowedPrograms(t *testing.T) {
 		"AllowedPrograms=nil must not add exec to the offered set")
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
 func TestExtractFirstFencedBlock(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -640,8 +749,6 @@ func TestRunCode_RequiresKB(t *testing.T) {
 	require.Contains(t, err.Error(), "KB is required")
 }
 
-// ─── env pass-through ────────────────────────────────────────────────────────
-
 // TestRunBlock_EnvPassthrough asserts the selective env pass-through mechanism:
 //   - EnvPassthrough ["FOO"] + EnvPrefix ["BAR_"] → child gets FOO and BAR_X
 //   - but NOT SECRET (a parent var that matches neither list nor prefix).
@@ -707,6 +814,5 @@ fi`
 		"parent sentinel must NOT be inherited when EnvPassthrough and EnvPrefix are both empty")
 }
 
-// ─── verify env isolation does not depend on the test binary's environment ──
 // Tests in this file use t.Setenv which correctly restores values on cleanup.
 // The parent-env isolation under test is enforced by buildChildEnv in coderun.go.
