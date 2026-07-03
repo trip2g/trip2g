@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -31,7 +32,7 @@ func TestHandleDebugWriteHolder(t *testing.T) {
 
 	get := func() response {
 		rec := httptest.NewRecorder()
-		a.handleDebugWriteHolder(rec, httptest.NewRequest("GET", "/debug/write-holder", nil))
+		a.handleDebugWriteHolder(rec, httptest.NewRequest(http.MethodGet, "/debug/write-holder", nil))
 		require.Equal(t, 200, rec.Code)
 		var resp response
 		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
