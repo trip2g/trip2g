@@ -1,0 +1,33 @@
+# Minimal local trip2g — one container, no external services.
+#
+#   docker compose up
+#
+# Then open http://localhost:8081, click Login, enter owner@example.com,
+# and use the dev sign-in code 111111 (no email is sent in dev mode).
+#
+# Files are stored on the local filesystem (no MinIO) and search is
+# full-text (no embedding server). This setup is for trying trip2g out;
+# for a real deployment see https://trip2g.com/en/user/selfhosted
+services:
+  trip2g:
+    image: ghcr.io/trip2g/trip2g:latest
+    ports:
+      - "8081:8081"
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8081
+      INTERNAL_LISTEN_ADDR: ":8082"
+      PUBLIC_URL: http://localhost:8081
+      DB_FILE: /data/data.sqlite3
+      STORAGE_BACKEND: local
+      STORAGE_LOCAL_DIR: /data/storage
+      OWNER_EMAIL: owner@example.com
+      # DEV=true enables the fixed sign-in code 111111. Never use in production.
+      DEV: "true"
+      USER_TOKEN_INSECURE: "true"
+      JWT_SECRET: dev-secret-not-for-prod
+      DATA_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+    volumes:
+      - trip2g-data:/data
+
+volumes:
+  trip2g-data:
