@@ -63,6 +63,12 @@ docker-deps:
 air: docker-deps
 	go tool github.com/air-verse/air
 
+# airfleet: run the fleet sidecar in dev with hot reload, against the local `make air` hub.
+#   Graph UI → http://127.0.0.1:9099/ (JSON at /graph.json); code-block debug UI → http://127.0.0.1:9098/
+#   LLM roles: export TRIP2G_FLEET_LLM_BASE_URL / TRIP2G_FLEET_LLM_API_KEY first.
+airfleet:
+	go tool github.com/air-verse/air -c .air.fleet.toml
+
 # bench: 60s load test against http://localhost:8081/ + cpu profile saved to /tmp/trip2g-bench-*
 # Usage: make bench              — test homepage
 #        make bench URL=/ru      — test specific path
