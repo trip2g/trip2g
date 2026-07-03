@@ -305,6 +305,12 @@ func (a *app) startInternalServer() {
 		debugMux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
 	}
 
+	// Write-holder diagnostic: names who occupies the single write connection.
+	// Dev-only — the tracker captures stacks per acquire, too costly for prod.
+	if a.config.DevMode {
+		debugMux.HandleFunc("/debug/write-holder", a.handleDebugWriteHolder)
+	}
+
 	debugHandler := fasthttpadaptor.NewFastHTTPHandler(debugMux)
 
 	// Start metrics updater

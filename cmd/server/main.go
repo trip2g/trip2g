@@ -102,6 +102,9 @@ type app struct {
 	queries *db.Queries
 
 	currentTx *sql.Tx
+	// txHolderRelease clears this tx's write-holder entry (dev diagnostic);
+	// set together with currentTx in AcquireTxEnvInRequest.
+	txHolderRelease func()
 }
 
 // appState holds all process-lifetime state. It is embedded in app by
@@ -167,6 +170,10 @@ type appState struct {
 	conn      *sql.DB
 	writeConn *sql.DB
 	queueConn *sql.DB // separate connection for goqite so queue polling never blocks app writes
+
+	// writeHolder tracks who occupies the single write connection (dev-only
+	// diagnostic behind /debug/write-holder); no-op in production.
+	writeHolder *db.WriteHolder
 
 	noteBus *notebus.Bus
 
@@ -295,9 +302,11 @@ func main() {
 	// it, so the write pool and WithTx paths must not use this).
 	readDBTX := db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:"))
 	queries := db.New(db.NewStmtCache(conn, readDBTX))
+	writeHolder := db.NewWriteHolder(config.DevMode)
 	writeQueries := db.NewWriteQueries(
 		db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")).
-			WithPoolStats(writeConn.Stats),
+			WithPoolStats(writeConn.Stats).
+			WithWriteHolder(writeHolder),
 	)
 
 	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey, log)
@@ -334,8 +343,9 @@ func main() {
 			conn:    conn,
 			// mail:    mailyak.New(mailAddr, mailAuth),
 
-			writeConn: writeConn,
-			queueConn: queueConn,
+			writeConn:   writeConn,
+			queueConn:   queueConn,
+			writeHolder: writeHolder,
 
 			UserBans: userbans.New(queries),
 

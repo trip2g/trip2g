@@ -81,6 +81,9 @@ func (a *app) WithTransaction(ctx context.Context, fn func(context.Context, *app
 		return fmt.Errorf("failed to BeginTx: %w", err)
 	}
 
+	releaseHolder := a.writeHolder.Acquire("WithTransaction")
+	defer releaseHolder()
+
 	defer func() {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
