@@ -50,6 +50,7 @@ export interface Flags {
   help: boolean;
   folder: string;
   port: number;
+  host: string;
   email: string;
   image: string;
   publicUrl: string | null;
@@ -475,6 +476,7 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
     help: false,
     folder: './memory-vault',
     port: DEFAULT_PORT,
+    host: '127.0.0.1',
     email: DEFAULT_EMAIL,
     image: DEFAULT_IMAGE,
     publicUrl: null,
@@ -510,6 +512,12 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
       flags.folder = argv[++i];
     } else if (arg === '--port') {
       flags.port = parseInt(argv[++i], 10);
+    } else if (arg === '--host') {
+      const h = argv[++i];
+      if (!h.startsWith('127.')) {
+        throw new Error('--host must be a loopback address (127.x.x.x)');
+      }
+      flags.host = h;
     } else if (arg === '--email') {
       flags.email = argv[++i];
     } else if (arg === '--image') {
@@ -767,6 +775,7 @@ export function buildServerEnv(opts: {
 export function buildDockerRunArgs(opts: {
   port: number;
   iport: number;
+  host?: string;
   email: string;
   secret: string;
   encryptionKey: string;
@@ -775,14 +784,16 @@ export function buildDockerRunArgs(opts: {
   containerName?: string;
 }): string[] {
   const { port, iport, stateDir, image } = opts;
+  const host = opts.host ?? '127.0.0.1';
   const cName = opts.containerName ?? CONTAINER_NAME;
   const env = buildServerEnv(opts);
 
   const args: string[] = [
     '-d',
     '--name', cName,
-    // Loopback bind — only reachable from localhost
-    '-p', `127.0.0.1:${port}:${port}`,
+    // Bind main port to the requested loopback address
+    '-p', `${host}:${port}:${port}`,
+    // Internal port always stays on 127.0.0.1 (backend-only)
     '-p', `127.0.0.1:${iport}:${iport}`,
     '-v', `${stateDir}/data:/data`,
   ];
@@ -884,12 +895,20 @@ async function waitReady(url: string, timeoutMs: number, pollMs: number): Promis
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
 }
 
-function isPortBusy(port: number): Promise<boolean> {
+export function isPortBusy(port: number, host = '127.0.0.1'): Promise<boolean> {
   return new Promise((resolve) => {
     const srv = net.createServer();
-    srv.once('error', () => resolve(true));
+    srv.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EACCES') {
+        // Privileged port (<1024): Node can't preflight as unprivileged user.
+        // Let Docker (rootful) attempt the bind; it will fail loudly if truly busy.
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
     srv.once('listening', () => srv.close(() => resolve(false)));
-    srv.listen(port, '127.0.0.1');
+    srv.listen(port, host);
   });
 }
 
@@ -1843,12 +1862,12 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
   }
 
-  if (!dryRun && !containerRunning && (await isPortBusy(port))) {
+  if (!dryRun && !containerRunning && (await isPortBusy(port, flags.host))) {
     console.error(`Error: port ${port} is busy — pass --port for this instance (or stop what holds it).`);
     process.exit(1);
   }
 
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image, containerName: name });
+  const dockerArgs = buildDockerRunArgs({ port, iport, host: flags.host, email, secret, encryptionKey, stateDir, image, containerName: name });
 
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(' ')}`);
