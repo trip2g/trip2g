@@ -189,6 +189,24 @@ test('parseArgs: --public-url flag', () => {
   assert.equal(flags.publicUrl, 'https://example.com');
 });
 
+// NEW: --host flag
+test('parseArgs: --host flag defaults to 127.0.0.1', () => {
+  const { flags } = parseArgs(['up', '--folder', '/tmp/v']);
+  assert.equal(flags.host, '127.0.0.1');
+});
+
+test('parseArgs: --host flag parses custom loopback IP', () => {
+  const { flags } = parseArgs(['up', '--host', '127.0.0.77']);
+  assert.equal(flags.host, '127.0.0.77');
+});
+
+test('parseArgs: --host rejects non-loopback address', () => {
+  assert.throws(
+    () => parseArgs(['up', '--host', '192.168.1.1']),
+    /--host must be a loopback address/,
+  );
+});
+
 // ---------------------------------------------------------------------------
 // buildServerEnv
 // ---------------------------------------------------------------------------
@@ -355,6 +373,60 @@ test('buildDockerRunArgs: does not include DEV=true in env args', () => {
   assert.ok(!hasDev, `Must not pass DEV=... env arg, got: ${JSON.stringify(envArgs)}`);
 });
 
+// NEW: host flag tests for buildDockerRunArgs
+test('buildDockerRunArgs: uses custom host for main port binding', () => {
+  const args = buildDockerRunArgs({
+    port: 24081,
+    iport: 24082,
+    email: 'a@b.com',
+    secret: 'x',
+    encryptionKey: TEST_ENC_KEY,
+    stateDir: '/tmp/state',
+    image: 'trip2g:local',
+    host: '127.0.0.77',
+  });
+  // Find the -p arg for the main port
+  const pIdx = args.indexOf('-p');
+  assert.ok(pIdx >= 0, 'Must have -p flag');
+  assert.equal(args[pIdx + 1], '127.0.0.77:24081:24081', `Main port must use custom host, got: ${args[pIdx + 1]}`);
+});
+
+test('buildDockerRunArgs: keeps 127.0.0.1 for internal port even with custom host', () => {
+  const args = buildDockerRunArgs({
+    port: 24081,
+    iport: 24082,
+    email: 'a@b.com',
+    secret: 'x',
+    encryptionKey: TEST_ENC_KEY,
+    stateDir: '/tmp/state',
+    image: 'trip2g:local',
+    host: '127.0.0.77',
+  });
+  // Find all -p args
+  const pArgs: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '-p') pArgs.push(args[i + 1]);
+  }
+  const iportArg = pArgs.find((a) => a.includes(':24082:'));
+  assert.ok(iportArg, 'Must have iport -p arg');
+  assert.equal(iportArg, '127.0.0.1:24082:24082', `Internal port must stay 127.0.0.1, got: ${iportArg}`);
+});
+
+test('buildDockerRunArgs: default host is 127.0.0.1 when omitted', () => {
+  const args = buildDockerRunArgs({
+    port: 24081,
+    iport: 24082,
+    email: 'a@b.com',
+    secret: 'x',
+    encryptionKey: TEST_ENC_KEY,
+    stateDir: '/tmp/state',
+    image: 'trip2g:local',
+  });
+  const pIdx = args.indexOf('-p');
+  assert.ok(pIdx >= 0, 'Must have -p flag');
+  assert.equal(args[pIdx + 1], '127.0.0.1:24081:24081', `Default main port must use 127.0.0.1, got: ${args[pIdx + 1]}`);
+});
+
 // ---------------------------------------------------------------------------
 // buildDataJson
 // ---------------------------------------------------------------------------
@@ -383,6 +455,12 @@ test('buildDataJson: syncDirs[0] has apiKey', () => {
 test('buildDataJson: syncDirs[0] has twoWaySync=true', () => {
   const obj = buildDataJson('/vault', 'http://localhost:24081', 'my-api-key');
   assert.equal(obj.syncDirs[0].twoWaySync, true);
+});
+
+// NEW: public-url becomes apiUrl base
+test('buildDataJson: uses public-url as apiUrl base when set', () => {
+  const obj = buildDataJson('/vault', 'http://yourwebsite.local', 'key');
+  assert.equal(obj.syncDirs[0].apiUrl, 'http://yourwebsite.local');
 });
 
 // ---------------------------------------------------------------------------
