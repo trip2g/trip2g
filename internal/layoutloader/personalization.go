@@ -70,7 +70,11 @@ func (jl *jetLoader) detectPersonalized(sourceID, content string, view *jet.Temp
 			if err != nil {
 				continue
 			}
-			safeWalk(imported, finder)
+			// Contained: a broken imported template (reported by its own load)
+			// must not crash personalization detection for the importing page.
+			if msg := walkContained(imported, finder); msg != "" {
+				continue
+			}
 			if finder.found {
 				return true
 			}
