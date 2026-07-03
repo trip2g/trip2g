@@ -56,6 +56,7 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	newEnv.Queries = queries.Queries
 	newEnv.WriteQueries = queries
 	newEnv.currentTx = tx
+	newEnv.txHolderRelease = a.writeHolder.Acquire("tx " + label)
 
 	// override the context with the new tx env
 	req.Env = &newEnv
@@ -77,6 +78,10 @@ func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
 	tx := envPtr.currentTx
 	if tx == nil {
 		return errors.New("no open transaction on request env")
+	}
+
+	if envPtr.txHolderRelease != nil {
+		envPtr.txHolderRelease()
 	}
 
 	// Restore the base env so nothing keeps using the finished tx scope and a
