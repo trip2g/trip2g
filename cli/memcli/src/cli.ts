@@ -895,12 +895,20 @@ async function waitReady(url: string, timeoutMs: number, pollMs: number): Promis
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
 }
 
-function isPortBusy(port: number): Promise<boolean> {
+export function isPortBusy(port: number, host = '127.0.0.1'): Promise<boolean> {
   return new Promise((resolve) => {
     const srv = net.createServer();
-    srv.once('error', () => resolve(true));
+    srv.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EACCES') {
+        // Privileged port (<1024): Node can't preflight as unprivileged user.
+        // Let Docker (rootful) attempt the bind; it will fail loudly if truly busy.
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
     srv.once('listening', () => srv.close(() => resolve(false)));
-    srv.listen(port, '127.0.0.1');
+    srv.listen(port, host);
   });
 }
 
@@ -1854,7 +1862,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
   }
 
-  if (!dryRun && !containerRunning && (await isPortBusy(port))) {
+  if (!dryRun && !containerRunning && (await isPortBusy(port, flags.host))) {
     console.error(`Error: port ${port} is busy — pass --port for this instance (or stop what holds it).`);
     process.exit(1);
   }

@@ -20833,12 +20833,18 @@ async function waitReady(url, timeoutMs, pollMs) {
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
 }
-function isPortBusy(port) {
+function isPortBusy(port, host = "127.0.0.1") {
   return new Promise((resolve) => {
     const srv = net.createServer();
-    srv.once("error", () => resolve(true));
+    srv.once("error", (err) => {
+      if (err.code === "EACCES") {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
     srv.once("listening", () => srv.close(() => resolve(false)));
-    srv.listen(port, "127.0.0.1");
+    srv.listen(port, host);
   });
 }
 async function hatAuth(publicUrl, secret, email) {
@@ -21547,7 +21553,7 @@ async function cmdUp(flags, dryRun) {
   } else if (dryRun && needsWrite) {
     console.log("[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to", envFile);
   }
-  if (!dryRun && !containerRunning && await isPortBusy(port)) {
+  if (!dryRun && !containerRunning && await isPortBusy(port, flags.host)) {
     console.error(`Error: port ${port} is busy \u2014 pass --port for this instance (or stop what holds it).`);
     process.exit(1);
   }
@@ -22038,6 +22044,7 @@ export {
   formatLintReport,
   hubSlug,
   installKanban,
+  isPortBusy,
   lintVault,
   parseArgs,
   runDaily,
