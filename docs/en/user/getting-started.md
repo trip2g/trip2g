@@ -5,30 +5,22 @@ home_position: 100
 lang_redirect: "[[ru/user/Начало работы]]"
 ---
 
-Your Obsidian vault becomes a website in under a minute. Write in Obsidian, sync, and notes are live — with Telegram publishing, monetization, and an AI assistant built in. Try the [demo](https://simplecloud.2pub.me) or see [[en/user/use-cases|how people use it]].
+Your Obsidian vault becomes a website in under a minute. The fastest path: sign in to your instance, download the preconfigured starter vault, open it in Obsidian, press Sync. No plugin installs, no API keys to copy. Try the [demo](https://simplecloud.2pub.me) or see [[en/user/use-cases|how people use it]].
 
 ### Setup at a glance
 
 ```mermaid
 flowchart LR
     A[Get an instance] --> B[Sign in by email]
-    B --> C[Configure admin panel]
-    C --> D[Install plugin via BRAT]
-    D --> E[Create API key]
-    E --> F[Connect plugin to site]
-    F --> G[Create _index note]
-    G --> H[Sync]
-    H --> I[Add free: true]
-    I --> J[Page is public]
+    B --> C[Download starter vault]
+    C --> D[Open it in Obsidian]
+    D --> E[Sync]
+    E --> F[Page is live]
 ```
 
 ### How the service works
 
 The trip2g plugin uploads notes from a folder in your vault to your site. All notes are private by default — only you can see them when logged in as admin. Adding `free: true` to a note makes it visible to everyone on the internet.
-
-### Create a test vault
-
-Before connecting the plugin, create a fresh Obsidian vault for experimenting. The plugin uploads everything in the configured folder, which may include personal notes you don't want to publish. A dedicated vault lets you experiment freely without risk.
 
 ### Sign in
 
@@ -38,31 +30,29 @@ Before signing in, you need an instance — a personal site that is already runn
 2. Enter your email address
 3. Copy the code from the email and paste it on the site
 
-Code didn't arrive? Check your spam folder.
+Code didn't arrive? Check your spam folder. On a self-hosted instance without email configured, the code is printed in the server logs — run `docker compose logs trip2g` and look for the sign-in code.
 
-### Configure the admin panel
+### Path A — starter vault (recommended)
 
-**Enable draft versions:**
+A fresh instance greets the admin with a welcome page and a **Download archive** button. The archive is a ready-to-use Obsidian vault: the sync plugin is already installed and connected — your site URL and a fresh API key are baked into its settings.
 
-By default, content goes live through a release process. While you are getting started, it is easier to see changes immediately.
+1. Click **Download archive** and unzip it
+2. In Obsidian, choose **Open folder as vault** and pick the unzipped folder
+3. Obsidian asks whether to trust the vault — choose **Trust author and enable plugins**. If you decline, the sync plugin stays disabled and nothing will sync.
+4. Click the sync button in the Obsidian sidebar
 
-1. Open the admin panel
-2. Go to Settings → click **+ Change**
-3. Enable **Show Draft Versions**
+Your notes are now on the site. Edit a note, sync again, refresh the page — it updates.
 
-Your notes will now appear on the site right after syncing, without waiting for a release.
+Two things to know:
 
-**Set your timezone:**
+- **The archive contains a private API key.** Don't share the zip. Each download creates a new key; you can review and revoke keys in the admin panel under API Keys.
+- Already have content on the server? Two-way sync will offer to pull the current server content into the vault on first sync.
 
-The system detects your timezone automatically and shows a button next to the Timezone field. Click it to fill in your zone, or type it manually (e.g. `Europe/Moscow`), then click **Submit**.
+The vault also ships MCP configs (`.mcp.json`, `AGENTS.md`) so AI agents can search and read your notes — see [[en/user/agent-memory]].
 
-Timezone matters for Telegram scheduling: a post set to 9:00 will go out at 9:00 in your local time, not UTC.
+### Path B — add sync to an existing vault
 
-**Navigating the admin panel:**
-
-Panels open left to right. Use Shift + mouse wheel to scroll horizontally. The admin panel supports English and Russian.
-
-### Install the Obsidian plugin
+Use this path when you want to publish from a vault you already have. Consider a dedicated folder or a fresh test vault first: the plugin uploads everything in the configured folder, which may include personal notes you don't want to publish.
 
 The trip2g sync plugin is not in the official Obsidian catalog yet. You install it through BRAT, a plugin that handles beta installations.
 
@@ -110,14 +100,14 @@ Click the sync button in the Obsidian sidebar, or run the command **trip2g sync:
 
 **Create the home page:**
 
-1. Create a file named `_index`
+1. Create a file named `_index` (the starter vault already has one — just edit it)
 2. Write any text, for example: "Hello world"
 
 The underscore prefix keeps `_index` at the top of the file list in Obsidian.
 
 **Sync the note:**
 
-Click the sync button. Open your site — you will see the text. Only you can see it because you are logged in as admin. Open the site in an incognito window and the page is not accessible.
+Click the sync button. Open your site — you will see the text. Only you can see it because you are logged in as admin. Visitors (try an incognito window) see the page title and a sign-in wall, not the content.
 
 **Make the page public:**
 
@@ -132,6 +122,22 @@ Open your site — the page is now visible to everyone.
 **Set a title:**
 
 By default the page title matches the filename. For `_index` this looks odd. Add a `title` property with the text you want shown as the heading.
+
+### Admin panel tips
+
+**Drafts are visible by default:**
+
+Out of the box, **Show Draft Versions** is on: synced notes appear on the site immediately. When you are ready for a review workflow, turn it off in Settings — then changes go live only through a [[en/user/releases|release]].
+
+**Set your timezone:**
+
+The system detects your timezone automatically and shows a button next to the Timezone field. Click it to fill in your zone, or type it manually (e.g. `Europe/Moscow`), then click **Submit**.
+
+Timezone matters for Telegram scheduling: a post set to 9:00 will go out at 9:00 in your local time, not UTC.
+
+**Navigating the admin panel:**
+
+Panels open left to right. Use Shift + mouse wheel to scroll horizontally. The admin panel supports English and Russian.
 
 ### Next steps
 
