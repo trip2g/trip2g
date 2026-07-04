@@ -7,6 +7,8 @@ title: "Навигация"
 - [[ru/thoughts/why-not-book|Почему не книга, курс или канал]]
 - [[ru/thoughts/digital-sovereignty|Цифровой суверенитет]]
 - [[ru/thoughts/dogfooding|Dogfooding]]
+- [[ru/thoughts/universality-tax|Налог на универсальность]]
+- [[ru/thoughts/paths-not-taken|Дороги, которые мы не выбрали]]
 
 **Архитектура**
 - [[ru/thoughts/markdown-operating-system|Markdown как операционная система]]

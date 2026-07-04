@@ -7,6 +7,8 @@ title: "Navigation"
 - [[en/thoughts/why-not-book|Why not a book, course, or channel]]
 - [[en/thoughts/digital-sovereignty|Digital sovereignty]]
 - [[en/thoughts/dogfooding|Dogfooding]]
+- [[en/thoughts/universality-tax|The universality tax]]
+- [[en/thoughts/paths-not-taken|Paths not taken]]
 
 **Architecture**
 - [[en/thoughts/markdown-operating-system|Markdown as an operating system]]
