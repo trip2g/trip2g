@@ -112,3 +112,78 @@ func TestExecuteJob_DoesNotHoldMutexDuringDBOps(t *testing.T) {
 
 	close(job1Block) // unblock job1 to let goroutines exit cleanly
 }
+
+// countingJob records how many times Execute was called.
+type countingJob struct {
+	name       string
+	afterStart bool
+	execCount  int
+}
+
+func (j *countingJob) Name() string            { return j.name }
+func (j *countingJob) Schedule() string        { return "0 0 * * * *" }
+func (j *countingJob) ExecuteAfterStart() bool { return j.afterStart }
+func (j *countingJob) Execute(_ context.Context, _ interface{}) (interface{}, error) {
+	j.execCount++
+	return nil, nil
+}
+
+func TestRunStartupJobs_RunsOnlyExecuteAfterStartJobsOnce(t *testing.T) {
+	jobA := &countingJob{name: "a", afterStart: true}
+	jobB := &countingJob{name: "b", afterStart: false}
+	jobC := &countingJob{name: "c", afterStart: true}
+	jobD := &countingJob{name: "d", afterStart: true} // disabled in DB config
+
+	env := &mockEnv{}
+	cj := newTestCronJobs(env, nil)
+	cj.jobs[1] = &jobItem{job: jobA, config: db.CronJob{ID: 1, Name: "a", Enabled: true}}
+	cj.jobs[2] = &jobItem{job: jobB, config: db.CronJob{ID: 2, Name: "b", Enabled: true}}
+	cj.jobs[3] = &jobItem{job: jobC, config: db.CronJob{ID: 3, Name: "c", Enabled: true}}
+	cj.jobs[4] = &jobItem{job: jobD, config: db.CronJob{ID: 4, Name: "d", Enabled: false}}
+
+	cj.RunStartupJobs(context.Background(), true)
+
+	if jobA.execCount != 1 {
+		t.Errorf("job a (afterStart=true): expected 1 execution, got %d", jobA.execCount)
+	}
+	if jobB.execCount != 0 {
+		t.Errorf("job b (afterStart=false): expected 0 executions, got %d", jobB.execCount)
+	}
+	if jobC.execCount != 1 {
+		t.Errorf("job c (afterStart=true): expected 1 execution, got %d", jobC.execCount)
+	}
+	if jobD.execCount != 0 {
+		t.Errorf("job d (disabled): expected 0 executions, got %d", jobD.execCount)
+	}
+}
+
+func TestRunStartupJobs_StopsOnCancelledContext(t *testing.T) {
+	jobA := &countingJob{name: "a", afterStart: true}
+
+	env := &mockEnv{}
+	cj := newTestCronJobs(env, nil)
+	cj.jobs[1] = &jobItem{job: jobA, config: db.CronJob{ID: 1, Name: "a", Enabled: true}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	cj.RunStartupJobs(ctx, true)
+
+	if jobA.execCount != 0 {
+		t.Errorf("expected 0 executions with cancelled context, got %d", jobA.execCount)
+	}
+}
+
+func TestRunStartupJobs_DisabledRunsNothing(t *testing.T) {
+	jobA := &countingJob{name: "a", afterStart: true}
+
+	env := &mockEnv{}
+	cj := newTestCronJobs(env, nil)
+	cj.jobs[1] = &jobItem{job: jobA, config: db.CronJob{ID: 1, Name: "a", Enabled: true}}
+
+	cj.RunStartupJobs(context.Background(), false)
+
+	if jobA.execCount != 0 {
+		t.Errorf("expected 0 executions with flag disabled, got %d", jobA.execCount)
+	}
+}

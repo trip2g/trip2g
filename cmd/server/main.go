@@ -520,6 +520,11 @@ func main() {
 	a.ready.Store(true)
 	log.Info("instance ready — serving reads+writes")
 
+	// Boot-refresh: run ExecuteAfterStart cron jobs once, in the background,
+	// never blocking readiness. Opt-in via CRONJOBS_RUN_ON_START (off by
+	// default: frequent restarts would re-run these jobs on every boot).
+	go a.RunStartupJobs(a.shutdownCtx, config.CronJobs.RunOnStart)
+
 	a.startServer()
 }
 
