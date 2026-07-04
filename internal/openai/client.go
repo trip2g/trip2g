@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"trip2g/internal/features"
-
 	"github.com/sashabaranov/go-openai"
 )
 
-// Client wraps OpenAI API for embedding generation.
+// Client wraps an OpenAI-compatible API for embedding generation.
 type Client struct {
-	client *openai.Client
-	model  features.EmbeddingModel
+	client    *openai.Client
+	modelName string
 }
 
 // EmbeddingResult holds the embedding vector and token usage.
@@ -21,23 +19,25 @@ type EmbeddingResult struct {
 	Tokens int
 }
 
-// New creates a new OpenAI-compatible client.
+// New creates a new OpenAI-compatible embedding client.
+// modelName is the model identifier sent in API requests (e.g. "text-embedding-3-small"
+// or any name accepted by the server).
 // baseURL is optional; when non-empty it overrides the default OpenAI endpoint
-// (e.g. "http://localhost:11434/v1" for a local Ollama instance).
-func New(apiKey string, model features.EmbeddingModel, baseURL string) *Client {
+// (e.g. "http://localhost:8080/v1" for a local TEI server).
+func New(apiKey string, modelName string, baseURL string) *Client {
 	cfg := openai.DefaultConfig(apiKey)
 	if baseURL != "" {
 		cfg.BaseURL = baseURL
 	}
 	return &Client{
-		client: openai.NewClientWithConfig(cfg),
-		model:  model,
+		client:    openai.NewClientWithConfig(cfg),
+		modelName: modelName,
 	}
 }
 
-// Model returns the configured embedding model.
-func (c *Client) Model() features.EmbeddingModel {
-	return c.model
+// ModelName returns the configured embedding model name.
+func (c *Client) ModelName() string {
+	return c.modelName
 }
 
 // CreateEmbedding generates an embedding for the given text.
@@ -55,7 +55,7 @@ func (c *Client) CreateEmbeddings(ctx context.Context, texts []string) ([]Embedd
 		return nil, nil
 	}
 	resp, err := c.client.CreateEmbeddings(ctx, openai.EmbeddingRequest{
-		Model: openai.EmbeddingModel(c.model.String()),
+		Model: openai.EmbeddingModel(c.modelName),
 		Input: texts,
 	})
 	if err != nil {

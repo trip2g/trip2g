@@ -48,16 +48,20 @@ func Parse(jsonStr string) Features {
 	// Check required environment variables and parse models for enabled features
 	if f.VectorSearch.Enabled {
 		// OPENAI_API_KEY is only required when using the OpenAI endpoint (base_url not set).
-		// When base_url is set (e.g. local Ollama), no API key is needed.
+		// When base_url is set (e.g. a local TEI server), no API key is needed.
 		if f.VectorSearch.BaseURL == "" && os.Getenv("OPENAI_API_KEY") == "" {
 			panic("OPENAI_API_KEY environment variable is required when vector_search.enabled=true and base_url is not set")
 		}
 
-		model, modelErr := ParseEmbeddingModel(f.VectorSearch.ModelName)
-		if modelErr != nil {
-			panic(fmt.Sprintf("invalid vector_search.model: %v", modelErr))
-		}
+		model, known := ParseEmbeddingModel(f.VectorSearch.ModelName)
 		f.VectorSearch.Model = model
+
+		// For unknown (custom) models, dimensions must be supplied explicitly.
+		if !known {
+			if parseErr := f.VectorSearch.validateModelParsed(); parseErr != nil {
+				panic(fmt.Sprintf("features validation failed: %v", parseErr))
+			}
+		}
 	}
 
 	return f

@@ -1152,7 +1152,7 @@ func stripFrontmatter(content string) string {
 }
 
 func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, error) {
-	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
+	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
 	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create embedding: %w", err)

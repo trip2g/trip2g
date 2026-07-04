@@ -74,7 +74,7 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Embed all chunks in one batch call (with model-specific passage prefix).
-	passagePrefix := a.config.Features.VectorSearch.Model.PassagePrefix()
+	passagePrefix := a.config.Features.VectorSearch.ResolvedPassagePrefix()
 	var embedMs int64
 	var embedErrStr string
 	if a.openaiClient == nil { //nolint:nestif // embedding branch complexity is inherent to the debug handler
