@@ -4,9 +4,9 @@ free: true
 lang_redirect: "[[ru/thoughts/markdown-operating-system]]"
 ---
 
-*What this is: trip2g read as a literal operating system, notes as the filesystem, MCP as syscalls, federation as the network, agents as processes. Every row in the map is tagged shipped, branch, or planned, so you can see where the metaphor is earned and where it is not. Read it if you want to judge whether "Markdown OS" is a real claim or just a label.*
+*What this is: trip2g read as a literal operating system, notes as the filesystem, MCP as syscalls, federation as the network, agents as processes. Every row in the map is tagged by how real it is, so you can see where the metaphor is earned and where it is not. Read it if you want to judge whether "Markdown OS" is a real claim or just a label.*
 
-trip2g began as a way to publish an Obsidian vault as a website. Somewhere along the way it grew the shape of an operating system. Notes are the filesystem. The MCP endpoint is the system-call interface that agents go through. Federation is the network stack. A note edit can start an agent. Most of that runs in production today. The one piece that makes the comparison land, agents as processes, is still on a branch. This is the honest version of the claim, with the parts that ship and the parts that do not marked as such.
+trip2g began as a way to publish an Obsidian vault as a website. Somewhere along the way it grew the shape of an operating system. Notes are the filesystem. The MCP endpoint is the system-call interface that agents go through. Federation is the network stack. A note edit can start an agent. All of that runs on `main` today, including the piece that makes the comparison land: agents as processes, merged as the `fleet` runtime after a spell on a feature branch. This is the honest version of the claim, with the remaining gaps marked as such.
 
 The framing is borrowed. ["Markdown as an Operating System"](https://leverageai.com.au/markdown-as-an-operating-system/) puts it in one line: your operating system runs on binaries, your AI agents should run on Markdown. The older root is Unix, where everything is a file. trip2g's version is that everything is a note.
 
@@ -22,7 +22,7 @@ Every edit is snapshotted into a `note_versions` row and mirrored into a git rep
 
 ## The map
 
-The operating-system words are not decoration. Each one points at a specific mechanism. Here is the mapping, tagged by how real it is. Shipped runs on `main`. Branch runs on `feat/agent-runtime`. Planned is a design note.
+The operating-system words are not decoration. Each one points at a specific mechanism. Here is the mapping, tagged by how real it is. Shipped runs on `main`. The agent rows were the last to land: they lived on `feat/agent-runtime` until the fleet merged.
 
 | OS concept | trip2g primitive | Status |
 |---|---|---|
@@ -45,11 +45,11 @@ The operating-system words are not decoration. Each one points at a specific mec
 | Page cache | anonymous rendered-page cache, version-keyed | shipped |
 | Output target | publish notes to a Telegram channel, links preserved | shipped |
 | Standard input | forms in frontmatter, submissions stored per note | shipped |
-| Control surface | a kanban board note (`layout: kanban`) | shipped (layout), branch (agent wiring) |
+| Control surface | a kanban board note (`layout: kanban`), agent-driven | shipped |
 | Kernel config | feature flags, validated at boot (panics on missing dep) | shipped |
-| Process executor | the in-note model loop (`agentruntime`) | branch |
-| Package manager | role-as-note: `fleet` registers the agent | branch |
-| Resource limits | non-overridable token and step caps per run | branch |
+| Process executor | the in-note agent loop (`agentruntime`): LLM or deterministic code | shipped |
+| Package manager | role-as-note: `fleet` registers the agent | shipped |
+| Resource limits | non-overridable token and step caps per run | shipped |
 
 ---
 
@@ -81,11 +81,13 @@ A cron webhook runs an agent on a schedule. A `next_run_at` column plus a once-a
 
 ## Userland: the agent fleet
 
-This is the layer that earns the word "runtime," and it is the layer that is not on `main` yet. It lives on `feat/agent-runtime`.
+This is the layer that earns the word "runtime," and it is on `main` now: `fleet` and `agentruntime` merged in mid-2026 and are exercised end to end in the test suite.
 
 The idea is small. An agent is a note. Its frontmatter is the configuration: which model, which tools, the `read_patterns` and `write_patterns` that scope what it can touch, the `trigger_on` that says which notes wake it, a `for_each`, a `max_depth`, a `timeout_seconds`. Its body is the instruction, written as a Jet template that can reference the note that changed. A daemon called `fleet` watches a folder of these role notes and registers each one as a change webhook pointed back at trip2g itself. Drop a note into the folder and the agent is installed. Delete the note and it is gone. That is the package manager, and the package is a markdown file.
 
 When a watched note changes, the webhook fires and `fleet` runs a scoped loop called `agentruntime`. The model gets the instruction and the in-scope context and calls `search`, `read_note`, `write_note`, `patch_note`, and `finish`. Reads and writes are checked against the role's glob patterns, so an agent allowed to write only to `reports/` cannot touch `roles/`. A token-and-step ceiling that the agent cannot raise caps the run. `max_depth` breaks the case where an agent's own write would wake it again. trip2g stays a plain event source. The instruction, the scope, and the triggers all live in notes you can read.
+
+Not every agent needs a model. A role can declare `executor: code`: the fenced blocks in its body are the program (python, bash, or node), run sandboxed as a stdout-to-stdin pipeline, and the final stdout is parsed as writes that pass the same scope checks. An LLM agent can also get an `exec` tool for running snippets, but only when the operator starts `fleet` with `--allowed-programs`; by default it is off.
 
 ```mermaid
 graph LR
@@ -97,7 +99,7 @@ graph LR
   KB -.re-trigger.-> E
 ```
 
-The plumbing under this, the webhooks and the scoped tokens and the delivery jobs, is shipped. The in-note model loop and the `fleet` reconciler are what the branch adds.
+The plumbing under this, the webhooks and the scoped tokens and the delivery jobs, is shipped. So are the in-note agent loop and the `fleet` reconciler that sit on top of it.
 
 ---
 
@@ -129,7 +131,7 @@ There is one more way into the filesystem. trip2g serves the whole knowledge bas
 
 A board is a note with [[en/user/kanban|`layout: kanban`]]. A card is a line like `- ship the docs @status:doing @assigned:bob`. Editing a card is a note edit, which means the same trigger that drives any agent can drive a triage agent that reads the board and rewrites cards in place with `patch_note`. The note is both the thing a person edits to direct work and the thing the agent reads and writes.
 
-The kanban layout and the standalone `kanban_template` ship today. Wiring a board to the fleet is part of the branch.
+The kanban layout, the standalone `kanban_template`, and the fleet wiring all ship today; an end-to-end test drives a board through a live agent.
 
 ---
 
@@ -141,13 +143,13 @@ trip2g runs as a single process on SQLite. There is no database server to stand 
 
 ## Where the metaphor breaks
 
-An honest map shows its edges. trip2g is not an editor. It leaves editing to Obsidian and Telegram and only takes over once a note is saved, so if you came expecting an operating system with its own shell and windows, the front door is somebody else's app. The "package manager" row is thinner than it sounds: today it is `fleet` turning a note into a webhook record, and only on the branch. There is no shell or exec tool for agents, only the read and write tools, and the design note that sketches one is still just a design note. There is also a gap between the word and the hardware: the production hubs run on a single small VM that already feels resource pressure, so "runs agent processes" is a promise the current box keeps only at small scale.
+An honest map shows its edges. trip2g is not an editor. It leaves editing to Obsidian and Telegram and only takes over once a note is saved, so if you came expecting an operating system with its own shell and windows, the front door is somebody else's app. The "package manager" row is thinner than it sounds: it is `fleet` turning a note into a webhook record, not a registry with versions and dependencies. Agents get code execution only on the operator's terms: the `exec` tool exists but stays off until `fleet` is started with an explicit program allowlist, so by default there is no shell. There is also a gap between the word and the hardware: the production hubs run on a single small VM that already feels resource pressure, so "runs agent processes" is a promise the current box keeps only at small scale.
 
 ---
 
 ## Why "operating system" and not "platform"
 
-The word is risky. "OS" has been worn smooth by a decade of Notion and Obsidian templates sold as a "Life OS" or a "Second Brain OS," where the OS part means a folder structure and some linked pages. That is not the claim here. The claim is literal and testable: there is a shared namespace, a controlled call interface, a scheduler, a network stack with a TTL, permission bits per agent, and a process model. For each one you can point at the table, the migration, the token, or the run loop. The metaphor is worth using only because it survives that test, on every row except the two marked branch and planned.
+The word is risky. "OS" has been worn smooth by a decade of Notion and Obsidian templates sold as a "Life OS" or a "Second Brain OS," where the OS part means a folder structure and some linked pages. That is not the claim here. The claim is literal and testable: there is a shared namespace, a controlled call interface, a scheduler, a network stack with a TTL, permission bits per agent, and a process model. For each one you can point at the table, the migration, the token, or the run loop. The metaphor is worth using only because it survives that test, on every row of the table.
 
 What makes the framing more than a relabel is the combination, not any single feature. Obsidian, Logseq, Foam, Dendron, and org-mode are local editors. Quartz is a static build. SilverBullet and a Node-hosted TiddlyWiki are live servers, but single-user. Notion and Tana are closed, not markdown-native, and they neither self-host nor federate. trip2g is a self-hosted server that serves many tenants, exposes an MCP interface, federates hub to hub, runs agents on note edits, and bundles subscriptions and Telegram. None of the others hold more than two of those at once. The OS framing is a way to name that bundle precisely.
 
