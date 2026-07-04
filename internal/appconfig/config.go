@@ -188,6 +188,10 @@ type SimpleBackupConfig struct {
 // CronJobsConfig holds cron jobs admin configuration.
 type CronJobsConfig struct {
 	AllowEdit bool
+	// RunOnStart runs every ExecuteAfterStart cron job once at boot,
+	// asynchronously after the instance is ready. Off by default: instances
+	// restart often and re-running these jobs on every boot is needless load.
+	RunOnStart bool
 }
 
 // Default values for configuration.
@@ -529,6 +533,12 @@ func (c *Config) defineServerFlags() {
 		"Enable the periodic VACUUM/ANALYZE database maintenance cron. Off by default (heavy full-DB rewrite; incompatible with Litestream WAL replication).",
 	)
 	flag.BoolVar(&c.CronJobs.AllowEdit, "cronjobs-allow-edit", false, "Allow admin to edit cron job schedule and enabled state")
+	flag.BoolVar(
+		&c.CronJobs.RunOnStart,
+		"cronjobs-run-on-start",
+		false,
+		"Run ExecuteAfterStart cron jobs once at boot, async after ready (env CRONJOBS_RUN_ON_START). Off by default.",
+	)
 
 	// Storage limits.
 	datasize.FlagVar(

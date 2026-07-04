@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -281,6 +283,62 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	}
 
 	return &execution, nil
+}
+
+// RunStartupJobs executes once, sequentially, every enabled job whose
+// ExecuteAfterStart() returns true, through the same executeJob path as a
+// scheduled run (identical cron_job_executions bookkeeping). Sequential on
+// purpose: the jobs contend for the single write connection. Meant to run in
+// a background goroutine after the instance is ready; ctx cancellation stops
+// the loop between jobs. enabled comes from the cronjobs-run-on-start flag
+// (CRONJOBS_RUN_ON_START), off by default — when false this is a no-op.
+func (cj *CronJobs) RunStartupJobs(ctx context.Context, enabled bool) {
+	if !enabled {
+		cj.log.Debug("boot jobs: disabled (cronjobs-run-on-start=false), skipping")
+		return
+	}
+
+	cj.jobsMU.Lock()
+	type startupJob struct {
+		id   int64
+		name string
+	}
+	var jobs []startupJob
+	for id, item := range cj.jobs {
+		if item.config.Enabled && item.job.ExecuteAfterStart() {
+			jobs = append(jobs, startupJob{id: id, name: item.job.Name()})
+		}
+	}
+	cj.jobsMU.Unlock()
+
+	sort.Slice(jobs, func(i, j int) bool { return jobs[i].name < jobs[j].name })
+
+	cj.log.Info("boot jobs: running startup-execute jobs", "count", len(jobs))
+	start := time.Now()
+	ran := 0
+
+	for _, job := range jobs {
+		if ctx.Err() != nil {
+			cj.log.Info("boot jobs: shutdown requested, stopping", "ran", ran)
+			return
+		}
+
+		jobStart := time.Now()
+		exec, err := cj.executeJob(job.id)
+		took := time.Since(jobStart)
+
+		switch {
+		case err != nil:
+			cj.log.Info("boot job done", "job", job.name, "took", took, "error", err)
+		case exec != nil && exec.Status == JobStatusFailed && exec.ErrorMessage != nil:
+			cj.log.Info("boot job done", "job", job.name, "took", took, "error", *exec.ErrorMessage)
+		default:
+			cj.log.Info("boot job done", "job", job.name, "took", took)
+		}
+		ran++
+	}
+
+	cj.log.Info("boot jobs complete", "total", time.Since(start), "ran", ran)
 }
 
 func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
