@@ -217,7 +217,7 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	// for a SQLite write lock (e.g. when another cron job holds a write transaction).
 	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
 		JobID:        jobID,
-		Status:       JobStatusRunning,
+		Status:       JobStatusFailed,
 		ErrorMessage: ptr.To("died"),
 	})
 	if updateErr != nil {

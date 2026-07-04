@@ -4000,7 +4000,7 @@ const updateRunningCronJobExecutions = `-- name: UpdateRunningCronJobExecutions 
 update cron_job_executions
   set status = ?, error_message = ?
 where job_id = ?
-  and status = 'running'
+  and status = 1
 `
 
 type UpdateRunningCronJobExecutionsParams struct {
