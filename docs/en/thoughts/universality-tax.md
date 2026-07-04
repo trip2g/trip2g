@@ -37,7 +37,20 @@ Partly. Some of it is named academic theory, some is well-sourced folk wisdom. W
 
 **Parkinson's Law of Triviality (bike-shedding) — real, named, half-satirical.** C. Northcote Parkinson, 1957: the committee approves the nuclear reactor in minutes and debates the bike shed for 45, because everyone can hold a bike shed in their head. Tool-building is the bike shed of knowledge work: tractable, visibly productive, fully understood, unlike the actual writing.
 
-**Yak shaving — real term, folk concept.** Coined by Carlin Vieri at the MIT AI Lab (1993–98), after a Ren & Stimpy episode; popularized by Seth Godin. The recursive prerequisite chain: to write the note you fix the template, to fix the template you patch the core, to patch the core you fix the hash encoding. The kanban section above is a yak-shaving log. Note the difference from goal displacement: yak shaving is prerequisites you genuinely need; displacement is when you stop needing them and keep going.
+**Yak shaving — real term, folk concept.** Coined by Carlin Vieri at the MIT AI Lab (1993–98), after a Ren & Stimpy episode; popularized by Seth Godin. The recursive prerequisite chain: to write the note you fix the template, to fix the template you patch the core, to patch the core you fix the hash encoding. The kanban receipt above is a yak-shaving log. Drawn as a tree:
+
+```mermaid
+flowchart TD
+  A["Render a kanban board from a note"]
+  A --> B["Custom layout loses the site chrome<br/>→ header/footer/login/search accessors in core"]
+  A --> C["A drag is a save, but the note holds prose the board can't model<br/>→ surgical in-place save via the update API"]
+  C --> D["The update API needs a create-only mode<br/>→ new core upsert mode"]
+  C --> E["base64 vs base64url<br/>→ 74% of saves silently failed"]
+  A --> F["Two browsers, one board<br/>→ card merge + real version ids + an ok-path clobber, 3 PRs"]
+  A --> G["Install in one command<br/>→ CLI flag + theme toggle"]
+```
+
+Each box is a prerequisite the board genuinely needed. The tree shape is why the estimate was wrong: you price the root and pay for the branches. Note the difference from goal displacement: yak shaving is prerequisites you genuinely need; displacement is when you stop needing them and keep going.
 
 **Structured procrastination — real, published.** John Perry (Stanford philosopher), 1996 essay in the *Chronicle of Higher Education*; won the 2011 Ig Nobel in Literature. Procrastinators do difficult, valuable things as a way of not doing the more important thing. Building a beautiful publishing pipeline is a world-class way to not write.
 
@@ -70,6 +83,31 @@ Not "avoid universality." The substrate bet is the right bet; [[en/thoughts/univ
 **Pay the tax when content pulls, not when the tool tempts.** The kanban board was worth building because a real person asked a real question and the result is a real, reusable door — and the core changes it forced (chrome accessors, in-place saves, sync correctness) made *every* future door cheaper. Build the door when someone is standing in front of it. Don't build doors speculatively; trip2g's design docs for canvas rendering, data views, and grid layouts sit unbuilt for exactly this reason, and that's correct.
 
 **Count the tax honestly.** "You can render a kanban board" and "there is a kanban template you can install with one command" are different claims, and only the second one is a door. A door you haven't built yet is a wall with a sign on it — remember that when you evaluate a universal tool, and when you pitch one.
+
+Here is the kanban tax, counted:
+
+```datachart
+{
+  "data": {
+    "source": "inline",
+    "rows": [
+      { "subsystem": "Layout engine", "changes": 2 },
+      { "subsystem": "Save / versioning", "changes": 2 },
+      { "subsystem": "Sync semantics", "changes": 3 },
+      { "subsystem": "CLI / install", "changes": 2 }
+    ]
+  },
+  "config": {
+    "xAxis": { "type": "category" },
+    "yAxis": { "type": "value" },
+    "series": [{ "type": "bar", "encode": { "x": "subsystem", "y": "changes" } }]
+  }
+}
+```
+
+One template, changes in four subsystems. The door the substrate "guaranteed" still had to be built in every one of them.
+
+And one more honest count. The kanban screenshot is an image; the diagram and the chart in this essay are not — they're fenced code blocks in this note, rendered by trip2g. Mermaid and datachart are two of its doors, and they're the opposite case from the unbuilt design docs: nobody needs their *why* explained. "Show a diagram", "show a chart" — the pitch is the name. They still paid the tax. Mermaid's "just render a fenced block" pulled a general mechanism into the core: the server now decides, per note, which widget scripts each page needs. Datachart's "just draw some bars" pulled a server-side fetch, a cache keyed to the note's version, and a chart library that loads only on pages with charts. Obvious doors, same hinges. What separates them from a sign on a wall is that you're looking at their output right now.
 
 **Don't book the tinkering as the work.** The test that survives Merton and the garage both: does this change exist because content demanded it, or because building it feels better than writing? The kanban board passes: a real person asked, a real board shipped. Not everything on your list will. And when a change fails the test, the honest move isn't shame, it's naming it: this one's the project car, I'm doing it because I like it. That's allowed. Just don't book it as output.
 
