@@ -12,8 +12,8 @@ docker-compose*.yml
 .gitignore
 .gitattributes
 
-# Dependencies
-node_modules/
+# Dependencies (glob form so BuildKit matches too — trailing-slash form was skipped by BuildKit)
+**/node_modules
 
 # Build artifacts
 tmp/
@@ -55,13 +55,24 @@ docs/
 README.md
 CLAUDE.md
 
+# Demo video assets (mp4/gif/mkv — not needed in build)
+docs/demo-video/
+**/*.mp4
+**/*.mkv
+**/*.gif
+
 # Demo and test data (use testdata/ instead)
 demo/
 demo2/
 demo/.obsidian
 
+# memcli docker volume data (root-owned sqlite/WAL, created at runtime)
+**/.trip2g-memory/
+
 # Separate services (have their own Dockerfile)
 ce-bot/
+embedding-server/
+tge2e/
 
 # Asset source/build files not needed in Go embed
 # embed.go only needs: tiptap/tiptap.js, ui/*/- built artifacts
@@ -79,6 +90,19 @@ thoughts/
 # BMad workflow files
 .bmad/
 .claude/
+
+# Git worktrees (agent-spawned checkouts, not needed for build)
+.worktrees/
+
+# OMC and related state dirs
+.omc/
+.omx/
+
+# Demo / non-production data
+businessdemo/
+
+# Telegram session files
+.tgsession.*
 
 # Logs
 *.log
