@@ -44,11 +44,16 @@ func run() (error, error) {
 		"endpoint", "http://localhost:21081/_system/graphql",
 		"GraphQL endpoint (/_system/graphql; /graphql is deprecated)",
 	)
-	bearer := flag.String("bearer", "", "Authorization bearer token (admin session JWT; required to see the latest index)")
+	bearer := flag.String("bearer", "", "admin session JWT (required to see the latest index)")
+	const cookieNameUsage = "if set, send the token as this cookie instead of " +
+		"Authorization: Bearer (reliable admin path; Bearer session JWTs are " +
+		"misclassified as scoped tokens and yield deny-all in search)"
+	cookieName := flag.String("cookie-name", "", cookieNameUsage)
 	label := flag.String("label", "run", "label for this run")
 	k := flag.Int("k", 10, "k for recall@k / ndcg@k")
 	out := flag.String("out", "", "write JSON artifact to this path (optional)")
 	failUnder := flag.Float64("fail-under-ndcg", 0, "exit nonzero if overall nDCG@k below this")
+	timeout := flag.Duration("timeout", 5*time.Minute, "overall deadline for the whole run (raise for slow CPU reranking)")
 	flag.Parse()
 
 	gs, err := retrievaleval.LoadGoldenSet(*golden)
@@ -61,7 +66,10 @@ func run() (error, error) {
 	}
 
 	client := retrievaleval.NewSearchClient(*endpoint, *bearer)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	if *cookieName != "" {
+		client = client.WithCookieAuth(*cookieName)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
 	retrieved := make([][]string, len(queries))

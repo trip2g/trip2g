@@ -62,7 +62,33 @@ func Parse(jsonStr string) Features {
 				panic(fmt.Sprintf("features validation failed: %v", parseErr))
 			}
 		}
+
+		// Reranker defaults (only meaningful when enabled).
+		applyRerankerDefaults(&f.VectorSearch.Reranker)
 	}
 
 	return f
+}
+
+// applyRerankerDefaults validates and fills in defaults for the optional
+// cross-encoder reranker. No-op when the reranker is disabled.
+func applyRerankerDefaults(r *RerankerConfig) {
+	if !r.Enabled {
+		return
+	}
+	if r.BaseURL == "" {
+		panic("vector_search.reranker.base_url is required when reranker.enabled=true")
+	}
+	if r.TopN <= 0 {
+		r.TopN = 50
+	}
+	if r.OutputK <= 0 {
+		r.OutputK = 20
+	}
+	if r.BlendWeight <= 0 {
+		r.BlendWeight = 0.5
+	}
+	if r.TimeoutSeconds <= 0 {
+		r.TimeoutSeconds = 10
+	}
 }
