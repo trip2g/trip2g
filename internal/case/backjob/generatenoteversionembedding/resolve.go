@@ -93,7 +93,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	err = env.UpsertNoteVersionEmbedding(ctx, db.UpsertNoteVersionEmbeddingParams{
 		VersionID:   params.VersionID,
 		Embedding:   model.Float32SliceToBytes(result.Vector),
-		ModelID:     int64(env.Features().VectorSearch.Model), //nolint:gosec // enum value fits int64
+		ModelID:     int64(env.Features().VectorSearch.Model),
 		ContentHash: contentHash[:],
 		Tokens:      int64(result.Tokens),
 	})
@@ -163,7 +163,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
 		}
 
-		modelID := int64(env.Features().VectorSearch.Model) //nolint:gosec // enum value fits int64
+		modelID := int64(env.Features().VectorSearch.Model)
 		for i, pe := range toEmbed {
 			select {
 			case <-ctx.Done():

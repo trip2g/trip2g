@@ -210,7 +210,10 @@ func TestParseFeatures_KnownModel(t *testing.T) {
 
 func TestParseFeatures_CustomModelWithDimensions(t *testing.T) {
 	// Parse must accept an unknown model when dimensions are provided.
-	f := Parse(`{"vector_search":{"enabled":true,"model":"intfloat/multilingual-e5-large","base_url":"http://localhost:8080/v1","dimensions":1024,"query_prefix":"query: ","passage_prefix":"passage: "}}`)
+	customJSON := `{"vector_search":{"enabled":true,"model":"intfloat/multilingual-e5-large",` +
+		`"base_url":"http://localhost:8080/v1","dimensions":1024,` +
+		`"query_prefix":"query: ","passage_prefix":"passage: "}}`
+	f := Parse(customJSON)
 	if f.VectorSearch.Model != EmbeddingModelCustom {
 		t.Errorf("Model = %v, want EmbeddingModelCustom", f.VectorSearch.Model)
 	}

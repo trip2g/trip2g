@@ -24,6 +24,8 @@ const (
 // String returns the API model name.
 func (m EmbeddingModel) String() string {
 	switch m {
+	case EmbeddingModelCustom:
+		return ""
 	case EmbeddingModelSmall:
 		return "text-embedding-3-small"
 	case EmbeddingModelLarge:
@@ -34,14 +36,15 @@ func (m EmbeddingModel) String() string {
 		return "multilingual-e5-base"
 	case EmbeddingModelBGEM3:
 		return "bge-m3"
-	default:
-		return ""
 	}
+	return ""
 }
 
 // defaultDimensions returns the built-in vector dimensions for known models.
 func (m EmbeddingModel) defaultDimensions() int {
 	switch m {
+	case EmbeddingModelCustom:
+		return 0
 	case EmbeddingModelSmall:
 		return 1536
 	case EmbeddingModelLarge:
@@ -52,36 +55,37 @@ func (m EmbeddingModel) defaultDimensions() int {
 		return 768
 	case EmbeddingModelBGEM3:
 		return 1024
-	default:
-		return 0
 	}
+	return 0
 }
 
 // defaultMaxInputTokens returns the built-in token limit for known models.
+// Unknown/custom models default to 8192.
 func (m EmbeddingModel) defaultMaxInputTokens() int {
 	switch m {
+	case EmbeddingModelCustom:
+		return 8192
 	case EmbeddingModelSmall, EmbeddingModelLarge, EmbeddingModelAda, EmbeddingModelBGEM3:
 		return 8192
 	case EmbeddingModelMultilingualE5Base:
 		return 512
-	default:
-		return 8192
 	}
+	return 8192
 }
 
 // defaultQueryPrefix returns the built-in query prefix for known models.
+// Only multilingual-e5-base requires a prefix; all others return empty string.
 func (m EmbeddingModel) defaultQueryPrefix() string {
-	switch m {
-	case EmbeddingModelMultilingualE5Base:
+	if m == EmbeddingModelMultilingualE5Base {
 		return "query: "
 	}
 	return ""
 }
 
 // defaultPassagePrefix returns the built-in passage prefix for known models.
+// Only multilingual-e5-base requires a prefix; all others return empty string.
 func (m EmbeddingModel) defaultPassagePrefix() string {
-	switch m {
-	case EmbeddingModelMultilingualE5Base:
+	if m == EmbeddingModelMultilingualE5Base {
 		return "passage: "
 	}
 	return ""
@@ -120,8 +124,9 @@ func (m EmbeddingModel) PassagePrefix() string {
 }
 
 // ParseEmbeddingModel parses a model name string to EmbeddingModel.
-// Returns (0, false) for model names not in the built-in enum; the caller
-// is responsible for requiring explicit dimension overrides in that case.
+// Returns (EmbeddingModelCustom, false) for model names not in the built-in
+// enum; the caller is responsible for requiring explicit dimension overrides
+// in that case.
 func ParseEmbeddingModel(s string) (EmbeddingModel, bool) {
 	switch s {
 	case "text-embedding-3-small", "small":
@@ -239,7 +244,10 @@ func (c VectorSearchConfig) Validate() error {
 // we can distinguish known from unknown models.
 func (c VectorSearchConfig) validateModelParsed() error {
 	if c.Enabled && c.Model == EmbeddingModelCustom && c.Dimensions == 0 {
-		return fmt.Errorf("vector_search: dimensions must be set when model %q is not a built-in model", c.ModelName)
+		return fmt.Errorf(
+			"vector_search: dimensions must be set when model %q is not a built-in model",
+			c.ModelName,
+		)
 	}
 	return nil
 }
