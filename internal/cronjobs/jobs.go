@@ -62,6 +62,10 @@ type CronJobs struct {
 
 	runningMU   sync.Mutex
 	runningJobs map[int64]db.CronJobExecution
+
+	// execMu ensures at most one job's Execute runs at a time, bounding
+	// peak memory on small boxes where multiple jobs fire at the same minute.
+	execMu sync.Mutex
 }
 
 func jobQueueID(id string) string {
@@ -239,8 +243,11 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	cj.runningJobs[jobID] = exec
 	cj.runningMU.Unlock()
 
-	// Execute the job
+	// Execute the job — serialised globally to bound peak memory.
+	// DB bookkeeping above is intentionally outside this lock.
+	cj.execMu.Lock()
 	report, jobErr := job.job.Execute(cj.ctx, cj.env)
+	cj.execMu.Unlock()
 
 	// Update execution status
 	status := JobStatusCompleted
