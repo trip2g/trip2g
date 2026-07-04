@@ -102,3 +102,8 @@ bench-max:
 		| $(HOME)/go/bin/vegeta report -type=text; \
 	wait $$PROF_PID; \
 	echo "==> CPU profile: /tmp/trip2g-cpu-max-$(BENCH_TS).prof"
+
+# vault-zip: regenerate onboarding-vault/vault.zip from current obsidian-sync/ build artifacts.
+# Requires obsidian-sync plugin to be built first (npm run build inside obsidian-sync/).
+vault-zip:
+	./onboarding-vault/generate.sh

@@ -456,3 +456,89 @@ img[src*="ce.trip2g.com"] {
 	color: var(--text-muted);
 	font-style: italic;
 }
+
+/* Sync Warnings View */
+.trip2g-warnings-desc {
+	color: var(--text-muted);
+	margin-bottom: 4px;
+}
+
+.trip2g-warnings-hint {
+	color: var(--text-faint);
+	font-size: 12px;
+}
+
+.trip2g-warnings-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.trip2g-warnings-table th {
+	text-align: left;
+	padding: 8px 10px;
+	border-bottom: 2px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.trip2g-warnings-table td {
+	padding: 7px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	vertical-align: middle;
+}
+
+.trip2g-warnings-table tbody tr:hover {
+	background: var(--background-secondary);
+}
+
+.trip2g-warnings-path {
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	color: var(--text-muted);
+	max-width: 220px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.trip2g-warnings-actions {
+	white-space: nowrap;
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.trip2g-warnings-actions button {
+	font-size: 12px;
+	padding: 3px 8px;
+	cursor: pointer;
+}
+
+.trip2g-warnings-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 10px 0 16px;
+	flex-wrap: wrap;
+	line-height: 1;
+}
+
+.trip2g-warnings-toolbar span {
+	display: inline-flex;
+	align-items: center;
+}
+
+.trip2g-warnings-count {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-right: 4px;
+}
+
+.trip2g-warnings-action-btn {
+	font-size: 12px;
+	padding: 2px 10px;
+	cursor: pointer;
+	border-radius: 4px;
+}
