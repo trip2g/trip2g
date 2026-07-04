@@ -113,6 +113,8 @@ And one more honest count. The kanban screenshot is an image; the diagram and th
 
 The pick-a-door thesis and this one are the same coin. Doors are how you explain a substrate; the tax is what doors cost. A substrate with no built doors can't be explained at all, and a maker who only builds doors never ships anything through them.
 
+*And if the tax I keep describing sounds like too much tool for one garden — that's the door being built next: an agent that tends the garden for you, no Obsidian required. [fleetbox.cc](https://fleetbox.cc) — coming soon.*
+
 ---
 
 **Sources**
