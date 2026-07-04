@@ -73,6 +73,47 @@ func TestScopedKB_EmptyWritePatternsIsReadOnly(t *testing.T) {
 	}
 }
 
+// TestScopedKB_LeadingSlashNormalization is the regression test for the
+// leading-slash matching bug: small models sometimes prepend "/" or "./" to the
+// path they write, so a candidate like "/concepts/x.md" was wrongly denied
+// against pattern "concepts/**". Normalization must ALLOW those while keeping
+// traversal/absolute-escape paths DENIED.
+func TestScopedKB_LeadingSlashNormalization(t *testing.T) {
+	patterns := []string{"concepts/**"}
+	scoped := NewScopedKB(newMemKB(nil), patterns, patterns)
+
+	allowed := []string{
+		"concepts/x.md",
+		"/concepts/x.md",
+		"./concepts/x.md",
+		"concepts/sub/y.md",
+		"/concepts/sub/y.md",
+	}
+	for _, p := range allowed {
+		if !scoped.CanWrite(p) {
+			t.Errorf("expected ALLOW for %q under %v, got DENY", p, patterns)
+		}
+		if !scoped.CanRead(p) {
+			t.Errorf("expected read ALLOW for %q under %v, got DENY", p, patterns)
+		}
+	}
+
+	denied := []string{
+		"../x.md",
+		"concepts/../x.md",
+		"/concepts/../secrets.md",
+		"/etc/passwd",
+		"../../etc/passwd",
+		"concepts/../../etc/passwd",
+		"secrets/x.md",
+	}
+	for _, p := range denied {
+		if scoped.CanWrite(p) {
+			t.Errorf("expected DENY for %q under %v, got ALLOW", p, patterns)
+		}
+	}
+}
+
 // TestScopedKB_PatchUniqueness is the regression test for G5: Patch must error
 // when find is absent (0 occurrences) or ambiguous (>1 occurrences), and must
 // patch correctly when find is unique (exactly 1 occurrence). The duplicate-match
