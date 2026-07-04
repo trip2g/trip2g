@@ -73,6 +73,9 @@ func Parse(jsonStr string) Features {
 			if f.VectorSearch.Reranker.BlendWeight <= 0 {
 				f.VectorSearch.Reranker.BlendWeight = 0.5
 			}
+			if f.VectorSearch.Reranker.TimeoutSeconds <= 0 {
+				f.VectorSearch.Reranker.TimeoutSeconds = 10
+			}
 		}
 	}
 

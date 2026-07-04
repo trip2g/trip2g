@@ -17,17 +17,35 @@ import (
 	"time"
 )
 
-// sharedHTTP is reused across clients so connections pool even when callers
-// construct a Client per request from config.
-var sharedHTTP = &http.Client{Timeout: 10 * time.Second}
+// sharedTransport is reused across clients so connections pool even when callers
+// construct a Client per request from config; only the per-client timeout varies.
+var sharedTransport = http.DefaultTransport
+
+const defaultTimeout = 10 * time.Second
 
 type Client struct {
 	endpoint string
 	model    string
+	http     *http.Client
 }
 
+// New builds a client with the default per-request timeout.
 func New(endpoint, model string) *Client {
-	return &Client{endpoint: endpoint, model: model}
+	return NewWithTimeout(endpoint, model, 0)
+}
+
+// NewWithTimeout builds a client with a per-request timeout. A non-positive
+// timeout falls back to the default. CPU cross-encoder inference over a wide
+// candidate set can be slow, so callers should raise this from config.
+func NewWithTimeout(endpoint, model string, timeout time.Duration) *Client {
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
+	return &Client{
+		endpoint: endpoint,
+		model:    model,
+		http:     &http.Client{Timeout: timeout, Transport: sharedTransport},
+	}
 }
 
 // Result is a cross-encoder relevance score for one input document.
@@ -51,7 +69,7 @@ func (c *Client) Rerank(ctx context.Context, query string, docs []string) ([]Res
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sharedHTTP.Do(req)
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("rerank request: %w", err)
 	}

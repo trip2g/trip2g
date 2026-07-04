@@ -362,7 +362,8 @@ func rerankResults(
 		return results // nothing meaningful to reorder
 	}
 
-	scored, err := reranker.New(cfg.BaseURL, cfg.Model).Rerank(ctx, query, docs)
+	client := reranker.NewWithTimeout(cfg.BaseURL, cfg.Model, time.Duration(cfg.TimeoutSeconds)*time.Second)
+	scored, err := client.Rerank(ctx, query, docs)
 	if err != nil || len(scored) == 0 {
 		env.Logger().Warn("rerank failed", "error", err)
 		return results

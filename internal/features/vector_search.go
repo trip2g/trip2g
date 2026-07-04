@@ -128,12 +128,13 @@ type VectorSearchConfig struct {
 // order. Only candidates whose passage fits the CE window (~512 tokens) are
 // rescored; the rest keep their stage-1 score. See docs/dev/reranker.md.
 type RerankerConfig struct {
-	Enabled     bool    `json:"enabled"`
-	BaseURL     string  `json:"base_url"`     // rerank endpoint, e.g. "http://reranker:8000/rerank"
-	Model       string  `json:"model"`        // e.g. "BAAI/bge-reranker-v2-m3"
-	TopN        int     `json:"top_n"`        // candidates to rerank (default 50)
-	OutputK     int     `json:"output_k"`     // results to keep after rerank (default 20)
-	BlendWeight float64 `json:"blend_weight"` // CE weight in [0,1]: final = (1-w)*rrf_norm + w*ce_norm (default 0.5)
+	Enabled        bool    `json:"enabled"`
+	BaseURL        string  `json:"base_url"`        // rerank endpoint, e.g. "http://reranker:8000/rerank"
+	Model          string  `json:"model"`           // e.g. "BAAI/bge-reranker-v2-m3"
+	TopN           int     `json:"top_n"`           // candidates to rerank (default 50)
+	OutputK        int     `json:"output_k"`        // results to keep after rerank (default 20)
+	BlendWeight    float64 `json:"blend_weight"`    // CE weight in [0,1]: final = (1-w)*rrf_norm + w*ce_norm (default 0.5)
+	TimeoutSeconds int     `json:"timeout_seconds"` // per-request rerank timeout (default 10; raise for CPU inference)
 }
 
 // Validate validates vector search configuration.
