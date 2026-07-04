@@ -23,7 +23,9 @@ Here is what "just a template" actually cost, from the git log:
 - **Two browsers, one board, data loss.** Live sync surfaced a genuinely hard problem: concurrent edits clobbered each other. Fixing it took a chain of three core-and-template pull requests: card-level merging, a core change so every save returns its real version id, and an ok-path clobber that only an adversarial review sweep found, fixed test-first. A fourth residual path is known and deferred.
 - **Install had to be one command.** A CLI flag to install the template and seed a sample board, plus a theme toggle so the board respects the site's light and dark mode.
 
-Total: one "simple template" produced changes across the layout engine, the save/versioning contract, the sync semantics, and the CLI, over roughly two weeks, with two bugs (the comment-eating template engine, base64url) that only live usage could find. The board shipped, and it's genuinely good — `trip2g/kanban_template`, curl-installable, live-sync-safe. But nothing about it was free. The universality was already "in the design"; the door still had to be built, hinges and all.
+Total: one "simple template" produced changes across the layout engine, the save/versioning contract, the sync semantics, and the CLI, over roughly two weeks, with two bugs (the comment-eating template engine, base64url) that only live usage could find. The board shipped, and it's genuinely good — [`trip2g/kanban_template`](https://github.com/trip2g/kanban_template), curl-installable, live-sync-safe, with a [[en/user/kanban-demo|live demo board]] on this site. But nothing about it was free. The universality was already "in the design"; the door still had to be built, hinges and all.
+
+![[kanban-board.png|The board that "was just a template": rendered by trip2g from a plain markdown note]]
 
 That's the tax in one sentence: **the substrate guarantees the door is possible, not that it exists.**
 
