@@ -480,6 +480,7 @@ func main() {
 		a.replicaReload = replicareload.New(a, a.log, replicaNoteReloadInterval)
 		go a.replicaReload.Run(a.shutdownCtx)
 		a.ready.Store(true)
+		log.Info("instance ready — serving reads+writes")
 		a.startServer()
 		return
 	}
@@ -517,6 +518,7 @@ func main() {
 
 	// Fully ready: can serve reads AND writes. /readyz flips to 200.
 	a.ready.Store(true)
+	log.Info("instance ready — serving reads+writes")
 
 	a.startServer()
 }
