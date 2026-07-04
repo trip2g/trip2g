@@ -9,18 +9,17 @@ PLUGIN_SRC="$REPO_ROOT/obsidian-sync"
 PLUGIN_DST="$REPO_ROOT/onboarding-vault/.obsidian/plugins/trip2g"
 
 # Copy built plugin artifacts from obsidian-sync/ into the vault.
-# The plugin is a submodule; artifacts (main.js, trip2g-sync.mjs, styles.css,
-# manifest.json) are built outputs that must exist before running this script.
-for f in main.js trip2g-sync.mjs styles.css manifest.json; do
-	if [ ! -f "$PLUGIN_SRC/$f" ]; then
-		echo "ERROR: $PLUGIN_SRC/$f not found — build the obsidian-sync plugin first" >&2
-		exit 1
-	fi
-	cp "$PLUGIN_SRC/$f" "$PLUGIN_DST/$f"
-done
-
-VER=$(jq -r .version "$PLUGIN_SRC/manifest.json")
-echo "Copied plugin v$VER into onboarding-vault"
+# Skipped when obsidian-sync/ is absent (e.g. Docker build context) — the
+# committed files in onboarding-vault/.obsidian/plugins/trip2g/ are used as-is.
+if [ -f "$PLUGIN_SRC/main.js" ]; then
+	for f in main.js trip2g-sync.mjs styles.css manifest.json; do
+		cp "$PLUGIN_SRC/$f" "$PLUGIN_DST/$f"
+	done
+	VER=$(jq -r .version "$PLUGIN_SRC/manifest.json")
+	echo "Copied plugin v$VER from obsidian-sync into onboarding-vault"
+else
+	echo "obsidian-sync not present — packing committed plugin files"
+fi
 
 # Repack vault.zip with deterministic timestamps so the zip is reproducible.
 python3 - "$REPO_ROOT" <<'PYEOF'
