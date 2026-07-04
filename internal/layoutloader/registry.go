@@ -37,7 +37,11 @@ func buildBlockRegistry(
 			continue
 		}
 		finder := &blockNameFinder{}
-		safeWalk(t, finder)
+		if msg := walkContained(t, finder); msg != "" {
+			// Broken template (its own load reports the error) — skip its blocks
+			// so it can't take down registry building for other pages.
+			continue
+		}
 		for _, name := range finder.names {
 			if existing, ok := registry[name]; ok {
 				warnings = append(warnings, model.NoteWarning{

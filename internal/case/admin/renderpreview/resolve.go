@@ -102,12 +102,25 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 			vars["note"] = reflect.ValueOf(noteView)
 		}
 		vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(nvs, "latest"))
+		vars["title"] = reflect.ValueOf(previewTitle(noteView))
 		vars["publicURL"] = reflect.ValueOf("")
 		// Set empty injection slices to prevent "identifier not available" errors
 		// in layouts that call {{ range injection := htmlInjectionsHead }}.
 		vars["htmlInjectionsHead"] = reflect.ValueOf([]struct{}{})
 		vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]struct{}{})
-		if err := layout.View.Execute(&buf, vars, nil); err != nil {
+		// Stub namespaces the real page render injects (rendernotepage). They need
+		// a live HTTP request context to populate; no-op values keep layouts that
+		// call defaultTemplate.Styles() / currentUser.IsAdmin() previewable.
+		vars["defaultTemplate"] = reflect.ValueOf(map[string]interface{}{
+			"UserSpaceScripts": func() string { return "" },
+			"Header":           func() string { return "" },
+			"Footer":           func() string { return "" },
+			"Styles":           func() string { return "" },
+		})
+		vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
+			"IsAdmin": func() bool { return false },
+		})
+		if err := executePreview(env, layout.View, &buf, vars); err != nil {
 			warnings.Layout = append(warnings.Layout, "runtime: "+err.Error())
 		}
 	}
@@ -121,6 +134,26 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 		PreviewURL: "/_system/renderlayout?preview_id=" + entry.ID,
 		Warnings:   warnings,
 	}, nil
+}
+
+// executePreview runs a user-authored layout. Jet's Execute re-panics
+// runtime errors and non-error panics, so without a recover a bad layout
+// would kill the server process (same guard as rendernotepage.renderLayout).
+func executePreview(env Env, view *jet.Template, buf *bytes.Buffer, vars jet.VarMap) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			env.Logger().Error("template panic", "layout", "preview", "error", r)
+			err = fmt.Errorf("template panic: %v", r)
+		}
+	}()
+	return view.Execute(buf, vars, nil)
+}
+
+func previewTitle(noteView *templateviews.Note) string {
+	if noteView == nil {
+		return ""
+	}
+	return noteView.Title()
 }
 
 func renderMarkdownNote(content string) *model.NoteView {

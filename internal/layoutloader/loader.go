@@ -245,26 +245,14 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 		assetWalker := assetFinder{}
 		safeWalk(view, &assetWalker)
 		// utils.Walk does not recurse into {{ import }} templates — walk them explicitly.
-		if views, ok := jl.sets[source.ID]; ok {
-			for _, importPath := range extractImportPaths(source.Content) {
-				if imported, err := views.GetTemplate(importPath); err == nil {
-					safeWalk(imported, &assetWalker)
-				}
-			}
-		}
+		jl.walkImported(source, &assetWalker)
 
 		jl.log.Debug("detect assets", "assets", assetWalker.List)
 
 		// Find block definitions
 		blockWalker := blockFinder{sourceID: source.ID}
 		safeWalk(view, &blockWalker)
-		if views, ok := jl.sets[source.ID]; ok {
-			for _, importPath := range extractImportPaths(source.Content) {
-				if imported, err := views.GetTemplate(importPath); err == nil {
-					safeWalk(imported, &blockWalker)
-				}
-			}
-		}
+		jl.walkImported(source, &blockWalker)
 
 		for _, block := range blockWalker.blocks {
 			// Add to ByName (last one wins if duplicate names)
@@ -310,6 +298,25 @@ func (jl *jetLoader) processTemplates(sourceFiles []model.LayoutSourceFile) {
 
 			Warnings:     warnings,
 			Personalized: personalized,
+		}
+	}
+}
+
+// walkImported walks the templates a source explicitly imports. Panics from a
+// broken imported template are contained (the import's own load reports the
+// error), so it can't crash processing of the importing page.
+func (jl *jetLoader) walkImported(source model.LayoutSourceFile, v utils.Visitor) {
+	views, ok := jl.sets[source.ID]
+	if !ok {
+		return
+	}
+	for _, importPath := range extractImportPaths(source.Content) {
+		imported, err := views.GetTemplate(importPath)
+		if err != nil {
+			continue
+		}
+		if msg := walkContained(imported, v); msg != "" {
+			jl.log.Warn("imported template walk panic", "source", source.ID, "import", importPath, "error", msg)
 		}
 	}
 }
@@ -395,9 +402,24 @@ func (w *yieldBlocksUsageFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 
 // load parses a template and returns (template, parseError).
 // If parsing fails, returns (nil, errorMessage).
-func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string) {
+//
+// Panics are recovered and reported as a parse error so one broken layout
+// (e.g. `{{ range _, x := ... }}`, which Jet parses but whose AST walker
+// panics on with "unexpected node _") can't crash the whole Load cycle —
+// and with it the entire pushNotes batch.
+//
+//nolint:nonamedreturns // named returns required for defer/recover to set them
+func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, parseErr string) {
 	jl.mu.Lock()
 	defer jl.mu.Unlock()
+
+	defer func() {
+		if r := recover(); r != nil {
+			jl.log.Error("layout load panic", "id", source.ID, "error", r)
+			view = nil
+			parseErr = fmt.Sprintf("layout panic: %v", r)
+		}
+	}()
 
 	// Add content to templates map (auto-convert JSON if needed)
 	content := source.Content
