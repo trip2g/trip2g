@@ -75,12 +75,12 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
 	// Prepare text for embedding (title + stripped content, with model-specific passage prefix).
-	embModel := env.Features().VectorSearch.Model
-	passagePrefix := embModel.PassagePrefix()
+	vsConfig := env.Features().VectorSearch
+	passagePrefix := vsConfig.ResolvedPassagePrefix()
 	// Cap whole-note input to the model's hard token limit; notes can be larger
 	// than the embedding window, which otherwise fails with HTTP 400 and retries
 	// forever. estimateTokens is approximate, so leave a 10% safety margin.
-	budget := embModel.MaxInputTokens() * 9 / 10
+	budget := vsConfig.ResolvedMaxInputTokens() * 9 / 10
 	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+strippedContent, budget)
 
 	// Generate embedding
@@ -93,7 +93,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	err = env.UpsertNoteVersionEmbedding(ctx, db.UpsertNoteVersionEmbeddingParams{
 		VersionID:   params.VersionID,
 		Embedding:   model.Float32SliceToBytes(result.Vector),
-		ModelID:     int64(env.Features().VectorSearch.Model),
+		ModelID:     int64(env.Features().VectorSearch.Model), //nolint:gosec // enum value fits int64
 		ContentHash: contentHash[:],
 		Tokens:      int64(result.Tokens),
 	})
@@ -152,7 +152,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	env.Logger().Debug("chunks to embed", "version_id", versionID, "to_embed", len(toEmbed), "skipped", len(chunks)-len(toEmbed))
 
 	if len(toEmbed) > 0 {
-		passagePrefix := env.Features().VectorSearch.Model.PassagePrefix()
+		passagePrefix := env.Features().VectorSearch.ResolvedPassagePrefix()
 		texts := make([]string, len(toEmbed))
 		for i, pe := range toEmbed {
 			texts[i] = passagePrefix + pe.chunk.Content
@@ -163,7 +163,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
 		}
 
-		modelID := int64(env.Features().VectorSearch.Model)
+		modelID := int64(env.Features().VectorSearch.Model) //nolint:gosec // enum value fits int64
 		for i, pe := range toEmbed {
 			select {
 			case <-ctx.Done():

@@ -401,7 +401,7 @@ func main() {
 	if a.config.Features.VectorSearch.Enabled {
 		a.openaiClient = openai.New(
 			os.Getenv("OPENAI_API_KEY"),
-			a.config.Features.VectorSearch.Model,
+			a.config.Features.VectorSearch.ResolvedModelName(),
 			a.config.Features.VectorSearch.BaseURL,
 		)
 	}
