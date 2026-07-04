@@ -74,6 +74,22 @@ That's the whole wiring — no client loader, no template changes.
 Theme follows `document.documentElement.classList.contains('dark')`, set by the
 inline theme script in `views.html`.
 
+### Pan/zoom
+
+`src/panzoom.ts` makes each rendered SVG pan/zoomable — zero-dep, Pointer
+Events based (svg-pan-zoom needs Hammer.js for pinch, so a small custom
+implementation is lighter):
+
+- Touch: pinch-to-zoom + one-finger drag to pan (drag only once zoomed —
+  at fit the container keeps `touch-action: pan-y` so page scroll works).
+- Desktop: + / − / reset / fullscreen buttons overlaid top-right, plus
+  ctrl/⌘+wheel zoom (plain wheel keeps scrolling the page).
+- Fullscreen is a CSS `position: fixed` overlay (portable, unlike
+  `requestFullscreen` on iOS); Escape or the button exits.
+- Default state is untouched fit-to-width; the CSS is injected by the glue so
+  nothing is added to the main bundle. Theme re-render rebinds instead of
+  stacking listeners.
+
 ## Build
 
 ```
