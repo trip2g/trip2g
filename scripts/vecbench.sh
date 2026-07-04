@@ -154,6 +154,7 @@ cmd_eval() {
     -bearer "$TOKEN" \
     -cookie-name "$COOKIE_NAME" \
     -label "$LABEL" -k 10 -out "$OUT" \
+    -timeout "${EVAL_TIMEOUT:-5m}" \
     -fail-under-ndcg "${EVAL_MIN_NDCG:-0}"
 }
 

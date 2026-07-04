@@ -50,6 +50,7 @@ func run() (error, error) {
 	k := flag.Int("k", 10, "k for recall@k / ndcg@k")
 	out := flag.String("out", "", "write JSON artifact to this path (optional)")
 	failUnder := flag.Float64("fail-under-ndcg", 0, "exit nonzero if overall nDCG@k below this")
+	timeout := flag.Duration("timeout", 5*time.Minute, "overall deadline for the whole run (raise for slow CPU reranking)")
 	flag.Parse()
 
 	gs, err := retrievaleval.LoadGoldenSet(*golden)
@@ -65,7 +66,7 @@ func run() (error, error) {
 	if *cookieName != "" {
 		client = client.WithCookieAuth(*cookieName)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
 	retrieved := make([][]string, len(queries))
