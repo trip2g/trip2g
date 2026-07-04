@@ -70,7 +70,7 @@ Everything runs in one binary — no separate workers, no Redis, no RabbitMQ.
 
 **Content pipeline**
 - [goldmark](https://github.com/yuin/goldmark) — Markdown parser with a full AST. Used everywhere: note rendering, Telegram post formatting, search indexing, wikilink resolution. The AST lets you walk and transform the document tree rather than regex-patching HTML.
-- [CloudyKit/jet](https://github.com/CloudyKit/jet) — a template engine with its own AST and expression evaluator. Powers JSON layouts and template views. More capable than `html/template`: variables, functions, inheritance, direct AST access. See also [[ru/user/jet|Jet docs]].
+- [CloudyKit/jet](https://github.com/CloudyKit/jet) — a template engine with its own AST and expression evaluator. Powers JSON layouts and template views. More capable than `html/template`: variables, functions, inheritance, direct AST access. See also the [[ru/user/jet|Jet docs (Russian)]].
 - `valyala/quicktemplate` — compiled templates for the default site theme. Templates become Go code at build time — no reflection, no parsing at runtime.
 - `google/go-jsonnet` — Jsonnet for site config. Supports imports, functions, and computed values, which plain JSON/TOML can't do.
 
@@ -79,7 +79,7 @@ Everything runs in one binary — no separate workers, no Redis, no RabbitMQ.
 
 **Storage**
 - `minio/minio-go` — S3-compatible storage for uploaded note assets and automated backups.
-- `mattn/go-sqlite3` + `modernc.org/sqlite` — two SQLite drivers. CGO version for production, pure-Go for environments where CGO isn't available.
+- `modernc.org/sqlite` — the pure-Go SQLite driver, used everywhere including production. The CGO driver `mattn/go-sqlite3` survives only as an indirect dependency of other packages.
 - `maragu/goqite` — job queue on top of SQLite. One less external dependency.
 
 **Transport**

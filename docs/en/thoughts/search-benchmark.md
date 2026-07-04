@@ -77,7 +77,7 @@ The per-query diffs showed the failure mode clearly. The cross-encoder promotes 
 
 The bi-encoder + RRF first stage had correctly ranked these below the answer. The reranker undid that work.
 
-The lesson: a reranker is not free. When the first stage is already strong and the corpus contains many topically-adjacent documents, "reorder everything" degrades rather than improves. We shipped the reranker off by default (`vector_search.reranker.enabled=false`) and kept the code for per-deployment A/B testing. A more principled approach — blending the rerank score with the RRF rank rather than replacing it — is left as future work.
+The lesson: a reranker is not free. When the first stage is already strong and the corpus contains many topically-adjacent documents, "reorder everything" degrades rather than improves. We first shipped the reranker off by default (`vector_search.reranker.enabled=false`), then removed the code entirely: a measured-worse feature is not worth the moving parts, and the negative result is recorded in the dev docs. A more principled approach — blending the rerank score with the RRF rank rather than replacing it — is left as future work.
 
 ---
 
