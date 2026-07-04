@@ -11,8 +11,9 @@ Here is what we found when we actually measured trip2g's vector search.
 | Baseline | 0.983 | 0.916 | 0.942 | 0.845 |
 | F1: widen fusion pool | **1.000** | 0.922 | 0.942 | 0.860 |
 | F2: per-language analyzer | 1.000 | 0.922 | 0.942 | 0.860 |
-| F3: cross-encoder reranker | 1.000 | **0.888** | 0.871 | 0.879 |
+| F3: cross-encoder reranker (replace mode) | 1.000 | **0.888** | 0.871 | 0.879 |
 | → shipped reranker OFF | 1.000 | 0.922 | 0.942 | 0.860 |
+| → re-added as blend (opt-in, w=0.5), re-measured | 0.992 | **0.949** | 0.969 | **0.924** |
 | F4: heading breadcrumb + token-aware chunks | 0.992 | **0.926** | 0.950 | 0.867 |
 | F5: dot-product similarity | 0.992 | 0.926 | 0.950 | 0.867 |
 | F5✗: AND→OR BM25 fallback (reverted) | 0.675 | **0.674** | 0.956 | 0.606 |
@@ -65,19 +66,21 @@ Fix: index Title and Body under two fields each — one with a Russian analyzer,
 
 ---
 
-## F3: the reranker measured strictly worse
+## F3: the reranker — worse as a replacement, better as a blend
 
-The plan was to add a cross-encoder reranker as a second stage — the textbook "biggest quality lever." We added `bge-reranker-v2-m3` behind a feature flag, re-scoring the fused top-N before returning results.
+The plan was to add a cross-encoder reranker as a second stage, the textbook "biggest quality lever." We added `bge-reranker-v2-m3` behind a feature flag, re-scoring the fused top-N before returning results.
 
-It was the only change that made things actively worse.
+In its first form it was the only change that made things actively worse.
 
-With 512-character passages: nDCG 0.922 → 0.888, MRR 0.942 → 0.871. With full-note passages it collapsed to nDCG 0.388 — passages exceeded the cross-encoder's ~512-token window, content was truncated, the notes looked identical to the reranker, and it reordered them by noise.
+With 512-character passages: nDCG 0.922 → 0.888, MRR 0.942 → 0.871. With full-note passages it collapsed to nDCG 0.388: passages exceeded the cross-encoder's ~512-token window, content was truncated, the notes looked identical to the reranker, and it reordered them by noise.
 
-The per-query diffs showed the failure mode clearly. The cross-encoder promotes surface term overlap — so "медленное брожение теста" (dough fermentation) surfaced the sauerkraut note above sourdough, because sauerkraut has more fermentation vocabulary. "Каналы вместо общей памяти" (channels vs shared memory) surfaced mutexes above goroutines.
+The per-query diffs showed the failure mode. The cross-encoder promotes surface term overlap, so "медленное брожение теста" (dough fermentation) surfaced the sauerkraut note above sourdough, because sauerkraut has more fermentation vocabulary. "Каналы вместо общей памяти" (channels vs shared memory) surfaced mutexes above goroutines. The bi-encoder + RRF first stage had ranked these below the answer. The reranker, told to reorder everything, undid that work.
 
-The bi-encoder + RRF first stage had correctly ranked these below the answer. The reranker undid that work.
+That is the diagnosis, and it points at the fix. The problem was not the cross-encoder's signal; it was letting that signal overwrite a first stage that was already strong. So we changed two things and measured again. Blend instead of replace: the final score is `(1-w)·rrf + w·ce`, both normalized, so the cross-encoder nudges the ranking instead of dictating it (`w=0.5`). And window discipline: rerank only each note's best-matching passage, always under the 512-token window, never a truncated whole note, the exact input that produced the 0.388 collapse.
 
-The lesson: a reranker is not free. When the first stage is already strong and the corpus contains many topically-adjacent documents, "reorder everything" degrades rather than improves. We first shipped the reranker off by default (`vector_search.reranker.enabled=false`), then removed the code entirely: a measured-worse feature is not worth the moving parts, and the negative result is recorded in the dev docs. A more principled approach — blending the rerank score with the RRF rank rather than replacing it — is left as future work.
+In that form it wins. nDCG 0.926 → 0.949, MRR 0.950 → 0.969, with the largest gain exactly where the first stage is weakest: cross-language en→ru retrieval, 0.867 → 0.924 (+0.057). The mirror image of the replace-mode result.
+
+So the lesson is narrower and more useful than "rerankers don't help." A reranker that reorders everything degrades a strong first stage on a small, topically-adjacent corpus. The same model, blended with the first-stage score and fed only inputs that fit its window, recovers the upside the first stage misses, the hard cross-language cases, without trampling what it already had right. It stays behind a flag, default off: it needs a CPU cross-encoder sidecar and adds latency, so it is opt-in infrastructure, not a free default. No longer a negative result, but a shipped option that earns its keep where the sidecar runs.
 
 ---
 
