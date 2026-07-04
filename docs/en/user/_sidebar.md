@@ -17,6 +17,7 @@ title: "Navigation"
 - [[en/user/two-way-sync|Two-way sync]]
 - [[en/user/live-editing|Live editing]]
 - [[en/user/releases|Releases]]
+- [[en/changelog|Changelog]]
 
 ### Use Cases
 

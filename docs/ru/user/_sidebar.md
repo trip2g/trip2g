@@ -81,6 +81,7 @@ title: "Навигация"
 - [[ru/user/Бекапы|Бекапы]]
 - [[ru/user/cli|CLI]]
 - [[ru/user/releases|Релизы]]
+- [[ru/changelog|История изменений]]
 
 ### Примеры
 
