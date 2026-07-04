@@ -198,6 +198,11 @@ func runOnce(ctx context.Context, cli cliFlags) error {
 		return fmt.Errorf("once: validate role: %w", err)
 	}
 
+	// Surface the deny-all trap loudly: write tools declared but no write_patterns.
+	// Without this the model paraphrases the per-tool "access denied" as its own
+	// refusal, hiding the config gap from the operator.
+	role.WarnIfWriteScopeMisconfigured(zerologger.New(cli.cfg.LogLevel, false))
+
 	// Load target note content if --target was given.
 	var targetContent string
 	if cli.targetPath != "" {
@@ -373,6 +378,9 @@ func syncOnce(ctx context.Context, lg logger.Logger, f *fleet.Fleet, d *fleet.Di
 	roles, errs := d.DiscoverRoles(ctx)
 	for _, e := range errs {
 		lg.Warn("discover: skipped role", "err", e)
+	}
+	for _, role := range roles {
+		role.WarnIfWriteScopeMisconfigured(lg)
 	}
 	f.SetRoles(roles)
 	if err := r.Reconcile(ctx, roles); err != nil {

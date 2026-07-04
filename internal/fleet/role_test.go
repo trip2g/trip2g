@@ -334,6 +334,43 @@ func TestRoleValidate_CodeExecutorSupportedFenceLangs(t *testing.T) {
 	}
 }
 
+// captureLogger records Warn calls for assertions.
+type captureLogger struct{ warns []string }
+
+func (c *captureLogger) Info(msg string, _ ...interface{})  {}
+func (c *captureLogger) Error(msg string, _ ...interface{}) {}
+func (c *captureLogger) Debug(msg string, _ ...interface{}) {}
+func (c *captureLogger) Warn(msg string, _ ...interface{})  { c.warns = append(c.warns, msg) }
+
+func TestRole_WarnIfWriteScopeMisconfigured(t *testing.T) {
+	tests := []struct {
+		name     string
+		tools    []string
+		patterns []string
+		wantWarn bool
+	}{
+		{"write tool + empty patterns warns", []string{"search", "write_note"}, nil, true},
+		{"patch tool + empty patterns warns", []string{"patch_note"}, nil, true},
+		{"write tool + non-empty patterns silent", []string{"write_note"}, []string{"concepts/**"}, false},
+		{"read-only role silent", []string{"search", "read_note"}, nil, false},
+		{"no tools silent", nil, nil, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := Role{NotePath: "roles/x.md", Tools: tc.tools, WritePatterns: tc.patterns}
+			lg := &captureLogger{}
+			r.WarnIfWriteScopeMisconfigured(lg)
+			if tc.wantWarn {
+				require.Len(t, lg.warns, 1)
+				require.Contains(t, lg.warns[0], "write_patterns is empty")
+				require.Contains(t, lg.warns[0], "roles/x.md")
+			} else {
+				require.Empty(t, lg.warns)
+			}
+		})
+	}
+}
+
 func TestParseRole_EnvPassthrough(t *testing.T) {
 	r, err := ParseRole("roles/a.md", "```bash\necho hi\n```", meta(
 		"mode", "change",

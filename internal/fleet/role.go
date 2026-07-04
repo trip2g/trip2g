@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"trip2g/internal/agentruntime"
+	"trip2g/internal/logger"
 	"trip2g/internal/webhookutil"
 )
 
@@ -94,6 +95,45 @@ func (r Role) EffectiveTimeoutSeconds() int {
 		return defaultTimeoutSeconds
 	}
 	return r.TimeoutSeconds
+}
+
+// Tool names that mutate the KB. A role listing either but with an empty
+// write_patterns will have every write denied (deny-all).
+const (
+	toolWriteNote = "write_note"
+	toolPatchNote = "patch_note"
+)
+
+// DeclaresWriteToolsButNoWritePatterns reports the deny-all trap: the role lists
+// a write tool yet write_patterns is empty, so every write is silently denied.
+func (r Role) DeclaresWriteToolsButNoWritePatterns() bool {
+	if len(r.WritePatterns) > 0 {
+		return false
+	}
+	for _, t := range r.Tools {
+		if t == toolWriteNote || t == toolPatchNote {
+			return true
+		}
+	}
+	return false
+}
+
+// WarnIfWriteScopeMisconfigured emits a loud WARNING when the role declares
+// write tools but has an empty write_patterns. In that state every write is
+// denied deny-all, and the denial surfaces to the model as a per-tool "access
+// denied" that it paraphrases as its own refusal — hiding the real cause (a
+// config gap) from the operator. Empty write_patterns can be intentional for a
+// read-only role, so this is a warning, not a hard failure; the security
+// behavior (empty = deny-all) is unchanged.
+func (r Role) WarnIfWriteScopeMisconfigured(lg logger.Logger) {
+	if lg == nil || !r.DeclaresWriteToolsButNoWritePatterns() {
+		return
+	}
+	lg.Warn(
+		fmt.Sprintf("role %q declares write tools but write_patterns is empty; all writes will be denied", r.NotePath),
+		"role", r.NotePath,
+		"tools", strings.Join(r.Tools, ","),
+	)
 }
 
 // for_each modes. These strings double as the Jet template variable names the
