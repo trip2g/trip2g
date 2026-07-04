@@ -3,6 +3,8 @@ package agentruntime
 import (
 	"context"
 	"errors"
+	pathpkg "path"
+	"strings"
 
 	"trip2g/internal/webhookutil"
 )
@@ -33,14 +35,56 @@ func NewScopedKB(kb KB, readPatterns, writePatterns []string) *ScopedKB {
 	}
 }
 
+// normalizeScopePath cleans a candidate path to a scope-relative form before
+// glob-matching. Small LLM models sometimes prepend "/" or "./" to a path, so
+// "/concepts/x.md" must match "concepts/**". It strips leading "./" and "/",
+// then path.Clean-resolves any "." / ".." segments. If the cleaned path still
+// escapes the scope root (leading "..", ".", or empty), it returns "" — a
+// sentinel that never matches any pattern, so traversal ("../x",
+// "concepts/../../etc/passwd") and absolute-escape stay denied.
+func normalizeScopePath(p string) string {
+	p = strings.TrimSpace(p)
+	// Strip a leading "./" and any leading "/" so absolute-looking inputs become
+	// scope-relative. Repeat because "/./" style prefixes can stack.
+	for {
+		switch {
+		case strings.HasPrefix(p, "./"):
+			p = p[2:]
+		case strings.HasPrefix(p, "/"):
+			p = p[1:]
+		default:
+			goto cleaned
+		}
+	}
+cleaned:
+	if p == "" {
+		return ""
+	}
+	c := pathpkg.Clean(p)
+	// After cleaning, a leading ".." (or bare "." / "..") means the path resolved
+	// outside the scope root: deny by returning the never-match sentinel.
+	if c == "." || c == ".." || strings.HasPrefix(c, "../") {
+		return ""
+	}
+	return c
+}
+
 // CanRead reports whether path is within the read scope.
 func (s *ScopedKB) CanRead(path string) bool {
-	return webhookutil.MatchesAny(path, s.readPatterns)
+	norm := normalizeScopePath(path)
+	if norm == "" {
+		return false
+	}
+	return webhookutil.MatchesAny(norm, s.readPatterns)
 }
 
 // CanWrite reports whether path is within the write scope.
 func (s *ScopedKB) CanWrite(path string) bool {
-	return webhookutil.MatchesAny(path, s.writePatterns)
+	norm := normalizeScopePath(path)
+	if norm == "" {
+		return false
+	}
+	return webhookutil.MatchesAny(norm, s.writePatterns)
 }
 
 // Read returns the document at path, or ErrReadDenied if it is out of scope.
