@@ -9,6 +9,7 @@ title: "Навигация"
 - [[ru/thoughts/dogfooding|Dogfooding]]
 - [[ru/thoughts/universality-tax|Налог на универсальность]]
 - [[ru/thoughts/paths-not-taken|Дороги, которые мы не выбрали]]
+- [[ru/thoughts/filming-is-testing|Съёмка демо — это тест]]
 
 **Архитектура**
 - [[ru/thoughts/markdown-operating-system|Markdown как операционная система]]

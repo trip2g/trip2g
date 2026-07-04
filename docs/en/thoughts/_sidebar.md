@@ -9,6 +9,7 @@ title: "Navigation"
 - [[en/thoughts/dogfooding|Dogfooding]]
 - [[en/thoughts/universality-tax|The universality tax]]
 - [[en/thoughts/paths-not-taken|Paths not taken]]
+- [[en/thoughts/filming-is-testing|Filming the demo is a test]]
 
 **Architecture**
 - [[en/thoughts/markdown-operating-system|Markdown as an operating system]]
