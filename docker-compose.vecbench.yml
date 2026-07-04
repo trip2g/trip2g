@@ -42,6 +42,26 @@ services:
       retries: 30
       start_period: 300s
 
+  # Local cross-encoder reranker — bge-reranker-v2-m3. Optional second stage,
+  # BLENDED with the RRF order (see docs/dev/reranker.md). Not in app.depends_on
+  # so baseline (reranker-off) runs never download the ~2GB model; start it only
+  # for the blend A/B: `docker compose -f docker-compose.vecbench.yml up -d reranker`.
+  reranker:
+    build: ./reranker-server
+    container_name: trip2g-vecbench-reranker
+    ports:
+      - "11437:8000"
+    volumes:
+      - ${HOME}/models/reranker:/data
+    environment:
+      - MODEL_NAME=BAAI/bge-reranker-v2-m3
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+
   app:
     build:
       context: .
@@ -65,7 +85,11 @@ services:
       - OWNER_EMAIL=hello@example.com # owner auto-provisioned on boot
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
-      # bge-m3 (1024d) baseline for the benchmark
+      # bge-m3 (1024d) baseline for the benchmark. Reranker OFF by default.
+      # Blend A/B: start the reranker service, then restart app with
+      #   FEATURES override adding:
+      #   "reranker": {"enabled": true, "base_url": "http://reranker:8000/rerank",
+      #                "model": "BAAI/bge-reranker-v2-m3", "blend_weight": 0.5}
       - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'
 
       # MinIO (isolated bucket; app auto-creates it on first boot)

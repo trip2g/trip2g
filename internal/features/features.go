@@ -58,6 +58,22 @@ func Parse(jsonStr string) Features {
 			panic(fmt.Sprintf("invalid vector_search.model: %v", modelErr))
 		}
 		f.VectorSearch.Model = model
+
+		// Reranker defaults (only meaningful when enabled).
+		if f.VectorSearch.Reranker.Enabled {
+			if f.VectorSearch.Reranker.BaseURL == "" {
+				panic("vector_search.reranker.base_url is required when reranker.enabled=true")
+			}
+			if f.VectorSearch.Reranker.TopN <= 0 {
+				f.VectorSearch.Reranker.TopN = 50
+			}
+			if f.VectorSearch.Reranker.OutputK <= 0 {
+				f.VectorSearch.Reranker.OutputK = 20
+			}
+			if f.VectorSearch.Reranker.BlendWeight <= 0 {
+				f.VectorSearch.Reranker.BlendWeight = 0.5
+			}
+		}
 	}
 
 	return f

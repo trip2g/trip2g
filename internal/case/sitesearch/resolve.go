@@ -3,6 +3,7 @@ package sitesearch
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/openai"
+	"trip2g/internal/reranker"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
 
@@ -71,15 +73,22 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	}
 
 	// Hybrid search: add vector results if enabled
+	// passageByURL holds the best-matching chunk passage per note (window-sized),
+	// used by the optional reranker to avoid feeding truncated whole notes.
+	var passageByURL map[string]string
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, vectorErr := vectorSearch(ctx, env, input.Query, useLatest)
+		vectorResults, passages, vectorErr := vectorSearch(ctx, env, input.Query, useLatest)
 		if vectorErr != nil {
 			// Log error but don't fail - text search still works
 			env.Logger().Warn("vector search failed", "error", vectorErr)
 		} else {
+			passageByURL = passages
 			results = mergeResults(results, vectorResults)
 		}
 	}
+
+	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order.
+	results = rerankResults(ctx, env, input.Query, results, passageByURL)
 
 	// Filter results based on permissions
 	conn := model.SearchConnection{}
@@ -132,11 +141,11 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 // list is capped after merge (see mergeResults).
 const vectorTopK = 50
 
-func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, error) {
+func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, map[string]string, error) {
 	queryPrefix := env.Features().VectorSearch.Model.QueryPrefix()
 	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create query embedding: %w", err)
+		return nil, nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}
 
 	var chunks []appmodel.NoteChunk
@@ -180,7 +189,11 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	}
 
 	// Deduplicate by note path, take top-K unique notes.
+	// passageByURL records the highest-similarity chunk per note — a window-sized
+	// passage (chunks are capped ~450 tokens, under the CE ~512-token window) so
+	// the reranker never sees a truncated whole note.
 	seen := map[string]bool{}
+	passageByURL := make(map[string]string)
 	var results []appmodel.SearchResult
 	for _, c := range candidates {
 		if seen[c.path] {
@@ -200,12 +213,23 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 			HighlightedTitle:   &title,
 			HighlightedContent: []string{snippetFromChunk(c.chunk.Content, 200)},
 		})
+		passageByURL[note.Permalink] = chunkPassage(c.chunk.Content)
 		if len(results) >= vectorTopK {
 			break
 		}
 	}
 
-	return results, nil
+	return results, passageByURL, nil
+}
+
+// chunkPassage strips the breadcrumb prefix ("{title} > {h1} > {h2}\n\n") from a
+// chunk, returning the body text used as the reranker document. The body is
+// already window-sized (chunks are capped ~450 tokens at ingest).
+func chunkPassage(content string) string {
+	if idx := strings.Index(content, "\n\n"); idx >= 0 {
+		content = content[idx+2:]
+	}
+	return trimWhitespace(content)
 }
 
 // snippetFromChunk extracts a display snippet from chunk content.
@@ -287,6 +311,131 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 	}
 
 	return finalResults
+}
+
+// rerankResults applies an optional cross-encoder rerank to the fused candidate
+// set and BLENDS the cross-encoder score with the first-stage RRF score rather
+// than replacing the order. The blend keeps RRF as a strong prior:
+//
+//	final = (1-w)*rrf_norm + w*ce_norm
+//
+// where rrf_norm and ce_norm are min-max normalised to [0,1] over the reranked
+// head, and w = BlendWeight. Only candidates with a window-sized passage (from
+// the vector lane) are rescored — text-only results with no passage keep their
+// stage-1 RRF score and are never truncated into the CE window. On any error it
+// returns the input unchanged (graceful degradation). See docs/dev/reranker.md.
+func rerankResults(
+	ctx context.Context,
+	env Env,
+	query string,
+	results []appmodel.SearchResult,
+	passageByURL map[string]string,
+) []appmodel.SearchResult {
+	cfg := env.Features().VectorSearch.Reranker
+	if !cfg.Enabled || len(results) < 2 {
+		return results
+	}
+
+	n := cfg.TopN
+	if n > len(results) {
+		n = len(results)
+	}
+	head := results[:n]
+
+	// Build CE documents only for candidates that have a window-sized passage.
+	// docIdx maps a reranker doc position back to its index in head.
+	var docs []string
+	var docIdx []int
+	for i, r := range head {
+		passage, ok := passageByURL[r.URL]
+		if !ok || passage == "" {
+			continue
+		}
+		title := ""
+		if r.NoteView != nil {
+			title = r.NoteView.Title
+		}
+		docs = append(docs, title+"\n"+passage)
+		docIdx = append(docIdx, i)
+	}
+	if len(docs) < 2 {
+		return results // nothing meaningful to reorder
+	}
+
+	scored, err := reranker.New(cfg.BaseURL, cfg.Model).Rerank(ctx, query, docs)
+	if err != nil || len(scored) == 0 {
+		env.Logger().Warn("rerank failed", "error", err)
+		return results
+	}
+
+	// Collect CE scores back onto head positions.
+	ceScore := make(map[int]float64, len(scored))
+	ceMin, ceMax := math.Inf(1), math.Inf(-1)
+	for _, s := range scored {
+		if s.Index < 0 || s.Index >= len(docIdx) {
+			continue
+		}
+		h := docIdx[s.Index]
+		ceScore[h] = s.Score
+		if s.Score < ceMin {
+			ceMin = s.Score
+		}
+		if s.Score > ceMax {
+			ceMax = s.Score
+		}
+	}
+
+	// Min-max range of the first-stage RRF scores over the head.
+	rrfMin, rrfMax := math.Inf(1), math.Inf(-1)
+	for _, r := range head {
+		if r.Score < rrfMin {
+			rrfMin = r.Score
+		}
+		if r.Score > rrfMax {
+			rrfMax = r.Score
+		}
+	}
+
+	w := cfg.BlendWeight
+	blended := make([]appmodel.SearchResult, len(head))
+	copy(blended, head)
+	for i := range blended {
+		rrfNorm := normalize(blended[i].Score, rrfMin, rrfMax)
+		ce, ok := ceScore[i]
+		if !ok {
+			// No CE score for this candidate (no passage): keep its RRF prior,
+			// blended against the neutral CE midpoint so it isn't unfairly sunk.
+			blended[i].Score = (1-w)*rrfNorm + w*0.5
+			continue
+		}
+		ceNorm := normalize(ce, ceMin, ceMax)
+		blended[i].Score = (1-w)*rrfNorm + w*ceNorm
+	}
+
+	sort.SliceStable(blended, func(i, j int) bool {
+		if blended[i].Score != blended[j].Score {
+			return blended[i].Score > blended[j].Score
+		}
+		return blended[i].URL < blended[j].URL
+	})
+
+	out := make([]appmodel.SearchResult, 0, len(results))
+	out = append(out, blended...)
+	out = append(out, results[n:]...) // tail beyond TopN unchanged
+
+	if cfg.OutputK > 0 && len(out) > cfg.OutputK {
+		out = out[:cfg.OutputK]
+	}
+	return out
+}
+
+// normalize maps v into [0,1] by min-max over [lo,hi]. A degenerate range
+// (hi==lo) returns 0.5 so a tied first stage contributes neutrally.
+func normalize(v, lo, hi float64) float64 {
+	if hi <= lo {
+		return 0.5
+	}
+	return (v - lo) / (hi - lo)
 }
 
 // generateSnippet extracts a text snippet from note content for vector-only results.
