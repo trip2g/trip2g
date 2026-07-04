@@ -9,6 +9,8 @@
 // Diagrams follow the site's light/dark theme: the theme switcher toggles the
 // `dark` class on <html>, which we observe and re-render on.
 
+import { enhancePanZoom } from './panzoom';
+
 interface Block {
   el: HTMLElement;
   src: string; // original diagram source, kept for re-rendering on theme change
@@ -50,7 +52,9 @@ function renderAll(blocks: Block[]) {
     b.el.removeAttribute('data-processed');
     b.el.textContent = b.src;
   }
-  mermaid.run({ nodes: blocks.map((b) => b.el) });
+  Promise.resolve(mermaid.run({ nodes: blocks.map((b) => b.el) })).then(() => {
+    for (const b of blocks) enhancePanZoom(b.el);
+  });
 }
 
 // Re-render when the theme switcher changes the theme. $trip2g_theme (in the
