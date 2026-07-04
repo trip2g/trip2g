@@ -419,6 +419,12 @@ img[src*="ce.trip2g.com"] {
 	background: var(--color-red);
 }
 
+/* Connection/auth failure — a background sync isn't reaching the server. */
+.sync-ribbon-icon.has-error::after {
+	background: var(--color-red);
+	border-color: var(--color-red);
+}
+
 /* Server Deleted Modal & Push Confirm Modal */
 .sync-server-deleted-modal,
 .sync-push-confirm-modal {
