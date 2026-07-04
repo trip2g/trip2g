@@ -48,36 +48,47 @@ func Parse(jsonStr string) Features {
 	// Check required environment variables and parse models for enabled features
 	if f.VectorSearch.Enabled {
 		// OPENAI_API_KEY is only required when using the OpenAI endpoint (base_url not set).
-		// When base_url is set (e.g. local Ollama), no API key is needed.
+		// When base_url is set (e.g. a local TEI server), no API key is needed.
 		if f.VectorSearch.BaseURL == "" && os.Getenv("OPENAI_API_KEY") == "" {
 			panic("OPENAI_API_KEY environment variable is required when vector_search.enabled=true and base_url is not set")
 		}
 
-		model, modelErr := ParseEmbeddingModel(f.VectorSearch.ModelName)
-		if modelErr != nil {
-			panic(fmt.Sprintf("invalid vector_search.model: %v", modelErr))
-		}
+		model, known := ParseEmbeddingModel(f.VectorSearch.ModelName)
 		f.VectorSearch.Model = model
 
-		// Reranker defaults (only meaningful when enabled).
-		if f.VectorSearch.Reranker.Enabled {
-			if f.VectorSearch.Reranker.BaseURL == "" {
-				panic("vector_search.reranker.base_url is required when reranker.enabled=true")
-			}
-			if f.VectorSearch.Reranker.TopN <= 0 {
-				f.VectorSearch.Reranker.TopN = 50
-			}
-			if f.VectorSearch.Reranker.OutputK <= 0 {
-				f.VectorSearch.Reranker.OutputK = 20
-			}
-			if f.VectorSearch.Reranker.BlendWeight <= 0 {
-				f.VectorSearch.Reranker.BlendWeight = 0.5
-			}
-			if f.VectorSearch.Reranker.TimeoutSeconds <= 0 {
-				f.VectorSearch.Reranker.TimeoutSeconds = 10
+		// For unknown (custom) models, dimensions must be supplied explicitly.
+		if !known {
+			if parseErr := f.VectorSearch.validateModelParsed(); parseErr != nil {
+				panic(fmt.Sprintf("features validation failed: %v", parseErr))
 			}
 		}
+
+		// Reranker defaults (only meaningful when enabled).
+		applyRerankerDefaults(&f.VectorSearch.Reranker)
 	}
 
 	return f
+}
+
+// applyRerankerDefaults validates and fills in defaults for the optional
+// cross-encoder reranker. No-op when the reranker is disabled.
+func applyRerankerDefaults(r *RerankerConfig) {
+	if !r.Enabled {
+		return
+	}
+	if r.BaseURL == "" {
+		panic("vector_search.reranker.base_url is required when reranker.enabled=true")
+	}
+	if r.TopN <= 0 {
+		r.TopN = 50
+	}
+	if r.OutputK <= 0 {
+		r.OutputK = 20
+	}
+	if r.BlendWeight <= 0 {
+		r.BlendWeight = 0.5
+	}
+	if r.TimeoutSeconds <= 0 {
+		r.TimeoutSeconds = 10
+	}
 }

@@ -8,6 +8,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// tokenType is the positive discriminator that distinguishes a short API token
+// from other HS256 JWTs signed with the same secret (notably session-login
+// tokens). Parse requires it, so a JWT lacking it is rejected as not-a-short-
+// API-token rather than silently accepted with empty scope.
+const tokenType = "sat" // short API token
+
 // Data holds the claims embedded in a short API token.
 type Data struct {
 	Depth         int      `json:"d"`
@@ -19,6 +25,9 @@ type Data struct {
 
 type claims struct {
 	jwt.RegisteredClaims
+	// Typ is the token-type discriminator; always tokenType for short API
+	// tokens. Session JWTs never carry it.
+	Typ string `json:"typ"`
 	Data
 }
 
@@ -31,6 +40,7 @@ func Sign(d Data, secret string, ttl time.Duration) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
+		Typ:  tokenType,
 		Data: d,
 	}
 
@@ -59,6 +69,13 @@ func Parse(tokenStr string, secret string) (Data, error) {
 	c, ok := token.Claims.(*claims)
 	if !ok || !token.Valid {
 		return Data{}, errors.New("invalid short API token claims")
+	}
+
+	// Require the positive discriminator: a validly-signed JWT that lacks it
+	// (e.g. a session-login token sharing the signing secret) is NOT a short
+	// API token and must be rejected to avoid token-type confusion.
+	if c.Typ != tokenType {
+		return Data{}, errors.New("not a short API token")
 	}
 
 	return c.Data, nil

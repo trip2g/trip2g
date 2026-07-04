@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,6 +40,25 @@ func TestParse_ExpiredToken(t *testing.T) {
 	_, err = Parse(token, secret)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "token is expired")
+}
+
+// TestParse_ForeignJWTRejected guards against token-type confusion: a validly
+// signed HS256 JWT that lacks the short-API-token discriminator claim (e.g. a
+// session-login JWT sharing the same signing secret) must NOT be accepted as a
+// short API token.
+func TestParse_ForeignJWTRejected(t *testing.T) {
+	secret := "shared-secret"
+
+	// Mimic a session JWT: same secret, HS256, but no short-API discriminator.
+	foreign := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  int64(42),
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	signed, err := foreign.SignedString([]byte(secret))
+	require.NoError(t, err)
+
+	_, err = Parse(signed, secret)
+	require.Error(t, err, "a JWT without the short-API discriminator must be rejected")
 }
 
 func TestParse_WrongSecret(t *testing.T) {
