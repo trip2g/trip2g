@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 
@@ -77,6 +78,24 @@ func TestStampShortAPIToken(t *testing.T) {
 			setup: func(t *testing.T) *appreq.Request {
 				return newBearerRequest(t, "not.a.valid.jwt")
 			},
+		},
+		{
+			// Token-type confusion guard: a validly-signed SESSION JWT (same
+			// signing secret, HS256) must NOT be stamped as a scoped short-API
+			// token. It lacks the short-API discriminator, so the stamp is a
+			// no-op and the request falls through to normal session auth.
+			name: "validly-signed session JWT — not stamped (falls through)",
+			setup: func(t *testing.T) *appreq.Request {
+				sessionJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+					"i":   1,
+					"r":   "admin",
+					"exp": time.Now().Add(time.Hour).Unix(),
+				})
+				signed, err := sessionJWT.SignedString([]byte(testSecret))
+				require.NoError(t, err)
+				return newBearerRequest(t, signed)
+			},
+			// All expectations remain zero-value: not stamped, not scoped.
 		},
 		{
 			name: "expired token — no-op (anonymous)",
