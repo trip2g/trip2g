@@ -17,10 +17,6 @@ import (
 	"time"
 )
 
-// sharedTransport is reused across clients so connections pool even when callers
-// construct a Client per request from config; only the per-client timeout varies.
-var sharedTransport = http.DefaultTransport
-
 const defaultTimeout = 10 * time.Second
 
 type Client struct {
@@ -44,7 +40,9 @@ func NewWithTimeout(endpoint, model string, timeout time.Duration) *Client {
 	return &Client{
 		endpoint: endpoint,
 		model:    model,
-		http:     &http.Client{Timeout: timeout, Transport: sharedTransport},
+		// Transport is left nil so the client uses http.DefaultTransport, which
+		// pools connections across all clients constructed per request from config.
+		http: &http.Client{Timeout: timeout},
 	}
 }
 
@@ -85,8 +83,8 @@ func (c *Client) Rerank(ctx context.Context, query string, docs []string) ([]Res
 			Score float64 `json:"relevance_score"`
 		} `json:"results"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("decode rerank response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&out); decErr != nil {
+		return nil, fmt.Errorf("decode rerank response: %w", decErr)
 	}
 
 	results := make([]Result, 0, len(out.Results))

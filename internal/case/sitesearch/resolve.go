@@ -342,22 +342,7 @@ func rerankResults(
 	}
 	head := results[:n]
 
-	// Build CE documents only for candidates that have a window-sized passage.
-	// docIdx maps a reranker doc position back to its index in head.
-	var docs []string
-	var docIdx []int
-	for i, r := range head {
-		passage, ok := passageByURL[r.URL]
-		if !ok || passage == "" {
-			continue
-		}
-		title := ""
-		if r.NoteView != nil {
-			title = r.NoteView.Title
-		}
-		docs = append(docs, title+"\n"+passage)
-		docIdx = append(docIdx, i)
-	}
+	docs, docIdx := buildRerankDocs(head, passageByURL)
 	if len(docs) < 2 {
 		return results // nothing meaningful to reorder
 	}
@@ -369,22 +354,7 @@ func rerankResults(
 		return results
 	}
 
-	// Collect CE scores back onto head positions.
-	ceScore := make(map[int]float64, len(scored))
-	ceMin, ceMax := math.Inf(1), math.Inf(-1)
-	for _, s := range scored {
-		if s.Index < 0 || s.Index >= len(docIdx) {
-			continue
-		}
-		h := docIdx[s.Index]
-		ceScore[h] = s.Score
-		if s.Score < ceMin {
-			ceMin = s.Score
-		}
-		if s.Score > ceMax {
-			ceMax = s.Score
-		}
-	}
+	ceScore, ceMin, ceMax := collectCEScores(scored, docIdx)
 
 	// Min-max range of the first-stage RRF scores over the head.
 	rrfMin, rrfMax := math.Inf(1), math.Inf(-1)
@@ -428,6 +398,48 @@ func rerankResults(
 		out = out[:cfg.OutputK]
 	}
 	return out
+}
+
+// buildRerankDocs builds cross-encoder documents ("title\npassage") only for
+// head candidates that carry a window-sized passage. The returned docIdx maps a
+// reranker doc position back to its index in head.
+func buildRerankDocs(head []appmodel.SearchResult, passageByURL map[string]string) ([]string, []int) {
+	var docs []string
+	var docIdx []int
+	for i, r := range head {
+		passage, ok := passageByURL[r.URL]
+		if !ok || passage == "" {
+			continue
+		}
+		title := ""
+		if r.NoteView != nil {
+			title = r.NoteView.Title
+		}
+		docs = append(docs, title+"\n"+passage)
+		docIdx = append(docIdx, i)
+	}
+	return docs, docIdx
+}
+
+// collectCEScores maps cross-encoder scores back onto head positions via docIdx
+// and returns the score-by-head-index map plus the min/max CE score range.
+func collectCEScores(scored []reranker.Result, docIdx []int) (map[int]float64, float64, float64) {
+	ceScore := make(map[int]float64, len(scored))
+	ceMin, ceMax := math.Inf(1), math.Inf(-1)
+	for _, s := range scored {
+		if s.Index < 0 || s.Index >= len(docIdx) {
+			continue
+		}
+		h := docIdx[s.Index]
+		ceScore[h] = s.Score
+		if s.Score < ceMin {
+			ceMin = s.Score
+		}
+		if s.Score > ceMax {
+			ceMax = s.Score
+		}
+	}
+	return ceScore, ceMin, ceMax
 }
 
 // normalize maps v into [0,1] by min-max over [lo,hi]. A degenerate range

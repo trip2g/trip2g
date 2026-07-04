@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/features"
@@ -33,11 +34,11 @@ func (e *rerankEnv) CanReadNote(context.Context, *appmodel.NoteView) (bool, erro
 	panic("unused")
 }
 func (e *rerankEnv) SiteConfig(context.Context) appmodel.SiteConfig { panic("unused") }
-func (e *rerankEnv) OpenAI() *openai.Client                        { panic("unused") }
-func (e *rerankEnv) LatestNoteViews() *appmodel.NoteViews          { panic("unused") }
-func (e *rerankEnv) LiveNoteViews() *appmodel.NoteViews            { panic("unused") }
-func (e *rerankEnv) LatestNoteChunks() []appmodel.NoteChunk        { panic("unused") }
-func (e *rerankEnv) LiveNoteChunks() []appmodel.NoteChunk          { panic("unused") }
+func (e *rerankEnv) OpenAI() *openai.Client                         { panic("unused") }
+func (e *rerankEnv) LatestNoteViews() *appmodel.NoteViews           { panic("unused") }
+func (e *rerankEnv) LiveNoteViews() *appmodel.NoteViews             { panic("unused") }
+func (e *rerankEnv) LatestNoteChunks() []appmodel.NoteChunk         { panic("unused") }
+func (e *rerankEnv) LiveNoteChunks() []appmodel.NoteChunk           { panic("unused") }
 
 func rerankerFeatures(w float64, url string) features.Features {
 	var f features.Features
@@ -60,7 +61,9 @@ func ceServer(t *testing.T, scoreFor func(doc string) float64) *httptest.Server 
 		var req struct {
 			Documents []string `json:"documents"`
 		}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&req)) {
+			return
+		}
 
 		type result struct {
 			Index int     `json:"index"`
@@ -73,7 +76,7 @@ func ceServer(t *testing.T, scoreFor func(doc string) float64) *httptest.Server 
 			out.Results = append(out.Results, result{Index: i, Score: scoreFor(d)})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(out))
+		assert.NoError(t, json.NewEncoder(w).Encode(out))
 	}))
 	t.Cleanup(srv.Close)
 	return srv

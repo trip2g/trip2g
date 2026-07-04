@@ -45,7 +45,10 @@ func run() (error, error) {
 		"GraphQL endpoint (/_system/graphql; /graphql is deprecated)",
 	)
 	bearer := flag.String("bearer", "", "admin session JWT (required to see the latest index)")
-	cookieName := flag.String("cookie-name", "", "if set, send the token as this cookie instead of Authorization: Bearer (reliable admin path; Bearer session JWTs are misclassified as scoped tokens and yield deny-all in search)")
+	const cookieNameUsage = "if set, send the token as this cookie instead of " +
+		"Authorization: Bearer (reliable admin path; Bearer session JWTs are " +
+		"misclassified as scoped tokens and yield deny-all in search)"
+	cookieName := flag.String("cookie-name", "", cookieNameUsage)
 	label := flag.String("label", "run", "label for this run")
 	k := flag.Int("k", 10, "k for recall@k / ndcg@k")
 	out := flag.String("out", "", "write JSON artifact to this path (optional)")
