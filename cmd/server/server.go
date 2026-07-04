@@ -161,6 +161,7 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
+			a.log.Info("http server listening", "addr", a.config.ListenAddr)
 			if err := a.serveHTTP(s); err != nil {
 				panic(err)
 			}
