@@ -28,15 +28,25 @@ func (r SearchResponse) URLs() []string {
 }
 
 type SearchClient struct {
-	endpoint string
-	bearer   string
-	http     *http.Client
+	endpoint   string
+	bearer     string
+	cookieName string
+	http       *http.Client
 }
 
 // NewSearchClient targets a GraphQL endpoint, e.g. "http://localhost:21081/_system/graphql".
 // bearer is optional (empty = anonymous; anonymous sees only live/free notes).
 func NewSearchClient(endpoint, bearer string) *SearchClient {
 	return &SearchClient{endpoint: endpoint, bearer: bearer, http: &http.Client{Timeout: 30 * time.Second}}
+}
+
+// WithCookieAuth sends the session token as a cookie instead of a Bearer header.
+// A session-token JWT sent via Authorization: Bearer is misclassified by the
+// scoped-shortapitoken stamp and yields deny-all in search; the session cookie
+// is the reliable admin path for the benchmark.
+func (c *SearchClient) WithCookieAuth(cookieName string) *SearchClient {
+	c.cookieName = cookieName
+	return c
 }
 
 const searchQuery = `query($q: String!){ search(input:{query:$q}){ totalCount nodes { url score matchOrigin } } }`
@@ -52,7 +62,11 @@ func (c *SearchClient) Search(ctx context.Context, query string) (*SearchRespons
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.bearer != "" {
-		req.Header.Set("Authorization", "Bearer "+c.bearer)
+		if c.cookieName != "" {
+			req.Header.Set("Cookie", c.cookieName+"="+c.bearer)
+		} else {
+			req.Header.Set("Authorization", "Bearer "+c.bearer)
+		}
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {

@@ -44,7 +44,8 @@ func run() (error, error) {
 		"endpoint", "http://localhost:21081/_system/graphql",
 		"GraphQL endpoint (/_system/graphql; /graphql is deprecated)",
 	)
-	bearer := flag.String("bearer", "", "Authorization bearer token (admin session JWT; required to see the latest index)")
+	bearer := flag.String("bearer", "", "admin session JWT (required to see the latest index)")
+	cookieName := flag.String("cookie-name", "", "if set, send the token as this cookie instead of Authorization: Bearer (reliable admin path; Bearer session JWTs are misclassified as scoped tokens and yield deny-all in search)")
 	label := flag.String("label", "run", "label for this run")
 	k := flag.Int("k", 10, "k for recall@k / ndcg@k")
 	out := flag.String("out", "", "write JSON artifact to this path (optional)")
@@ -61,6 +62,9 @@ func run() (error, error) {
 	}
 
 	client := retrievaleval.NewSearchClient(*endpoint, *bearer)
+	if *cookieName != "" {
+		client = client.WithCookieAuth(*cookieName)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 

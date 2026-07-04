@@ -145,10 +145,14 @@ cmd_eval() {
   if [ -z "$TOKEN" ]; then
     echo -e "${RED}✗ Could not get admin token for eval${NC}"; exit 1
   fi
+  # Authenticate via the session cookie: a session-token JWT sent as a Bearer
+  # header is misclassified by the scoped-shortapitoken stamp and yields deny-all
+  # in search. The cookie is the reliable admin path.
   go run ./cmd/evalretrieval \
     -golden testdata/eval/golden_set.json \
     -endpoint "$GRAPHQL" \
     -bearer "$TOKEN" \
+    -cookie-name "$COOKIE_NAME" \
     -label "$LABEL" -k 10 -out "$OUT" \
     -fail-under-ndcg "${EVAL_MIN_NDCG:-0}"
 }
