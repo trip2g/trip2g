@@ -82,18 +82,39 @@ that was never on camera.
 
 ## Known gaps
 
-- `reset-stage.sh`, `stage-notes.sh` and `run-all.sh` still hardcode
-  `https://$SPACE` and read `v4-config.json` directly — a full local
-  `gate.sh`/`run-all.sh` wave needs the same `V4_CONFIG` + scheme treatment
-  (preflight.sh and record.mjs already have it). Also `record.mjs` matches CDP
-  pages by URL substring (`SITE`, `'trip2g.com'`); with both local targets on
-  `localhost` those match strings need a look before a full local wave.
-- A local golden-vault (make-golden.sh from the LOCAL onboarding zip) is needed
-  before actually recording Obsidian beats against this harness — the current
-  golden-vault carries the cloud space's apiUrl/key.
 - "Open as Admin" is a plain link (no HAT auth handoff): the admin session on
-  the space comes from the one-time browser sign-in above.
-- Product finding (upstream, not harness-specific): the onboarding zip's
-  directory entries carry no trailing slash, so plain `unzip` extraction fails
-  with "exists but is not directory". `unzip -p <zip> <entry>` and `bsdtar -xf`
-  work. Affects `make-golden.sh` (which unzips) — and possibly real users.
+  the space comes from the one-time browser sign-in above. Scriptable
+  alternative: `signInByEmail` over GraphQL, then CDP `Storage.setCookies`
+  with `trip2g_record_space=<token>` on the demo browser.
+- `/_system/onboarding-vault` does NOT accept `X-Api-Key` — it requires an
+  admin session (cookie or `Authorization: Bearer <session token>`). preflight
+  check 4 therefore always WARNs here; make-golden downloads need the Bearer.
+
+Closed 2026-07-06 (full local wave is GREEN — see the rig changes in
+autoproducer `scripts/hero/v4/`):
+
+- `gate.sh`/`run-all.sh`/`reset-stage.sh`/`stage-notes.sh` now honor
+  `V4_CONFIG` + `scheme`/`landing`/`api_key`; `record.mjs` matches the landing
+  page by the config `landing` value (ports disambiguate the two localhost
+  targets) and seg3b types the config landing host.
+- golden-vault rebuilt from the LOCAL zip (`V4_CONFIG=... ./make-golden.sh`);
+  the prod golden is kept at `golden-vault.prod-honesthesse/`.
+- reset-stage now hides ALL server notes via `notePaths` (the static list
+  missed the local zip's `robots.md`, so the space never went empty).
+- stage-notes synthesizes the plugin sync-state baseline (`seed-baseline.mjs`):
+  the sync CLI records `lastSyncedHash` only for files it pushed/pulled, so an
+  already-in-sync vault seeded an EMPTY baseline and the first on-camera sync
+  popped the one-time "Sync system update" migration dialog mid-take.
+- clickSync matches the ribbon by class (`.sync-ribbon-icon`): the pending
+  badge rewrites the aria-label to "Trip2g Sync (↑1 to push)".
+
+Product findings (upstream, not harness-specific):
+
+- The onboarding zip's directory entries carry no trailing slash AND are
+  written as zero-byte *file* entries, so both plain `unzip` and Python
+  `ZipFile.extractall` fail with "exists but is not a directory".
+  `unzip -p <zip> <entry>` works; make-golden.sh now extracts file entries
+  itself, skipping dir-prefix names. Possibly affects real users.
+- Plugin/CLI: `executePlan` never records `lastSyncedHash` for unchanged
+  files — a fresh state file over an in-sync vault stays empty, and the next
+  edit is misclassified as a first-sync conflict (migration dialog).
