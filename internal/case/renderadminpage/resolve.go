@@ -2,27 +2,20 @@ package renderadminpage
 
 import (
 	"context"
-	"trip2g/internal/usertoken"
+	"trip2g/internal/model"
 )
 
 type Env interface {
 	AdminJSURL() string
+	LiveNoteViews() *model.NoteViews
 }
 
-type Request struct {
-	UserToken *usertoken.Data
-}
+type Request struct{}
 
 type Response struct {
 	JSURL string
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
-	if !request.UserToken.IsAdmin() {
-		return nil, nil
-	}
-
-	jsURL := env.AdminJSURL()
-
-	return &Response{JSURL: jsURL}, nil
+	return &Response{JSURL: env.AdminJSURL()}, nil
 }

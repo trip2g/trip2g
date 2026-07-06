@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +15,6 @@ import (
 	"time"
 	"trip2g/assets"
 	"trip2g/internal/appconfig"
-	"trip2g/internal/appreq"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
@@ -219,18 +217,4 @@ func (a *app) UserInlineCSS() string {
 
 func (a *app) AssetVersion() string {
 	return strconv.FormatInt(time.Now().UnixMilli(), 10)
-}
-
-func (a *app) handleAdminAssets(req *appreq.Request, path string) bool {
-	if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' &&
-		strings.HasPrefix(path, a.config.AdminJSURL) {
-		userToken, err := req.UserToken()
-		if err != nil || userToken == nil {
-			req.Req.SetStatusCode(http.StatusUnauthorized)
-			req.Req.SetBodyString("401 Unauthorized")
-			return true
-		}
-	}
-
-	return false
 }

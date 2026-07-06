@@ -37,7 +37,22 @@ func (a *app) serveHTTP(s *fasthttp.Server) error {
 func (a *app) startServer() { //nolint:gocognit // server startup wiring
 	makeGraphQLHandler := a.prepareGraphQLHandler()
 	handleGraphQL := makeGraphQLHandler("/_system/graphql")
-	handleGraphQLCompat := makeGraphQLHandler("/graphql")
+	handleGraphQLCompatRaw := makeGraphQLHandler("/graphql")
+
+	// The deprecated /graphql alias keeps working until a live note at /graphql
+	// replaces it — then the note takes over the path (served by the router's
+	// note renderer) and GraphQL stays at its canonical /_system/graphql.
+	handleGraphQLCompat := func(ctx *fasthttp.RequestCtx, path string) bool {
+		if !strings.HasPrefix(path, "/graphql") {
+			return false
+		}
+
+		if nvs := a.LiveNoteViews(); nvs != nil && nvs.GetByPath("/graphql") != nil {
+			return false
+		}
+
+		return handleGraphQLCompatRaw(ctx, path)
+	}
 
 	rtr := router.New(a)
 

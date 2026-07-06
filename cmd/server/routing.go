@@ -227,9 +227,6 @@ func (a *app) prepareMiddlewares() []Middleware {
 			return a.gitAPI != nil && a.gitAPI.HandleRequest(req.Req)
 		},
 		func(req *appreq.Request) bool {
-			return a.handleAdminAssets(req, req.Path)
-		},
-		func(req *appreq.Request) bool {
 			if strings.HasPrefix(req.Path, "/assets/") {
 				fsHandler(req.Req)
 				return true

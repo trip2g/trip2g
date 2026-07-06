@@ -42,6 +42,7 @@ var endpoints = []Endpoint{
 	&processpatreonwebhookprocesspatreonwebhook.Endpoint{},
 	&render404render404.Endpoint{},
 	&renderadminpagerenderadminpage.Endpoint{},
+	&renderadminpagerenderadminpage.GetEndpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&rendersearchpagerendersearchpage.Endpoint{},
 	&signinbyhatsigninbyhat.Endpoint{},
