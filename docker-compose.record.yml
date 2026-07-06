@@ -1,0 +1,151 @@
+# Record harness — deterministic LOCAL recording target for the demo-video rig
+# (autoproducer scripts/hero/v4). Replaces recording against the drift-prone
+# public targets (trip2g.com landing + a cloud space).
+#
+# Two independent trip2g instances:
+#   landing  http://localhost:21080  — seeded with the repo docs/ vault
+#                                      (same content trip2g.com is re-seeded from)
+#                                      + record-harness overrides (try-free CTA,
+#                                      local cloud page, /simplecloud dashboard
+#                                      stand-in)
+#   space    http://localhost:21090  — EMPTY (onboarding "Welcome!/Download
+#                                      archive" state) — the cloud space the
+#                                      demo syncs into
+#
+# Bring-up + seeding: node scripts/record-harness/seed.mjs
+# Docs: docs/dev/record_harness.md
+name: trip2g_record_env
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: trip2g-record-minio
+    ports:
+      - "29200:29200"
+      - "29201:29201"
+    environment:
+      MINIO_ROOT_USER: recorduser
+      MINIO_ROOT_PASSWORD: recordpassword
+    command: server /data --console-address ":29201" --address ":29200"
+    # tmpfs: image-declared anonymous /data volume survives `compose rm -v`;
+    # tmpfs guarantees a clean asset store on every container (re)create.
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:29200/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-record-landing
+    # Host-user mapping: everything under ./tmp/record-data stays writable from
+    # the host (seed.mjs inserts the deterministic space api key via sqlite3).
+    user: "${RECORD_UID:-1000}:${RECORD_GID:-1000}"
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "21080:21080"
+      - "21082:21082"
+    environment:
+      - LISTEN_ADDR=0.0.0.0:21080
+      - INTERNAL_LISTEN_ADDR=:21082
+      - DB_FILE=/data/landing.sqlite3
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - 'FEATURES={"vector_search": {"enabled": false}}'
+
+      # MinIO (assets for the docs vault images); distinct prefix per instance.
+      - MINIO_ENDPOINT=minio:29200
+      - MINIO_ACCESS_KEY_ID=recorduser
+      - MINIO_SECRET_KEY=recordpassword
+      - MINIO_BUCKET=record-bucket
+      - MINIO_PREFIX=landing/
+      - MINIO_USE_SSL=false
+
+      - PUBLIC_URL=http://localhost:21080
+
+      - JWT_SECRET=record-landing-secret-do-not-use-in-production
+      # localhost cookies are shared across ports: names MUST differ per instance.
+      - USER_TOKEN_COOKIE_NAME=trip2g_record_landing
+
+      - GIT_API_REPO_PATH=/data/git-landing
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock): no SMTP/RESEND configured -> SendMail logs and skips.
+      - MAIL_FROM=record@example.com
+
+      # The mapped host uid has no passwd entry in the container; git (gitapi)
+      # needs a writable HOME.
+      - HOME=/tmp
+    volumes:
+      - ./tmp/record-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:21082/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  space:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-record-space
+    user: "${RECORD_UID:-1000}:${RECORD_GID:-1000}"
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "21090:21090"
+      - "21092:21092"
+    environment:
+      - LISTEN_ADDR=0.0.0.0:21090
+      - INTERNAL_LISTEN_ADDR=:21092
+      - DB_FILE=/data/space.sqlite3
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - 'FEATURES={"vector_search": {"enabled": false}}'
+
+      - MINIO_ENDPOINT=minio:29200
+      - MINIO_ACCESS_KEY_ID=recorduser
+      - MINIO_SECRET_KEY=recordpassword
+      - MINIO_BUCKET=record-bucket
+      - MINIO_PREFIX=space/
+      - MINIO_USE_SSL=false
+
+      # PUBLIC_URL is baked into the onboarding zip (data.json apiUrl) — the
+      # downloaded starter vault syncs straight back to this instance.
+      - PUBLIC_URL=http://localhost:21090
+
+      - JWT_SECRET=record-space-secret-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_record_space
+
+      - GIT_API_REPO_PATH=/data/git-space
+      - GIT_API_BASE_PATH=/git
+
+      - MAIL_FROM=record@example.com
+
+      # The mapped host uid has no passwd entry in the container; git (gitapi)
+      # needs a writable HOME.
+      - HOME=/tmp
+    volumes:
+      - ./tmp/record-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:21092/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
