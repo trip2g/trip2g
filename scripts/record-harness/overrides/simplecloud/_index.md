@@ -5,16 +5,10 @@ free: true
 
 # Your spaces
 
-Signed in as **hello@example.com** · free sandbox plan
+Signed in as **maya@2pub.me** · free sandbox plan
 
-## localspace
+## honesthesse
 
-`{{SPACE}}` · running · 0 / 100 MB
+`{{SPACE_HOST}}` · running · 0 / 100 MB
 
 **[Open as Admin →]({{SPACE}}/)**
-
----
-
-*record-harness stand-in for the simplecloud dashboard (the real control
-plane lives in a separate repo). Layout mimics the dashboard's space card
-closely enough for the demo's "Open as Admin" beat.*

@@ -23,9 +23,19 @@ const ROOT = path.resolve(HERE, "../..");
 
 const LANDING = "http://localhost:21080";
 const SPACE = "http://localhost:21090";
+// Public-facing URLs (served by the caddy TLS front, scripts/record-harness/Caddyfile):
+// page CONTENT must carry these — never localhost — so the browser shows real domains.
+const SPACE_PUBLIC = "https://honesthesse.2pub.me";
+const SIMPLECLOUD_PUBLIC = "https://simplecloud.2pub.me";
 const LANDING_COOKIE = "trip2g_record_landing";
-const EMAIL = "hello@example.com";
+// Demo identity (F2 scrub): must match OWNER_EMAIL in docker-compose.record.yml.
+// No dev email may ever render in frame.
+const EMAIL = "maya@2pub.me";
 const DEV_CODE = "111111";
+// dev footer email on the public docs vault — scrubbed at seed time (in-frame
+// in the docs scroll + present in body innerText on every landing page)
+const DEV_EMAIL = "alexes.dev@gmail.com";
+const DEMO_CONTACT = "hello@trip2g.com";
 
 // Deterministic space api key (64 alnum chars, matching GenerateAPIKey shape).
 // Local-only harness credential — NOT a secret. The rig config
@@ -159,27 +169,48 @@ bar = bar.replace(
   `<a href="/en/user/cloud" class="@did__nav-link">try free →</a>\n    ${startAnchor}`,
 );
 
-// (b) en/user/cloud.md: point "Open the cloud" at the LOCAL dashboard stand-in.
-// The path contains "simplecloud" on purpose — record.mjs asserts
-// a.href.includes('simplecloud') on this link.
+// (b) en/user/cloud.md: the real simplecloud.2pub.me domain STAYS in the page
+// (the caddy front serves it locally) — the "Open the cloud" CTA is pointed at
+// the sign-in route so the on-camera click lands on the sign-in form.
+// record.mjs asserts a.href.includes('simplecloud') on this link.
 const cloudPath = path.join(ROOT, "docs/en/user/cloud.md");
 let cloud = fs.readFileSync(cloudPath, "utf8");
-if (!cloud.includes("https://simplecloud.2pub.me")) {
+if (!cloud.includes(`](${SIMPLECLOUD_PUBLIC})`)) {
   throw new Error(`en/user/cloud.md drifted: simplecloud link not found — update seed.mjs override`);
 }
-cloud = cloud.replaceAll("https://simplecloud.2pub.me", `${LANDING}/simplecloud`);
-// visible link TEXT too — the video must not show the prod domain over a local URL
-cloud = cloud.replaceAll("simplecloud.2pub.me", "localhost:21080/simplecloud");
+cloud = cloud.replaceAll(`](${SIMPLECLOUD_PUBLIC})`, `](${SIMPLECLOUD_PUBLIC}/_system/admin)`);
 
 // (c) /simplecloud dashboard stand-in with the "Open as Admin" link.
 const dash = fs
   .readFileSync(path.join(HERE, "overrides/simplecloud/_index.md"), "utf8")
-  .replaceAll("{{SPACE}}", SPACE);
+  .replaceAll("{{SPACE}}", SPACE_PUBLIC)
+  .replaceAll("{{SPACE_HOST}}", SPACE_PUBLIC.replace("https://", ""));
+
+// (d) dev-email scrub (F2): the personal footer/pricing/consult email is
+// intentional on the public site but must not render on the recording target.
+const scrubbed = [];
+for (const rel of [
+  "docs/_layouts/mesh/foot.html",
+  "docs/_layouts/mesh/try_now.html",
+  "docs/_layouts/mesh/pricing.html",
+  "docs/_footer.md",
+  "docs/ru/_footer.md",
+  "docs/en/user/hosting.md",
+  "docs/ru/user/hosting.md",
+]) {
+  const content = fs.readFileSync(path.join(ROOT, rel), "utf8");
+  if (!content.includes(DEV_EMAIL)) continue;
+  scrubbed.push({
+    path: rel.replace(/^docs\//, ""),
+    content: content.replaceAll(DEV_EMAIL, DEMO_CONTACT),
+  });
+}
 
 await pushNotes(LANDING, landingKey, [
   { path: "_layouts/mesh/bar.html", content: bar },
   { path: "en/user/cloud.md", content: cloud },
   { path: "simplecloud/_index.md", content: dash },
+  ...scrubbed,
 ]);
 
 // ---------- 4. space: deterministic admin api key ----------
@@ -216,6 +247,9 @@ record harness READY
   landing    ${LANDING}            (try free → header CTA -> /en/user/cloud)
   dashboard  ${LANDING}/simplecloud (stand-in; "Open as Admin" -> space)
   space      ${SPACE}            (onboarding empty state)
+  https      https://trip2g.com / ${SIMPLECLOUD_PUBLIC} / ${SPACE_PUBLIC}
+             (caddy front on :443; browser needs --host-resolver-rules to
+             127.0.0.1 + the caddy root CA in its nssdb)
   space key  ${SPACE_API_KEY}
   sign-in    ${EMAIL} / dev code ${DEV_CODE} (both instances)
 

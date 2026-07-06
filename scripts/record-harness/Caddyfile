@@ -1,0 +1,38 @@
+# Record-harness TLS front: real hostnames with Caddy's local CA (tls internal)
+# so the recording browser shows https + real domains (no localhost in frame).
+# The browser resolves these hosts to 127.0.0.1 via --host-resolver-rules and
+# trusts the root CA from tmp/record-data/caddy/pki/authorities/local/root.crt.
+{
+	admin off
+	local_certs
+}
+
+trip2g.com {
+	tls internal
+	reverse_proxy trip2g-record-landing:21080
+}
+
+# The simplecloud dashboard stand-in lives on the landing instance at
+# /simplecloud; the root of the simplecloud host maps onto it so the URL bar
+# stays clean (https://simplecloud.2pub.me/). /_system/* (sign-in, graphql)
+# passes through untouched.
+simplecloud.2pub.me {
+	tls internal
+	rewrite / /simplecloud
+	reverse_proxy trip2g-record-landing:21080
+}
+
+honesthesse.2pub.me {
+	tls internal
+	reverse_proxy trip2g-record-space:21090
+}
+
+# Presigned minio asset URLs (MINIO_PUBLIC_URL rewrites their scheme+host to
+# this site). The upstream Host must be restored to the SIGNED host
+# (minio:29200) or the S3 signature check fails.
+assets.trip2g.com {
+	tls internal
+	reverse_proxy trip2g-record-minio:29200 {
+		header_up Host minio:29200
+	}
+}

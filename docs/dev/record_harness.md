@@ -16,6 +16,25 @@ stale cloud image).
 | dashboard stand-in | http://localhost:21080/simplecloud | a note mimicking the simplecloud space card, with the **Open as Admin →** link to the space |
 | space | http://localhost:21090 | EMPTY — the onboarding "Welcome! / Download archive" state the demo opens on |
 | minio | localhost:29200 (console :29201) | asset store for both instances (tmpfs, clean each recreate) |
+| caddy TLS front | 127.0.0.1:443 | serves the REAL demo domains with `tls internal`: `trip2g.com` → landing, `simplecloud.2pub.me` → landing (root rewritten to `/simplecloud`), `honesthesse.2pub.me` → space, `assets.trip2g.com` → minio (upstream Host restored to the signed `minio:29200`) |
+
+## Real domains in the recording browser (F1)
+
+The video must show real https domains — never localhost. The caddy service
+(`scripts/record-harness/Caddyfile`) terminates TLS with its local CA:
+
+1. Root CA: `docker cp trip2g-record-caddy:/data/caddy/pki/authorities/local/root.crt .`
+   then `certutil -A -d sql:$HOME/snap/chromium/current/.pki/nssdb -n trip2g-record-caddy-local -t "C,," -i root.crt`
+   (no sudo; certutil extractable from libnss3-tools via `apt-get download` + `dpkg -x`).
+2. Recording chromium runs with
+   `--host-resolver-rules="MAP trip2g.com 127.0.0.1, MAP simplecloud.2pub.me 127.0.0.1, MAP honesthesse.2pub.me 127.0.0.1, MAP assets.trip2g.com 127.0.0.1"`
+   (reset-stage.sh sets this). No `/etc/hosts` edit needed for browser-only scenes.
+3. `PUBLIC_URL` is the real domain per instance; `MINIO_PUBLIC_URL=https://assets.trip2g.com`
+   keeps presigned asset URLs browser-reachable and https (mixed-content upgrade
+   would break plain-http images).
+
+Obsidian scenes (2+) additionally need host resolution for the sync plugin
+(`/etc/hosts` or equivalent) + `NODE_EXTRA_CA_CERTS=<root.crt>` — not wired yet.
 
 Build pin: images are built from the repo checkout (`Dockerfile`), so the
 harness always runs exactly the branch you're on — current main includes the
@@ -24,7 +43,9 @@ render fix (fb2a9efe) that the stale prod image was missing (magazine layout /
 
 ## Seeded credentials (local-only, not secrets)
 
-- Sign-in on both instances: `hello@example.com` + dev code `111111` (`DEV=true`).
+- Sign-in on both instances: `maya@2pub.me` + dev code `111111` (`DEV=true`).
+  Demo identity (F2 scrub): the email domain must resolve in DNS
+  (`is.Email` checks it) and no dev email may render in frame.
 - Space api key (deterministic, same value every seed):
   `recordharness0recordharness0recordharness0recordharness0record0`
   — inserted straight into the DB by seed.mjs; the rig profile
@@ -42,14 +63,19 @@ the repo `docs/` files stay untouched, nothing is published:
    was clobbered by the CI re-seed because it was never in the repo. If you
    want it back on the public landing, land it in `docs/_layouts/mesh/bar.html`
    properly.
-2. **`en/user/cloud.md`** — `https://simplecloud.2pub.me` links rewritten to
-   `http://localhost:21080/simplecloud` (path contains `simplecloud` on
-   purpose: record.mjs asserts `href.includes('simplecloud')`).
+2. **`en/user/cloud.md`** — the real `simplecloud.2pub.me` domain stays in the
+   page (the caddy front serves it locally); only the "Open the cloud" CTA is
+   pointed at `/_system/admin` so the on-camera click lands on the real
+   sign-in form (record.mjs asserts `href.includes('simplecloud')`).
 3. **`simplecloud/_index.md`** — dashboard stand-in
    (`scripts/record-harness/overrides/`). The real control plane is a separate
    repo; this page only reproduces the space card + "Open as Admin" link the
-   scenario needs. The video's opening beat reads the same; the login form and
-   multi-space list of the real dashboard are not reproduced.
+   scenario needs.
+4. **dev-email scrub** — `alexes.dev@gmail.com` replaced with `hello@trip2g.com`
+   in `_layouts/mesh/{foot,try_now,pricing}.html`, `_footer.md`,
+   `ru/_footer.md`, `en/user/hosting.md`, `ru/user/hosting.md` (seed-time
+   override pushes; the repo files stay untouched — the address is intentional
+   on the public site).
 
 Intentional differences from the public targets, in one list: the try-free CTA
 (missing on prod today), the dashboard (stand-in note, no auth handoff), and

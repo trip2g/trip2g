@@ -17,6 +17,24 @@
 name: trip2g_record_env
 
 services:
+  # TLS front: real hostnames (trip2g.com / simplecloud.2pub.me /
+  # honesthesse.2pub.me) with Caddy's local CA — the recording browser resolves
+  # them to 127.0.0.1 (--host-resolver-rules) and trusts the root CA. Extract it:
+  #   docker cp trip2g-record-caddy:/data/caddy/pki/authorities/local/root.crt .
+  # (named volume, NOT ./tmp bind: caddy runs as root and would leave
+  # root-owned files the host can't rm)
+  caddy:
+    image: caddy:2
+    container_name: trip2g-record-caddy
+    ports:
+      - "443:443"
+    volumes:
+      - ./scripts/record-harness/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - landing
+      - space
+
   minio:
     image: minio/minio:latest
     container_name: trip2g-record-minio
@@ -58,7 +76,8 @@ services:
       - DEV=true # sign in code 111111
       - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
-      - OWNER_EMAIL=hello@example.com
+      # demo identity — must never leak a dev email into frame (F2 scrub)
+      - OWNER_EMAIL=maya@2pub.me
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
       - 'FEATURES={"vector_search": {"enabled": false}}'
@@ -70,8 +89,11 @@ services:
       - MINIO_BUCKET=record-bucket
       - MINIO_PREFIX=landing/
       - MINIO_USE_SSL=false
+      # presigned asset URLs must be browser-reachable + https (mixed content)
+      - MINIO_PUBLIC_URL=https://assets.trip2g.com
 
-      - PUBLIC_URL=http://localhost:21080
+      # real hostname via the caddy front — kills localhost in page bodies
+      - PUBLIC_URL=https://trip2g.com
 
       - JWT_SECRET=record-landing-secret-do-not-use-in-production
       # localhost cookies are shared across ports: names MUST differ per instance.
@@ -114,7 +136,7 @@ services:
       - DEV=true # sign in code 111111
       - MAX_ACTIVE_SIGNIN_CODES=999
       - LOG_LEVEL=info
-      - OWNER_EMAIL=hello@example.com
+      - OWNER_EMAIL=maya@2pub.me
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
       - 'FEATURES={"vector_search": {"enabled": false}}'
@@ -125,10 +147,13 @@ services:
       - MINIO_BUCKET=record-bucket
       - MINIO_PREFIX=space/
       - MINIO_USE_SSL=false
+      # presigned asset URLs must be browser-reachable + https (mixed content)
+      - MINIO_PUBLIC_URL=https://assets.trip2g.com
 
       # PUBLIC_URL is baked into the onboarding zip (data.json apiUrl) — the
-      # downloaded starter vault syncs straight back to this instance.
-      - PUBLIC_URL=http://localhost:21090
+      # downloaded starter vault syncs straight back to this instance (via the
+      # caddy front; Obsidian needs NODE_EXTRA_CA_CERTS + host resolution).
+      - PUBLIC_URL=https://honesthesse.2pub.me
 
       - JWT_SECRET=record-space-secret-do-not-use-in-production
       - USER_TOKEN_COOKIE_NAME=trip2g_record_space
@@ -149,3 +174,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+volumes:
+  caddy-data:
