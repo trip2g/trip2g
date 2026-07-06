@@ -11,10 +11,15 @@ import (
 	jsonnet "github.com/google/go-jsonnet"
 )
 
-// NewVM returns a jsonnet VM with a safe stack limit (no IO; go-jsonnet is pure).
+// NewVM returns a jsonnet VM with a safe stack limit and a deny-all importer.
+// Snippets come from untrusted sources (note frontmatter patches, webhook
+// transforms), so import/importstr must not reach the server filesystem: an
+// empty MemoryImporter makes every import resolve to "file not found" instead
+// of leaking file contents into the rendered output.
 func NewVM() *jsonnet.VM {
 	vm := jsonnet.MakeVM()
 	vm.MaxStack = 500 // Prevent stack overflow from recursive jsonnet.
+	vm.Importer(&jsonnet.MemoryImporter{})
 	return vm
 }
 
