@@ -76,3 +76,6 @@ templates/kanban/node_modules/
 /fleet
 /llmmock
 /krispmock
+
+# demo video working files (large binaries)
+docs/demo-video/
