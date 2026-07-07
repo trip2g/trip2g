@@ -2,6 +2,8 @@ package tgbots
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -15,8 +17,34 @@ type HandlerIO struct {
 	dbBotID int64
 	logger  logger.Logger
 
-	bot   *tgbotapi.BotAPI
-	token string
+	bot *tgbotapi.BotAPI
+
+	// token is the per-bot opaque webhook path segment; webhookSecret is the
+	// value Telegram echoes back in X-Telegram-Bot-Api-Secret-Token. Both are
+	// derived from the bot API token so re-registration stays idempotent, but
+	// the raw token never appears in URLs or logs.
+	token         string
+	webhookSecret string
+}
+
+func newHandlerIO(bot *tgbotapi.BotAPI, dbBotID int64, botToken string, log logger.Logger) *HandlerIO {
+	return &HandlerIO{
+		bot:           bot,
+		dbBotID:       dbBotID,
+		logger:        log,
+		token:         webhookPathToken(botToken),
+		webhookSecret: webhookSecretToken(botToken),
+	}
+}
+
+func webhookPathToken(botToken string) string {
+	sum := sha256.Sum256([]byte("tgbots-webhook-path:" + botToken))
+	return hex.EncodeToString(sum[:])[:32]
+}
+
+func webhookSecretToken(botToken string) string {
+	sum := sha256.Sum256([]byte("tgbots-webhook-secret:" + botToken))
+	return hex.EncodeToString(sum[:])[:32]
 }
 
 func (io *HandlerIO) BotID() int64 {

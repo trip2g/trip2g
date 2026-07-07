@@ -2,8 +2,10 @@ package tgbots
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -14,6 +16,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type HandlerFunc func(ctx context.Context, io *HandlerIO, update tgbotapi.Update) error
 
@@ -35,12 +39,18 @@ type TgBots struct {
 
 	handlerIOMap map[int64]*HandlerIO
 
+	// ctx is the server-lifetime context from New; all bot goroutines derive
+	// from it, never from the incoming request context.
+	ctx context.Context
+
 	env    Env
 	config Config
 	logger logger.Logger
 
 	webhookURL *url.URL
 	handler    HandlerFunc
+
+	newBotAPI func(token string) (*tgbotapi.BotAPI, error)
 }
 
 type Env interface {
@@ -58,9 +68,12 @@ func New(ctx context.Context, env Env, config Config) (*TgBots, error) {
 		webhookMap:   make(map[string]*HandlerIO),
 		handlerIOMap: make(map[int64]*HandlerIO),
 
+		ctx:    ctx,
 		env:    env,
 		config: config,
 		logger: logger.WithPrefix(env.Logger(), "tgbots:"),
+
+		newBotAPI: tgbotapi.NewBotAPI,
 	}
 
 	publicURL := env.PublicURL()
@@ -114,7 +127,10 @@ func (io *TgBots) GetBotIDs() []int64 {
 func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 	env := io.env
 
-	// extract the env with a sql transaction
+	// extract the env with a sql transaction; use it only for the synchronous
+	// bot lookup below (read-your-writes inside the mutation's tx). Goroutines
+	// must use the app-level env and the server-lifetime context instead: the
+	// request ctx dies with the request and the tx env dies with the tx.
 	req, err := appreq.FromCtx(ctx)
 	if err == nil {
 		reqEnv, ok := req.Env.(Env)
@@ -129,24 +145,24 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 		return
 	}
 
-	bot, err := tgbotapi.NewBotAPI(botConfig.Token)
+	bot, err := io.newBotAPI(botConfig.Token)
 	if err != nil {
 		io.logger.Error("failed to create tg bot", "id", id, "error", err)
 		return
 	}
 
-	handlerIO := HandlerIO{bot: bot, dbBotID: id, logger: io.logger}
+	handlerIO := newHandlerIO(bot, id, botConfig.Token, io.logger)
 
 	// Check bot permissions in all active chats
-	go io.checkBotPermissionsInAllChats(ctx, &handlerIO, env)
+	go io.checkBotPermissionsInAllChats(io.ctx, handlerIO, io.env)
 
 	// Store bot instance in botMap
 	io.mu.Lock()
-	io.handlerIOMap[id] = &handlerIO
+	io.handlerIOMap[id] = handlerIO
 	io.mu.Unlock()
 
 	if io.webhookURL != nil {
-		io.registerWebhook(id, &handlerIO)
+		io.registerWebhook(id, handlerIO)
 		return
 	}
 
@@ -162,7 +178,8 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 		cancel()
 	}
 
-	ctx, cancel = context.WithCancel(ctx)
+	// The bot lifetime derives from the server context, not the request one.
+	botCtx, cancel := context.WithCancel(io.ctx)
 	io.cancelMap[id] = cancel
 
 	go func() {
@@ -175,14 +192,14 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-botCtx.Done():
 				io.logger.Info("stopping tg bot loop", "id", id)
 				bot.StopReceivingUpdates()
 				return
 
 			case update := <-updates:
 				if io.handler != nil {
-					handlerErr := io.handler(ctx, &handlerIO, update)
+					handlerErr := io.handler(botCtx, handlerIO, update)
 					if handlerErr != nil {
 						io.logger.Error("failed to handle update", "botID", id, "error", handlerErr)
 					}
@@ -194,13 +211,22 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 	}()
 }
 
-func (io *TgBots) ProcessWebhookRequest(path string, getBody func() []byte) bool {
+// ProcessWebhookRequest handles a Telegram webhook delivery. secretToken is
+// the X-Telegram-Bot-Api-Secret-Token header value; it must match the secret
+// registered with setWebhook or the update is rejected with 403 before the
+// handler runs. Returns whether the path was handled and the HTTP status.
+func (io *TgBots) ProcessWebhookRequest(path string, secretToken string, getBody func() []byte) (bool, int) {
 	io.mu.Lock()
 	handleIO, webhookExists := io.webhookMap[path]
 	io.mu.Unlock()
 
 	if !webhookExists {
-		return false
+		return false, 0
+	}
+
+	if subtle.ConstantTimeCompare([]byte(secretToken), []byte(handleIO.webhookSecret)) != 1 {
+		io.logger.Warn("webhook secret token mismatch", "botID", handleIO.BotID())
+		return true, http.StatusForbidden
 	}
 
 	var update tgbotapi.Update
@@ -208,7 +234,7 @@ func (io *TgBots) ProcessWebhookRequest(path string, getBody func() []byte) bool
 	err := json.Unmarshal(getBody(), &update)
 	if err != nil {
 		io.logger.Error("failed to unmarshal update", "error", err)
-		return true
+		return true, http.StatusOK
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -221,7 +247,7 @@ func (io *TgBots) ProcessWebhookRequest(path string, getBody func() []byte) bool
 		}
 	}
 
-	return true
+	return true, http.StatusOK
 }
 
 func (io *TgBots) StopTgBot(ctx context.Context, id int64) {
@@ -269,19 +295,17 @@ func (io *TgBots) Stop(ctx context.Context) {
 	io.handlerIOMap = make(map[int64]*HandlerIO)
 }
 
-// registerWebhook registers a webhook for the given bot.
+// registerWebhook registers a webhook for the given bot. setWebhook goes
+// through a raw request because tgbotapi's WebhookConfig has no secret_token.
 func (io *TgBots) registerWebhook(id int64, handlerIO *HandlerIO) {
 	webhookPath := fmt.Sprintf("%s/%s", io.webhookURL.Path, handlerIO.token)
 	fullWebhookURL := *io.webhookURL
 	fullWebhookURL.Path = webhookPath
 
-	webhookConfig, webhookErr := tgbotapi.NewWebhook(fullWebhookURL.String())
-	if webhookErr != nil {
-		io.logger.Error("failed to create webhook config", "id", id, "error", webhookErr)
-		return
-	}
-
-	_, webhookErr = handlerIO.bot.Request(webhookConfig)
+	_, webhookErr := handlerIO.bot.MakeRequest("setWebhook", tgbotapi.Params{
+		"url":          fullWebhookURL.String(),
+		"secret_token": handlerIO.webhookSecret,
+	})
 	if webhookErr != nil {
 		io.logger.Error("failed to set webhook", "id", id, "error", webhookErr)
 		return

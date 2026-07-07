@@ -253,7 +253,12 @@ func (a *app) prepareMiddlewares() []Middleware {
 			return signinbytgauthtoken.Process(req.Req, a)
 		},
 		func(req *appreq.Request) bool {
-			return a.TgBots.ProcessWebhookRequest(req.Path, func() []byte { return req.Req.PostBody() })
+			secret := string(req.Req.Request.Header.Peek("X-Telegram-Bot-Api-Secret-Token"))
+			handled, status := a.TgBots.ProcessWebhookRequest(req.Path, secret, func() []byte { return req.Req.PostBody() })
+			if handled {
+				req.Req.SetStatusCode(status)
+			}
+			return handled
 		},
 	}
 }
