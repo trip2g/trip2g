@@ -9,10 +9,13 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/oauthstate"
 	"trip2g/internal/oidcauth"
+
+	"github.com/valyala/fasthttp"
 )
 
 type Env interface {
 	GetActiveOIDCCredentials(ctx context.Context) (db.OidcCredential, error)
+	VerifyOIDCIDToken(ctx context.Context, rawIDToken string, p oidcauth.VerifyParams) (*oidcauth.IDTokenClaims, error)
 	DecryptData(ciphertext []byte) ([]byte, error)
 	PublicURL() string
 	Insecure() bool
@@ -24,6 +27,7 @@ type Env interface {
 
 type Endpoint struct{}
 
+//nolint:funlen // linear OAuth callback flow: discover → exchange → verify → userinfo → provision
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
 	ctx := req.Req
@@ -99,6 +103,13 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"error", err.Error(),
 			"ip", clientIP)
 		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		return nil, nil
+	}
+
+	// Verify the id_token signature against the provider's JWKS and its
+	// standard claims (iss/aud/exp/iat) before trusting the token response.
+	// Identity details below still come from userinfo (groups, verified email).
+	if !verifyIDToken(env, ctx, creds, endpoints, tokenResp.IDToken, clientIP) {
 		return nil, nil
 	}
 
@@ -190,6 +201,25 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Redirect to saved URL
 	ctx.Redirect(redirect, http.StatusFound)
 	return nil, nil
+}
+
+// verifyIDToken checks the id_token signature + standard claims. On failure it
+// logs, redirects with an error, and returns false so the caller aborts.
+func verifyIDToken(env Env, ctx *fasthttp.RequestCtx, creds db.OidcCredential, endpoints oidcauth.Endpoints, idToken, clientIP string) bool {
+	_, err := env.VerifyOIDCIDToken(ctx, idToken, oidcauth.VerifyParams{
+		JWKSURI:  endpoints.JWKSURI,
+		Issuer:   creds.Issuer,
+		ClientID: creds.ClientID,
+	})
+	if err != nil {
+		env.Logger().Info("oauth login failed: id_token verification failed",
+			"provider", "oidc",
+			"error", err.Error(),
+			"ip", clientIP)
+		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		return false
+	}
+	return true
 }
 
 func (*Endpoint) Path() string {

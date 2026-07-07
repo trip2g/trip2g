@@ -165,6 +165,13 @@ func (a *app) ValidateOIDCCredentials(ctx context.Context, issuer, clientID, cli
 	return err
 }
 
+// VerifyOIDCIDToken verifies an OIDC id_token signature against the provider's
+// JWKS and standard claims, caching keys across logins. Rejection is a
+// validation error (auth denied), never a panic.
+func (a *app) VerifyOIDCIDToken(ctx context.Context, rawIDToken string, p oidcauth.VerifyParams) (*oidcauth.IDTokenClaims, error) {
+	return a.oidcKeys.VerifyIDToken(ctx, rawIDToken, p)
+}
+
 // ValidateGitHubOAuthCredentials validates GitHub OAuth credentials by making a test API call.
 func (a *app) ValidateGitHubOAuthCredentials(ctx context.Context, clientID, clientSecret string) error {
 	return githubauth.ValidateCredentials(clientID, clientSecret)

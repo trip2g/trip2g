@@ -1,4 +1,6 @@
-// TODO(oidc): verify id_token signature against jwks_uri (defense in depth). v1 trusts userinfo fetched over TLS, mirroring googleauth.
+// id_token verification lives in verify.go / jwks.go: the callback verifies the
+// id_token signature against jwks_uri (KeyCache) before trusting the response;
+// identity details are still read from userinfo, mirroring googleauth.
 package oidcauth
 
 import (
