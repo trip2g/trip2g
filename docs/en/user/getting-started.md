@@ -10,7 +10,7 @@ Your Obsidian vault becomes a website in under a minute. The fastest path: sign 
 ### Setup at a glance
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[Get an instance] --> B[Sign in by email]
     B --> C[Download starter vault]
     C --> D[Open it in Obsidian]
