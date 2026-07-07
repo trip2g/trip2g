@@ -63,7 +63,9 @@ docker compose start demo-target   # the same note flips to resolved
 
 Three decisions I'd defend.
 
-**Resolve is a patch, not a rewrite.** When an alert resolves, the sink edits exactly two adjacent frontmatter lines in the note, `status` and `ends_at`, with a single find and replace. It never regenerates the note body. So if someone added context to the note while the incident was live ("this is the flaky switch again, see last week"), that text survives the resolution. The machine and the humans share a document without clobbering each other.
+**Two notes, clean separation.** The incident note is machine-owned: alert-sink writes and patches it entirely; no human edits it. The postmortem is a separate file the human (or an agent) creates later. The incident note carries a wikilink to the postmortem path; the unresolved link is the "create" affordance. The sink never writes or reads that path.
+
+On resolve, the sink patches a single contiguous block at the bottom of the frontmatter and the visible status callout right after it. Frontmatter flips from `status: firing` to `status: resolved`; the callout flips from 🔴 FIRING to ✅ RESOLVED. Everything else in the note is untouched. This is also why one Telegram message suffices: trip2g edits the same post in place, so the channel member sees the flip without a new message.
 
 **Self-mint auth.** trip2g has no long-lived scoped write tokens, so the sink holds the instance's JWT secret and signs itself a fresh 5-minute token for every write. No credential longer-lived than 5 minutes ever exists outside the secret. The honest caveat: that token is admin on its instance, trip2g has no path-level scoping. Least privilege comes from blast radius, so point the sink at a dedicated instance that holds only alert history.
 
