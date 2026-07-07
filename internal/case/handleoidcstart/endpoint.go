@@ -2,6 +2,8 @@ package handleoidcstart
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 
 	"trip2g/internal/appreq"
@@ -35,8 +37,18 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		redirect = "/"
 	}
 
-	// Generate state with CSRF nonce
-	state, err := oauthstate.Generate(req.Req, redirect, env.Insecure())
+	// Generate the OIDC nonce (replay protection): sent in the auth request and
+	// carried through the signed state blob so the callback can bind it to the
+	// id_token's nonce claim.
+	nonceBytes := make([]byte, 16)
+	if _, err = rand.Read(nonceBytes); err != nil {
+		req.Req.SetStatusCode(http.StatusInternalServerError)
+		return nil, nil //nolint:nilerr // redirect response, error logged elsewhere
+	}
+	nonce := hex.EncodeToString(nonceBytes)
+
+	// Generate state with CSRF nonce + embedded OIDC nonce
+	state, err := oauthstate.GenerateWithOIDCNonce(req.Req, redirect, nonce, env.Insecure())
 	if err != nil {
 		req.Req.SetStatusCode(http.StatusInternalServerError)
 		return nil, nil //nolint:nilerr // redirect response, error logged elsewhere
@@ -53,7 +65,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	callbackURL := env.PublicURL() + "/_system/auth/oidc/callback"
 
 	// Redirect to OIDC provider
-	authURL := oidcauth.BuildAuthURL(endpoints.AuthorizationEndpoint, creds.ClientID, callbackURL, state, creds.Scopes)
+	authURL := oidcauth.BuildAuthURL(endpoints.AuthorizationEndpoint, creds.ClientID, callbackURL, state, creds.Scopes, nonce)
 	req.Req.Redirect(authURL, http.StatusFound)
 
 	return nil, nil
