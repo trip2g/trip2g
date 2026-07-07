@@ -124,15 +124,25 @@ test.describe('MCP TOC', () => {
     expect(section.length).toBeLessThan(full.length);
   });
 
-  test('unknown toc_path falls back to full note HTML', async () => {
-    const [full, fallback] = await Promise.all([
-      toolCallText(apiContext, 'note_html', { path: NOTE_PATH }),
-      toolCallText(apiContext, 'note_html', {
-        path: NOTE_PATH,
-        toc_path: ['__nonexistent_xyzzy__'],
-      }),
-    ]);
-    expect(fallback).toBe(full);
+  test('unknown toc_path fails loud with a sections nudge', async () => {
+    // A pointer miss must never silently dump the full note (token-economy
+    // correctness): the server returns an invalid-params error with a nudge.
+    const res = await apiContext.post(MCP_URL, {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'note_html',
+          arguments: { path: NOTE_PATH, toc_path: ['__nonexistent_xyzzy__'] },
+        },
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+    expect(body.error.message).toContain('section not found for toc_path');
   });
 
   // ── search: slimmed (structure now comes from expand) ────────────────────────
