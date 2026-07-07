@@ -25,9 +25,25 @@ What that buys you:
 
 That last point is the part I find interesting. The knowledge base isn't just an archive that happens to hold incidents. It's the thing doing the talking. The sink writes a note; everything downstream, the magazine page, the search, the Telegram post, is the knowledge base behaving the way it behaves with any other note.
 
-### Try it
+### Not an archive: live context for people and agents
 
-The repo ships a self-contained demo: Prometheus, Alertmanager, alert-sink and a trip2g instance in one compose file.
+The "search" bullet above is not just full-text. trip2g's [[en/user/search|search]] is hybrid: BM25 text search plus semantic vector search (OpenAI embeddings, RRF fusion). So incident history becomes queryable by meaning, not only by keywords. "Postgres connection pool saturated" surfaces notes about a `too many clients` incident even if those exact words aren't in the incident title.
+
+The more interesting part is what this enables for agents. trip2g exposes an [[en/user/mcp|MCP server]]: connect it to any MCP-compatible client and the knowledge base becomes a tool your agents can call. For incident history that means an agent can ask `search("database connection spike")` and get the three most relevant past incidents back, ranked by semantic similarity. The workflow then is what you'd expect: an agent investigating a current alert can pull its own history before recommending anything.
+
+A concrete example: a deploy agent sees a `CacheLatencyHigh` alert firing. It calls `search("cache latency high")` on the incident base, gets the postmortem from six months ago that traced the same symptom to a misconfigured eviction policy, and flags it in its report. That postmortem was written by a human into a note the sink would never touch. The knowledge base just held onto it.
+
+Semantic search on incident history is available today. The MCP interface is the same interface any trip2g instance exposes, so it comes with the instance, no extra setup needed.
+
+A few illustrative query pairs that show where vector wins over keyword:
+
+| Query | Incident it finds | Why keyword misses it |
+|---|---|---|
+| `"database is slow"` | `NodeDown - postgres-primary high p99 latency` | no shared words |
+| `"agent ran out of memory"` | `OOMKilled - hermes-agent` | "OOM" vs "out of memory" |
+| `"disk full on worker"` | `DiskPressure - node-02 filesystem 97%` | "full" vs "pressure", "worker" vs "node" |
+
+These are illustrative. The actual matches depend on how your incidents are titled and labeled. The point is that a query phrased in plain language finds incidents named in monitoring-system language, which are rarely the same words.
 
 ```bash
 git clone https://github.com/trip2g/alert-sink
