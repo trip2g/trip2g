@@ -398,6 +398,125 @@ func TestHandleMyChatMember(t *testing.T) {
 	}
 }
 
+// TestHandleMyChatMember_AdministratorRetriesBackoffThenSucceeds verifies that
+// transient GetBotCanInvite failures (Telegram still propagating the
+// permission change) are retried with bounded exponential backoff instead of
+// a blind sleep, and that the eventual success is persisted.
+func TestHandleMyChatMember_AdministratorRetriesBackoffThenSucceeds(t *testing.T) {
+	env := &EnvMock{}
+	env.LoggerFunc = func() logger.Logger {
+		return &logger.TestLogger{Prefix: "[TEST]"}
+	}
+	env.BotIDFunc = func() int64 { return 1 }
+
+	var attempts int
+	env.GetBotCanInviteFunc = func(ctx context.Context, chatID int64) (bool, error) {
+		attempts++
+		if attempts < 3 {
+			return false, errors.New("permission not yet propagated")
+		}
+		return true, nil
+	}
+
+	var gotCanInvite bool
+	env.UpsertTgBotChatFunc = func(ctx context.Context, arg db.UpsertTgBotChatParams) error {
+		gotCanInvite = arg.CanInvite
+		return nil
+	}
+
+	update := tgbotapi.Update{
+		MyChatMember: &tgbotapi.ChatMemberUpdated{
+			Chat: tgbotapi.Chat{
+				ID:    -1002529281698,
+				Type:  "supergroup",
+				Title: "Test Group",
+			},
+			OldChatMember: tgbotapi.ChatMember{Status: "left"},
+			NewChatMember: tgbotapi.ChatMember{Status: "administrator"},
+		},
+	}
+
+	req := &request{update: update, env: env}
+	err := req.handleMyChatMember(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 3, attempts)
+	require.True(t, gotCanInvite)
+	require.Len(t, env.UpsertTgBotChatCalls(), 1)
+}
+
+// TestHandleMyChatMember_AdministratorGivesUpAfterMaxAttempts verifies the
+// retry is bounded: persistent failures surface an error after exhausting
+// the attempt budget instead of retrying forever.
+func TestHandleMyChatMember_AdministratorGivesUpAfterMaxAttempts(t *testing.T) {
+	env := &EnvMock{}
+	env.LoggerFunc = func() logger.Logger {
+		return &logger.TestLogger{Prefix: "[TEST]"}
+	}
+
+	var attempts int
+	env.GetBotCanInviteFunc = func(ctx context.Context, chatID int64) (bool, error) {
+		attempts++
+		return false, errors.New("permanently unavailable")
+	}
+
+	update := tgbotapi.Update{
+		MyChatMember: &tgbotapi.ChatMemberUpdated{
+			Chat: tgbotapi.Chat{
+				ID:    -1002529281698,
+				Type:  "supergroup",
+				Title: "Test Group",
+			},
+			OldChatMember: tgbotapi.ChatMember{Status: "left"},
+			NewChatMember: tgbotapi.ChatMember{Status: "administrator"},
+		},
+	}
+
+	req := &request{update: update, env: env}
+	err := req.handleMyChatMember(context.Background())
+	require.Error(t, err)
+	require.Equal(t, tgPermissionMaxAttempts, attempts)
+	require.Empty(t, env.UpsertTgBotChatCalls())
+}
+
+// TestHandleMyChatMember_AdministratorAbortsOnContextCancel verifies the
+// backoff wait is context-aware: a canceled context stops retries instead of
+// sleeping through them.
+func TestHandleMyChatMember_AdministratorAbortsOnContextCancel(t *testing.T) {
+	env := &EnvMock{}
+	env.LoggerFunc = func() logger.Logger {
+		return &logger.TestLogger{Prefix: "[TEST]"}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var attempts int
+	env.GetBotCanInviteFunc = func(ctx context.Context, chatID int64) (bool, error) {
+		attempts++
+		if attempts == 1 {
+			cancel()
+		}
+		return false, errors.New("permission not yet propagated")
+	}
+
+	update := tgbotapi.Update{
+		MyChatMember: &tgbotapi.ChatMemberUpdated{
+			Chat: tgbotapi.Chat{
+				ID:    -1002529281698,
+				Type:  "supergroup",
+				Title: "Test Group",
+			},
+			OldChatMember: tgbotapi.ChatMember{Status: "left"},
+			NewChatMember: tgbotapi.ChatMember{Status: "administrator"},
+		},
+	}
+
+	req := &request{update: update, env: env}
+	err := req.handleMyChatMember(ctx)
+	require.Error(t, err)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Equal(t, 1, attempts)
+}
+
 func TestHandleChatMember(t *testing.T) {
 	tests := []struct {
 		name   string

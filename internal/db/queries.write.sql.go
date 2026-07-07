@@ -3841,22 +3841,6 @@ func (q *WriteQueries) UpdateNoteGraphPositionByPathID(ctx context.Context, arg 
 	return err
 }
 
-const updateNotionIntegrationVerificationToken = `-- name: UpdateNotionIntegrationVerificationToken :exec
-update notion_integrations
-   set verification_token = ?
- where id = ?
-`
-
-type UpdateNotionIntegrationVerificationTokenParams struct {
-	VerificationToken *string `json:"verification_token"`
-	ID                int64   `json:"id"`
-}
-
-func (q *WriteQueries) UpdateNotionIntegrationVerificationToken(ctx context.Context, arg UpdateNotionIntegrationVerificationTokenParams) error {
-	_, err := q.db.ExecContext(ctx, updateNotionIntegrationVerificationToken, arg.VerificationToken, arg.ID)
-	return err
-}
-
 const updateOffer = `-- name: UpdateOffer :one
 update offers
    set lifetime = coalesce(?1, lifetime)

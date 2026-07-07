@@ -10,21 +10,10 @@ import (
 	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
-	"trip2g/internal/notiontypes"
 	"trip2g/internal/openai"
 
 	"github.com/oklog/ulid/v2"
 )
-
-func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
-	client, err := a.notionClientManager.Get(a.ctx, a, integrationID)
-	if err != nil {
-		a.log.Error("failed to get notion client by integration ID", "integrationID", integrationID, "error", err)
-		return nil
-	}
-
-	return client
-}
 
 func (a *app) CalculateSha256(s string) string {
 	hash := sha256.Sum256([]byte(s))

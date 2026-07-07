@@ -672,11 +672,6 @@ returning *;
 delete from cron_job_executions
 where started_at < datetime('now', '-7 days');
 
--- name: UpdateNotionIntegrationVerificationToken :exec
-update notion_integrations
-   set verification_token = ?
- where id = ?;
-
 -- name: InsertConfigChange :one
 insert into config_changes (value_id, created_by)
 values (?, ?)
