@@ -11,7 +11,6 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/backjob/delivercronwebhook"
-	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
 	"trip2g/internal/case/backjob/refreshchartdata"
@@ -151,7 +150,6 @@ func (a *app) constructJobs() {
 	a.refreshChartDataJob = refreshchartdata.New(a)
 	a.SendTelegramPostJob = sendtelegrampost.New(a)
 	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
-	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
 	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
 	a.GenerateNoteVersionEmbeddingJob = generatenoteversionembedding.New(a)

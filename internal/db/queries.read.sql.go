@@ -760,41 +760,6 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
-const allNotionIntegrations = `-- name: AllNotionIntegrations :many
-select id, created_at, created_by, enabled, secret_token, verification_token, base_path from notion_integrations order by id
-`
-
-func (q *Queries) AllNotionIntegrations(ctx context.Context) ([]NotionIntegration, error) {
-	rows, err := q.db.QueryContext(ctx, allNotionIntegrations)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []NotionIntegration
-	for rows.Next() {
-		var i NotionIntegration
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.CreatedBy,
-			&i.Enabled,
-			&i.SecretToken,
-			&i.VerificationToken,
-			&i.BasePath,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const allPatreonCredentials = `-- name: AllPatreonCredentials :many
 select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 order by created_at desc
@@ -6960,27 +6925,6 @@ func (q *Queries) NotesReloadSignal(ctx context.Context) (NotesReloadSignalRow, 
 	row := q.db.QueryRowContext(ctx, notesReloadSignal)
 	var i NotesReloadSignalRow
 	err := row.Scan(&i.VersionGen, &i.HiddenCount)
-	return i, err
-}
-
-const notionIntegration = `-- name: NotionIntegration :one
-select id, created_at, created_by, enabled, secret_token, verification_token, base_path
-  from notion_integrations
- where id = ?
-`
-
-func (q *Queries) NotionIntegration(ctx context.Context, id int64) (NotionIntegration, error) {
-	row := q.db.QueryRowContext(ctx, notionIntegration, id)
-	var i NotionIntegration
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Enabled,
-		&i.SecretToken,
-		&i.VerificationToken,
-		&i.BasePath,
-	)
 	return i, err
 }
 

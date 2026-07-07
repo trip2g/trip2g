@@ -13,7 +13,6 @@ import (
 	handleoidccallbackhandleoidccallback "trip2g/internal/case/handleoidccallback"
 	handleoidcstarthandleoidcstart "trip2g/internal/case/handleoidcstart"
 	mcpmcp "trip2g/internal/case/mcp"
-	processnotionwebookprocessnotionwebook "trip2g/internal/case/processnotionwebook"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
 	processpatreonwebhookprocesspatreonwebhook "trip2g/internal/case/processpatreonwebhook"
 	render404render404 "trip2g/internal/case/render404"
@@ -37,7 +36,6 @@ var endpoints = []Endpoint{
 	&handleoidcstarthandleoidcstart.Endpoint{},
 	&mcpmcp.Endpoint{},
 	&mcpmcp.GetEndpoint{},
-	&processnotionwebookprocessnotionwebook.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&processpatreonwebhookprocesspatreonwebhook.Endpoint{},
 	&render404render404.Endpoint{},
@@ -62,7 +60,6 @@ type RoutesEnv interface {
 	handleoidccallbackhandleoidccallback.Env
 	handleoidcstarthandleoidcstart.Env
 	mcpmcp.Env
-	processnotionwebookprocessnotionwebook.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
 	processpatreonwebhookprocesspatreonwebhook.Env
 	render404render404.Env
