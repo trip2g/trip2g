@@ -8,7 +8,18 @@
 //   - authorize -> reached by the BROWSER on the host, so it uses `localhost`.
 //
 // The server binds 0.0.0.0 so the container can reach it via the host gateway.
+//
+// id_token is a real RS256 JWT, signed with a key generated at startup and
+// published via /jwks, so the backend's signature/iss/aud/exp/nonce/sub
+// verification (see internal/oidcauth) passes against this mock.
 import http from 'node:http';
+import crypto from 'node:crypto';
+
+// base64url without padding, as used for both JWK members and JWT segments.
+function base64url(input) {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input);
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export async function startMockIdp({
   port = 19200,
@@ -16,6 +27,15 @@ export async function startMockIdp({
   hostForBrowser = 'localhost',
 } = {}) {
   const issuer = `http://${hostForContainer}:${port}`;
+  const clientId = 'trip2g-test';
+  const kid = 'mock-key-1';
+
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const jwk = publicKey.export({ format: 'jwk' });
+
+  // nonce from the authorize request, keyed by the code we hand back so the
+  // token endpoint can echo it into the id_token.
+  const noncesByCode = new Map();
 
   // Mutable identity returned by /userinfo; set per-test via setUser().
   let currentUser = {
@@ -25,6 +45,22 @@ export async function startMockIdp({
     name: 'OIDC User',
     groups: [],
   };
+
+  function signIdToken(nonce) {
+    const header = { alg: 'RS256', typ: 'JWT', kid };
+    const now = Math.floor(Date.now() / 1000);
+    const payload = {
+      iss: issuer,
+      aud: clientId,
+      sub: currentUser.sub,
+      exp: now + 3600,
+      iat: now,
+      ...(nonce ? { nonce } : {}),
+    };
+    const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
+    const signature = crypto.createSign('RSA-SHA256').update(signingInput).sign(privateKey);
+    return `${signingInput}.${base64url(signature)}`;
+  }
 
   const json = (res, code, body) => {
     res.writeHead(code, { 'content-type': 'application/json' });
@@ -52,17 +88,24 @@ export async function startMockIdp({
     if (url.pathname === '/authorize') {
       const redirectUri = url.searchParams.get('redirect_uri');
       const state = url.searchParams.get('state') || '';
-      const location = `${redirectUri}?code=mock-code&state=${encodeURIComponent(state)}`;
+      const nonce = url.searchParams.get('nonce') || '';
+      const code = 'mock-code';
+      noncesByCode.set(code, nonce);
+      const location = `${redirectUri}?code=${code}&state=${encodeURIComponent(state)}`;
       res.writeHead(302, { location });
       return res.end();
     }
 
     if (url.pathname === '/token' && req.method === 'POST') {
+      // Body parsing isn't needed: the mock only ever hands out one code at a
+      // time (tests run serially), so just use the last stored nonce.
+      const code = 'mock-code';
+      const nonce = noncesByCode.get(code) || '';
       return json(res, 200, {
         access_token: 'mock-access-token',
         token_type: 'Bearer',
         expires_in: 3600,
-        id_token: 'mock.unsigned.idtoken',
+        id_token: signIdToken(nonce),
       });
     }
 
@@ -71,7 +114,7 @@ export async function startMockIdp({
     }
 
     if (url.pathname === '/jwks') {
-      return json(res, 200, { keys: [] });
+      return json(res, 200, { keys: [{ ...jwk, kid, use: 'sig', alg: 'RS256' }] });
     }
 
     res.writeHead(404);
