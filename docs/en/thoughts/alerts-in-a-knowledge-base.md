@@ -33,17 +33,18 @@ The more interesting part is what this enables for agents. trip2g exposes an [[e
 
 A concrete example: a deploy agent sees a `CacheLatencyHigh` alert firing. It calls `search("cache latency high")` on the incident base, gets the postmortem from six months ago that traced the same symptom to a misconfigured eviction policy, and flags it in its report. That postmortem was written by a human into a note the sink would never touch. The knowledge base just held onto it.
 
-Semantic search on incident history is available today. The MCP interface is the same interface any trip2g instance exposes, so it comes with the instance, no extra setup needed.
+Semantic search is opt-in. It's off by default; you turn it on by pointing trip2g at your own embedding server (any OpenAI-compatible endpoint, local or hosted) through the `vector_search` feature flag, see [[en/user/search|search]]. The demo ships with it off. Plain BM25 text search over incident history works with no setup at all; semantic ranking is the extra step. The MCP interface, on the other hand, is the same interface any trip2g instance exposes, so `search()` from an agent comes with the instance either way, it just uses whichever search you've enabled.
 
-A few illustrative query pairs that show where vector wins over keyword:
+To make this concrete I ran it. I brought up the demo stack, fired three incidents through Alertmanager, pointed the instance at a local `bge-m3` embedding server, and searched. The queries below share no words with the incident notes, and two of them are in Russian against English notes. Real results from that run:
 
-| Query | Incident it finds | Why keyword misses it |
+| Query (plain language) | Top hit (real incident note) | Why keyword alone misses it |
 |---|---|---|
-| `"database is slow"` | `NodeDown - postgres-primary high p99 latency` | no shared words |
-| `"agent ran out of memory"` | `OOMKilled - hermes-agent` | "OOM" vs "out of memory" |
-| `"disk full on worker"` | `DiskPressure - node-02 filesystem 97%` | "full" vs "pressure", "worker" vs "node" |
+| `"database slow"` | `HighPostgresLatency` -- "p99 latency on postgres spiked to 4s" | note never says "database" or "slow" |
+| `"база тормозит"` (RU) | `HighPostgresLatency` -- same note, English | cross-language, zero shared tokens |
+| `"закончилось место"` (RU, "ran out of space") | `DiskFillingNode2` -- "root filesystem 96% on node-2" | note says "filesystem", not "место"/"space" |
+| `"агент упал по памяти"` (RU, "agent died on memory") | `HermesOOM` -- "hermes-agent killed by OOM" | "OOM" vs "по памяти", RU vs EN |
 
-These are illustrative. The actual matches depend on how your incidents are titled and labeled. The point is that a query phrased in plain language finds incidents named in monitoring-system language, which are rarely the same words.
+Each of these returned the right incident as the top hit. The tell that it was the vector leg doing the work: before the embeddings finished loading, the same `"база тормозит"` query returned only the generic always-firing demo alert (BM25 noise); once the notes were embedded, `HighPostgresLatency` jumped to first. The actual matches depend on how your incidents are titled and labeled. The point is that a query phrased in plain language finds incidents named in monitoring-system language, which are rarely the same words, and rarely the same language.
 
 ```bash
 git clone https://github.com/trip2g/alert-sink
