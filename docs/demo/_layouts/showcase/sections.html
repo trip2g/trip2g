@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+
+  <!-- Standard design-system stylesheets: Pico variables, typography, header CSS. -->
+  {{ defaultTemplate.Styles() }}
+
+  <style>
+    .sc-page { max-width: 720px; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+    .sc-lead { font-size: 1.15rem; color: var(--pico-muted-color); }
+    .sc-card {
+      position: relative;
+      margin: 1.5rem 0;
+      padding: 1.5rem 1.75rem 1.25rem 4.5rem;
+      background: var(--pico-card-background-color);
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: 12px;
+      box-shadow: var(--pico-card-box-shadow);
+    }
+    .sc-card__num {
+      position: absolute; left: 1.25rem; top: 1.35rem;
+      width: 2.25rem; height: 2.25rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--pico-primary); color: var(--pico-primary-inverse);
+      font-weight: 700;
+    }
+    .sc-card h2 { margin-bottom: .75rem; font-size: 1.3rem; }
+    .sc-card__subs { margin-top: .5rem; }
+    .sc-card__sub {
+      display: inline-block; margin: 0 .4rem .4rem 0; padding: .15rem .6rem;
+      font-size: .8rem; border-radius: 999px;
+      border: 1px solid var(--pico-muted-border-color);
+      color: var(--pico-muted-color);
+    }
+  </style>
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+
+  <main class="sc-page">
+    <h1>{{ note.Title() }}</h1>
+
+    <!-- Introduce() = everything before the first heading. -->
+    <div class="sc-lead">{{ note.PartialRenderer().Introduce().ContentHTML }}</div>
+
+    <!-- Sections(2) splits the note AST at H2 headings.
+         Each section: .Title (plain), .TitleHTML, .ContentHTML,
+         and nested .Sections(level) / .Section(title). -->
+    {{ range i, sec := note.PartialRenderer().Sections(2) }}
+    <section class="sc-card">
+      <div class="sc-card__num">{{ i+1 }}</div>
+      <h2>{{ sec.TitleHTML }}</h2>
+      <div>{{ sec.ContentHTML }}</div>
+
+      {{ subs := sec.Sections(3) }}
+      {{ if len(subs) > 0 }}
+      <div class="sc-card__subs">
+        {{ range si, sub := subs }}<span class="sc-card__sub">{{ sub.Title }}</span>{{ end }}
+      </div>
+      {{ end }}
+    </section>
+    {{ end }}
+  </main>
+</body>
+</html>

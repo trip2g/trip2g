@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+
+  {{ defaultTemplate.Styles() }}
+
+  <style>
+    .in-page { max-width: 720px; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+    .in-pull {
+      margin: 2rem 0; padding: 1.25rem 1.5rem;
+      border-left: 4px solid var(--pico-primary);
+      background: var(--pico-card-background-color);
+      border-radius: 0 12px 12px 0;
+      box-shadow: var(--pico-card-box-shadow);
+    }
+    .in-pull__from { font-size: .8rem; color: var(--pico-muted-color); margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+
+  <main class="in-page">
+    <h1>{{ note.Title() }}</h1>
+
+    {{ note.HTMLString() }}
+
+    <!-- Cross-note pull: resolve another note and render its body.
+         nvs.ByWikilink("target") uses Obsidian resolution (basename lookup);
+         nvs.ByPath("/_snippet-cta.md") is the exact-path variant. -->
+    {{ pulled := nvs.ByWikilink("_snippet-cta") }}
+    {{ if pulled }}
+    <aside class="in-pull">
+      <div class="in-pull__from">Pulled from <code>{{ pulled.Path() }}</code></div>
+      {{ pulled.HTMLString() }}
+    </aside>
+    {{ end }}
+  </main>
+</body>
+</html>

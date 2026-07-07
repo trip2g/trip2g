@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+
+  {{ defaultTemplate.Styles() }}
+
+  <style>
+    .mg-hero {
+      padding: 4rem 1rem 3rem; text-align: center;
+      background: linear-gradient(180deg, var(--pico-card-background-color), transparent);
+    }
+    .mg-hero h1 { font-size: 2.6rem; margin-bottom: .75rem; }
+    .mg-hero__lead { max-width: 640px; margin: 0 auto; font-size: 1.2rem; color: var(--pico-muted-color); }
+    .mg-hero__meta { margin-top: 1.25rem; font-size: .85rem; color: var(--pico-muted-color); }
+    .mg-hero__tag {
+      display: inline-block; margin: 0 .25rem; padding: .15rem .7rem;
+      border: 1px solid var(--pico-muted-border-color); border-radius: 999px;
+    }
+    .mg-rows { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .mg-row {
+      display: grid; grid-template-columns: 180px 1fr; gap: 1.5rem;
+      align-items: start; padding: 2.5rem 0;
+      border-top: 1px solid var(--pico-muted-border-color);
+    }
+    .mg-row:nth-child(even) { grid-template-columns: 1fr 180px; }
+    .mg-row:nth-child(even) .mg-row__side { order: 2; text-align: right; }
+    .mg-row__num {
+      font-size: 4rem; font-weight: 800; line-height: 1;
+      color: var(--pico-primary); opacity: .35;
+    }
+    .mg-row__side h2 { font-size: 1.4rem; margin: .25rem 0 0; }
+    .mg-cta {
+      max-width: 960px; margin: 3rem auto; padding: 2rem;
+      text-align: center; border-radius: 16px;
+      background: var(--pico-primary); color: var(--pico-primary-inverse);
+    }
+    .mg-cta a { color: inherit; text-decoration: underline; }
+    .mg-cta h1, .mg-cta h2, .mg-cta h3 { color: inherit; }
+    @media (max-width: 640px) {
+      .mg-row, .mg-row:nth-child(even) { grid-template-columns: 1fr; }
+      .mg-row:nth-child(even) .mg-row__side { order: 0; text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+
+  <!-- Hero: title + lead (content before the first heading) + frontmatter meta. -->
+  <header class="mg-hero">
+    <h1>{{ note.Title() }}</h1>
+    <div class="mg-hero__lead">{{ note.PartialRenderer().Introduce().ContentHTML }}</div>
+    <div class="mg-hero__meta">
+      {{ note.ReadingTime() }} min read
+      {{ range ti, tag := note.Tags() }}<span class="mg-hero__tag">{{ tag }}</span>{{ end }}
+    </div>
+  </header>
+
+  <!-- Feature rows: one per H2 section, alternating sides. -->
+  <main class="mg-rows">
+    {{ range i, sec := note.PartialRenderer().Sections(2) }}
+    <article class="mg-row">
+      <div class="mg-row__side">
+        <div class="mg-row__num">{{ i+1 }}</div>
+        <h2>{{ sec.TitleHTML }}</h2>
+      </div>
+      <div class="mg-row__body">{{ sec.ContentHTML }}</div>
+    </article>
+    {{ end }}
+  </main>
+
+  <!-- Cross-note CTA: the banner text lives in its own note, edited in Obsidian. -->
+  {{ cta := nvs.ByWikilink("_snippet-cta") }}
+  {{ if cta }}
+  <aside class="mg-cta">{{ cta.HTMLString() }}</aside>
+  {{ end }}
+</body>
+</html>
