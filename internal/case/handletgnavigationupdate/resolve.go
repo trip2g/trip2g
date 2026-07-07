@@ -37,7 +37,7 @@ type navState struct {
 }
 
 // stateFragment is what we read/write in tg_user_states.data.
-// We merge only our keys to preserve unrelated state (e.g. quiz_states).
+// We merge only our keys to preserve unrelated state owned by other handlers.
 type stateFragment struct {
 	Handler string    `json:"handler,omitempty"`
 	Nav     *navState `json:"nav,omitempty"`
@@ -258,7 +258,7 @@ func loadState(ctx context.Context, env Env, chatID int64) (string, *stateFragme
 }
 
 func saveState(ctx context.Context, env Env, chatID int64, rawJSON string, frag *stateFragment) error {
-	// Merge our keys into the existing JSON to preserve other state (e.g. quiz_states).
+	// Merge our keys into the existing JSON to preserve other state owned by other handlers.
 	var full map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(rawJSON), &full); err != nil {
 		full = make(map[string]json.RawMessage)
