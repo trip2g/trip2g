@@ -70,9 +70,10 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	// Validate state (CSRF protection)
+	// Validate state (CSRF protection) and recover the OIDC nonce for replay
+	// protection binding below.
 	stateParam := string(ctx.QueryArgs().Peek("state"))
-	redirect, err := oauthstate.Validate(ctx, stateParam, env.Insecure())
+	redirect, nonce, err := oauthstate.ValidateWithOIDCNonce(ctx, stateParam, env.Insecure())
 	if err != nil {
 		env.Logger().Info("oauth login failed: invalid state",
 			"provider", "oidc",
@@ -107,9 +108,11 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	// Verify the id_token signature against the provider's JWKS and its
-	// standard claims (iss/aud/exp/iat) before trusting the token response.
-	// Identity details below still come from userinfo (groups, verified email).
-	if !verifyIDToken(env, ctx, creds, endpoints, tokenResp.IDToken, clientIP) {
+	// standard claims (iss/aud/exp/iat, plus nonce) before trusting the token
+	// response. Identity details below still come from userinfo, but its subject
+	// is bound to the verified id_token subject.
+	idClaims, ok := verifyIDToken(env, ctx, creds, endpoints, tokenResp.IDToken, nonce, clientIP)
+	if !ok {
 		return nil, nil
 	}
 
@@ -119,6 +122,15 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		env.Logger().Info("oauth login failed: oauth error",
 			"provider", "oidc",
 			"error", err.Error(),
+			"ip", clientIP)
+		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		return nil, nil
+	}
+
+	// Bind userinfo to the verified id_token via sub (OIDC Core 5.3.2 MUST).
+	if !subjectBound(idClaims.Subject, userInfo.Sub) {
+		env.Logger().Info("oauth login failed: id_token/userinfo sub mismatch",
+			"provider", "oidc",
 			"ip", clientIP)
 		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
@@ -203,13 +215,21 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	return nil, nil
 }
 
-// verifyIDToken checks the id_token signature + standard claims. On failure it
-// logs, redirects with an error, and returns false so the caller aborts.
-func verifyIDToken(env Env, ctx *fasthttp.RequestCtx, creds db.OidcCredential, endpoints oidcauth.Endpoints, idToken, clientIP string) bool {
-	_, err := env.VerifyOIDCIDToken(ctx, idToken, oidcauth.VerifyParams{
+// verifyIDToken checks the id_token signature + standard claims (including the
+// nonce). On success it returns the verified claims; on failure it logs,
+// redirects with an error, and returns ok=false so the caller aborts.
+func verifyIDToken(
+	env Env,
+	ctx *fasthttp.RequestCtx,
+	creds db.OidcCredential,
+	endpoints oidcauth.Endpoints,
+	idToken, nonce, clientIP string,
+) (*oidcauth.IDTokenClaims, bool) {
+	claims, err := env.VerifyOIDCIDToken(ctx, idToken, oidcauth.VerifyParams{
 		JWKSURI:  endpoints.JWKSURI,
 		Issuer:   creds.Issuer,
 		ClientID: creds.ClientID,
+		Nonce:    nonce,
 	})
 	if err != nil {
 		env.Logger().Info("oauth login failed: id_token verification failed",
@@ -217,9 +237,9 @@ func verifyIDToken(env Env, ctx *fasthttp.RequestCtx, creds db.OidcCredential, e
 			"error", err.Error(),
 			"ip", clientIP)
 		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
-		return false
+		return nil, false
 	}
-	return true
+	return claims, true
 }
 
 func (*Endpoint) Path() string {

@@ -43,6 +43,13 @@ func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 	return ""
 }
 
+// subjectBound reports whether the id_token subject and the userinfo subject
+// identify the same principal. Per OIDC Core 5.3.2 the id_token sub MUST match
+// the userinfo sub; empty subjects never bind.
+func subjectBound(idTokenSub, userInfoSub string) bool {
+	return idTokenSub != "" && userInfoSub != "" && idTokenSub == userInfoSub
+}
+
 // provisionBError returns a non-empty berror code if a NEW (not-yet-existing)
 // OIDC identity may not be auto-provisioned into an account.
 func provisionBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {

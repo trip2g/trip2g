@@ -16,7 +16,7 @@ const defaultScopes = "openid email profile"
 
 // BuildAuthURL builds the OIDC authorization URL. The authorization endpoint
 // comes from discovery, unlike Google's hardcoded constant.
-func BuildAuthURL(authzEndpoint, clientID, redirectURI, state, scopes string) string {
+func BuildAuthURL(authzEndpoint, clientID, redirectURI, state, scopes, nonce string) string {
 	if scopes == "" {
 		scopes = defaultScopes
 	}
@@ -27,6 +27,9 @@ func BuildAuthURL(authzEndpoint, clientID, redirectURI, state, scopes string) st
 	params.Set("redirect_uri", redirectURI)
 	params.Set("scope", scopes)
 	params.Set("state", state)
+	if nonce != "" {
+		params.Set("nonce", nonce)
+	}
 
 	return authzEndpoint + "?" + params.Encode()
 }

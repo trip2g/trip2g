@@ -98,6 +98,26 @@ func TestAccessBError(t *testing.T) {
 	}
 }
 
+func TestSubjectBound(t *testing.T) {
+	tests := []struct {
+		name       string
+		idTokenSub string
+		userInfo   string
+		want       bool
+	}{
+		{name: "matching subjects bind", idTokenSub: "user-123", userInfo: "user-123", want: true},
+		{name: "mismatched subjects rejected", idTokenSub: "user-123", userInfo: "attacker-456", want: false},
+		{name: "empty id_token subject rejected", idTokenSub: "", userInfo: "user-123", want: false},
+		{name: "empty userinfo subject rejected", idTokenSub: "user-123", userInfo: "", want: false},
+		{name: "both empty rejected", idTokenSub: "", userInfo: "", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, subjectBound(tt.idTokenSub, tt.userInfo))
+		})
+	}
+}
+
 func TestProvisionBError(t *testing.T) {
 	tests := []struct {
 		name  string

@@ -154,7 +154,7 @@ func TestGetUserInfo(t *testing.T) {
 
 func TestBuildAuthURL(t *testing.T) {
 	authzEndpoint := "https://issuer.example.com/authorize"
-	raw := BuildAuthURL(authzEndpoint, "client-id", "https://app/callback", "state-xyz", "openid email")
+	raw := BuildAuthURL(authzEndpoint, "client-id", "https://app/callback", "state-xyz", "openid email", "nonce-abc")
 
 	require.True(t, strings.HasPrefix(raw, authzEndpoint+"?"))
 
@@ -166,10 +166,19 @@ func TestBuildAuthURL(t *testing.T) {
 	require.Equal(t, "https://app/callback", q.Get("redirect_uri"))
 	require.Equal(t, "openid email", q.Get("scope"))
 	require.Equal(t, "state-xyz", q.Get("state"))
+	require.Equal(t, "nonce-abc", q.Get("nonce"))
+}
+
+func TestBuildAuthURLOmitsEmptyNonce(t *testing.T) {
+	raw := BuildAuthURL("https://issuer.example.com/authorize", "client-id", "https://app/callback", "state-xyz", "openid", "")
+
+	parsed, err := url.Parse(raw)
+	require.NoError(t, err)
+	require.False(t, parsed.Query().Has("nonce"), "no nonce param when nonce is empty")
 }
 
 func TestBuildAuthURLDefaultScopes(t *testing.T) {
-	raw := BuildAuthURL("https://issuer.example.com/authorize", "client-id", "https://app/callback", "state-xyz", "")
+	raw := BuildAuthURL("https://issuer.example.com/authorize", "client-id", "https://app/callback", "state-xyz", "", "")
 
 	parsed, err := url.Parse(raw)
 	require.NoError(t, err)
