@@ -56,6 +56,10 @@
     "url": "http://localhost:20081/_sidebar_premium"
   },
   {
+    "path": "_snippet-cta.md",
+    "url": "http://localhost:20081/_snippet_cta"
+  },
+  {
     "path": "_test_footer.md",
     "url": "http://localhost:20081/_test_footer"
   },
@@ -266,6 +270,22 @@
   {
     "path": "lang_hub/russian.md",
     "url": "http://localhost:20081/lang_hub/russian"
+  },
+  {
+    "path": "layout-functions.md",
+    "url": "http://localhost:20081/layout_functions"
+  },
+  {
+    "path": "layout-include.md",
+    "url": "http://localhost:20081/layout_include"
+  },
+  {
+    "path": "layout-magazine.md",
+    "url": "http://localhost:20081/layout_magazine"
+  },
+  {
+    "path": "layout-sections.md",
+    "url": "http://localhost:20081/layout_sections"
   },
   {
     "path": "mcp-url-test.md",
