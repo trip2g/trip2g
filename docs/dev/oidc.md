@@ -2,7 +2,7 @@
 
 **Status:** implemented on branch `feat/oidc-login` (backend + admin GraphQL CRUD + SSO login button + e2e). Key decisions taken during implementation:
 - **Account policy is a per-provider setting** (Step 8 option B, made configurable): `oidc_credentials.auto_provision` + `allowed_email_domain` + `required_group`. Off → unknown email rejected (`user_not_found`, mirrors Google). On → user auto-created on first login. The `allowed_email_domain` / `required_group` gates apply to **every** login (existing + new); `email_verified` is enforced only when provisioning a new account.
-- **Userinfo-only** (Step 8 / §7 Q1): the callback reads identity from `/userinfo`; the `id_token` signature is **not** verified yet (TODO in `internal/oidcauth/{client,discovery}.go`). Fold in JWKS verification + discovery-issuer match when hardening.
+- **id_token verified + userinfo identity** (Step 8 / §7 Q1): the callback now verifies the `id_token` signature against the provider's `jwks_uri` plus `iss`/`aud`/`exp`/`iat` (see `internal/oidcauth/{verify,jwks}.go`, `KeyCache` caches keys and refetches on an unknown kid); identity details (email, groups, `email_verified`) are still read from `/userinfo`, mirroring googleauth. Verification failure rejects the login (`?berror=oauth_failed`).
 - **Discovery is uncached** for now (login is infrequent); TODO to add a TTL cache on the app layer.
 - `ValidateOIDCCredentials` is a discovery-reachability probe only (does not verify client_id/secret).
 **Goal:** add a generic **OIDC** login provider to trip2g, alongside the existing Google/GitHub OAuth, so the app can be a Relying Party against a corporate IdP. Immediate target: a client who already runs **Authentik**.

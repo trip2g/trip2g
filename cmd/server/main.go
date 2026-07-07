@@ -54,6 +54,7 @@ import (
 	"trip2g/internal/notfoundtracker"
 	"trip2g/internal/notion"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/oidcauth"
 	"trip2g/internal/openai"
 	"trip2g/internal/pagecache"
 	"trip2g/internal/patreon"
@@ -199,6 +200,9 @@ type appState struct {
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
 
+	// oidcKeys caches OIDC provider JWKS keys for id_token verification.
+	oidcKeys *oidcauth.KeyCache
+
 	notionClientManager *notion.ClientManager
 
 	config *appconfig.Config
@@ -335,6 +339,8 @@ func main() {
 
 			hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
 			tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
+
+			oidcKeys: oidcauth.NewKeyCache(),
 
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
