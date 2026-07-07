@@ -49,8 +49,9 @@ const (
 
 // Bool config IDs.
 const (
-	ConfigShowDraftVersions = "show_draft_versions"
-	ConfigEnableRSS         = "enable_rss"
+	ConfigShowDraftVersions      = "show_draft_versions"
+	ConfigEnableRSS              = "enable_rss"
+	ConfigEnableNotFoundTracking = "enable_not_found_tracking"
 )
 
 // Int config IDs.
@@ -117,6 +118,14 @@ var (
 			ConfigMeta: ConfigMeta{ID: ConfigEnableRSS, Description: "Enable RSS feed for notes."},
 			Default:    true,
 			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.EnableRSS = v },
+		},
+		ConfigEnableNotFoundTracking: {
+			ConfigMeta: ConfigMeta{
+				ID:          ConfigEnableNotFoundTracking,
+				Description: "Track 404s (not_found_paths, not_found_ip_hits) for review in the admin panel.",
+			},
+			Default:   false,
+			SetupFunc: func(cfg *model.SiteConfig, v bool) { cfg.EnableNotFoundTracking = v },
 		},
 	}
 
