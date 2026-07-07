@@ -175,9 +175,6 @@ func TestResolve(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
-				env.PublicURLFunc = func() string {
-					return "https://test.com"
-				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
 					return &model.NoteViews{
 						List: []*model.NoteView{
@@ -224,11 +221,7 @@ func TestResolve(t *testing.T) {
 				}
 
 				// Return existing user state with valid JSON
-				validStateData := UserStateData{
-					QuizStates: map[string]QuizState{
-						"mbti": {Answers: map[int]int{}},
-					},
-				}
+				validStateData := UserStateData{}
 				stateJSON, _ := json.Marshal(validStateData)
 
 				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
@@ -251,9 +244,6 @@ func TestResolve(t *testing.T) {
 				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
-				}
-				env.PublicURLFunc = func() string {
-					return "https://test.com"
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
 					return &model.NoteViews{List: []*model.NoteView{}}
@@ -300,9 +290,6 @@ func TestResolve(t *testing.T) {
 				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
-				}
-				env.PublicURLFunc = func() string {
-					return "https://test.com"
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
 					return &model.NoteViews{List: []*model.NoteView{}}
@@ -501,30 +488,28 @@ func TestUserState(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name: "existing user state",
+			name: "existing user state with unrelated JSON key survives decode",
 			setup: func(env *EnvMock) {
 				env.BotIDFunc = func() int64 {
 					return 1
 				}
-				validStateData := UserStateData{
-					QuizStates: map[string]QuizState{
-						"mbti": {Answers: map[int]int{0: 1, 1: 2}},
-					},
-				}
-				stateJSON, _ := json.Marshal(validStateData)
+				// "some_other_state" stands in for state owned by another handler
+				// (e.g. nav/canvas mode), which this package doesn't know about but
+				// must not choke on when decoding tg_user_states.data.
+				stateJSON := `{"some_other_state":{"foo":"bar"},"handler":""}`
 
 				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
 					return db.TgUserState{
 						ChatID:      123456,
 						BotID:       1,
-						Value:       "quiz_in_progress",
-						Data:        string(stateJSON),
+						Value:       "custom_state",
+						Data:        stateJSON,
 						UpdateCount: 3,
 					}, nil
 				}
 			},
 			chatID:        123456,
-			expectedValue: "quiz_in_progress",
+			expectedValue: "custom_state",
 			wantErr:       false,
 		},
 		{
@@ -566,7 +551,6 @@ func TestUserState(t *testing.T) {
 				require.Equal(t, tt.expectedValue, userState.Value)
 				require.Equal(t, tt.chatID, userState.ChatID)
 				require.NotNil(t, userState.UserStateData)
-				require.NotNil(t, userState.QuizStates)
 			}
 		})
 	}

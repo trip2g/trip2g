@@ -76,9 +76,6 @@ var _ Env = &EnvMock{}
 //			MarkTgBotChatRemovedFunc: func(ctx context.Context, id int64) error {
 //				panic("mock out the MarkTgBotChatRemoved method")
 //			},
-//			PublicURLFunc: func() string {
-//				panic("mock out the PublicURL method")
-//			},
 //			RemoveTgChatMemberFunc: func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 //				panic("mock out the RemoveTgChatMember method")
 //			},
@@ -178,9 +175,6 @@ type EnvMock struct {
 
 	// MarkTgBotChatRemovedFunc mocks the MarkTgBotChatRemoved method.
 	MarkTgBotChatRemovedFunc func(ctx context.Context, id int64) error
-
-	// PublicURLFunc mocks the PublicURL method.
-	PublicURLFunc func() string
 
 	// RemoveTgChatMemberFunc mocks the RemoveTgChatMember method.
 	RemoveTgChatMemberFunc func(ctx context.Context, arg db.RemoveTgChatMemberParams) error
@@ -337,9 +331,6 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
-		// PublicURL holds details about calls to the PublicURL method.
-		PublicURL []struct {
-		}
 		// RemoveTgChatMember holds details about calls to the RemoveTgChatMember method.
 		RemoveTgChatMember []struct {
 			// Ctx is the ctx argument value.
@@ -446,7 +437,6 @@ type EnvMock struct {
 	lockListActiveUserSubgraphs               sync.RWMutex
 	lockLogger                                sync.RWMutex
 	lockMarkTgBotChatRemoved                  sync.RWMutex
-	lockPublicURL                             sync.RWMutex
 	lockRemoveTgChatMember                    sync.RWMutex
 	lockRequest                               sync.RWMutex
 	lockSend                                  sync.RWMutex
@@ -1079,33 +1069,6 @@ func (mock *EnvMock) MarkTgBotChatRemovedCalls() []struct {
 	mock.lockMarkTgBotChatRemoved.RLock()
 	calls = mock.calls.MarkTgBotChatRemoved
 	mock.lockMarkTgBotChatRemoved.RUnlock()
-	return calls
-}
-
-// PublicURL calls PublicURLFunc.
-func (mock *EnvMock) PublicURL() string {
-	if mock.PublicURLFunc == nil {
-		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockPublicURL.Lock()
-	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
-	mock.lockPublicURL.Unlock()
-	return mock.PublicURLFunc()
-}
-
-// PublicURLCalls gets all the calls that were made to PublicURL.
-// Check the length with:
-//
-//	len(mockedEnv.PublicURLCalls())
-func (mock *EnvMock) PublicURLCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockPublicURL.RLock()
-	calls = mock.calls.PublicURL
-	mock.lockPublicURL.RUnlock()
 	return calls
 }
 

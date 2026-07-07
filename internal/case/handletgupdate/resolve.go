@@ -38,7 +38,6 @@ type Env interface {
 	InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error
 	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
 	CalculateSha256(s string) string
-	PublicURL() string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
 	Logger() logger.Logger
 	BotID() int64
@@ -64,8 +63,7 @@ type Env interface {
 }
 
 type UserStateData struct {
-	QuizStates map[string]QuizState `json:"quiz_states"`
-	Handler    string               `json:"handler,omitempty"` // "" = default, "navigation" = note browser
+	Handler string `json:"handler,omitempty"` // "" = default, "navigation" = note browser
 }
 
 type UserState struct {
@@ -82,7 +80,6 @@ type request struct {
 	update    tgbotapi.Update
 	userState *UserState
 	env       Env
-	questions []Question
 }
 
 func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
@@ -236,19 +233,6 @@ func (req *request) handleCallbackQuery(ctx context.Context) error {
 	actionParts := strings.SplitN(callbackData, ":", 3)
 
 	switch actionParts[0] {
-	case "start_mbti":
-		callback := tgbotapi.NewCallback(req.update.CallbackQuery.ID, req.update.CallbackQuery.Data)
-
-		_, err := req.env.Request(callback)
-		if err != nil {
-			return fmt.Errorf("failed to send callback: %w", err)
-		}
-
-		return req.sendNextQuestion(ctx)
-
-	case "mbti_answer":
-		return req.handleMBTIAnswer(ctx, actionParts)
-
 	case "join_chat":
 		return req.handleJoinChat(ctx, actionParts)
 
@@ -283,16 +267,7 @@ func (req *request) handleCommands(ctx context.Context) error {
 			}
 		}
 
-		questions, err := req.Questions(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get questions: %w", err)
-		}
-
-		if len(questions) == 0 {
-			return req.sendContentMenu(ctx)
-		}
-
-		return req.sendStartMenu(ctx)
+		return req.sendContentMenu(ctx)
 
 	case "browse":
 		if req.update.Message.Chat.ID < 0 {
@@ -354,12 +329,10 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 		// If not found, create a new one
 		if errors.Is(err, sql.ErrNoRows) {
 			req.userState = &UserState{
-				UserStateData: &UserStateData{
-					QuizStates: make(map[string]QuizState),
-				},
-				ChatID:      req.chatID,
-				Value:       "pending",
-				UpdateCount: 0,
+				UserStateData: &UserStateData{},
+				ChatID:        req.chatID,
+				Value:         "pending",
+				UpdateCount:   0,
 			}
 			return req.userState, nil
 		}
@@ -370,10 +343,6 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	err = json.Unmarshal([]byte(data.Data), &userStateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state: %w", err)
-	}
-
-	if userStateData.QuizStates == nil {
-		userStateData.QuizStates = make(map[string]QuizState)
 	}
 
 	return &UserState{

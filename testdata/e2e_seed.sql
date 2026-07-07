@@ -301,8 +301,8 @@ CREATE TABLE tg_user_states (
   data text not null,
   primary key (chat_id, bot_id)
 );
-INSERT INTO tg_user_states VALUES(-1003576908503,1,NULL,'2025-12-18 07:39:36','2025-12-18 07:39:43',2,'pending','{"quiz_states":{}}');
-INSERT INTO tg_user_states VALUES(-1003591599765,1,NULL,'2025-12-18 07:39:51','2025-12-18 07:39:58',2,'pending','{"quiz_states":{}}');
+INSERT INTO tg_user_states VALUES(-1003576908503,1,NULL,'2025-12-18 07:39:36','2025-12-18 07:39:43',2,'pending','{}');
+INSERT INTO tg_user_states VALUES(-1003591599765,1,NULL,'2025-12-18 07:39:51','2025-12-18 07:39:58',2,'pending','{}');
 CREATE TABLE tg_user_profiles (
   sha256_hash text primary key,
   chat_id int not null,
