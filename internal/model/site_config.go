@@ -10,6 +10,7 @@ type SiteConfig struct {
 	DefaultLayout          string
 	ShowDraftVersions      bool
 	EnableRSS              bool
+	EnableNotFoundTracking bool
 	VectorMinSimilarity    int // 1–1000, divide by 1000 to get float threshold
 	URLNormalizationMethod URLNormalizationMethod
 	WikilinkResolution     WikilinkResolution

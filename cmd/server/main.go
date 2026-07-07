@@ -20,7 +20,6 @@ import (
 	"trip2g/internal/case/admin/renderpreview"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/backjob/delivercronwebhook"
-	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
 	"trip2g/internal/case/backjob/refreshchartdata"
@@ -52,7 +51,6 @@ import (
 	"trip2g/internal/notebus"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/notfoundtracker"
-	"trip2g/internal/notion"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/openai"
 	"trip2g/internal/pagecache"
@@ -131,7 +129,6 @@ type appState struct {
 	*sendtelegramaccountpost.SendTelegramAccountPostJob
 	*updatetelegramaccountpost.UpdateTelegramAccountPostJob
 	*importtelegramchannel.ImportTelegramChannelJob
-	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 	*updateallaccounttelegrampublishposts.UpdateAllAccountTelegramPublishPostsJob
 	GenerateNoteVersionEmbeddingJob *generatenoteversionembedding.Job
@@ -198,8 +195,6 @@ type appState struct {
 
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
-
-	notionClientManager *notion.ClientManager
 
 	config *appconfig.Config
 
@@ -442,9 +437,6 @@ func main() {
 	}
 
 	a.previewBuffer = renderpreview.NewPreviewBuffer(a.config.RenderPreview)
-
-	// TODO: remove notion at all
-	a.notionClientManager = notion.NewClientManager(a, a.config.Notion)
 
 	// Initialize simple backup manager if enabled
 	if config.SimpleBackup.Enabled {

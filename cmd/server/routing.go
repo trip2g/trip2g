@@ -79,6 +79,10 @@ func (a *app) TrackNotFound(path string, ip string) {
 		return
 	}
 
+	if !a.SiteConfig(context.Background()).EnableNotFoundTracking {
+		return
+	}
+
 	err := a.notFoundTracker.Track(path, ip)
 	if err != nil {
 		a.log.Error("failed to track not found", "path", path, "error", err)

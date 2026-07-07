@@ -22,7 +22,36 @@ const (
 	chatTypeChannel    = "channel"
 	chatTypeGroup      = "group"
 	chatTypeSuperGroup = "supergroup"
+
+	tgPermissionMaxAttempts = 3
+	tgPermissionBaseGap     = 500 * time.Millisecond
 )
+
+// getBotCanInviteWithRetry checks whether the bot can invite users, retrying
+// with bounded exponential backoff: Telegram needs time to propagate bot
+// membership/permission changes before the check reflects them. The wait
+// between attempts is context-aware so a canceled context aborts immediately.
+func getBotCanInviteWithRetry(ctx context.Context, env Env, chatID int64) (bool, error) {
+	var lastErr error
+	for attempt := range tgPermissionMaxAttempts {
+		if attempt > 0 {
+			gap := tgPermissionBaseGap << (attempt - 1)
+			select {
+			case <-ctx.Done():
+				return false, ctx.Err()
+			case <-time.After(gap):
+			}
+		}
+
+		canInvite, err := env.GetBotCanInvite(ctx, chatID)
+		if err == nil {
+			return canInvite, nil
+		}
+		lastErr = err
+	}
+
+	return false, fmt.Errorf("check bot invite permission: giving up after %d attempts: %w", tgPermissionMaxAttempts, lastErr)
+}
 
 func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 	groupIDStr := strings.TrimPrefix(args, "group_")
@@ -105,12 +134,8 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		// Check if bot can invite users (only for administrators)
 		canInvite := false
 		if newStatus == statusAdministrator {
-			// TODO: replace sleep with proper retry mechanism with exponential backoff
-			// Telegram API needs time to propagate bot membership before we can check permissions
-			time.Sleep(1 * time.Second)
-
 			var checkErr error
-			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
+			canInvite, checkErr = getBotCanInviteWithRetry(ctx, req.env, chat.ID)
 			if checkErr != nil {
 				return fmt.Errorf("failed to check bot invite permissions: %w", checkErr)
 			}
@@ -138,12 +163,8 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		// Check if bot can invite users (only for administrators)
 		canInvite := false
 		if newStatus == statusAdministrator {
-			// TODO: replace sleep with proper retry mechanism with exponential backoff
-			// Telegram API needs time to propagate bot permission changes
-			time.Sleep(1 * time.Second)
-
 			var checkErr error
-			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
+			canInvite, checkErr = getBotCanInviteWithRetry(ctx, req.env, chat.ID)
 			if checkErr != nil {
 				log.Error("failed to check bot invite permissions", "error", checkErr, "chat_id", chat.ID)
 			}

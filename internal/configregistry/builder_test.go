@@ -55,6 +55,7 @@ func TestSiteConfigBuilder_DefaultsFromRegistry(t *testing.T) {
 	require.Empty(t, cfg.DefaultLayout)
 	require.True(t, cfg.ShowDraftVersions)
 	require.True(t, cfg.EnableRSS)
+	require.False(t, cfg.EnableNotFoundTracking)
 	require.Equal(t, 820, cfg.VectorMinSimilarity)
 	require.Equal(t, model.DefaultURLNormalizationMethod, cfg.URLNormalizationMethod)
 	require.NotNil(t, cfg.TimeLocation)
@@ -70,6 +71,7 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 		bools: []db.AllLatestConfigBoolsRow{
 			{ValueID: "show_draft_versions", Value: false},
 			{ValueID: "enable_rss", Value: false},
+			{ValueID: "enable_not_found_tracking", Value: true},
 		},
 		ints: []db.AllLatestConfigIntsRow{
 			{ValueID: "vector_min_similarity", Value: 500},
@@ -83,6 +85,7 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 	require.Equal(t, "Europe/Moscow", cfg.Timezone)
 	require.False(t, cfg.ShowDraftVersions)
 	require.False(t, cfg.EnableRSS)
+	require.True(t, cfg.EnableNotFoundTracking)
 	require.Equal(t, 500, cfg.VectorMinSimilarity)
 
 	moscow, _ := time.LoadLocation("Europe/Moscow")
@@ -184,6 +187,10 @@ func TestTypedRegistryLookup(t *testing.T) {
 	im, ok := configregistry.GetInt("vector_min_similarity")
 	require.True(t, ok)
 	require.Equal(t, 820, im.Default)
+
+	nftm, ok := configregistry.GetBool("enable_not_found_tracking")
+	require.True(t, ok)
+	require.False(t, nftm.Default)
 
 	_, ok = configregistry.GetString("nonexistent")
 	require.False(t, ok)

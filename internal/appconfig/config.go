@@ -22,7 +22,6 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
-	"trip2g/internal/notion"
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/tgauthtoken"
@@ -130,8 +129,6 @@ type Config struct {
 	RenderPreview renderpreview.Config
 
 	APIKeyLogs cleanupapikeylogs.Config
-
-	Notion notion.Config
 
 	DataEncryption dataencryption.Config
 
@@ -445,11 +442,6 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.GitAPI.BasePath, "git-api-base-path", gitAPIDefaults.BasePath, "base url path for git API")
 	flag.StringVar(&c.GitAPI.RepoPath, "git-api-repo-path", gitAPIDefaults.RepoPath, "path to the git repository")
 	flag.StringVar(&c.GitAPI.MasterBranch, "git-api-master-branch", gitAPIDefaults.MasterBranch, "name of the master branch")
-
-	// Notion
-	notionDefaults := notion.DefaultConfig()
-
-	flag.DurationVar(&c.Notion.RequestTimeout, "notion-request-timeout", notionDefaults.RequestTimeout, "Notion API request timeout")
 
 	// Data Encryption
 	dataEncryptionDefaults := dataencryption.DefaultConfig()

@@ -807,14 +807,6 @@ select *
    and disabled_at is null
  limit 1;
 
--- name: NotionIntegration :one
-select *
-  from notion_integrations
- where id = ?;
-
--- name: AllNotionIntegrations :many
-select * from notion_integrations order by id;
-
 -- name: GetLatestConfigString :one
 select c.id, c.value_id, c.created_at, c.created_by, v.value
   from config_changes c
