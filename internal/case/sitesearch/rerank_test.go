@@ -54,12 +54,13 @@ func rerankerFeatures(w float64, url string) features.Features {
 }
 
 // ceServer returns a rerank server that scores each doc via scoreFor, letting
-// tests drive the cross-encoder ranking.
+// tests drive the cross-encoder ranking. Request/response shapes match TEI:
+// request has "texts" (not "documents"), response is a bare array [{index, score}].
 func ceServer(t *testing.T, scoreFor func(doc string) float64) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
-			Documents []string `json:"documents"`
+			Texts []string `json:"texts"`
 		}
 		if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&req)) {
 			return
@@ -67,13 +68,11 @@ func ceServer(t *testing.T, scoreFor func(doc string) float64) *httptest.Server 
 
 		type result struct {
 			Index int     `json:"index"`
-			Score float64 `json:"relevance_score"`
+			Score float64 `json:"score"`
 		}
-		out := struct {
-			Results []result `json:"results"`
-		}{}
-		for i, d := range req.Documents {
-			out.Results = append(out.Results, result{Index: i, Score: scoreFor(d)})
+		var out []result
+		for i, d := range req.Texts {
+			out = append(out, result{Index: i, Score: scoreFor(d)})
 		}
 		w.Header().Set("Content-Type", "application/json")
 		assert.NoError(t, json.NewEncoder(w).Encode(out))

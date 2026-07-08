@@ -60,7 +60,7 @@ func (c *Client) Rerank(ctx context.Context, query string, docs []string) ([]Res
 	if len(docs) == 0 {
 		return nil, nil
 	}
-	body, _ := json.Marshal(map[string]any{"model": c.model, "query": query, "documents": docs})
+	body, _ := json.Marshal(map[string]any{"query": query, "texts": docs})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -77,18 +77,16 @@ func (c *Client) Rerank(ctx context.Context, query string, docs []string) ([]Res
 		return nil, fmt.Errorf("rerank status %d", resp.StatusCode)
 	}
 
-	var out struct {
-		Results []struct {
-			Index int     `json:"index"`
-			Score float64 `json:"relevance_score"`
-		} `json:"results"`
+	var out []struct {
+		Index int     `json:"index"`
+		Score float64 `json:"score"`
 	}
 	if decErr := json.NewDecoder(resp.Body).Decode(&out); decErr != nil {
 		return nil, fmt.Errorf("decode rerank response: %w", decErr)
 	}
 
-	results := make([]Result, 0, len(out.Results))
-	for _, r := range out.Results {
+	results := make([]Result, 0, len(out))
+	for _, r := range out {
 		if r.Index >= 0 && r.Index < len(docs) {
 			results = append(results, Result{Index: r.Index, Score: r.Score})
 		}
