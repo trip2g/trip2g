@@ -13,7 +13,8 @@ import (
 func TestRerankReturnsScores(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/rerank", r.URL.Path)
-		_, _ = w.Write([]byte(`{"results":[{"index":2,"relevance_score":0.9},{"index":0,"relevance_score":0.5},{"index":1,"relevance_score":0.1}]}`))
+		// TEI returns a bare array with "score" (not a wrapped {"results":[...]} with "relevance_score").
+		_, _ = w.Write([]byte(`[{"index":2,"score":0.9},{"index":0,"score":0.5},{"index":1,"score":0.1}]`))
 	}))
 	defer srv.Close()
 
@@ -32,7 +33,7 @@ func TestRerankEmptyDocs(t *testing.T) {
 
 func TestRerankDropsOutOfRangeIndices(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"results":[{"index":5,"relevance_score":0.9},{"index":0,"relevance_score":0.5}]}`))
+		_, _ = w.Write([]byte(`[{"index":5,"score":0.9},{"index":0,"score":0.5}]`))
 	}))
 	defer srv.Close()
 
