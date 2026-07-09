@@ -62,7 +62,7 @@ Those five days were not a bad model or a broken process. They look more like st
 
 This one landed during the great Fable sprint before 7 July — moving fast, cutting corners, fixing one thing and nicking another. The sprint left a paper trail. `bunx ccusage claude weekly` prints what Claude Code burned, week by week:
 
-![[ccusage-weekly.png]]
+![[./img/ccusage-weekly.png]]
 
 Read top to bottom, that is the marathon. The weekly bill climbs almost tenfold each week, tops out near $9k for the week of 28 June, then falls by two-thirds the week after — when I stopped sprinting. Six weeks, 26.5 billion tokens, about $22k. Ninety-six percent of it is cache reads: the model re-reading large contexts, not writing new code. This ZIP bug is one line buried in that total.
 

@@ -12,7 +12,7 @@ This page explains what is inside the archive, how to sync it without opening Ob
 
 A fresh instance greets the admin with a welcome page and a **Download archive** button. Each download creates a new API key and bakes it into the archive.
 
-![[onboarding-download.jpg]]
+![[./img/onboarding-download.jpg]]
 
 1. **Download archive** — the download link. You only see it when you are logged in as the admin.
 2. **Gear icon** — the admin panel. The gear appears in the top bar once you are signed in as admin; if you do not see it, you are not authenticated.
