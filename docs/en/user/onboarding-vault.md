@@ -85,17 +85,6 @@ Concretely:
 
 If a key leaks, revoke it in the admin panel under **API Keys** and download a fresh archive.
 
-### Back up before you sync
-
-trip2g does not delete anything on its own on the server. There is no automatic garbage collection today — a garbage collector is planned but not yet built. Notes you remove locally are hidden on the server, not erased, so the server side rarely loses data on its own.
-
-The real risk is on the sync side. A wrong or duplicated API key in `data.json`, or a mismatched sync config, can point the plugin at the wrong vault and overwrite your content with the wrong notes. Two habits keep you safe:
-
-- Keep a backup of your notes (a Git repo or a copy of the folder) before large syncs.
-- Check `data.json` before syncing a vault you did not just download — confirm `apiUrl` matches the instance you mean to publish to.
-
-For a broader backup strategy, see [[en/user/backup|Backups]].
-
 ### Next steps
 
 - [[en/user/getting-started|Getting started]] — first sign-in and first sync
