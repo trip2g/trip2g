@@ -48,7 +48,7 @@ Two things to know:
 - **The archive contains a private API key.** Don't share the zip. Each download creates a new key; you can review and revoke keys in the admin panel under API Keys.
 - Already have content on the server? Two-way sync will offer to pull the current server content into the vault on first sync.
 
-The vault also ships MCP configs (`.mcp.json`, `AGENTS.md`) so AI agents can search and read your notes — see [[en/user/agent-memory]].
+The vault also ships MCP configs (`.mcp.json`, `AGENTS.md`) so AI agents can search and read your notes — see [[en/user/agent-memory]]. For a full tour of the archive — its layout, the bundled sync script, and how to keep the API key safe — see [[en/user/onboarding-vault|The onboarding vault]].
 
 ### Path B — add sync to an existing vault
 
@@ -141,6 +141,7 @@ Panels open left to right. Use Shift + mouse wheel to scroll horizontally. The a
 
 ### Next steps
 
+- [[en/user/onboarding-vault|The onboarding vault]] — what's inside the archive and how to sync it from the terminal
 - [[en/user/hosting|Hosting options]] — get a running instance if you don't have one yet
 - [[en/user/publishing]] — control how notes appear on your site with frontmatter properties
 - [[en/user/telegram]] — publish posts to a Telegram channel on a schedule

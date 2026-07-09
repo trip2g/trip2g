@@ -5,6 +5,7 @@ title: "Navigation"
 ### Getting Started
 
 - [[en/user/getting-started|Install & first sync]]
+- [[en/user/onboarding-vault|The onboarding vault]]
 - [[en/user/protocol|How trip2g works]]
 - [[en/user/hosting|Hosting options]]
 - [[en/user/selfhosted|Self-hosted deployment]]
