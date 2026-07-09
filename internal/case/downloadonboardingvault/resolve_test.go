@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -138,4 +141,32 @@ func TestResolve_ExtractsWithoutDirFileCollision(t *testing.T) {
 				"entry %q is a plain file but %q lives under it — directory entry is missing its trailing slash", name, other)
 		}
 	}
+}
+
+func TestResolve_UnzipCLIExtractsCleanly(t *testing.T) {
+	unzipBin, lookErr := exec.LookPath("unzip")
+	if lookErr != nil {
+		t.Skip("unzip binary not available")
+	}
+
+	env := &mockEnv{publicURL: "https://example.com"}
+	zipData, err := Resolve(context.Background(), env, 1, false)
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "vault.zip")
+	require.NoError(t, os.WriteFile(zipPath, zipData, 0o644))
+
+	outDir := filepath.Join(dir, "out")
+	cmd := exec.Command(unzipBin, "-q", zipPath, "-d", outDir)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	runErr := cmd.Run()
+	require.NoError(t, runErr, "unzip failed: %s", stderr.String())
+	require.Empty(t, stderr.String(), "unzip emitted warnings: %s", stderr.String())
+
+	// The folder that the bug turned into a plain file must extract as a real directory.
+	info, statErr := os.Stat(filepath.Join(outDir, "example.com", ".obsidian"))
+	require.NoError(t, statErr)
+	require.True(t, info.IsDir(), ".obsidian must be a directory, not a file")
 }
