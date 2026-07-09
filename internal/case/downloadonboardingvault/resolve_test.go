@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 
 	"trip2g/internal/db"
@@ -107,5 +108,34 @@ func TestResolve_FolderRenamedToDomain(t *testing.T) {
 			"file %s should not have old prefix %s", file.Name, oldPrefix)
 		require.True(t, len(file.Name) >= len("trip2g.com/") && file.Name[:len("trip2g.com/")] == "trip2g.com/",
 			"file %s should start with trip2g.com/", file.Name)
+	}
+}
+
+func TestResolve_ExtractsWithoutDirFileCollision(t *testing.T) {
+	env := &mockEnv{publicURL: "https://example.com"}
+
+	zipData, err := Resolve(context.Background(), env, 1, false)
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	require.NoError(t, err)
+
+	names := make(map[string]bool, len(reader.File))
+	for _, f := range reader.File {
+		names[f.Name] = true
+	}
+
+	// No plain-file entry may be a directory prefix of another entry.
+	// Such an entry makes `unzip` create a file where a directory is needed,
+	// which triggers "exists but is not directory" warnings.
+	for _, f := range reader.File {
+		name := f.Name
+		if strings.HasSuffix(name, "/") {
+			continue // proper directory entry
+		}
+		for other := range names {
+			require.False(t, strings.HasPrefix(other, name+"/"),
+				"entry %q is a plain file but %q lives under it — directory entry is missing its trailing slash", name, other)
+		}
 	}
 }
