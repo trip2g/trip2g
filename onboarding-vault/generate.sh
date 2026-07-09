@@ -48,11 +48,13 @@ with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         if path in EXCLUDE:
             continue
         rel = path.relative_to(repo_root)
-        zi = zipfile.ZipInfo(str(rel), date_time=FIXED_DATE)
         if path.is_dir():
+            zi = zipfile.ZipInfo(str(rel) + "/", date_time=FIXED_DATE)
             zi.compress_type = zipfile.ZIP_STORED
+            zi.external_attr = 0o40755 << 16
             zf.writestr(zi, "")
         else:
+            zi = zipfile.ZipInfo(str(rel), date_time=FIXED_DATE)
             zi.compress_type = zipfile.ZIP_DEFLATED
             zf.writestr(zi, path.read_bytes())
 
