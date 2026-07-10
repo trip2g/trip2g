@@ -2,6 +2,11 @@ package enclavefix
 
 import (
 	"fmt"
+	"html"
+	"net/url"
+	"regexp"
+	"strings"
+	"unicode"
 
 	"github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/quailyquaily/goldmark-enclave/object"
@@ -10,6 +15,62 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
+
+var (
+	youtubeIDPattern         = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
+	bilibiliIDPattern        = regexp.MustCompile(`^(?:BV[A-Za-z0-9]{10}|av[0-9]+)$`)
+	imageSizePattern         = regexp.MustCompile(`^[0-9]+(?:%|px|rem)?$`)
+	unitlessImageSizePattern = regexp.MustCompile(`^[0-9]+$`)
+	difyPathPattern          = regexp.MustCompile(`^/chatbot/[A-Za-z0-9_-]+/?$`)
+)
+
+// ValidEmbedID reports whether an embed identifier is safe for the provider's
+// downstream HTML/JavaScript template. It is shared with mdloader, which has a
+// second renderer for the same AST nodes.
+func ValidEmbedID(provider, id string) bool {
+	switch provider {
+	case "youtube":
+		return youtubeIDPattern.MatchString(id)
+	case "bilibili":
+		return bilibiliIDPattern.MatchString(id)
+	case "tradingview":
+		if id == "" || strings.ContainsAny(id, `"\<>`) {
+			return false
+		}
+		for _, r := range id {
+			if unicode.IsControl(r) || r == '\u2028' || r == '\u2029' {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+// ValidDifyURL accepts only the HTTPS chatbot URLs emitted by the transformer.
+// In particular, it rejects decoded quotes from dify: URLs before they reach
+// the upstream text/template iframe renderer.
+func ValidDifyURL(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "https" && u.Host == "udify.app" &&
+		u.User == nil && u.RawQuery == "" && u.Fragment == "" && difyPathPattern.MatchString(u.Path)
+}
+
+// SafeImageDimension returns a dimension only when it is safe to place in an
+// HTML attribute or inline style. Invalid values are dropped.
+func SafeImageDimension(value string) string {
+	if imageSizePattern.MatchString(value) {
+		return value
+	}
+	return ""
+}
+
+// ValidQuailLayout constrains the only query parameter that the upstream
+// renderer interpolates into an iframe URL using text/template.
+func ValidQuailLayout(layout string) bool {
+	return layout == "" || layout == "subscribe_form" || layout == "subscribe_form_mini"
+}
 
 type HTMLRenderer struct {
 	cfg *core.Config
@@ -45,6 +106,10 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 	switch enc.Provider {
 	case core.EnclaveProviderYouTube:
 		{
+			if !ValidEmbedID("youtube", enc.ObjectID) {
+				w.Write([]byte(r.wrapEnclaveErrorHtml("youtube", enc.ObjectID)))
+				break
+			}
 			html, err := object.GetYoutubeEmbedHtml(enc)
 			if err != nil || html == "" {
 				html = r.wrapEnclaveErrorHtml("youtube", enc.ObjectID)
@@ -56,6 +121,10 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 
 	case core.EnclaveProviderBilibili:
 		{
+			if !ValidEmbedID("bilibili", enc.ObjectID) {
+				w.Write([]byte(r.wrapEnclaveErrorHtml("bilibili", enc.ObjectID)))
+				break
+			}
 			html, err := object.GetBilibiliEmbedHtml(enc)
 			if err != nil || html == "" {
 				html = r.wrapEnclaveErrorHtml("bilibili", enc.ObjectID)
@@ -77,7 +146,13 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 		w.Write([]byte(html))
 
 	case core.EnclaveProviderTradingView:
-		html, err := object.GetTradingViewWidgetHtml(enc)
+		var html string
+		var err error
+		if ValidEmbedID("tradingview", enc.ObjectID) {
+			html, err = object.GetTradingViewWidgetHtml(enc)
+		} else {
+			err = fmt.Errorf("invalid TradingView symbol")
+		}
 		if err != nil || html == "" {
 			// html = fmt.Sprintf(`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object tradingview-enclave-object error">Failed to load tradingview chart from %s</div></div>`, enc.ObjectID)
 			html = r.wrapEnclaveErrorHtml("tradingview", enc.ObjectID)
@@ -88,7 +163,13 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 		w.Write([]byte(html))
 
 	case core.EnclaveProviderDifyWidget:
-		html, err := object.GetDifyWidgetHtml(enc)
+		var html string
+		var err error
+		if ValidDifyURL(enc.ObjectID) {
+			html, err = object.GetDifyWidgetHtml(enc)
+		} else {
+			err = fmt.Errorf("invalid Dify chatbot URL")
+		}
 		if err != nil || html == "" {
 			// html = fmt.Sprintf(`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object dify-enclave-object error">Failed to load dify widget from %s</div></div>`, enc.ObjectID)
 			html = r.wrapEnclaveErrorHtml("dify", enc.ObjectID)
@@ -99,7 +180,13 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 		w.Write([]byte(html))
 
 	case core.EnclaveProviderQuailWidget:
-		html, err := object.GetQuailWidgetHtml(enc)
+		var html string
+		var err error
+		if ValidQuailLayout(enc.Params["layout"]) {
+			html, err = object.GetQuailWidgetHtml(enc)
+		} else {
+			err = fmt.Errorf("invalid Quail layout")
+		}
 		if err != nil || html == "" {
 			// html = fmt.Sprintf(`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object quail-enclave-object error">Failed to load quail widget from %s</div></div>`, enc.ObjectID)
 			html = r.wrapEnclaveErrorHtml("quail", enc.ObjectID)
@@ -137,37 +224,28 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 		w.Write([]byte(html))
 
 	case core.EnclaveHtml5Audio:
-		html, err := object.GetAudioHtml(enc)
-		if err != nil || html == "" {
-			html = r.wrapEnclaveErrorHtml("audio", enc.ObjectID)
-		} else {
-			html = r.wrapEnclaveHtml("audio", html, true, false)
-		}
-		w.Write([]byte(html))
+		audioHTML := fmt.Sprintf(`<audio controls src="%s"></audio>`, html.EscapeString(enc.ObjectID))
+		w.Write([]byte(r.wrapEnclaveHtml("audio", audioHTML, true, false)))
 
 	case core.EnclaveProviderQuailImage:
-		var alt string
+		alt := enc.Alt
 		if enc.Alt == "" && len(enc.Title) != 0 {
 			alt = fmt.Sprintf("An image to describe %s", enc.Title)
 		}
 		if alt == "" {
 			alt = "An image to describe post"
 		}
-		html, err := object.GetQuailImageHtml(enc)
-		if err != nil || html == "" {
-			html = r.wrapEnclaveErrorHtml("quail-image", enc.ObjectID)
-		}
-		w.Write([]byte(html))
+		w.Write([]byte(renderQuailImageHTML(enc, alt)))
 
 	case core.EnclaveRegularImage:
-		var alt string
+		alt := enc.Alt
 		if enc.Alt == "" && len(enc.Title) != 0 {
 			alt = fmt.Sprintf("An image to describe %s", enc.Title)
 		}
 		if alt == "" {
 			alt = "An image to describe post"
 		}
-		html := fmt.Sprintf(`<img src="%s" alt="%s" />`, enc.URL.String(), alt)
+		html := fmt.Sprintf(`<img src="%s" alt="%s" />`, html.EscapeString(enc.URL.String()), html.EscapeString(alt))
 		w.Write([]byte(html))
 
 	}
@@ -175,10 +253,44 @@ func (r *HTMLRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.N
 	return ast.WalkContinue, nil
 }
 
+func renderQuailImageHTML(enc *core.Enclave, alt string) string {
+	width := styleImageDimension(enc.Params["width"])
+	if width == "" {
+		width = "auto"
+	}
+	height := styleImageDimension(enc.Params["height"])
+	if height == "" {
+		height = "auto"
+	}
+	margin := "0 auto"
+	if enc.Params["align"] == "left" {
+		margin = "0 auto 0 0"
+	} else if enc.Params["align"] == "right" {
+		margin = "0 0 0 auto"
+	}
+	return fmt.Sprintf(
+		`<figure class="quail-image-wrapper" style="width: %s; height: %s; margin: %s; display: block"><img src="%s" alt="%s" style="width: 100%%; height: auto" class="quail-image" /><figcaption class="quail-image-caption" style="display: block">%s</figcaption></figure>`,
+		width,
+		height,
+		margin,
+		html.EscapeString(enc.URL.String()),
+		html.EscapeString(alt),
+		html.EscapeString(enc.Title),
+	)
+}
+
+func styleImageDimension(value string) string {
+	value = SafeImageDimension(value)
+	if unitlessImageSizePattern.MatchString(value) {
+		return value + "px"
+	}
+	return value
+}
+
 func (r *HTMLRenderer) wrapEnclaveErrorHtml(enclaveName, objectID string) string {
 	html := fmt.Sprintf(
 		`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object %s-enclave-object error">Failed to load %s from %s</div></div>`,
-		enclaveName, enclaveName, objectID,
+		html.EscapeString(enclaveName), html.EscapeString(enclaveName), html.EscapeString(objectID),
 	)
 	return html
 }

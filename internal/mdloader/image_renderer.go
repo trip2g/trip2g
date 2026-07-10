@@ -1,10 +1,13 @@
 package mdloader
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
 	"strings"
+
+	"trip2g/internal/enclavefix"
 
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/quailyquaily/goldmark-enclave/object"
@@ -116,7 +119,13 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		r.renderImage(w, enc)
 
 	case enclavecore.EnclaveProviderYouTube:
-		html, err := object.GetYoutubeEmbedHtml(enc)
+		var html string
+		var err error
+		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderYouTube, enc.ObjectID) {
+			html, err = object.GetYoutubeEmbedHtml(enc)
+		} else {
+			err = errors.New("invalid YouTube video ID")
+		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("youtube", enc.ObjectID)
 		} else {
@@ -125,7 +134,13 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderBilibili:
-		html, err := object.GetBilibiliEmbedHtml(enc)
+		var html string
+		var err error
+		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderBilibili, enc.ObjectID) {
+			html, err = object.GetBilibiliEmbedHtml(enc)
+		} else {
+			err = errors.New("invalid Bilibili video ID")
+		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("bilibili", enc.ObjectID)
 		} else {
@@ -143,7 +158,13 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderTradingView:
-		html, err := object.GetTradingViewWidgetHtml(enc)
+		var html string
+		var err error
+		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderTradingView, enc.ObjectID) {
+			html, err = object.GetTradingViewWidgetHtml(enc)
+		} else {
+			err = errors.New("invalid TradingView symbol")
+		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("tradingview", enc.ObjectID)
 		} else {
@@ -152,7 +173,13 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderDifyWidget:
-		html, err := object.GetDifyWidgetHtml(enc)
+		var html string
+		var err error
+		if enclavefix.ValidDifyURL(enc.ObjectID) {
+			html, err = object.GetDifyWidgetHtml(enc)
+		} else {
+			err = errors.New("invalid Dify chatbot URL")
+		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("dify", enc.ObjectID)
 		} else {
@@ -161,7 +188,13 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderQuailWidget:
-		html, err := object.GetQuailWidgetHtml(enc)
+		var html string
+		var err error
+		if enclavefix.ValidQuailLayout(enc.Params["layout"]) {
+			html, err = object.GetQuailWidgetHtml(enc)
+		} else {
+			err = errors.New("invalid Quail layout")
+		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("quail", enc.ObjectID)
 		} else {
@@ -241,8 +274,8 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 	var size *imageSize
 	if enc.Provider == enclavecore.EnclaveProviderQuailImage {
 		// Size is in Params for QuailImage
-		width := enc.Params["width"]
-		height := enc.Params["height"]
+		width := enclavefix.SafeImageDimension(enc.Params["width"])
+		height := enclavefix.SafeImageDimension(enc.Params["height"])
 		if width != "" {
 			size = &imageSize{Width: width, Height: height}
 		}
@@ -282,9 +315,16 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 	var out string
 	if size != nil {
 		if size.Height != "" {
-			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" height="%s" />`, safeSrc, safeAlt, classAttr, size.Width, size.Height)
+			out = fmt.Sprintf(
+				`<img src="%s" alt="%s"%s width="%s" height="%s" />`,
+				safeSrc,
+				safeAlt,
+				classAttr,
+				html.EscapeString(size.Width),
+				html.EscapeString(size.Height),
+			)
 		} else {
-			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, safeSrc, safeAlt, classAttr, size.Width)
+			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, safeSrc, safeAlt, classAttr, html.EscapeString(size.Width))
 		}
 	} else {
 		out = fmt.Sprintf(`<img src="%s" alt="%s"%s />`, safeSrc, safeAlt, classAttr)
@@ -296,7 +336,7 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 func wrapEnclaveErrorHTML(enclaveName, objectID string) string {
 	return fmt.Sprintf(
 		`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object %s-enclave-object error">Failed to load %s from %s</div></div>`,
-		enclaveName, enclaveName, objectID,
+		html.EscapeString(enclaveName), html.EscapeString(enclaveName), html.EscapeString(objectID),
 	)
 }
 

@@ -86,3 +86,93 @@ func TestImageAltSpecialCharsEscaped(t *testing.T) {
 	html := string(pages.Map["/note"].HTML)
 	require.NotContains(t, html, `<script>`, "script tags in alt must be escaped")
 }
+
+func TestYouTubeEmbedIDCannotInjectHTMLAttribute(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![](https://www.youtube.com/watch?v=video-id%22%20onload%3D%22trip2g-marker%22)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `<iframe`, "invalid YouTube IDs must not reach the embed template")
+	require.NotContains(t, html, `onload="trip2g-marker"`, "YouTube IDs must not break out of iframe attributes")
+	require.Contains(t, html, `&#34;`, "the rejected identifier must be escaped in the error message")
+}
+
+func TestTradingViewSymbolCannotInjectScript(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![](https://www.tradingview.com/chart/abc/?symbol=%22%3Balert(1)%3B%2F%2F)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `";alert(1)`, "TradingView symbols must not break out of widget JavaScript")
+}
+
+func TestBilibiliEmbedIDCannotInjectHTMLAttribute(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![](https://www.bilibili.com/video/%22%20onload%3D%22trip2g-marker%22)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `<iframe`, "invalid Bilibili IDs must not reach the embed template")
+	require.NotContains(t, html, `onload="trip2g-marker"`)
+}
+
+func TestQuailLayoutCannotInjectHTMLAttribute(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![](https://quaily.com/list?layout=%22%20onload%3D%22trip2g-marker%22)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `<iframe`, "invalid Quail layouts must not reach the embed template")
+	require.NotContains(t, html, `onload="trip2g-marker"`)
+}
+
+func TestDifyURLCannotInjectHTMLAttribute(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![](dify://udify.app/chatbot/%22%20onload%3D%22trip2g-marker%22)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `<iframe`, "invalid Dify URLs must not reach the embed template")
+	require.NotContains(t, html, `onload="trip2g-marker"`)
+}
+
+func TestImageDimensionCannotInjectHTMLAttribute(t *testing.T) {
+	log := logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "note.md",
+			Content: []byte(`![image](https://example.com/image.jpg?w=%22%20onload%3D%22trip2g-marker%22)`),
+		}},
+		Log: &log,
+	})
+	require.NoError(t, err)
+	html := string(pages.Map["/note"].HTML)
+	require.NotContains(t, html, `onload="trip2g-marker"`)
+	require.NotContains(t, html, `width=""`)
+}
