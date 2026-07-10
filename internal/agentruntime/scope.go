@@ -72,7 +72,11 @@ func normalizeScopePatterns(patterns []string) []string {
 // escapes the scope root (leading "..", ".", or empty), it returns "" — a
 // sentinel that never matches any pattern, so traversal ("../x",
 // "concepts/../../etc/passwd") and absolute-escape stay denied.
+// Backslashes are treated as separators (like FileKB.resolve) so
+// "concepts/..\secrets/x.md" is seen as traversal here too — the authz and
+// resolution layers must agree on what a path means.
 func normalizeScopePath(p string) string {
+	p = strings.ReplaceAll(p, "\\", "/")
 	p = stripScopePrefix(strings.TrimSpace(p))
 	if p == "" {
 		return ""

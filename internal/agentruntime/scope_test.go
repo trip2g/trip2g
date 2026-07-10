@@ -114,6 +114,36 @@ func TestScopedKB_LeadingSlashNormalization(t *testing.T) {
 	}
 }
 
+// TestScopedKB_BackslashTraversalDenied: FileKB.resolve treats "\" as a path
+// separator (ReplaceAll to "/"), but scope matching used path.Clean where "\"
+// is an ordinary character — so `concepts/..\secrets/x.md` passed the
+// "concepts/**" glob yet resolved to secrets/x.md, outside the scope. Both
+// layers must agree: backslash traversal is denied.
+func TestScopedKB_BackslashTraversalDenied(t *testing.T) {
+	patterns := []string{"concepts/**"}
+	scoped := NewScopedKB(newMemKB(nil), patterns, patterns)
+
+	denied := []string{
+		`concepts/..\secrets/x.md`,
+		`..\secrets\x.md`,
+		`concepts\..\..\etc\passwd`,
+	}
+	for _, p := range denied {
+		if scoped.CanRead(p) {
+			t.Errorf("expected read DENY for %q under %v, got ALLOW", p, patterns)
+		}
+		if scoped.CanWrite(p) {
+			t.Errorf("expected write DENY for %q under %v, got ALLOW", p, patterns)
+		}
+	}
+
+	// Backslash-separated in-scope paths must still resolve and match, same as
+	// FileKB.resolve would.
+	if !scoped.CanRead(`concepts\x.md`) {
+		t.Errorf("expected read ALLOW for %q under %v, got DENY", `concepts\x.md`, patterns)
+	}
+}
+
 // TestScopedKB_WritePassesNormalizedPathToKB: normalization must apply to the
 // path handed DOWNSTREAM, not just to glob matching. Today Write("/concepts/x.md")
 // passes the scope check but forwards the raw slash path to the underlying KB,
