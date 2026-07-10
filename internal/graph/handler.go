@@ -14,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // buildSkipTxMap collects all field names (at any nesting level under Mutation)
@@ -93,20 +94,22 @@ func NewHandler(env Env) *handler.Server {
 		Cache: lru.New[string](100),
 	})
 
-	graphqlErr := func(err error) graphql.ResponseHandler {
+	logger := logger.WithPrefix(env.Logger(), "GraphQL:")
+	skipTxMutations := buildSkipTxMap(schema)
+
+	srv.AroundOperations(makeAroundOperations(logger, skipTxMutations, env, makeGraphqlErr(log)))
+
+	return srv
+}
+
+func makeGraphqlErr(log logger.Logger) func(err error) graphql.ResponseHandler {
+	return func(err error) graphql.ResponseHandler {
 		log.Error("graphql error", "error", err)
 
 		return func(ctx context.Context) *graphql.Response {
 			return graphql.ErrorResponse(ctx, "%s", err.Error())
 		}
 	}
-
-	logger := logger.WithPrefix(env.Logger(), "GraphQL:")
-	skipTxMutations := buildSkipTxMap(schema)
-
-	srv.AroundOperations(makeAroundOperations(logger, skipTxMutations, env, graphqlErr))
-
-	return srv
 }
 
 func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env operationsEnv) {
@@ -195,6 +198,8 @@ func makeAroundOperations(
 			commitErr := env.ReleaseTxEnvInRequest(ctx, true)
 			if commitErr != nil {
 				log.Error("failed to release transactioned env with commit", "error", commitErr)
+				// The writes are lost; the caller must not see a success response.
+				resp.Errors = append(resp.Errors, gqlerror.Errorf("failed to commit transaction: %s", commitErr))
 			} else {
 				log.Debug("released transactioned env with commit")
 			}
@@ -216,14 +221,58 @@ func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct
 // operation — nested mutations like AdminMutation.runCronJob are covered.
 func selectionHasSkipTx(sel ast.SelectionSet, skipTx map[string]struct{}) bool {
 	for _, s := range sel {
-		field, ok := s.(*ast.Field)
-		if !ok {
+		switch sel := s.(type) {
+		case *ast.Field:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
+			if _, skip := skipTx[sel.Name]; skip {
+				return true
+			}
+			if selectionHasSkipTx(sel.SelectionSet, skipTx) {
+				return true
+			}
+		case *ast.InlineFragment:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
+			if selectionHasSkipTx(sel.SelectionSet, skipTx) {
+				return true
+			}
+		case *ast.FragmentSpread:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
+			// Definition is resolved by the validator; fragment cycles are
+			// rejected before this runs, so plain recursion is safe.
+			if sel.Definition != nil && selectionHasSkipTx(sel.Definition.SelectionSet, skipTx) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// staticallyExcluded reports whether @skip(if: true) or @include(if: false)
+// with a literal boolean removes the selection from execution. Variable-driven
+// conditions can't be evaluated here (no variables at this layer), so they are
+// treated as potentially executing.
+func staticallyExcluded(directives ast.DirectiveList) bool {
+	for _, d := range directives {
+		var excludeWhen bool
+		switch d.Name {
+		case "skip":
+			excludeWhen = true
+		case "include":
+			excludeWhen = false
+		default:
 			continue
 		}
-		if _, skip := skipTx[field.Name]; skip {
-			return true
+		arg := d.Arguments.ForName("if")
+		if arg == nil || arg.Value == nil || arg.Value.Kind != ast.BooleanValue {
+			continue
 		}
-		if selectionHasSkipTx(field.SelectionSet, skipTx) {
+		if (arg.Value.Raw == "true") == excludeWhen {
 			return true
 		}
 	}
@@ -242,5 +291,12 @@ func NewExecutor(env Env) *executor.Executor {
 	schema := NewExecutableSchema(config)
 	exec := executor.New(schema)
 	exec.Use(extension.Introspection{})
+
+	// Programmatic (MCP) dispatch must share the HTTP path's tx lifecycle:
+	// without this middleware, multi-step mutations run outside a transaction
+	// and a mid-way failure leaves partial writes committed.
+	log := logger.WithPrefix(env.Logger(), "GraphQL:")
+	exec.AroundOperations(makeAroundOperations(log, buildSkipTxMap(schema), env, makeGraphqlErr(env.Logger())))
+
 	return exec
 }
