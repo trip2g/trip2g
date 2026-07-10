@@ -79,3 +79,4 @@ templates/kanban/node_modules/
 
 # demo video working files (large binaries)
 docs/demo-video/
+__pycache__/
