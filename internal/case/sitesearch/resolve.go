@@ -187,7 +187,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	// Score all chunks, no absolute threshold — E5 models compress scores
 	// into 0.7–1.0 range, making absolute thresholds unreliable.
 	// dotSimilarity is used here instead of cosine because the embedding server
-	// returns L2-normalised unit vectors (embedding-server/server.py normalize_embeddings=True),
+	// returns L2-normalised unit vectors (TEI always normalizes /v1/embeddings output),
 	// making cosine ≡ dot product at lower compute cost.
 	scanStart := time.Now()
 	var candidates []scored
@@ -551,8 +551,8 @@ func lastIndexByte(s string, c byte) int {
 
 // dotSimilarity returns the dot product of two vectors.
 // This is equivalent to cosine similarity when both vectors are L2-normalised,
-// which is guaranteed by the embedding server (embedding-server/server.py
-// normalize_embeddings=True). Using dot product avoids the redundant sqrt
+// which is guaranteed by the embedding server (TEI always L2-normalises its
+// /v1/embeddings output). Using dot product avoids the redundant sqrt
 // divisions that cosine similarity would otherwise perform on unit vectors.
 func dotSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {

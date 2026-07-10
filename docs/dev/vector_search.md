@@ -33,7 +33,7 @@ The AND operator is intentional and load-bearing: in a hybrid system the BM25 la
 
 ### Vector lane
 
-**Embedding model.** The embedding server (`embedding-server/server.py`) defaults to `intfloat/multilingual-e5-base` (the `MODEL_NAME` env var in both `server.py` and `Dockerfile`). The trip2g deployment and benchmark override this to `BAAI/bge-m3` (1024-dim, multilingual) via the `MODEL_NAME` env var — so both names are correct in their context. The server returns L2-normalized unit vectors (`normalize_embeddings=True`).
+**Embedding model.** There is no bespoke embedding server: the compose stacks (dev, e2e, vecbench) run the official HuggingFace `text-embeddings-inference` (TEI) image serving `BAAI/bge-m3` (1024-dim, multilingual) via `--model-id`. TEI exposes an OpenAI-compatible `/v1/embeddings` route and always returns L2-normalized unit vectors on it (normalization is hardcoded in that route, not a flag).
 
 **Per-chunk embeddings.** Notes are split into paragraph-level chunks by `internal/mdchunk`. Each chunk gets its own embedding. This lets a dense query match the most relevant *section* of a long note rather than the averaged whole-note signal.
 
@@ -170,13 +170,11 @@ internal/
 │   └── client.go          cross-encoder reranker client
 └── openai/
     └── client.go          embedding API client (OpenAI-compatible)
-
-embedding-server/
-└── server.py              FastAPI server, normalize_embeddings=True
 ```
 
-The reranker has no bespoke server: the vecbench stack runs the official
-HuggingFace `text-embeddings-inference` image (`/rerank` endpoint).
+Neither embeddings nor the reranker has a bespoke server: the compose stacks
+run the official HuggingFace `text-embeddings-inference` image
+(`/v1/embeddings` and `/rerank` endpoints).
 
 ## similarNotes (legacy whole-note similarity)
 

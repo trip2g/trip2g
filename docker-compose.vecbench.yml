@@ -25,22 +25,19 @@ services:
       timeout: 5s
       retries: 5
 
-  # Local embedding server — bge-m3 (1024 dims) via sentence-transformers, OpenAI-compatible.
+  # Local embedding server — bge-m3 (1024 dims) via the official HuggingFace
+  # text-embeddings-inference image (OpenAI-compatible /v1/embeddings route).
+  # TEI always L2-normalizes /v1/embeddings output, which the app's dot-product
+  # similarity relies on (cosine ≡ dot for unit vectors).
+  # No healthcheck: the TEI image ships no shell/curl.
   embedding:
-    build: ./embedding-server
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
     container_name: trip2g-vecbench-embedding
+    command: --model-id BAAI/bge-m3 --port 8000 --auto-truncate
     ports:
       - "11436:8000"
     volumes:
       - ${HOME}/models/embedding:/data
-    environment:
-      - MODEL_NAME=BAAI/bge-m3
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 300s
 
   # Local cross-encoder reranker — bge-reranker-v2-m3 via the official HuggingFace
   # text-embeddings-inference server (its /rerank API is the contract the Go client
@@ -67,7 +64,7 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_healthy
+        condition: service_started # TEI image has no healthcheck
     ports:
       - "21081:21081"
       - "21082:21082"

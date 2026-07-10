@@ -71,7 +71,6 @@ demo/.obsidian
 
 # Separate services (have their own Dockerfile)
 ce-bot/
-embedding-server/
 tge2e/
 
 # Asset source/build files not needed in Go embed
