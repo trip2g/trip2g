@@ -143,3 +143,21 @@ func TestMaxActiveSignInCodes_BelowLimit(t *testing.T) {
 	require.True(t, ok, "expected RequestEmailSignInCodePayload, got %T", result)
 	require.True(t, payload.Success)
 }
+
+// At count == limit, creating one more code would exceed the configured
+// maximum. The boundary therefore has to reject before CreateSignInCode.
+func TestMaxActiveSignInCodes_AtLimitRejected(t *testing.T) {
+	env := fullFlowEnv("")
+	env.MaxActiveSignInCodesFunc = func() int64 { return 3 }
+	env.CountActiveSignInCodesFunc = func(_ context.Context, _ int64) (int64, error) {
+		return 3, nil
+	}
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	errPayload, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "count == limit must return ErrorPayload, got %T", result)
+	require.Equal(t, "too_many_sign_in_codes", errPayload.Message)
+	require.Empty(t, env.CreateSignInCodeCalls(), "must not create a code once the limit is reached")
+}
