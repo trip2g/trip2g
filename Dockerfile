@@ -20,7 +20,9 @@ RUN mkdir fragment && \
 
 COPY ./assets/ui ./trip2g
 
-RUN npm install
+# typescript 7 dropped convertCompilerOptionsFromJson which the mam builder uses;
+# pin via overrides so the `npm update` inside `npm start` can't bump it
+RUN npm pkg set overrides.typescript=6.0.3 && npm install
 
 RUN npm start trip2g && \
     npm start trip2g/user && \
