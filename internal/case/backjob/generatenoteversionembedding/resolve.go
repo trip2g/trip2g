@@ -48,29 +48,23 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 		return nil // Note might have been deleted, skip silently
 	}
 
-	strippedContent := mdchunk.StripFrontmatter(string(noteView.Content))
-
 	vsConfig := env.Features().VectorSearch
 
-	// Calculate content hash (uses stripped content to avoid noise from frontmatter
-	// changes; custom-model identity is mixed in, see modelFingerprint)
-	contentHash := sha256.Sum256([]byte(noteView.Title + strippedContent + modelFingerprint(vsConfig)))
+	contentHash := NoteContentHash(noteView.Title, noteView.Content, vsConfig)
 
 	// Check if embedding already exists with same content hash and model
 	existing, err := env.GetNoteVersionEmbedding(ctx, params.VersionID)
-	if err == nil && bytes.Equal(existing.ContentHash, contentHash[:]) && storedModelMatches(existing.ModelID, vsConfig.Model) {
+	if err == nil && bytes.Equal(existing.ContentHash, contentHash) && storedModelMatches(existing.ModelID, vsConfig.Model) {
 		// Hash matches — skip whole-note embedding regeneration.
-		// But still check if chunk embeddings are missing (e.g. first deploy after chunk feature).
 		if noteView.ExcludeSearch || noteView.IsSystem() {
 			env.Logger().Debug("embedding already up to date, skipping", "version_id", params.VersionID)
 			return nil
 		}
-		existingChunks, chunkErr := env.GetNoteVersionChunks(ctx, params.VersionID)
-		if chunkErr == nil && len(existingChunks) > 0 {
-			env.Logger().Debug("embedding and chunks already up to date, skipping", "version_id", params.VersionID)
-			return nil
-		}
-		env.Logger().Debug("embedding up to date but chunks missing, generating", "version_id", params.VersionID, "title", noteView.Title)
+		// The whole-note row is saved before chunks, so a retry can land here with
+		// a partially-written or stale chunk set. Chunk presence alone proves
+		// nothing — delegate to the chunk path, which verifies each chunk's hash
+		// and model, re-embeds only the stale/missing ones, and no-ops otherwise.
+		env.Logger().Debug("embedding up to date, verifying chunks", "version_id", params.VersionID, "title", noteView.Title)
 		return generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -84,7 +78,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	// than the embedding window, which otherwise fails with HTTP 400 and retries
 	// forever. estimateTokens is approximate, so leave a 10% safety margin.
 	budget := vsConfig.ResolvedMaxInputTokens() * 9 / 10
-	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+strippedContent, budget)
+	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+mdchunk.StripFrontmatter(string(noteView.Content)), budget)
 
 	// Generate embedding
 	result, err := env.OpenAI().CreateEmbedding(ctx, text)
@@ -97,7 +91,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 		VersionID:   params.VersionID,
 		Embedding:   model.Float32SliceToBytes(result.Vector),
 		ModelID:     int64(vsConfig.Model),
-		ContentHash: contentHash[:],
+		ContentHash: contentHash,
 		Tokens:      int64(result.Tokens),
 	})
 	if err != nil {
@@ -160,9 +154,13 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 
 	if len(toEmbed) > 0 {
 		passagePrefix := vsConfig.ResolvedPassagePrefix()
+		// Chunks target ~450 tokens but the configured max_input_tokens can be
+		// smaller; cap chunk input like the whole-note path (10% safety margin),
+		// otherwise oversized requests fail with HTTP 400 and retry forever.
+		budget := vsConfig.ResolvedMaxInputTokens() * 9 / 10
 		texts := make([]string, len(toEmbed))
 		for i, pe := range toEmbed {
-			texts[i] = passagePrefix + pe.chunk.Content
+			texts[i] = passagePrefix + mdchunk.TruncateToTokens(pe.chunk.Content, budget)
 		}
 
 		results, embErr := env.OpenAI().CreateEmbeddings(ctx, texts)
@@ -203,6 +201,17 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	}
 
 	return nil
+}
+
+// NoteContentHash returns the content hash stored with a note's whole-note
+// embedding: sha256 over title + frontmatter-stripped content + model
+// fingerprint. Stripping avoids noise from frontmatter changes; the fingerprint
+// mixes in model identity (see modelFingerprint). The regeneration cron must
+// use this same function so its up-to-date check matches what the generator
+// stores.
+func NoteContentHash(title string, content []byte, cfg features.VectorSearchConfig) []byte {
+	h := sha256.Sum256([]byte(title + mdchunk.StripFrontmatter(string(content)) + modelFingerprint(cfg)))
+	return h[:]
 }
 
 // modelFingerprint identifies the embedding model inside content hashes. Every
