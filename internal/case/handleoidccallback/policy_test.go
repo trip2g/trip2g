@@ -1,6 +1,7 @@
 package handleoidccallback
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,73 +20,73 @@ func TestAccessBError(t *testing.T) {
 		{
 			name:  "no gates configured allows",
 			creds: db.OidcCredential{},
-			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			info:  verifiedUserInfo("a@example.com"),
 			want:  "",
 		},
 		{
 			name:  "allowed domain match (exact) allows",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			info:  verifiedUserInfo("a@example.com"),
 			want:  "",
 		},
 		{
 			name:  "allowed domain mismatch rejects",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@other.com"},
+			info:  verifiedUserInfo("a@other.com"),
 			want:  "email_not_allowed",
 		},
 		{
 			name:  "allowed domain match is case-insensitive (creds upper)",
 			creds: db.OidcCredential{AllowedEmailDomain: "Example.COM"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com"},
+			info:  verifiedUserInfo("a@example.com"),
 			want:  "",
 		},
 		{
 			name:  "allowed domain match is case-insensitive (email upper)",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "a@EXAMPLE.com"},
+			info:  verifiedUserInfo("a@EXAMPLE.com"),
 			want:  "",
 		},
 		{
 			name:  "uses domain after last @ (multiple @ in local part)",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "weird@local@example.com"},
+			info:  verifiedUserInfo("weird@local@example.com"),
 			want:  "",
 		},
 		{
 			name:  "no @ in email rejects when domain required",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com"},
-			info:  &oidcauth.UserInfo{Email: "noatsign"},
+			info:  verifiedUserInfo("noatsign"),
 			want:  "email_not_allowed",
 		},
 		{
 			name:  "required group present allows",
 			creds: db.OidcCredential{RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors", "admins"}},
+			info:  verifiedUserInfo("a@example.com", "editors", "admins"),
 			want:  "",
 		},
 		{
 			name:  "required group absent rejects",
 			creds: db.OidcCredential{RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors"}},
+			info:  verifiedUserInfo("a@example.com", "editors"),
 			want:  "email_not_allowed",
 		},
 		{
 			name:  "required group with empty groups rejects",
 			creds: db.OidcCredential{RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: nil},
+			info:  verifiedUserInfo("a@example.com"),
 			want:  "email_not_allowed",
 		},
 		{
 			name:  "domain and group both satisfied allows",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"admins"}},
+			info:  verifiedUserInfo("a@example.com", "admins"),
 			want:  "",
 		},
 		{
 			name:  "domain ok but group missing rejects",
 			creds: db.OidcCredential{AllowedEmailDomain: "example.com", RequiredGroup: "admins"},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", Groups: []string{"editors"}},
+			info:  verifiedUserInfo("a@example.com", "editors"),
 			want:  "email_not_allowed",
 		},
 	}
@@ -96,6 +97,36 @@ func TestAccessBError(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+type userByEmailLookupFunc func(context.Context, string) (db.User, error)
+
+func (f userByEmailLookupFunc) UserByEmail(ctx context.Context, email string) (db.User, error) {
+	return f(ctx, email)
+}
+
+func TestLookupAuthorizedUserRejectsBeforeAccountLookup(t *testing.T) {
+	called := false
+	lookup := userByEmailLookupFunc(func(context.Context, string) (db.User, error) {
+		called = true
+		return db.User{}, nil
+	})
+
+	_, err, berr := lookupAuthorizedUser(context.Background(), lookup, db.OidcCredential{}, &oidcauth.UserInfo{
+		Email:         "existing@example.com",
+		EmailVerified: false,
+	})
+	require.NoError(t, err)
+	require.Equal(t, berrEmailNotAllowed, berr)
+	require.False(t, called, "an unverified identity must not reach UserByEmail")
+}
+
+func TestAccessBErrorRejectsUnverifiedEmailForExistingAccountBinding(t *testing.T) {
+	got := accessBError(db.OidcCredential{}, &oidcauth.UserInfo{
+		Email:         "existing@example.com",
+		EmailVerified: false,
+	})
+	require.Equal(t, berrEmailNotAllowed, got)
 }
 
 func TestSubjectBound(t *testing.T) {
@@ -151,4 +182,8 @@ func TestProvisionBError(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func verifiedUserInfo(email string, groups ...string) *oidcauth.UserInfo {
+	return &oidcauth.UserInfo{Email: email, EmailVerified: true, Groups: groups}
 }

@@ -134,11 +134,14 @@ The account policy controls who gets in after the IdP confirms their identity.
 | Setting | Behaviour |
 |---|---|
 | `auto_provision` off (default) | The OIDC email must match an existing trip2g user. Unknown email → access denied. Mirrors the Google/GitHub OAuth behaviour. |
-| `auto_provision` on | A new trip2g user is created from the verified email on the first login. `email_verified` must be true for provisioning to proceed. |
+| `auto_provision` on | A new trip2g user is created from the verified email on the first login. |
+| `email_verified` | Every login requires `/userinfo` to return `email_verified: true`; a missing or false claim is rejected before trip2g looks up an account by email. |
 | `allowed_email_domain` | Every login (existing user or new) is rejected unless the email domain matches. |
 | `required_group` | Every login is rejected unless the user's token includes this group. Requires the `groups` scope mapping in Authentik. |
 
 Domain and group gates apply to every login, not just the first one.
+
+Configure the provider to include `email_verified` in its UserInfo response. trip2g fails closed when the claim is absent, even if the provider includes it only in the ID token.
 
 ## Security
 

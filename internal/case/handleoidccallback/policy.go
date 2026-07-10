@@ -1,11 +1,16 @@
 package handleoidccallback
 
 import (
+	"context"
 	"strings"
 
 	"trip2g/internal/db"
 	"trip2g/internal/oidcauth"
 )
+
+type userByEmailLookup interface {
+	UserByEmail(ctx context.Context, email string) (db.User, error)
+}
 
 // berror codes returned to the sign-in page via ?berror=.
 const (
@@ -17,6 +22,9 @@ const (
 // rejects this identity. Applies to EVERY login (existing users and new).
 // Empty allowed_email_domain / required_group are no-ops.
 func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
+	if !info.EmailVerified {
+		return berrEmailNotAllowed
+	}
 	if creds.AllowedEmailDomain != "" {
 		// domain = case-insensitive part after the last '@'
 		at := strings.LastIndex(info.Email, "@")
@@ -41,6 +49,22 @@ func accessBError(creds db.OidcCredential, info *oidcauth.UserInfo) string {
 		}
 	}
 	return ""
+}
+
+// lookupAuthorizedUser keeps the verified-email/access decision in front of
+// the email-based account lookup. That ordering is the security boundary: an
+// unverified provider claim must never select an existing local account.
+func lookupAuthorizedUser(
+	ctx context.Context,
+	env userByEmailLookup,
+	creds db.OidcCredential,
+	info *oidcauth.UserInfo,
+) (db.User, error, string) {
+	if berr := accessBError(creds, info); berr != "" {
+		return db.User{}, nil, berr
+	}
+	user, err := env.UserByEmail(ctx, info.Email)
+	return user, err, ""
 }
 
 // subjectBound reports whether the id_token subject and the userinfo subject

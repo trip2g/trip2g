@@ -136,8 +136,19 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	// Find user by email
-	user, err := env.UserByEmail(ctx, userInfo.Email)
+	// Reject unverified identities before looking up a local account by email.
+	// An email claim that has not been verified by the provider must never bind
+	// an OIDC login to an existing user.
+	user, err, berr := lookupAuthorizedUser(ctx, env, creds, userInfo)
+	if berr != "" {
+		env.Logger().Info("oauth login failed: access denied",
+			"provider", "oidc",
+			"email", userInfo.Email,
+			"ip", clientIP)
+		ctx.Redirect("/?berror="+berr, http.StatusFound)
+		return nil, nil
+	}
+
 	if err != nil && !db.IsNoFound(err) {
 		env.Logger().Info("oauth login failed: oauth error",
 			"provider", "oidc",
@@ -147,16 +158,6 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 	exists := err == nil
-
-	// Apply the configured access gate to EVERY login (existing and new users)
-	if berr := accessBError(creds, userInfo); berr != "" {
-		env.Logger().Info("oauth login failed: access denied",
-			"provider", "oidc",
-			"email", userInfo.Email,
-			"ip", clientIP)
-		ctx.Redirect("/?berror="+berr, http.StatusFound)
-		return nil, nil
-	}
 
 	if !exists {
 		// No existing user: decide whether to auto-provision
