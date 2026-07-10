@@ -2,10 +2,12 @@ package runcronjob
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
+	"trip2g/internal/cronjobs"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -47,6 +49,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Manually trigger the job
 	execution, err := env.ExecuteCronJobManually(input.ID)
 	if err != nil {
+		if errors.Is(err, cronjobs.ErrJobAlreadyRunning) {
+			return &model.ErrorPayload{Message: "Cron job is already running"}, nil
+		}
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
 	}
 

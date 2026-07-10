@@ -3,6 +3,7 @@ package cronjobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -21,6 +22,10 @@ const (
 	JobStatusCompleted int64 = 2
 	JobStatusFailed    int64 = 3
 )
+
+// ErrJobAlreadyRunning is returned to a caller that loses the same-job dedup
+// race; the winning execution keeps running.
+var ErrJobAlreadyRunning = errors.New("cron job is already running")
 
 type Job interface {
 	Name() string
@@ -139,6 +144,10 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		jobName := jobQueueID(name)
 		cj.env.RegisterJob(model.BackgroundDefaultQueue, jobName, func(ctx context.Context, m []byte) error {
 			_, execErr := cj.executeJob(dbJob.ID)
+			if errors.Is(execErr, ErrJobAlreadyRunning) {
+				// Not a failure: the previous run is still going, skip this tick.
+				return nil
+			}
 			return execErr
 		})
 
@@ -204,10 +213,11 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	}
 
 	cj.runningMU.Lock()
-	exec, exists := cj.runningJobs[jobID]
-	if exists {
+	if _, exists := cj.runningJobs[jobID]; exists {
 		cj.runningMU.Unlock()
-		return &exec, nil
+		// Never hand out the reservation entry: right after the reserve below it
+		// is a placeholder with ID 0, not a real execution row.
+		return nil, ErrJobAlreadyRunning
 	}
 	// Reserve the slot under the same lock as the check, so a concurrent call
 	// for the same job returns early instead of running it twice.
@@ -250,6 +260,16 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	cj.execMu.Lock()
 	if ctxErr := cj.ctx.Err(); ctxErr != nil {
 		cj.execMu.Unlock()
+		// The row was already inserted as RUNNING; mark it terminal or it stays
+		// RUNNING in the DB forever. cj.ctx is cancelled, so detach for the write.
+		_, updErr := cj.env.UpdateCronJobExecution(context.WithoutCancel(cj.ctx), db.UpdateCronJobExecutionParams{
+			ID:           exec.ID,
+			Status:       JobStatusFailed,
+			ErrorMessage: ptr.To("canceled: shutdown before execute"),
+		})
+		if updErr != nil {
+			cj.log.Error("failed to mark canceled cron job execution", "job_id", jobID, "error", updErr)
+		}
 		return nil, fmt.Errorf("context done before execute for job %d: %w", jobID, ctxErr)
 	}
 	report, jobErr := job.job.Execute(cj.ctx, cj.env)
