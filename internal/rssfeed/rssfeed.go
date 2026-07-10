@@ -189,11 +189,31 @@ func buildItem(l link, publicURL string, notes *model.NoteViews) RSSItem {
 	return item
 }
 
+// IsPubliclyReadable reports whether a note may be exposed through an
+// unauthenticated endpoint. RSS has no user context, so it must honor the same
+// static gates as anonymous page rendering rather than relying on Free alone.
+func IsPubliclyReadable(note *model.NoteView) bool {
+	if note == nil || !note.Free {
+		return false
+	}
+	if strings.HasSuffix(note.Path, ".html") || note.IsSystem() {
+		return false
+	}
+	for _, subgraph := range note.Subgraphs {
+		if subgraph != nil && subgraph.RequireSignin {
+			return false
+		}
+	}
+	return true
+}
+
 // textContent extracts plain text from an AST node's children.
 // enrichItem adds metadata from the target note to an RSS item.
 func enrichItem(item *RSSItem, notes *model.NoteViews, path string) {
 	target := notes.GetByPath(path)
-	if target == nil {
+	// Keep link/title metadata for inaccessible targets so readers can discover
+	// the item, but never include private description, dates, or rendered HTML.
+	if !IsPubliclyReadable(target) {
 		return
 	}
 
