@@ -47,6 +47,7 @@ import (
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/notebus"
 	"trip2g/internal/noteloader"
@@ -73,6 +74,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/valyala/fasthttp"
 
@@ -191,6 +194,8 @@ type appState struct {
 	personalTokenResolver *personaltoken.Resolver
 
 	notFoundTracker *notfoundtracker.Tracker
+
+	mcpMetrics *metrics.MCPMetrics
 
 	redirectManager *redirectmanager.Manager
 
@@ -337,6 +342,8 @@ func main() {
 
 			oidcKeys: oidcauth.NewKeyCache(),
 
+			mcpMetrics: metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
+
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
 			log:     log,
@@ -432,6 +439,7 @@ func main() {
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.wireMCPDynamicToolsGauge()
 	a.ChartData = chartdata.New(a)
 	a.liveNoteLoader.SetChartDataProvider(a)
 	a.latestNoteLoader.SetChartDataProvider(a)
@@ -544,6 +552,15 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 	a.ClearPageCache()
 
 	return a.latestNoteLoader.NoteViews(), nil
+}
+
+// wireMCPDynamicToolsGauge makes the dynamic-tools gauge read the currently
+// published note snapshot at scrape time, so it stays fresh across reloads
+// without any tools/list call.
+func (a *app) wireMCPDynamicToolsGauge() {
+	a.mcpMetrics.SetDynamicToolsSource(func() int {
+		return mcp.DynamicToolCount(a.latestNoteLoader.NoteViews())
+	})
 }
 
 func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {

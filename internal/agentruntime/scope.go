@@ -25,14 +25,44 @@ type ScopedKB struct {
 	writePatterns []string
 }
 
-// NewScopedKB builds a ScopedKB. The pattern slices are taken as-is (parse them
-// from JSON with webhookutil.ParseJSONStringArray at the call site).
+// NewScopedKB builds a ScopedKB. Patterns are normalized (leading "/" and "./"
+// stripped) so a config like "/concepts/**" matches the slash-less candidates
+// produced by normalizeScopePath instead of silently denying everything.
 func NewScopedKB(kb KB, readPatterns, writePatterns []string) *ScopedKB {
 	return &ScopedKB{
 		kb:            kb,
-		readPatterns:  readPatterns,
-		writePatterns: writePatterns,
+		readPatterns:  normalizeScopePatterns(readPatterns),
+		writePatterns: normalizeScopePatterns(writePatterns),
 	}
+}
+
+// stripScopePrefix removes leading "./" and "/" segments. Repeat because
+// "/./"-style prefixes can stack.
+func stripScopePrefix(p string) string {
+	for {
+		switch {
+		case strings.HasPrefix(p, "./"):
+			p = p[2:]
+		case strings.HasPrefix(p, "/"):
+			p = p[1:]
+		default:
+			return p
+		}
+	}
+}
+
+// normalizeScopePatterns strips leading "/" and "./" from each pattern so
+// patterns compare against normalized (slash-less) candidate paths. Patterns
+// are not path.Clean-ed to keep glob segments like "**" intact.
+func normalizeScopePatterns(patterns []string) []string {
+	if patterns == nil {
+		return nil
+	}
+	out := make([]string, len(patterns))
+	for i, p := range patterns {
+		out[i] = stripScopePrefix(strings.TrimSpace(p))
+	}
+	return out
 }
 
 // normalizeScopePath cleans a candidate path to a scope-relative form before
@@ -42,21 +72,12 @@ func NewScopedKB(kb KB, readPatterns, writePatterns []string) *ScopedKB {
 // escapes the scope root (leading "..", ".", or empty), it returns "" — a
 // sentinel that never matches any pattern, so traversal ("../x",
 // "concepts/../../etc/passwd") and absolute-escape stay denied.
+// Backslashes are treated as separators (like FileKB.resolve) so
+// "concepts/..\secrets/x.md" is seen as traversal here too — the authz and
+// resolution layers must agree on what a path means.
 func normalizeScopePath(p string) string {
-	p = strings.TrimSpace(p)
-	// Strip a leading "./" and any leading "/" so absolute-looking inputs become
-	// scope-relative. Repeat because "/./" style prefixes can stack.
-	for {
-		switch {
-		case strings.HasPrefix(p, "./"):
-			p = p[2:]
-		case strings.HasPrefix(p, "/"):
-			p = p[1:]
-		default:
-			goto cleaned
-		}
-	}
-cleaned:
+	p = strings.ReplaceAll(p, "\\", "/")
+	p = stripScopePrefix(strings.TrimSpace(p))
 	if p == "" {
 		return ""
 	}
@@ -88,11 +109,14 @@ func (s *ScopedKB) CanWrite(path string) bool {
 }
 
 // Read returns the document at path, or ErrReadDenied if it is out of scope.
+// The normalized path is what reaches the underlying KB, so slash-prefixed
+// inputs resolve to the same document as their canonical form.
 func (s *ScopedKB) Read(ctx context.Context, path string) (string, error) {
-	if !s.CanRead(path) {
+	norm := normalizeScopePath(path)
+	if norm == "" || !webhookutil.MatchesAny(norm, s.readPatterns) {
 		return "", ErrReadDenied
 	}
-	return s.kb.Read(ctx, path)
+	return s.kb.Read(ctx, norm)
 }
 
 // Search returns only in-scope documents. Out-of-scope hits are dropped so a
@@ -112,18 +136,23 @@ func (s *ScopedKB) Search(ctx context.Context, query string) ([]Doc, error) {
 }
 
 // Write upserts the document at path, or returns ErrWriteDenied if out of scope.
+// The normalized path is forwarded to the KB so a slash-prefixed path can't
+// create a duplicate ghost document.
 func (s *ScopedKB) Write(ctx context.Context, path string, content string) error {
-	if !s.CanWrite(path) {
+	norm := normalizeScopePath(path)
+	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
 		return ErrWriteDenied
 	}
-	return s.kb.Write(ctx, path, content)
+	return s.kb.Write(ctx, norm, content)
 }
 
 // Patch applies a find/replace to the document at path, or returns
-// ErrWriteDenied if out of write scope.
+// ErrWriteDenied if out of write scope. The normalized path is forwarded to
+// the KB, same as Write.
 func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error {
-	if !s.CanWrite(path) {
+	norm := normalizeScopePath(path)
+	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
 		return ErrWriteDenied
 	}
-	return s.kb.Patch(ctx, path, find, replace)
+	return s.kb.Patch(ctx, norm, find, replace)
 }

@@ -143,7 +143,9 @@ func (a *app) handleRSSFeed(req *appreq.Request) bool {
 
 	notes := a.LiveNoteViews()
 	note := notes.GetByPath(notePath)
-	if note == nil {
+	// RSS is an unauthenticated endpoint and must honor every static anonymous
+	// access gate, including sign-in-only subgraphs and internal/template notes.
+	if !rssfeed.IsPubliclyReadable(note) {
 		return false
 	}
 

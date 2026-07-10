@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 	"trip2g/internal/ptr"
@@ -40,6 +41,8 @@ const (
 
 	// MCP method names.
 	MCPMethodInitialize = "initialize"
+	mcpMethodToolsList  = "tools/list"
+	mcpMethodToolsCall  = "tools/call"
 )
 
 type Env interface {
@@ -63,6 +66,8 @@ type Env interface {
 	// Federated GraphQL tools
 	GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error)
 	FederatedGraphQLEnabled() bool
+	// Prometheus metrics for the MCP endpoint; may be nil (record methods are nil-safe).
+	MCPMetrics() *metrics.MCPMetrics
 }
 
 // unmarshalArgs unmarshals JSON arguments into the target type.
@@ -107,9 +112,9 @@ func Resolve(ctx context.Context, env Env, req Request) Response {
 	case "notifications/initialized":
 		// Client notification, no response needed
 		return Response{JSONRPC: "2.0", ID: req.ID, Result: map[string]any{}}
-	case "tools/list":
+	case mcpMethodToolsList:
 		return handleToolsList(ctx, env, req.ID)
-	case "tools/call":
+	case mcpMethodToolsCall:
 		return handleToolsCall(ctx, env, req)
 	default:
 		return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: "+req.Method)
@@ -487,6 +492,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 
 	limit, detailLimit := resolveSearchLimits(log, args.Limit, args.DetailLimit)
 	payload := buildSearchPayload(args.Query, results, env.NoteURL, env.LatestNoteChunks(), limit, detailLimit)
+	metricsFromContext(ctx).ObserveSearchResults("search", len(payload.Results))
 
 	// Format response
 	var sb strings.Builder
@@ -823,6 +829,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		log.Error("similar search failed", "error", err, "path", input.Path)
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
+	metricsFromContext(ctx).ObserveSearchResults("similar", len(results))
 
 	// Format response
 	var sb strings.Builder

@@ -114,6 +114,69 @@ func TestScopedKB_LeadingSlashNormalization(t *testing.T) {
 	}
 }
 
+// TestScopedKB_BackslashTraversalDenied: FileKB.resolve treats "\" as a path
+// separator (ReplaceAll to "/"), but scope matching used path.Clean where "\"
+// is an ordinary character — so `concepts/..\secrets/x.md` passed the
+// "concepts/**" glob yet resolved to secrets/x.md, outside the scope. Both
+// layers must agree: backslash traversal is denied.
+func TestScopedKB_BackslashTraversalDenied(t *testing.T) {
+	patterns := []string{"concepts/**"}
+	scoped := NewScopedKB(newMemKB(nil), patterns, patterns)
+
+	denied := []string{
+		`concepts/..\secrets/x.md`,
+		`..\secrets\x.md`,
+		`concepts\..\..\etc\passwd`,
+	}
+	for _, p := range denied {
+		if scoped.CanRead(p) {
+			t.Errorf("expected read DENY for %q under %v, got ALLOW", p, patterns)
+		}
+		if scoped.CanWrite(p) {
+			t.Errorf("expected write DENY for %q under %v, got ALLOW", p, patterns)
+		}
+	}
+
+	// Backslash-separated in-scope paths must still resolve and match, same as
+	// FileKB.resolve would.
+	if !scoped.CanRead(`concepts\x.md`) {
+		t.Errorf("expected read ALLOW for %q under %v, got DENY", `concepts\x.md`, patterns)
+	}
+}
+
+// TestScopedKB_WritePassesNormalizedPathToKB: normalization must apply to the
+// path handed DOWNSTREAM, not just to glob matching. Today Write("/concepts/x.md")
+// passes the scope check but forwards the raw slash path to the underlying KB,
+// so the doc lands at "/concepts/x.md" — downstream lookups keyed by the
+// normalized path ("concepts/x.md") miss and a duplicate ghost note appears.
+func TestScopedKB_WritePassesNormalizedPathToKB(t *testing.T) {
+	kb := newMemKB(nil)
+	patterns := []string{"concepts/**"}
+	scoped := NewScopedKB(kb, patterns, patterns)
+
+	err := scoped.Write(context.Background(), "/concepts/x.md", "content")
+	require.NoError(t, err)
+
+	require.Contains(t, kb.docs, "concepts/x.md",
+		"KB must receive the normalized path, not the raw slash-prefixed one")
+	require.NotContains(t, kb.docs, "/concepts/x.md",
+		"raw slash path must not leak into the KB")
+}
+
+// TestScopedKB_LeadingSlashPatternsStillMatch: patterns themselves are never
+// normalized, so write_patterns like ["/concepts/**"] silently match NOTHING
+// (candidates are normalized slash-less) — a deny-all lockout. Desired: a
+// leading-slash pattern matches the same paths as its slash-less form.
+func TestScopedKB_LeadingSlashPatternsStillMatch(t *testing.T) {
+	patterns := []string{"/concepts/**"}
+	scoped := NewScopedKB(newMemKB(nil), patterns, patterns)
+
+	require.True(t, scoped.CanWrite("concepts/x.md"),
+		"pattern %q must match %q after pattern normalization", patterns[0], "concepts/x.md")
+	require.True(t, scoped.CanRead("concepts/x.md"),
+		"read pattern %q must match %q after pattern normalization", patterns[0], "concepts/x.md")
+}
+
 // TestScopedKB_PatchUniqueness is the regression test for G5: Patch must error
 // when find is absent (0 occurrences) or ambiguous (>1 occurrences), and must
 // patch correctly when find is unique (exactly 1 occurrence). The duplicate-match

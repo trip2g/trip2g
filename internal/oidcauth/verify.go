@@ -42,9 +42,8 @@ type idTokenClaims struct {
 
 // VerifyIDToken verifies an OIDC id_token's signature against the provider's
 // JWKS, requires iss/aud/exp, validates iat when present, and checks nonce when
-// supplied.
-// Only RSA signatures are accepted; alg=none and symmetric algorithms are
-// rejected. Any failure returns an ErrVerification-wrapped error and nil claims.
+// supplied. Only RSA and ECDSA signatures are accepted; alg=none and symmetric
+// algorithms are rejected. Any failure returns an ErrVerification-wrapped error and nil claims.
 func (c *KeyCache) VerifyIDToken(ctx context.Context, rawIDToken string, p VerifyParams) (*IDTokenClaims, error) {
 	if rawIDToken == "" {
 		return nil, fmt.Errorf("%w: empty id_token", ErrVerification)
@@ -60,7 +59,7 @@ func (c *KeyCache) VerifyIDToken(ctx context.Context, rawIDToken string, p Verif
 	}
 
 	parsed, err := jwt.ParseWithClaims(rawIDToken, claims, keyFunc,
-		jwt.WithValidMethods([]string{"RS256", "RS384", "RS512"}),
+		jwt.WithValidMethods([]string{"RS256", "RS384", "RS512", "ES256", "ES384", "ES512"}),
 		jwt.WithIssuer(p.Issuer),
 		jwt.WithAudience(p.ClientID),
 		jwt.WithExpirationRequired(),

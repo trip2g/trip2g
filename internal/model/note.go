@@ -1026,7 +1026,12 @@ func NewNoteViews() *NoteViews {
 	}
 }
 
+// Copy is nil-safe: before the first notes load the snapshot is nil and
+// scrape-time readers (metrics) must not panic.
 func (nv *NoteViews) Copy() *NoteViews {
+	if nv == nil {
+		return nil
+	}
 	res := *nv
 	return &res
 }

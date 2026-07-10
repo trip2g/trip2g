@@ -41,6 +41,12 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
+// hybridResultCap bounds the final hybrid result list when no reranker OutputK
+// applies. It is a final-output bound, so it must run AFTER permission
+// filtering — capping the fused list earlier would discard readable results
+// ranked below unreadable ones.
+const hybridResultCap = 20
+
 //nolint:gocognit // multi-source search merge with per-result auth, scoping, and RRF ranking
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
@@ -76,6 +82,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	// passageByURL holds the best-matching chunk passage per note (window-sized),
 	// used by the optional reranker to avoid feeding truncated whole notes.
 	var passageByURL map[string]string
+	merged := false
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
 		vectorResults, passages, vectorErr := vectorSearch(ctx, env, input.Query, useLatest)
 		if vectorErr != nil {
@@ -84,6 +91,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		} else {
 			passageByURL = passages
 			results = mergeResults(results, vectorResults)
+			merged = true
 		}
 	}
 
@@ -132,13 +140,28 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	// Push hidden results to the end of the list
 	conn.Nodes = append(conn.Nodes, hiddenResults...)
 
+	// Size bounds are applied after permission filtering so unreadable notes
+	// don't consume output slots (hidden placeholders sit at the end and get cut
+	// first). OutputK takes precedence; without a reranker the hybrid path is
+	// bounded by hybridResultCap. Text-only search stays unbounded, as before.
+	switch cfg := env.Features().VectorSearch.Reranker; {
+	case cfg.Enabled && cfg.OutputK > 0:
+		if len(conn.Nodes) > cfg.OutputK {
+			conn.Nodes = conn.Nodes[:cfg.OutputK]
+		}
+	case merged:
+		if len(conn.Nodes) > hybridResultCap {
+			conn.Nodes = conn.Nodes[:hybridResultCap]
+		}
+	}
+
 	return &conn, nil
 }
 
 // vectorTopK is the number of unique-note vector candidates fed into RRF fusion.
 // Keep this wide: the cosine scan already scores every chunk, so truncating
 // before fusion only discards recall at zero compute saving. The final result
-// list is capped after merge (see mergeResults).
+// list is capped after permission filtering (see hybridResultCap in Resolve).
 const vectorTopK = 50
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, map[string]string, error) {
@@ -164,13 +187,25 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	// Score all chunks, no absolute threshold — E5 models compress scores
 	// into 0.7–1.0 range, making absolute thresholds unreliable.
 	// dotSimilarity is used here instead of cosine because the embedding server
-	// returns L2-normalised unit vectors (embedding-server/server.py normalize_embeddings=True),
+	// returns L2-normalised unit vectors (TEI always normalizes /v1/embeddings output),
 	// making cosine ≡ dot product at lower compute cost.
 	scanStart := time.Now()
 	var candidates []scored
+	mismatched := 0
 	for _, c := range chunks {
+		// A stored vector with a different dimensionality (model switch without
+		// re-embedding) is incomparable — skip it rather than scoring it 0, which
+		// would surface an arbitrary alphabetical top-K.
+		if len(c.Embedding) != len(embedding.Vector) {
+			mismatched++
+			continue
+		}
 		sim := dotSimilarity(embedding.Vector, c.Embedding)
 		candidates = append(candidates, scored{c.NotePath, c, sim})
+	}
+	if mismatched > 0 {
+		env.Logger().Warn("vector search: embedding dimension mismatch, skipping stale chunks (model switch without re-embedding?)",
+			"query_dims", len(embedding.Vector), "skipped_chunks", mismatched)
 	}
 	env.Logger().Debug("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
@@ -306,10 +341,6 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 		return finalResults[i].URL < finalResults[j].URL
 	})
 
-	if len(finalResults) > 20 {
-		finalResults = finalResults[:20]
-	}
-
 	return finalResults
 }
 
@@ -393,10 +424,6 @@ func rerankResults(
 	out := make([]appmodel.SearchResult, 0, len(results))
 	out = append(out, blended...)
 	out = append(out, results[n:]...) // tail beyond TopN unchanged
-
-	if cfg.OutputK > 0 && len(out) > cfg.OutputK {
-		out = out[:cfg.OutputK]
-	}
 	return out
 }
 
@@ -524,8 +551,8 @@ func lastIndexByte(s string, c byte) int {
 
 // dotSimilarity returns the dot product of two vectors.
 // This is equivalent to cosine similarity when both vectors are L2-normalised,
-// which is guaranteed by the embedding server (embedding-server/server.py
-// normalize_embeddings=True). Using dot product avoids the redundant sqrt
+// which is guaranteed by the embedding server (TEI always L2-normalises its
+// /v1/embeddings output). Using dot product avoids the redundant sqrt
 // divisions that cosine similarity would otherwise perform on unit vectors.
 func dotSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {

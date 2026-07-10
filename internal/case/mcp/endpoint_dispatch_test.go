@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
@@ -61,6 +62,7 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 		FeaturesFunc:                func() features.Features { return features.Features{} },
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		FederatedGraphQLEnabledFunc: func() bool { return false },
+		MCPMetricsFunc:              func() *metrics.MCPMetrics { return nil },
 	}
 	if verifyInboundWillFail {
 		env.FederationSecretByKIDFunc = func(_ context.Context, _ string) (db.FederationSecret, bool, error) {

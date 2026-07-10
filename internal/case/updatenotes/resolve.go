@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	pathpkg "path"
 	"strings"
 
 	"trip2g/internal/appreq"
@@ -35,6 +36,26 @@ func hashContent(content []byte) string {
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }
 
+// normalizeNotePath mirrors agentruntime's scope-path normalization: clients
+// (especially small LLMs) sometimes prepend "/" or "./" to a path, but
+// write_patterns and nvs.PathMap keys are both slash-less. Strips leading "/"
+// and "./", then path.Clean-resolves "."/".." segments. Returns "" when the
+// path resolves outside the vault root — callers treat that as invalid.
+func normalizeNotePath(p string) string {
+	p = strings.TrimSpace(p)
+	for strings.HasPrefix(p, "./") || strings.HasPrefix(p, "/") {
+		p = strings.TrimPrefix(strings.TrimPrefix(p, "./"), "/")
+	}
+	if p == "" {
+		return ""
+	}
+	c := pathpkg.Clean(p)
+	if c == "." || c == ".." || strings.HasPrefix(c, "../") {
+		return ""
+	}
+	return c
+}
+
 func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 	wp := appreq.WebhookWritePatterns(ctx)
 	// Scoped-token requests (fleet calls via shortapitoken): deny-all when
@@ -50,6 +71,19 @@ func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 		return &model.ErrorPayload{Message: "write denied for path: " + path}
 	}
 	return nil
+}
+
+// normalizeAndAuthorize normalizes a change path and checks it against the
+// request's write scope. Returns the canonical path, or an ErrorPayload.
+func normalizeAndAuthorize(ctx context.Context, raw string) (string, *model.ErrorPayload) {
+	norm := normalizeNotePath(raw)
+	if norm == "" {
+		return "", &model.ErrorPayload{Message: "invalid path: " + raw}
+	}
+	if denied := webhookWriteDenied(ctx, norm); denied != nil {
+		return "", denied
+	}
+	return norm, nil
 }
 
 //nolint:gocognit // per-change branches share state with the outer loop; extraction would require threading paths/pathIDs and a multi-return payload sentinel through helpers.
@@ -71,9 +105,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
-			if denied := webhookWriteDenied(ctx, upsert.Path); denied != nil {
-				return denied, nil
+			norm, errp := normalizeAndAuthorize(ctx, upsert.Path)
+			if errp != nil {
+				return errp, nil
 			}
+			upsert.Path = norm
 			// ExpectedHash gates the upsert with optimistic concurrency.
 			// actualHash defaults to "" for an absent note (the nv != nil block is skipped),
 			// so expectedHash == "" is the create-only sentinel: it asserts "expect this note
@@ -102,9 +138,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
-			if denied := webhookWriteDenied(ctx, patch.Path); denied != nil {
-				return denied, nil
+			norm, errp := normalizeAndAuthorize(ctx, patch.Path)
+			if errp != nil {
+				return errp, nil
 			}
+			patch.Path = norm
 			nv := nvs.PathMap[patch.Path]
 			if nv == nil {
 				return &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
@@ -139,9 +177,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
-			if denied := webhookWriteDenied(ctx, hide.Path); denied != nil {
-				return denied, nil
+			norm, errp := normalizeAndAuthorize(ctx, hide.Path)
+			if errp != nil {
+				return errp, nil
 			}
+			hide.Path = norm
 			err := env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
 				Value:    hide.Path,

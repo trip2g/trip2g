@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 )
@@ -65,6 +66,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
+//			},
+//			MCPMetricsFunc: func() *metrics.MCPMetrics {
+//				panic("mock out the MCPMetrics method")
 //			},
 //			NoteURLFunc: func(note *model.NoteView) string {
 //				panic("mock out the NoteURL method")
@@ -129,6 +133,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// MCPMetricsFunc mocks the MCPMetrics method.
+	MCPMetricsFunc func() *metrics.MCPMetrics
 
 	// NoteURLFunc mocks the NoteURL method.
 	NoteURLFunc func(note *model.NoteView) string
@@ -225,6 +232,9 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// MCPMetrics holds details about calls to the MCPMetrics method.
+		MCPMetrics []struct {
+		}
 		// NoteURL holds details about calls to the NoteURL method.
 		NoteURL []struct {
 			// Note is the note argument value.
@@ -265,6 +275,7 @@ type EnvMock struct {
 	lockLatestNoteViews                    sync.RWMutex
 	lockListFederationSecretSubgraphsByKID sync.RWMutex
 	lockLogger                             sync.RWMutex
+	lockMCPMetrics                         sync.RWMutex
 	lockNoteURL                            sync.RWMutex
 	lockOpenAI                             sync.RWMutex
 	lockPublicURL                          sync.RWMutex
@@ -727,6 +738,33 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// MCPMetrics calls MCPMetricsFunc.
+func (mock *EnvMock) MCPMetrics() *metrics.MCPMetrics {
+	if mock.MCPMetricsFunc == nil {
+		panic("EnvMock.MCPMetricsFunc: method is nil but Env.MCPMetrics was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockMCPMetrics.Lock()
+	mock.calls.MCPMetrics = append(mock.calls.MCPMetrics, callInfo)
+	mock.lockMCPMetrics.Unlock()
+	return mock.MCPMetricsFunc()
+}
+
+// MCPMetricsCalls gets all the calls that were made to MCPMetrics.
+// Check the length with:
+//
+//	len(mockedEnv.MCPMetricsCalls())
+func (mock *EnvMock) MCPMetricsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockMCPMetrics.RLock()
+	calls = mock.calls.MCPMetrics
+	mock.lockMCPMetrics.RUnlock()
 	return calls
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script: index docs/dev/*.md into Qdrant via embedding-server,
+Test script: index docs/dev/*.md into Qdrant via the local embedding service,
 then run search queries and compare results.
 
 Usage: python3 scripts/qdrant_test.py
@@ -74,7 +74,7 @@ def chunk_markdown(text: str, target_size: int = 1500, min_size: int = 200, over
 # --- Embedding ---
 
 def embed_texts(texts: list[str], prefix: str = "") -> list[list[float]]:
-    """Call embedding-server. Prefix 'passage: ' for docs, 'query: ' for queries (e5 convention)."""
+    """Call the embedding service. Prefix 'passage: ' for docs, 'query: ' for queries (e5 convention)."""
     prefixed = [prefix + t for t in texts]
     # batch in groups of 32
     all_vecs = []

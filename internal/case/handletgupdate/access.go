@@ -29,10 +29,15 @@ const (
 
 // getBotCanInviteWithRetry checks whether the bot can invite users, retrying
 // with bounded exponential backoff: Telegram needs time to propagate bot
-// membership/permission changes before the check reflects them. The wait
+// membership/permission changes before the check reflects them. A successful
+// but false result is retried too — propagation lag can return a stale
+// canInvite=false with no error right after a permission change. The wait
 // between attempts is context-aware so a canceled context aborts immediately.
 func getBotCanInviteWithRetry(ctx context.Context, env Env, chatID int64) (bool, error) {
-	var lastErr error
+	var (
+		canInvite bool
+		lastErr   error
+	)
 	for attempt := range tgPermissionMaxAttempts {
 		if attempt > 0 {
 			gap := tgPermissionBaseGap << (attempt - 1)
@@ -43,14 +48,17 @@ func getBotCanInviteWithRetry(ctx context.Context, env Env, chatID int64) (bool,
 			}
 		}
 
-		canInvite, err := env.GetBotCanInvite(ctx, chatID)
-		if err == nil {
-			return canInvite, nil
+		canInvite, lastErr = env.GetBotCanInvite(ctx, chatID)
+		if lastErr == nil && canInvite {
+			return true, nil
 		}
-		lastErr = err
 	}
 
-	return false, fmt.Errorf("check bot invite permission: giving up after %d attempts: %w", tgPermissionMaxAttempts, lastErr)
+	if lastErr != nil {
+		return false, fmt.Errorf("check bot invite permission: giving up after %d attempts: %w", tgPermissionMaxAttempts, lastErr)
+	}
+
+	return canInvite, nil
 }
 
 func (req *request) handleGroupAccess(ctx context.Context, args string) error {

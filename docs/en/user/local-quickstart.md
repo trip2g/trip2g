@@ -54,7 +54,7 @@ until curl -sf http://localhost:24082/healthz >/dev/null; do sleep 1; done; echo
 
 Notes:
 - `DEV=true` enables the dev sign-in code (no real email needed). **Never use in production.**
-- You do **not** need the `FEATURES` / vector-search env for plain content; omit it to avoid the embedding-server dependency.
+- You do **not** need the `FEATURES` / vector-search env for plain content; omit it to avoid the embedding-service dependency.
 - `-p 24081:24081 -p 24082:24082` publishes the app and health ports to your host machine. MinIO's `-p 9000:9000` does the same for S3 access (MinIO console is on 9001).
 - `MINIO_ENDPOINT=trip2g-minio:9000` uses the container name as the hostname. Docker's built-in DNS resolves it on the shared network. From your host browser or CLI you still reach MinIO at `localhost:9000`.
 - On Linux you can skip the network setup and use `--network host` on the trip2g container with `MINIO_ENDPOINT=localhost:9000` instead. Docker Desktop on Mac and Windows does not support host networking, so the `-p` approach above is the portable default.
