@@ -22,7 +22,18 @@ var (
 	imageSizePattern         = regexp.MustCompile(`^[0-9]+(?:%|px|rem)?$`)
 	unitlessImageSizePattern = regexp.MustCompile(`^[0-9]+$`)
 	difyPathPattern          = regexp.MustCompile(`^/chatbot/[A-Za-z0-9_-]+/?$`)
+	errorEchoIDPattern       = regexp.MustCompile(`^[A-Za-z0-9@/_:.,~-]*$`)
 )
+
+// SafeErrorEchoID returns an embed ID safe to echo in an error message.
+// A rejected ID may carry markup or attribute fragments; those are replaced
+// with a placeholder instead of being reflected back into the page.
+func SafeErrorEchoID(id string) string {
+	if errorEchoIDPattern.MatchString(id) {
+		return id
+	}
+	return "(invalid id)"
+}
 
 // ValidEmbedID reports whether an embed identifier is safe for the provider's
 // downstream HTML/JavaScript template. It is shared with mdloader, which has a
@@ -290,7 +301,7 @@ func styleImageDimension(value string) string {
 func (r *HTMLRenderer) wrapEnclaveErrorHtml(enclaveName, objectID string) string {
 	html := fmt.Sprintf(
 		`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object %s-enclave-object error">Failed to load %s from %s</div></div>`,
-		html.EscapeString(enclaveName), html.EscapeString(enclaveName), html.EscapeString(objectID),
+		html.EscapeString(enclaveName), html.EscapeString(enclaveName), html.EscapeString(SafeErrorEchoID(objectID)),
 	)
 	return html
 }
