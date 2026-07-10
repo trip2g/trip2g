@@ -49,7 +49,7 @@ func Resolve(ctx context.Context, env Env, req nowpayments.IPNRequest) (*Respons
 
 	env.Logger().Info("purchase updated", "order_id", req.OrderID, "status", req.PaymentStatus)
 
-	if req.PaymentStatus == nowpayments.PaymentStatusConfirmed { //nolint:nestif // I don't know how to avoid this nesting
+	if req.PaymentStatus.IsSuccessful() { //nolint:nestif // I don't know how to avoid this nesting
 		accessCount, countErr := env.CountUserSubgraphAccessByPurchaseID(ctx, &purchase.ID)
 		if countErr != nil {
 			return nil, fmt.Errorf("failed to count user subgraph access by purchase ID: %w", countErr)
