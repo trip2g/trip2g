@@ -183,6 +183,30 @@ func TestMatchesAny(t *testing.T) {
 			patterns: []string{"**/*.md"},
 			want:     true,
 		},
+		{
+			name:     "slash-prefixed pattern matches canonical path",
+			path:     "concepts/x.md",
+			patterns: []string{"/concepts/**"},
+			want:     true,
+		},
+		{
+			name:     "dot-slash-prefixed pattern matches canonical path",
+			path:     "concepts/x.md",
+			patterns: []string{"./concepts/**"},
+			want:     true,
+		},
+		{
+			name:     "stacked slash prefixes are stripped",
+			path:     "concepts/x.md",
+			patterns: []string{"/./concepts/**"},
+			want:     true,
+		},
+		{
+			name:     "pattern empty after stripping matches nothing",
+			path:     "",
+			patterns: []string{"/"},
+			want:     false,
+		},
 	}
 
 	for _, tt := range tests {

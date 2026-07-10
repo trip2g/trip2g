@@ -778,6 +778,38 @@ func TestResolve_ScopedToken_LeadingSlashPathNotDenied(t *testing.T) {
 	require.True(t, called)
 }
 
+// The mirror-image defect: the STORED PATTERN carries the leading slash. Paths
+// are normalized before matching, but patterns were passed raw to MatchesAny,
+// so write_patterns ["/concepts/**"] never matched the canonical slash-less
+// path and every write was wrongly denied. Desired: patterns are normalized
+// too, so the write is allowed.
+func TestResolve_ScopedToken_SlashPrefixedPatternNotDenied(t *testing.T) {
+	req := &appreq.Request{
+		WebhookDeliveryKind:  "change",
+		WebhookWritePatterns: []string{"/concepts/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "concepts/x.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out,
+		"slash-prefixed write pattern must still allow its in-scope paths")
+	require.True(t, called)
+}
+
 // Same leading-slash defect for the Hide branch: the raw path reached
 // webhookWriteDenied and HideNotePath un-normalized, so a scoped token hiding
 // "/concepts/x.md" was wrongly denied against "concepts/**".
