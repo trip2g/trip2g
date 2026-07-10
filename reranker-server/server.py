@@ -14,24 +14,26 @@ print(f"Reranker loaded in {time.time() - t0:.1f}s")
 app = FastAPI()
 
 
+# TEI-style contract: {"query","texts"} in, bare [{"index","score"}] out
+# (matches internal/reranker/client.go).
 class RerankRequest(BaseModel):
     query: str
-    documents: list[str]
+    texts: list[str]
     model: str = ""
 
 
 @app.post("/rerank")
 def rerank(req: RerankRequest):
-    if not req.documents:
-        return {"results": []}
-    pairs = [(req.query, doc) for doc in req.documents]
+    if not req.texts:
+        return []
+    pairs = [(req.query, text) for text in req.texts]
     scores = model.predict(pairs)
     results = [
-        {"index": i, "relevance_score": float(s)}
+        {"index": i, "score": float(s)}
         for i, s in enumerate(scores)
     ]
-    results.sort(key=lambda r: r["relevance_score"], reverse=True)
-    return {"results": results}
+    results.sort(key=lambda r: r["score"], reverse=True)
+    return results
 
 
 @app.get("/health")
