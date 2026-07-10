@@ -265,6 +265,8 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 	hdr, ok := handlers[path[len(api.config.BasePath):]]
 	if !ok {
 		api.logger.Warn("unsupported path", "path", path)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		return true
 	}
 
 	api.mu.Lock()
