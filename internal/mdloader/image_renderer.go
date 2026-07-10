@@ -1,6 +1,7 @@
 package mdloader
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
@@ -123,7 +124,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderYouTube, enc.ObjectID) {
 			html, err = object.GetYoutubeEmbedHtml(enc)
 		} else {
-			err = fmt.Errorf("invalid YouTube video ID")
+			err = errors.New("invalid YouTube video ID")
 		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("youtube", enc.ObjectID)
@@ -138,7 +139,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderBilibili, enc.ObjectID) {
 			html, err = object.GetBilibiliEmbedHtml(enc)
 		} else {
-			err = fmt.Errorf("invalid Bilibili video ID")
+			err = errors.New("invalid Bilibili video ID")
 		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("bilibili", enc.ObjectID)
@@ -162,7 +163,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		if enclavefix.ValidEmbedID(enclavecore.EnclaveProviderTradingView, enc.ObjectID) {
 			html, err = object.GetTradingViewWidgetHtml(enc)
 		} else {
-			err = fmt.Errorf("invalid TradingView symbol")
+			err = errors.New("invalid TradingView symbol")
 		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("tradingview", enc.ObjectID)
@@ -177,7 +178,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		if enclavefix.ValidDifyURL(enc.ObjectID) {
 			html, err = object.GetDifyWidgetHtml(enc)
 		} else {
-			err = fmt.Errorf("invalid Dify chatbot URL")
+			err = errors.New("invalid Dify chatbot URL")
 		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("dify", enc.ObjectID)
@@ -192,7 +193,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		if enclavefix.ValidQuailLayout(enc.Params["layout"]) {
 			html, err = object.GetQuailWidgetHtml(enc)
 		} else {
-			err = fmt.Errorf("invalid Quail layout")
+			err = errors.New("invalid Quail layout")
 		}
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("quail", enc.ObjectID)
@@ -314,7 +315,14 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 	var out string
 	if size != nil {
 		if size.Height != "" {
-			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" height="%s" />`, safeSrc, safeAlt, classAttr, html.EscapeString(size.Width), html.EscapeString(size.Height))
+			out = fmt.Sprintf(
+				`<img src="%s" alt="%s"%s width="%s" height="%s" />`,
+				safeSrc,
+				safeAlt,
+				classAttr,
+				html.EscapeString(size.Width),
+				html.EscapeString(size.Height),
+			)
 		} else {
 			out = fmt.Sprintf(`<img src="%s" alt="%s"%s width="%s" />`, safeSrc, safeAlt, classAttr, html.EscapeString(size.Width))
 		}
