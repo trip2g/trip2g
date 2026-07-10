@@ -14,6 +14,7 @@ import (
 type federationMock struct {
 	searchFunc          func(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error)
 	federatedSearchFunc func(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error)
+	noteHTMLFunc        func(ctx context.Context, params appmodel.FederationNoteHTMLParams) (appmodel.FederationResult, error)
 	expandFunc          func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
 	federatedExpandFunc func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
 }
@@ -30,7 +31,10 @@ func (m *federationMock) Similar(ctx context.Context, params appmodel.Federation
 }
 
 func (m *federationMock) NoteHTML(ctx context.Context, params appmodel.FederationNoteHTMLParams) (appmodel.FederationResult, error) {
-	panic("unexpected NoteHTML call")
+	if m.noteHTMLFunc == nil {
+		panic("unexpected NoteHTML call")
+	}
+	return m.noteHTMLFunc(ctx, params)
 }
 
 func (m *federationMock) FederatedSearch(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
@@ -115,6 +119,57 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 	result := resp.Result.(mcp.CallToolResult)
 	require.Equal(t, "remote bob", result.Content[0].Text)
 	require.JSONEq(t, `{"results":[{"title":"remote"}]}`, string(result.StructuredContent.(json.RawMessage)))
+}
+
+func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
+	// Models replay search match ids ("p36:c2") as pid; the hub must not
+	// reject the whole call — it forwards the valid path with pid unset.
+	kbNote := &appmodel.NoteView{
+		PathID:             17,
+		MCPFederationKBURL: "https://bob.example/_system/mcp",
+		MCPFederationKBID:  "nietzsche",
+	}
+	nvs := appmodel.NewNoteViews()
+	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
+
+	var gotParams appmodel.FederationNoteHTMLParams
+	federation := &federationMock{
+		noteHTMLFunc: func(ctx context.Context, params appmodel.FederationNoteHTMLParams) (appmodel.FederationResult, error) {
+			gotParams = params
+			return appmodel.FederationResult{
+				Content: []appmodel.FederationContent{{Type: "text", Text: "remote note body"}},
+			}, nil
+		},
+	}
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			return nvs
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
+			return federation, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "federated_note_html",
+		Arguments: json.RawMessage(`{"kb_id":"nietzsche","path":"concepts/volya-k-vlasti.md","pid":"p36:c2"}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	})
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.Equal(t, "remote note body", result.Content[0].Text)
+	require.Equal(t, "concepts/volya-k-vlasti.md", gotParams.Path)
+	require.Zero(t, gotParams.PID)
 }
 
 func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {

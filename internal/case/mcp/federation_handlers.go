@@ -146,7 +146,7 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
 	params := model.FederationNoteHTMLParams{
-		PID:     args.PID,
+		PID:     args.PID.Value,
 		NoteID:  args.NoteID,
 		Path:    args.Path,
 		Href:    args.Href,
