@@ -900,14 +900,18 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		return *errResp
 	}
 
-	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+	if args.Path == "" && args.Href == "" && args.PID.Value == 0 && args.PID.Raw == "" && args.NoteID == 0 {
 		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
 	}
 
 	noteViews := env.LatestNoteViews()
 	note := resolveNoteReference(noteViews, *args)
 	if note == nil {
-		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "pid_raw", args.PID.Raw, "note_id", args.NoteID)
+		if args.PID.Raw != "" && args.PID.Value == 0 {
+			return errorResponse(id, ErrCodeInvalidParams,
+				fmt.Sprintf("pid %q is not a note id; note ids are numbers from search results — chunk refs like \"p36:c2\" go in match_id", args.PID.Raw))
+		}
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 	canRead, err := canReadMCPNote(ctx, env, note)
@@ -916,7 +920,7 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		return errorResponse(id, ErrCodeInternal, "Note HTML failed: "+err.Error())
 	}
 	if !canRead {
-		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
+		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "note_id", args.NoteID)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 
@@ -986,7 +990,7 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	note := resolveNoteReference(noteViews, NoteHTMLArguments{
 		Path:   args.Path,
 		Href:   args.Href,
-		PID:    args.PID,
+		PID:    PID{Value: args.PID},
 		NoteID: args.NoteID,
 	})
 	if note == nil {
@@ -1079,12 +1083,16 @@ func parseChunkMatchID(matchID string) (int64, int, bool) {
 }
 
 func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *model.NoteView {
-	id := args.PID
+	id := args.PID.Value
 	if id == 0 {
 		id = args.NoteID
 	}
 	if id != 0 {
-		return noteViews.GetByPathID(id)
+		if note := noteViews.GetByPathID(id); note != nil {
+			return note
+		}
+		// Models routinely replay a stale or foreign id as pid alongside a
+		// valid path — a pid miss must not eclipse the other references.
 	}
 	if args.Path != "" {
 		if note := noteViews.PathMap[args.Path]; note != nil {

@@ -767,6 +767,22 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 	require.Equal(t, "/custom-note", payload.Results[0].Href)
 }
 
+func noteHTMLEnv(note *appmodel.NoteView) *EnvMock {
+	return &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			noteViews := appmodel.NewNoteViews()
+			noteViews.RegisterNote(note)
+			return noteViews
+		},
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+	}
+}
+
 func TestHandleNoteHtml(t *testing.T) {
 	t.Run("returns note HTML", func(t *testing.T) {
 		note := &appmodel.NoteView{
@@ -1048,6 +1064,109 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
 		require.Contains(t, result.Content[0].Text, "Section body.")
+	})
+
+	// Models routinely replay ids from search results as pid: the numeric
+	// note_id as a string, a chunk match_id ("p36:c2"), even a path. Those
+	// calls usually carry a valid path too — a bogus pid must not eclipse it.
+	t.Run("falls back to path when pid does not resolve", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "concepts/volya-k-vlasti.md",
+			PathID:    36,
+			Permalink: "/concepts/volya-k-vlasti",
+			HTML:      "<h1>Воля к власти</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 999999, "path": "concepts/volya-k-vlasti.md"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 8,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Воля к власти")
+	})
+
+	t.Run("tolerates match_id-shaped string pid and resolves via path", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "concepts/volya-k-vlasti.md",
+			PathID:    36,
+			Permalink: "/concepts/volya-k-vlasti",
+			HTML:      "<h1>Воля к власти</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": "p36:c2", "path": "concepts/volya-k-vlasti.md"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 9,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Воля к власти")
+	})
+
+	t.Run("accepts numeric string pid", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "ru/hub/pascal.md",
+			PathID:    70,
+			Permalink: "/ru/hub/pascal",
+			HTML:      "<h1>Паскаль</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": "70"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 10,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Паскаль")
+	})
+
+	t.Run("string pid alone returns clear error naming the bad pid", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			Path:      "concepts/volya-k-vlasti.md",
+			PathID:    36,
+			Permalink: "/concepts/volya-k-vlasti",
+			HTML:      "<h1>Воля к власти</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": "p36:c2"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 11,
+		})
+
+		require.NotNil(t, resp.Error)
+		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
+		require.Contains(t, resp.Error.Message, "p36:c2")
 	})
 
 	t.Run("returns error instead of empty success for note with no rendered content", func(t *testing.T) {
