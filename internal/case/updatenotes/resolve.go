@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	pathpkg "path"
 	"strings"
 
 	"trip2g/internal/appreq"
@@ -33,6 +34,26 @@ func hashContent(content []byte) string {
 	h := sha256.New()
 	h.Write(content)
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+}
+
+// normalizeNotePath mirrors agentruntime's scope-path normalization: clients
+// (especially small LLMs) sometimes prepend "/" or "./" to a path, but
+// write_patterns and nvs.PathMap keys are both slash-less. Strips leading "/"
+// and "./", then path.Clean-resolves "."/".." segments. Returns "" when the
+// path resolves outside the vault root — callers treat that as invalid.
+func normalizeNotePath(p string) string {
+	p = strings.TrimSpace(p)
+	for strings.HasPrefix(p, "./") || strings.HasPrefix(p, "/") {
+		p = strings.TrimPrefix(strings.TrimPrefix(p, "./"), "/")
+	}
+	if p == "" {
+		return ""
+	}
+	c := pathpkg.Clean(p)
+	if c == "." || c == ".." || strings.HasPrefix(c, "../") {
+		return ""
+	}
+	return c
 }
 
 func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
@@ -71,6 +92,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
+			norm := normalizeNotePath(upsert.Path)
+			if norm == "" {
+				return &model.ErrorPayload{Message: "invalid path: " + upsert.Path}, nil
+			}
+			upsert.Path = norm
 			if denied := webhookWriteDenied(ctx, upsert.Path); denied != nil {
 				return denied, nil
 			}
@@ -102,6 +128,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
+			norm := normalizeNotePath(patch.Path)
+			if norm == "" {
+				return &model.ErrorPayload{Message: "invalid path: " + patch.Path}, nil
+			}
+			patch.Path = norm
 			if denied := webhookWriteDenied(ctx, patch.Path); denied != nil {
 				return denied, nil
 			}
@@ -139,6 +170,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
+			norm := normalizeNotePath(hide.Path)
+			if norm == "" {
+				return &model.ErrorPayload{Message: "invalid path: " + hide.Path}, nil
+			}
+			hide.Path = norm
 			if denied := webhookWriteDenied(ctx, hide.Path); denied != nil {
 				return denied, nil
 			}
