@@ -132,6 +132,12 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	// Push hidden results to the end of the list
 	conn.Nodes = append(conn.Nodes, hiddenResults...)
 
+	// OutputK is applied after permission filtering so unreadable notes don't
+	// consume output slots (hidden placeholders sit at the end and get cut first).
+	if cfg := env.Features().VectorSearch.Reranker; cfg.Enabled && cfg.OutputK > 0 && len(conn.Nodes) > cfg.OutputK {
+		conn.Nodes = conn.Nodes[:cfg.OutputK]
+	}
+
 	return &conn, nil
 }
 
@@ -168,9 +174,21 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	// making cosine ≡ dot product at lower compute cost.
 	scanStart := time.Now()
 	var candidates []scored
+	mismatched := 0
 	for _, c := range chunks {
+		// A stored vector with a different dimensionality (model switch without
+		// re-embedding) is incomparable — skip it rather than scoring it 0, which
+		// would surface an arbitrary alphabetical top-K.
+		if len(c.Embedding) != len(embedding.Vector) {
+			mismatched++
+			continue
+		}
 		sim := dotSimilarity(embedding.Vector, c.Embedding)
 		candidates = append(candidates, scored{c.NotePath, c, sim})
+	}
+	if mismatched > 0 {
+		env.Logger().Warn("vector search: embedding dimension mismatch, skipping stale chunks (model switch without re-embedding?)",
+			"query_dims", len(embedding.Vector), "skipped_chunks", mismatched)
 	}
 	env.Logger().Debug("vector scan complete", "chunks", len(chunks), "duration", time.Since(scanStart))
 
@@ -393,10 +411,6 @@ func rerankResults(
 	out := make([]appmodel.SearchResult, 0, len(results))
 	out = append(out, blended...)
 	out = append(out, results[n:]...) // tail beyond TopN unchanged
-
-	if cfg.OutputK > 0 && len(out) > cfg.OutputK {
-		out = out[:cfg.OutputK]
-	}
 	return out
 }
 
