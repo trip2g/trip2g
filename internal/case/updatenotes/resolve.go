@@ -73,6 +73,19 @@ func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 	return nil
 }
 
+// normalizeAndAuthorize normalizes a change path and checks it against the
+// request's write scope. Returns the canonical path, or an ErrorPayload.
+func normalizeAndAuthorize(ctx context.Context, raw string) (string, *model.ErrorPayload) {
+	norm := normalizeNotePath(raw)
+	if norm == "" {
+		return "", &model.ErrorPayload{Message: "invalid path: " + raw}
+	}
+	if denied := webhookWriteDenied(ctx, norm); denied != nil {
+		return "", denied
+	}
+	return norm, nil
+}
+
 //nolint:gocognit // per-change branches share state with the outer loop; extraction would require threading paths/pathIDs and a multi-return payload sentinel through helpers.
 func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error) {
 	nvs := env.LatestNoteViews()
@@ -92,14 +105,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
-			norm := normalizeNotePath(upsert.Path)
-			if norm == "" {
-				return &model.ErrorPayload{Message: "invalid path: " + upsert.Path}, nil
+			norm, errp := normalizeAndAuthorize(ctx, upsert.Path)
+			if errp != nil {
+				return errp, nil
 			}
 			upsert.Path = norm
-			if denied := webhookWriteDenied(ctx, upsert.Path); denied != nil {
-				return denied, nil
-			}
 			// ExpectedHash gates the upsert with optimistic concurrency.
 			// actualHash defaults to "" for an absent note (the nv != nil block is skipped),
 			// so expectedHash == "" is the create-only sentinel: it asserts "expect this note
@@ -128,14 +138,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
-			norm := normalizeNotePath(patch.Path)
-			if norm == "" {
-				return &model.ErrorPayload{Message: "invalid path: " + patch.Path}, nil
+			norm, errp := normalizeAndAuthorize(ctx, patch.Path)
+			if errp != nil {
+				return errp, nil
 			}
 			patch.Path = norm
-			if denied := webhookWriteDenied(ctx, patch.Path); denied != nil {
-				return denied, nil
-			}
 			nv := nvs.PathMap[patch.Path]
 			if nv == nil {
 				return &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
@@ -170,14 +177,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
 			hide := change.Hide
-			norm := normalizeNotePath(hide.Path)
-			if norm == "" {
-				return &model.ErrorPayload{Message: "invalid path: " + hide.Path}, nil
+			norm, errp := normalizeAndAuthorize(ctx, hide.Path)
+			if errp != nil {
+				return errp, nil
 			}
 			hide.Path = norm
-			if denied := webhookWriteDenied(ctx, hide.Path); denied != nil {
-				return denied, nil
-			}
 			err := env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
 				Value:    hide.Path,

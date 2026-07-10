@@ -43,7 +43,10 @@ func TestRerankAgainstBundledSidecar(t *testing.T) {
 			Texts []string `json:"texts"`
 			Model string   `json:"model"`
 		}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		if req.Texts == nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			_, _ = w.Write([]byte(`{"detail":[{"type":"missing","loc":["body","texts"],"msg":"Field required"}]}`))

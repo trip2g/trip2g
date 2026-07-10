@@ -248,9 +248,9 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 
 	// Execute the job — serialize globally to bound memory on small boxes.
 	cj.execMu.Lock()
-	if err := cj.ctx.Err(); err != nil {
+	if ctxErr := cj.ctx.Err(); ctxErr != nil {
 		cj.execMu.Unlock()
-		return nil, fmt.Errorf("context done before execute for job %d: %w", jobID, err)
+		return nil, fmt.Errorf("context done before execute for job %d: %w", jobID, ctxErr)
 	}
 	report, jobErr := job.job.Execute(cj.ctx, cj.env)
 	cj.execMu.Unlock()

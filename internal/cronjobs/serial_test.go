@@ -58,8 +58,8 @@ func TestExecuteJob_SerialExecution(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func() { defer wg.Done(); cj.executeJob(1) }() //nolint:errcheck
-	go func() { defer wg.Done(); cj.executeJob(2) }() //nolint:errcheck
+	go func() { defer wg.Done(); cj.executeJob(1) }()
+	go func() { defer wg.Done(); cj.executeJob(2) }()
 	wg.Wait()
 
 	// Each job must have run exactly once.

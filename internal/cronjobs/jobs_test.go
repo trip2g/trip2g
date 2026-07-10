@@ -157,12 +157,12 @@ func TestExecuteJob_ConcurrentSameJobExecutesOnce(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func() { defer wg.Done(); cj.executeJob(1) }() //nolint:errcheck
+	go func() { defer wg.Done(); cj.executeJob(1) }()
 
 	// Wait until the first call is past the runningJobs check, inside the insert.
 	<-insertEntered
 
-	go func() { defer wg.Done(); cj.executeJob(1) }() //nolint:errcheck
+	go func() { defer wg.Done(); cj.executeJob(1) }()
 
 	// With correct dedup the second call returns early and never reaches the
 	// insert; give it a moment either way, then release the blocked insert(s).

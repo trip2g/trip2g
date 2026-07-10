@@ -84,8 +84,12 @@ func (c *KeyCache) keyForKID(ctx context.Context, jwksURI, kid string) (crypto.P
 		return nil, err
 	}
 
-	key, ok := v.(map[string]crypto.PublicKey)[kid]
+	keys, ok := v.(map[string]crypto.PublicKey)
 	if !ok {
+		return nil, fmt.Errorf("unexpected JWKS cache entry type %T", v)
+	}
+	key, found := keys[kid]
+	if !found {
 		return nil, fmt.Errorf("no JWKS key for kid %q", kid)
 	}
 	return key, nil
