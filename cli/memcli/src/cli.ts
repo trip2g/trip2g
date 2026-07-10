@@ -19,6 +19,7 @@ import crypto from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
+import os from 'node:os';
 import path from 'node:path';
 import { print } from 'graphql';
 import { CreateApiKeyDocument, DisableApiKeyDocument } from './generated/graphql.ts';
@@ -40,6 +41,25 @@ const DEFAULT_IMAGE = 'ghcr.io/trip2g/trip2g:latest';
 const DEFAULT_EMAIL = 'memory@local';
 const READY_TIMEOUT_MS = 60_000;
 const READY_POLL_MS = 500;
+
+// Local vector-search sidecars (--embedded / --reranker). TEI L2-normalizes
+// /v1/embeddings output, which the app's dot-product similarity relies on.
+const TEI_IMAGE = 'ghcr.io/huggingface/text-embeddings-inference:cpu-1.8';
+// First run downloads a ~2GB model — allow minutes, not seconds.
+const TEI_READY_TIMEOUT_MS = 900_000;
+const TEI_READY_POLL_MS = 2_000;
+
+export function networkName(name: string): string {
+  return `${name}-net`;
+}
+
+export function embeddingContainerName(name: string): string {
+  return `${name}-embedding`;
+}
+
+export function rerankerContainerName(name: string): string {
+  return `${name}-reranker`;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,6 +83,8 @@ export interface Flags {
   name: string | null;
   kanban: boolean;
   kanbanBundle: string | null;
+  embedded: boolean;
+  reranker: boolean;
 }
 
 export interface ServerEnv {
@@ -75,6 +97,7 @@ export interface ServerEnv {
   DATA_ENCRYPTION_KEY: string;
   STORAGE_BACKEND: string;
   STORAGE_LOCAL_DIR: string;
+  FEATURES?: string;
 }
 
 export interface DataJson {
@@ -489,6 +512,8 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
     name: null,
     kanban: false,
     kanbanBundle: null,
+    embedded: false,
+    reranker: false,
   };
 
   let cmd = 'up';
@@ -542,6 +567,10 @@ export function parseArgs(argv: string[]): { cmd: string; flags: Flags; position
       flags.kanban = true;
     } else if (arg === '--kanban-bundle') {
       flags.kanbanBundle = argv[++i];
+    } else if (arg === '--embedded') {
+      flags.embedded = true;
+    } else if (arg === '--reranker') {
+      flags.reranker = true;
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -606,6 +635,8 @@ export function buildToolList(): ToolDef[] {
           publicUrl: { type: 'string', description: 'Override PUBLIC_URL for the server' },
           kanban: { type: 'boolean', description: 'Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board' },
           kanbanBundle: { type: 'string', description: 'Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)' },
+          embedded: { type: 'boolean', description: 'Start a local TEI embedding sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search' },
+          reranker: { type: 'boolean', description: 'Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB); implies embedded' },
         },
         required: [],
       },
@@ -744,6 +775,7 @@ export function buildServerEnv(opts: {
   email: string;
   secret: string;
   encryptionKey: string;
+  features?: string;
 }): ServerEnv {
   const { port, iport, email, secret, encryptionKey } = opts;
   const env: ServerEnv = {
@@ -757,6 +789,7 @@ export function buildServerEnv(opts: {
     STORAGE_BACKEND: 'local',
     STORAGE_LOCAL_DIR: '/data/storage',
   };
+  if (opts.features) env.FEATURES = opts.features;
 
   // Safety assertion: must not leak DEV/email/git keys
   const forbidden = ['DEV', 'RESEND_API_KEY', 'SMTP_PASSWORD', 'GIT_API_REPO_PATH'];
@@ -782,6 +815,8 @@ export function buildDockerRunArgs(opts: {
   stateDir: string;
   image: string;
   containerName?: string;
+  network?: string;
+  features?: string;
 }): string[] {
   const { port, iport, stateDir, image } = opts;
   const host = opts.host ?? '127.0.0.1';
@@ -791,18 +826,71 @@ export function buildDockerRunArgs(opts: {
   const args: string[] = [
     '-d',
     '--name', cName,
+  ];
+  if (opts.network) {
+    args.push('--network', opts.network);
+  }
+  args.push(
     // Bind main port to the requested loopback address
     '-p', `${host}:${port}:${port}`,
     // Internal port always stays on 127.0.0.1 (backend-only)
     '-p', `127.0.0.1:${iport}:${iport}`,
     '-v', `${stateDir}/data:/data`,
-  ];
+  );
 
   for (const [k, v] of Object.entries(env)) {
     args.push('-e', `${k}=${v}`);
   }
 
   args.push(image);
+  return args;
+}
+
+/**
+ * Build the FEATURES env JSON enabling vector search against a local TEI
+ * embedding sidecar, optionally with a second-stage cross-encoder reranker.
+ * Shapes match internal/features/vector_search.go (VectorSearchConfig / RerankerConfig).
+ */
+export function buildFeaturesJson(embeddingContainer: string, rerankerContainer: string | null): string {
+  const vectorSearch: Record<string, unknown> = {
+    enabled: true,
+    model: 'bge-m3',
+    base_url: `http://${embeddingContainer}:8000/v1`,
+  };
+  if (rerankerContainer) {
+    vectorSearch.reranker = {
+      enabled: true,
+      base_url: `http://${rerankerContainer}:8000/rerank`,
+      model: 'BAAI/bge-reranker-v2-m3',
+    };
+  }
+  return JSON.stringify({ vector_search: vectorSearch });
+}
+
+/**
+ * Build the docker run argv for a TEI sidecar (embedding or reranker).
+ * The host port publishes TEI's :8000 on loopback so `up` can poll readiness
+ * (the TEI image ships no shell/curl, so a docker healthcheck is impossible).
+ */
+export function buildTeiRunArgs(opts: {
+  name: string;
+  network: string;
+  hostPort: number;
+  modelsDir: string;
+  modelId: string;
+  autoTruncate: boolean;
+}): string[] {
+  const args = [
+    '-d',
+    '--name', opts.name,
+    '--network', opts.network,
+    '-p', `127.0.0.1:${opts.hostPort}:8000`,
+    '-v', `${opts.modelsDir}:/data`,
+    TEI_IMAGE,
+    '--model-id', opts.modelId,
+    '--port', '8000',
+  ];
+  if (opts.autoTruncate) args.push('--auto-truncate');
   return args;
 }
 
@@ -979,6 +1067,61 @@ function isPidAlive(pid: number, cmdlinePattern: RegExp): boolean {
     }
   } catch {
     return false;
+  }
+}
+
+function isContainerRunning(name: string): boolean {
+  try {
+    const out = spawnSync('docker', ['ps', '-q', '--filter', `name=^${name}$`], { encoding: 'utf8' });
+    return (out.stdout || '').trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function containerExists(name: string): boolean {
+  try {
+    const out = spawnSync('docker', ['ps', '-aq', '--filter', `name=^${name}$`], { encoding: 'utf8' });
+    return (out.stdout || '').trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function ensureNetwork(netName: string, dryRun: boolean): void {
+  if (dryRun) {
+    console.log(`[dry-run] docker network create ${netName} (if absent)`);
+    return;
+  }
+  const inspect = spawnSync('docker', ['network', 'inspect', netName], { encoding: 'utf8' });
+  if (inspect.status === 0) return;
+  spawnSync('docker', ['network', 'create', netName], { encoding: 'utf8' });
+  console.log(`Created docker network ${netName}.`);
+}
+
+/** Start (or reuse) a TEI sidecar. A stopped leftover is recreated cleanly. */
+function ensureTeiSidecar(
+  opts: Parameters<typeof buildTeiRunArgs>[0],
+  dryRun: boolean,
+): void {
+  const args = buildTeiRunArgs(opts);
+  if (dryRun) {
+    console.log(`[dry-run] docker run ${args.join(' ')}`);
+    return;
+  }
+  if (isContainerRunning(opts.name)) {
+    console.log(`Sidecar ${opts.name} already running.`);
+    return;
+  }
+  if (containerExists(opts.name)) {
+    spawnSync('docker', ['rm', '-f', opts.name], { encoding: 'utf8' });
+  }
+  console.log(`Starting sidecar ${opts.name} (model ${opts.modelId})...`);
+  const run = spawnSync('docker', ['run', ...args], { encoding: 'utf8' });
+  // Fail fast: a silent docker failure would leave `up` polling readiness for
+  // minutes against a container that never started (e.g. no arm64 TEI image).
+  if (run.status !== 0) {
+    throw new Error(`docker run ${opts.name} failed: ${(run.stderr || run.stdout || '').trim()}`);
   }
 }
 
@@ -1764,6 +1907,11 @@ FLAGS (up)
   --kanban             Install the trip2g kanban template into <vault>/_layouts/kanban.html
                        and seed a sample kanban.md board (skipped with --no-seed)
   --kanban-bundle <url>  Override the kanban.js bundle <script src> (local-dev, e.g. http://localhost:8770/kanban.js)
+  --embedded           Start a local embedding sidecar (TEI, bge-m3) and enable vector
+                       search on the instance. Off by default: the model is ~2GB and
+                       CPU-heavy; first boot downloads it and can take minutes.
+  --reranker           Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB) for
+                       second-stage reranking. Implies --embedded.
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -1809,16 +1957,23 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   const iport = port + 1;
   const publicUrl = flags.publicUrl || `http://localhost:${port}`;
 
-  const containerRunning = (() => {
-    try {
-      const out = spawnSync('docker', ['ps', '-q', '--filter', `name=^${name}$`], {
-        encoding: 'utf8',
-      });
-      return (out.stdout || '').trim().length > 0;
-    } catch {
-      return false;
-    }
-  })();
+  // --reranker implies --embedded (the reranker is a second stage on top of
+  // vector search, useless without the embedding sidecar).
+  const embedded = flags.embedded || flags.reranker;
+  if (flags.reranker && !flags.embedded) {
+    console.log('--reranker implies --embedded: enabling the embedding sidecar too.');
+  }
+  const netName = networkName(name);
+  const embName = embeddingContainerName(name);
+  const rerName = rerankerContainerName(name);
+  // Loopback host ports for readiness polling (TEI has no shell for a docker healthcheck)
+  const embPort = port + 2;
+  const rerPort = port + 3;
+
+  const containerRunning = isContainerRunning(name);
+  const sidecarsUp =
+    !embedded ||
+    (isContainerRunning(embName) && (!flags.reranker || isContainerRunning(rerName)));
 
   let watcherAlive = false;
   if (fs.existsSync(pidFile)) {
@@ -1828,7 +1983,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     }
   }
 
-  if (containerRunning && watcherAlive && !dryRun) {
+  if (containerRunning && watcherAlive && sidecarsUp && !dryRun) {
     console.log(`${name} is already up. Web: ${publicUrl}`);
     return;
   }
@@ -1867,7 +2022,49 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     process.exit(1);
   }
 
-  const dockerArgs = buildDockerRunArgs({ port, iport, host: flags.host, email, secret, encryptionKey, stateDir, image, containerName: name });
+  // Vector-search sidecars must be up (and ready) before the trip2g container
+  // boots pointing at them via FEATURES.
+  if (embedded) {
+    ensureNetwork(netName, dryRun);
+    ensureTeiSidecar({
+      name: embName,
+      network: netName,
+      hostPort: embPort,
+      modelsDir: path.join(os.homedir(), 'models', 'embedding'),
+      modelId: 'BAAI/bge-m3',
+      autoTruncate: true,
+    }, dryRun);
+    if (flags.reranker) {
+      ensureTeiSidecar({
+        name: rerName,
+        network: netName,
+        hostPort: rerPort,
+        modelsDir: path.join(os.homedir(), 'models', 'reranker'),
+        modelId: 'BAAI/bge-reranker-v2-m3',
+        autoTruncate: false,
+      }, dryRun);
+    }
+    if (dryRun) {
+      console.log(`[dry-run] Would poll http://localhost:${embPort}/health until 200 (timeout ${TEI_READY_TIMEOUT_MS}ms)`);
+    } else {
+      console.log(`Waiting for embedding server at http://localhost:${embPort}/health (first run downloads a ~2GB model — this can take minutes)...`);
+      await waitReady(`http://localhost:${embPort}/health`, TEI_READY_TIMEOUT_MS, TEI_READY_POLL_MS);
+      console.log('Embedding server is ready.');
+      if (flags.reranker) {
+        console.log(`Waiting for reranker at http://localhost:${rerPort}/health ...`);
+        await waitReady(`http://localhost:${rerPort}/health`, TEI_READY_TIMEOUT_MS, TEI_READY_POLL_MS);
+        console.log('Reranker is ready.');
+      }
+    }
+  }
+
+  const dockerArgs = buildDockerRunArgs({
+    port, iport, host: flags.host, email, secret, encryptionKey, stateDir, image, containerName: name,
+    ...(embedded ? {
+      network: netName,
+      features: buildFeaturesJson(embName, flags.reranker ? rerName : null),
+    } : {}),
+  });
 
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(' ')}`);
@@ -1877,6 +2074,9 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     spawnSync('docker', ['run', ...dockerArgs], { encoding: 'utf8' });
   } else {
     console.log(`Container ${name} already running, skipping docker run.`);
+    if (embedded) {
+      console.log('NOTE: FEATURES/network apply only on container create — run `down` first to rewire an existing container.');
+    }
   }
 
   const readyzUrl = `http://localhost:${iport}/readyz`;
@@ -2002,6 +2202,8 @@ function cmdDown(dryRun: boolean, folder: string | undefined, name: string): voi
   if (dryRun) {
     console.log(`[dry-run] docker stop ${name}`);
     console.log(`[dry-run] docker rm ${name}`);
+    console.log(`[dry-run] docker rm -f ${embeddingContainerName(name)} ${rerankerContainerName(name)} (if present)`);
+    console.log(`[dry-run] docker network rm ${networkName(name)} (if present)`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), '.trip2g-memory', 'watch.pid');
       console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
@@ -2018,6 +2220,19 @@ function cmdDown(dryRun: boolean, folder: string | undefined, name: string): voi
       // ignore
     }
     console.log(`Container ${name} stopped and removed.`);
+
+    // Vector-search sidecars + per-instance network (present only after --embedded/--reranker)
+    for (const sidecar of [embeddingContainerName(name), rerankerContainerName(name)]) {
+      if (containerExists(sidecar)) {
+        spawnSync('docker', ['rm', '-f', sidecar], { encoding: 'utf8' });
+        console.log(`Sidecar ${sidecar} removed.`);
+      }
+    }
+    try {
+      spawnSync('docker', ['network', 'rm', networkName(name)], { encoding: 'utf8' });
+    } catch {
+      // ignore
+    }
 
     // Kill the detached watcher process if a pid file exists
     if (folder) {
@@ -2052,6 +2267,10 @@ function cmdStatus(name: string): void {
       '-a',
       '--filter',
       `name=^${name}$`,
+      '--filter',
+      `name=^${embeddingContainerName(name)}$`,
+      '--filter',
+      `name=^${rerankerContainerName(name)}$`,
       '--format',
       'table {{.Names}}\t{{.Status}}\t{{.Ports}}',
     ],
@@ -2187,6 +2406,8 @@ function defaultFlags(): Flags {
     name: null,
     kanban: false,
     kanbanBundle: null,
+    embedded: false,
+    reranker: false,
   };
 }
 
@@ -2207,6 +2428,8 @@ async function dispatchMcpTool(
     if (typeof a.name === 'string') f.name = a.name;
     if (typeof a.kanban === 'boolean') f.kanban = a.kanban;
     if (typeof a.kanbanBundle === 'string') f.kanbanBundle = a.kanbanBundle;
+    if (typeof a.embedded === 'boolean') f.embedded = a.embedded;
+    if (typeof a.reranker === 'boolean') f.reranker = a.reranker;
     return f;
   }
 

@@ -16,6 +16,8 @@ import {
   buildServerEnv,
   buildDataJson,
   buildDockerRunArgs,
+  buildFeaturesJson,
+  buildTeiRunArgs,
   buildHubNote,
   hubSlug,
   _stampBlock,
@@ -1363,6 +1365,109 @@ test('parseArgs: --kanban and --kanban-bundle together', () => {
   const { flags } = parseArgs(['up', '--folder', '/tmp/v', '--kanban', '--kanban-bundle', 'http://localhost:8770/kanban.js']);
   assert.equal(flags.kanban, true);
   assert.equal(flags.kanbanBundle, 'http://localhost:8770/kanban.js');
+});
+
+// ---------------------------------------------------------------------------
+// --embedded / --reranker (local vector-search sidecars)
+// ---------------------------------------------------------------------------
+
+test('parseArgs: embedded and reranker default to false', () => {
+  const { flags } = parseArgs(['up']);
+  assert.equal(flags.embedded, false);
+  assert.equal(flags.reranker, false);
+});
+
+test('parseArgs: --embedded sets flags.embedded=true', () => {
+  const { flags } = parseArgs(['up', '--embedded']);
+  assert.equal(flags.embedded, true);
+});
+
+test('parseArgs: --reranker sets flags.reranker=true', () => {
+  const { flags } = parseArgs(['up', '--reranker']);
+  assert.equal(flags.reranker, true);
+});
+
+test('buildFeaturesJson: embedding only', () => {
+  const json = buildFeaturesJson('trip2g-memory-embedding', null);
+  const parsed = JSON.parse(json);
+  assert.deepEqual(parsed, {
+    vector_search: {
+      enabled: true,
+      model: 'bge-m3',
+      base_url: 'http://trip2g-memory-embedding:8000/v1',
+    },
+  });
+});
+
+test('buildFeaturesJson: with reranker', () => {
+  const json = buildFeaturesJson('t-embedding', 't-reranker');
+  const parsed = JSON.parse(json);
+  assert.equal(parsed.vector_search.enabled, true);
+  assert.deepEqual(parsed.vector_search.reranker, {
+    enabled: true,
+    base_url: 'http://t-reranker:8000/rerank',
+    model: 'BAAI/bge-reranker-v2-m3',
+  });
+});
+
+test('buildTeiRunArgs: embedding sidecar shape', () => {
+  const args = buildTeiRunArgs({
+    name: 'trip2g-memory-embedding',
+    network: 'trip2g-memory-net',
+    hostPort: 24083,
+    modelsDir: '/home/u/models/embedding',
+    modelId: 'BAAI/bge-m3',
+    autoTruncate: true,
+  });
+  assert.deepEqual(args, [
+    '-d',
+    '--name', 'trip2g-memory-embedding',
+    '--network', 'trip2g-memory-net',
+    '-p', '127.0.0.1:24083:8000',
+    '-v', '/home/u/models/embedding:/data',
+    'ghcr.io/huggingface/text-embeddings-inference:cpu-1.8',
+    '--model-id', 'BAAI/bge-m3',
+    '--port', '8000',
+    '--auto-truncate',
+  ]);
+});
+
+test('buildTeiRunArgs: reranker sidecar has no --auto-truncate', () => {
+  const args = buildTeiRunArgs({
+    name: 'trip2g-memory-reranker',
+    network: 'trip2g-memory-net',
+    hostPort: 24084,
+    modelsDir: '/home/u/models/reranker',
+    modelId: 'BAAI/bge-reranker-v2-m3',
+    autoTruncate: false,
+  });
+  assert.ok(!args.includes('--auto-truncate'));
+  assert.ok(args.includes('BAAI/bge-reranker-v2-m3'));
+});
+
+test('buildDockerRunArgs: includes --network and FEATURES when embedded', () => {
+  const args = buildDockerRunArgs({
+    port: 24081, iport: 24082, email: 'a@b.com', secret: 'x',
+    encryptionKey: TEST_ENC_KEY, stateDir: '/tmp/state', image: 'img:latest',
+    network: 'trip2g-memory-net',
+    features: buildFeaturesJson('trip2g-memory-embedding', null),
+  });
+  const netIdx = args.indexOf('--network');
+  assert.ok(netIdx >= 0, 'must include --network');
+  assert.equal(args[netIdx + 1], 'trip2g-memory-net');
+  assert.ok(
+    args.some((a) => a.startsWith('FEATURES={') && a.includes('vector_search')),
+    'must include FEATURES env',
+  );
+});
+
+test('buildDockerRunArgs: no --network or FEATURES by default', () => {
+  const args = buildDockerRunArgs({
+    port: 24081, iport: 24082, email: 'a@b.com', secret: 'x',
+    encryptionKey: TEST_ENC_KEY, stateDir: '/tmp/state', image: 'img:latest',
+  });
+  assert.ok(!args.includes('--network'));
+  assert.ok(!args.some((a) => a.startsWith('FEATURES=')));
 });
 
 // ---------------------------------------------------------------------------

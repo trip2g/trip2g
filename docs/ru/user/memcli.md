@@ -66,6 +66,8 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `--no-hub` | — | Не записывать hub-заметку для федерации |
 | `--hub-url <url>` | `https://trip2g.com/_system/mcp` | Указать другой MCP-эндпоинт для хаба |
 | `--name <id>` | — | Запустить изолированный экземпляр `trip2g-memory-<id>`; передайте тот же `--name` в `down`/`status`/`logs`, а также отдельный `--port` |
+| `--embedded` | выкл | Запустить локальный embedding-сайдкар (bge-m3) и включить векторный поиск |
+| `--reranker` | выкл | Дополнительно запустить сайдкар-реранкер (bge-reranker-v2-m3) для второй стадии ранжирования; включает `--embedded` |
 | `--dry-run` | — | Вывести команды без выполнения |
 
 Для запуска двух экземпляров одновременно дайте второму `--name` и отдельный `--port`. Состояние хранится per-`--folder`, поэтому у каждого экземпляра свой хранилище:
@@ -75,6 +77,14 @@ node cli/memcli/dist/memcli.js up --folder ./vault-blog --name blog --port 24181
 node cli/memcli/dist/memcli.js up --folder ./vault-work --name work --port 24281
 # остановить по имени:
 node cli/memcli/dist/memcli.js down --name blog
+```
+
+### Локальный векторный поиск (`--embedded` / `--reranker`)
+
+Оба флага по умолчанию выключены: каждая модель ~2ГБ, работает на CPU, при первом запуске скачивается (может занять минуты). `--embedded` поднимает рядом контейнер [text-embeddings-inference](https://github.com/huggingface/text-embeddings-inference) с `BAAI/bge-m3` и прописывает `FEATURES`, чтобы поиск использовал эмбеддинги, а не только полнотекст. `--reranker` добавляет вторую стадию `BAAI/bge-reranker-v2-m3` и автоматически включает `--embedded`. Модели кэшируются в `~/models/embedding` и `~/models/reranker`, поэтому последующие запуски быстрые. `down` удаляет сайдкары, `status` их показывает.
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./vault --embedded --reranker
 ```
 
 **Флаги для `daily` / `log`:**

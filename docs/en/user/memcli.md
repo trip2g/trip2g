@@ -66,6 +66,8 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `--no-hub` | — | Skip writing the federation hub note |
 | `--hub-url <url>` | `https://trip2g.com/_system/mcp` | Point the hub at a different MCP endpoint |
 | `--name <id>` | — | Run a second isolated instance `trip2g-memory-<id>`; pass the same `--name` to `down`/`status`/`logs`, and give it a distinct `--port` |
+| `--embedded` | off | Start a local embedding sidecar (bge-m3) and enable vector search |
+| `--reranker` | off | Also start a reranker sidecar (bge-reranker-v2-m3) for second-stage reranking; implies `--embedded` |
 | `--dry-run` | — | Print commands without executing |
 
 To run two instances side-by-side, give the second one a `--name` and a distinct `--port`. State stays per-`--folder`, so each instance keeps its own vault:
@@ -75,6 +77,14 @@ node cli/memcli/dist/memcli.js up --folder ./vault-blog --name blog --port 24181
 node cli/memcli/dist/memcli.js up --folder ./vault-work --name work --port 24281
 # stop by name:
 node cli/memcli/dist/memcli.js down --name blog
+```
+
+### Local vector search (`--embedded` / `--reranker`)
+
+Both are off by default: each model is ~2GB, runs on CPU, and the first boot downloads it (can take minutes). `--embedded` starts a [text-embeddings-inference](https://github.com/huggingface/text-embeddings-inference) container with `BAAI/bge-m3` next to the instance and wires `FEATURES` so search uses embeddings, not just full-text. `--reranker` adds a `BAAI/bge-reranker-v2-m3` second stage and implies `--embedded`. Models cache in `~/models/embedding` and `~/models/reranker`, so later boots are fast. `down` removes the sidecars, `status` shows them.
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./vault --embedded --reranker
 ```
 
 **Flags for `daily` / `log`:**
