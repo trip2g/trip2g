@@ -66,6 +66,10 @@ type Config struct {
 	WriterAcquireTimeout    time.Duration
 	GlobalQueuePollInterval time.Duration
 	InternalListenAddr      string
+	// DebugEmbedding exposes the unauthenticated /debug/embedding endpoint on
+	// the internal listener outside dev mode. It can drive arbitrary embedding
+	// API/CPU load, so it is off by default in production.
+	DebugEmbedding bool
 	// LeaderAddr, when non-empty, puts this instance in read-only replica mode:
 	// it serves safe (GET/HEAD/OPTIONS) requests locally off a replicated DB and
 	// reverse-proxies every mutating request to the leader's internal address
@@ -193,7 +197,10 @@ type CronJobsConfig struct {
 
 // Default values for configuration.
 const (
-	DefaultListenAddr           = ":8081"
+	DefaultListenAddr = ":8081"
+	// Loopback by default: the internal listener serves unauthenticated
+	// /metrics, pprof and debug endpoints and must not be world-exposed.
+	DefaultInternalListenAddr   = "127.0.0.1:8082"
 	DefaultDatabaseFile         = "data.sqlite3"
 	DefaultAdminJSURL           = "/assets/ui/admin/-/web.js"
 	DefaultLogLevel             = "info"
@@ -235,6 +242,7 @@ func DefaultStorageConfig() miniostorage.Config {
 func DefaultConfig() *Config {
 	return &Config{
 		ListenAddr:           DefaultListenAddr,
+		InternalListenAddr:   DefaultInternalListenAddr,
 		DatabaseFile:         DefaultDatabaseFile,
 		DevMode:              DefaultDevMode,
 		AdminJSURL:           DefaultAdminJSURL,
@@ -495,7 +503,9 @@ func (c *Config) defineServerFlags() {
 		"0 * * * * *",
 		"Cron schedule (6-field, with seconds) for the send_scheduled_telegram_publishposts job. Default every minute; the public cloud sets it hourly.",
 	)
-	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
+	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", c.InternalListenAddr, "Internal listen address (for health checks etc.)")
+	flag.BoolVar(&c.DebugEmbedding, "debug-embedding", false,
+		"Expose the unauthenticated /debug/embedding endpoint on the internal listener (always on in --dev)")
 	flag.StringVar(
 		&c.LeaderAddr,
 		"leader-addr",

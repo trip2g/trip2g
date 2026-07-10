@@ -182,7 +182,17 @@ func (a *app) GetSecretValues(ctx context.Context, like string) (map[string]stri
 }
 
 func (a *app) SetSecretValue(ctx context.Context, key, value string) error {
-	return setsecret.Resolve(ctx, a, key, value)
+	errPayload, err := setsecret.Resolve(ctx, a, key, value)
+	if err != nil {
+		return err
+	}
+	if errPayload != nil {
+		if len(errPayload.ByFields) > 0 {
+			return fmt.Errorf("%s: %s", errPayload.ByFields[0].Name, errPayload.ByFields[0].Value)
+		}
+		return fmt.Errorf("%s", errPayload.Message)
+	}
+	return nil
 }
 
 func (a *app) DeleteSecretValue(ctx context.Context, key string) error {

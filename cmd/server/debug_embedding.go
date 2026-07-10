@@ -8,14 +8,19 @@ import (
 	"trip2g/internal/mdchunk"
 )
 
+// debugEmbeddingEnabled gates /debug/embedding registration: vector search
+// must be on, and — since the endpoint is unauthenticated and can burn
+// embedding API/CPU — dev mode or the explicit --debug-embedding flag too.
+func (a *app) debugEmbeddingEnabled() bool {
+	return a.openaiClient != nil && (a.config.DevMode || a.config.DebugEmbedding)
+}
+
 // handleDebugEmbedding provides a step-by-step view of the indexing pipeline:
 // chunk splitting → embedding → response with timing and vector samples.
 //
 // POST /debug/embedding
 //
 //	{"title": "My Note", "content": "# Heading\n\nParagraph text..."}
-//
-// Only available on the internal server when vector search is enabled.
 func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)

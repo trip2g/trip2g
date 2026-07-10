@@ -1328,8 +1328,17 @@ func (r *adminMutationResolver) RenderLayout(ctx context.Context, obj *appmodel.
 
 // SetSecret is the resolver for the setSecret field.
 func (r *adminMutationResolver) SetSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.SetSecretInput) (*model.SetSecretPayload, error) {
-	if err := setsecret.Resolve(ctx, r.env(ctx), input.Key, input.Value); err != nil {
+	errPayload, err := setsecret.Resolve(ctx, r.env(ctx), input.Key, input.Value)
+	if err != nil {
 		return nil, err
+	}
+	// SetSecretPayload has no ErrorPayload union; surface validation failures
+	// as a GraphQL error so the client still sees the reason.
+	if errPayload != nil {
+		if len(errPayload.ByFields) > 0 {
+			return nil, fmt.Errorf("%s: %s", errPayload.ByFields[0].Name, errPayload.ByFields[0].Value)
+		}
+		return nil, fmt.Errorf("%s", errPayload.Message)
 	}
 	return &model.SetSecretPayload{Key: input.Key}, nil
 }

@@ -316,8 +316,7 @@ func (a *app) startInternalServer() {
 	debugMux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
 
 	// Embedding debug endpoint — step-by-step pipeline: split → embed → JSON result.
-	// Only registered when vector search is enabled.
-	if a.openaiClient != nil {
+	if a.debugEmbeddingEnabled() {
 		debugMux.HandleFunc("/debug/embedding", a.handleDebugEmbedding)
 	}
 
