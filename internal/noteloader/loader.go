@@ -83,8 +83,9 @@ type Loader struct {
 
 	layouts *model.Layouts
 
-	searchIndex   bleve.Index
-	contentHashes map[int64][32]byte // PathID -> content hash for incremental indexing
+	searchIndex       bleve.Index
+	contentHashes     map[int64][32]byte // PathID -> content hash for incremental indexing
+	indexedPermalinks map[int64]string   // PathID -> permalink of docs currently in the index
 
 	chunks []model.NoteChunk // per-chunk embeddings for vector search
 

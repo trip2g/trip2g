@@ -69,9 +69,27 @@ func contentHash(note *model.NoteView) [32]byte {
 	h := sha256.New()
 	h.Write([]byte(note.Title))
 	h.Write(note.Content)
+	// Visibility is part of the hash: toggling search:false alone must not be
+	// skipped as "unchanged".
+	if note.ExcludeSearch {
+		h.Write([]byte{1})
+	}
 	var result [32]byte
 	copy(result[:], h.Sum(nil))
 	return result
+}
+
+// removeFromIndex deletes a previously indexed document, if any.
+func (l *Loader) removeFromIndex(index bleve.Index, pathID int64) error {
+	permalink, ok := l.indexedPermalinks[pathID]
+	if !ok {
+		return nil
+	}
+	if err := index.Delete(permalink); err != nil {
+		return fmt.Errorf("failed to delete note %s from index: %w", permalink, err)
+	}
+	delete(l.indexedPermalinks, pathID)
+	return nil
 }
 
 func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
@@ -91,6 +109,9 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	if l.contentHashes == nil {
 		l.contentHashes = make(map[int64][32]byte)
 	}
+	if l.indexedPermalinks == nil {
+		l.indexedPermalinks = make(map[int64]string)
+	}
 
 	// Track current PathIDs to detect deleted notes
 	currentPathIDs := make(map[int64]struct{})
@@ -109,13 +130,13 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 			continue
 		}
 
-		if note.ExcludeSearch {
-			continue
-		}
-
-		// Raw files (.canvas, .base, .excalidraw) have no AST — skip indexing.
-		// They aren't markdown, no meaningful text to search anyway.
-		if note.Ast() == nil {
+		// Raw files (.canvas, .base, .excalidraw) have no AST — nothing to index.
+		// A note that became hidden or raw may still be in the index — delete it.
+		if note.ExcludeSearch || note.Ast() == nil {
+			if delErr := l.removeFromIndex(index, note.PathID); delErr != nil {
+				return nil, delErr
+			}
+			l.contentHashes[note.PathID] = hash
 			continue
 		}
 
@@ -130,6 +151,7 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		}
 
 		l.contentHashes[note.PathID] = hash
+		l.indexedPermalinks[note.PathID] = note.Permalink
 		indexed++
 	}
 
@@ -137,8 +159,9 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	deleted := 0
 	for pathID := range l.contentHashes {
 		if _, exists := currentPathIDs[pathID]; !exists {
-			// Note was deleted, but we don't have permalink to delete from index
-			// Just remove from hashes map
+			if delErr := l.removeFromIndex(index, pathID); delErr != nil {
+				return nil, delErr
+			}
 			delete(l.contentHashes, pathID)
 			deleted++
 		}
