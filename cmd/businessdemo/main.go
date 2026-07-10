@@ -109,7 +109,7 @@ var connections = map[string]int64{} //nolint:gochecknoglobals // demo command s
 // pull from LatestNoteViews after the ingestion phase lands.
 var canvas *Canvas //nolint:gochecknoglobals // demo command state
 
-// ------------------------- nav state -----------------------------------------
+// nav state
 
 type navState struct {
 	current   string
@@ -125,7 +125,7 @@ func stateKey(chatID int64, bcID string) string {
 	return strconv.FormatInt(chatID, 10) + "|" + bcID
 }
 
-// ------------------------- rendering -----------------------------------------
+// rendering
 
 const (
 	telegramMessageMax = 3800
@@ -188,7 +188,7 @@ func emptyMarkup() string {
 	return string(j)
 }
 
-// ------------------------- send helpers --------------------------------------
+// send helpers
 
 func sendText(bot *tgbotapi.BotAPI, chatID int64, bcID, text, markup string) error {
 	p := tgbotapi.Params{
@@ -313,7 +313,7 @@ func answerCallback(bot *tgbotapi.BotAPI, callbackID, text string, alert bool) e
 	return err
 }
 
-// ------------------------- handlers ------------------------------------------
+// handlers
 
 func startBrowse(bot *tgbotapi.BotAPI, chatID int64, bcID string) error {
 	entry := canvas.entry()
@@ -429,8 +429,6 @@ func handleCallback(bot *tgbotapi.BotAPI, cq *bizCallbackQuery) error {
 	}
 	return answerCallback(bot, cq.ID, "", false)
 }
-
-// ------------------------- main loop -----------------------------------------
 
 func main() {
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")

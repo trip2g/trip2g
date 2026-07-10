@@ -24,13 +24,13 @@ type cell struct {
 //
 //nolint:gochecknoglobals
 var ruTable = [...]cell{
-	// ── Simple vowels (type: vowel) ────────────────────────────
+	// Simple vowels (type: vowel)
 	{cyrl: 'а', latn: "a", typ: vowel},
 	{cyrl: 'и', latn: "i", typ: vowel},
 	{cyrl: 'о', latn: "o", typ: vowel},
 	{cyrl: 'у', latn: "u", typ: vowel},
 
-	// ── Consonants ─────────────────────────────────────────────
+	// Consonants
 	{cyrl: 'б', latn: "b", typ: consonant},
 	{cyrl: 'в', latn: "v", typ: consonant},
 	{cyrl: 'г', latn: "g", typ: consonant},
@@ -52,7 +52,7 @@ var ruTable = [...]cell{
 	{cyrl: 'ш', latn: "sh", typ: consonant},
 	{cyrl: 'щ', latn: "sjh", typ: consonant},
 
-	// ── Compound/iotated vowels (type: other per Swift) ────────
+	// Compound/iotated vowels (type: other per Swift)
 	// These are NOT typed as vowel because in the Swift ru table
 	// their cells use default type (.other). This matters for
 	// postfixContext matching on ъ (nonVowel vs vowel).
@@ -61,29 +61,29 @@ var ruTable = [...]cell{
 	{cyrl: 'ё', latn: "yo", typ: other},
 	{cyrl: 'ы', latn: "yi", typ: other},
 
-	// ── Context-dependent: э ───────────────────────────────────
+	// Context-dependent: э
 	// First cell → element type: vowel.
 	// After non-consonant: "e". After consonant: "ye".
 	{cyrl: 'э', latn: "e", typ: vowel, prefix: ctxNonConsonant},
 	{cyrl: 'э', latn: "ye", typ: other, prefix: ctxConsonant},
 
-	// ── Context-dependent: е ───────────────────────────────────
+	// Context-dependent: е
 	// First cell → element type: other (NOT vowel — matches Swift).
 	// After consonant: "e". After non-consonant: "ye".
 	{cyrl: 'е', latn: "e", typ: other, prefix: ctxConsonant},
 	{cyrl: 'е', latn: "ye", typ: other, prefix: ctxNonConsonant},
 
-	// ── Context-dependent: й ───────────────────────────────────
+	// Context-dependent: й
 	// First cell → element type: vowel.
 	{cyrl: 'й', latn: "j", typ: vowel, prefix: ctxNonConsonant},
 	{cyrl: 'й', latn: "yj", typ: other, prefix: ctxConsonant},
 
-	// ── Context-dependent: ь (soft sign) ───────────────────────
+	// Context-dependent: ь (soft sign)
 	// First cell → element type: vowel (matches Swift).
 	{cyrl: 'ь', latn: "j", typ: vowel, prefix: ctxConsonant},
 	{cyrl: 'ь', latn: "hj", typ: vowel, prefix: ctxNonConsonant},
 
-	// ── Context-dependent: ъ (hard sign) ───────────────────────
+	// Context-dependent: ъ (hard sign)
 	// 4 rules based on prefix (consonant/non) × postfix (vowel/non).
 	// First cell → element type: other.
 	{cyrl: 'ъ', latn: "y", typ: other, prefix: ctxConsonant, postfix: ctxNonVowel},
@@ -91,6 +91,6 @@ var ruTable = [...]cell{
 	{cyrl: 'ъ', latn: "yh", typ: other, prefix: ctxConsonant, postfix: ctxVowel},
 	{cyrl: 'ъ', latn: "hyh", typ: other, prefix: ctxNonConsonant, postfix: ctxVowel},
 
-	// ── Historical ─────────────────────────────────────────────
+	// Historical
 	{cyrl: 'ѵ', latn: "y", typ: other},
 }
