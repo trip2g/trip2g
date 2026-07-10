@@ -1,4 +1,4 @@
-# embedding-reranker-server
+# retriever
 
 **TL;DR:** a small local server that replaces the official TEI image on ARM hosts.
 TEI (`ghcr.io/huggingface/text-embeddings-inference`) publishes no arm64 manifest

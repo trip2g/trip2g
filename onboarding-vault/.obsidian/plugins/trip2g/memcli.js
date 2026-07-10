@@ -17170,7 +17170,7 @@ function buildToolList() {
           publicUrl: { type: "string", description: "Override PUBLIC_URL for the server" },
           kanban: { type: "boolean", description: "Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board" },
           kanbanBundle: { type: "string", description: "Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)" },
-          embedded: { type: "boolean", description: "Start the local embedding-reranker-server sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search" },
+          embedded: { type: "boolean", description: "Start the local retriever sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search" },
           reranker: { type: "boolean", description: "Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB); implies embedded" }
         },
         required: []
@@ -17516,7 +17516,7 @@ function ensureNetwork(netName, dryRun) {
   console.log(`Created docker network ${netName}.`);
 }
 function ensureEmbedServerImage(dryRun) {
-  const buildDir = path.join(repoRoot(), "embedding-reranker-server");
+  const buildDir = path.join(repoRoot(), "retriever");
   if (dryRun) {
     console.log(`[dry-run] docker build -t ${EMBED_SERVER_IMAGE} ${buildDir} (if image absent)`);
     return;

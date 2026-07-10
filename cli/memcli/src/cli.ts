@@ -43,7 +43,7 @@ const READY_TIMEOUT_MS = 60_000;
 const READY_POLL_MS = 500;
 
 // Local vector-search sidecar (--embedded / --reranker): the bundled
-// embedding-reranker-server (see embedding-reranker-server/). It replaces the
+// retriever server (see retriever/). It replaces the
 // official TEI image, which ships no arm64 build, and speaks the same wire:
 // OpenAI /v1/embeddings (L2-normalized — the app's dot-product similarity
 // relies on it) + TEI /rerank.
@@ -634,7 +634,7 @@ export function buildToolList(): ToolDef[] {
           publicUrl: { type: 'string', description: 'Override PUBLIC_URL for the server' },
           kanban: { type: 'boolean', description: 'Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board' },
           kanbanBundle: { type: 'string', description: 'Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)' },
-          embedded: { type: 'boolean', description: 'Start the local embedding-reranker-server sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search' },
+          embedded: { type: 'boolean', description: 'Start the local retriever sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search' },
           reranker: { type: 'boolean', description: 'Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB); implies embedded' },
         },
         required: [],
@@ -847,7 +847,7 @@ export function buildDockerRunArgs(opts: {
 
 /**
  * Build the FEATURES env JSON enabling vector search against the local
- * embedding-reranker-server sidecar; the optional cross-encoder reranker lives
+ * retriever sidecar; the optional cross-encoder reranker lives
  * on the same server (/rerank).
  * Shapes match internal/features/vector_search.go (VectorSearchConfig / RerankerConfig).
  */
@@ -868,7 +868,7 @@ export function buildFeaturesJson(serverContainer: string, reranker: boolean): s
 }
 
 /**
- * Build the docker run argv for the embedding-reranker-server sidecar.
+ * Build the docker run argv for the retriever sidecar.
  * The host port publishes the server's :8000 on loopback so `up` can poll
  * readiness from the host. modelsDir is mounted at /data (= HF_HOME) so the
  * ~2GB models cache across runs.
@@ -1097,9 +1097,9 @@ function ensureNetwork(netName: string, dryRun: boolean): void {
   console.log(`Created docker network ${netName}.`);
 }
 
-/** Build the embedding-reranker-server image from the repo checkout if absent. */
+/** Build the retriever image from the repo checkout if absent. */
 function ensureEmbedServerImage(dryRun: boolean): void {
-  const buildDir = path.join(repoRoot(), 'embedding-reranker-server');
+  const buildDir = path.join(repoRoot(), 'retriever');
   if (dryRun) {
     console.log(`[dry-run] docker build -t ${EMBED_SERVER_IMAGE} ${buildDir} (if image absent)`);
     return;
@@ -1115,7 +1115,7 @@ function ensureEmbedServerImage(dryRun: boolean): void {
 }
 
 /**
- * Start (or reuse) the embedding-reranker-server sidecar. A stopped leftover is
+ * Start (or reuse) the retriever sidecar. A stopped leftover is
  * recreated cleanly; a running one is recreated if its LOAD_RERANKER env does
  * not match the requested reranker mode.
  */

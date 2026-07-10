@@ -1,4 +1,4 @@
-"""Contract tests for the embedding-reranker-server.
+"""Contract tests for the retriever server.
 
 Two tiers:
 - Always-on: wire-shape tests against fake models (no downloads, no torch).
