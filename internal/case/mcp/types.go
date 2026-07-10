@@ -129,8 +129,9 @@ type FederationStatusPayload struct {
 }
 
 type FederatedCallPayload struct {
-	Results []FederatedCallResult `json:"results,omitempty"`
-	Errors  []FederatedCallError  `json:"errors,omitempty"`
+	Results []FederatedCallResult  `json:"results,omitempty"`
+	Errors  []FederatedCallError   `json:"errors,omitempty"`
+	Skipped []FederatedCallSkipped `json:"skipped,omitempty"`
 }
 
 type FederatedCallResult struct {
@@ -142,6 +143,14 @@ type FederatedCallResult struct {
 type FederatedCallError struct {
 	KBID  string `json:"kb_id"`
 	Error string `json:"error"`
+}
+
+// FederatedCallSkipped lists a peer that was not queried at all (e.g. cut off
+// by the blind fan-out limit) — distinct from Errors, which are peers that
+// were queried and failed. Query these directly with kb_id.
+type FederatedCallSkipped struct {
+	KBID   string `json:"kb_id"`
+	Reason string `json:"reason"`
 }
 
 type SearchResultPayload struct {

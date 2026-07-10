@@ -282,7 +282,9 @@ Used by visualization (the simplepanel graph) and by the agent for verification 
 ## 8. What depends on the deployment
 
 - **Fan-out depth** — `MCP_FEDERATION_MAX_DEPTH` (default 3). Limits hub→hub→member chains and prevents loops. Plan multi-level hubs against the limit. See [selfhosted](https://trip2g.com/docs/en/user/selfhosted).
-- **Per-peer timeout** — `MCP_FEDERATION_FANOUT_TIMEOUT` (default 2s). Slow/unreachable peers are skipped.
+- **Per-peer timeout** — `FEDERATED_FANOUT_TIMEOUT` (default 5s). Slow/unreachable peers are reported as errors without blocking the rest.
+- **Fan-out parallelism** — `FEDERATED_FANOUT_CONCURRENCY` (default 5). Max peers queried at once.
+- **Blind fan-out cap** — `FEDERATED_FANOUT_LIMIT` (default 7). A `federated_search` without `kb_id`/`kb_ids` queries at most this many peers; the rest are listed in the response's `skipped` field for direct follow-up.
 - **Default kb_id** = host of the instance's public URL (override with `mcp_federation_kb_id` in the KB-note). Public URL is instance config.
 - **Transport** — HMAC-SHA256 only, JWT exp ~30s, no mTLS/OAuth, no replay cache. TLS is not enforced by the hub — use HTTPS peer URLs in production.
 - **Control plane** — path §1.1 requires a deployed simplepanel with the pool master secret; §1.2 requires a key with `enable_mcp_admin_tools`. Without either, configuration is manual.

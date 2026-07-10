@@ -30,9 +30,15 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		if len(selected) == 0 {
 			return federationNotConfiguredResponse(id, "")
 		}
-		results := fanout(ctx, env, selected, func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
-			return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
-		})
+		// The limit only caps blind fan-outs; explicit kb_ids targeting is precise.
+		var skipped []*model.MCPFederationNote
+		if len(args.KBIDs) == 0 {
+			selected, skipped = capBlindFanout(selected, env.FederatedFanoutLimit())
+		}
+		results := fanout(ctx, env, selected, env.FederatedFanoutConcurrency(), env.FederatedFanoutTimeout(),
+			func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
+				return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
+			})
 		m := metricsFromContext(ctx)
 		touched := 0
 		for _, r := range results {
@@ -42,7 +48,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 			}
 		}
 		m.ObserveFanoutBases(touched)
-		return successResponse(id, aggregateFederationResults(results))
+		return successResponse(id, aggregateFederationResults(results, skipped))
 	}
 
 	kb, rest := findFederationKB(kbs, args.KBID)

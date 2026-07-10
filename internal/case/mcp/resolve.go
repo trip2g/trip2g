@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/similarnotes"
@@ -59,6 +60,9 @@ type Env interface {
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
 	DecryptData([]byte) ([]byte, error)
 	FederationMaxDepth() int
+	FederatedFanoutConcurrency() int
+	FederatedFanoutLimit() int
+	FederatedFanoutTimeout() time.Duration
 	// API key auth
 	ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)
 	// Admin GraphQL tools

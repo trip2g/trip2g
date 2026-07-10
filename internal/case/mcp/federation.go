@@ -26,20 +26,21 @@ func fanout(
 	ctx context.Context,
 	env federationFanoutEnv,
 	kbs []*model.MCPFederationNote,
+	concurrency int,
+	timeout time.Duration,
 	call func(ctx context.Context, client model.Federation) (model.FederationResult, error),
 ) []ProxiedResult {
 	results := make([]ProxiedResult, len(kbs))
 	var g errgroup.Group
+	if concurrency > 0 {
+		g.SetLimit(concurrency)
+	}
 
 	for i, kb := range kbs {
 		results[i].KB = kb
 		g.Go(func() error {
 			start := time.Now()
-			client, err := env.FederationClient(ctx, kb.ID)
-			if err == nil {
-				results[i].Result, err = call(ctx, client)
-			}
-			results[i].Err = err
+			results[i].Result, results[i].Err = callPeer(ctx, env, kb.ID, timeout, call)
 			results[i].Latency = time.Since(start)
 			return nil
 		})
@@ -47,6 +48,53 @@ func fanout(
 
 	_ = g.Wait()
 	return results
+}
+
+// callPeer calls one peer under a per-peer timeout. The call runs in its own
+// goroutine so a hung client that ignores ctx cancellation still releases the
+// fan-out concurrency slot when the timeout fires.
+func callPeer(
+	ctx context.Context,
+	env federationFanoutEnv,
+	kbID string,
+	timeout time.Duration,
+	call func(ctx context.Context, client model.Federation) (model.FederationResult, error),
+) (model.FederationResult, error) {
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
+	type outcome struct {
+		result model.FederationResult
+		err    error
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		client, err := env.FederationClient(ctx, kbID)
+		var result model.FederationResult
+		if err == nil {
+			result, err = call(ctx, client)
+		}
+		done <- outcome{result: result, err: err}
+	}()
+
+	select {
+	case o := <-done:
+		return o.result, o.err
+	case <-ctx.Done():
+		return model.FederationResult{}, ctx.Err()
+	}
+}
+
+// capBlindFanout caps a blind fan-out at limit peers (registration order),
+// returning the peers to query and those skipped for reporting.
+func capBlindFanout(kbs []*model.MCPFederationNote, limit int) ([]*model.MCPFederationNote, []*model.MCPFederationNote) {
+	if limit > 0 && len(kbs) > limit {
+		return kbs[:limit], kbs[limit:]
+	}
+	return kbs, nil
 }
 
 func selectFederationKBs(kbs []*model.MCPFederationNote, kbID string, kbIDs []string) []*model.MCPFederationNote {
@@ -100,8 +148,14 @@ func federationResultToToolResult(result model.FederationResult) CallToolResult 
 	}
 }
 
-func aggregateFederationResults(results []ProxiedResult) CallToolResult {
+func aggregateFederationResults(results []ProxiedResult, skipped []*model.MCPFederationNote) CallToolResult {
 	payload := FederatedCallPayload{}
+	for _, kb := range skipped {
+		payload.Skipped = append(payload.Skipped, FederatedCallSkipped{
+			KBID:   kb.ID,
+			Reason: "fanout_limit",
+		})
+	}
 	var text strings.Builder
 	for _, result := range results {
 		kbID := ""
@@ -135,6 +189,14 @@ func aggregateFederationResults(results []ProxiedResult) CallToolResult {
 	}
 	if text.Len() == 0 {
 		text.WriteString("No federation results")
+	}
+	if len(skipped) > 0 {
+		ids := make([]string, 0, len(skipped))
+		for _, kb := range skipped {
+			ids = append(ids, kb.ID)
+		}
+		_, _ = fmt.Fprintf(&text, "\n\n%d bases were not queried due to the fan-out limit — query them directly with kb_id: %s",
+			len(ids), strings.Join(ids, ", "))
 	}
 
 	toolResult := structuredToolResult(text.String(), payload)

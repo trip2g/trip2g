@@ -6,6 +6,7 @@ package mcp_test
 import (
 	"context"
 	"sync"
+	"time"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/features"
@@ -33,6 +34,15 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
+//			},
+//			FederatedFanoutConcurrencyFunc: func() int {
+//				panic("mock out the FederatedFanoutConcurrency method")
+//			},
+//			FederatedFanoutLimitFunc: func() int {
+//				panic("mock out the FederatedFanoutLimit method")
+//			},
+//			FederatedFanoutTimeoutFunc: func() time.Duration {
+//				panic("mock out the FederatedFanoutTimeout method")
 //			},
 //			FederatedGraphQLEnabledFunc: func() bool {
 //				panic("mock out the FederatedGraphQLEnabled method")
@@ -101,6 +111,15 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// FederatedFanoutConcurrencyFunc mocks the FederatedFanoutConcurrency method.
+	FederatedFanoutConcurrencyFunc func() int
+
+	// FederatedFanoutLimitFunc mocks the FederatedFanoutLimit method.
+	FederatedFanoutLimitFunc func() int
+
+	// FederatedFanoutTimeoutFunc mocks the FederatedFanoutTimeout method.
+	FederatedFanoutTimeoutFunc func() time.Duration
+
 	// FederatedGraphQLEnabledFunc mocks the FederatedGraphQLEnabled method.
 	FederatedGraphQLEnabledFunc func() bool
 
@@ -168,6 +187,15 @@ type EnvMock struct {
 		}
 		// Features holds details about calls to the Features method.
 		Features []struct {
+		}
+		// FederatedFanoutConcurrency holds details about calls to the FederatedFanoutConcurrency method.
+		FederatedFanoutConcurrency []struct {
+		}
+		// FederatedFanoutLimit holds details about calls to the FederatedFanoutLimit method.
+		FederatedFanoutLimit []struct {
+		}
+		// FederatedFanoutTimeout holds details about calls to the FederatedFanoutTimeout method.
+		FederatedFanoutTimeout []struct {
 		}
 		// FederatedGraphQLEnabled holds details about calls to the FederatedGraphQLEnabled method.
 		FederatedGraphQLEnabled []struct {
@@ -264,6 +292,9 @@ type EnvMock struct {
 	lockCanReadNote                        sync.RWMutex
 	lockDecryptData                        sync.RWMutex
 	lockFeatures                           sync.RWMutex
+	lockFederatedFanoutConcurrency         sync.RWMutex
+	lockFederatedFanoutLimit               sync.RWMutex
+	lockFederatedFanoutTimeout             sync.RWMutex
 	lockFederatedGraphQLEnabled            sync.RWMutex
 	lockFederationClient                   sync.RWMutex
 	lockFederationMaxDepth                 sync.RWMutex
@@ -375,6 +406,87 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// FederatedFanoutConcurrency calls FederatedFanoutConcurrencyFunc.
+func (mock *EnvMock) FederatedFanoutConcurrency() int {
+	if mock.FederatedFanoutConcurrencyFunc == nil {
+		panic("EnvMock.FederatedFanoutConcurrencyFunc: method is nil but Env.FederatedFanoutConcurrency was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederatedFanoutConcurrency.Lock()
+	mock.calls.FederatedFanoutConcurrency = append(mock.calls.FederatedFanoutConcurrency, callInfo)
+	mock.lockFederatedFanoutConcurrency.Unlock()
+	return mock.FederatedFanoutConcurrencyFunc()
+}
+
+// FederatedFanoutConcurrencyCalls gets all the calls that were made to FederatedFanoutConcurrency.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedFanoutConcurrencyCalls())
+func (mock *EnvMock) FederatedFanoutConcurrencyCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederatedFanoutConcurrency.RLock()
+	calls = mock.calls.FederatedFanoutConcurrency
+	mock.lockFederatedFanoutConcurrency.RUnlock()
+	return calls
+}
+
+// FederatedFanoutLimit calls FederatedFanoutLimitFunc.
+func (mock *EnvMock) FederatedFanoutLimit() int {
+	if mock.FederatedFanoutLimitFunc == nil {
+		panic("EnvMock.FederatedFanoutLimitFunc: method is nil but Env.FederatedFanoutLimit was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederatedFanoutLimit.Lock()
+	mock.calls.FederatedFanoutLimit = append(mock.calls.FederatedFanoutLimit, callInfo)
+	mock.lockFederatedFanoutLimit.Unlock()
+	return mock.FederatedFanoutLimitFunc()
+}
+
+// FederatedFanoutLimitCalls gets all the calls that were made to FederatedFanoutLimit.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedFanoutLimitCalls())
+func (mock *EnvMock) FederatedFanoutLimitCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederatedFanoutLimit.RLock()
+	calls = mock.calls.FederatedFanoutLimit
+	mock.lockFederatedFanoutLimit.RUnlock()
+	return calls
+}
+
+// FederatedFanoutTimeout calls FederatedFanoutTimeoutFunc.
+func (mock *EnvMock) FederatedFanoutTimeout() time.Duration {
+	if mock.FederatedFanoutTimeoutFunc == nil {
+		panic("EnvMock.FederatedFanoutTimeoutFunc: method is nil but Env.FederatedFanoutTimeout was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederatedFanoutTimeout.Lock()
+	mock.calls.FederatedFanoutTimeout = append(mock.calls.FederatedFanoutTimeout, callInfo)
+	mock.lockFederatedFanoutTimeout.Unlock()
+	return mock.FederatedFanoutTimeoutFunc()
+}
+
+// FederatedFanoutTimeoutCalls gets all the calls that were made to FederatedFanoutTimeout.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedFanoutTimeoutCalls())
+func (mock *EnvMock) FederatedFanoutTimeoutCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederatedFanoutTimeout.RLock()
+	calls = mock.calls.FederatedFanoutTimeout
+	mock.lockFederatedFanoutTimeout.RUnlock()
 	return calls
 }
 

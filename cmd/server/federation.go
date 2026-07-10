@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/federation"
@@ -104,6 +106,18 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 
 func (a *app) FederationMaxDepth() int {
 	return a.config.MCPFederationMaxDepth
+}
+
+func (a *app) FederatedFanoutConcurrency() int {
+	return a.config.FederatedFanoutConcurrency
+}
+
+func (a *app) FederatedFanoutLimit() int {
+	return a.config.FederatedFanoutLimit
+}
+
+func (a *app) FederatedFanoutTimeout() time.Duration {
+	return a.config.FederatedFanoutTimeout
 }
 
 func (a *app) MCPMetrics() *metrics.MCPMetrics {

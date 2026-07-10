@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"trip2g/internal/db"
 	"trip2g/internal/features"
@@ -62,6 +63,11 @@ func (e *fedGQLEnv) ListFederationSecretSubgraphsByKID(_ context.Context, _ stri
 }
 func (e *fedGQLEnv) DecryptData(_ []byte) ([]byte, error) { panic("unexpected") }
 func (e *fedGQLEnv) FederationMaxDepth() int              { panic("unexpected") }
+func (e *fedGQLEnv) FederatedFanoutConcurrency() int      { panic("unexpected") }
+func (e *fedGQLEnv) FederatedFanoutLimit() int            { panic("unexpected") }
+func (e *fedGQLEnv) FederatedFanoutTimeout() time.Duration {
+	panic("unexpected")
+}
 func (e *fedGQLEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, error) {
 	panic("unexpected")
 }

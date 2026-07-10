@@ -204,6 +204,12 @@ A per-request filter `accessibleKBNotes(ctx, env, user)` runs `canreadnote.Resol
 
 **Fan-out mode** — global env `MCP_FEDERATION_MAX_DEPTH` (default `3`) caps recursion depth. Self-skip: hub ignores its own URL among KB-notes. That's enough for this scale.
 
+A blind fan-out (no `kb_id`/`kb_ids`) is bounded by three knobs:
+
+- `FEDERATED_FANOUT_LIMIT` (default `7`) — max peers a blind fan-out touches, in registration order. Peers beyond the limit are returned in the response's `skipped` list (reason `fanout_limit`) so the caller can query them directly with `kb_id`; they are never dropped silently. Explicit `kb_id`/`kb_ids` calls are not capped.
+- `FEDERATED_FANOUT_CONCURRENCY` (default `5`) — max peers queried in parallel.
+- `FEDERATED_FANOUT_TIMEOUT` (default `5s`) — per-peer timeout for the whole call (client build + request); a hung peer is reported in `errors[]` and never blocks the others.
+
 If real cycles ever bite (10+ peers actively cross-referencing), add `__visited` array to proxied requests as a Stage 2 hardening. Not in MVP.
 
 ---

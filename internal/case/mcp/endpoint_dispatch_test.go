@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/mcp"
@@ -34,6 +35,8 @@ func (r *testPersonalTokenResolver) Resolve(_ context.Context, _ string) (*usert
 // buildMCPFasthttpCtx builds a *fasthttp.RequestCtx with the given body and Authorization header.
 func buildMCPFasthttpCtx(body []byte, authHeader string) *fasthttp.RequestCtx {
 	ctx := &fasthttp.RequestCtx{}
+	// Wire the fake server so ctx works as a context.Context (Done() panics on a bare RequestCtx).
+	ctx.Init2(nil, nil, true)
 	ctx.Request.Header.SetMethod("POST")
 	ctx.Request.SetRequestURI("/_system/mcp")
 	ctx.Request.Header.SetContentType("application/json")
@@ -63,6 +66,10 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		FederatedGraphQLEnabledFunc: func() bool { return false },
 		MCPMetricsFunc:              func() *metrics.MCPMetrics { return nil },
+
+		FederatedFanoutConcurrencyFunc: func() int { return 5 },
+		FederatedFanoutLimitFunc:       func() int { return 7 },
+		FederatedFanoutTimeoutFunc:     func() time.Duration { return 5 * time.Second },
 	}
 	if verifyInboundWillFail {
 		env.FederationSecretByKIDFunc = func(_ context.Context, _ string) (db.FederationSecret, bool, error) {
