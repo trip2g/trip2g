@@ -1,8 +1,8 @@
 # OIDC login for trip2g — implementation plan
 
 **Status:** implemented on branch `feat/oidc-login` (backend + admin GraphQL CRUD + SSO login button + e2e). Key decisions taken during implementation:
-- **Account policy is a per-provider setting** (Step 8 option B, made configurable): `oidc_credentials.auto_provision` + `allowed_email_domain` + `required_group`. Off → unknown email rejected (`user_not_found`, mirrors Google). On → user auto-created on first login. The `allowed_email_domain` / `required_group` gates apply to **every** login (existing + new); `email_verified` is enforced only when provisioning a new account.
-- **id_token verified + userinfo identity** (Step 8 / §7 Q1): the callback now verifies the `id_token` signature against the provider's `jwks_uri` plus `iss`/`aud`/`exp`/`iat` (see `internal/oidcauth/{verify,jwks}.go`, `KeyCache` caches keys and refetches on an unknown kid); identity details (email, groups, `email_verified`) are still read from `/userinfo`, mirroring googleauth. Verification failure rejects the login (`?berror=oauth_failed`).
+- **Account policy is a per-provider setting** (Step 8 option B, made configurable): `oidc_credentials.auto_provision` + `allowed_email_domain` + `required_group`. Off → unknown email rejected (`user_not_found`, mirrors Google). On → user auto-created on first login. Email verification plus the `allowed_email_domain` / `required_group` gates apply to **every** login (existing + new).
+- **id_token verified + userinfo identity** (Step 8 / §7 Q1): the callback verifies the `id_token` signature against the provider's `jwks_uri`, requires `iss`/`aud`/`exp`, validates `iat` when present (see `internal/oidcauth/{verify,jwks}.go`, `KeyCache` caches keys and refetches on an unknown kid), binds it to UserInfo through exact non-empty `sub`, and may use its email claims only through the fallback specified below.
 - **Discovery is uncached** for now (login is infrequent); TODO to add a TTL cache on the app layer.
 - `ValidateOIDCCredentials` is a discovery-reachability probe only (does not verify client_id/secret).
 **Goal:** add a generic **OIDC** login provider to trip2g, alongside the existing Google/GitHub OAuth, so the app can be a Relying Party against a corporate IdP. Immediate target: a client who already runs **Authentik**.
@@ -12,6 +12,30 @@
 This is the trip2g half of the cross-product SSO design. The full picture (panel + trip2g + agent dashboards behind Traefik, IdP choice, authN-vs-authZ split) lives in the simplepanel repo: `docs/sso_box_design.md`. Read it for the "why"; this doc is the trip2g "how".
 
 > trip2g conventions (from `CLAUDE.md`): English everywhere; **SQL migrations require confirmation before creating**; `make sqlc` after editing queries; commits are short one-liners, no `Co-Authored-By`.
+
+---
+
+## Email verification resolution
+
+The callback resolves identity in this order, before `UserByEmail` or provisioning:
+
+1. Verify the ID-token signature, require `iss`, `aud`, and `exp`, validate `iat` when present, and check nonce.
+2. Fetch UserInfo and require exact non-empty `id_token.sub == userinfo.sub`.
+3. Require a non-empty UserInfo email.
+4. Resolve `email_verified` with UserInfo precedence:
+
+| UserInfo claim | Verified ID-token claims | Decision |
+|---|---|---|
+| Present `true` | Any | Verified by UserInfo. |
+| Present `false` | Any, including `true` | Reject with `email_not_verified`. |
+| Omitted | Present `true` and non-empty ID-token email exactly equals UserInfo email | Verified by ID token. |
+| Omitted | Omitted/`null`/`false`, missing ID-token email, or unequal emails | Reject with `email_not_verified`. |
+| `null` | Any | Reject with `email_not_verified`; null is distinct from omitted. |
+| Non-boolean | Any | JSON/JWT claim parsing fails and the callback rejects with `oauth_failed`. |
+
+The fallback comparison is byte-for-byte, without trimming or case folding. Rejection logs include a stable internal reason such as `userinfo_claim_false`, `id_token_claim_missing`, or `id_token_userinfo_email_mismatch`; successful login logs include `email_verification_source=userinfo|id_token`.
+
+This `sub` check binds the two provider responses during one callback only. The database still selects the local account by email and does not persist `(issuer, sub)`.
 
 ---
 
@@ -96,7 +120,7 @@ Mirror `internal/googleauth` (fasthttp, no x/oauth2), but discovery-driven:
 - `Discover(issuer) (Endpoints, error)` — fetch `{issuer}/.well-known/openid-configuration`, return `{AuthorizationEndpoint, TokenEndpoint, UserInfoEndpoint, JWKSURI}`. Cache per-issuer with a TTL (avoid a network call on every login).
 - `BuildAuthURL(clientID, redirectURI, state, scopes, authzEndpoint)` — `response_type=code`, `scope=openid email profile [groups]`.
 - `ExchangeCode(clientID, clientSecret, code, redirectURI, tokenEndpoint) (*TokenResponse, error)` — returns `access_token` + `id_token`.
-- `GetUserInfo(accessToken, userInfoEndpoint) (*UserInfo, error)` — `UserInfo{ Sub, Email, EmailVerified, Name, Groups []string }`.
+- `GetUserInfo(accessToken, userInfoEndpoint) (*UserInfo, error)` — `EmailVerified` uses a presence-aware `BoolClaim`, preserving omitted, true, false, and null as distinct wire states.
 - *(recommended)* `VerifyIDToken(idToken, jwksURI, clientID, issuer) (*Claims, error)` — verify signature + `iss`/`aud`/`exp`. If you skip this initially, leave a TODO; do not silently trust an unverified id_token.
 
 ### Step 4 — case handlers
@@ -201,7 +225,7 @@ Authentication (who the user is) is what this plan delivers. **Authorization** (
 
 ## 7. Open questions / risks
 
-1. **id_token verification vs userinfo-only.** Minimal mirror of Google uses `userinfo` only. Proper OIDC verifies the id_token signature against `jwks_uri`. Recommend verifying; if deferred, mark a clear TODO and never trust unverified id_token claims for authZ.
+1. **Persistent provider identity.** ID token and UserInfo are cryptographically/semantically bound during each callback, but the local account is still selected by email. Persist `(issuer, sub)` before relying on stable provider identity across email changes or reassignment.
 2. **Discovery caching.** Cache `.well-known` per issuer with a TTL; do not fetch on every login. Handle issuer/IdP downtime gracefully (fall back to a clear `?berror=`).
 3. **Auto-provisioning (Step 8).** Policy + security decision (who gets an account). Confirm before enabling B.
 4. **Authentik reachability.** trip2g must reach the issuer's token/userinfo/jwks over HTTPS at login time, and the user's browser must reach authorize. If the client's Authentik is network-isolated, plan connectivity (see `sso_box_design.md` §6 risk 8).

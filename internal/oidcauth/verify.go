@@ -18,7 +18,7 @@ var ErrVerification = errors.New("id_token verification failed")
 type IDTokenClaims struct {
 	Subject       string
 	Email         string
-	EmailVerified bool
+	EmailVerified BoolClaim
 	Nonce         string
 	Groups        []string
 }
@@ -33,16 +33,16 @@ type VerifyParams struct {
 }
 
 type idTokenClaims struct {
-	Email         string   `json:"email"`
-	EmailVerified bool     `json:"email_verified"`
-	Nonce         string   `json:"nonce"`
-	Groups        []string `json:"groups"`
+	Email         string    `json:"email"`
+	EmailVerified BoolClaim `json:"email_verified"`
+	Nonce         string    `json:"nonce"`
+	Groups        []string  `json:"groups"`
 	jwt.RegisteredClaims
 }
 
 // VerifyIDToken verifies an OIDC id_token's signature against the provider's
-// JWKS and its standard claims (iss, aud, exp, iat), plus nonce when supplied.
-// Only RSA and ECDSA signatures are accepted; alg=none and symmetric
+// JWKS, requires iss/aud/exp, validates iat when present, and checks nonce when
+// supplied. Only RSA and ECDSA signatures are accepted; alg=none and symmetric
 // algorithms are rejected. Any failure returns an ErrVerification-wrapped error and nil claims.
 func (c *KeyCache) VerifyIDToken(ctx context.Context, rawIDToken string, p VerifyParams) (*IDTokenClaims, error) {
 	if rawIDToken == "" {

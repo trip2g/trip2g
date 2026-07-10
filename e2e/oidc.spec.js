@@ -101,6 +101,26 @@ test.describe.serial('OIDC SSO login', () => {
     expect(await sessionCookie(page)).toBeTruthy();
   });
 
+  test('missing UserInfo verification falls back to matching signed ID token', async ({ page, request }) => {
+    await createOidcCred(request, adminToken, idp.issuer, { autoProvision: false });
+    idp.setUser({ email: 'existing-oidc@example.com', email_verified: undefined });
+    idp.setIdTokenClaims({ email: 'existing-oidc@example.com', email_verified: true });
+
+    const url = await login(page);
+    expect(url).not.toContain('berror=');
+    expect(await sessionCookie(page)).toBeTruthy();
+  });
+
+  test('ID-token fallback rejects a different email', async ({ page, request }) => {
+    await createOidcCred(request, adminToken, idp.issuer, { autoProvision: false });
+    idp.setUser({ email: 'existing-oidc@example.com', email_verified: undefined });
+    idp.setIdTokenClaims({ email: 'other@example.com', email_verified: true });
+
+    const url = await login(page);
+    expect(url).toContain('berror=email_not_verified');
+    expect(await sessionCookie(page)).toBeFalsy();
+  });
+
   test('unknown email, auto_provision off -> user_not_found', async ({ page, request }) => {
     await createOidcCred(request, adminToken, idp.issuer, { autoProvision: false });
     idp.setUser({ email: 'ghost@example.com', email_verified: true });
@@ -119,12 +139,13 @@ test.describe.serial('OIDC SSO login', () => {
     expect(await sessionCookie(page)).toBeTruthy();
   });
 
-  test('auto_provision on but email not verified -> email_not_allowed', async ({ page, request }) => {
+  test('explicit UserInfo false overrides a verified ID token', async ({ page, request }) => {
     await createOidcCred(request, adminToken, idp.issuer, { autoProvision: true });
     idp.setUser({ email: 'unverified@example.com', email_verified: false });
+    idp.setIdTokenClaims({ email: 'unverified@example.com', email_verified: true });
 
     const url = await login(page);
-    expect(url).toContain('berror=email_not_allowed');
+    expect(url).toContain('berror=email_not_verified');
     expect(await sessionCookie(page)).toBeFalsy();
   });
 

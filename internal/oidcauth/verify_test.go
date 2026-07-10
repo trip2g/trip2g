@@ -197,6 +197,46 @@ func TestVerifyIDToken(t *testing.T) {
 			require.NotNil(t, claims)
 			require.Equal(t, "user-123", claims.Subject)
 			require.Equal(t, "alice@example.com", claims.Email)
+			require.Equal(t, testBoolClaim(true), claims.EmailVerified)
+		})
+	}
+}
+
+func TestVerifyIDTokenPreservesEmailVerifiedState(t *testing.T) {
+	key := mustRSAKey(t)
+	kid := "key-1"
+	jwks := jwksJSON(t, kid, &key.PublicKey)
+	params := VerifyParams{JWKSURI: testJWKSURI, Issuer: testIssuer, ClientID: testClientID}
+
+	tests := []struct {
+		name    string
+		mutate  func(jwt.MapClaims)
+		want    BoolClaim
+		wantErr bool
+	}{
+		{name: "true", mutate: func(jwt.MapClaims) {}, want: testBoolClaim(true)},
+		{name: "false", mutate: func(c jwt.MapClaims) { c["email_verified"] = false }, want: testBoolClaim(false)},
+		{name: "omitted", mutate: func(c jwt.MapClaims) { delete(c, "email_verified") }, want: BoolClaim{}},
+		{name: "null", mutate: func(c jwt.MapClaims) { c["email_verified"] = nil }, want: BoolClaim{Present: true}},
+		{name: "invalid type", mutate: func(c jwt.MapClaims) { c["email_verified"] = "true" }, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			claims := validClaims()
+			tt.mutate(claims)
+			raw := signIDToken(t, key, kid, jwt.SigningMethodRS256, claims)
+
+			cache := NewKeyCache()
+			cache.fetch = func(context.Context, string) ([]byte, error) { return jwks, nil }
+			got, err := cache.VerifyIDToken(context.Background(), raw, params)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got.EmailVerified)
 		})
 	}
 }

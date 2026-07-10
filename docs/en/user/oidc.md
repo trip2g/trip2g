@@ -134,11 +134,27 @@ The account policy controls who gets in after the IdP confirms their identity.
 | Setting | Behaviour |
 |---|---|
 | `auto_provision` off (default) | The OIDC email must match an existing trip2g user. Unknown email → access denied. Mirrors the Google/GitHub OAuth behaviour. |
-| `auto_provision` on | A new trip2g user is created from the verified email on the first login. `email_verified` must be true for provisioning to proceed. |
+| `auto_provision` on | A new trip2g user is created from the verified email on the first login. |
+| `email_verified` | Every login requires a verified email. UserInfo is authoritative when it contains the claim; a signature-verified ID token is used only when UserInfo omits it. |
 | `allowed_email_domain` | Every login (existing user or new) is rejected unless the email domain matches. |
 | `required_group` | Every login is rejected unless the user's token includes this group. Requires the `groups` scope mapping in Authentik. |
 
 Domain and group gates apply to every login, not just the first one.
+
+### Exact email verification mechanism
+
+trip2g resolves email verification after it has verified the ID-token signature, issuer, audience, expiry, nonce, and `iat` when present, and confirmed that the non-empty ID-token `sub` exactly matches the UserInfo `sub`. It then requires a non-empty UserInfo email and applies this table before any local account lookup:
+
+| UserInfo `email_verified` | Signature-verified ID token | Result |
+|---|---|---|
+| `true` | Any value or omitted | Accept; UserInfo is the verification source. |
+| `false` | Even `true` | Reject with `email_not_verified`; an explicit UserInfo denial never falls back. |
+| Omitted | `email_verified: true` and a non-empty ID-token email exactly equal to the UserInfo email | Accept; the ID token is the verification source. |
+| Omitted | Claim omitted/`null`/`false`, ID-token email missing, or emails different | Reject with `email_not_verified`. |
+| `null` | Any value | Reject with `email_not_verified`; null is not treated as omission. |
+| A non-boolean value | Any value | Reject the malformed provider response with `oauth_failed`. |
+
+Email equality for the fallback is byte-for-byte: trip2g does not trim or case-fold either claim. The `sub` comparison binds ID token and UserInfo only for the current callback. Local accounts are still looked up by email; trip2g does not yet persist an `(issuer, sub)` account binding.
 
 ## Security
 

@@ -1,6 +1,6 @@
-// id_token verification lives in verify.go / jwks.go: the callback verifies the
-// id_token signature against jwks_uri (KeyCache) before trusting the response;
-// identity details are still read from userinfo, mirroring googleauth.
+// ID-token verification lives in verify.go / jwks.go. The callback reads
+// identity from UserInfo and uses verified ID-token email claims only as the
+// presence-aware fallback documented in handleoidccallback.
 package oidcauth
 
 import (
