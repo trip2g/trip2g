@@ -183,16 +183,21 @@ func TestVectorSearchConfigResolved_CustomModelWithoutDimensions_Error(t *testin
 	}
 }
 
-func TestVectorSearchConfigResolved_CustomModelDefaultMaxTokens(t *testing.T) {
-	// An unknown model without explicit MaxTokens must default to 8192.
+func TestVectorSearchConfigResolved_CustomModelWithoutMaxTokens_Error(t *testing.T) {
+	// An unknown model without an explicit max_input_tokens must fail validation,
+	// same as missing dimensions. Silently defaulting to 8192 breaks small-window
+	// models (e.g. e5-large, 512 tokens): every oversized request gets HTTP 400
+	// and the embedding job retries forever.
 	cfg := VectorSearchConfig{
 		Model:      EmbeddingModelCustom,
 		ModelName:  "my-custom-model",
+		Enabled:    true,
 		Dimensions: 768,
-		// MaxTokens intentionally omitted → should default to 8192.
+		// MaxTokens intentionally omitted.
 	}
-	if got := cfg.ResolvedMaxInputTokens(); got != 8192 {
-		t.Errorf("ResolvedMaxInputTokens() = %d, want 8192 (default for custom model)", got)
+	err := cfg.validateModelParsed()
+	if err == nil {
+		t.Error("validateModelParsed() expected error for unknown model without max_input_tokens, got nil")
 	}
 }
 
@@ -211,7 +216,7 @@ func TestParseFeatures_KnownModel(t *testing.T) {
 func TestParseFeatures_CustomModelWithDimensions(t *testing.T) {
 	// Parse must accept an unknown model when dimensions are provided.
 	customJSON := `{"vector_search":{"enabled":true,"model":"intfloat/multilingual-e5-large",` +
-		`"base_url":"http://localhost:8080/v1","dimensions":1024,` +
+		`"base_url":"http://localhost:8080/v1","dimensions":1024,"max_input_tokens":512,` +
 		`"query_prefix":"query: ","passage_prefix":"passage: "}}`
 	f := Parse(customJSON)
 	if f.VectorSearch.Model != EmbeddingModelCustom {

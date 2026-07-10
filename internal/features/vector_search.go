@@ -151,7 +151,8 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, bool) {
 // their known values; any explicit field below overrides the default.
 //
 // For any other model name (e.g. a local TEI server serving an arbitrary model),
-// Dimensions must be set explicitly; the remaining fields default to safe values.
+// Dimensions and MaxTokens must be set explicitly; the remaining fields default
+// to safe values.
 //
 // Example FEATURES config for a custom local model:
 //
@@ -161,6 +162,7 @@ func ParseEmbeddingModel(s string) (EmbeddingModel, bool) {
 //	    "model": "intfloat/multilingual-e5-large",
 //	    "base_url": "http://localhost:8080/v1",
 //	    "dimensions": 1024,
+//	    "max_input_tokens": 512,
 //	    "query_prefix": "query: ",
 //	    "passage_prefix": "passage: "
 //	  }
@@ -176,8 +178,7 @@ type VectorSearchConfig struct {
 
 	// The following optional fields override the per-model defaults.
 	// For known models they are not required. For unknown (custom) models,
-	// Dimensions must be set; others fall back to safe defaults (empty prefixes,
-	// 8192 token limit).
+	// Dimensions and MaxTokens must be set; prefixes fall back to empty.
 	Dimensions int    `json:"dimensions"`
 	MaxTokens  int    `json:"max_input_tokens"`
 	QueryPfx   string `json:"query_prefix"`
@@ -257,13 +258,21 @@ func (c VectorSearchConfig) Validate() error {
 	)
 }
 
-// validateModelParsed returns an error if the config requires dimensions for a
-// custom model but none were provided. This is called after model parsing so
-// we can distinguish known from unknown models.
+// validateModelParsed returns an error if the config requires dimensions or
+// max_input_tokens for a custom model but none were provided. This is called
+// after model parsing so we can distinguish known from unknown models.
 func (c VectorSearchConfig) validateModelParsed() error {
 	if c.Enabled && c.Model == EmbeddingModelCustom && c.Dimensions == 0 {
 		return fmt.Errorf(
 			"vector_search: dimensions must be set when model %q is not a built-in model",
+			c.ModelName,
+		)
+	}
+	// Silently defaulting the token limit breaks small-window models: every
+	// oversized request gets HTTP 400 and the embedding job retries forever.
+	if c.Enabled && c.Model == EmbeddingModelCustom && c.MaxTokens == 0 {
+		return fmt.Errorf(
+			"vector_search: max_input_tokens must be set when model %q is not a built-in model",
 			c.ModelName,
 		)
 	}
