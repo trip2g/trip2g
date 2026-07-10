@@ -14,9 +14,7 @@ import (
 	"unicode"
 )
 
-// ---------------------------------------------------------------------------
 // Element & context types
-// ---------------------------------------------------------------------------
 
 type elementType uint8
 
@@ -65,9 +63,7 @@ func (c contextType) matches(et elementType) bool {
 	return false
 }
 
-// ---------------------------------------------------------------------------
 // Engine
-// ---------------------------------------------------------------------------
 
 type engine struct {
 	cyrlCells map[rune][]cell      // lowercase Cyrillic rune → cells (forward)
@@ -152,9 +148,7 @@ func (e *engine) latnElemType(s string) elementType {
 	return nonLetter
 }
 
-// ---------------------------------------------------------------------------
 // Forward: Cyrillic → Latin
-// ---------------------------------------------------------------------------
 
 type fwdElem struct {
 	srcRune rune
@@ -214,9 +208,7 @@ func (e *engine) translit(input string) string {
 	return b.String()
 }
 
-// ---------------------------------------------------------------------------
 // Reverse: Latin → Cyrillic
-// ---------------------------------------------------------------------------
 
 type revElem struct {
 	source string // original Latin (preserves case)
@@ -290,9 +282,7 @@ func (e *engine) revert(input string) string {
 	return b.String()
 }
 
-// ---------------------------------------------------------------------------
 // Case resolution (Swift multi-pass algorithm)
-// ---------------------------------------------------------------------------
 
 type charCase int8
 

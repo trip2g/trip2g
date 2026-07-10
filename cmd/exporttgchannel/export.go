@@ -319,7 +319,7 @@ func frontmatter(channelID int64, msg *tg.Message) string {
 	return sb.String()
 }
 
-// ---- title / filename helpers (adapted from importtelegramchannel) ----
+// title / filename helpers (adapted from importtelegramchannel)
 
 var (
 	rCustomEmoji    = regexp.MustCompile(`!\[[^\]]*\]\((tg://emoji\?id=\d+|https://ce\.trip2g\.com/\d+\.webp)\)`)

@@ -382,14 +382,12 @@ func main() {
 
 	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
-	// ========================================================================
 	// BLOCK A — read-only warmup. Everything here is safe to run WITHOUT the
 	// SQLite writer slot: it only reads the DB (or touches no DB at all), so a
 	// new instance can fully warm up (load notes, build in-memory indexes,
 	// construct handlers) while the OLD instance keeps serving, including
 	// writes. No writer subsystem (queues, cron, patreon/boosty refresh) is
 	// started here. /readyz stays 503 until Block B finishes.
-	// ========================================================================
 
 	// No-DB construction halves (client managers, job handlers).
 	a.constructPatreon()
@@ -470,13 +468,12 @@ func main() {
 	a.personalTokenResolver = personaltoken.NewResolver(a)
 	a.setFileStorageExpiringCallback()
 
-	// ========================================================================
 	// WRITER SLOT — acquire before starting any writer subsystem. This is an
 	// honest-but-minimal probe (BEGIN IMMEDIATE; COMMIT) that the SQLite write
 	// lock is currently grabbable; the OLD instance releases it on SIGTERM
 	// after stopping its own writers. It does NOT hold the lock open and does
 	// NOT guarantee hard cross-process single-writer (deferred to Phase 2).
-	// ========================================================================
+	//
 	// Read-only replica: never acquire the writer slot or start any writer
 	// subsystem. The replica serves reads off the replicated DB and forwards
 	// every mutating request to the leader (--leader-addr). It becomes ready as
@@ -497,10 +494,8 @@ func main() {
 
 	log.Info("writer slot acquired, starting writer subsystems")
 
-	// ========================================================================
 	// BLOCK B — writer-only. Runs only after the writer slot is acquired.
 	// Everything here writes to the DB or starts a background loop that does.
-	// ========================================================================
 
 	// createOwnerIfNotExists inserts the owner user+admin (WRITE).
 	err = a.createOwnerIfNotExists(ctx)

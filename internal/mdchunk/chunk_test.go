@@ -5,10 +5,6 @@ import (
 	"testing"
 )
 
-// ---------------------------------------------------------------------------
-// StripFrontmatter tests
-// ---------------------------------------------------------------------------
-
 func TestStripFrontmatter(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -62,9 +58,7 @@ func TestStripFrontmatter(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Split tests
-// ---------------------------------------------------------------------------
 
 // searchAstronomyContent mirrors docs/demo/search_astronomy.md (body after frontmatter).
 const searchAstronomyContent = `---
