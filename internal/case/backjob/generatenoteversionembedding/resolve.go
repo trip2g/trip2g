@@ -49,12 +49,15 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 
 	strippedContent := mdchunk.StripFrontmatter(string(noteView.Content))
 
-	// Calculate content hash (uses stripped content to avoid noise from frontmatter changes)
-	contentHash := sha256.Sum256([]byte(noteView.Title + strippedContent))
+	vsConfig := env.Features().VectorSearch
 
-	// Check if embedding already exists with same content hash
+	// Calculate content hash (uses stripped content to avoid noise from frontmatter
+	// changes; custom-model identity is mixed in, see modelFingerprint)
+	contentHash := sha256.Sum256([]byte(noteView.Title + strippedContent + modelFingerprint(vsConfig)))
+
+	// Check if embedding already exists with same content hash and model
 	existing, err := env.GetNoteVersionEmbedding(ctx, params.VersionID)
-	if err == nil && bytes.Equal(existing.ContentHash, contentHash[:]) {
+	if err == nil && bytes.Equal(existing.ContentHash, contentHash[:]) && storedModelMatches(existing.ModelID, vsConfig.Model) {
 		// Hash matches — skip whole-note embedding regeneration.
 		// But still check if chunk embeddings are missing (e.g. first deploy after chunk feature).
 		if noteView.ExcludeSearch || noteView.IsSystem() {
@@ -75,7 +78,6 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	env.Logger().Debug("generating embedding", "version_id", params.VersionID, "title", noteView.Title)
 
 	// Prepare text for embedding (title + stripped content, with model-specific passage prefix).
-	vsConfig := env.Features().VectorSearch
 	passagePrefix := vsConfig.ResolvedPassagePrefix()
 	// Cap whole-note input to the model's hard token limit; notes can be larger
 	// than the embedding window, which otherwise fails with HTTP 400 and retries
@@ -93,7 +95,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	err = env.UpsertNoteVersionEmbedding(ctx, db.UpsertNoteVersionEmbeddingParams{
 		VersionID:   params.VersionID,
 		Embedding:   model.Float32SliceToBytes(result.Vector),
-		ModelID:     int64(env.Features().VectorSearch.Model),
+		ModelID:     int64(vsConfig.Model),
 		ContentHash: contentHash[:],
 		Tokens:      int64(result.Tokens),
 	})
@@ -125,15 +127,18 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	chunks := mdchunk.Split(title, rawContent)
 	env.Logger().Debug("chunk split done", "version_id", versionID, "title", title, "total_chunks", len(chunks))
 
-	// Load existing chunk hashes to skip unchanged chunks.
+	// Load existing chunks to skip ones unchanged under the same model.
 	existingChunks, err := env.GetNoteVersionChunks(ctx, versionID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("failed to get existing chunks: %w", err)
 	}
-	existingHashes := make(map[int64][]byte, len(existingChunks))
+	existingByIndex := make(map[int64]db.NoteVersionChunk, len(existingChunks))
 	for _, ec := range existingChunks {
-		existingHashes[ec.ChunkIndex] = ec.ContentHash
+		existingByIndex[ec.ChunkIndex] = ec
 	}
+
+	vsConfig := env.Features().VectorSearch
+	fingerprint := modelFingerprint(vsConfig)
 
 	// Identify chunks that need re-embedding.
 	type pendingChunk struct {
@@ -142,9 +147,10 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	}
 	var toEmbed []pendingChunk
 	for _, c := range chunks {
-		h := sha256.Sum256([]byte(c.Content))
-		if existing, ok := existingHashes[int64(c.Index)]; ok && bytes.Equal(existing, h[:]) {
-			continue // content unchanged, skip
+		h := sha256.Sum256([]byte(c.Content + fingerprint))
+		if ec, ok := existingByIndex[int64(c.Index)]; ok && bytes.Equal(ec.ContentHash, h[:]) &&
+			(ec.ModelID == nil || storedModelMatches(*ec.ModelID, vsConfig.Model)) {
+			continue // content and model unchanged, skip
 		}
 		toEmbed = append(toEmbed, pendingChunk{chunk: c, hash: h})
 	}
@@ -152,7 +158,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	env.Logger().Debug("chunks to embed", "version_id", versionID, "to_embed", len(toEmbed), "skipped", len(chunks)-len(toEmbed))
 
 	if len(toEmbed) > 0 {
-		passagePrefix := env.Features().VectorSearch.ResolvedPassagePrefix()
+		passagePrefix := vsConfig.ResolvedPassagePrefix()
 		texts := make([]string, len(toEmbed))
 		for i, pe := range toEmbed {
 			texts[i] = passagePrefix + pe.chunk.Content
@@ -163,7 +169,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
 		}
 
-		modelID := int64(env.Features().VectorSearch.Model)
+		modelID := int64(vsConfig.Model)
 		for i, pe := range toEmbed {
 			select {
 			case <-ctx.Done():
@@ -196,4 +202,22 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	}
 
 	return nil
+}
+
+// modelFingerprint identifies the embedding model inside content hashes for
+// custom models. Built-in models are distinguished by the ModelID stored on the
+// row, but every custom model shares ModelID 0, so the resolved model name and
+// the passage prefix (both change the stored vectors) go into the hash instead.
+func modelFingerprint(cfg features.VectorSearchConfig) string {
+	if cfg.Model != features.EmbeddingModelCustom {
+		return ""
+	}
+	return "\x00model=" + cfg.ResolvedModelName() + "\x00passage_prefix=" + cfg.ResolvedPassagePrefix()
+}
+
+// storedModelMatches reports whether a stored row was embedded by the configured
+// model. Rows written before model tracking carry ModelID 0 and are trusted;
+// custom models all store ModelID 0 and are told apart via modelFingerprint.
+func storedModelMatches(stored int64, configured features.EmbeddingModel) bool {
+	return stored == 0 || stored == int64(configured)
 }
