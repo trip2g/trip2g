@@ -11,31 +11,55 @@ lang_redirect: "[[en/hub/_index]]"
 
 - [[ru/hub/nicksenin_journal|Журнал Ника Сенина]]
 - [[ru/hub/markavrelii|Марк Аврелий — Размышления]]
-- [Хаб философов](https://philosophers.2pub.me) — слой маршрутизации над 21 корпусом философов
+- [[ru/hub/minionschool|Школа миньонов]]
+- [[ru/hub/philosophers|Хаб философов]] — слой маршрутизации над 21 корпусом философов
 
 ## Текущая схема хаба
+
+Корневой хаб подключает `philosophers` одним пиром; тот хаб уже федерирует
+21 корпус. Пунктирные линии — связи влияния между корпусами: корпус указывает
+на соседей, с которыми спорит, и агент может пройти по идее через базы.
 
 ```mermaid
 graph TD
   HUB["trip2g.com hub"]
   HUB --> J["nicksenin_journal"]
   HUB --> MA["markavrelii"]
-  HUB --> PH["philosophers.2pub.me<br/>карточки · матрица тем · противоречия"]
+  HUB --> MS["minionschool"]
+  HUB --> PH["philosophers"]
 
-  subgraph CORPORA["21 корпус философов"]
-    direction LR
-    C1["nietzsche · schopenhauer · goethe<br/>pascal · montaigne · larochefoucauld"]
-    C2["confucius · laozi · epictetus<br/>tolstoy · ignatius · lebon · adler"]
-    C3["machiavelli · franklin · smiles<br/>ford · rockefeller · hill<br/>wattles · james-allen"]
-  end
+  PH --> nietzsche
+  PH --> schopenhauer
+  PH --> goethe
+  PH --> pascal
+  PH --> montaigne
+  PH --> larochefoucauld
+  PH --> confucius
+  PH --> laozi
+  PH --> epictetus
+  PH --> tolstoy
+  PH --> ignatius
+  PH --> lebon
+  PH --> adler
+  PH --> machiavelli
+  PH --> franklin
+  PH --> smiles
+  PH --> ford
+  PH --> rockefeller
+  PH --> hill
+  PH --> wattles
+  PH --> jamesallen["james-allen"]
 
-  PH --> C1
-  PH --> C2
-  PH --> C3
+  nietzsche -.->|отвечает| schopenhauer
+  pascal -.->|против| montaigne
+  epictetus -.->|Стоя| MA
+  confucius -.->|порядок vs путь| laozi
+  tolstoy -.->|опирается| epictetus
+  tolstoy -.->|опирается| MA
 ```
 
-Слепой federated-веер с этого хаба видит хаб философов как **одну** базу
-(его карточки и матрицу тем). Глубина корпусов достигается адресно через
-составной id: `federated_search(kb_id="philosophers/<slug>")`.
+Слепой веер с корневого хаба видит `philosophers` как **одну** базу. Чтобы дойти
+до конкретного мыслителя, спрашивают хаб философов по `kb_id` его корпуса
+(например, `federated_search(kb_id="nietzsche")` к `philosophers.2pub.me`).
 
 Что такое федеративный поиск и как он работает — [[ru/user/federation|MCP Federation]].

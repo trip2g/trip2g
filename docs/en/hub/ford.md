@@ -3,8 +3,6 @@ title: "Henry Ford — My Life and Work"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/ford]]"
-mcp_federation_kb_url: https://ford.2pub.me/_system/mcp
-mcp_federation_kb_id: ford
 ---
 
 # Henry Ford — My Life and Work

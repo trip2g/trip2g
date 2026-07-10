@@ -3,8 +3,6 @@ title: "Samuel Smiles — Self-Help"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/smiles]]"
-mcp_federation_kb_url: https://smiles.2pub.me/_system/mcp
-mcp_federation_kb_id: smiles
 ---
 
 # Samuel Smiles — Self-Help

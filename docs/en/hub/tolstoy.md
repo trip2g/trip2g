@@ -3,8 +3,6 @@ title: "Leo Tolstoy — Confession"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/tolstoy]]"
-mcp_federation_kb_url: https://tolstoy.2pub.me/_system/mcp
-mcp_federation_kb_id: tolstoy
 ---
 
 # Leo Tolstoy — Confession

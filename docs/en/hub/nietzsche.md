@@ -3,8 +3,6 @@ title: "Nietzsche — Beyond Good and Evil"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/nietzsche]]"
-mcp_federation_kb_url: https://nietzsche.2pub.me/_system/mcp
-mcp_federation_kb_id: nietzsche
 ---
 
 # Nietzsche — Beyond Good and Evil

@@ -3,8 +3,6 @@ title: "Alfred Adler — Understanding Human Nature"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/adler]]"
-mcp_federation_kb_url: https://adler.2pub.me/_system/mcp
-mcp_federation_kb_id: adler
 ---
 
 # Alfred Adler — Understanding Human Nature

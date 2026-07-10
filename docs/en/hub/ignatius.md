@@ -3,8 +3,6 @@ title: "Ignatius of Loyola — Spiritual Exercises"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/ignatius]]"
-mcp_federation_kb_url: https://ignatius.2pub.me/_system/mcp
-mcp_federation_kb_id: ignatius
 ---
 
 # Ignatius of Loyola — Spiritual Exercises

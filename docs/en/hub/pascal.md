@@ -3,8 +3,6 @@ title: "Pascal — Pensées"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/pascal]]"
-mcp_federation_kb_url: https://pascal.2pub.me/_system/mcp
-mcp_federation_kb_id: pascal
 ---
 
 # Pascal — Pensées
