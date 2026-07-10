@@ -3039,7 +3039,7 @@ select distinct s.name
   join boosty_tier_subgraphs bts on bm.current_tier_id = bts.tier_id
   join subgraphs s on bts.subgraph_id = s.id
  where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
-   and bm.status = 'active_patron'
+   and bm.status = 'active'
  order by s.name
 `
 
