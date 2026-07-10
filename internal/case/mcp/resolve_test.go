@@ -1050,6 +1050,47 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.Contains(t, result.Content[0].Text, "Section body.")
 	})
 
+	t.Run("returns error instead of empty success for note with no rendered content", func(t *testing.T) {
+		// A frontmatter-only or otherwise empty note must not answer a
+		// valid-looking read with text:"" — a retrieval endpoint returning
+		// silent empty content poisons downstream consumers.
+		note := &appmodel.NoteView{
+			Path:      "demo/pointer.md",
+			PathID:    77,
+			Permalink: "/demo/pointer",
+			HTML:      "",
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"pid": 77}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 7,
+		})
+
+		require.NotNil(t, resp.Error)
+		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
+		require.Contains(t, resp.Error.Message, "demo/pointer.md")
+		require.Contains(t, resp.Error.Message, "no rendered content")
+	})
+
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {

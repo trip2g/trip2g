@@ -945,6 +945,14 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 			fmt.Sprintf("section not found for toc_path [%s]; %s", strings.Join(args.TocPath, " > "), topLevelSectionsNudge(note)))
 	}
 
+	// A resolved note with no rendered content must fail loud: silent empty
+	// success poisons downstream consumers that treat text:"" as the note body.
+	if len(note.HTML) == 0 {
+		log.Warn("note has no rendered content", "path", note.Path, "pid", note.PathID)
+		return errorResponse(id, ErrCodeInvalidParams,
+			fmt.Sprintf("note %q resolved but has no rendered content", note.Path))
+	}
+
 	return successResponse(id, textToolResult(string(note.HTML)))
 }
 
