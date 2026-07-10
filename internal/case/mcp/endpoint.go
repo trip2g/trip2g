@@ -35,12 +35,14 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	// Enforce federation hop depth limit. Depth is observed for every request:
-	// no header (or a malformed one) counts as 0 = direct client.
+	// no header, a malformed value or a negative one all count as 0 = direct client.
 	resolveCtx := context.Context(req.Req)
 	depthHeader := req.Req.Request.Header.Peek("X-MCP-Federation-Depth")
 	incomingDepth := 0
 	if len(depthHeader) > 0 {
-		incomingDepth, _ = strconv.Atoi(string(depthHeader))
+		if v, parseErr := strconv.Atoi(string(depthHeader)); parseErr == nil && v > 0 {
+			incomingDepth = v
+		}
 	}
 	m.ObserveFederationDepth(incomingDepth)
 	if len(depthHeader) > 0 {
@@ -76,7 +78,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
 	resolveCtx = ContextWithMetrics(resolveCtx, m)
 	resp := Resolve(resolveCtx, env, rpcReq)
-	recordRequestMetrics(resolveCtx, m, env, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
+	recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
 	return writeJSONResponse(req, resp)
 }
 

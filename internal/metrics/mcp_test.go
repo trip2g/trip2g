@@ -133,8 +133,8 @@ func TestNewMCPMetrics_Records(t *testing.T) {
 			wantHistSum:   f(7),
 		},
 		{
-			name:      "dynamic_tools_registered gauge is set",
-			record:    func(m *MCPMetrics) { m.SetDynamicToolsRegistered(5) },
+			name:      "dynamic_tools_registered gauge reads its source at scrape time",
+			record:    func(m *MCPMetrics) { m.SetDynamicToolsSource(func() int { return 5 }) },
 			metric:    "trip2g_mcp_dynamic_tools_registered",
 			labels:    map[string]string{},
 			wantGauge: f(5),
@@ -174,6 +174,27 @@ func TestMCPMetrics_NilSafe(t *testing.T) {
 		m.ObserveFanoutBases(2)
 		m.RecordFederatedRequest("ok")
 		m.ObserveSearchResults("similar", 3)
-		m.SetDynamicToolsRegistered(4)
+		m.SetDynamicToolsSource(func() int { return 4 })
 	})
+}
+
+// TestDynamicToolsGauge_TracksSourceAcrossScrapes pins that the gauge value
+// follows the source on every scrape, so a note reload changing the underlying
+// count is visible immediately, with no explicit gauge update anywhere.
+func TestDynamicToolsGauge_TracksSourceAcrossScrapes(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	m := NewMCPMetrics(reg)
+
+	// Without a source the gauge reads 0.
+	metric := findMetric(t, reg, "trip2g_mcp_dynamic_tools_registered", map[string]string{})
+	require.InDelta(t, 0, metric.GetGauge().GetValue(), 1e-9)
+
+	count := 2
+	m.SetDynamicToolsSource(func() int { return count })
+	metric = findMetric(t, reg, "trip2g_mcp_dynamic_tools_registered", map[string]string{})
+	require.InDelta(t, 2, metric.GetGauge().GetValue(), 1e-9)
+
+	count = 7
+	metric = findMetric(t, reg, "trip2g_mcp_dynamic_tools_registered", map[string]string{})
+	require.InDelta(t, 7, metric.GetGauge().GetValue(), 1e-9)
 }

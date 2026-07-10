@@ -66,13 +66,6 @@ func requireHistogram(t *testing.T, g prometheus.Gatherer, name string, labels m
 	require.InDelta(t, wantSum, m.GetHistogram().GetSampleSum(), 1e-9, "histogram sum %s %v", name, labels)
 }
 
-func requireGauge(t *testing.T, g prometheus.Gatherer, name string, labels map[string]string, want float64) {
-	t.Helper()
-	m := findRegMetric(t, g, name, labels)
-	require.NotNil(t, m, "metric %s with labels %v not found", name, labels)
-	require.InDelta(t, want, m.GetGauge().GetValue(), 1e-9, "gauge %s %v", name, labels)
-}
-
 // withSearchEnv wires the env funcs needed by the search tool: one readable
 // note returned by text search, vector search disabled.
 func withSearchEnv(env *EnvMock) {
@@ -181,7 +174,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "tools list records discovery counter and dynamic tools gauge",
+			name: "tools list records discovery counter",
 			body: mcpToolsListBody(t),
 			setup: func(_ *testing.T, env *EnvMock) {
 				dyn := &appmodel.NoteView{Path: "tools/my.md", MCPMethod: "my_tool", Title: "My tool"}
@@ -194,7 +187,6 @@ func TestMCPEndpointMetrics(t *testing.T) {
 			},
 			assert: func(t *testing.T, reg *prometheus.Registry) {
 				requireCounter(t, reg, "trip2g_mcp_tools_list_total", map[string]string{"auth": "anonymous"}, 1)
-				requireGauge(t, reg, "trip2g_mcp_dynamic_tools_registered", map[string]string{}, 1)
 			},
 		},
 		{
@@ -213,6 +205,61 @@ func TestMCPEndpointMetrics(t *testing.T) {
 			body: mcpInitBody,
 			assert: func(t *testing.T, reg *prometheus.Registry) {
 				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 0)
+			},
+		},
+		{
+			name:    "malformed depth header observes depth 0",
+			body:    mcpInitBody,
+			headers: map[string]string{"X-MCP-Federation-Depth": "abc"},
+			setup: func(_ *testing.T, env *EnvMock) {
+				env.FederationMaxDepthFunc = func() int { return 5 }
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 0)
+			},
+		},
+		{
+			name:    "negative depth header observes depth 0",
+			body:    mcpInitBody,
+			headers: map[string]string{"X-MCP-Federation-Depth": "-3"},
+			setup: func(_ *testing.T, env *EnvMock) {
+				env.FederationMaxDepthFunc = func() int { return 5 }
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 0)
+			},
+		},
+		{
+			name: "dynamic tool call is labeled dynamic, never by frontmatter name",
+			body: mcpToolsCallBody(t, "my_dynamic_tool", map[string]any{}),
+			setup: func(_ *testing.T, env *EnvMock) {
+				dyn := &appmodel.NoteView{Path: "tools/my.md", MCPMethod: "my_dynamic_tool", Content: []byte("body")}
+				env.LatestNoteViewsFunc = func() *appmodel.NoteViews {
+					return &appmodel.NoteViews{
+						List:    []*appmodel.NoteView{dyn},
+						PathMap: map[string]*appmodel.NoteView{dyn.Path: dyn},
+					}
+				}
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "tools/call", "tool": "dynamic", "auth": "anonymous", "status": "ok"}, 1)
+				require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "tools/call", "tool": "my_dynamic_tool", "auth": "anonymous", "status": "ok"}),
+					"frontmatter-derived tool name must not become a label value")
+			},
+		},
+		{
+			name: "single-kb federation client failure counts an outbound error",
+			body: mcpToolsCallBody(t, "federated_search", map[string]any{"query": "alpha", "kb_id": "alice"}),
+			setup: func(_ *testing.T, env *EnvMock) {
+				withFederationEnv(env)
+				env.FederationClientFunc = func(_ context.Context, _ string) (appmodel.Federation, error) {
+					return nil, errors.New("no active federation secret")
+				}
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"status": "error"}, 1)
 			},
 		},
 		{
@@ -292,5 +339,40 @@ func TestMCPEndpointMetrics(t *testing.T) {
 
 			tc.assert(t, reg)
 		})
+	}
+}
+
+// TestDynamicToolLabelBounded pins the cardinality bound: calls to different
+// mcp_method tools share one "dynamic" series instead of minting one series
+// per author-controlled frontmatter name.
+func TestDynamicToolLabelBounded(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	m := metrics.NewMCPMetrics(reg)
+
+	dynA := &appmodel.NoteView{Path: "a.md", MCPMethod: "tool_a", Content: []byte("a")}
+	dynB := &appmodel.NoteView{Path: "b.md", MCPMethod: "tool_b", Content: []byte("b")}
+	env := buildDispatchEnv(t, false)
+	env.MCPMetricsFunc = func() *metrics.MCPMetrics { return m }
+	env.LatestNoteViewsFunc = func() *appmodel.NoteViews {
+		return &appmodel.NoteViews{
+			List:    []*appmodel.NoteView{dynA, dynB},
+			PathMap: map[string]*appmodel.NoteView{dynA.Path: dynA, dynB.Path: dynB},
+		}
+	}
+
+	for _, tool := range []string{"tool_a", "tool_b"} {
+		fasthttpCtx := buildMCPFasthttpCtx(mcpToolsCallBody(t, tool, map[string]any{}), "")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		appreq.Release(req)
+		require.NoError(t, err)
+	}
+
+	requireCounter(t, reg, "trip2g_mcp_requests_total",
+		map[string]string{"method": "tools/call", "tool": "dynamic", "auth": "anonymous", "status": "ok"}, 2)
+	for _, name := range []string{"tool_a", "tool_b"} {
+		require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_requests_total",
+			map[string]string{"method": "tools/call", "tool": name, "auth": "anonymous", "status": "ok"}),
+			"per-name series %q must not exist", name)
 	}
 }

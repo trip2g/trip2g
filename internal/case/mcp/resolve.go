@@ -346,8 +346,6 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
 		})
 	}
-	// Cheap re-sync; the authoritative refresh happens on notes reload.
-	metricsFromContext(ctx).SetDynamicToolsRegistered(DynamicToolCount(env.LatestNoteViews()))
 
 	if env.FederatedGraphQLEnabled() {
 		tools = append(tools, Tool{

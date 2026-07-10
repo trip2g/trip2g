@@ -439,6 +439,7 @@ func main() {
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.wireMCPDynamicToolsGauge()
 	a.ChartData = chartdata.New(a)
 	a.liveNoteLoader.SetChartDataProvider(a)
 	a.latestNoteLoader.SetChartDataProvider(a)
@@ -550,10 +551,16 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 	// whole anonymous page cache rather than reasoning about which keys moved.
 	a.ClearPageCache()
 
-	// Keep the dynamic-tools gauge fresh even when no client calls tools/list.
-	a.mcpMetrics.SetDynamicToolsRegistered(mcp.DynamicToolCount(a.latestNoteLoader.NoteViews()))
-
 	return a.latestNoteLoader.NoteViews(), nil
+}
+
+// wireMCPDynamicToolsGauge makes the dynamic-tools gauge read the currently
+// published note snapshot at scrape time, so it stays fresh across reloads
+// without any tools/list call.
+func (a *app) wireMCPDynamicToolsGauge() {
+	a.mcpMetrics.SetDynamicToolsSource(func() int {
+		return mcp.DynamicToolCount(a.latestNoteLoader.NoteViews())
+	})
 }
 
 func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {

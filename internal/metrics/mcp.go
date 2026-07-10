@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"sync/atomic"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -16,7 +18,8 @@ type MCPMetrics struct {
 	searchResults     *prometheus.HistogramVec
 	toolErrors        *prometheus.CounterVec
 	auth              *prometheus.CounterVec
-	dynamicTools      prometheus.Gauge
+	dynamicTools      prometheus.GaugeFunc
+	dynamicToolsFn    atomic.Pointer[func() int]
 	toolsList         *prometheus.CounterVec
 }
 
@@ -59,15 +62,24 @@ func NewMCPMetrics(reg prometheus.Registerer) *MCPMetrics {
 			Name: "trip2g_mcp_auth_total",
 			Help: "Total number of MCP requests by auth kind",
 		}, []string{"auth"}),
-		dynamicTools: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "trip2g_mcp_dynamic_tools_registered",
-			Help: "Number of dynamic per-note (mcp_method) tools currently exposed",
-		}),
 		toolsList: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "trip2g_mcp_tools_list_total",
 			Help: "Total number of MCP tools/list calls (discovery signal)",
 		}, []string{"auth"}),
 	}
+
+	// Computed at scrape time from the source set via SetDynamicToolsSource, so
+	// the value always reflects the currently published note snapshot: no
+	// staleness after reloads and no ordering races between concurrent writers.
+	m.dynamicTools = prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "trip2g_mcp_dynamic_tools_registered",
+		Help: "Number of dynamic per-note (mcp_method) tools currently exposed",
+	}, func() float64 {
+		if fn := m.dynamicToolsFn.Load(); fn != nil {
+			return float64((*fn)())
+		}
+		return 0
+	})
 
 	reg.MustRegister(
 		m.requests, m.duration, m.fanoutBases, m.federationDepth,
@@ -75,6 +87,15 @@ func NewMCPMetrics(reg prometheus.Registerer) *MCPMetrics {
 		m.dynamicTools, m.toolsList,
 	)
 	return m
+}
+
+// SetDynamicToolsSource wires the function the dynamic-tools gauge reads on
+// every scrape.
+func (m *MCPMetrics) SetDynamicToolsSource(fn func() int) {
+	if m == nil || fn == nil {
+		return
+	}
+	m.dynamicToolsFn.Store(&fn)
 }
 
 // RecordMCPRequest records one MCP request: requests_total, auth_total and the
@@ -139,12 +160,4 @@ func (m *MCPMetrics) ObserveSearchResults(tool string, n int) {
 		return
 	}
 	m.searchResults.WithLabelValues(tool).Observe(float64(n))
-}
-
-// SetDynamicToolsRegistered sets the count of dynamic mcp_method tools.
-func (m *MCPMetrics) SetDynamicToolsRegistered(n int) {
-	if m == nil {
-		return
-	}
-	m.dynamicTools.Set(float64(n))
 }

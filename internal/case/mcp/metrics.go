@@ -25,7 +25,7 @@ func metricsFromContext(ctx context.Context) *metrics.MCPMetrics {
 }
 
 // recordRequestMetrics records the per-request metrics after Resolve.
-func recordRequestMetrics(ctx context.Context, m *metrics.MCPMetrics, env Env, req Request, hasUserToken bool, resp Response, seconds float64) {
+func recordRequestMetrics(ctx context.Context, m *metrics.MCPMetrics, req Request, hasUserToken bool, resp Response, seconds float64) {
 	if m == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func recordRequestMetrics(ctx context.Context, m *metrics.MCPMetrics, env Env, r
 	if req.Method == mcpMethodToolsCall {
 		var params CallToolParams
 		if json.Unmarshal(req.Params, &params) == nil {
-			tool = toolLabel(env, params.Name)
+			tool = toolLabel(params.Name, resp)
 		}
 	}
 
@@ -64,8 +64,8 @@ func recordRejectedRequest(m *metrics.MCPMetrics, req Request, auth string, seco
 }
 
 // DynamicToolCount returns how many notes expose a dynamic (mcp_method) tool,
-// excluding names shadowed by built-in tools. The app refreshes the
-// trip2g_mcp_dynamic_tools_registered gauge with it on every notes reload.
+// excluding names shadowed by built-in tools. The app wires it as the
+// scrape-time source of the trip2g_mcp_dynamic_tools_registered gauge.
 func DynamicToolCount(nvs *model.NoteViews) int {
 	if nvs == nil {
 		return 0
@@ -105,6 +105,11 @@ func authKind(ctx context.Context, hasUserToken bool) string {
 // otherLabel is the bounded fallback for free-form client input in labels.
 const otherLabel = "other"
 
+// dynamicLabel is the fixed label for note-registered (mcp_method) tools:
+// frontmatter names are author-controlled and unbounded, so they never become
+// label values.
+const dynamicLabel = "dynamic"
+
 // methodLabel bounds the method label to the known JSON-RPC method set.
 func methodLabel(method string) string {
 	switch method {
@@ -115,20 +120,17 @@ func methodLabel(method string) string {
 	}
 }
 
-// toolLabel bounds the tool label: built-in tools and note-registered dynamic
-// tools keep their name, anything else (arbitrary client input) becomes "other".
-func toolLabel(env Env, name string) string {
+// toolLabel bounds the tool label: built-in tools keep their name (fixed set);
+// a name Resolve rejected as unknown maps to "other"; anything else Resolve
+// accepted is a note-registered dynamic tool and maps to "dynamic".
+func toolLabel(name string, resp Response) string {
 	if reservedMCPTools[name] {
 		return name
 	}
-	if nvs := env.LatestNoteViews(); nvs != nil {
-		for _, note := range nvs.List {
-			if note.MCPMethod == name {
-				return name
-			}
-		}
+	if resp.Error != nil && resp.Error.Code == ErrCodeMethodNotFound {
+		return otherLabel
 	}
-	return otherLabel
+	return dynamicLabel
 }
 
 // errorReason maps a JSON-RPC error code to a bounded reason label.
