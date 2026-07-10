@@ -21,14 +21,23 @@ var _ setsecret.Env = &EnvMock{}
 //
 //		// make and configure a mocked setsecret.Env
 //		mockedEnv := &EnvMock{
+//			CronWebhookByIDFunc: func(ctx context.Context, id int64) (db.CronWebhook, error) {
+//				panic("mock out the CronWebhookByID method")
+//			},
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
 //			},
 //			EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
 //				panic("mock out the EncryptData method")
 //			},
+//			IsDevModeFunc: func() bool {
+//				panic("mock out the IsDevMode method")
+//			},
 //			UpsertSecretFunc: func(ctx context.Context, arg db.UpsertSecretParams) (db.Secret, error) {
 //				panic("mock out the UpsertSecret method")
+//			},
+//			WebhookByIDFunc: func(ctx context.Context, id int64) (db.ChangeWebhook, error) {
+//				panic("mock out the WebhookByID method")
 //			},
 //		}
 //
@@ -37,17 +46,33 @@ var _ setsecret.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CronWebhookByIDFunc mocks the CronWebhookByID method.
+	CronWebhookByIDFunc func(ctx context.Context, id int64) (db.CronWebhook, error)
+
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
 	// EncryptDataFunc mocks the EncryptData method.
 	EncryptDataFunc func(plaintext []byte) ([]byte, error)
 
+	// IsDevModeFunc mocks the IsDevMode method.
+	IsDevModeFunc func() bool
+
 	// UpsertSecretFunc mocks the UpsertSecret method.
 	UpsertSecretFunc func(ctx context.Context, arg db.UpsertSecretParams) (db.Secret, error)
 
+	// WebhookByIDFunc mocks the WebhookByID method.
+	WebhookByIDFunc func(ctx context.Context, id int64) (db.ChangeWebhook, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// CronWebhookByID holds details about calls to the CronWebhookByID method.
+		CronWebhookByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// CurrentAdminUserToken holds details about calls to the CurrentAdminUserToken method.
 		CurrentAdminUserToken []struct {
 			// Ctx is the ctx argument value.
@@ -58,6 +83,9 @@ type EnvMock struct {
 			// Plaintext is the plaintext argument value.
 			Plaintext []byte
 		}
+		// IsDevMode holds details about calls to the IsDevMode method.
+		IsDevMode []struct {
+		}
 		// UpsertSecret holds details about calls to the UpsertSecret method.
 		UpsertSecret []struct {
 			// Ctx is the ctx argument value.
@@ -65,10 +93,56 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpsertSecretParams
 		}
+		// WebhookByID holds details about calls to the WebhookByID method.
+		WebhookByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 	}
+	lockCronWebhookByID       sync.RWMutex
 	lockCurrentAdminUserToken sync.RWMutex
 	lockEncryptData           sync.RWMutex
+	lockIsDevMode             sync.RWMutex
 	lockUpsertSecret          sync.RWMutex
+	lockWebhookByID           sync.RWMutex
+}
+
+// CronWebhookByID calls CronWebhookByIDFunc.
+func (mock *EnvMock) CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error) {
+	if mock.CronWebhookByIDFunc == nil {
+		panic("EnvMock.CronWebhookByIDFunc: method is nil but Env.CronWebhookByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockCronWebhookByID.Lock()
+	mock.calls.CronWebhookByID = append(mock.calls.CronWebhookByID, callInfo)
+	mock.lockCronWebhookByID.Unlock()
+	return mock.CronWebhookByIDFunc(ctx, id)
+}
+
+// CronWebhookByIDCalls gets all the calls that were made to CronWebhookByID.
+// Check the length with:
+//
+//	len(mockedEnv.CronWebhookByIDCalls())
+func (mock *EnvMock) CronWebhookByIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockCronWebhookByID.RLock()
+	calls = mock.calls.CronWebhookByID
+	mock.lockCronWebhookByID.RUnlock()
+	return calls
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -135,6 +209,33 @@ func (mock *EnvMock) EncryptDataCalls() []struct {
 	return calls
 }
 
+// IsDevMode calls IsDevModeFunc.
+func (mock *EnvMock) IsDevMode() bool {
+	if mock.IsDevModeFunc == nil {
+		panic("EnvMock.IsDevModeFunc: method is nil but Env.IsDevMode was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockIsDevMode.Lock()
+	mock.calls.IsDevMode = append(mock.calls.IsDevMode, callInfo)
+	mock.lockIsDevMode.Unlock()
+	return mock.IsDevModeFunc()
+}
+
+// IsDevModeCalls gets all the calls that were made to IsDevMode.
+// Check the length with:
+//
+//	len(mockedEnv.IsDevModeCalls())
+func (mock *EnvMock) IsDevModeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIsDevMode.RLock()
+	calls = mock.calls.IsDevMode
+	mock.lockIsDevMode.RUnlock()
+	return calls
+}
+
 // UpsertSecret calls UpsertSecretFunc.
 func (mock *EnvMock) UpsertSecret(ctx context.Context, arg db.UpsertSecretParams) (db.Secret, error) {
 	if mock.UpsertSecretFunc == nil {
@@ -168,5 +269,41 @@ func (mock *EnvMock) UpsertSecretCalls() []struct {
 	mock.lockUpsertSecret.RLock()
 	calls = mock.calls.UpsertSecret
 	mock.lockUpsertSecret.RUnlock()
+	return calls
+}
+
+// WebhookByID calls WebhookByIDFunc.
+func (mock *EnvMock) WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error) {
+	if mock.WebhookByIDFunc == nil {
+		panic("EnvMock.WebhookByIDFunc: method is nil but Env.WebhookByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockWebhookByID.Lock()
+	mock.calls.WebhookByID = append(mock.calls.WebhookByID, callInfo)
+	mock.lockWebhookByID.Unlock()
+	return mock.WebhookByIDFunc(ctx, id)
+}
+
+// WebhookByIDCalls gets all the calls that were made to WebhookByID.
+// Check the length with:
+//
+//	len(mockedEnv.WebhookByIDCalls())
+func (mock *EnvMock) WebhookByIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockWebhookByID.RLock()
+	calls = mock.calls.WebhookByID
+	mock.lockWebhookByID.RUnlock()
 	return calls
 }

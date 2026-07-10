@@ -18,6 +18,9 @@ func TestRequireHTTPS(t *testing.T) {
 		{"http 127.0.0.1 allows", "http://127.0.0.1/hook", false},
 		{"http ::1 allows", "http://[::1]/hook", false},
 		{"other scheme silent", "ftp://example.com", false},
+		{"HTTP uppercase rejects", "HTTP://example.com/hook", true},
+		{"HtTp mixed case rejects", "HtTp://example.com/hook", true},
+		{"http with leading whitespace rejects", "  http://example.com/hook", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
