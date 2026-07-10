@@ -3,8 +3,6 @@ title: "La Rochefoucauld — Maxims"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/larochefoucauld]]"
-mcp_federation_kb_url: https://larochefoucauld.2pub.me/_system/mcp
-mcp_federation_kb_id: larochefoucauld
 ---
 
 # La Rochefoucauld — Maxims

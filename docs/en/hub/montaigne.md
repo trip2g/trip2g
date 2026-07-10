@@ -3,8 +3,6 @@ title: "Montaigne — Essays"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/montaigne]]"
-mcp_federation_kb_url: https://montaigne.2pub.me/_system/mcp
-mcp_federation_kb_id: montaigne
 ---
 
 # Montaigne — Essays

@@ -3,8 +3,6 @@ title: "Schopenhauer — Aphorisms on the Wisdom of Life"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/schopenhauer]]"
-mcp_federation_kb_url: https://schopenhauer.2pub.me/_system/mcp
-mcp_federation_kb_id: schopenhauer
 ---
 
 # Schopenhauer — Aphorisms on the Wisdom of Life

@@ -3,8 +3,6 @@ title: "Laozi — Tao Te Ching"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/laozi]]"
-mcp_federation_kb_url: https://laozi.2pub.me/_system/mcp
-mcp_federation_kb_id: laozi
 ---
 
 # Laozi — Tao Te Ching

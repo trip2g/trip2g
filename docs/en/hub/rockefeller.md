@@ -3,8 +3,6 @@ title: "John D. Rockefeller — Random Reminiscences"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/rockefeller]]"
-mcp_federation_kb_url: https://rockefeller.2pub.me/_system/mcp
-mcp_federation_kb_id: rockefeller
 ---
 
 # John D. Rockefeller — Random Reminiscences

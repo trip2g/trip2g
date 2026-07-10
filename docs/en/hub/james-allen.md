@@ -3,8 +3,6 @@ title: "James Allen — As a Man Thinketh"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/james-allen]]"
-mcp_federation_kb_url: https://james-allen.2pub.me/_system/mcp
-mcp_federation_kb_id: james-allen
 ---
 
 # James Allen — As a Man Thinketh

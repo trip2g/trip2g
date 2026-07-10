@@ -3,8 +3,6 @@ title: "Gustave Le Bon — The Crowd"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/lebon]]"
-mcp_federation_kb_url: https://lebon.2pub.me/_system/mcp
-mcp_federation_kb_id: lebon
 ---
 
 # Gustave Le Bon — The Crowd

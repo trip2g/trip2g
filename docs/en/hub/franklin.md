@@ -3,8 +3,6 @@ title: "Benjamin Franklin — Autobiography & The Way to Wealth"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/franklin]]"
-mcp_federation_kb_url: https://franklin.2pub.me/_system/mcp
-mcp_federation_kb_id: franklin
 ---
 
 # Benjamin Franklin — Autobiography & The Way to Wealth

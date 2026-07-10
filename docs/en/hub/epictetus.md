@@ -3,8 +3,6 @@ title: "Epictetus — Enchiridion"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/epictetus]]"
-mcp_federation_kb_url: https://epictetus.2pub.me/_system/mcp
-mcp_federation_kb_id: epictetus
 ---
 
 # Epictetus — Enchiridion

@@ -3,8 +3,6 @@ title: "Goethe — Maxims and Reflections"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/goethe]]"
-mcp_federation_kb_url: https://goethe.2pub.me/_system/mcp
-mcp_federation_kb_id: goethe
 ---
 
 # Goethe — Maxims and Reflections

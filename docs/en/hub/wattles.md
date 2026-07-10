@@ -3,8 +3,6 @@ title: "Wallace Wattles — The Science of Getting Rich"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/wattles]]"
-mcp_federation_kb_url: https://wattles.2pub.me/_system/mcp
-mcp_federation_kb_id: wattles
 ---
 
 # Wallace Wattles — The Science of Getting Rich

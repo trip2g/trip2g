@@ -3,8 +3,6 @@ title: "Napoleon Hill — The Law of Success"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/hill]]"
-mcp_federation_kb_url: https://hill.2pub.me/_system/mcp
-mcp_federation_kb_id: hill
 ---
 
 # Napoleon Hill — The Law of Success

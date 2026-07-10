@@ -11,26 +11,55 @@ lang_redirect: "[[en/hub/_index]]"
 
 - [[ru/hub/nicksenin_journal|Журнал Ника Сенина]]
 - [[ru/hub/markavrelii|Марк Аврелий — Размышления]]
-- [[ru/hub/telegram|Telegram-каналы]]
-- [[ru/hub/foragent|Foragent]]
-- [[ru/hub/adler|Альфред Адлер — Понять природу человека]]
-- [[ru/hub/confucius|Конфуций — Лунь юй]]
-- [[ru/hub/epictetus|Эпиктет — Энхиридион]]
-- [[ru/hub/ford|Генри Форд — My Life and Work]]
-- [[ru/hub/franklin|Бенджамин Франклин — Автобиография и Путь к богатству]]
-- [[ru/hub/goethe|Гёте — Максимы и размышления]]
-- [[ru/hub/hill|Наполеон Хилл — The Law of Success]]
-- [[ru/hub/ignatius|Игнатий Лойола — Духовные упражнения]]
-- [[ru/hub/james-allen|Джеймс Аллен — As a Man Thinketh]]
-- [[ru/hub/laozi|Лао-цзы — Дао дэ цзин]]
-- [[ru/hub/larochefoucauld|Ларошфуко — Максимы]]
-- [[ru/hub/lebon|Гюстав Ле Бон — Психология толпы]]
-- [[ru/hub/machiavelli|Макиавелли — Государь]]
-- [[ru/hub/montaigne|Мишель де Монтень — Опыты]]
-- [[ru/hub/nietzsche|Ницше — По ту сторону добра и зла]]
-- [[ru/hub/pascal|Паскаль — Мысли]]
-- [[ru/hub/rockefeller|Джон Д. Рокфеллер — Random Reminiscences]]
-- [[ru/hub/schopenhauer|Шопенгауэр — Афоризмы житейской мудрости]]
-- [[ru/hub/smiles|Сэмюэл Смайлс — Self-Help]]
-- [[ru/hub/tolstoy|Лев Толстой — Исповедь]]
-- [[ru/hub/wattles|Уоллес Уоттлс — The Science of Getting Rich]]
+- [[ru/hub/minionschool|Школа миньонов]]
+- [[ru/hub/philosophers|Хаб философов]] — слой маршрутизации над 21 корпусом философов
+
+## Текущая схема хаба
+
+Корневой хаб подключает `philosophers` одним пиром; тот хаб уже федерирует
+21 корпус. Пунктирные линии — связи влияния между корпусами: корпус указывает
+на соседей, с которыми спорит, и агент может пройти по идее через базы.
+
+```mermaid
+graph TD
+  HUB["trip2g.com hub"]
+  HUB --> J["nicksenin_journal"]
+  HUB --> MA["markavrelii"]
+  HUB --> MS["minionschool"]
+  HUB --> PH["philosophers"]
+
+  PH --> nietzsche
+  PH --> schopenhauer
+  PH --> goethe
+  PH --> pascal
+  PH --> montaigne
+  PH --> larochefoucauld
+  PH --> confucius
+  PH --> laozi
+  PH --> epictetus
+  PH --> tolstoy
+  PH --> ignatius
+  PH --> lebon
+  PH --> adler
+  PH --> machiavelli
+  PH --> franklin
+  PH --> smiles
+  PH --> ford
+  PH --> rockefeller
+  PH --> hill
+  PH --> wattles
+  PH --> jamesallen["james-allen"]
+
+  nietzsche -.->|отвечает| schopenhauer
+  pascal -.->|против| montaigne
+  epictetus -.->|Стоя| MA
+  confucius -.->|порядок vs путь| laozi
+  tolstoy -.->|опирается| epictetus
+  tolstoy -.->|опирается| MA
+```
+
+Слепой веер с корневого хаба видит `philosophers` как **одну** базу. Чтобы дойти
+до конкретного мыслителя, спрашивают хаб философов по `kb_id` его корпуса
+(например, `federated_search(kb_id="nietzsche")` к `philosophers.2pub.me`).
+
+Что такое федеративный поиск и как он работает — [[ru/user/federation|MCP Federation]].

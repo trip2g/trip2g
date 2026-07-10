@@ -3,8 +3,6 @@ title: "Confucius — The Analects"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/confucius]]"
-mcp_federation_kb_url: https://confucius.2pub.me/_system/mcp
-mcp_federation_kb_id: confucius
 ---
 
 # Confucius — The Analects

@@ -11,26 +11,55 @@ Knowledge bases federated into this hub.
 
 - [[en/hub/nicksenin_journal|Nick Senin Journal]]
 - [[en/hub/markavrelii|Marcus Aurelius — Meditations]]
-- [[en/hub/telegram|Telegram Channels]]
-- [[en/hub/foragent|Foragent]]
-- [[en/hub/adler|Alfred Adler — Understanding Human Nature]]
-- [[en/hub/confucius|Confucius — The Analects]]
-- [[en/hub/epictetus|Epictetus — Enchiridion]]
-- [[en/hub/ford|Henry Ford — My Life and Work]]
-- [[en/hub/franklin|Benjamin Franklin — Autobiography & The Way to Wealth]]
-- [[en/hub/goethe|Goethe — Maxims and Reflections]]
-- [[en/hub/hill|Napoleon Hill — The Law of Success]]
-- [[en/hub/ignatius|Ignatius of Loyola — Spiritual Exercises]]
-- [[en/hub/james-allen|James Allen — As a Man Thinketh]]
-- [[en/hub/laozi|Laozi — Tao Te Ching]]
-- [[en/hub/larochefoucauld|La Rochefoucauld — Maxims]]
-- [[en/hub/lebon|Gustave Le Bon — The Crowd]]
-- [[en/hub/machiavelli|Machiavelli — The Prince]]
-- [[en/hub/montaigne|Montaigne — Essays]]
-- [[en/hub/nietzsche|Nietzsche — Beyond Good and Evil]]
-- [[en/hub/pascal|Pascal — Pensées]]
-- [[en/hub/rockefeller|John D. Rockefeller — Random Reminiscences]]
-- [[en/hub/schopenhauer|Schopenhauer — Aphorisms on the Wisdom of Life]]
-- [[en/hub/smiles|Samuel Smiles — Self-Help]]
-- [[en/hub/tolstoy|Leo Tolstoy — Confession]]
-- [[en/hub/wattles|Wallace Wattles — The Science of Getting Rich]]
+- [[en/hub/minionschool|Minion School]]
+- [[en/hub/philosophers|Philosophers Hub]] — routing layer over 21 philosopher corpora
+
+## Current hub topology
+
+The root hub links `philosophers` as a single peer; that hub in turn federates
+the 21 corpora. Dotted lines are cross-corpus influence links — a corpus points
+at the neighbours it argues with, so an agent can follow an idea across bases.
+
+```mermaid
+graph TD
+  HUB["trip2g.com hub"]
+  HUB --> J["nicksenin_journal"]
+  HUB --> MA["markavrelii"]
+  HUB --> MS["minionschool"]
+  HUB --> PH["philosophers"]
+
+  PH --> nietzsche
+  PH --> schopenhauer
+  PH --> goethe
+  PH --> pascal
+  PH --> montaigne
+  PH --> larochefoucauld
+  PH --> confucius
+  PH --> laozi
+  PH --> epictetus
+  PH --> tolstoy
+  PH --> ignatius
+  PH --> lebon
+  PH --> adler
+  PH --> machiavelli
+  PH --> franklin
+  PH --> smiles
+  PH --> ford
+  PH --> rockefeller
+  PH --> hill
+  PH --> wattles
+  PH --> jamesallen["james-allen"]
+
+  nietzsche -.->|responds to| schopenhauer
+  pascal -.->|contra| montaigne
+  epictetus -.->|Stoa| MA
+  confucius -.->|order vs way| laozi
+  tolstoy -.->|draws on| epictetus
+  tolstoy -.->|draws on| MA
+```
+
+A blind fan-out from the root hub sees `philosophers` as **one** base. To reach a
+specific thinker, query the philosophers hub by that corpus's `kb_id` (e.g.
+`federated_search(kb_id="nietzsche")` against `philosophers.2pub.me`).
+
+What federated search is and how it works — [[en/user/federation|MCP Federation]].
