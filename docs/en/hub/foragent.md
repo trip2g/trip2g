@@ -3,8 +3,6 @@ title: "Foragent"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/foragent]]"
-mcp_federation_kb_url: https://foragentadapter.2pub.me/_system/mcp
-mcp_federation_kb_id: foragent
 ---
 
 # Foragent

@@ -3,8 +3,6 @@ title: "Telegram Channels"
 free: true
 lang: en
 lang_redirect: "[[ru/hub/telegram]]"
-mcp_federation_kb_url: https://keepertgadapter.2pub.me/_system/mcp
-mcp_federation_kb_id: telegram_public
 ---
 
 # Telegram Channels
