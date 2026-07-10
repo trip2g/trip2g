@@ -65,6 +65,93 @@ func TestShouldSkipTx_InlineFragment(t *testing.T) {
 		"@skipTx field selected via inline fragment must be detected")
 }
 
+func TestShouldSkipTx_FragmentExcludedByInclude(t *testing.T) {
+	op := loadTestOperation(t, `
+		mutation {
+			admin {
+				...CronOps @include(if: false)
+			}
+		}
+		fragment CronOps on AdminMutation {
+			runCronJob(input: {id: 1}) {
+				__typename
+			}
+		}
+	`)
+
+	require.False(t, shouldSkipTx(op, realSkipTxMap()),
+		"@skipTx field in a fragment excluded by @include(if: false) never executes, tx must stay on")
+}
+
+func TestShouldSkipTx_FragmentExcludedBySkip(t *testing.T) {
+	op := loadTestOperation(t, `
+		mutation {
+			admin {
+				...CronOps @skip(if: true)
+			}
+		}
+		fragment CronOps on AdminMutation {
+			runCronJob(input: {id: 1}) {
+				__typename
+			}
+		}
+	`)
+
+	require.False(t, shouldSkipTx(op, realSkipTxMap()),
+		"@skipTx field in a fragment excluded by @skip(if: true) never executes, tx must stay on")
+}
+
+func TestShouldSkipTx_FieldExcludedBySkip(t *testing.T) {
+	op := loadTestOperation(t, `
+		mutation {
+			admin {
+				runCronJob(input: {id: 1}) @skip(if: true) {
+					__typename
+				}
+			}
+		}
+	`)
+
+	require.False(t, shouldSkipTx(op, realSkipTxMap()),
+		"@skipTx field excluded by @skip(if: true) never executes, tx must stay on")
+}
+
+func TestShouldSkipTx_FragmentIncludedByLiteralTrue(t *testing.T) {
+	op := loadTestOperation(t, `
+		mutation {
+			admin {
+				...CronOps @include(if: true)
+			}
+		}
+		fragment CronOps on AdminMutation {
+			runCronJob(input: {id: 1}) {
+				__typename
+			}
+		}
+	`)
+
+	require.True(t, shouldSkipTx(op, realSkipTxMap()),
+		"@include(if: true) does not exclude the fragment, @skipTx must still be detected")
+}
+
+func TestShouldSkipTx_FragmentGuardedByVariable(t *testing.T) {
+	op := loadTestOperation(t, `
+		mutation ($run: Boolean!) {
+			admin {
+				...CronOps @include(if: $run)
+			}
+		}
+		fragment CronOps on AdminMutation {
+			runCronJob(input: {id: 1}) {
+				__typename
+			}
+		}
+	`)
+
+	require.True(t, shouldSkipTx(op, realSkipTxMap()),
+		"variable-guarded fragment may execute, must be treated as skipTx conservatively")
+}
+
 func TestShouldSkipTx_FragmentWithoutSkipTxField(t *testing.T) {
 	op := loadTestOperation(t, `
 		mutation {

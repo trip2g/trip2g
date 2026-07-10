@@ -223,6 +223,9 @@ func selectionHasSkipTx(sel ast.SelectionSet, skipTx map[string]struct{}) bool {
 	for _, s := range sel {
 		switch sel := s.(type) {
 		case *ast.Field:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
 			if _, skip := skipTx[sel.Name]; skip {
 				return true
 			}
@@ -230,15 +233,47 @@ func selectionHasSkipTx(sel ast.SelectionSet, skipTx map[string]struct{}) bool {
 				return true
 			}
 		case *ast.InlineFragment:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
 			if selectionHasSkipTx(sel.SelectionSet, skipTx) {
 				return true
 			}
 		case *ast.FragmentSpread:
+			if staticallyExcluded(sel.Directives) {
+				continue
+			}
 			// Definition is resolved by the validator; fragment cycles are
 			// rejected before this runs, so plain recursion is safe.
 			if sel.Definition != nil && selectionHasSkipTx(sel.Definition.SelectionSet, skipTx) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// staticallyExcluded reports whether @skip(if: true) or @include(if: false)
+// with a literal boolean removes the selection from execution. Variable-driven
+// conditions can't be evaluated here (no variables at this layer), so they are
+// treated as potentially executing.
+func staticallyExcluded(directives ast.DirectiveList) bool {
+	for _, d := range directives {
+		var excludeWhen bool
+		switch d.Name {
+		case "skip":
+			excludeWhen = true
+		case "include":
+			excludeWhen = false
+		default:
+			continue
+		}
+		arg := d.Arguments.ForName("if")
+		if arg == nil || arg.Value == nil || arg.Value.Kind != ast.BooleanValue {
+			continue
+		}
+		if (arg.Value.Raw == "true") == excludeWhen {
+			return true
 		}
 	}
 	return false
