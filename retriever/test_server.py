@@ -183,7 +183,7 @@ def test_rerank_wire_contract_backend_agnostic(monkeypatch):
     assert [r["score"] for r in out] == [0.9, 0.5, 0.2]
 
 
-# ---- REAL_MODELS=1: numeric guarantees with the actual models ----
+# REAL_MODELS=1: numeric guarantees with the actual models
 
 
 @pytest.fixture(scope="module")

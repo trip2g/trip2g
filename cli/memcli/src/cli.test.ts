@@ -1367,9 +1367,7 @@ test('parseArgs: --kanban and --kanban-bundle together', () => {
   assert.equal(flags.kanbanBundle, 'http://localhost:8770/kanban.js');
 });
 
-// ---------------------------------------------------------------------------
 // --embedded / --reranker (local vector-search sidecars)
-// ---------------------------------------------------------------------------
 
 test('parseArgs: embedded and reranker default to false', () => {
   const { flags } = parseArgs(['up']);
