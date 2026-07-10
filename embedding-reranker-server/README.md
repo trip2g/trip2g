@@ -35,6 +35,27 @@ Notes:
   (and `models--BAAI--bge-reranker-v2-m3`). Pre-populated caches in per-model
   subdirs (`embedding/hub`, `reranker/hub`) can be consolidated with symlinks.
 
+## Tests
+
+`test_server.py` has two tiers:
+
+- **Always-on** (no models, no torch): wire-shape contracts — OpenAI `/v1/embeddings`
+  shape, TEI `/rerank` bare-array shape, `/health`, `LOAD_RERANKER` gating, and
+  that the server requests L2-normalized output.
+
+  ```bash
+  pip install fastapi httpx pytest && pytest test_server.py
+  ```
+
+- **`REAL_MODELS=1`** (loads both models, ~2.4GB RAM): 1024 dims, unit norm,
+  semantic ranking. Easiest inside the docker image with the shared cache:
+
+  ```bash
+  docker run --rm -e REAL_MODELS=1 -e HF_HOME=/data \
+    -v "${MODELS_DIR:-$HOME/models}":/data -v "$PWD":/app-src \
+    trip2g-embedding-server sh -c "pip -q install pytest httpx && cd /app-src && python -m pytest test_server.py"
+  ```
+
 ## Run manually
 
 ```bash
