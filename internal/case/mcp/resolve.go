@@ -20,6 +20,7 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 	"trip2g/internal/ptr"
+	"trip2g/internal/reranker"
 )
 
 const (
@@ -476,14 +477,23 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	}
 
 	// Add vector search results if enabled
+	// passageByURL holds the best-matching chunk passage per note (window-sized),
+	// used by the optional reranker to avoid feeding truncated whole notes.
+	var passageByURL map[string]string
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, vecErr := vectorSearch(ctx, env, args.Query, DefaultVectorSearchLimit)
+		vectorResults, passages, vecErr := vectorSearch(ctx, env, args.Query, DefaultVectorSearchLimit)
 		if vecErr == nil {
 			results = mergeResults(results, vectorResults)
+			passageByURL = passages
 		} else {
 			log.Warn("vector search failed", "error", vecErr, "query", args.Query)
 		}
 	}
+
+	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order —
+	// same shared path as the site search. No-op when not configured.
+	results = reranker.BlendRRF(ctx, env.Features().VectorSearch.Reranker, log, args.Query, results, passageByURL)
+
 	results, err = filterSearchResults(ctx, env, results)
 	if err != nil {
 		log.Error("search access check failed", "error", err, "query", args.Query)
@@ -1158,19 +1168,20 @@ func stripFrontmatter(content string) string {
 	return strings.TrimLeft(result, "\r\n")
 }
 
-func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, error) {
+func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, map[string]string, error) {
 	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
 	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create embedding: %w", err)
+		return nil, nil, fmt.Errorf("failed to create embedding: %w", err)
 	}
 
-	return vectorResultsFromChunks(
+	results, passageByURL := vectorResultsFromChunks(
 		embedding.Vector,
 		env.LatestNoteChunks(),
 		env.LatestNoteViews(),
 		limit,
-	), nil
+	)
+	return results, passageByURL, nil
 }
 
 type scoredChunk struct {
@@ -1183,7 +1194,7 @@ func vectorResultsFromChunks(
 	chunks []model.NoteChunk,
 	noteViews *model.NoteViews,
 	limit int,
-) []model.SearchResult {
+) ([]model.SearchResult, map[string]string) {
 	var scores []scoredChunk
 	for _, chunk := range chunks {
 		if len(chunk.Embedding) == 0 {
@@ -1200,6 +1211,9 @@ func vectorResultsFromChunks(
 	})
 
 	results := make([]model.SearchResult, 0, len(scores))
+	// passageByURL records the highest-similarity chunk per note — a
+	// window-sized passage the optional reranker can rescore.
+	passageByURL := make(map[string]string)
 	seen := map[string]bool{}
 	for _, s := range scores {
 		if seen[s.chunk.NotePath] {
@@ -1221,12 +1235,23 @@ func vectorResultsFromChunks(
 			HighlightedContent: []string{snippetFromChunk(s.chunk.Content, 200)},
 			ChunkIndex:         &chunkIndex,
 		})
+		passageByURL[note.Permalink] = chunkPassage(s.chunk.Content)
 		if len(results) >= limit {
 			break
 		}
 	}
 
-	return results
+	return results, passageByURL
+}
+
+// chunkPassage strips the breadcrumb prefix ("{title} > {h1} > {h2}\n\n") from a
+// chunk, returning the body text used as the reranker document. The body is
+// already window-sized (chunks are capped ~450 tokens at ingest).
+func chunkPassage(content string) string {
+	if idx := strings.Index(content, "\n\n"); idx >= 0 {
+		content = content[idx+2:]
+	}
+	return trimWhitespace(content)
 }
 
 func snippetFromChunk(content string, maxLen int) string {

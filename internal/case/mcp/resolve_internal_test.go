@@ -41,7 +41,7 @@ func TestVectorResultsFromChunksUsesBestMatchingChunk(t *testing.T) {
 		},
 	}
 
-	results := vectorResultsFromChunks([]float32{1, 0}, chunks, noteViews, 10)
+	results, _ := vectorResultsFromChunks([]float32{1, 0}, chunks, noteViews, 10)
 
 	require.Len(t, results, 2)
 	require.Equal(t, sourceNote.Path, results[0].NoteView.Path)
