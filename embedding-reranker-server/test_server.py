@@ -67,7 +67,7 @@ class FakeCrossEncoder:
         return scores
 
 
-def load_client(monkeypatch, load_reranker):
+def load_module(monkeypatch, load_reranker):
     """Import a fresh server module against the fake models."""
     fake = types.ModuleType("sentence_transformers")
     fake.SentenceTransformer = FakeEmbedder
@@ -81,7 +81,11 @@ def load_client(monkeypatch, load_reranker):
     spec = importlib.util.spec_from_file_location(f"server_{uuid.uuid4().hex}", SERVER_PY)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return TestClient(mod.app)
+    return mod
+
+
+def load_client(monkeypatch, load_reranker):
+    return TestClient(load_module(monkeypatch, load_reranker).app)
 
 
 def test_embeddings_openai_shape(monkeypatch):
@@ -145,9 +149,38 @@ def test_rerank_unavailable_without_load_reranker(monkeypatch):
 
 def test_health_reflects_reranker_flag(monkeypatch):
     on = load_client(monkeypatch, load_reranker=True).get("/health").json()
-    assert on == {"status": "ok", "reranker": True}
+    assert on == {"status": "ok", "reranker": True, "reranker_model": "BAAI/bge-reranker-v2-m3"}
     off = load_client(monkeypatch, load_reranker=False).get("/health").json()
-    assert off == {"status": "ok", "reranker": False}
+    assert off == {"status": "ok", "reranker": False, "reranker_model": None}
+
+
+def test_reranker_class_dispatch(monkeypatch):
+    # Env-selected backend: bge → sentence-transformers CrossEncoder,
+    # Qwen/Qwen3-Reranker-* → the causal-LM scorer. Classes only — no load.
+    mod = load_module(monkeypatch, load_reranker=False)
+    assert mod.reranker_class("BAAI/bge-reranker-v2-m3") is FakeCrossEncoder
+    assert mod.reranker_class("Qwen/Qwen3-Reranker-0.6B") is mod.Qwen3Reranker
+
+
+def test_rerank_wire_contract_backend_agnostic(monkeypatch):
+    # /rerank must keep the TEI bare-array contract whatever scorer backs it —
+    # simulate a loaded Qwen3 backend with a fake .predict scorer.
+    mod = load_module(monkeypatch, load_reranker=False)
+
+    class FakeQwenScorer:
+        def predict(self, pairs):
+            return [0.2, 0.9, 0.5]
+
+    mod.rerank_model = FakeQwenScorer()
+    mod.rerank_model_name = "Qwen/Qwen3-Reranker-0.6B"
+    client = TestClient(mod.app)
+
+    health = client.get("/health").json()
+    assert health["reranker_model"] == "Qwen/Qwen3-Reranker-0.6B"
+
+    out = client.post("/rerank", json={"query": "q", "texts": ["a", "b", "c"]}).json()
+    assert [r["index"] for r in out] == [1, 2, 0]
+    assert [r["score"] for r in out] == [0.9, 0.5, 0.2]
 
 
 # ---- REAL_MODELS=1: numeric guarantees with the actual models ----

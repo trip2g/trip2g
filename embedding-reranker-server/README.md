@@ -12,7 +12,14 @@ the same two contracts, so trip2g's clients work unchanged:
 - `POST /rerank` — TEI wire: request `{"query","texts"}`, response a bare array
   `[{"index","score"}]` sorted by score desc (`BAAI/bge-reranker-v2-m3` cross-encoder).
   Loaded only when `LOAD_RERANKER=1` (saves ~2GB RAM otherwise).
-- `GET /health`
+- `GET /health` — reports whether a reranker is loaded and which model.
+
+Reranker backend is selected by `RERANKER_MODEL` (one per boot):
+- default `BAAI/bge-reranker-v2-m3` — sentence-transformers CrossEncoder;
+- `RERANKER_MODEL=Qwen/Qwen3-Reranker-0.6B` — LLM-logit reranker (temporary,
+  for engine comparisons): the model is a causal LM, each (query, doc) is
+  scored as softmax([no, yes])[yes] of the last-position logits under the
+  official yes/no judging template. Same `/rerank` wire either way.
 
 One python/sentence-transformers process, both models, runs natively on arm64 and amd64.
 `memcli up --embedded` builds and runs it automatically (image `trip2g-embedding-server`).
