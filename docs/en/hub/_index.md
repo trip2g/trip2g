@@ -37,3 +37,5 @@ graph TD
 A blind federated fan-out from this hub sees the philosophers hub as **one**
 base (its cards and topic matrix). Corpus depth is reached deliberately via a
 composite id: `federated_search(kb_id="philosophers/<slug>")`.
+
+What federated search is and how it works — [[en/user/federation|MCP Federation]].
