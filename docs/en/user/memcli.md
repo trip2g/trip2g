@@ -81,7 +81,7 @@ node cli/memcli/dist/memcli.js down --name blog
 
 ### Local vector search (`--embedded` / `--reranker`)
 
-Both are off by default: each model is ~2GB, runs on CPU, and the first boot downloads it (can take minutes). `--embedded` starts a [text-embeddings-inference](https://github.com/huggingface/text-embeddings-inference) container with `BAAI/bge-m3` next to the instance and wires `FEATURES` so search uses embeddings, not just full-text. `--reranker` adds a `BAAI/bge-reranker-v2-m3` second stage and implies `--embedded`. Models cache in `~/models/embedding` and `~/models/reranker`, so later boots are fast. `down` removes the sidecars, `status` shows them.
+Both are off by default: each model is ~2GB, runs on CPU, and the first boot downloads it (can take minutes). `--embedded` starts the bundled [embedding-reranker-server](../../../embedding-reranker-server/README.md) sidecar with `BAAI/bge-m3` next to the instance (it builds the docker image on first use) and wires `FEATURES` so search uses embeddings, not just full-text. `--reranker` also loads `BAAI/bge-reranker-v2-m3` on the same sidecar for a second reranking stage and implies `--embedded`. The server runs natively on arm64 and amd64. Models cache in the `MODELS_DIR` env dir (default `~/models`), so later boots are fast. `down` removes the sidecar, `status` shows it.
 
 ```bash
 node cli/memcli/dist/memcli.js up --folder ./vault --embedded --reranker

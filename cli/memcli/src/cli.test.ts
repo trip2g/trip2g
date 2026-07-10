@@ -17,7 +17,7 @@ import {
   buildDataJson,
   buildDockerRunArgs,
   buildFeaturesJson,
-  buildTeiRunArgs,
+  buildEmbedServerRunArgs,
   buildHubNote,
   hubSlug,
   _stampBlock,
@@ -1388,7 +1388,7 @@ test('parseArgs: --reranker sets flags.reranker=true', () => {
 });
 
 test('buildFeaturesJson: embedding only', () => {
-  const json = buildFeaturesJson('trip2g-memory-embedding', null);
+  const json = buildFeaturesJson('trip2g-memory-embedding', false);
   const parsed = JSON.parse(json);
   assert.deepEqual(parsed, {
     vector_search: {
@@ -1399,50 +1399,46 @@ test('buildFeaturesJson: embedding only', () => {
   });
 });
 
-test('buildFeaturesJson: with reranker', () => {
-  const json = buildFeaturesJson('t-embedding', 't-reranker');
+test('buildFeaturesJson: with reranker on the same server', () => {
+  const json = buildFeaturesJson('t-embedding', true);
   const parsed = JSON.parse(json);
   assert.equal(parsed.vector_search.enabled, true);
   assert.deepEqual(parsed.vector_search.reranker, {
     enabled: true,
-    base_url: 'http://t-reranker:8000/rerank',
+    base_url: 'http://t-embedding:8000/rerank',
     model: 'BAAI/bge-reranker-v2-m3',
   });
 });
 
-test('buildTeiRunArgs: embedding sidecar shape', () => {
-  const args = buildTeiRunArgs({
+test('buildEmbedServerRunArgs: embedding-only shape', () => {
+  const args = buildEmbedServerRunArgs({
     name: 'trip2g-memory-embedding',
     network: 'trip2g-memory-net',
     hostPort: 24083,
-    modelsDir: '/home/u/models/embedding',
-    modelId: 'BAAI/bge-m3',
-    autoTruncate: true,
+    modelsDir: '/home/u/models',
+    loadReranker: false,
   });
   assert.deepEqual(args, [
     '-d',
     '--name', 'trip2g-memory-embedding',
     '--network', 'trip2g-memory-net',
     '-p', '127.0.0.1:24083:8000',
-    '-v', '/home/u/models/embedding:/data',
-    'ghcr.io/huggingface/text-embeddings-inference:cpu-1.8',
-    '--model-id', 'BAAI/bge-m3',
-    '--port', '8000',
-    '--auto-truncate',
+    '-v', '/home/u/models:/data',
+    'trip2g-embedding-server',
   ]);
 });
 
-test('buildTeiRunArgs: reranker sidecar has no --auto-truncate', () => {
-  const args = buildTeiRunArgs({
-    name: 'trip2g-memory-reranker',
+test('buildEmbedServerRunArgs: loadReranker adds LOAD_RERANKER=1', () => {
+  const args = buildEmbedServerRunArgs({
+    name: 'trip2g-memory-embedding',
     network: 'trip2g-memory-net',
-    hostPort: 24084,
-    modelsDir: '/home/u/models/reranker',
-    modelId: 'BAAI/bge-reranker-v2-m3',
-    autoTruncate: false,
+    hostPort: 24083,
+    modelsDir: '/home/u/models',
+    loadReranker: true,
   });
-  assert.ok(!args.includes('--auto-truncate'));
-  assert.ok(args.includes('BAAI/bge-reranker-v2-m3'));
+  const eIdx = args.indexOf('-e');
+  assert.ok(eIdx >= 0 && args[eIdx + 1] === 'LOAD_RERANKER=1');
+  assert.equal(args[args.length - 1], 'trip2g-embedding-server');
 });
 
 test('buildDockerRunArgs: includes --network and FEATURES when embedded', () => {
@@ -1450,7 +1446,7 @@ test('buildDockerRunArgs: includes --network and FEATURES when embedded', () => 
     port: 24081, iport: 24082, email: 'a@b.com', secret: 'x',
     encryptionKey: TEST_ENC_KEY, stateDir: '/tmp/state', image: 'img:latest',
     network: 'trip2g-memory-net',
-    features: buildFeaturesJson('trip2g-memory-embedding', null),
+    features: buildFeaturesJson('trip2g-memory-embedding', false),
   });
   const netIdx = args.indexOf('--network');
   assert.ok(netIdx >= 0, 'must include --network');

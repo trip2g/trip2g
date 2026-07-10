@@ -16813,17 +16813,14 @@ var DEFAULT_IMAGE = "ghcr.io/trip2g/trip2g:latest";
 var DEFAULT_EMAIL = "memory@local";
 var READY_TIMEOUT_MS = 6e4;
 var READY_POLL_MS = 500;
-var TEI_IMAGE = "ghcr.io/huggingface/text-embeddings-inference:cpu-1.8";
-var TEI_READY_TIMEOUT_MS = 9e5;
-var TEI_READY_POLL_MS = 2e3;
+var EMBED_SERVER_IMAGE = "trip2g-embedding-server";
+var EMBED_READY_TIMEOUT_MS = 9e5;
+var EMBED_READY_POLL_MS = 2e3;
 function networkName(name) {
   return `${name}-net`;
 }
 function embeddingContainerName(name) {
   return `${name}-embedding`;
-}
-function rerankerContainerName(name) {
-  return `${name}-reranker`;
 }
 var DEFAULT_HUB_URL = "https://trip2g.com/_system/mcp";
 var DEFAULT_STALE_DAYS = 60;
@@ -17173,7 +17170,7 @@ function buildToolList() {
           publicUrl: { type: "string", description: "Override PUBLIC_URL for the server" },
           kanban: { type: "boolean", description: "Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board" },
           kanbanBundle: { type: "string", description: "Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)" },
-          embedded: { type: "boolean", description: "Start a local TEI embedding sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search" },
+          embedded: { type: "boolean", description: "Start the local embedding-reranker-server sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search" },
           reranker: { type: "boolean", description: "Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB); implies embedded" }
         },
         required: []
@@ -17331,22 +17328,22 @@ function buildDockerRunArgs(opts) {
   args.push(image);
   return args;
 }
-function buildFeaturesJson(embeddingContainer, rerankerContainer) {
+function buildFeaturesJson(serverContainer, reranker) {
   const vectorSearch = {
     enabled: true,
     model: "bge-m3",
-    base_url: `http://${embeddingContainer}:8000/v1`
+    base_url: `http://${serverContainer}:8000/v1`
   };
-  if (rerankerContainer) {
+  if (reranker) {
     vectorSearch.reranker = {
       enabled: true,
-      base_url: `http://${rerankerContainer}:8000/rerank`,
+      base_url: `http://${serverContainer}:8000/rerank`,
       model: "BAAI/bge-reranker-v2-m3"
     };
   }
   return JSON.stringify({ vector_search: vectorSearch });
 }
-function buildTeiRunArgs(opts) {
+function buildEmbedServerRunArgs(opts) {
   const args = [
     "-d",
     "--name",
@@ -17356,14 +17353,10 @@ function buildTeiRunArgs(opts) {
     "-p",
     `127.0.0.1:${opts.hostPort}:8000`,
     "-v",
-    `${opts.modelsDir}:/data`,
-    TEI_IMAGE,
-    "--model-id",
-    opts.modelId,
-    "--port",
-    "8000"
+    `${opts.modelsDir}:/data`
   ];
-  if (opts.autoTruncate) args.push("--auto-truncate");
+  if (opts.loadReranker) args.push("-e", "LOAD_RERANKER=1");
+  args.push(EMBED_SERVER_IMAGE);
   return args;
 }
 function buildDataJson(vault, publicUrl, apiKey) {
@@ -17522,20 +17515,40 @@ function ensureNetwork(netName, dryRun) {
   spawnSync("docker", ["network", "create", netName], { encoding: "utf8" });
   console.log(`Created docker network ${netName}.`);
 }
-function ensureTeiSidecar(opts, dryRun) {
-  const args = buildTeiRunArgs(opts);
+function ensureEmbedServerImage(dryRun) {
+  const buildDir = path.join(repoRoot(), "embedding-reranker-server");
+  if (dryRun) {
+    console.log(`[dry-run] docker build -t ${EMBED_SERVER_IMAGE} ${buildDir} (if image absent)`);
+    return;
+  }
+  const inspect = spawnSync("docker", ["image", "inspect", EMBED_SERVER_IMAGE], { encoding: "utf8" });
+  if (inspect.status === 0) return;
+  console.log(`Building ${EMBED_SERVER_IMAGE} image from ${buildDir} (first time \u2014 a few minutes)...`);
+  const build = spawnSync("docker", ["build", "-t", EMBED_SERVER_IMAGE, buildDir], { encoding: "utf8" });
+  if (build.status !== 0) {
+    throw new Error(`docker build ${EMBED_SERVER_IMAGE} failed: ${(build.stderr || build.stdout || "").trim().slice(-2e3)}`);
+  }
+  console.log(`Built ${EMBED_SERVER_IMAGE}.`);
+}
+function ensureEmbedServerSidecar(opts, dryRun) {
+  const args = buildEmbedServerRunArgs(opts);
   if (dryRun) {
     console.log(`[dry-run] docker run ${args.join(" ")}`);
     return;
   }
   if (isContainerRunning(opts.name)) {
-    console.log(`Sidecar ${opts.name} already running.`);
-    return;
+    const env = spawnSync("docker", ["inspect", opts.name, "--format", "{{json .Config.Env}}"], { encoding: "utf8" });
+    const hasReranker = (env.stdout || "").includes("LOAD_RERANKER=1");
+    if (hasReranker === opts.loadReranker) {
+      console.log(`Sidecar ${opts.name} already running.`);
+      return;
+    }
+    console.log(`Sidecar ${opts.name} running without matching reranker mode \u2014 recreating.`);
   }
   if (containerExists(opts.name)) {
     spawnSync("docker", ["rm", "-f", opts.name], { encoding: "utf8" });
   }
-  console.log(`Starting sidecar ${opts.name} (model ${opts.modelId})...`);
+  console.log(`Starting sidecar ${opts.name} (bge-m3${opts.loadReranker ? " + bge-reranker-v2-m3" : ""})...`);
   const run = spawnSync("docker", ["run", ...args], { encoding: "utf8" });
   if (run.status !== 0) {
     throw new Error(`docker run ${opts.name} failed: ${(run.stderr || run.stdout || "").trim()}`);
@@ -18103,11 +18116,12 @@ FLAGS (up)
   --kanban             Install the trip2g kanban template into <vault>/_layouts/kanban.html
                        and seed a sample kanban.md board (skipped with --no-seed)
   --kanban-bundle <url>  Override the kanban.js bundle <script src> (local-dev, e.g. http://localhost:8770/kanban.js)
-  --embedded           Start a local embedding sidecar (TEI, bge-m3) and enable vector
-                       search on the instance. Off by default: the model is ~2GB and
-                       CPU-heavy; first boot downloads it and can take minutes.
-  --reranker           Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB) for
-                       second-stage reranking. Implies --embedded.
+  --embedded           Start the local embedding server sidecar (bge-m3) and enable
+                       vector search. Off by default: the model is ~2GB and CPU-heavy;
+                       first boot downloads it and can take minutes. Model cache dir:
+                       MODELS_DIR env (default ~/models).
+  --reranker           Also load the reranker (bge-reranker-v2-m3, ~2GB) on the same
+                       sidecar for second-stage reranking. Implies --embedded.
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -18156,11 +18170,9 @@ async function cmdUp(flags, dryRun) {
   }
   const netName = networkName(name);
   const embName = embeddingContainerName(name);
-  const rerName = rerankerContainerName(name);
   const embPort = port + 2;
-  const rerPort = port + 3;
   const containerRunning = isContainerRunning(name);
-  const sidecarsUp = !embedded || isContainerRunning(embName) && (!flags.reranker || isContainerRunning(rerName));
+  const sidecarsUp = !embedded || isContainerRunning(embName);
   let watcherAlive = false;
   if (fs.existsSync(pidFile)) {
     const pid = parseInt(fs.readFileSync(pidFile, "utf8").trim(), 10);
@@ -18204,35 +18216,20 @@ async function cmdUp(flags, dryRun) {
   }
   if (embedded) {
     ensureNetwork(netName, dryRun);
-    ensureTeiSidecar({
+    ensureEmbedServerImage(dryRun);
+    ensureEmbedServerSidecar({
       name: embName,
       network: netName,
       hostPort: embPort,
-      modelsDir: path.join(os.homedir(), "models", "embedding"),
-      modelId: "BAAI/bge-m3",
-      autoTruncate: true
+      modelsDir: process.env.MODELS_DIR || path.join(os.homedir(), "models"),
+      loadReranker: flags.reranker
     }, dryRun);
-    if (flags.reranker) {
-      ensureTeiSidecar({
-        name: rerName,
-        network: netName,
-        hostPort: rerPort,
-        modelsDir: path.join(os.homedir(), "models", "reranker"),
-        modelId: "BAAI/bge-reranker-v2-m3",
-        autoTruncate: false
-      }, dryRun);
-    }
     if (dryRun) {
-      console.log(`[dry-run] Would poll http://localhost:${embPort}/health until 200 (timeout ${TEI_READY_TIMEOUT_MS}ms)`);
+      console.log(`[dry-run] Would poll http://localhost:${embPort}/health until 200 (timeout ${EMBED_READY_TIMEOUT_MS}ms)`);
     } else {
-      console.log(`Waiting for embedding server at http://localhost:${embPort}/health (first run downloads a ~2GB model \u2014 this can take minutes)...`);
-      await waitReady(`http://localhost:${embPort}/health`, TEI_READY_TIMEOUT_MS, TEI_READY_POLL_MS);
+      console.log(`Waiting for embedding server at http://localhost:${embPort}/health (first run downloads ~2GB models \u2014 this can take minutes)...`);
+      await waitReady(`http://localhost:${embPort}/health`, EMBED_READY_TIMEOUT_MS, EMBED_READY_POLL_MS);
       console.log("Embedding server is ready.");
-      if (flags.reranker) {
-        console.log(`Waiting for reranker at http://localhost:${rerPort}/health ...`);
-        await waitReady(`http://localhost:${rerPort}/health`, TEI_READY_TIMEOUT_MS, TEI_READY_POLL_MS);
-        console.log("Reranker is ready.");
-      }
     }
   }
   const dockerArgs = buildDockerRunArgs({
@@ -18247,7 +18244,7 @@ async function cmdUp(flags, dryRun) {
     containerName: name,
     ...embedded ? {
       network: netName,
-      features: buildFeaturesJson(embName, flags.reranker ? rerName : null)
+      features: buildFeaturesJson(embName, flags.reranker)
     } : {}
   });
   if (dryRun) {
@@ -18373,7 +18370,7 @@ function cmdDown(dryRun, folder, name) {
   if (dryRun) {
     console.log(`[dry-run] docker stop ${name}`);
     console.log(`[dry-run] docker rm ${name}`);
-    console.log(`[dry-run] docker rm -f ${embeddingContainerName(name)} ${rerankerContainerName(name)} (if present)`);
+    console.log(`[dry-run] docker rm -f ${embeddingContainerName(name)} (if present)`);
     console.log(`[dry-run] docker network rm ${networkName(name)} (if present)`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
@@ -18389,7 +18386,7 @@ function cmdDown(dryRun, folder, name) {
     } catch {
     }
     console.log(`Container ${name} stopped and removed.`);
-    for (const sidecar of [embeddingContainerName(name), rerankerContainerName(name)]) {
+    for (const sidecar of [embeddingContainerName(name)]) {
       if (containerExists(sidecar)) {
         spawnSync("docker", ["rm", "-f", sidecar], { encoding: "utf8" });
         console.log(`Sidecar ${sidecar} removed.`);
@@ -18430,8 +18427,6 @@ function cmdStatus(name) {
       `name=^${name}$`,
       "--filter",
       `name=^${embeddingContainerName(name)}$`,
-      "--filter",
-      `name=^${rerankerContainerName(name)}$`,
       "--format",
       "table {{.Names}}	{{.Status}}	{{.Ports}}"
     ],
@@ -18731,6 +18726,7 @@ if (_mainUrl === _argv1Url) {
   }
 }
 export {
+  EMBED_SERVER_IMAGE,
   KANBAN_RELEASE_URL,
   KANBAN_SENTINEL,
   _plainBlock,
@@ -18742,6 +18738,7 @@ export {
   buildDailyEntry,
   buildDataJson,
   buildDockerRunArgs,
+  buildEmbedServerRunArgs,
   buildFeaturesJson,
   buildHatLoginUrl,
   buildHeaderNote,
@@ -18752,7 +18749,6 @@ export {
   buildLogNote,
   buildSchemaNote,
   buildServerEnv,
-  buildTeiRunArgs,
   buildToolList,
   containerName,
   embeddingContainerName,
@@ -18766,7 +18762,6 @@ export {
   lintVault,
   networkName,
   parseArgs,
-  rerankerContainerName,
   runDaily,
   runDown,
   runHub,
