@@ -64,6 +64,8 @@ type CronJobs struct {
 
 	runningMU   sync.Mutex
 	runningJobs map[int64]db.CronJobExecution
+
+	execMu sync.Mutex // serializes Execute calls — one job at a time to bound memory
 }
 
 func jobQueueID(id string) string {
@@ -203,11 +205,14 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 
 	cj.runningMU.Lock()
 	exec, exists := cj.runningJobs[jobID]
-	cj.runningMU.Unlock()
-
 	if exists {
+		cj.runningMU.Unlock()
 		return &exec, nil
 	}
+	// Reserve the slot under the same lock as the check, so a concurrent call
+	// for the same job returns early instead of running it twice.
+	cj.runningJobs[jobID] = db.CronJobExecution{JobID: jobID, Status: JobStatusRunning}
+	cj.runningMU.Unlock()
 
 	defer func() {
 		cj.runningMU.Lock()
@@ -241,7 +246,14 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	cj.runningJobs[jobID] = exec
 	cj.runningMU.Unlock()
 
+	// Execute the job — serialize globally to bound memory on small boxes.
+	cj.execMu.Lock()
+	if err := cj.ctx.Err(); err != nil {
+		cj.execMu.Unlock()
+		return nil, fmt.Errorf("context done before execute for job %d: %w", jobID, err)
+	}
 	report, jobErr := job.job.Execute(cj.ctx, cj.env)
+	cj.execMu.Unlock()
 
 	// Update execution status
 	status := JobStatusCompleted
