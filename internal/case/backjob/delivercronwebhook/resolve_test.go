@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/shortapitoken"
 	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"
@@ -108,6 +109,39 @@ func TestResolve_NoSecrets_FieldOmitted(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &payload))
 	_, hasSecrets := payload["secrets"]
 	require.False(t, hasSecrets, "secrets field should be omitted when no secrets exist")
+}
+
+// Cron webhooks share the scoped token path with change webhooks. Invalid JSON
+// must not silently widen the token to read every note.
+func TestResolve_MalformedReadPatternsFailClosed(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID: id, Url: srv.URL, TimeoutSeconds: 10, PassApiKey: true,
+			ReadPatterns: `{malformed`, WritePatterns: `[]`,
+		}, nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 601, Attempt: 1})
+	require.NoError(t, err)
+
+	var payload struct {
+		APIToken string `json:"api_token"`
+	}
+	require.NoError(t, json.Unmarshal(body, &payload))
+	require.NotEmpty(t, payload.APIToken)
+	claims, err := shortapitoken.Parse(payload.APIToken, "test-secret")
+	require.NoError(t, err)
+	require.Empty(t, claims.ReadPatterns,
+		"malformed read_patterns must not become an all-notes scope")
 }
 
 // F2: applyCronAgentChanges with empty write_patterns must deny all writes (was: allow all).
