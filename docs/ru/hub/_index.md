@@ -11,26 +11,29 @@ lang_redirect: "[[en/hub/_index]]"
 
 - [[ru/hub/nicksenin_journal|Журнал Ника Сенина]]
 - [[ru/hub/markavrelii|Марк Аврелий — Размышления]]
-- [[ru/hub/telegram|Telegram-каналы]]
-- [[ru/hub/foragent|Foragent]]
-- [[ru/hub/adler|Альфред Адлер — Понять природу человека]]
-- [[ru/hub/confucius|Конфуций — Лунь юй]]
-- [[ru/hub/epictetus|Эпиктет — Энхиридион]]
-- [[ru/hub/ford|Генри Форд — My Life and Work]]
-- [[ru/hub/franklin|Бенджамин Франклин — Автобиография и Путь к богатству]]
-- [[ru/hub/goethe|Гёте — Максимы и размышления]]
-- [[ru/hub/hill|Наполеон Хилл — The Law of Success]]
-- [[ru/hub/ignatius|Игнатий Лойола — Духовные упражнения]]
-- [[ru/hub/james-allen|Джеймс Аллен — As a Man Thinketh]]
-- [[ru/hub/laozi|Лао-цзы — Дао дэ цзин]]
-- [[ru/hub/larochefoucauld|Ларошфуко — Максимы]]
-- [[ru/hub/lebon|Гюстав Ле Бон — Психология толпы]]
-- [[ru/hub/machiavelli|Макиавелли — Государь]]
-- [[ru/hub/montaigne|Мишель де Монтень — Опыты]]
-- [[ru/hub/nietzsche|Ницше — По ту сторону добра и зла]]
-- [[ru/hub/pascal|Паскаль — Мысли]]
-- [[ru/hub/rockefeller|Джон Д. Рокфеллер — Random Reminiscences]]
-- [[ru/hub/schopenhauer|Шопенгауэр — Афоризмы житейской мудрости]]
-- [[ru/hub/smiles|Сэмюэл Смайлс — Self-Help]]
-- [[ru/hub/tolstoy|Лев Толстой — Исповедь]]
-- [[ru/hub/wattles|Уоллес Уоттлс — The Science of Getting Rich]]
+- [Хаб философов](https://philosophers.2pub.me) — слой маршрутизации над 21 корпусом философов
+
+## Текущая схема хаба
+
+```mermaid
+graph TD
+  HUB["trip2g.com hub"]
+  HUB --> J["nicksenin_journal"]
+  HUB --> MA["markavrelii"]
+  HUB --> PH["philosophers.2pub.me<br/>карточки · матрица тем · противоречия"]
+
+  subgraph CORPORA["21 корпус философов"]
+    direction LR
+    C1["nietzsche · schopenhauer · goethe<br/>pascal · montaigne · larochefoucauld"]
+    C2["confucius · laozi · epictetus<br/>tolstoy · ignatius · lebon · adler"]
+    C3["machiavelli · franklin · smiles<br/>ford · rockefeller · hill<br/>wattles · james-allen"]
+  end
+
+  PH --> C1
+  PH --> C2
+  PH --> C3
+```
+
+Слепой federated-веер с этого хаба видит хаб философов как **одну** базу
+(его карточки и матрицу тем). Глубина корпусов достигается адресно через
+составной id: `federated_search(kb_id="philosophers/<slug>")`.
