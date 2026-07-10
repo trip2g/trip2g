@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"trip2g/internal/db"
 	"trip2g/internal/features"
@@ -204,15 +205,19 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	return nil
 }
 
-// modelFingerprint identifies the embedding model inside content hashes for
-// custom models. Built-in models are distinguished by the ModelID stored on the
-// row, but every custom model shares ModelID 0, so the resolved model name and
-// the passage prefix (both change the stored vectors) go into the hash instead.
+// modelFingerprint identifies the embedding model inside content hashes. Every
+// custom model shares ModelID 0, so model identity has to live in the hash:
+// resolved name and passage prefix change the stored vectors, dimensions change
+// the vector width, and max_input_tokens changes how much of a long note gets
+// embedded — all four invalidate stored rows. Dimensions and max_input_tokens
+// can be overridden for built-in models too, so the fingerprint covers all
+// models. base_url is deliberately excluded: moving the same model to another
+// server must not invalidate every embedding (identity = name + params).
 func modelFingerprint(cfg features.VectorSearchConfig) string {
-	if cfg.Model != features.EmbeddingModelCustom {
-		return ""
-	}
-	return "\x00model=" + cfg.ResolvedModelName() + "\x00passage_prefix=" + cfg.ResolvedPassagePrefix()
+	return "\x00model=" + cfg.ResolvedModelName() +
+		"\x00passage_prefix=" + cfg.ResolvedPassagePrefix() +
+		"\x00dimensions=" + strconv.Itoa(cfg.ResolvedDimensions()) +
+		"\x00max_input_tokens=" + strconv.Itoa(cfg.ResolvedMaxInputTokens())
 }
 
 // storedModelMatches reports whether a stored row was embedded by the configured
