@@ -23,13 +23,13 @@ func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink
 	}
 
 	note := noteByPathID(noteViews, pathID)
-	if note == nil {
+	if note == nil || !note.Free {
 		return "", nil, fmt.Errorf("note not found: %d", pathID)
 	}
 
 	converter := &markdownv2.HTMLConverter{}
 	converter.SetLinkResolver(func(target string) (*markdownv2.LinkResolverResult, error) {
-		resolved := resolveBasename(noteViews, target)
+		resolved := resolvePublicBasename(noteViews, target)
 		if resolved == nil {
 			return nil, &markdownv2.LinkResolverError{Target: target, Reason: "not found"}
 		}
@@ -60,7 +60,7 @@ func RenderNote(noteViews *model.NoteViews, pathID int64, stack []int64, botLink
 		if len(links) == 0 {
 			continue
 		}
-		target := resolveBasename(noteViews, links[0].Target)
+		target := resolvePublicBasename(noteViews, links[0].Target)
 		if target == nil {
 			continue
 		}
@@ -95,7 +95,7 @@ func FindStartNote(noteViews *model.NoteViews) *model.NoteView {
 		return nil
 	}
 	for _, note := range noteViews.List {
-		if strings.HasSuffix(note.Path, "_bot_start.md") {
+		if note.Free && strings.HasSuffix(note.Path, "_bot_start.md") {
 			return note
 		}
 	}
@@ -111,11 +111,12 @@ func noteByPathID(noteViews *model.NoteViews, pathID int64) *model.NoteView {
 	return nil
 }
 
-func resolveBasename(noteViews *model.NoteViews, target string) *model.NoteView {
+func resolvePublicBasename(noteViews *model.NoteViews, target string) *model.NoteView {
 	key := strings.ToLower(strings.TrimSuffix(target, ".md"))
-	candidates := noteViews.BasenameMap[key]
-	if len(candidates) > 0 {
-		return candidates[0]
+	for _, candidate := range noteViews.BasenameMap[key] {
+		if candidate.Free {
+			return candidate
+		}
 	}
 	return nil
 }

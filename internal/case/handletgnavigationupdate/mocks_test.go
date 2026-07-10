@@ -28,8 +28,8 @@ var _ Env = &EnvMock{}
 //			BotLinkFunc: func() string {
 //				panic("mock out the BotLink method")
 //			},
-//			LatestNoteViewsFunc: func() *model.NoteViews {
-//				panic("mock out the LatestNoteViews method")
+//			LiveNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LiveNoteViews method")
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
@@ -59,8 +59,8 @@ type EnvMock struct {
 	// BotLinkFunc mocks the BotLink method.
 	BotLinkFunc func() string
 
-	// LatestNoteViewsFunc mocks the LatestNoteViews method.
-	LatestNoteViewsFunc func() *model.NoteViews
+	// LiveNoteViewsFunc mocks the LiveNoteViews method.
+	LiveNoteViewsFunc func() *model.NoteViews
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -85,8 +85,8 @@ type EnvMock struct {
 		// BotLink holds details about calls to the BotLink method.
 		BotLink []struct {
 		}
-		// LatestNoteViews holds details about calls to the LatestNoteViews method.
-		LatestNoteViews []struct {
+		// LiveNoteViews holds details about calls to the LiveNoteViews method.
+		LiveNoteViews []struct {
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -118,7 +118,7 @@ type EnvMock struct {
 	}
 	lockBotID                       sync.RWMutex
 	lockBotLink                     sync.RWMutex
-	lockLatestNoteViews             sync.RWMutex
+	lockLiveNoteViews               sync.RWMutex
 	lockLogger                      sync.RWMutex
 	lockRequest                     sync.RWMutex
 	lockSend                        sync.RWMutex
@@ -180,30 +180,30 @@ func (mock *EnvMock) BotLinkCalls() []struct {
 	return calls
 }
 
-// LatestNoteViews calls LatestNoteViewsFunc.
-func (mock *EnvMock) LatestNoteViews() *model.NoteViews {
-	if mock.LatestNoteViewsFunc == nil {
-		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+// LiveNoteViews calls LiveNoteViewsFunc.
+func (mock *EnvMock) LiveNoteViews() *model.NoteViews {
+	if mock.LiveNoteViewsFunc == nil {
+		panic("EnvMock.LiveNoteViewsFunc: method is nil but Env.LiveNoteViews was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockLatestNoteViews.Lock()
-	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
-	mock.lockLatestNoteViews.Unlock()
-	return mock.LatestNoteViewsFunc()
+	mock.lockLiveNoteViews.Lock()
+	mock.calls.LiveNoteViews = append(mock.calls.LiveNoteViews, callInfo)
+	mock.lockLiveNoteViews.Unlock()
+	return mock.LiveNoteViewsFunc()
 }
 
-// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// LiveNoteViewsCalls gets all the calls that were made to LiveNoteViews.
 // Check the length with:
 //
-//	len(mockedEnv.LatestNoteViewsCalls())
-func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+//	len(mockedEnv.LiveNoteViewsCalls())
+func (mock *EnvMock) LiveNoteViewsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockLatestNoteViews.RLock()
-	calls = mock.calls.LatestNoteViews
-	mock.lockLatestNoteViews.RUnlock()
+	mock.lockLiveNoteViews.RLock()
+	calls = mock.calls.LiveNoteViews
+	mock.lockLiveNoteViews.RUnlock()
 	return calls
 }
 

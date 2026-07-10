@@ -25,7 +25,7 @@ type Env interface {
 	BotID() int64
 	BotLink() string
 	Logger() logger.Logger
-	LatestNoteViews() *model.NoteViews
+	LiveNoteViews() *model.NoteViews
 	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 }
@@ -185,7 +185,7 @@ func handleBrowseCommand(ctx context.Context, env Env, msg *tgbotapi.Message, ch
 		return sendNote(ctx, env, chatID, pathID, frag, rawState)
 	}
 
-	note := FindStartNote(env.LatestNoteViews())
+	note := FindStartNote(env.LiveNoteViews())
 	if note == nil {
 		reply := tgbotapi.NewMessage(chatID, "No _bot_start.md found in vault.")
 		_, _ = env.Send(reply)
@@ -212,7 +212,7 @@ func parseBrowseDeepLink(args string) (int64, bool) {
 }
 
 func sendNote(ctx context.Context, env Env, chatID, pathID int64, frag *stateFragment, rawState string) error {
-	text, keyboard, err := RenderNote(env.LatestNoteViews(), pathID, frag.Nav.Stack, env.BotLink())
+	text, keyboard, err := RenderNote(env.LiveNoteViews(), pathID, frag.Nav.Stack, env.BotLink())
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Note not found (%d).", pathID))
 		_, _ = env.Send(msg)
