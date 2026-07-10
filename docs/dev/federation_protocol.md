@@ -14,7 +14,9 @@
 - Request body: JSON-RPC 2.0 envelope.
 - Response body: JSON-RPC 2.0 envelope.
 - Content-Type: `application/json` both directions.
-- Hub default fan-out timeout: 2 seconds per peer (`MCP_FEDERATION_FANOUT_TIMEOUT` env on hub).
+- Hub per-peer fan-out timeout: 5 seconds (`FEDERATED_FANOUT_TIMEOUT` env on hub; the underlying HTTP client also enforces a 2s request timeout).
+- Hub fan-out parallelism: 5 peers at a time (`FEDERATED_FANOUT_CONCURRENCY`).
+- Blind fan-out peer cap: 7 (`FEDERATED_FANOUT_LIMIT`); peers over the cap come back in the response's `skipped` list. Explicit `kb_id`/`kb_ids` calls are not capped.
 - Recursion depth limit (hub-enforced): 3 (`MCP_FEDERATION_MAX_DEPTH`).
 
 A peer is a black box behind one URL. There is no separate metadata endpoint; everything goes through `tools/list` and `tools/call`.

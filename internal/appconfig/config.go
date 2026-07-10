@@ -79,6 +79,9 @@ type Config struct {
 	MCPFederationMaxDepth      int
 	MCPFederationAllowPrivate  bool
 	MCPFederatedGraphQLEnabled bool
+	FederatedFanoutConcurrency int
+	FederatedFanoutLimit       int
+	FederatedFanoutTimeout     time.Duration
 
 	CronExecuteWebhooksSchedule string
 	CronTelegramPublishSchedule string
@@ -521,6 +524,12 @@ func (c *Config) defineServerFlags() {
 	)
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
+	flag.IntVar(&c.FederatedFanoutConcurrency, "federated-fanout-concurrency", 5,
+		"Max peers queried in parallel by a federated_search fan-out (0 = unlimited)")
+	flag.IntVar(&c.FederatedFanoutLimit, "federated-fanout-limit", 7,
+		"Max peers a blind (no kb_id) federated_search fan-out touches; the rest are reported as skipped (0 = unlimited)")
+	flag.DurationVar(&c.FederatedFanoutTimeout, "federated-fanout-timeout", 5*time.Second,
+		"Per-peer timeout for federated fan-out requests (0 = no extra timeout)")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(
 		&c.SimpleBackup.BackupOnShutdown,
