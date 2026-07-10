@@ -201,6 +201,36 @@ func TestVectorSearchConfigResolved_CustomModelWithoutMaxTokens_Error(t *testing
 	}
 }
 
+func TestVectorSearchConfigResolved_CustomModelNegativeValues_Error(t *testing.T) {
+	// Negative overrides must fail validation the same way as missing ones:
+	// the Resolved* getters treat non-positive values as "not set" and silently
+	// fall back to defaults, hiding the config mistake.
+	t.Run("negative dimensions", func(t *testing.T) {
+		cfg := VectorSearchConfig{
+			Model:      EmbeddingModelCustom,
+			ModelName:  "my-custom-model",
+			Enabled:    true,
+			Dimensions: -1,
+			MaxTokens:  512,
+		}
+		if err := cfg.validateModelParsed(); err == nil {
+			t.Error("validateModelParsed() expected error for negative dimensions, got nil")
+		}
+	})
+	t.Run("negative max_input_tokens", func(t *testing.T) {
+		cfg := VectorSearchConfig{
+			Model:      EmbeddingModelCustom,
+			ModelName:  "my-custom-model",
+			Enabled:    true,
+			Dimensions: 768,
+			MaxTokens:  -512,
+		}
+		if err := cfg.validateModelParsed(); err == nil {
+			t.Error("validateModelParsed() expected error for negative max_input_tokens, got nil")
+		}
+	})
+}
+
 func TestParseFeatures_KnownModel(t *testing.T) {
 	// Parse must resolve known model correctly.
 	t.Setenv("OPENAI_API_KEY", "sk-test")

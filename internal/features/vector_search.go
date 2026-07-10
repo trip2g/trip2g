@@ -262,17 +262,17 @@ func (c VectorSearchConfig) Validate() error {
 // max_input_tokens for a custom model but none were provided. This is called
 // after model parsing so we can distinguish known from unknown models.
 func (c VectorSearchConfig) validateModelParsed() error {
-	if c.Enabled && c.Model == EmbeddingModelCustom && c.Dimensions == 0 {
+	if c.Enabled && c.Model == EmbeddingModelCustom && c.Dimensions <= 0 {
 		return fmt.Errorf(
-			"vector_search: dimensions must be set when model %q is not a built-in model",
+			"vector_search: dimensions must be set to a positive value when model %q is not a built-in model",
 			c.ModelName,
 		)
 	}
 	// Silently defaulting the token limit breaks small-window models: every
 	// oversized request gets HTTP 400 and the embedding job retries forever.
-	if c.Enabled && c.Model == EmbeddingModelCustom && c.MaxTokens == 0 {
+	if c.Enabled && c.Model == EmbeddingModelCustom && c.MaxTokens <= 0 {
 		return fmt.Errorf(
-			"vector_search: max_input_tokens must be set when model %q is not a built-in model",
+			"vector_search: max_input_tokens must be set to a positive value when model %q is not a built-in model",
 			c.ModelName,
 		)
 	}
