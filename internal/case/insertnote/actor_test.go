@@ -62,10 +62,12 @@ func latestVersion(t *testing.T, rq *db.Queries, pathID int64) db.NoteVersion {
 }
 
 func TestInsertNoteRecordsUserActor(t *testing.T) {
+	conn := setupActorDB(t)
+
+	// Timeout starts after setup: migrations can take seconds on slow CI runners.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn := setupActorDB(t)
 	wq := db.NewWriteQueries(conn)
 	rq := db.New(conn)
 
@@ -96,10 +98,11 @@ func TestInsertNoteRecordsUserActor(t *testing.T) {
 }
 
 func TestInsertNoteRecordsAPIKeyActor(t *testing.T) {
+	conn := setupActorDB(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn := setupActorDB(t)
 	wq := db.NewWriteQueries(conn)
 	rq := db.New(conn)
 
@@ -140,10 +143,11 @@ func TestInsertNoteRecordsAPIKeyActor(t *testing.T) {
 }
 
 func TestInsertNoteRecordsNoActorAsNull(t *testing.T) {
+	conn := setupActorDB(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn := setupActorDB(t)
 	wq := db.NewWriteQueries(conn)
 	rq := db.New(conn)
 
@@ -165,10 +169,11 @@ func TestInsertNoteRecordsNoActorAsNull(t *testing.T) {
 }
 
 func TestInsertNoteRecordsClientHeader(t *testing.T) {
+	conn := setupActorDB(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn := setupActorDB(t)
 	wq := db.NewWriteQueries(conn)
 	rq := db.New(conn)
 
