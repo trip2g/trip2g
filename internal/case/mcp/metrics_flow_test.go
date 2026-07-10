@@ -3,6 +3,7 @@ package mcp_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"trip2g/internal/appreq"
@@ -56,11 +57,12 @@ func requireCounter(t *testing.T, g prometheus.Gatherer, name string, labels map
 	require.InDelta(t, want, m.GetCounter().GetValue(), 1e-9, "counter %s %v", name, labels)
 }
 
-func requireHistogram(t *testing.T, g prometheus.Gatherer, name string, labels map[string]string, wantCount uint64, wantSum float64) {
+// requireHistogram asserts the histogram holds exactly one sample of wantSum.
+func requireHistogram(t *testing.T, g prometheus.Gatherer, name string, labels map[string]string, wantSum float64) {
 	t.Helper()
 	m := findRegMetric(t, g, name, labels)
 	require.NotNil(t, m, "metric %s with labels %v not found", name, labels)
-	require.Equal(t, wantCount, m.GetHistogram().GetSampleCount(), "histogram count %s %v", name, labels)
+	require.Equal(t, uint64(1), m.GetHistogram().GetSampleCount(), "histogram count %s %v", name, labels)
 	require.InDelta(t, wantSum, m.GetHistogram().GetSampleSum(), 1e-9, "histogram sum %s %v", name, labels)
 }
 
@@ -103,11 +105,12 @@ func withFederationEnv(env *EnvMock) {
 
 func TestMCPEndpointMetrics(t *testing.T) {
 	cases := []struct {
-		name    string
-		body    []byte
-		headers map[string]string
-		setup   func(t *testing.T, env *EnvMock)
-		assert  func(t *testing.T, reg *prometheus.Registry)
+		name     string
+		body     []byte
+		headers  map[string]string
+		resolver appreq.PersonalTokenResolver
+		setup    func(t *testing.T, env *EnvMock)
+		assert   func(t *testing.T, reg *prometheus.Registry)
 	}{
 		{
 			name: "anonymous search records request, auth and result count",
@@ -122,7 +125,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 				m := findRegMetric(t, reg, "trip2g_mcp_request_duration_seconds", map[string]string{"tool": "search"})
 				require.NotNil(t, m, "duration histogram for tool=search not found")
 				require.Equal(t, uint64(1), m.GetHistogram().GetSampleCount())
-				requireHistogram(t, reg, "trip2g_mcp_search_results_returned", map[string]string{"tool": "search"}, 1, 1)
+				requireHistogram(t, reg, "trip2g_mcp_search_results_returned", map[string]string{"tool": "search"}, 1)
 			},
 		},
 		{
@@ -148,7 +151,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 				withFederationEnv(env)
 			},
 			assert: func(t *testing.T, reg *prometheus.Registry) {
-				requireHistogram(t, reg, "trip2g_mcp_fanout_bases", map[string]string{}, 1, 2)
+				requireHistogram(t, reg, "trip2g_mcp_fanout_bases", map[string]string{}, 2)
 				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"status": "ok"}, 2)
 				requireCounter(t, reg, "trip2g_mcp_requests_total",
 					map[string]string{"method": "tools/call", "tool": "federated_search", "auth": "anonymous", "status": "ok"}, 1)
@@ -202,7 +205,63 @@ func TestMCPEndpointMetrics(t *testing.T) {
 				env.FederationMaxDepthFunc = func() int { return 5 }
 			},
 			assert: func(t *testing.T, reg *prometheus.Registry) {
-				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 1, 2)
+				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 2)
+			},
+		},
+		{
+			name: "direct request without depth header observes depth 0",
+			body: mcpInitBody,
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireHistogram(t, reg, "trip2g_mcp_federation_depth", map[string]string{}, 0)
+			},
+		},
+		{
+			name:     "invalid personal token records rejected request",
+			body:     mcpInitBody,
+			headers:  map[string]string{"Authorization": "Bearer t2g_revoked"},
+			resolver: &testPersonalTokenResolver{err: errors.New("token revoked")},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "initialize", "tool": "", "auth": "token", "status": "error"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_auth_total", map[string]string{"auth": "token"}, 1)
+			},
+		},
+		{
+			name:    "exceeded federation depth records rejected request",
+			body:    mcpInitBody,
+			headers: map[string]string{"X-MCP-Federation-Depth": "5"},
+			setup: func(_ *testing.T, env *EnvMock) {
+				env.FederationMaxDepthFunc = func() int { return 5 }
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "initialize", "tool": "", "auth": "anonymous", "status": "error"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_auth_total", map[string]string{"auth": "anonymous"}, 1)
+			},
+		},
+		{
+			name:    "invalid api key records rejected request as auth=api_key",
+			body:    mcpInitBody,
+			headers: map[string]string{"X-API-Key": "bad-key"},
+			setup: func(_ *testing.T, env *EnvMock) {
+				env.ResolveAPIKeyFunc = func(_ context.Context, _, _ string) (*db.ApiKey, error) {
+					return nil, errors.New("invalid API key")
+				}
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "initialize", "tool": "", "auth": "api_key", "status": "error"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_auth_total", map[string]string{"auth": "api_key"}, 1)
+			},
+		},
+		{
+			name:    "failed federation bearer records rejected request as auth=federation",
+			body:    mcpInitBody,
+			headers: map[string]string{"Authorization": "Basic not-a-bearer"},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "initialize", "tool": "", "auth": "federation", "status": "error"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_auth_total", map[string]string{"auth": "federation"}, 1)
 			},
 		},
 	}
@@ -222,7 +281,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 			for k, v := range tc.headers {
 				fasthttpCtx.Request.Header.Set(k, v)
 			}
-			req := wiredRequest(fasthttpCtx, env, nil)
+			req := wiredRequest(fasthttpCtx, env, tc.resolver)
 			defer appreq.Release(req)
 
 			_, err := (&mcp.Endpoint{}).Handle(req)

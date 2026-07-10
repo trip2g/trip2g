@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"trip2g/internal/metrics"
+	"trip2g/internal/model"
 )
 
 type mcpMetricsContextKey struct{}
@@ -54,18 +55,50 @@ func recordRequestMetrics(ctx context.Context, m *metrics.MCPMetrics, env Env, r
 	}
 }
 
+// recordRejectedRequest counts a request rejected before Resolve (depth limit,
+// auth failures) so error and abusive traffic shows up in the request counters.
+// auth is the attempted auth kind; the tool label stays empty since the call
+// never reached tool dispatch.
+func recordRejectedRequest(m *metrics.MCPMetrics, req Request, auth string, seconds float64) {
+	m.RecordMCPRequest(methodLabel(req.Method), "", auth, "error", seconds)
+}
+
+// DynamicToolCount returns how many notes expose a dynamic (mcp_method) tool,
+// excluding names shadowed by built-in tools. The app refreshes the
+// trip2g_mcp_dynamic_tools_registered gauge with it on every notes reload.
+func DynamicToolCount(nvs *model.NoteViews) int {
+	if nvs == nil {
+		return 0
+	}
+	n := 0
+	for _, note := range nvs.List {
+		if note.MCPMethod != "" && !reservedMCPTools[note.MCPMethod] {
+			n++
+		}
+	}
+	return n
+}
+
+// Auth kinds for the auth metric label.
+const (
+	authToken      = "token"
+	authAPIKey     = "api_key"
+	authFederation = "federation"
+	authAnonymous  = "anonymous"
+)
+
 // authKind classifies the request auth for metric labels.
 func authKind(ctx context.Context, hasUserToken bool) string {
 	switch {
 	case hasUserToken:
-		return "token"
+		return authToken
 	case mcpAPIKeyAuthed(ctx):
-		return "api_key"
+		return authAPIKey
 	default:
 		if _, ok := federationAuthFromContext(ctx); ok {
-			return "federation"
+			return authFederation
 		}
-		return "anonymous"
+		return authAnonymous
 	}
 }
 

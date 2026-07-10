@@ -550,6 +550,9 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 	// whole anonymous page cache rather than reasoning about which keys moved.
 	a.ClearPageCache()
 
+	// Keep the dynamic-tools gauge fresh even when no client calls tools/list.
+	a.mcpMetrics.SetDynamicToolsRegistered(mcp.DynamicToolCount(a.latestNoteLoader.NoteViews()))
+
 	return a.latestNoteLoader.NoteViews(), nil
 }
 

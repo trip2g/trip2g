@@ -15,6 +15,7 @@ type Endpoint struct{}
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
+	start := time.Now()
 
 	// Parse JSON-RPC request
 	var rpcReq Request
@@ -24,22 +25,28 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeJSONResponse(req, resp)
 	}
 
+	m := env.MCPMetrics()
+
 	// Validate JSON-RPC version
 	if rpcReq.JSONRPC != "2.0" {
 		resp := errorResponse(rpcReq.ID, ErrCodeInvalidRequest, "Invalid JSON-RPC version")
+		recordRejectedRequest(m, rpcReq, authAnonymous, time.Since(start).Seconds())
 		return writeJSONResponse(req, resp)
 	}
 
-	m := env.MCPMetrics()
-
-	// Enforce federation hop depth limit.
+	// Enforce federation hop depth limit. Depth is observed for every request:
+	// no header (or a malformed one) counts as 0 = direct client.
 	resolveCtx := context.Context(req.Req)
 	depthHeader := req.Req.Request.Header.Peek("X-MCP-Federation-Depth")
+	incomingDepth := 0
 	if len(depthHeader) > 0 {
-		incomingDepth, _ := strconv.Atoi(string(depthHeader))
-		m.ObserveFederationDepth(incomingDepth)
+		incomingDepth, _ = strconv.Atoi(string(depthHeader))
+	}
+	m.ObserveFederationDepth(incomingDepth)
+	if len(depthHeader) > 0 {
 		if incomingDepth >= env.FederationMaxDepth() {
 			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "federation max depth exceeded")
+			recordRejectedRequest(m, rpcReq, authAnonymous, time.Since(start).Seconds())
 			return writeJSONResponse(req, resp)
 		}
 		resolveCtx = contextWithFederationDepth(resolveCtx, incomingDepth)
@@ -52,12 +59,14 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	userToken, utErr := req.UserToken()
 	if utErr != nil {
 		resp := errorResponse(rpcReq.ID, ErrCodeInternal, "Auth failed: "+utErr.Error())
+		recordRejectedRequest(m, rpcReq, authToken, time.Since(start).Seconds())
 		return writeJSONResponse(req, resp)
 	}
 
 	if userToken == nil {
-		newCtx, errResp := authenticateAnonymousRequest(resolveCtx, req, env, rpcReq.ID)
+		newCtx, authAttempt, errResp := authenticateAnonymousRequest(resolveCtx, req, env, rpcReq.ID)
 		if errResp != nil {
+			recordRejectedRequest(m, rpcReq, authAttempt, time.Since(start).Seconds())
 			return writeJSONResponse(req, *errResp)
 		}
 		resolveCtx = newCtx
@@ -66,7 +75,6 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Handle request
 	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
 	resolveCtx = ContextWithMetrics(resolveCtx, m)
-	start := time.Now()
 	resp := Resolve(resolveCtx, env, rpcReq)
 	recordRequestMetrics(resolveCtx, m, env, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
 	return writeJSONResponse(req, resp)
@@ -74,20 +82,21 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 // authenticateAnonymousRequest resolves API-key or federation-JWT auth when no
 // personal token is present. It returns the augmented context, or an error
-// response to send back unchanged when auth fails.
-func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env Env, id any) (context.Context, *Response) {
+// response to send back unchanged when auth fails, plus the attempted auth
+// kind for metric labels (an invalid API key is still auth=api_key traffic).
+func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env Env, id any) (context.Context, string, *Response) {
 	apiKeyValue := strings.TrimSpace(string(req.Req.Request.Header.Peek("X-API-Key")))
 	if apiKeyValue != "" {
 		apiKey, keyErr := env.ResolveAPIKey(req.Req, apiKeyValue, "mcp")
 		if keyErr != nil {
 			resp := errorResponse(id, ErrCodeInternal, "Auth failed: "+keyErr.Error())
-			return ctx, &resp
+			return ctx, authAPIKey, &resp
 		}
 		adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
 		// Attribute internal admin GraphQL calls (WithAdminToken) to the API
 		// key owner so mutations like createAdmin record a real granted_by.
 		req.AdminActorUserID = int(apiKey.CreatedBy)
-		return contextWithMCPAPIKeyAuth(ctx, adminTools), nil
+		return contextWithMCPAPIKeyAuth(ctx, adminTools), authAPIKey, nil
 	}
 
 	authHeader := strings.TrimSpace(string(req.Req.Request.Header.Peek("Authorization")))
@@ -95,17 +104,17 @@ func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env 
 	token = strings.TrimSpace(token)
 	if authHeader != "" && (!isBearerToken || token == "") {
 		resp := errorResponse(id, ErrCodeInternal, "Federation auth failed: malformed bearer token")
-		return ctx, &resp
+		return ctx, authFederation, &resp
 	}
 	if !isBearerToken || token == "" {
-		return ctx, nil
+		return ctx, authAnonymous, nil
 	}
 	kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, token)
 	if verifyErr != nil {
 		resp := errorResponse(id, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
-		return ctx, &resp
+		return ctx, authFederation, &resp
 	}
-	return contextWithFederationAuth(ctx, kid, allowedSubgraphs), nil
+	return contextWithFederationAuth(ctx, kid, allowedSubgraphs), authFederation, nil
 }
 
 func writeJSONResponse(req *appreq.Request, resp Response) (interface{}, error) {

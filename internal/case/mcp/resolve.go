@@ -328,12 +328,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 	}
 
 	// Append dynamic tools from notes with mcp_method (excluding reserved names)
-	dynamicTools := 0
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod == "" || reservedMCPTools[note.MCPMethod] {
 			continue
 		}
-		dynamicTools++
 		ok, err := canReadMCPNote(ctx, env, note)
 		if err != nil || !ok {
 			continue
@@ -348,7 +346,8 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
 		})
 	}
-	metricsFromContext(ctx).SetDynamicToolsRegistered(dynamicTools)
+	// Cheap re-sync; the authoritative refresh happens on notes reload.
+	metricsFromContext(ctx).SetDynamicToolsRegistered(DynamicToolCount(env.LatestNoteViews()))
 
 	if env.FederatedGraphQLEnabled() {
 		tools = append(tools, Tool{
