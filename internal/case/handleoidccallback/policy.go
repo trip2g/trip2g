@@ -26,10 +26,10 @@ const (
 	emailVerificationReasonUserInfoEmailEmpty = "userinfo_email_missing"
 	emailVerificationReasonUserInfoInvalid    = "userinfo_claim_invalid"
 	emailVerificationReasonUserInfoFalse      = "userinfo_claim_false"
-	emailVerificationReasonIDTokenMissing     = "id_token_claim_missing"
+	emailVerificationReasonIDTokenMissing     = "id_token_claim_missing" //nolint:gosec // G101 false positive: OIDC reason code, not a credential
 	emailVerificationReasonIDTokenInvalid     = "id_token_claim_invalid"
-	emailVerificationReasonIDTokenFalse       = "id_token_claim_false"
-	emailVerificationReasonIDTokenEmailEmpty  = "id_token_email_missing"
+	emailVerificationReasonIDTokenFalse       = "id_token_claim_false"   //nolint:gosec // G101 false positive: OIDC reason code, not a credential
+	emailVerificationReasonIDTokenEmailEmpty  = "id_token_email_missing" //nolint:gosec // G101 false positive: OIDC reason code, not a credential
 	emailVerificationReasonEmailMismatch      = "id_token_userinfo_email_mismatch"
 )
 
