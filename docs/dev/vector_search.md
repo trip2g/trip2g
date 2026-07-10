@@ -173,10 +173,10 @@ internal/
 
 embedding-server/
 └── server.py              FastAPI server, normalize_embeddings=True
-
-reranker-server/
-└── server.py              FastAPI cross-encoder sidecar
 ```
+
+The reranker has no bespoke server: the vecbench stack runs the official
+HuggingFace `text-embeddings-inference` image (`/rerank` endpoint).
 
 ## similarNotes (legacy whole-note similarity)
 
