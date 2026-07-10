@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/shortapitoken"
 	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"
@@ -127,6 +128,39 @@ func TestResolve_TokenTTLHasNoSixtyMinuteFloor(t *testing.T) {
 	tok, _ := payload["api_token"].(string)
 	require.NotEmpty(t, tok)
 	require.Less(t, tokenLifetimeSeconds(t, tok), int64(300), "60-min floor must be gone; TTL ~= timeout + margin")
+}
+
+// A malformed scope is invalid configuration, not permission to read every
+// note. If delivery continues with a token, that token must be deny-all.
+func TestResolve_MalformedReadPatternsFailClosed(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID: id, Url: srv.URL, TimeoutSeconds: 10, PassApiKey: true,
+			ReadPatterns: `{malformed`, WritePatterns: `[]`,
+		}, nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 101, Attempt: 1})
+	require.NoError(t, err)
+
+	var payload struct {
+		APIToken string `json:"api_token"`
+	}
+	require.NoError(t, json.Unmarshal(body, &payload))
+	require.NotEmpty(t, payload.APIToken)
+	claims, err := shortapitoken.Parse(payload.APIToken, "test-secret")
+	require.NoError(t, err)
+	require.Empty(t, claims.ReadPatterns,
+		"malformed read_patterns must not become an all-notes scope")
 }
 
 func TestResolve_LoggedRequestBodyRedactsTokenAndSecrets(t *testing.T) {

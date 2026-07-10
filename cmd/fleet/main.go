@@ -519,7 +519,6 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		FlagSet:           fs,
 		EnvPrefix:         "TRIP2G_FLEET_",
 		ShowEnvKeyInUsage: true,
-		ShowEnvValInUsage: true,
 	})
 
 	if err := ef.Parse(ctx, os.Args[1:]); err != nil {

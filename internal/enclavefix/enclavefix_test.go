@@ -71,7 +71,7 @@ func TestTradingViewSymbolCannotBreakOutOfScript(t *testing.T) {
 	html := buf.String()
 	require.NotContains(t, html, `<script`)
 	require.NotContains(t, html, `";alert`)
-	require.Contains(t, html, `&#34;;alert(1);//`)
+	require.NotContains(t, html, `alert(1)`, "rejected symbols are redacted, not echoed")
 	require.Contains(t, html, "Failed to load tradingview")
 }
 

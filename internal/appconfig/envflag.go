@@ -20,7 +20,6 @@ type EnvFlag struct {
 	minLength         int
 	envFlagDict       map[string]string
 	showEnvKeyInUsage bool
-	showEnvValInUsage bool
 	envPrefix         string
 	logger            logger.Logger
 }
@@ -31,7 +30,6 @@ type EnvFlagConfig struct {
 	MinLength         int
 	EnvFlagDict       map[string]string
 	ShowEnvKeyInUsage bool
-	ShowEnvValInUsage bool
 	// EnvPrefix, when set, restricts processing to env vars with this prefix.
 	// Prefixed vars that don't match any flag are treated as errors (likely typos).
 	// Example: "TRIP2G_" makes TRIP2G_LISTEN_ADDR map to flag listen-addr.
@@ -46,7 +44,6 @@ func DefaultEnvFlagConfig() EnvFlagConfig {
 		MinLength:         3,
 		EnvFlagDict:       make(map[string]string),
 		ShowEnvKeyInUsage: true,
-		ShowEnvValInUsage: true,
 		EnvPrefix:         "TRIP2G_",
 		Logger:            &logger.DummyLogger{},
 	}
@@ -69,21 +66,20 @@ func New(cfg EnvFlagConfig) *EnvFlag {
 		minLength:         cfg.MinLength,
 		envFlagDict:       cfg.EnvFlagDict,
 		showEnvKeyInUsage: cfg.ShowEnvKeyInUsage,
-		showEnvValInUsage: cfg.ShowEnvValInUsage,
 		envPrefix:         cfg.EnvPrefix,
 		logger:            cfg.Logger,
 	}
 }
 
 // ProcessError represents an error that occurred during flag processing.
+// The value is intentionally omitted — env-loaded values may be secrets.
 type ProcessError struct {
-	Flag  string
-	Value string
-	Err   error
+	Flag string
+	Err  error
 }
 
 func (e *ProcessError) Error() string {
-	return fmt.Sprintf("error setting flag %q to %q: %v", e.Flag, e.Value, e.Err)
+	return fmt.Sprintf("error setting flag %q: %v", e.Flag, e.Err)
 }
 
 func (e *ProcessError) Unwrap() error {
@@ -228,11 +224,9 @@ func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) (string, 
 		return "", nil
 	}
 
-	ef.logger.Debug("processing environment variable", "envKey", key, "flagKey", flagKey, "value", value)
-
-	if ef.showEnvValInUsage {
-		f.DefValue = value
-	}
+	// Never log or expose the value: env-loaded values may be secrets, and
+	// setting them as the flag's printable default would leak them via --help.
+	ef.logger.Debug("processing environment variable", "envKey", key, "flagKey", flagKey)
 
 	err := ef.flagSet.Set(flagKey, value)
 	if err != nil {
@@ -240,13 +234,11 @@ func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) (string, 
 			"failed to set flag from environment variable",
 			"envKey", key,
 			"flagKey", flagKey,
-			"value", value,
 			"error", err,
 		)
 		return "", &ProcessError{
-			Flag:  flagKey,
-			Value: value,
-			Err:   err,
+			Flag: flagKey,
+			Err:  err,
 		}
 	}
 
@@ -335,11 +327,6 @@ func SetEnvFlagDict(v map[string]string) {
 // SetShowEnvKeyInUsage controls whether environment variable names are shown in usage.
 func SetShowEnvKeyInUsage(v bool) {
 	std.showEnvKeyInUsage = v
-}
-
-// SetShowEnvValInUsage controls whether environment variable values are shown as defaults.
-func SetShowEnvValInUsage(v bool) {
-	std.showEnvValInUsage = v
 }
 
 // SetLogger sets the logger for the standard instance.

@@ -139,6 +139,42 @@ func TestEnglishStemming(t *testing.T) {
 	require.True(t, hasURL(resRu, "/ru-note"), "russian query should still match russian note")
 }
 
+// Toggling search:false is an access decision even when title/content did not
+// change. An incremental rebuild must remove the document already in Bleve.
+func TestIncrementalIndexing_RemovesNoteWhenSearchDisabled(t *testing.T) {
+	loader := &Loader{log: &logger.TestLogger{}}
+	const canary = "privacysearchcanary"
+
+	visible := createNoteWithAST(42, "/private-later", "Initially searchable", []byte(canary))
+	before := model.NewNoteViews()
+	before.List = []*model.NoteView{visible}
+	before.Map[visible.Permalink] = visible
+
+	index, err := loader.buildSearchIndex(before)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = before
+
+	results, err := loader.Search(canary)
+	require.NoError(t, err)
+	require.Len(t, results, 1, "precondition: note must initially be indexed")
+
+	hidden := createNoteWithAST(42, "/private-later", "Initially searchable", []byte(canary))
+	hidden.ExcludeSearch = true
+	after := model.NewNoteViews()
+	after.List = []*model.NoteView{hidden}
+	after.Map[hidden.Permalink] = hidden
+
+	index, err = loader.buildSearchIndex(after)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = after
+
+	results, err = loader.Search(canary)
+	require.NoError(t, err)
+	require.Empty(t, results, "search:false must remove an already-indexed document")
+}
+
 func hasURL(res []model.SearchResult, url string) bool {
 	for _, r := range res {
 		if r.URL == url {

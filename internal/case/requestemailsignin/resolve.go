@@ -102,7 +102,7 @@ func Resolve(ctx context.Context, env Env, input Input, remoteIP string) (model.
 		return nil, fmt.Errorf("failed to count active signin codes: %w", err)
 	}
 
-	if count > env.MaxActiveSignInCodes() {
+	if count >= env.MaxActiveSignInCodes() {
 		return &model.ErrorPayload{Message: "too_many_sign_in_codes"}, nil
 	}
 
