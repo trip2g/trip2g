@@ -89,6 +89,15 @@ func TestResolve_ScopedSearch_FailClosed(t *testing.T) {
 			req:     &appreq.Request{WebhookScoped: false},
 			wantLen: 2,
 		},
+		{
+			// Stored patterns sometimes carry a leading slash; they must still
+			// match the canonical slash-less note paths (patterns are normalized
+			// inside MatchesAny) instead of silently hiding every result.
+			name:      "scoped + slash-prefixed read_patterns → in-scope still matches",
+			req:       &appreq.Request{WebhookScoped: true, WebhookReadPatterns: []string{"/boards/**"}},
+			wantLen:   1,
+			wantPaths: []string{"boards/sprint.md"},
+		},
 	}
 
 	for _, tc := range tests {

@@ -36,7 +36,7 @@ Endpoint: `http://localhost:21081/_system/graphql` (the `/graphql` alias is **de
 
 ### 1. F5 — AND→OR fallback + cosine norm precompute (effort S, quality ~0 / perf win)
 - **Files:** `internal/noteloader/search.go` (`Search`, the `MatchQueryOperatorAnd` at ~line 146), `internal/case/sitesearch/resolve.go` (`vectorSearch` ~120, `cosineSimilarity` ~335), `internal/model/chunk.go` (add `Norm float32` to `NoteChunk`), `internal/noteloader/loader.go` (set norm at load).
-- **Do:** if the AND bleve query returns too few hits, re-run with `MatchQueryOperatorOr` and merge. Precompute each chunk's L2 norm at load (the embedding server returns normalized vectors — verify with `sentence-transformers normalize_embeddings=True` in `embedding-server/server.py`; if already unit-norm, switch cosine to a plain dot product). Add a Warn log of `len(chunks)` + scan duration in `vectorSearch`.
+- **Do:** if the AND bleve query returns too few hits, re-run with `MatchQueryOperatorOr` and merge. Precompute each chunk's L2 norm at load (the TEI embedding server always L2-normalizes its `/v1/embeddings` output; since vectors are unit-norm, switch cosine to a plain dot product). Add a Warn log of `len(chunks)` + scan duration in `vectorSearch`.
 - **Expect:** ~0 quality delta on this corpus (recall already maxed), latency win. Measure on both golden sets, record in `search_refactoring.md`, commit `perf(search): AND->OR fallback + precomputed norms (F5)`.
 
 ### 2. Option A — `graphql_request` returns MCP `structuredContent` (effort S)

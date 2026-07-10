@@ -9,16 +9,17 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
 
-  # Local embedding server — bge-m3 via sentence-transformers.
+  # Local embedding server — bge-m3 via the official HuggingFace
+  # text-embeddings-inference image (OpenAI-compatible /v1/embeddings route,
+  # always L2-normalized output).
   # First start downloads the model (~2.3 GB), cached in shared ~/models/embedding.
   embedding:
-    build: ./embedding-server
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    command: --model-id BAAI/bge-m3 --port 8000 --auto-truncate
     ports:
       - "11435:8000"
     volumes:
       - ${HOME}/models/embedding:/data
-    environment:
-      - MODEL_NAME=BAAI/bge-m3
 
   # Mock data adapter for the datachart `url` source (local demo). Serves the
   # docs/demo chart queries; mimics trip2g_agent_queue's POST /v1/query.

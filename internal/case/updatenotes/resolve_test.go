@@ -746,6 +746,103 @@ func TestResolve_ScopedToken_MatchingPattern_Allowed(t *testing.T) {
 	require.True(t, called)
 }
 
+// Scoped token + leading-slash upsert path: small models sometimes prepend "/"
+// to the path. ScopedKB normalizes candidates for its own glob check, but the
+// raw path reaches updatenotes, where webhookWriteDenied matches it against
+// write_patterns with no normalization — "/concepts/x.md" vs "concepts/**" is
+// wrongly DENIED. Desired: normalize before matching, so the write is allowed.
+func TestResolve_ScopedToken_LeadingSlashPathNotDenied(t *testing.T) {
+	req := &appreq.Request{
+		WebhookDeliveryKind:  "change",
+		WebhookWritePatterns: []string{"concepts/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "/concepts/x.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out,
+		"leading-slash path inside write scope must not be denied")
+	require.True(t, called)
+}
+
+// The mirror-image defect: the STORED PATTERN carries the leading slash. Paths
+// are normalized before matching, but patterns were passed raw to MatchesAny,
+// so write_patterns ["/concepts/**"] never matched the canonical slash-less
+// path and every write was wrongly denied. Desired: patterns are normalized
+// too, so the write is allowed.
+func TestResolve_ScopedToken_SlashPrefixedPatternNotDenied(t *testing.T) {
+	req := &appreq.Request{
+		WebhookDeliveryKind:  "change",
+		WebhookWritePatterns: []string{"/concepts/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "concepts/x.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out,
+		"slash-prefixed write pattern must still allow its in-scope paths")
+	require.True(t, called)
+}
+
+// Same leading-slash defect for the Hide branch: the raw path reached
+// webhookWriteDenied and HideNotePath un-normalized, so a scoped token hiding
+// "/concepts/x.md" was wrongly denied against "concepts/**".
+func TestResolve_ScopedToken_LeadingSlashHideNotDenied(t *testing.T) {
+	req := &appreq.Request{
+		WebhookDeliveryKind:  "change",
+		WebhookWritePatterns: []string{"concepts/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews: appmodel.NewNoteViews,
+		hideNotePath: func(_ context.Context, params db.HideNotePathParams) error {
+			called = true
+			require.Equal(t, "concepts/x.md", params.Value, "HideNotePath must receive the normalized path")
+			return nil
+		},
+		prepareLatestNotes: noopPrepare,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Hide: &model.NoteChangeHideInput{Path: "/concepts/x.md"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out,
+		"leading-slash hide path inside write scope must not be denied")
+	require.True(t, called)
+}
+
 // F2: unscoped/admin request (no DeliveryKind) + empty write_patterns → allowed (unchanged behavior).
 func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 	// No appreq in context — simulates admin/unscoped request.

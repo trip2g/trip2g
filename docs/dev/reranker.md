@@ -23,9 +23,9 @@ A cross-encoder scores a `(query, document)` pair **jointly** in one forward
 pass. That is strictly more expressive than independent embeddings, which is why
 retrieve-then-rerank is a standard IR pattern — a cheap recall stage proposes
 candidates, an expensive precision stage reorders the top-N. It needs a
-rerank-capable server (TEI / Infinity / the bespoke `reranker-server/` sidecar,
-FastAPI + `sentence_transformers.CrossEncoder`), not the plain `/embeddings`
-endpoint: different architecture, different API (pair scoring vs vectors).
+rerank-capable server (the official HuggingFace `text-embeddings-inference`
+image, or Infinity), not the plain `/embeddings` endpoint: different
+architecture, different API (pair scoring vs vectors).
 
 ## When it helps vs when it hurts
 
@@ -152,9 +152,10 @@ the F3b collapse.
 | `blend_weight` | 0.5 | CE weight `w` in the blend |
 | `timeout_seconds` | 10 | per-request rerank timeout; raise for CPU inference |
 
-The sidecar (`reranker-server/`) serves `bge-reranker-v2-m3` on CPU. First boot
-downloads the model (~2.2 GB). It is intentionally **not** in the vecbench
-`app.depends_on`, so baseline runs never pull the model. CPU inference is slow:
+The vecbench stack serves `bge-reranker-v2-m3` on CPU via the official
+HuggingFace `text-embeddings-inference` image. First boot downloads the model
+(~2.2 GB). It is intentionally **not** in the vecbench `app.depends_on`, so
+baseline runs never pull the model. CPU inference is slow:
 a warm rerank of 20 passages takes ~6 s, of 50 passages ~25 s on a loaded box —
 so raise `timeout_seconds` well above the 10 s default when serving on CPU, or
 the lane silently degrades to the RRF order on timeout.

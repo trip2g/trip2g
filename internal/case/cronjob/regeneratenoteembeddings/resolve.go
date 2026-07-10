@@ -1,15 +1,16 @@
 package regeneratenoteembeddings
 
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg regeneratenoteembeddings_test . Env
+
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"errors"
 
+	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
-	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 )
 
@@ -61,12 +62,14 @@ func Resolve(ctx context.Context, env Env) (*Result, error) {
 		embeddingHashes[emb.VersionID] = emb.ContentHash
 	}
 
-	// Check each note and enqueue if needed
+	// Check each note and enqueue if needed. The expected hash must match what
+	// the generator stores (fingerprinted), or fresh rows get re-enqueued forever.
+	vsConfig := env.Features().VectorSearch
 	for _, note := range noteViews.List {
-		currentHash := sha256.Sum256([]byte(note.Title + mdchunk.StripFrontmatter(string(note.Content))))
+		currentHash := generatenoteversionembedding.NoteContentHash(note.Title, note.Content, vsConfig)
 
 		existingHash, hasEmbedding := embeddingHashes[note.VersionID]
-		if hasEmbedding && bytesEqual(existingHash, currentHash[:]) {
+		if hasEmbedding && bytesEqual(existingHash, currentHash) {
 			result.UpToDateCount++
 			continue
 		}

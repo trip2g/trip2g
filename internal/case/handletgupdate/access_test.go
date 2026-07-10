@@ -444,6 +444,32 @@ func TestHandleMyChatMember_AdministratorRetriesBackoffThenSucceeds(t *testing.T
 	require.Len(t, env.UpsertTgBotChatCalls(), 1)
 }
 
+// TestGetBotCanInviteWithRetry_RetriesStaleFalseResult verifies a successful
+// but stale (false, nil) response is retried too: Telegram propagation lag can
+// return canInvite=false with no error right after a permission change (the
+// reason the old fixed 1s sleep existed), so a first-attempt false must not be
+// accepted immediately.
+func TestGetBotCanInviteWithRetry_RetriesStaleFalseResult(t *testing.T) {
+	env := &EnvMock{}
+	env.LoggerFunc = func() logger.Logger {
+		return &logger.TestLogger{Prefix: "[TEST]"}
+	}
+
+	var attempts int
+	env.GetBotCanInviteFunc = func(ctx context.Context, chatID int64) (bool, error) {
+		attempts++
+		if attempts == 1 {
+			return false, nil // stale: permission not yet propagated
+		}
+		return true, nil
+	}
+
+	canInvite, err := getBotCanInviteWithRetry(context.Background(), env, -1002529281698)
+	require.NoError(t, err)
+	require.True(t, canInvite, "stale first-attempt false must be retried, not accepted")
+	require.Equal(t, 2, attempts)
+}
+
 // TestHandleMyChatMember_AdministratorGivesUpAfterMaxAttempts verifies the
 // retry is bounded: persistent failures surface an error after exhausting
 // the attempt budget instead of retrying forever.

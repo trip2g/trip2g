@@ -2,6 +2,9 @@ package oidcauth
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -12,6 +15,7 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"golang.org/x/sync/singleflight"
 )
 
 type jwk struct {
@@ -21,6 +25,9 @@ type jwk struct {
 	Alg string `json:"alg"`
 	N   string `json:"n"`
 	E   string `json:"e"`
+	Crv string `json:"crv"`
+	X   string `json:"x"`
+	Y   string `json:"y"`
 }
 
 type jwksDocument struct {
@@ -32,7 +39,8 @@ type jwksDocument struct {
 // concurrent use. State lives on the cache, not in a package-level var.
 type KeyCache struct {
 	mu    sync.Mutex
-	byURI map[string]map[string]*rsa.PublicKey // jwksURI -> kid -> key
+	byURI map[string]map[string]crypto.PublicKey // jwksURI -> kid -> key
+	group singleflight.Group
 
 	// fetch retrieves the raw JWKS document; defaults to a fasthttp GET.
 	// It is a field (not a hardcoded call) so tests can drive rotation
@@ -42,38 +50,52 @@ type KeyCache struct {
 
 func NewKeyCache() *KeyCache {
 	return &KeyCache{
-		byURI: map[string]map[string]*rsa.PublicKey{},
+		byURI: map[string]map[string]crypto.PublicKey{},
 		fetch: fetchJWKS,
 	}
 }
 
-// keyForKID returns the RSA public key for kid at jwksURI, fetching (or, on an
+// keyForKID returns the public key for kid at jwksURI, fetching (or, on an
 // unknown kid, refetching) the JWKS as needed.
-func (c *KeyCache) keyForKID(ctx context.Context, jwksURI, kid string) (*rsa.PublicKey, error) {
+func (c *KeyCache) keyForKID(ctx context.Context, jwksURI, kid string) (crypto.PublicKey, error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if keys, ok := c.byURI[jwksURI]; ok {
 		if key, found := keys[kid]; found {
+			c.mu.Unlock()
 			return key, nil
 		}
 	}
+	c.mu.Unlock()
 
-	// Cache miss or unknown kid: (re)fetch and replace the cached set.
-	keys, err := c.load(ctx, jwksURI)
+	// Cache miss or unknown kid: (re)fetch and replace the cached set. The lock
+	// is not held during the fetch so a slow endpoint doesn't block cached
+	// reads; singleflight collapses concurrent fetches of the same URI.
+	v, err, _ := c.group.Do(jwksURI, func() (any, error) {
+		keys, lerr := c.load(ctx, jwksURI)
+		if lerr != nil {
+			return nil, lerr
+		}
+		c.mu.Lock()
+		c.byURI[jwksURI] = keys
+		c.mu.Unlock()
+		return keys, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	c.byURI[jwksURI] = keys
 
-	key, ok := keys[kid]
+	keys, ok := v.(map[string]crypto.PublicKey)
 	if !ok {
+		return nil, fmt.Errorf("unexpected JWKS cache entry type %T", v)
+	}
+	key, found := keys[kid]
+	if !found {
 		return nil, fmt.Errorf("no JWKS key for kid %q", kid)
 	}
 	return key, nil
 }
 
-func (c *KeyCache) load(ctx context.Context, jwksURI string) (map[string]*rsa.PublicKey, error) {
+func (c *KeyCache) load(ctx context.Context, jwksURI string) (map[string]crypto.PublicKey, error) {
 	body, err := c.fetch(ctx, jwksURI)
 	if err != nil {
 		return nil, err
@@ -84,19 +106,27 @@ func (c *KeyCache) load(ctx context.Context, jwksURI string) (map[string]*rsa.Pu
 		return nil, fmt.Errorf("failed to unmarshal JWKS: %w", uerr)
 	}
 
-	keys := map[string]*rsa.PublicKey{}
+	keys := map[string]crypto.PublicKey{}
 	for _, k := range doc.Keys {
-		if k.Kty != "RSA" {
+		var (
+			pub  crypto.PublicKey
+			perr error
+		)
+		switch k.Kty {
+		case "RSA":
+			pub, perr = k.rsaPublicKey()
+		case "EC":
+			pub, perr = k.ecPublicKey()
+		default:
 			continue
 		}
-		pub, perr := k.rsaPublicKey()
 		if perr != nil {
 			continue
 		}
 		keys[k.Kid] = pub
 	}
 	if len(keys) == 0 {
-		return nil, errors.New("JWKS contained no usable RSA keys")
+		return nil, errors.New("JWKS contained no usable keys")
 	}
 	return keys, nil
 }
@@ -120,6 +150,39 @@ func (k jwk) rsaPublicKey() (*rsa.PublicKey, error) {
 	}
 
 	return &rsa.PublicKey{N: new(big.Int).SetBytes(nBytes), E: e}, nil
+}
+
+func (k jwk) ecPublicKey() (*ecdsa.PublicKey, error) {
+	var curve elliptic.Curve
+	switch k.Crv {
+	case "P-256":
+		curve = elliptic.P256()
+	case "P-384":
+		curve = elliptic.P384()
+	case "P-521":
+		curve = elliptic.P521()
+	default:
+		return nil, fmt.Errorf("unsupported JWKS curve %q", k.Crv)
+	}
+
+	xBytes, err := base64.RawURLEncoding.DecodeString(k.X)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWKS x coordinate: %w", err)
+	}
+	yBytes, err := base64.RawURLEncoding.DecodeString(k.Y)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWKS y coordinate: %w", err)
+	}
+
+	pub := &ecdsa.PublicKey{
+		Curve: curve,
+		X:     new(big.Int).SetBytes(xBytes),
+		Y:     new(big.Int).SetBytes(yBytes),
+	}
+	if !curve.IsOnCurve(pub.X, pub.Y) {
+		return nil, errors.New("JWKS EC point not on curve")
+	}
+	return pub, nil
 }
 
 func fetchJWKS(ctx context.Context, jwksURI string) ([]byte, error) {

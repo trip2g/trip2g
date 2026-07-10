@@ -47,7 +47,7 @@ Results are **byte-for-byte identical** at this scale. HNSW approximation doesn'
 1. **Score normalization.** Normalize E5 cosine scores to a meaningful 0-1 range before RRF fusion. The raw 0.75-1.0 compression makes threshold-based filtering unreliable.
 2. **Post-RRF minimum score.** Apply a relevance threshold after merging BM25 + vector results, not before. BM25 returning zero results for garbage queries naturally pushes junk down.
 3. **Model evaluation.** Test `multilingual-e5-large` (1024d) or `bge-m3` for better score separation between relevant and irrelevant results.
-4. **Reranker.** Cross-encoder reranking of top-20 candidates is expensive but dramatically improves precision. Could run as a second pass in the embedding-server.
+4. **Reranker.** Cross-encoder reranking of top-20 candidates is expensive but dramatically improves precision. Since done: the vecbench stack serves one via the official `text-embeddings-inference` image (see reranker.md).
 
 ## Test Setup
 

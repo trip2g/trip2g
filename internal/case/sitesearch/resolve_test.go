@@ -180,8 +180,8 @@ func TestVectorTopKWideEnoughForFusion(t *testing.T) {
 }
 
 // TestDotSimilarity_UnitVectors verifies F5: for L2-normalised unit vectors dot
-// product equals cosine similarity. The embedding server sets normalize_embeddings=True
-// (embedding-server/server.py) so this equivalence always holds in production.
+// product equals cosine similarity. The TEI embedding server always L2-normalises
+// its /v1/embeddings output so this equivalence always holds in production.
 func TestDotSimilarity_UnitVectors(t *testing.T) {
 	// Identical unit vectors → similarity = 1.
 	a := []float32{1, 0, 0}
