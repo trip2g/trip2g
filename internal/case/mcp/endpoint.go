@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"trip2g/internal/appreq"
 )
@@ -29,11 +30,14 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeJSONResponse(req, resp)
 	}
 
+	m := env.MCPMetrics()
+
 	// Enforce federation hop depth limit.
 	resolveCtx := context.Context(req.Req)
 	depthHeader := req.Req.Request.Header.Peek("X-MCP-Federation-Depth")
 	if len(depthHeader) > 0 {
 		incomingDepth, _ := strconv.Atoi(string(depthHeader))
+		m.ObserveFederationDepth(incomingDepth)
 		if incomingDepth >= env.FederationMaxDepth() {
 			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "federation max depth exceeded")
 			return writeJSONResponse(req, resp)
@@ -61,7 +65,10 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// Handle request
 	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
+	resolveCtx = ContextWithMetrics(resolveCtx, m)
+	start := time.Now()
 	resp := Resolve(resolveCtx, env, rpcReq)
+	recordRequestMetrics(resolveCtx, m, env, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
 	return writeJSONResponse(req, resp)
 }
 

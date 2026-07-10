@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/federation"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 )
 
@@ -103,4 +104,8 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 
 func (a *app) FederationMaxDepth() int {
 	return a.config.MCPFederationMaxDepth
+}
+
+func (a *app) MCPMetrics() *metrics.MCPMetrics {
+	return a.mcpMetrics
 }

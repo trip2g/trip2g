@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 
@@ -35,6 +36,7 @@ func (e *fedGQLEnv) GraphQLRequest(ctx context.Context, query string, variables 
 	}
 	panic("unexpected admin GraphQLRequest call — security violation: must NOT reach admin path under fedAuth")
 }
+func (e *fedGQLEnv) MCPMetrics() *metrics.MCPMetrics     { return nil }
 func (e *fedGQLEnv) Features() features.Features         { panic("unexpected") }
 func (e *fedGQLEnv) LatestNoteViews() *model.NoteViews   { panic("unexpected") }
 func (e *fedGQLEnv) LatestNoteChunks() []model.NoteChunk { panic("unexpected") }

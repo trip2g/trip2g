@@ -33,6 +33,15 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		results := fanout(ctx, env, selected, func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
 			return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
 		})
+		m := metricsFromContext(ctx)
+		touched := 0
+		for _, r := range results {
+			m.RecordFederatedRequest(federatedStatus(r.Err))
+			if r.Err == nil {
+				touched++
+			}
+		}
+		m.ObserveFanoutBases(touched)
 		return successResponse(id, aggregateFederationResults(results))
 	}
 
@@ -53,6 +62,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		params.KBID = rest
 		result, err = client.FederatedSearch(ctx, params)
 	}
+	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
@@ -84,6 +94,7 @@ func callFederatedSingleKB(
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
 	result, err := call(client, rest)
+	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}

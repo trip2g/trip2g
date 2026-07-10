@@ -47,6 +47,7 @@ import (
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/notebus"
 	"trip2g/internal/noteloader"
@@ -73,6 +74,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/valyala/fasthttp"
 
@@ -191,6 +194,8 @@ type appState struct {
 	personalTokenResolver *personaltoken.Resolver
 
 	notFoundTracker *notfoundtracker.Tracker
+
+	mcpMetrics *metrics.MCPMetrics
 
 	redirectManager *redirectmanager.Manager
 
@@ -336,6 +341,8 @@ func main() {
 			tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
 
 			oidcKeys: oidcauth.NewKeyCache(),
+
+			mcpMetrics: metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
 
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
