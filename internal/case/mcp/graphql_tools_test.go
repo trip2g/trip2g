@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 
@@ -24,6 +25,7 @@ type gqlRequestEnv struct {
 func (e *gqlRequestEnv) GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
 	return e.graphqlFunc(ctx, query, variables)
 }
+func (e *gqlRequestEnv) MCPMetrics() *metrics.MCPMetrics     { return nil }
 func (e *gqlRequestEnv) Features() features.Features         { panic("unexpected") }
 func (e *gqlRequestEnv) LatestNoteViews() *model.NoteViews   { panic("unexpected") }
 func (e *gqlRequestEnv) LatestNoteChunks() []model.NoteChunk { panic("unexpected") }

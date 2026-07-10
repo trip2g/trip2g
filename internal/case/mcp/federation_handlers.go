@@ -33,6 +33,15 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		results := fanout(ctx, env, selected, func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
 			return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
 		})
+		m := metricsFromContext(ctx)
+		touched := 0
+		for _, r := range results {
+			m.RecordFederatedRequest(federatedStatus(r.Err))
+			if r.Err == nil {
+				touched++
+			}
+		}
+		m.ObserveFanoutBases(touched)
 		return successResponse(id, aggregateFederationResults(results))
 	}
 
@@ -43,6 +52,9 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 	var client model.Federation
 	client, err = env.FederationClient(ctx, kb.ID)
 	if err != nil {
+		// A client that can't be built is still a failed outbound attempt,
+		// same as on the fan-out path.
+		metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
 	params := model.FederationSearchParams{Query: args.Query}
@@ -53,6 +65,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		params.KBID = rest
 		result, err = client.FederatedSearch(ctx, params)
 	}
+	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
@@ -81,9 +94,13 @@ func callFederatedSingleKB(
 	}
 	client, err := env.FederationClient(ctx, kb.ID)
 	if err != nil {
+		// A client that can't be built is still a failed outbound attempt,
+		// same as on the fan-out path.
+		metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
 	result, err := call(client, rest)
+	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
