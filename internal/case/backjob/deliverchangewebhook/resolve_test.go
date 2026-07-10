@@ -527,6 +527,130 @@ func TestResolve_AgentChanges_PatchKind_FindReplace(t *testing.T) {
 	require.Equal(t, "# Todo\nHELLO world\n", insertedNote.Content, "patch must replace find→replace in existing content, not empty it")
 }
 
+// P1: a change carrying a stale expected_hash must not overwrite the current note.
+func TestResolve_AgentChanges_StaleExpectedHash_Rejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"clobber","expected_hash":"stale"}]}`))
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.PathMap["notes/todo.md"] = &model.NoteView{Path: "notes/todo.md", Content: []byte("# Todo\ncurrent\n")}
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			MaxRetries:     1,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 0, nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 30, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, insertCalled, "InsertNote must not be called when expected_hash is stale")
+	require.Equal(t, "failed", got.Status, "delivery must be marked failed on hash mismatch")
+}
+
+// P1: a change carrying the correct expected_hash must still apply.
+func TestResolve_AgentChanges_MatchingExpectedHash_Applied(t *testing.T) {
+	const noteContent = "# Todo\ncurrent\n"
+	currentHash := webhookutil.HashContent([]byte(noteContent))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		resp := `{"status":"ok","changes":[{"path":"notes/todo.md","content":"updated","expected_hash":"` + currentHash + `"}]}`
+		_, _ = w.Write([]byte(resp))
+	}))
+	defer srv.Close()
+
+	nvs := model.NewNoteViews()
+	nvs.PathMap["notes/todo.md"] = &model.NoteView{Path: "notes/todo.md", Content: []byte(noteContent)}
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) { return nvs, nil }
+
+	var insertedNote model.RawNote
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+		insertedNote = note
+		return 1, nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 31, Attempt: 1})
+	require.NoError(t, err)
+	require.Equal(t, "notes/todo.md", insertedNote.Path)
+	require.Equal(t, "updated", insertedNote.Content)
+}
+
+// P1: a mid-batch failure must not leave a partially applied prefix of the batch.
+func TestResolve_AgentChanges_MidBatchFailure_NoPartialApply(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[` +
+			`{"path":"notes/a.md","content":"a"},` +
+			`{"path":"outside.md","content":"b"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			MaxRetries:     1,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+
+	insertCalled := false
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		insertCalled = true
+		return 0, nil
+	}
+
+	var got db.UpdateWebhookDeliveryResultParams
+	env.UpdateWebhookDeliveryResultFunc = func(_ context.Context, arg db.UpdateWebhookDeliveryResultParams) error {
+		got = arg
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 32, Attempt: 1})
+	require.NoError(t, err)
+	require.False(t, insertCalled, "no change may be applied when any change in the batch is invalid")
+	require.Equal(t, "failed", got.Status)
+}
+
 // F8: patch-kind change with a find string absent from the note must error without writing.
 func TestResolve_AgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
 	const noteContent = "# Todo\nhello world\n"

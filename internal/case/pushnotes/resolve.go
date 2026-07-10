@@ -60,11 +60,16 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit
 	pathIDs := []int64{}
 
+	// Validate the whole batch before writing anything: callers (e.g. gitapi's
+	// applyDiff) roll back only their own state on failure, so a partially
+	// inserted prefix would diverge the DB from Git.
 	for _, update := range input.Updates {
 		if errPayload := validateUpdate(log, update); errPayload != nil {
 			return errPayload, nil
 		}
+	}
 
+	for _, update := range input.Updates {
 		note := appmodel.RawNote{
 			Path:    update.Path,
 			Content: update.Content,

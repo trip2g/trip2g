@@ -355,7 +355,10 @@ func TransformExtVarsForTest(payloadBytes []byte) map[string]string {
 	return transformExtVars(payloadBytes)
 }
 
-// applyAgentChanges parses and applies agent response changes.
+// applyAgentChanges parses, validates, and applies agent response changes.
+// The whole batch is validated (write patterns, expected_hash CAS, patch
+// resolution) before any item is written, so an invalid item rejects the
+// batch without partial application.
 func applyAgentChanges(ctx context.Context, env Env, result webhookutil.DeliveryResult, writePatterns []string) error {
 	agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
 	if parseErr != nil {
@@ -365,49 +368,14 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		return nil
 	}
 
-	// Read the current note views once; needed for patch operations.
-	nvs := env.LatestNoteViews()
+	notes, resolveErr := webhookutil.ResolveAgentChanges(agentResp.Changes, env.LatestNoteViews(), writePatterns)
+	if resolveErr != nil {
+		return resolveErr
+	}
 
-	for _, change := range agentResp.Changes {
-		// Deny-all when write_patterns is empty: a webhook delivery is always a
-		// scoped context, so an empty list means "no writes permitted" rather
-		// than "allow all". Also deny on no-match when non-empty.
-		if len(writePatterns) == 0 || !webhookutil.MatchesAny(change.Path, writePatterns) {
-			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
-		}
-
-		var content string
-		if change.IsPatch() { //nolint:nestif // patch requires sequential null-checks before string ops
-			// Apply find/replace against the note's current content.
-			// Matches updateNotes Patch semantics: find must be present exactly once.
-			if nvs == nil {
-				return fmt.Errorf("note not found for patch: %s", change.Path)
-			}
-			nv := nvs.PathMap[change.Path]
-			if nv == nil {
-				return fmt.Errorf("note not found for patch: %s", change.Path)
-			}
-			current := string(nv.Content)
-			idx := strings.Index(current, change.Find)
-			if idx == -1 {
-				return fmt.Errorf("patch find string not found in %s", change.Path)
-			}
-			// Reject ambiguous finds (multiple occurrences) to match updateNotes Patch semantics.
-			if strings.Contains(current[idx+len(change.Find):], change.Find) {
-				return fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
-			}
-			content = current[:idx] + change.Replace + current[idx+len(change.Find):]
-		} else {
-			// Kind=="" or "upsert": upsert with provided content.
-			content = change.Content
-		}
-
-		_, insertErr := env.InsertNote(ctx, model.RawNote{
-			Path:    change.Path,
-			Content: content,
-		})
-		if insertErr != nil {
-			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
+	for _, note := range notes {
+		if _, insertErr := env.InsertNote(ctx, note); insertErr != nil {
+			return fmt.Errorf("failed to apply change for %s: %w", note.Path, insertErr)
 		}
 	}
 

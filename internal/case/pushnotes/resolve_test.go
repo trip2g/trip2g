@@ -277,6 +277,30 @@ func TestResolve(t *testing.T) {
 	}
 }
 
+// P1: a mid-batch validation failure must not leave earlier updates persisted
+// (gitapi rolls back only the git ref on failure, so a partial DB write diverges DB from Git).
+func TestResolve_MidBatchValidationFailure_NoPartialWrite(t *testing.T) {
+	ctx := context.Background()
+	env := newEnvMock(&logger.TestLogger{})
+
+	insertCount := 0
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
+		insertCount++
+		return int64(insertCount), nil
+	}
+
+	result, err := pushnotes.Resolve(ctx, env, model.PushNotesInput{
+		Updates: []model.PushNoteInput{
+			{Path: "a.md", Content: "# A\n"},
+			{Path: "b.txt", Content: "not allowed"},
+		},
+	})
+	require.NoError(t, err)
+	_, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload for invalid second update")
+	require.Equal(t, 0, insertCount, "no update may be persisted when any update in the batch is invalid")
+}
+
 func TestResolve_UpdatedNotes(t *testing.T) {
 	ctx := context.Background()
 	mockLogger := &logger.TestLogger{}

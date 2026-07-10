@@ -1,11 +1,23 @@
 package webhookutil
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"trip2g/internal/model"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
+
+// HashContent returns the base64url sha256 of note content — the hash format
+// agents receive and send back as expected_hash (same as updateNotes CAS).
+func HashContent(content []byte) string {
+	sum := sha256.Sum256(content)
+	return base64.URLEncoding.EncodeToString(sum[:])
+}
 
 // AgentChange kinds. An empty Kind is treated as KindWrite for backward
 // compatibility with existing webhook agents that only send {path, content}.
@@ -51,6 +63,63 @@ func (c AgentChange) Validate() error {
 		ozzo.Field(&c.Path, ozzo.Required),
 		ozzo.Field(&c.Content, ozzo.Required),
 	)
+}
+
+// ResolveAgentChanges validates every change (write patterns, expected_hash
+// CAS, patch resolution) against the current note views and returns the final
+// notes to write. Any invalid change rejects the whole batch, so callers never
+// apply a partial prefix.
+func ResolveAgentChanges(changes []AgentChange, nvs *model.NoteViews, writePatterns []string) ([]model.RawNote, error) {
+	notes := make([]model.RawNote, 0, len(changes))
+	for _, change := range changes {
+		// Deny-all when write_patterns is empty: a webhook delivery is always a
+		// scoped context, so an empty list means "no writes permitted" rather
+		// than "allow all". Also deny on no-match when non-empty.
+		if len(writePatterns) == 0 || !MatchesAny(change.Path, writePatterns) {
+			return nil, fmt.Errorf("path %q not allowed by write_patterns", change.Path)
+		}
+
+		var nv *model.NoteView
+		if nvs != nil {
+			nv = nvs.PathMap[change.Path]
+		}
+
+		// expected_hash gates the write with optimistic concurrency, matching
+		// updateNotes CAS semantics: "" asserts the note is absent (create-only).
+		if change.ExpectedHash != nil {
+			var actualHash string
+			if nv != nil {
+				actualHash = HashContent(nv.Content)
+			}
+			if actualHash != *change.ExpectedHash {
+				return nil, fmt.Errorf("expected_hash mismatch for %s: note changed since it was read", change.Path)
+			}
+		}
+
+		var content string
+		if change.IsPatch() {
+			// Apply find/replace against the note's current content.
+			// Matches updateNotes Patch semantics: find must be present exactly once.
+			if nv == nil {
+				return nil, fmt.Errorf("note not found for patch: %s", change.Path)
+			}
+			current := string(nv.Content)
+			idx := strings.Index(current, change.Find)
+			if idx == -1 {
+				return nil, fmt.Errorf("patch find string not found in %s", change.Path)
+			}
+			if strings.Contains(current[idx+len(change.Find):], change.Find) {
+				return nil, fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
+			}
+			content = current[:idx] + change.Replace + current[idx+len(change.Find):]
+		} else {
+			// Kind=="" or "upsert": upsert with provided content.
+			content = change.Content
+		}
+
+		notes = append(notes, model.RawNote{Path: change.Path, Content: content})
+	}
+	return notes, nil
 }
 
 // ParseAgentResponse parses a webhook response body into AgentResponse.
