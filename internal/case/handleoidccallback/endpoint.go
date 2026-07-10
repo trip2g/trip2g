@@ -108,9 +108,9 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	// Verify the id_token signature against the provider's JWKS and its
-	// standard claims (iss/aud/exp/iat, plus nonce) before trusting the token
-	// response. Identity details below still come from userinfo, but its subject
-	// is bound to the verified id_token subject.
+	// standard claims (iss/aud/exp, iat when present, plus nonce) before trusting
+	// the token response. Identity details below still come from userinfo, but
+	// its subject is bound to the verified id_token subject.
 	idClaims, ok := verifyIDToken(env, ctx, creds, endpoints, tokenResp.IDToken, nonce, clientIP)
 	if !ok {
 		return nil, nil
@@ -136,14 +136,22 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	verification := resolveEmailVerification(idClaims, userInfo)
+
 	// Reject unverified identities before looking up a local account by email.
 	// An email claim that has not been verified by the provider must never bind
 	// an OIDC login to an existing user.
-	user, err, berr := lookupAuthorizedUser(ctx, env, creds, userInfo)
+	user, berr, err := lookupAuthorizedUser(ctx, env, creds, userInfo, verification)
 	if berr != "" {
+		reason := berr
+		if berr == berrEmailNotVerified {
+			reason = verification.Reason
+		}
 		env.Logger().Info("oauth login failed: access denied",
 			"provider", "oidc",
 			"email", userInfo.Email,
+			"berror", berr,
+			"reason", reason,
 			"ip", clientIP)
 		ctx.Redirect("/?berror="+berr, http.StatusFound)
 		return nil, nil
@@ -161,7 +169,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	if !exists {
 		// No existing user: decide whether to auto-provision
-		if berr := provisionBError(creds, userInfo); berr != "" {
+		if berr := provisionBError(creds, verification); berr != "" {
 			reason := "access denied"
 			if berr == berrUserNotFound {
 				reason = berrUserNotFound
@@ -191,6 +199,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		env.Logger().Info("oauth user provisioned",
 			"provider", "oidc",
 			"email", userInfo.Email,
+			"email_verification_source", verification.Source,
 			"user_id", user.ID)
 	}
 
@@ -208,6 +217,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env.Logger().Info("oauth login success",
 		"provider", "oidc",
 		"email", userInfo.Email,
+		"email_verification_source", verification.Source,
 		"user_id", user.ID,
 		"ip", clientIP)
 

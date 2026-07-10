@@ -45,6 +45,7 @@ export async function startMockIdp({
     name: 'OIDC User',
     groups: [],
   };
+  let currentIDTokenClaims = {};
 
   function signIdToken(nonce) {
     const header = { alg: 'RS256', typ: 'JWT', kid };
@@ -56,6 +57,7 @@ export async function startMockIdp({
       exp: now + 3600,
       iat: now,
       ...(nonce ? { nonce } : {}),
+      ...currentIDTokenClaims,
     };
     const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
     const signature = crypto.createSign('RSA-SHA256').update(signingInput).sign(privateKey);
@@ -128,6 +130,10 @@ export async function startMockIdp({
     browserURL: `http://${hostForBrowser}:${port}`,
     setUser(u) {
       currentUser = { ...currentUser, ...u };
+      currentIDTokenClaims = {};
+    },
+    setIdTokenClaims(claims) {
+      currentIDTokenClaims = { ...claims };
     },
     close() {
       return new Promise((resolve) => server.close(resolve));

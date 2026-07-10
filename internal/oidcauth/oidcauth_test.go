@@ -55,7 +55,7 @@ func newMockIssuer(t *testing.T) (*httptest.Server, *capturedRequests) {
 		resp := UserInfo{
 			Sub:           "user-123",
 			Email:         "alice@example.com",
-			EmailVerified: true,
+			EmailVerified: testBoolClaim(true),
 			Name:          "Alice Example",
 			Groups:        []string{"admins", "editors"},
 		}
@@ -145,11 +145,44 @@ func TestGetUserInfo(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "user-123", info.Sub)
 	require.Equal(t, "alice@example.com", info.Email)
-	require.True(t, info.EmailVerified)
+	require.Equal(t, testBoolClaim(true), info.EmailVerified)
 	require.Equal(t, "Alice Example", info.Name)
 	require.Equal(t, []string{"admins", "editors"}, info.Groups)
 
 	require.Equal(t, "Bearer test-access-token", captured.userInfoAuth)
+}
+
+func TestGetUserInfoPreservesEmailVerifiedState(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		want    BoolClaim
+		wantErr bool
+	}{
+		{name: "true", body: `{"sub":"u","email":"u@example.com","email_verified":true}`, want: testBoolClaim(true)},
+		{name: "false", body: `{"sub":"u","email":"u@example.com","email_verified":false}`, want: testBoolClaim(false)},
+		{name: "omitted", body: `{"sub":"u","email":"u@example.com"}`, want: BoolClaim{}},
+		{name: "null", body: `{"sub":"u","email":"u@example.com","email_verified":null}`, want: BoolClaim{Present: true}},
+		{name: "invalid type", body: `{"sub":"u","email":"u@example.com","email_verified":"true"}`, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(server.Close)
+
+			info, err := GetUserInfo("test-access-token", server.URL)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, info.EmailVerified)
+		})
+	}
 }
 
 func TestBuildAuthURL(t *testing.T) {
@@ -209,4 +242,8 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 	require.Equal(t, "openid email profile", cfg.Scopes)
 	require.False(t, cfg.IsConfigured())
+}
+
+func testBoolClaim(value bool) BoolClaim {
+	return BoolClaim{Present: true, Valid: true, Value: value}
 }

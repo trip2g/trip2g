@@ -112,21 +112,141 @@ func TestLookupAuthorizedUserRejectsBeforeAccountLookup(t *testing.T) {
 		return db.User{}, nil
 	})
 
-	_, err, berr := lookupAuthorizedUser(context.Background(), lookup, db.OidcCredential{}, &oidcauth.UserInfo{
-		Email:         "existing@example.com",
-		EmailVerified: false,
-	})
+	_, berr, err := lookupAuthorizedUser(
+		context.Background(),
+		lookup,
+		db.OidcCredential{},
+		&oidcauth.UserInfo{Email: "existing@example.com"},
+		emailVerificationDecision{Reason: emailVerificationReasonIDTokenMissing},
+	)
 	require.NoError(t, err)
-	require.Equal(t, berrEmailNotAllowed, berr)
+	require.Equal(t, berrEmailNotVerified, berr)
 	require.False(t, called, "an unverified identity must not reach UserByEmail")
 }
 
-func TestAccessBErrorRejectsUnverifiedEmailForExistingAccountBinding(t *testing.T) {
-	got := accessBError(db.OidcCredential{}, &oidcauth.UserInfo{
-		Email:         "existing@example.com",
-		EmailVerified: false,
-	})
-	require.Equal(t, berrEmailNotAllowed, got)
+func TestResolveEmailVerification(t *testing.T) {
+	tests := []struct {
+		name     string
+		idClaims *oidcauth.IDTokenClaims
+		info     *oidcauth.UserInfo
+		want     emailVerificationDecision
+	}{
+		{
+			name: "UserInfo true is authoritative",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "different@example.com",
+				EmailVerified: boolClaim(false),
+			},
+			info: &oidcauth.UserInfo{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			want: emailVerificationDecision{Verified: true, Source: emailVerificationSourceUserInfo},
+		},
+		{
+			name: "UserInfo explicit false overrides verified ID token",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(false),
+			},
+			want: emailVerificationDecision{Reason: emailVerificationReasonUserInfoFalse},
+		},
+		{
+			name: "UserInfo null is invalid and does not fall back",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{
+				Email: "user@example.com",
+				EmailVerified: oidcauth.BoolClaim{
+					Present: true,
+				},
+			},
+			want: emailVerificationDecision{Reason: emailVerificationReasonUserInfoInvalid},
+		},
+		{
+			name: "missing UserInfo claim falls back to verified ID token",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{Email: "user@example.com"},
+			want: emailVerificationDecision{Verified: true, Source: emailVerificationSourceIDToken},
+		},
+		{
+			name:     "both claims missing rejects",
+			idClaims: &oidcauth.IDTokenClaims{Email: "user@example.com"},
+			info:     &oidcauth.UserInfo{Email: "user@example.com"},
+			want:     emailVerificationDecision{Reason: emailVerificationReasonIDTokenMissing},
+		},
+		{
+			name: "ID token explicit false rejects fallback",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(false),
+			},
+			info: &oidcauth.UserInfo{Email: "user@example.com"},
+			want: emailVerificationDecision{Reason: emailVerificationReasonIDTokenFalse},
+		},
+		{
+			name: "ID token null rejects fallback",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: oidcauth.BoolClaim{Present: true},
+			},
+			info: &oidcauth.UserInfo{Email: "user@example.com"},
+			want: emailVerificationDecision{Reason: emailVerificationReasonIDTokenInvalid},
+		},
+		{
+			name: "ID token fallback requires an email",
+			idClaims: &oidcauth.IDTokenClaims{
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{Email: "user@example.com"},
+			want: emailVerificationDecision{Reason: emailVerificationReasonIDTokenEmailEmpty},
+		},
+		{
+			name: "ID token fallback requires exact email match",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "User@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{Email: "user@example.com"},
+			want: emailVerificationDecision{Reason: emailVerificationReasonEmailMismatch},
+		},
+		{
+			name:     "nil ID token claims reject fallback",
+			idClaims: nil,
+			info:     &oidcauth.UserInfo{Email: "user@example.com"},
+			want:     emailVerificationDecision{Reason: emailVerificationReasonIDTokenMissing},
+		},
+		{
+			name: "empty UserInfo email rejects even a verified claim",
+			idClaims: &oidcauth.IDTokenClaims{
+				Email:         "user@example.com",
+				EmailVerified: boolClaim(true),
+			},
+			info: &oidcauth.UserInfo{EmailVerified: boolClaim(true)},
+			want: emailVerificationDecision{Reason: emailVerificationReasonUserInfoEmailEmpty},
+		},
+		{
+			name:     "nil UserInfo rejects",
+			idClaims: &oidcauth.IDTokenClaims{},
+			info:     nil,
+			want:     emailVerificationDecision{Reason: emailVerificationReasonUserInfoEmailEmpty},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, resolveEmailVerification(tt.idClaims, tt.info))
+		})
+	}
 }
 
 func TestSubjectBound(t *testing.T) {
@@ -151,39 +271,49 @@ func TestSubjectBound(t *testing.T) {
 
 func TestProvisionBError(t *testing.T) {
 	tests := []struct {
-		name  string
-		creds db.OidcCredential
-		info  *oidcauth.UserInfo
-		want  string
+		name         string
+		creds        db.OidcCredential
+		verification emailVerificationDecision
+		want         string
 	}{
 		{
-			name:  "auto_provision off rejects with user_not_found",
-			creds: db.OidcCredential{AutoProvision: false},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  "user_not_found",
+			name:         "auto_provision off rejects with user_not_found",
+			creds:        db.OidcCredential{AutoProvision: false},
+			verification: emailVerificationDecision{Verified: true},
+			want:         "user_not_found",
 		},
 		{
-			name:  "auto_provision on but email not verified rejects",
-			creds: db.OidcCredential{AutoProvision: true},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: false},
-			want:  "email_not_allowed",
+			name:         "auto_provision on but email not verified rejects",
+			creds:        db.OidcCredential{AutoProvision: true},
+			verification: emailVerificationDecision{},
+			want:         "email_not_verified",
 		},
 		{
-			name:  "auto_provision on and email verified allows",
-			creds: db.OidcCredential{AutoProvision: true},
-			info:  &oidcauth.UserInfo{Email: "a@example.com", EmailVerified: true},
-			want:  "",
+			name:         "unverified email wins over auto_provision off",
+			creds:        db.OidcCredential{AutoProvision: false},
+			verification: emailVerificationDecision{},
+			want:         "email_not_verified",
+		},
+		{
+			name:         "auto_provision on and email verified allows",
+			creds:        db.OidcCredential{AutoProvision: true},
+			verification: emailVerificationDecision{Verified: true},
+			want:         "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := provisionBError(tt.creds, tt.info)
+			got := provisionBError(tt.creds, tt.verification)
 			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func verifiedUserInfo(email string, groups ...string) *oidcauth.UserInfo {
-	return &oidcauth.UserInfo{Email: email, EmailVerified: true, Groups: groups}
+	return &oidcauth.UserInfo{Email: email, EmailVerified: boolClaim(true), Groups: groups}
+}
+
+func boolClaim(value bool) oidcauth.BoolClaim {
+	return oidcauth.BoolClaim{Present: true, Valid: true, Value: value}
 }
