@@ -2,10 +2,13 @@ package oidcauth
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -216,6 +219,99 @@ func TestVerifyIDTokenCachesKeys(t *testing.T) {
 		require.NoError(t, err)
 	}
 	require.Equal(t, int32(1), atomic.LoadInt32(&fetches), "JWKS should be fetched once and cached")
+}
+
+// ecJWKSJSON renders a single-key JWKS document for an EC P-256 public key.
+func ecJWKSJSON(t *testing.T, kid string, pub *ecdsa.PublicKey) []byte {
+	t.Helper()
+	doc := map[string]any{"keys": []map[string]any{{
+		"kty": "EC",
+		"kid": kid,
+		"use": "sig",
+		"alg": "ES256",
+		"crv": "P-256",
+		"x":   base64.RawURLEncoding.EncodeToString(pub.X.FillBytes(make([]byte, 32))),
+		"y":   base64.RawURLEncoding.EncodeToString(pub.Y.FillBytes(make([]byte, 32))),
+	}}}
+	b, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return b
+}
+
+// IdPs like Auth0, Keycloak, and Apple commonly sign id_tokens with EC keys
+// (ES256). Verification must accept them, not just RSA.
+func TestVerifyIDTokenAcceptsES256(t *testing.T) {
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	kid := "ec-key-1"
+	jwks := ecJWKSJSON(t, kid, &ecKey.PublicKey)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, validClaims())
+	token.Header["kid"] = kid
+	signed, err := token.SignedString(ecKey)
+	require.NoError(t, err)
+
+	cache := NewKeyCache()
+	cache.fetch = func(_ context.Context, _ string) ([]byte, error) { return jwks, nil }
+
+	claims, err := cache.VerifyIDToken(context.Background(),
+		signed, VerifyParams{JWKSURI: testJWKSURI, Issuer: testIssuer, ClientID: testClientID})
+	require.NoError(t, err, "ES256-signed id_token with an EC JWKS key must verify")
+	require.NotNil(t, claims)
+	require.Equal(t, "user-123", claims.Subject)
+}
+
+// A hanging JWKS fetch for one URI must not block verification with keys
+// already cached for another URI.
+func TestKeyCacheCachedReadsNotBlockedByInflightFetch(t *testing.T) {
+	key := mustRSAKey(t)
+	kid := "cached-kid"
+	jwks := jwksJSON(t, kid, &key.PublicKey)
+
+	const slowURI = "https://slow-idp.example.com/jwks"
+	release := make(chan struct{})
+	fetchStarted := make(chan struct{})
+
+	cache := NewKeyCache()
+	cache.fetch = func(_ context.Context, uri string) ([]byte, error) {
+		if uri == slowURI {
+			close(fetchStarted)
+			<-release
+			return nil, errors.New("slow jwks endpoint gave up")
+		}
+		return jwks, nil
+	}
+
+	params := VerifyParams{JWKSURI: testJWKSURI, Issuer: testIssuer, ClientID: testClientID}
+
+	// Warm the cache for the fast URI.
+	_, err := cache.VerifyIDToken(context.Background(), signIDToken(t, key, kid, jwt.SigningMethodRS256, validClaims()), params)
+	require.NoError(t, err)
+
+	// Goroutine A hangs inside the JWKS fetch for the slow URI.
+	slowDone := make(chan struct{})
+	t.Cleanup(func() { <-slowDone })
+	t.Cleanup(func() { close(release) })
+	go func() {
+		defer close(slowDone)
+		_, _ = cache.keyForKID(context.Background(), slowURI, "unknown-kid")
+	}()
+	<-fetchStarted
+
+	// Goroutine B verifies with the already-cached key while A is blocked.
+	cachedToken := signIDToken(t, key, kid, jwt.SigningMethodRS256, validClaims())
+	verified := make(chan error, 1)
+	go func() {
+		_, verr := cache.VerifyIDToken(context.Background(), cachedToken, params)
+		verified <- verr
+	}()
+
+	select {
+	case verr := <-verified:
+		require.NoError(t, verr)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("cached-key verification blocked behind an in-flight JWKS fetch for another URI")
+	}
 }
 
 func TestVerifyIDTokenRefetchesOnUnknownKID(t *testing.T) {
