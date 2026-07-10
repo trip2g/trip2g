@@ -41,6 +41,12 @@ type Env interface {
 // Standard value is 60.
 const rrfK = 60
 
+// hybridResultCap bounds the final hybrid result list when no reranker OutputK
+// applies. It is a final-output bound, so it must run AFTER permission
+// filtering — capping the fused list earlier would discard readable results
+// ranked below unreadable ones.
+const hybridResultCap = 20
+
 //nolint:gocognit // multi-source search merge with per-result auth, scoping, and RRF ranking
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
@@ -76,6 +82,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	// passageByURL holds the best-matching chunk passage per note (window-sized),
 	// used by the optional reranker to avoid feeding truncated whole notes.
 	var passageByURL map[string]string
+	merged := false
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
 		vectorResults, passages, vectorErr := vectorSearch(ctx, env, input.Query, useLatest)
 		if vectorErr != nil {
@@ -84,6 +91,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		} else {
 			passageByURL = passages
 			results = mergeResults(results, vectorResults)
+			merged = true
 		}
 	}
 
@@ -132,10 +140,19 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	// Push hidden results to the end of the list
 	conn.Nodes = append(conn.Nodes, hiddenResults...)
 
-	// OutputK is applied after permission filtering so unreadable notes don't
-	// consume output slots (hidden placeholders sit at the end and get cut first).
-	if cfg := env.Features().VectorSearch.Reranker; cfg.Enabled && cfg.OutputK > 0 && len(conn.Nodes) > cfg.OutputK {
-		conn.Nodes = conn.Nodes[:cfg.OutputK]
+	// Size bounds are applied after permission filtering so unreadable notes
+	// don't consume output slots (hidden placeholders sit at the end and get cut
+	// first). OutputK takes precedence; without a reranker the hybrid path is
+	// bounded by hybridResultCap. Text-only search stays unbounded, as before.
+	switch cfg := env.Features().VectorSearch.Reranker; {
+	case cfg.Enabled && cfg.OutputK > 0:
+		if len(conn.Nodes) > cfg.OutputK {
+			conn.Nodes = conn.Nodes[:cfg.OutputK]
+		}
+	case merged:
+		if len(conn.Nodes) > hybridResultCap {
+			conn.Nodes = conn.Nodes[:hybridResultCap]
+		}
 	}
 
 	return &conn, nil
@@ -144,7 +161,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 // vectorTopK is the number of unique-note vector candidates fed into RRF fusion.
 // Keep this wide: the cosine scan already scores every chunk, so truncating
 // before fusion only discards recall at zero compute saving. The final result
-// list is capped after merge (see mergeResults).
+// list is capped after permission filtering (see hybridResultCap in Resolve).
 const vectorTopK = 50
 
 func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([]appmodel.SearchResult, map[string]string, error) {
@@ -323,10 +340,6 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 		}
 		return finalResults[i].URL < finalResults[j].URL
 	})
-
-	if len(finalResults) > 20 {
-		finalResults = finalResults[:20]
-	}
 
 	return finalResults
 }

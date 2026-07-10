@@ -3,6 +3,7 @@ package sitesearch_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -84,6 +85,66 @@ func TestVectorSearch_DimensionMismatchYieldsNothing(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, conn.Nodes,
 		"dimension mismatch must yield no vector candidates, not an alphabetical top-K")
+}
+
+// TestHybridSearch_ReadableBeyondCapSurfaces asserts that the fused-list size
+// bound must not discard readable results before permission filtering. With >20
+// fused results whose top 20 are unreadable, a readable result at rank 21+ must
+// still surface. Today mergeResults hard-caps at 20 before CanReadNote runs, so
+// the readable tail is gone before the filter ever sees it.
+func TestHybridSearch_ReadableBeyondCapSurfaces(t *testing.T) {
+	embSrv := newEmbeddingServer(t, []float32{1, 0})
+	defer embSrv.Close()
+
+	// 24 text results; a single vector chunk for the first one triggers the
+	// hybrid merge path (and its cap). Only the last-ranked note is readable.
+	var textResults []appmodel.SearchResult
+	for i := 1; i <= 24; i++ {
+		path := fmt.Sprintf("n%02d.md", i)
+		permalink := fmt.Sprintf("/n%02d", i)
+		title := fmt.Sprintf("N%02d", i)
+		textResults = append(textResults, appmodel.SearchResult{
+			URL:      permalink,
+			NoteView: chunkNote(path, permalink, title),
+		})
+	}
+	readable := textResults[23]
+
+	firstNote := textResults[0].NoteView
+	chunks := []appmodel.NoteChunk{
+		{NotePath: firstNote.Path, Content: firstNote.Title + "\n\nbody", Embedding: []float32{1, 0}},
+	}
+
+	env := &EnvMock{
+		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
+		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		SearchLiveNotesFunc:  func(_ string) ([]appmodel.SearchResult, error) { return textResults, nil },
+		FeaturesFunc: func() features.Features {
+			return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
+		},
+		OpenAIFunc:         func() *openai.Client { return openai.New("test-key", "test-model", embSrv.URL+"/v1") },
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return chunks },
+		LiveNoteViewsFunc: func() *appmodel.NoteViews {
+			return &appmodel.NoteViews{PathMap: map[string]*appmodel.NoteView{firstNote.Path: firstNote}}
+		},
+		CanReadNoteFunc: func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
+			return nv.Path == readable.NoteView.Path, nil
+		},
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+	}
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "x"})
+	require.NoError(t, err)
+
+	var readableURLs []string
+	for _, n := range conn.Nodes {
+		if n.NoteView != nil {
+			readableURLs = append(readableURLs, n.URL)
+		}
+	}
+	require.Contains(t, readableURLs, readable.URL,
+		"readable result ranked beyond the candidate cap must surface when higher-ranked results are unreadable")
 }
 
 // TestRerank_OutputKTruncatesAfterPermissionFilter asserts that OutputK must not
