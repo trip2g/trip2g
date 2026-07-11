@@ -25,7 +25,6 @@ type Env interface {
 // ranked below unreadable ones.
 const hybridResultCap = 20
 
-//nolint:gocognit // multi-source search merge with per-result auth, scoping, and RRF ranking
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {

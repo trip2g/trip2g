@@ -48,6 +48,9 @@ func (e *fedGQLEnv) FederationClient(_ context.Context, _ string) (model.Federat
 	panic("unexpected")
 }
 func (e *fedGQLEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error) { panic("unexpected") }
+func (e *fedGQLEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error)   { panic("unexpected") }
+func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk                        { panic("unexpected") }
+func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews                          { panic("unexpected") }
 func (e *fedGQLEnv) OpenAI() *openai.Client                                   { panic("unexpected") }
 func (e *fedGQLEnv) PublicURL() string                                        { panic("unexpected") }
 func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string                         { panic("unexpected") }

@@ -74,6 +74,12 @@ var _ mcp.Env = &EnvMock{}
 //			ListFederationSecretSubgraphsByKIDFunc: func(ctx context.Context, kid string) ([]string, error) {
 //				panic("mock out the ListFederationSecretSubgraphsByKID method")
 //			},
+//			LiveNoteChunksFunc: func() []model.NoteChunk {
+//				panic("mock out the LiveNoteChunks method")
+//			},
+//			LiveNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LiveNoteViews method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -94,6 +100,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			SearchLatestNotesFunc: func(query string) ([]model.SearchResult, error) {
 //				panic("mock out the SearchLatestNotes method")
+//			},
+//			SearchLiveNotesFunc: func(query string) ([]model.SearchResult, error) {
+//				panic("mock out the SearchLiveNotes method")
 //			},
 //		}
 //
@@ -150,6 +159,12 @@ type EnvMock struct {
 	// ListFederationSecretSubgraphsByKIDFunc mocks the ListFederationSecretSubgraphsByKID method.
 	ListFederationSecretSubgraphsByKIDFunc func(ctx context.Context, kid string) ([]string, error)
 
+	// LiveNoteChunksFunc mocks the LiveNoteChunks method.
+	LiveNoteChunksFunc func() []model.NoteChunk
+
+	// LiveNoteViewsFunc mocks the LiveNoteViews method.
+	LiveNoteViewsFunc func() *model.NoteViews
+
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
 
@@ -170,6 +185,9 @@ type EnvMock struct {
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
 	SearchLatestNotesFunc func(query string) ([]model.SearchResult, error)
+
+	// SearchLiveNotesFunc mocks the SearchLiveNotes method.
+	SearchLiveNotesFunc func(query string) ([]model.SearchResult, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -257,6 +275,12 @@ type EnvMock struct {
 			// Kid is the kid argument value.
 			Kid string
 		}
+		// LiveNoteChunks holds details about calls to the LiveNoteChunks method.
+		LiveNoteChunks []struct {
+		}
+		// LiveNoteViews holds details about calls to the LiveNoteViews method.
+		LiveNoteViews []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
@@ -288,6 +312,11 @@ type EnvMock struct {
 			// Query is the query argument value.
 			Query string
 		}
+		// SearchLiveNotes holds details about calls to the SearchLiveNotes method.
+		SearchLiveNotes []struct {
+			// Query is the query argument value.
+			Query string
+		}
 	}
 	lockCanReadNote                        sync.RWMutex
 	lockDecryptData                        sync.RWMutex
@@ -305,6 +334,8 @@ type EnvMock struct {
 	lockLatestNoteChunks                   sync.RWMutex
 	lockLatestNoteViews                    sync.RWMutex
 	lockListFederationSecretSubgraphsByKID sync.RWMutex
+	lockLiveNoteChunks                     sync.RWMutex
+	lockLiveNoteViews                      sync.RWMutex
 	lockLogger                             sync.RWMutex
 	lockMCPMetrics                         sync.RWMutex
 	lockNoteURL                            sync.RWMutex
@@ -312,6 +343,7 @@ type EnvMock struct {
 	lockPublicURL                          sync.RWMutex
 	lockResolveAPIKey                      sync.RWMutex
 	lockSearchLatestNotes                  sync.RWMutex
+	lockSearchLiveNotes                    sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -826,6 +858,60 @@ func (mock *EnvMock) ListFederationSecretSubgraphsByKIDCalls() []struct {
 	return calls
 }
 
+// LiveNoteChunks calls LiveNoteChunksFunc.
+func (mock *EnvMock) LiveNoteChunks() []model.NoteChunk {
+	if mock.LiveNoteChunksFunc == nil {
+		panic("EnvMock.LiveNoteChunksFunc: method is nil but Env.LiveNoteChunks was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLiveNoteChunks.Lock()
+	mock.calls.LiveNoteChunks = append(mock.calls.LiveNoteChunks, callInfo)
+	mock.lockLiveNoteChunks.Unlock()
+	return mock.LiveNoteChunksFunc()
+}
+
+// LiveNoteChunksCalls gets all the calls that were made to LiveNoteChunks.
+// Check the length with:
+//
+//	len(mockedEnv.LiveNoteChunksCalls())
+func (mock *EnvMock) LiveNoteChunksCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLiveNoteChunks.RLock()
+	calls = mock.calls.LiveNoteChunks
+	mock.lockLiveNoteChunks.RUnlock()
+	return calls
+}
+
+// LiveNoteViews calls LiveNoteViewsFunc.
+func (mock *EnvMock) LiveNoteViews() *model.NoteViews {
+	if mock.LiveNoteViewsFunc == nil {
+		panic("EnvMock.LiveNoteViewsFunc: method is nil but Env.LiveNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLiveNoteViews.Lock()
+	mock.calls.LiveNoteViews = append(mock.calls.LiveNoteViews, callInfo)
+	mock.lockLiveNoteViews.Unlock()
+	return mock.LiveNoteViewsFunc()
+}
+
+// LiveNoteViewsCalls gets all the calls that were made to LiveNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LiveNoteViewsCalls())
+func (mock *EnvMock) LiveNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLiveNoteViews.RLock()
+	calls = mock.calls.LiveNoteViews
+	mock.lockLiveNoteViews.RUnlock()
+	return calls
+}
+
 // Logger calls LoggerFunc.
 func (mock *EnvMock) Logger() logger.Logger {
 	if mock.LoggerFunc == nil {
@@ -1035,5 +1121,37 @@ func (mock *EnvMock) SearchLatestNotesCalls() []struct {
 	mock.lockSearchLatestNotes.RLock()
 	calls = mock.calls.SearchLatestNotes
 	mock.lockSearchLatestNotes.RUnlock()
+	return calls
+}
+
+// SearchLiveNotes calls SearchLiveNotesFunc.
+func (mock *EnvMock) SearchLiveNotes(query string) ([]model.SearchResult, error) {
+	if mock.SearchLiveNotesFunc == nil {
+		panic("EnvMock.SearchLiveNotesFunc: method is nil but Env.SearchLiveNotes was just called")
+	}
+	callInfo := struct {
+		Query string
+	}{
+		Query: query,
+	}
+	mock.lockSearchLiveNotes.Lock()
+	mock.calls.SearchLiveNotes = append(mock.calls.SearchLiveNotes, callInfo)
+	mock.lockSearchLiveNotes.Unlock()
+	return mock.SearchLiveNotesFunc(query)
+}
+
+// SearchLiveNotesCalls gets all the calls that were made to SearchLiveNotes.
+// Check the length with:
+//
+//	len(mockedEnv.SearchLiveNotesCalls())
+func (mock *EnvMock) SearchLiveNotesCalls() []struct {
+	Query string
+} {
+	var calls []struct {
+		Query string
+	}
+	mock.lockSearchLiveNotes.RLock()
+	calls = mock.calls.SearchLiveNotes
+	mock.lockSearchLiveNotes.RUnlock()
 	return calls
 }

@@ -50,7 +50,9 @@ func Retrieve(
 	env RetrieveEnv,
 	query string,
 	useLatest bool,
-) (results []appmodel.SearchResult, merged bool, err error) {
+) ([]appmodel.SearchResult, bool, error) {
+	var results []appmodel.SearchResult
+	var err error
 	if useLatest {
 		results, err = env.SearchLatestNotes(query)
 		if err != nil {
@@ -72,6 +74,7 @@ func Retrieve(
 	// passageByURL holds the best-matching chunk passage per note (window-sized),
 	// used by the optional reranker to avoid feeding truncated whole notes.
 	var passageByURL map[string]string
+	merged := false
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
 		vectorResults, passages, vectorErr := vectorSearch(ctx, env, query, useLatest)
 		if vectorErr != nil {

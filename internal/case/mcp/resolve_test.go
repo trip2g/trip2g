@@ -284,7 +284,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
 				URL:                note.Permalink,
@@ -292,7 +292,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 				HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
 			}}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -416,7 +416,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
 				URL:                note.Permalink,
@@ -424,7 +424,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 				HighlightedContent: []string{"Use when: Bob's work-status updates."},
 			}}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -486,13 +486,13 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
 				{NoteView: localNote, URL: localNote.Permalink, Score: 1},
 			}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -550,13 +550,13 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
 				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
 			}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -652,14 +652,14 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
 				{NoteView: excludedNote, URL: excludedNote.Permalink, Score: 2},
 				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
 			}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -712,14 +712,14 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: note,
 				URL:      note.Permalink,
 				Score:    1.0,
 			}}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -1604,12 +1604,12 @@ func makeSearchNote(pathID int64, path, title string) *appmodel.NoteView {
 func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 	t.Helper()
 	return &EnvMock{
-		SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return results, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
-		FeaturesFunc:         func() features.Features { return features.Features{} },
-		PublicURLFunc:        func() string { return "https://example.test" },
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
+		FeaturesFunc:       func() features.Features { return features.Features{} },
+		PublicURLFunc:      func() string { return "https://example.test" },
 		NoteURLFunc: func(note *appmodel.NoteView) string {
 			return "https://example.test" + note.Permalink
 		},
