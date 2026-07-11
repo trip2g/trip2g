@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"trip2g/internal/model"
 )
@@ -14,6 +16,9 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 	}
 	if args.Query == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "query is required")
+	}
+	if depthErr := federationPathDepthExceeded(ctx, env, id, args.KBID); depthErr != nil {
+		return *depthErr
 	}
 
 	kbs, err := accessibleKBNotes(ctx, env)
@@ -87,6 +92,9 @@ func callFederatedSingleKB(
 	kbID string,
 	call func(client model.Federation, rest string) (model.FederationResult, error),
 ) Response {
+	if errResp := federationPathDepthExceeded(ctx, env, id, kbID); errResp != nil {
+		return *errResp
+	}
 	kbs, err := accessibleKBNotes(ctx, env)
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
@@ -208,6 +216,41 @@ func handleFederatedGraphQLRequest(ctx context.Context, env Env, id any, argsRaw
 	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
 		return client.GraphQLRequest(ctx, model.FederationGraphQLParams{KBID: rest, Query: args.Query, Variables: args.Variables})
 	})
+}
+
+// federationPathDepthExceeded rejects an explicit nested kb_id up front when the
+// path cannot fit under the federation depth limit, before any outbound hop fires.
+// The bound is invariant along the path: each hop consumes one segment and gains
+// one depth unit, so incomingDepth + segmentCount(kbID) is constant from the entry
+// node to the leaf. The entry node sees the full path and rejects here, so no
+// doomed hop runs and the caller gets a single clean error instead of a
+// triple-wrapped -32603. Fan-out and single-segment (segmentCount < 2) calls defer
+// to the runtime header-depth backstop in the endpoint: a single segment can only
+// exceed when max < 1, and any deeper path is already caught at the entry node.
+func federationPathDepthExceeded(ctx context.Context, env Env, id any, kbID string) *Response {
+	segs := segmentCount(kbID)
+	if segs < 2 {
+		return nil
+	}
+	total := FederationDepthFromContext(ctx) + segs
+	if limit := env.FederationMaxDepth(); total > limit {
+		resp := errorResponse(id, ErrCodeInternal,
+			fmt.Sprintf("kb_id path depth %d exceeds federation max depth %d", total, limit))
+		return &resp
+	}
+	return nil
+}
+
+// segmentCount counts the '/'-separated non-empty segments of a kb_id path
+// (empty kb_id = 0).
+func segmentCount(kbID string) int {
+	n := 0
+	for _, seg := range strings.Split(kbID, "/") {
+		if seg != "" {
+			n++
+		}
+	}
+	return n
 }
 
 func federationNotConfiguredResponse(id any, kbID string) Response {

@@ -29,6 +29,7 @@ func singlePeerEnv(kbID string, fed *federationMock) *EnvMock {
 		FederationClientFunc: func(context.Context, string) (appmodel.Federation, error) {
 			return fed, nil
 		},
+		FederationMaxDepthFunc: func() int { return 3 },
 	}
 }
 

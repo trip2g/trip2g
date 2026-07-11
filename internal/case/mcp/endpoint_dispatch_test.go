@@ -280,9 +280,23 @@ func TestMCPEndpointDepthEnforcement(t *testing.T) {
 		require.Nil(t, resp.Error)
 	})
 
-	t.Run("depth equal to max is rejected", func(t *testing.T) {
+	t.Run("depth equal to max passes through (inclusive limit)", func(t *testing.T) {
+		// A path of N segments reaches depth N; with max=3 the deepest node
+		// receives depth 3, which is allowed (3 > 3 is false).
 		env := buildEnvWithMaxDepth(t, 3)
 		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "3")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.Nil(t, resp.Error)
+	})
+
+	t.Run("depth above max is rejected by the backstop", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 3)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "4")
 		req := wiredRequest(fasthttpCtx, env, nil)
 		defer appreq.Release(req)
 		_, err := (&mcp.Endpoint{}).Handle(req)
@@ -293,7 +307,7 @@ func TestMCPEndpointDepthEnforcement(t *testing.T) {
 		require.Contains(t, resp.Error.Message, "max depth")
 	})
 
-	t.Run("depth above max is rejected", func(t *testing.T) {
+	t.Run("far above max is rejected by the backstop", func(t *testing.T) {
 		env := buildEnvWithMaxDepth(t, 3)
 		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "10")
 		req := wiredRequest(fasthttpCtx, env, nil)
@@ -304,6 +318,125 @@ func TestMCPEndpointDepthEnforcement(t *testing.T) {
 		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
 		require.NotNil(t, resp.Error)
 		require.Contains(t, resp.Error.Message, "max depth")
+	})
+
+	t.Run("maxDepth 1 allows depth 1 at the backstop", func(t *testing.T) {
+		env := buildEnvWithMaxDepth(t, 1)
+		fasthttpCtx := buildCtxWithDepth(mcpInitBody, "1")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.Nil(t, resp.Error)
+	})
+}
+
+// TestFederationPathDepthEarlyReject drives federated_search end-to-end with an
+// explicit nested kb_id and asserts the entry node rejects an over-long path up
+// front — before any outbound federation hop fires — while an in-bounds path is
+// forwarded. outboundCalls counts how many times a federation client is built.
+func TestFederationPathDepthEarlyReject(t *testing.T) {
+	buildEnv := func(t *testing.T, peerID string, maxDepth int, outboundCalls *int) *EnvMock {
+		t.Helper()
+		note := &appmodel.NoteView{
+			PathID:             17,
+			MCPFederationKBURL: "https://" + peerID + ".example/_system/mcp",
+			MCPFederationKBID:  peerID,
+		}
+		nvs := appmodel.NewNoteViews()
+		nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(note)}
+		env := buildDispatchEnv(t, false)
+		env.LatestNoteViewsFunc = func() *appmodel.NoteViews { return nvs }
+		env.CanReadNoteFunc = func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil }
+		env.FederationMaxDepthFunc = func() int { return maxDepth }
+		env.FederationClientFunc = func(context.Context, string) (appmodel.Federation, error) {
+			*outboundCalls++
+			ok := func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+				return appmodel.FederationResult{Content: []appmodel.FederationContent{{Type: "text", Text: "ok"}}}, nil
+			}
+			return &federationMock{searchFunc: ok, federatedSearchFunc: ok}, nil
+		}
+		return env
+	}
+
+	callSearch := func(t *testing.T, env *EnvMock, kbID string) mcp.Response {
+		t.Helper()
+		callBody, _ := json.Marshal(mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  mustMarshalRaw(mcp.CallToolParams{Name: "federated_search", Arguments: json.RawMessage(`{"query":"x","kb_id":"` + kbID + `"}`)}),
+			ID:      1,
+		})
+		fasthttpCtx := buildMCPFasthttpCtx(callBody, "")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		return resp
+	}
+
+	t.Run("3-segment path allowed at maxDepth 3", func(t *testing.T) {
+		calls := 0
+		env := buildEnv(t, "philosophers", 3, &calls)
+		resp := callSearch(t, env, "philosophers/nietzsche/schopenhauer")
+		require.Nil(t, resp.Error)
+		require.Equal(t, 1, calls, "an in-bounds path must fire exactly one outbound hop")
+	})
+
+	t.Run("4-segment path rejected early with a single clean message and no outbound hop", func(t *testing.T) {
+		calls := 0
+		env := buildEnv(t, "philosophers", 3, &calls)
+		resp := callSearch(t, env, "philosophers/nietzsche/schopenhauer/hegel")
+		require.NotNil(t, resp.Error)
+		require.Equal(t, 0, calls, "an over-long path must not fire any outbound hop")
+		require.Contains(t, resp.Error.Message, "exceeds federation max depth")
+		// A single, unwrapped error — not the triple-wrapped -32603 the doomed hops produced.
+		require.NotContains(t, resp.Error.Message, "rpc error")
+	})
+
+	t.Run("fan-out cycle bounded by the runtime backstop", func(t *testing.T) {
+		// A blind fan-out (kb_id="") has 0 explicit segments, so the path-length
+		// check does not apply; a peer that federates back and drives the cumulative
+		// header depth past the limit must still be stopped by the backstop, firing
+		// no local fan-out.
+		calls := 0
+		env := buildEnv(t, "philosophers", 3, &calls)
+		callBody, _ := json.Marshal(mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  mustMarshalRaw(mcp.CallToolParams{Name: "federated_search", Arguments: json.RawMessage(`{"query":"x"}`)}),
+			ID:      1,
+		})
+		fasthttpCtx := buildMCPFasthttpCtx(callBody, "")
+		fasthttpCtx.Request.Header.Set("X-MCP-Federation-Depth", "4")
+		req := wiredRequest(fasthttpCtx, env, nil)
+		defer appreq.Release(req)
+		_, err := (&mcp.Endpoint{}).Handle(req)
+		require.NoError(t, err)
+		var resp mcp.Response
+		require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+		require.NotNil(t, resp.Error)
+		require.Contains(t, resp.Error.Message, "max depth")
+		require.Equal(t, 0, calls, "backstop must stop the request before any fan-out")
+	})
+
+	t.Run("boundary maxDepth 1: 1 segment allowed, 2 rejected", func(t *testing.T) {
+		calls := 0
+		env := buildEnv(t, "philosophers", 1, &calls)
+		resp := callSearch(t, env, "philosophers")
+		require.Nil(t, resp.Error)
+		require.Equal(t, 1, calls)
+
+		calls = 0
+		env2 := buildEnv(t, "philosophers", 1, &calls)
+		resp2 := callSearch(t, env2, "philosophers/nietzsche")
+		require.NotNil(t, resp2.Error)
+		require.Equal(t, 0, calls)
+		require.Contains(t, resp2.Error.Message, "exceeds federation max depth")
 	})
 }
 
