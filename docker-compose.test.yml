@@ -46,7 +46,14 @@ services:
     ports:
       - "11434:8000"
     volumes:
-      - ${HOME}/models:/data
+      # Override with MODELS_DIR=/path/to/hf-cache when ~/models has no HF-layout cache.
+      - ${MODELS_DIR:-${HOME}/models}:/data
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
 
   app:
     build:
@@ -61,7 +68,7 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_started # TEI image has no healthcheck
+        condition: service_healthy # wait for the model to load
       dex:
         condition: service_started
     ports:
@@ -247,7 +254,7 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_started # TEI image has no healthcheck
+        condition: service_healthy # wait for the model to load
     ports:
       - "20091:20091"
       - "20092:20092"
@@ -309,7 +316,7 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_started # TEI image has no healthcheck
+        condition: service_healthy # wait for the model to load
     ports:
       - "20093:20093"
       - "20094:20094"
@@ -371,7 +378,7 @@ services:
       minio:
         condition: service_healthy
       embedding:
-        condition: service_started # TEI image has no healthcheck
+        condition: service_healthy # wait for the model to load
     ports:
       - "20095:20095"
       - "20096:20096"
