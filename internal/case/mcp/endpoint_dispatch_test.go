@@ -66,6 +66,7 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		FederatedGraphQLEnabledFunc: func() bool { return false },
 		MCPMetricsFunc:              func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:              func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 
 		FederatedFanoutConcurrencyFunc: func() int { return 5 },
 		FederatedFanoutLimitFunc:       func() int { return 7 },

@@ -55,6 +55,7 @@ func corpusEnv() *EnvMock {
 		NoteURLFunc:          func(n *appmodel.NoteView) string { return "https://x.test" + n.Permalink },
 		LoggerFunc:           func() logger.Logger { return &logger.DummyLogger{} },
 		CanReadNoteFunc:      func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		SiteConfigFunc:       func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 	}
 }
 
@@ -80,6 +81,26 @@ func TestSearchAnonymousUsesLiveCorpus(t *testing.T) {
 	require.Equal(t, "Published", payload.Results[0].Title)
 	require.Empty(t, env.SearchLatestNotesCalls(),
 		"anonymous search must not touch the latest (draft) corpus")
+}
+
+// Instances that show draft versions to site visitors (ShowDraftVersions)
+// must search the latest corpus for anonymous MCP clients too — the corpus
+// choice mirrors the site search rule, not just the auth method. Regression
+// test for the outage where anonymous federated search returned zero results
+// on such instances because the live index is nearly empty.
+func TestSearchAnonymousWithShowDraftVersionsUsesLatestCorpus(t *testing.T) {
+	env := corpusEnv()
+	env.SiteConfigFunc = func(context.Context) appmodel.SiteConfig {
+		return appmodel.SiteConfig{ShowDraftVersions: true}
+	}
+
+	resp := mcp.Resolve(context.Background(), env, searchToolCall(t))
+	payload := searchPayload(t, resp)
+
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "Draft Only", payload.Results[0].Title)
+	require.Empty(t, env.SearchLiveNotesCalls(),
+		"ShowDraftVersions instance must search the latest corpus, even anonymously")
 }
 
 // API-key (admin) clients keep searching the latest corpus, drafts included.

@@ -52,6 +52,7 @@ func (e *fedGQLEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error)   { 
 func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk                        { panic("unexpected") }
 func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews                          { panic("unexpected") }
 func (e *fedGQLEnv) OpenAI() *openai.Client                                   { panic("unexpected") }
+func (e *fedGQLEnv) SiteConfig(_ context.Context) model.SiteConfig            { panic("unexpected") }
 func (e *fedGQLEnv) PublicURL() string                                        { panic("unexpected") }
 func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string                         { panic("unexpected") }
 func (e *fedGQLEnv) Logger() logger.Logger                                    { return &logger.DummyLogger{} }

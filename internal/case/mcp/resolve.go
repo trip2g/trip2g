@@ -47,6 +47,7 @@ type Env interface {
 	LiveNoteChunks() []model.NoteChunk
 	LiveNoteViews() *model.NoteViews
 	OpenAI() *openai.Client
+	SiteConfig(ctx context.Context) model.SiteConfig
 	PublicURL() string
 	NoteURL(note *model.NoteView) string
 	Logger() logger.Logger
@@ -493,9 +494,11 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	}
 
 	// Shared retrieval core (text + vector + RRF + rerank), same as the site
-	// search. API-key clients are admins and search the latest corpus (drafts
-	// included); everyone else gets the live corpus, like anonymous site visitors.
-	useLatest := mcpAPIKeyAuthed(ctx)
+	// search, and the same corpus rule: instances that show draft versions
+	// search latest for everyone, API-key clients always get latest, everyone
+	// else gets the live corpus, like anonymous site visitors.
+	siteConfig := env.SiteConfig(ctx)
+	useLatest := siteConfig.ShowDraftVersions || mcpAPIKeyAuthed(ctx)
 	results, _, err := sitesearch.Retrieve(ctx, env, args.Query, useLatest)
 	if err != nil {
 		log.Error("search failed", "error", err, "query", args.Query)
