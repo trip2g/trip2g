@@ -79,7 +79,9 @@ Two corrections from the owner overturn the recommendation:
    verdict treated them as competing page formats, which undercounted JSON's
    value as the builder's serialization target.
 
-**Standing decision: KEEP the backend and this analysis; do not cut.** The
-open question is now sequencing only: finish the existing admin editor against
-today's block-call JSON, or wait for grid_layouts and extend the manifest
-schema then. Effort estimate for finishing (10-20 pd) still stands.
+**Standing decision: FREEZE — keep as a future feature.** Keep the backend,
+the started admin editor, and this analysis; do not cut and do not invest
+further **until there is real user demand**. When demand appears, the
+sequencing question opens: finish the existing admin editor against today's
+block-call JSON, or extend the manifest schema alongside grid_layouts. Effort
+estimate for finishing (10-20 pd) still stands.
