@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/case/mcp"
@@ -24,7 +25,7 @@ func embeddingServer(t *testing.T, vector []float32) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+		assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 			"object": "list",
 			"data": []map[string]any{
 				{"object": "embedding", "index": 0, "embedding": vector},
@@ -46,7 +47,7 @@ func rerankServer(t *testing.T, calls *atomic.Int64, scoreFor func(doc string) f
 		var req struct {
 			Texts []string `json:"texts"`
 		}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.NoError(t, json.NewDecoder(r.Body).Decode(&req))
 		type result struct {
 			Index int     `json:"index"`
 			Score float64 `json:"score"`
@@ -56,7 +57,7 @@ func rerankServer(t *testing.T, calls *atomic.Int64, scoreFor func(doc string) f
 			out = append(out, result{Index: i, Score: scoreFor(d)})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(out))
+		assert.NoError(t, json.NewEncoder(w).Encode(out))
 	}))
 	t.Cleanup(srv.Close)
 	return srv
