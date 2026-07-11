@@ -172,6 +172,7 @@
   </div>
   <div id="graphwrap">
     <canvas id="cv"></canvas>
+    <button class="ghost" id="kbtoggle" style="position:absolute;top:10px;right:10px;z-index:5;font-size:11px;padding:3px 8px">⬢ bases</button>
     <div id="answer"><span class="close" onclick="this.parentNode.style.display='none'">✕</span><h3 id="anshdr">Final answer</h3><div id="anstext"></div></div>
     <div id="legend">
       <div class="lg"><span class="dot" style="background:#e6edf3;width:13px;height:13px"></span>step (numbered — the walk's spine)</div>
@@ -227,9 +228,26 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // identity, so a note returned by two steps becomes one shared node (degree > 1).
 const G = { nodes: new Map(), edges: [], focus: null, selected: null };
 let stepCount = 0, prevStep = null;
+
+// mini-map: base-level overview. Nodes = distinct knowledge bases touched
+// (kb_id's last segment, or 'hub'); directed edges = base-to-base transitions.
+// A federation cycle (tolstoy -> epictetus -> ... -> tolstoy) closes visibly here.
+const KB = { nodes: new Map(), edges: [], current: null, selected: null, visible: true };
+function kbReset() { KB.nodes.clear(); KB.edges.length = 0; KB.current = null; KB.selected = null; }
+function kbTouch(fullKb) {
+  const base = fullKb ? String(fullKb).split('/').pop() : 'hub';
+  if (!KB.nodes.has(base)) KB.nodes.set(base, { id: base, kb: fullKb });
+  if (KB.current && KB.current !== base &&
+      !KB.edges.some(e => e.a === KB.current && e.b === base))
+    KB.edges.push({ a: KB.current, b: base });
+  KB.current = base;
+}
+function baseOfNode(n) { return n.kb ? String(n.kb).split('/').pop() : 'hub'; }
+
 function resetGraph() {
   G.nodes.clear(); G.edges.length = 0; G.focus = null; G.selected = null;
   titleCache = {}; qCounter = 0; stepCount = 0; prevStep = null;
+  kbReset();
   $('inspect').style.display = 'none';
 }
 function kbHue(kb) { // stable hue per kb id
@@ -374,6 +392,10 @@ function draw() {
       ctx.strokeStyle = '#d29922'; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 5, 0, 7); ctx.stroke();
     }
+    if (KB.selected && baseOfNode(n) === KB.selected) { // mini-map base selection
+      ctx.strokeStyle = 'rgba(210,153,34,.5)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 8, 0, 7); ctx.stroke();
+    }
     if (n.read) { // note the model actually opened: glow + outline
       ctx.save();
       ctx.shadowColor = nodeColor(n); ctx.shadowBlur = 14;
@@ -402,6 +424,60 @@ function draw() {
     }
   }
   ctx.restore();
+  drawMinimap(now);
+}
+// mini-map panel (screen coords, top-right): simple radial layout, no physics
+function kbLayout() {
+  const MW = 210, MH = 170, px = cv.clientWidth - MW - 10, py = 42;
+  const cxm = px + MW / 2, cym = py + MH / 2 + 8;
+  const arr = [...KB.nodes.values()];
+  const R = Math.min(MW, MH) / 2 - 32;
+  return arr.map((n, i) => ({ n, px, py, MW, MH,
+    x: arr.length === 1 ? cxm : cxm + Math.cos(-Math.PI / 2 + i * 2 * Math.PI / arr.length) * R,
+    y: arr.length === 1 ? cym : cym + Math.sin(-Math.PI / 2 + i * 2 * Math.PI / arr.length) * R }));
+}
+function drawMinimap(now) {
+  if (!KB.visible || !KB.nodes.size) return;
+  const L = kbLayout();
+  const { px, py, MW, MH } = L[0];
+  ctx.save();
+  ctx.fillStyle = 'rgba(22,27,34,.92)'; ctx.strokeStyle = '#2d333b'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(px, py, MW, MH, 8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#768390'; ctx.font = '9px ui-sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('KNOWLEDGE BASES', px + 10, py + 15);
+  const pos = {};
+  for (const o of L) pos[o.n.id] = o;
+  for (const e of KB.edges) {
+    const A = pos[e.a], B = pos[e.b];
+    if (!A || !B) continue;
+    const dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d, uy = dy / d;
+    const ex = B.x - ux * 12, ey = B.y - uy * 12;
+    ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(A.x + ux * 10, A.y + uy * 10); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.fillStyle = '#58a6ff';
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - ux * 7 - uy * 4, ey - uy * 7 + ux * 4);
+    ctx.lineTo(ex - ux * 7 + uy * 4, ey - uy * 7 - ux * 4);
+    ctx.closePath(); ctx.fill();
+  }
+  for (const o of L) {
+    const n = o.n;
+    if (n.id === KB.current) {
+      ctx.strokeStyle = 'rgba(88,166,255,.8)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(o.x, o.y, 12 + Math.sin(now / 260) * 2, 0, 7); ctx.stroke();
+    }
+    if (n.id === KB.selected) {
+      ctx.strokeStyle = '#d29922'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(o.x, o.y, 11, 0, 7); ctx.stroke();
+    }
+    ctx.fillStyle = n.id === 'hub' ? '#e6edf3' : `hsl(${kbHue(n.kb || n.id)} 55% 62%)`;
+    ctx.beginPath(); ctx.arc(o.x, o.y, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#c9d1d9'; ctx.font = '9px ui-sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(n.id.slice(0, 14), o.x, o.y + 20);
+  }
+  ctx.restore();
 }
 (function loop() { tick(); draw(); requestAnimationFrame(loop); })();
 
@@ -416,6 +492,7 @@ function firstHeading(html) {
 // spine, plus deduped result satellites. dur = real latency (capped in addEdge).
 function interpret(name, args, structured, text, dur, reasoning) {
   const kb = args.kb_id || null;
+  kbTouch(kb);
   const sid = 's' + (++stepCount);
   const step = addNode(sid, name.replace('federated_', 'fed.'), 'step', kb, prevStep,
                        { name, args, ms: dur, kb, reasoning: reasoning || '' });
@@ -473,6 +550,7 @@ function showInspect(id) {
   const n = G.nodes.get(id);
   if (!n) return;
   G.selected = id;
+  KB.selected = baseOfNode(n);   // mirror the selection onto the mini-map
   const kv = (k, v) => v ? `<div class="kv"><b>${esc(k)}:</b> ${esc(v)}</div>` : '';
   let html;
   if (n.kind === 'step') {
@@ -737,10 +815,20 @@ $('export').onclick = () => {
   a.click();
 };
 $('demo').onclick = () => { trace = DEMO_TRACE; replay(DEMO_TRACE); };
+$('kbtoggle').onclick = () => { KB.visible = !KB.visible; };
 
-/* click a node on canvas -> inspector */
+/* click a node on canvas -> inspector; mini-map nodes are hit-tested first */
 cv.addEventListener('click', e => {
   const r = cv.getBoundingClientRect();
+  if (KB.visible && KB.nodes.size) {
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    for (const o of kbLayout()) {
+      if ((o.x - sx) ** 2 + (o.y - sy) ** 2 < 14 * 14) {
+        KB.selected = KB.selected === o.n.id ? null : o.n.id;   // toggle base highlight
+        return;
+      }
+    }
+  }
   const x = (e.clientX - r.left - r.width / 2) / view.k + view.x;
   const y = (e.clientY - r.top - r.height / 2) / view.k + view.y;
   let best = null, bd = 30 * 30;
