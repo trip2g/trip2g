@@ -543,9 +543,10 @@ function trimStructured(sc) {
 const SYS_TASK = `You explore a documentation knowledge graph through MCP tools and answer the user's question from what you actually read — never from memory.
 Loop: search(query) -> read only the matched section with note_html(pid, toc_path=[...]) -> expand(pid) if the pointer looks off. Use similar(pid) for neighbors.
 If a search result has kind "federation_kb", or local search finds nothing, use federated_search (pass kb_id to target one base; follow-up reads need federated_note_html/expand/similar with the same kb_id).
-Think out loud briefly (1-2 sentences) before each tool call so an observer can follow your reasoning. Cite note URLs in the final answer. When you have enough, answer without calling more tools.`;
+Think out loud briefly (1-2 sentences) before each tool call so an observer can follow your reasoning. Cite note URLs in the final answer. When you have enough, answer without calling more tools.
+You have exactly {N} tool-call steps for this walk. Budget them deliberately — plan to use most of them, and reserve enough steps to verify what you found before answering. A progress line will report how many steps remain; when it tells you to wrap up, produce your final answer.`;
 const SYS_WANDER = `You are a curious wanderer in a knowledge graph, with no task. Explore through MCP tools: start with a search on whatever genuinely intrigues you, then follow your curiosity — read sections (note_html with toc_path), check neighbors (similar), descend into federated bases (federated_search with kb_id; nested bases use "/" in kb_id). Prefer depth over breadth: follow one thread until it surprises you.
-Before each tool call, say in 1-2 sentences what pulls you there. After roughly {N} hops, settle: stop calling tools and describe your final resting place — which note you ended on, the theme that emerged along the walk, and the most surprising connection you found.`;
+Before each tool call, say in 1-2 sentences what pulls you there. You have exactly {N} tool-call steps — budget them deliberately and spend them going DEEP (descend into deeper corpora via the federated tools), not just wide. A progress line will report how many steps remain; when it tells you to wrap up, settle: stop calling tools and describe your final resting place — which note you ended on, the theme that emerged along the walk, and the most surprising connection you found.`;
 
 async function runLive() {
   const key = $('apikey').value.trim();
@@ -570,11 +571,22 @@ async function runLive() {
     const tools = await mcpInit(endpoint);
     setStatus(`connected — ${tools.length} tools`);
     const messages = [
-      { role: 'system', content: m === 'task' ? SYS_TASK : SYS_WANDER.replace('{N}', Math.max(4, maxTurns - 3)) },
+      { role: 'system', content: (m === 'task' ? SYS_TASK : SYS_WANDER).replace('{N}', maxTurns) },
       { role: 'user', content: m === 'task' ? task : 'Begin your wander.' },
     ];
+    let stepsUsed = 0;
     for (let turn = 1; turn <= maxTurns && !stopFlag; turn++) {
       journalTurn(turn);
+      // budget awareness: tell the model where it stands so the finale is deliberate,
+      // not a hard-cap truncation (the turn cap below stays as backstop)
+      if (stepsUsed > 0) {
+        const left = maxTurns - stepsUsed;
+        let prog = `[progress] Step ${stepsUsed} of ${maxTurns} used; ${left} remaining.`;
+        if (left <= 2) prog += m === 'task'
+          ? ' Wrap up now: produce your final answer on your next message.'
+          : ' Wrap up now: stop calling tools and describe your final resting place and its theme on your next message.';
+        messages.push({ role: 'user', content: prog });
+      }
       setStatus(`turn ${turn}/${maxTurns} — thinking (${model})…`);
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -610,6 +622,7 @@ async function runLive() {
         let result = null, err = null;
         try { result = await rpc(endpoint, 'tools/call', { name: tc.function.name, arguments: args }); }
         catch (e) { err = String(e.message || e); }
+        stepsUsed++;
         const ms = Math.round(performance.now() - t0);
         const text = err ? '' : contentText(result);
         const structured = err ? null : (result.structuredContent || null);
