@@ -209,24 +209,24 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":    {Type: "string", Description: "Note path from search or note_html"},
+					"path":    {Type: "string", Description: "Note path from a search result — the usual way to reference a note"},
 					"href":    {Type: "string", Description: "Note href from search results"},
-					"pid":     {Type: "number", Description: "Stable note id from search or HTML data-pid"},
-					"note_id": {Type: "number", Description: "Stable note id from search results"},
+					"pid":     {Type: "number", Description: "Internal integer note id, e.g. HTML data-pid. Prefer path"},
+					"note_id": {Type: "number", Description: "Internal integer note id (rarely available). Prefer path"},
 					"limit":   {Type: "number", Description: "Max number of results (default 10)"},
 				},
 			},
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, path, or match_id. Use match_id for a focused chunk window around a specific search hit; match_id alone is enough to resolve the note. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
+			Description: "Read a note. Preferred: path (the note_path from a search result) or match_id (a focused chunk window around a search hit; match_id alone is enough to resolve the note). Only pass pid/note_id if you already have that exact integer id from a result. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":          {Type: "string", Description: "Note path from search results"},
+					"path":          {Type: "string", Description: "Note path from a search result — the usual way to open a note"},
 					"href":          {Type: "string", Description: "Note href or absolute URL from search results"},
-					"pid":           {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
-					"note_id":       {Type: "number", Description: "Stable note id from search results"},
+					"pid":           {Type: "number", Description: "Internal integer note id, rarely available. Prefer path or match_id"},
+					"note_id":       {Type: "number", Description: "Internal integer note id, rarely available. Prefer path or match_id"},
 					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
 					"toc_path": {
@@ -243,10 +243,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":    {Type: "string", Description: "Note path from search results"},
+					"path":    {Type: "string", Description: "Note path from a search result — the usual way to reference a note"},
 					"href":    {Type: "string", Description: "Note href from search results"},
-					"pid":     {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
-					"note_id": {Type: "number", Description: "Stable note id from search results"},
+					"pid":     {Type: "number", Description: "Internal integer note id, e.g. HTML data-pid. Prefer path"},
+					"note_id": {Type: "number", Description: "Internal integer note id (rarely available). Prefer path"},
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level.",
@@ -293,10 +293,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 						Description: "Target knowledge base id; nested bases use '/' " +
 							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
 					},
-					"path":    {Type: "string", Description: "Remote note path"},
+					"path":    {Type: "string", Description: "Remote note path from a federated_search result"},
 					"href":    {Type: "string", Description: "Remote note href"},
-					"pid":     {Type: "number", Description: "Remote stable note id"},
-					"note_id": {Type: "string", Description: "Remote stable note id (uint64 string)"},
+					"pid":     {Type: "number", Description: "Remote internal integer note id, rarely available. Prefer path"},
+					"note_id": {Type: "string", Description: "Remote internal integer note id as a string. Prefer path"},
 					"limit":   {Type: "number", Description: "Max number of results"},
 				},
 				Required: []string{"kb_id"},
@@ -304,7 +304,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "federated_note_html",
-			Description: "Read a remote note by pid, note_id, href, path, or match_id inside a connected knowledge base.",
+			Description: "Read a remote note inside a connected knowledge base. Preferred: path (from a federated_search result) or match_id (a focused chunk window around a search hit; match_id alone is enough to resolve the note). Only pass pid/note_id if you already have that exact id from a result.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -313,10 +313,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 						Description: "Target knowledge base id; nested bases use '/' " +
 							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
 					},
-					"path":     {Type: "string", Description: "Remote note path"},
+					"path":     {Type: "string", Description: "Remote note path from a federated_search result"},
 					"href":     {Type: "string", Description: "Remote note href or absolute URL from search results"},
-					"pid":      {Type: "number", Description: "Remote stable note id"},
-					"note_id":  {Type: "string", Description: "Remote stable note id (uint64 string)"},
+					"pid":      {Type: "number", Description: "Remote internal integer id, rarely available. Prefer path or match_id"},
+					"note_id":  {Type: "string", Description: "Remote internal integer id as a string. Prefer path or match_id"},
 					"match_id": {Type: "string", Description: "Focused match id from remote search results; match_id alone is enough"},
 				},
 				Required: []string{"kb_id"},
@@ -333,10 +333,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 						Description: "Target knowledge base id; nested bases use '/' " +
 							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
 					},
-					"path":    {Type: "string", Description: "Remote note path"},
+					"path":    {Type: "string", Description: "Remote note path from a federated_search result"},
 					"href":    {Type: "string", Description: "Remote note href"},
-					"pid":     {Type: "number", Description: "Remote stable note id"},
-					"note_id": {Type: "string", Description: "Remote stable note id (uint64 string)"},
+					"pid":     {Type: "number", Description: "Remote internal integer note id, rarely available. Prefer path"},
+					"note_id": {Type: "string", Description: "Remote internal integer note id as a string. Prefer path"},
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to the node to expand. Omit or [] for the top level.",
@@ -794,7 +794,7 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 
 func federationAgentInstruction(kbID string) string {
 	return fmt.Sprintf(
-		`This is a knowledge base pointer. To search inside it, call federated_search with kb_id="%s". To open notes from it, call federated_note_html(note_id=..., kb_id="%s").`,
+		`This is a knowledge base pointer. To search inside it, call federated_search with kb_id="%s". To open notes from it, call federated_note_html(path=..., kb_id="%s").`,
 		kbID,
 		kbID,
 	)
