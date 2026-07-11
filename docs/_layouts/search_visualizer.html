@@ -295,6 +295,25 @@ function tick() {
     dx /= d; dy /= d;
     A.vx += dx * f; A.vy += dy * f; B.vx -= dx * f; B.vy -= dy * f;
   }
+  // axis force: step i is pulled toward x = i * spacing so the spine reads as a
+  // left->right timeline; stronger than the spine springs (steps rarely fold back)
+  // but not rigid. Walks longer than AXIS_COLS wrap serpentine-style into the next
+  // row. Satellites keep orbiting via the spring forces above.
+  const AXIS_COLS = 8, AXIS_DX = 200, AXIS_DY = 280;
+  const steps = ns.filter(n => n.kind === 'step').sort((a, b) => a.num - b.num);
+  if (steps.length) {
+    const rows = Math.ceil(steps.length / AXIS_COLS);
+    const cols = Math.min(steps.length, AXIS_COLS);
+    steps.forEach((n, i) => {
+      const row = Math.floor(i / AXIS_COLS);
+      let col = i % AXIS_COLS;
+      if (row % 2) col = AXIS_COLS - 1 - col;
+      const tx = (col - (cols - 1) / 2) * AXIS_DX;
+      const ty = (row - (rows - 1) / 2) * AXIS_DY;
+      n.vx += (tx - n.x) * 0.06;
+      n.vy += (ty - n.y) * (rows > 1 ? 0.05 : 0.035);  // weak vertical-center pull on a single row
+    });
+  }
   for (const n of ns) {
     n.vx -= n.x * 0.002; n.vy -= n.y * 0.002;      // gravity to center
     n.vx *= 0.85; n.vy *= 0.85;
