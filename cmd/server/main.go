@@ -43,6 +43,7 @@ import (
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
+	"trip2g/internal/fedinstr"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
@@ -235,6 +236,8 @@ type appState struct {
 
 	*chartdata.ChartData // server-side data for url/internal datachart sources (promotes ChartRows, SaveChartData)
 
+	*fedinstr.Cache // caches federated instructions per kb_id (promotes CachedFederatedInstructions, StoreFederatedInstructions)
+
 	patreonClientManager *patreon.ClientManager
 	boostyClientManager  *boosty.ClientManager
 
@@ -375,6 +378,7 @@ func main() {
 	a.ctx = ctx
 	a.SiteConfigBuilder = configregistry.NewSiteConfigBuilder(a)
 	a.pageCache = pagecache.New()
+	a.Cache = fedinstr.New()
 	a.sigChan = make(chan os.Signal, 1)
 	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)
 

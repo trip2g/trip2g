@@ -59,6 +59,9 @@ type Env interface {
 	FederatedFanoutConcurrency() int
 	FederatedFanoutLimit() int
 	FederatedFanoutTimeout() time.Duration
+	// Federated instructions cache (per kb_id path)
+	CachedFederatedInstructions(kbID string) (model.FederationResult, bool)
+	StoreFederatedInstructions(kbID string, result model.FederationResult)
 	// API key auth
 	ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)
 	// Admin GraphQL tools
@@ -179,6 +182,7 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	"federated_similar":         true,
 	"federated_note_html":       true,
 	"federated_expand":          true,
+	"federated_instructions":    true,
 	"graphql_introspection":     true,
 	"graphql_request":           true,
 	"federated_graphql_request": true,
@@ -425,13 +429,42 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				Required: []string{"kb_id"},
 			},
 		},
+		{
+			Name: "federated_instructions",
+			Description: "Fetch the instructions/guidance for a federated knowledge base by kb_id " +
+				`(e.g. "philosophers/nietzsche") — read a base's own conventions before searching it. ` +
+				"Nested bases are addressed with '/' and the call routes through each peer recursively.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id": {
+						Type: "string",
+						Description: "Target knowledge base id; nested bases use '/' " +
+							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+					},
+				},
+				Required: []string{"kb_id"},
+			},
+		},
 	}
 
-	// Append dynamic tools from notes with mcp_method (excluding reserved names)
+	// Append dynamic tools from notes with mcp_method (excluding reserved names).
+	// Several notes can share an mcp_method (e.g. localized en/ru instruction
+	// notes) — the call side (handleDynamicMethod) resolves to the first note in
+	// path-sorted order, so tools/list must list each method once, keeping that
+	// same first note. Otherwise tools/list returns duplicate tool names.
+	seenMCPMethods := make(map[string]bool)
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod == "" || reservedMCPTools[note.MCPMethod] {
 			continue
 		}
+		if seenMCPMethods[note.MCPMethod] {
+			continue
+		}
+		// Claim the method for this note before the read check so the first note
+		// in path-sorted order always owns it — matching handleDynamicMethod,
+		// which stops at that same first note whether or not it is readable.
+		seenMCPMethods[note.MCPMethod] = true
 		ok, err := canReadMCPNote(ctx, env, note)
 		if err != nil || !ok {
 			continue
@@ -518,6 +551,8 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
 	case "federated_expand":
 		return handleFederatedExpand(ctx, env, req.ID, params.Arguments)
+	case "federated_instructions":
+		return handleFederatedInstructions(ctx, env, req.ID, params.Arguments)
 	case "graphql_introspection":
 		if !mcpAdminToolsEnabled(ctx) {
 			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
