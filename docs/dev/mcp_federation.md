@@ -534,3 +534,51 @@ If a real reseller use case appears, see `docs/dev/mcp_federation_marketplace.md
 - **Adapter library** — first-party Go skeleton for building new MCP adapters quickly.
 - **Cron health check** — periodic ping of every connected peer, surfacing breakage in admin.
 - **System-reminder enrichment** — automatic injection of "you have N federations available" into agent's startup context.
+
+## Federation hop depth (`mcp-federation-max-depth`)
+
+Every federated request carries a cumulative hop counter in the
+`X-MCP-Federation-Depth` header, incremented by 1 at each outbound hop
+(`internal/federation/client.go`). On receipt each instance compares the
+**incoming** depth against its **own** `mcp-federation-max-depth` (default `3`,
+`appconfig/config.go`) and rejects with `federation max depth exceeded` when
+`incomingDepth >= localMax` (`internal/case/mcp/endpoint.go`). Direct clients
+send no header (depth 0) and are never rejected by this check — the limit only
+governs requests arriving *through* federation.
+
+A nested `kb_id` path consumes one depth level per segment: from the root,
+`philosophers/nietzsche` reaches depth 2 (works at default 3), while
+`philosophers/nietzsche/schopenhauer` reaches depth 3 and is rejected. So the
+default `3` allows **two levels of nesting** below a direct client.
+
+### Heterogeneous limits across instances
+
+The counter is global to a chain; each instance judges it by its own local max.
+Consequences when instances disagree:
+
+- The chain is cut at the **first** instance whose `max <= the depth it
+  receives at`. The **stingiest instance on the path caps everything beyond
+  it** — a larger limit downstream is useless if an upstream peer already
+  rejected.
+- Reachability is **route-dependent and asymmetric**: the same leaf may be
+  reachable through one hub and not through another, purely by which instances
+  sit at which positions. This is **expected**, not a bug.
+- An entry instance can reject early by checking `incomingDepth +
+  segments(kb_id)` against its **own** max, but it cannot know downstream peers'
+  limits, so deeper cuts still happen live.
+
+**Operational guidance:** keep `mcp-federation-max-depth` consistent across a
+federation you operate, or monotonically non-decreasing along expected paths
+(hub ≥ leaves). Otherwise callers see `max depth exceeded` that depends on the
+route taken.
+
+### Prior art
+
+This is the same shape as two well-worn standards. The `/`-delimited `kb_id`
+resolved hop-by-hop through delegating peers is **DNS-style hierarchical
+delegation** (each instance authoritative for its own zone, aware only of its
+direct children); the caller-frame `kb_id` rewrite on the way back is the
+equivalent of qualifying a name toward an FQDN. The depth counter is an
+application-layer **TTL / `Max-Forwards`** (IP TTL RFC 791; HTTP `Max-Forwards`
+RFC 7231; SIP `Max-Forwards` RFC 3261) — a per-hop counter that drops a request
+when exhausted, with the same inherent, accepted route-dependence.
