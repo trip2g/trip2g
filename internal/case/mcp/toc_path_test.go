@@ -3,6 +3,7 @@ package mcp
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/require"
 
@@ -253,4 +254,77 @@ func TestStripMarkdownInline(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// TestMarkedContextRuneSafety verifies that markedContext, which windows ±120
+// bytes around the first <mark>...</mark> block, never splits a multi-byte
+// UTF-8 rune — regardless of where the byte offsets land relative to
+// variable-width characters (e.g. 2-byte Cyrillic).
+func TestMarkedContextRuneSafety(t *testing.T) {
+	t.Run("leading orphan continuation byte at window start", func(t *testing.T) {
+		// 60 Cyrillic chars (120 bytes) + 1 ASCII byte = 121-byte prefix.
+		// window=120 means lo = start-120 = 1, which is the second (continuation)
+		// byte of the first Cyrillic rune under naive byte slicing.
+		prefix := strings.Repeat("б", 60) + "A"
+		content := prefix + "<mark>совпадение</mark>"
+
+		snippet := markedContext(content)
+
+		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
+		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
+		require.Contains(t, snippet, "<mark>совпадение</mark>", "mark tag must still wrap the matched term")
+	})
+
+	t.Run("trailing half character at window end", func(t *testing.T) {
+		// Symmetric case: 1 ASCII byte + 60 Cyrillic chars (120 bytes) after
+		// the closing tag. window=120 means hi = end+120 lands on the
+		// continuation byte of the last Cyrillic rune under naive slicing.
+		suffix := "A" + strings.Repeat("б", 60)
+		content := "<mark>совпадение</mark>" + suffix
+
+		snippet := markedContext(content)
+
+		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
+		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
+		require.Contains(t, snippet, "<mark>совпадение</mark>", "mark tag must still wrap the matched term")
+	})
+
+	t.Run("both edges misaligned", func(t *testing.T) {
+		prefix := strings.Repeat("б", 60) + "A"
+		suffix := "A" + strings.Repeat("б", 60)
+		content := prefix + "<mark>совпадение</mark>" + suffix
+
+		snippet := markedContext(content)
+
+		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
+		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
+		require.Contains(t, snippet, "<mark>совпадение</mark>", "mark tag must still wrap the matched term")
+	})
+
+	t.Run("ASCII-only content is unchanged (no regression)", func(t *testing.T) {
+		prefix := strings.Repeat("word ", 40)
+		suffix := strings.Repeat(" word", 40)
+		content := prefix + "<mark>match</mark>" + suffix
+
+		snippet := markedContext(content)
+
+		start := strings.Index(content, "<mark>")
+		end := strings.LastIndex(content, "</mark>") + len("</mark>")
+		lo := start - 120
+		if lo < 0 {
+			lo = 0
+		}
+		hi := end + 120
+		if hi > len(content) {
+			hi = len(content)
+		}
+		want := content[lo:hi]
+
+		require.Equal(t, want, snippet, "ASCII-only content must match the original byte-window behavior exactly")
+	})
+
+	t.Run("no mark tags returns snippet unchanged", func(t *testing.T) {
+		content := "no marks here at all"
+		require.Equal(t, content, markedContext(content))
+	})
 }
