@@ -38,7 +38,7 @@
   }
   #config input:focus, #config textarea:focus { outline: none; border-color: var(--accent); }
   #config textarea { resize: vertical; min-height: 54px; }
-  .row { display: flex; gap: 8px; align-items: center; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
   .chips button { background: var(--bg); color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 11px; cursor: pointer; }
   .chips button:hover { border-color: var(--accent); }
@@ -165,8 +165,10 @@
     <div class="row">
       <button class="ghost" id="replay" disabled>↻ Replay</button>
       <button class="ghost" id="export" disabled>⤓ Export</button>
+      <button class="ghost" id="import">⤒ Import</button>
       <button class="ghost" id="demo">Demo</button>
     </div>
+    <input type="file" id="importfile" accept="application/json,.json" hidden>
     <div class="hint">Demo replays a pre-recorded trace (real MCP calls, real latencies) — no API key needed. Edge animation duration = the actual tool-call latency, capped at 2.5&nbsp;s.</div>
     <div class="hint" id="about">{{ note.HTMLString() | unsafe }}</div>
   </div>
@@ -816,6 +818,26 @@ $('export').onclick = () => {
 };
 $('demo').onclick = () => { trace = DEMO_TRACE; replay(DEMO_TRACE); };
 $('kbtoggle').onclick = () => { KB.visible = !KB.visible; };
+// import a previously exported trace JSON and replay it deterministically
+$('import').onclick = () => $('importfile').click();
+$('importfile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f || running) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const tr = JSON.parse(fr.result);
+      if (!tr || !Array.isArray(tr.events) || !tr.events.length)
+        throw new Error('no events[] — not an exported walk trace');
+      trace = tr;
+      $('replay').disabled = $('export').disabled = false;
+      replay(tr);
+    } catch (err) { setStatus('import failed: ' + (err.message || err)); }
+  };
+  fr.onerror = () => setStatus('import failed: could not read file');
+  fr.readAsText(f);
+});
 
 /* click a node on canvas -> inspector; mini-map nodes are hit-tested first */
 cv.addEventListener('click', e => {
