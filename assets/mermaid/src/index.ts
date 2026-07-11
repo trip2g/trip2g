@@ -11,6 +11,26 @@
 
 import { enhancePanZoom } from './panzoom';
 
+// The default template's global text color (e.g. `p { color: … }`) leaks into
+// mermaid's foreignObject HTML labels and, matching the inner <p> directly,
+// beats the color mermaid sets on the label span (from the diagram theme or a
+// classDef) — washing node/edge/cluster text to the body color regardless of
+// contrast. Force label descendants to inherit the span's mermaid color.
+const LABEL_STYLE_ID = 'mermaid-label-style';
+const LABEL_CSS = `
+.mermaid .nodeLabel *,
+.mermaid .edgeLabel *,
+.mermaid .cluster-label * { color: inherit; }
+`;
+
+function injectLabelStyle() {
+  if (document.getElementById(LABEL_STYLE_ID)) return;
+  const s = document.createElement('style');
+  s.id = LABEL_STYLE_ID;
+  s.textContent = LABEL_CSS;
+  document.head.appendChild(s);
+}
+
 interface Block {
   el: HTMLElement;
   src: string; // original diagram source, kept for re-rendering on theme change
@@ -40,6 +60,7 @@ function currentTheme(): string {
 }
 
 function renderAll(blocks: Block[]) {
+  injectLabelStyle();
   const mermaid = (window as any).mermaid;
   mermaid.initialize({
     startOnLoad: false,
