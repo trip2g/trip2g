@@ -262,13 +262,13 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "federated_search",
-			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
+			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive). Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"query":  {Type: "string", Description: "Search query"},
-					"kb_id":  {Type: "string", Description: "Target knowledge base id"},
-					"kb_ids": {Type: "array", Description: "Target knowledge base ids", Items: &Property{Type: "string"}},
+					"kb_id":  {Type: "string", Description: "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively)"},
+					"kb_ids": {Type: "array", Description: "Target knowledge base ids; each accepts the same nested 'peer/base' form as kb_id", Items: &Property{Type: "string"}},
 					"limit":  {Type: "number", Description: "Max number of results to return (default 6)"},
 					"detail_limit": {
 						Type:        "number",
@@ -284,7 +284,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"kb_id":   {Type: "string", Description: "Target knowledge base id"},
+					"kb_id":   {Type: "string", Description: "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively)"},
 					"path":    {Type: "string", Description: "Remote note path"},
 					"href":    {Type: "string", Description: "Remote note href"},
 					"pid":     {Type: "number", Description: "Remote stable note id"},
@@ -300,7 +300,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"kb_id":    {Type: "string", Description: "Target knowledge base id"},
+					"kb_id":    {Type: "string", Description: "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively)"},
 					"path":     {Type: "string", Description: "Remote note path"},
 					"href":     {Type: "string", Description: "Remote note href"},
 					"pid":      {Type: "number", Description: "Remote stable note id"},
@@ -316,7 +316,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"kb_id":   {Type: "string", Description: "Target knowledge base id"},
+					"kb_id":   {Type: "string", Description: "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively)"},
 					"path":    {Type: "string", Description: "Remote note path"},
 					"href":    {Type: "string", Description: "Remote note href"},
 					"pid":     {Type: "number", Description: "Remote stable note id"},
@@ -359,7 +359,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"kb_id":     {Type: "string", Description: "Target knowledge base id"},
+					"kb_id":     {Type: "string", Description: "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively)"},
 					"query":     {Type: "string", Description: "Read-only GraphQL query string"},
 					"variables": {Type: "object", Description: "Optional variables map"},
 				},
