@@ -18,7 +18,6 @@ import (
 	render404render404 "trip2g/internal/case/render404"
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
-	rendersearchpagerendersearchpage "trip2g/internal/case/rendersearchpage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
 	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
 	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
@@ -42,7 +41,6 @@ var endpoints = []Endpoint{
 	&renderadminpagerenderadminpage.Endpoint{},
 	&renderadminpagerenderadminpage.GetEndpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
-	&rendersearchpagerendersearchpage.Endpoint{},
 	&signinbyhatsigninbyhat.Endpoint{},
 	&renderlayoutpreviewrenderlayoutpreview.Endpoint{},
 	&renderpreviewrenderpreview.Endpoint{},
@@ -65,7 +63,6 @@ type RoutesEnv interface {
 	render404render404.Env
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env
-	rendersearchpagerendersearchpage.Env
 	signinbyhatsigninbyhat.Env
 	renderlayoutpreviewrenderlayoutpreview.Env
 	renderpreviewrenderpreview.Env

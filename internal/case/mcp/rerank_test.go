@@ -71,19 +71,19 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 	noteB := &appmodel.NoteView{Path: "b.md", PathID: 2, Title: "B", Permalink: "/b"}
 
 	return &EnvMock{
-		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, HighlightedContent: []string{"alpha"}},
 				{NoteView: noteB, URL: noteB.Permalink, Score: 1.0, HighlightedContent: []string{"beta"}},
 			}, nil
 		},
-		LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
 			return []appmodel.NoteChunk{
 				{NotePath: "a.md", ChunkIndex: 0, Content: "A > H\n\nalpha passage", Embedding: []float32{1, 0}},
 				{NotePath: "b.md", ChunkIndex: 0, Content: "B > H\n\nbeta passage", Embedding: []float32{0.9, 0.436}},
 			}
 		},
-		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+		LiveNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{
 				List:    []*appmodel.NoteView{noteA, noteB},
 				PathMap: map[string]*appmodel.NoteView{"a.md": noteA, "b.md": noteB},

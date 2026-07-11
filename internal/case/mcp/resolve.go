@@ -6,14 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/similarnotes"
+	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -21,25 +20,16 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 	"trip2g/internal/ptr"
-	"trip2g/internal/reranker"
 )
 
 const (
 	// Search and display limits.
-	// DefaultVectorSearchLimit is the vector-candidate pool fed into RRF fusion;
-	// keep it wide so fusion sees enough candidates (cosine already scores all
-	// chunks). DefaultDisplayLimit/MaxMergedResults still bound what's returned.
-	DefaultVectorSearchLimit = 50
 	DefaultDisplayLimit      = 10
 	DefaultSimilarLimit      = 10
 	MaxSimilarLimit          = 100
-	MaxMergedResults         = 20
 	DefaultSearchLimit       = 6
 	DefaultSearchDetailLimit = 3
-	MaxSearchLimit           = 20 // aligns with MaxMergedResults
-
-	// Hybrid search rank constant.
-	rrfK = 60
+	MaxSearchLimit           = 20
 
 	// MCP method names.
 	MCPMethodInitialize = "initialize"
@@ -51,7 +41,10 @@ type Env interface {
 	similarnotes.Env
 	model.FederationClientFactory
 	SearchLatestNotes(query string) ([]model.SearchResult, error)
+	SearchLiveNotes(query string) ([]model.SearchResult, error)
 	LatestNoteChunks() []model.NoteChunk
+	LiveNoteChunks() []model.NoteChunk
+	LiveNoteViews() *model.NoteViews
 	OpenAI() *openai.Client
 	PublicURL() string
 	NoteURL(note *model.NoteView) string
@@ -498,30 +491,15 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		return errorResponse(id, ErrCodeInvalidParams, "query is required")
 	}
 
-	// Text search
-	results, err := env.SearchLatestNotes(args.Query)
+	// Shared retrieval core (text + vector + RRF + rerank), same as the site
+	// search. API-key clients are admins and search the latest corpus (drafts
+	// included); everyone else gets the live corpus, like anonymous site visitors.
+	useLatest := mcpAPIKeyAuthed(ctx)
+	results, _, err := sitesearch.Retrieve(ctx, env, args.Query, useLatest)
 	if err != nil {
-		log.Error("text search failed", "error", err, "query", args.Query)
+		log.Error("search failed", "error", err, "query", args.Query)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
-
-	// Add vector search results if enabled
-	// passageByURL holds the best-matching chunk passage per note (window-sized),
-	// used by the optional reranker to avoid feeding truncated whole notes.
-	var passageByURL map[string]string
-	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, passages, vecErr := vectorSearch(ctx, env, args.Query, DefaultVectorSearchLimit)
-		if vecErr == nil {
-			results = mergeResults(results, vectorResults)
-			passageByURL = passages
-		} else {
-			log.Warn("vector search failed", "error", vecErr, "query", args.Query)
-		}
-	}
-
-	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order —
-	// same shared path as the site search. No-op when not configured.
-	results = reranker.BlendRRF(ctx, env.Features().VectorSearch.Reranker, log, args.Query, results, passageByURL)
 
 	results, err = filterSearchResults(ctx, env, results)
 	if err != nil {
@@ -529,8 +507,13 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
 
+	chunks := env.LiveNoteChunks()
+	if useLatest {
+		chunks = env.LatestNoteChunks()
+	}
+
 	limit, detailLimit := resolveSearchLimits(log, args.Limit, args.DetailLimit)
-	payload := buildSearchPayload(args.Query, results, env.NoteURL, env.LatestNoteChunks(), limit, detailLimit)
+	payload := buildSearchPayload(args.Query, results, env.NoteURL, chunks, limit, detailLimit)
 	metricsFromContext(ctx).ObserveSearchResults("search", len(payload.Results))
 
 	// Format response
@@ -716,7 +699,7 @@ func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []
 		if chunk.NotePath != note.Path {
 			continue
 		}
-		normalizedChunk := normalizeSearchSnippet(snippetFromChunk(chunk.Content, 400))
+		normalizedChunk := normalizeSearchSnippet(sitesearch.SnippetFromChunk(chunk.Content, 400))
 		if normalizedChunk == "" {
 			continue
 		}
@@ -750,7 +733,7 @@ func nearestChunkIndexForSnippet(note *model.NoteView, snippet string, chunks []
 func normalizeSearchSnippet(s string) string {
 	replacer := strings.NewReplacer("<mark>", "", "</mark>", "")
 	s = replacer.Replace(s)
-	s = trimWhitespace(strings.ToLower(s))
+	s = sitesearch.TrimWhitespace(strings.ToLower(s))
 	return s
 }
 
@@ -1090,7 +1073,7 @@ func focusedChunkWindow(note *model.NoteView, matchID string, chunks []model.Not
 		if chunk.ChunkIndex < chunkIndex-1 || chunk.ChunkIndex > chunkIndex+1 {
 			continue
 		}
-		relevant = append(relevant, snippetFromChunk(chunk.Content, 400))
+		relevant = append(relevant, sitesearch.SnippetFromChunk(chunk.Content, 400))
 	}
 	if len(relevant) == 0 {
 		return "", false
@@ -1211,213 +1194,6 @@ func stripFrontmatter(content string) string {
 	}
 
 	return strings.TrimLeft(result, "\r\n")
-}
-
-func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, map[string]string, error) {
-	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create embedding: %w", err)
-	}
-
-	results, passageByURL := vectorResultsFromChunks(
-		embedding.Vector,
-		env.LatestNoteChunks(),
-		env.LatestNoteViews(),
-		limit,
-	)
-	return results, passageByURL, nil
-}
-
-type scoredChunk struct {
-	chunk model.NoteChunk
-	score float64
-}
-
-func vectorResultsFromChunks(
-	queryEmbedding []float32,
-	chunks []model.NoteChunk,
-	noteViews *model.NoteViews,
-	limit int,
-) ([]model.SearchResult, map[string]string) {
-	var scores []scoredChunk
-	for _, chunk := range chunks {
-		if len(chunk.Embedding) == 0 {
-			continue
-		}
-		scores = append(scores, scoredChunk{
-			chunk: chunk,
-			score: cosineSimilarity(queryEmbedding, chunk.Embedding),
-		})
-	}
-
-	sort.Slice(scores, func(i, j int) bool {
-		return scores[i].score > scores[j].score
-	})
-
-	results := make([]model.SearchResult, 0, len(scores))
-	// passageByURL records the highest-similarity chunk per note — a
-	// window-sized passage the optional reranker can rescore.
-	passageByURL := make(map[string]string)
-	seen := map[string]bool{}
-	for _, s := range scores {
-		if seen[s.chunk.NotePath] {
-			continue
-		}
-		seen[s.chunk.NotePath] = true
-
-		note := noteViews.PathMap[s.chunk.NotePath]
-		if note == nil || note.IsSystem() || note.ExcludeSearch {
-			continue
-		}
-		title := note.Title
-		chunkIndex := s.chunk.ChunkIndex
-		results = append(results, model.SearchResult{
-			NoteView:           note,
-			URL:                note.Permalink,
-			Score:              s.score,
-			HighlightedTitle:   &title,
-			HighlightedContent: []string{snippetFromChunk(s.chunk.Content, 200)},
-			ChunkIndex:         &chunkIndex,
-		})
-		passageByURL[note.Permalink] = chunkPassage(s.chunk.Content)
-		if len(results) >= limit {
-			break
-		}
-	}
-
-	return results, passageByURL
-}
-
-// chunkPassage strips the breadcrumb prefix ("{title} > {h1} > {h2}\n\n") from a
-// chunk, returning the body text used as the reranker document. The body is
-// already window-sized (chunks are capped ~450 tokens at ingest).
-func chunkPassage(content string) string {
-	if idx := strings.Index(content, "\n\n"); idx >= 0 {
-		content = content[idx+2:]
-	}
-	return trimWhitespace(content)
-}
-
-func snippetFromChunk(content string, maxLen int) string {
-	if idx := strings.Index(content, "\n\n"); idx >= 0 {
-		content = content[idx+2:]
-	}
-	content = trimWhitespace(content)
-	runes := []rune(content)
-	if len(runes) > maxLen {
-		content = string(runes[:maxLen])
-		if lastSpace := lastIndexByte(content, ' '); lastSpace > maxLen/2 {
-			content = content[:lastSpace]
-		}
-		content += "..."
-	}
-	return content
-}
-
-func mergeResults(textResults, vectorResults []model.SearchResult) []model.SearchResult {
-	if len(vectorResults) == 0 {
-		return textResults
-	}
-
-	type merged struct {
-		result   model.SearchResult
-		rrfScore float64
-	}
-
-	resultMap := make(map[string]*merged)
-
-	for rank, r := range textResults {
-		score := 1.0 / float64(rrfK+rank+1)
-		if existing, ok := resultMap[r.URL]; ok {
-			existing.rrfScore += score
-		} else {
-			resultMap[r.URL] = &merged{result: r, rrfScore: score}
-		}
-	}
-
-	for rank, r := range vectorResults {
-		score := 1.0 / float64(rrfK+rank+1)
-		if existing, ok := resultMap[r.URL]; ok {
-			existing.rrfScore += score
-			if existing.result.ChunkIndex == nil && r.ChunkIndex != nil {
-				existing.result.ChunkIndex = r.ChunkIndex
-			}
-			if len(existing.result.HighlightedContent) == 0 && len(r.HighlightedContent) > 0 {
-				existing.result.HighlightedContent = r.HighlightedContent
-			}
-		} else {
-			resultMap[r.URL] = &merged{result: r, rrfScore: score}
-		}
-	}
-
-	var finalResults []model.SearchResult
-	for _, m := range resultMap {
-		m.result.Score = m.rrfScore
-		finalResults = append(finalResults, m.result)
-	}
-
-	sort.Slice(finalResults, func(i, j int) bool {
-		return finalResults[i].Score > finalResults[j].Score
-	})
-
-	if len(finalResults) > MaxMergedResults {
-		finalResults = finalResults[:MaxMergedResults]
-	}
-
-	return finalResults
-}
-
-func trimWhitespace(s string) string {
-	result := make([]byte, 0, len(s))
-	inWhitespace := true
-	for i := range len(s) {
-		c := s[i]
-		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-			if !inWhitespace && len(result) > 0 {
-				result = append(result, ' ')
-				inWhitespace = true
-			}
-		} else {
-			result = append(result, c)
-			inWhitespace = false
-		}
-	}
-	if len(result) > 0 && result[len(result)-1] == ' ' {
-		result = result[:len(result)-1]
-	}
-	return string(result)
-}
-
-func lastIndexByte(s string, c byte) int {
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
-}
-
-// cosineSimilarity calculates the cosine similarity between two vectors.
-// TODO: Consider replacing with Bleve's FAISS-based vector search when CGO is acceptable.
-// See: https://github.com/blevesearch/bleve/blob/master/docs/vectors.md
-func cosineSimilarity(a, b []float32) float64 {
-	if len(a) != len(b) || len(a) == 0 {
-		return 0
-	}
-
-	var dotProduct, normA, normB float64
-	for i := range a {
-		dotProduct += float64(a[i]) * float64(b[i])
-		normA += float64(a[i]) * float64(a[i])
-		normB += float64(b[i]) * float64(b[i])
-	}
-
-	if normA == 0 || normB == 0 {
-		return 0
-	}
-
-	return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
 }
 
 func errorResponse(id any, code int, message string) Response {
