@@ -18,7 +18,7 @@ Core loop: `search` → read one section with `note_html(toc_path=...)` → navi
 - `detail_limit`: how many results include `matches[]` snippets, default 3; the rest are lightweight previews (title, path, score).
 - Each result: `title`, `note_id`, `note_path`, `href`, `url`, `kind`, `score`.
 - Each match: `match_id`, `chunk_index`, `snippet`, `toc_path` — the breadcrumb of the section that matched, e.g. `["Adding a private peer (two-step exchange)"]`.
-- `note_id` is the stable id; `note_html`, `expand`, and `similar` accept it as either `pid` or `note_id`.
+- `note_id` (integer) and `note_path` (string) both identify the note; `note_html`, `expand`, and `similar` accept the id as either `pid` or `note_id`. Prefer copying `note_path` into their `path` argument — it is the more common, self-describing choice.
 - A result with `kind: "federation_kb"` is a pointer to a connected base — switch to `federated_search` with the `kb_id` it names.
 
 Query tips: use content words from the question ("private federation peer HMAC secret"), not full sentences. If nothing relevant comes back, rephrase once with synonyms before reaching for `federated_search`.
@@ -53,7 +53,7 @@ Trigger: you have one good note and want its neighbors — related guides, the o
 This base can be connected to peer knowledge bases. The federated variants mirror the local ones, with a `kb_id` targeting a peer:
 
 - `federated_search(query, kb_id?, kb_ids?, limit?, detail_limit?)` — omit `kb_id` to fan out across all connected bases in parallel; pass `kb_id` for one base, `kb_ids` for a chosen set.
-- Nested bases: a peer's own peers are addressed with `/` — `kb_id="philosophers/nietzsche"` routes through the `philosophers` peer into the base it federates (recursive; `kb_ids` accepts the same form). A base reached _through_ a hub is addressed `<hub>/<base>`: a `philosophers` hub note advertising `kb_id: montaigne` is `philosophers/montaigne` from an outer hub, not `montaigne`.
+- Nested bases: a peer's own peers are addressed with `/` — `kb_id="philosophers/nietzsche"` routes through the `philosophers` peer into the base it federates (recursive; `kb_ids` accepts the same form), up to 3 levels deep by default (kb_id path segments; the `mcp-federation-max-depth` setting) — a deeper path is rejected. A base reached _through_ a hub is addressed `<hub>/<base>`: a `philosophers` hub note advertising `kb_id: montaigne` is `philosophers/montaigne` from an outer hub, not `montaigne`.
 - `federated_note_html(kb_id, ...)`, `federated_expand(kb_id, ...)`, `federated_similar(kb_id, ...)` — same arguments as their local twins, `kb_id` required.
 
 Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Every search result now carries an absolute `kb_id` in the caller's frame — use it verbatim to open or re-search that result; keep passing it on every follow-up call.

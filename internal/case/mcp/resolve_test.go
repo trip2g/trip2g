@@ -147,6 +147,7 @@ soul_profile:
 				}
 			},
 			FederatedGraphQLEnabledFunc: func() bool { return false },
+			FederationMaxDepthFunc:      func() int { return 3 },
 		}
 
 		req := mcp.Request{
@@ -197,6 +198,7 @@ soul_profile:
 				return true, nil
 			},
 			FederatedGraphQLEnabledFunc: func() bool { return false },
+			FederationMaxDepthFunc:      func() int { return 3 },
 		}
 
 		req := mcp.Request{

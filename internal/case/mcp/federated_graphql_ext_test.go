@@ -40,6 +40,7 @@ func buildFedGQLEnvMock(t *testing.T, federatedEnabled bool, clientFactory func(
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc:        clientFactory,
 		FederatedGraphQLEnabledFunc: func() bool { return federatedEnabled },
+		FederationMaxDepthFunc:      func() int { return 3 },
 	}
 }
 
