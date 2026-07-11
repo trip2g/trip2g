@@ -1,17 +1,25 @@
 # Search Transports: GraphQL vs MCP — Consolidation Analysis
 
-**TL;DR.** Do NOT move the site frontend to MCP search. The premise "both are thin wrappers over shared internals" is half-wrong: GraphQL `search` is a 1-line wrapper over `sitesearch.Resolve`, but MCP `search` is a **separate ~200-line duplicate retrieval pipeline** that only shares low-level primitives. The right move is the inverse consolidation (option c): extract one shared retrieval engine, keep both transports as thin adapters. Effort ≈ 0.5–1 day. Bonus: it fixes a real behavioral divergence (MCP always searches *latest* notes, even for anonymous clients, where the site correctly serves *live*).
+**TL;DR.** Do NOT move the site frontend to MCP search. The premise "both are thin wrappers over shared internals" was half-wrong: GraphQL `search` was a 1-line wrapper over `sitesearch.Resolve`, but MCP `search` was a **separate ~200-line duplicate retrieval pipeline** that only shared low-level primitives. The right move was the inverse consolidation (option c): extract one shared retrieval engine, keep both transports as thin adapters. It also fixed a real behavioral divergence (MCP always searched *latest* notes, even for anonymous clients, where the site correctly serves *live*).
 
-Status: analysis only, nothing changed. Written 2026-07-11.
+Status: **IMPLEMENTED** in PR #176 (merged 2026-07-11). Sections 1–3 describe the pre-change state and are kept as the rationale record; the shipped architecture is in §0.
 
-## 1. The actual call graph
+## 0. Implemented architecture (PR #176)
 
-There are **three** consumers of search, not two:
+- **One core:** `sitesearch.Retrieve(ctx, env RetrieveEnv, query, useLatest) ([]model.SearchResult, merged bool, error)` (`internal/case/sitesearch/retrieve.go`) — text lane (bleve) + vector lane (dot similarity, dim-mismatch guard, deterministic tie-breaks) + RRF fusion + optional blended CE rerank.
+- **Site adapter:** `sitesearch.Resolve` = corpus choice (`ShowDraftVersions || admin` → latest) → `Retrieve` → scope/permission filter → "Закрытый материал." placeholders → post-ACL output caps.
+- **MCP adapter:** `handleSearch` = corpus choice (`mcpAPIKeyAuthed` → latest; anonymous and federation-JWT clients → live) → `Retrieve` → `filterSearchResults`/`canReadMCPNote` → `buildSearchPayload` (`match_id`, `toc_path`).
+- The unused server-rendered `/search` page (`internal/case/rendersearchpage`) is **deleted**; GraphQL search remains the transport for the site widget and `notePaths(filter:{search})`.
+- Cross-transport parity is locked by `TestSearchRankingMatchesSiteSearch` plus golden retrieval tests (`internal/case/sitesearch/golden_test.go`); corpus selection and the dim guard have dedicated tests on both surfaces.
+
+## 1. The call graph (pre-change)
+
+There were **three** consumers of search, not two:
 
 | Surface | Entry point | Engine used |
 |---------|-------------|-------------|
 | GraphQL `search(input:)` | `internal/graph/schema.resolvers.go:3205-3207` | `sitesearch.Resolve` — literally one line |
-| HTML `/search?q=` page | `internal/case/rendersearchpage/endpoint.go:35` | `sitesearch.Resolve` (64-line endpoint, `Env = sitesearch.Env`) |
+| HTML `/search?q=` page | `internal/case/rendersearchpage/endpoint.go:35` | `sitesearch.Resolve` (64-line endpoint; **removed in PR #176**) |
 | MCP `search` tool | `internal/case/mcp/resolve.go:489` (`handleSearch`) | **its own pipeline**, not `sitesearch` |
 
 Also: GraphQL `notePaths(filter:{search})` reuses the Search resolver (`schema.resolvers.go:3230`), so GraphQL search has a second internal consumer.
@@ -50,11 +58,11 @@ Switching this widget to the MCP endpoint would require:
 - a JSON-RPC 2.0 client in the template bundle (MCP is same-origin, so CORS is a non-issue, and anonymous MCP access exists — `internal/case/mcp/endpoint.go:150-154`);
 - losing HTML match highlighting (MCP returns plain snippets — by design, agents must not get injectable remote HTML);
 - losing the "closed material" placeholder UX and the live/latest draft logic;
-- keeping GraphQL search anyway for `notePaths(filter:{search})` and the `/search` HTML page — so nothing gets deleted.
+- keeping GraphQL search anyway for `notePaths(filter:{search})` — so the engine survives regardless. (The `/search` HTML page, a third consumer at analysis time, turned out to be unused and was deleted in PR #176 instead.)
 
 ## 3. Options
 
-**(a) Frontend → MCP, remove GraphQL `search`.** Worst of all worlds. The MCP pipeline is the *less correct* of the two (always-latest corpus, no dim guard); the frontend loses highlighting and hidden-result UX; a JSON-RPC client must be added to the visitor bundle; `notePaths` and `/search` still need the engine so no code is deleted; and it contradicts the federated-search design (`docs/dev/federated_search_ui.md`), which — written today — proposes a **new** `federatedSearch` GraphQL query as the human-visitor transport. Effort: days. Value: negative.
+**(a) Frontend → MCP, remove GraphQL `search`.** Worst of all worlds. The MCP pipeline was the *less correct* of the two (always-latest corpus, no dim guard); the frontend loses highlighting and hidden-result UX; a JSON-RPC client must be added to the visitor bundle; `notePaths` still needs the engine so no code is deleted; and it contradicts the federated-search design (`docs/dev/federated_search_ui.md`), which — written the same day — proposes a **new** `federatedSearch` GraphQL query as the human-visitor transport. Effort: days. Value: negative.
 
 **(b) Status quo.** Zero immediate effort, but the "two thin transports" framing is false — it is two *engines*, and they have already drifted (table above). Every retrieval improvement (reranker tuning, RRF changes, embedding-model migration) must be applied twice or silently applies once.
 
@@ -62,9 +70,9 @@ Switching this widget to the MCP endpoint would require:
 
 ## 4. Recommendation
 
-**Option (c).** The owner's self-correction was directionally right but factually optimistic — the internals are *not* shared today, and that is precisely the problem worth fixing. Removing GraphQL search solves nothing (the engine must survive for `/search` and `notePaths`, and the fed-search UI plan builds *on* GraphQL), while unifying the retrieval core removes ~200 duplicated lines from `internal/case/mcp`, closes the dot/cosine and dim-guard drift, and gives the federated-search work a single engine to call. This also matches the in-flight `internal/fedsearch` extraction proposed in `docs/dev/federated_search_ui.md` §3 — the same service-package move, one layer down.
+**Option (c).** The owner's self-correction was directionally right but factually optimistic — the internals were *not* shared at the time, and that was precisely the problem worth fixing. Removing GraphQL search solves nothing (the engine must survive for `notePaths`, and the fed-search UI plan builds *on* GraphQL), while unifying the retrieval core removed ~200 duplicated lines from `internal/case/mcp`, closed the dot/cosine and dim-guard drift, and gives the federated-search work a single engine to call. This also matches the in-flight `internal/fedsearch` extraction proposed in `docs/dev/federated_search_ui.md` §3 — the same service-package move, one layer down.
 
-**Migration sketch (0.5–1 day):**
+**Migration sketch (implemented as written, in PR #176):**
 
 1. Extract `retrieve(ctx, env, query, useLatest) ([]model.SearchResult, passageByURL, error)` — the text+vector+RRF+rerank core — from `sitesearch` (either exported from `sitesearch` or a new `internal/search` service package per the gitapi pattern). `sitesearch.Env` already declares everything it needs.
 2. `sitesearch.Resolve` becomes: corpus choice → `retrieve` → scope/permission filter → placeholders → caps. (Mostly unchanged.)
@@ -73,15 +81,15 @@ Switching this widget to the MCP endpoint would require:
 
 **Trade-offs of (c):** the shared engine gains a `useLatest` parameter and both callers' expectations become coupled — a retrieval change now affects agents and visitors simultaneously (that is the point, but it means rerank experiments hit both surfaces; if a surface ever needs different retrieval behavior, add an options struct, don't re-fork). The latest→live change for anonymous MCP is a user-visible behavior change for agent clients on draft-showing sites; it should be called out in the changelog.
 
-## References
+## References (post-PR #176; pre-change line numbers in §1-3 are historical)
 
-- `internal/case/sitesearch/resolve.go:50` — the site engine (text+vector+RRF+rerank+ACL)
-- `internal/graph/schema.resolvers.go:3205` — GraphQL wrapper (1 line)
-- `internal/graph/schema.resolvers.go:3230` — `notePaths(search:)` reuses it
-- `internal/case/rendersearchpage/endpoint.go:35` — `/search` HTML page, third consumer
-- `internal/case/mcp/resolve.go:489` — MCP `handleSearch`, parallel pipeline
-- `internal/case/mcp/resolve.go:1216-1421` — duplicated vector/RRF/snippet code
-- `internal/case/mcp/resolve.go:502,513` — MCP always-latest corpus
+- `internal/case/sitesearch/retrieve.go` — the shared retrieval core (`Retrieve`)
+- `internal/case/sitesearch/resolve.go` — site adapter (ACL, placeholders, caps)
+- `internal/case/mcp/resolve.go` — MCP adapter (`handleSearch`: corpus choice, `filterSearchResults`, `buildSearchPayload`)
+- `internal/case/sitesearch/golden_test.go` — golden retrieval rankings
+- `internal/case/mcp/search_corpus_test.go` — corpus selection + cross-transport parity tests
+- `internal/graph/schema.resolvers.go` — GraphQL wrapper (1 line) and `notePaths(search:)` reuse
 - `assets/ui/user/search/search.view.ts:2` — frontend uses GraphQL `search`
 - `internal/defaulttemplate/views.html:421` — template mounts the widget
 - `docs/dev/federated_search_ui.md` — in-flight design that extends GraphQL search
+- `docs/dev/todo_remove_old_layout.md` — `rendersearchpage` removal recorded there (step 1 done)
