@@ -186,10 +186,17 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 }
 
 func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:funlen // flat declarative list of built-in tool schemas
+	maxDepth := env.FederationMaxDepth()
+	nestedKBIDNote := fmt.Sprintf(
+		"Target knowledge base id; nested bases use '/' "+
+			`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively). `+
+			"Federation nests up to %d levels deep (kb_id path segments); a deeper path is rejected.",
+		maxDepth,
+	)
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(toc_path=[...]) to read the matched section, or expand(pid=..., toc_path=[...]) to navigate the note's structure level by level; 3) note_html(pid=..., match_id=...) for a focused chunk window.",
+			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -205,29 +212,54 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "similar",
-			Description: "Find related notes from a known note id, href, or path. Use this after opening a promising note when you need nearby context.",
+			Description: "Find related notes from a known note reference. Preferred: path (a search result's note_path field). Use this after opening a promising note when you need nearby context.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":    {Type: "string", Description: "Note path from a search result — the usual way to reference a note"},
-					"href":    {Type: "string", Description: "Note href from search results"},
-					"pid":     {Type: "number", Description: "Internal integer note id, e.g. HTML data-pid. Prefer path"},
-					"note_id": {Type: "number", Description: "Internal integer note id (rarely available). Prefer path"},
-					"limit":   {Type: "number", Description: "Max number of results (default 10)"},
+					"path": {
+						Type:        "string",
+						Description: "String note path, e.g. \"concepts/maska-i-glubina.md\" — copy verbatim from a search result's note_path field. The default, preferred way to reference a note",
+					},
+					"href": {Type: "string", Description: "String note href, copied verbatim from a search result's href field"},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id — a value like \":\" or \"/hub/goethe.md\" is a path, not a note id. Prefer path",
+					},
+					"note_id": {
+						Type:        "number",
+						Description: "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path",
+					},
+					"limit": {Type: "number", Description: "Max number of results (default 10)"},
 				},
 			},
 		},
 		{
-			Name:        "note_html",
-			Description: "Read a note. Preferred: path (the note_path from a search result) or match_id (a focused chunk window around a search hit; match_id alone is enough to resolve the note). Only pass pid/note_id if you already have that exact integer id from a result. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
+			Name: "note_html",
+			Description: "Read a note. Canonical calls, copying fields verbatim from a search result: " +
+				"search(query) -> note_html(path=<result.note_path>) reads the whole note; " +
+				"search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); " +
+				"expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. " +
+				"Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":          {Type: "string", Description: "Note path from a search result — the usual way to open a note"},
-					"href":          {Type: "string", Description: "Note href or absolute URL from search results"},
-					"pid":           {Type: "number", Description: "Internal integer note id, rarely available. Prefer path or match_id"},
-					"note_id":       {Type: "number", Description: "Internal integer note id, rarely available. Prefer path or match_id"},
-					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
+					"path": {
+						Type:        "string",
+						Description: "String note path, e.g. \"concepts/maska-i-glubina.md\" — copy verbatim from a search result's note_path field. The default, preferred way to open a note",
+					},
+					"href": {Type: "string", Description: "String note href or absolute URL, copied verbatim from a search result's href field"},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id — a value like \":\" or \"/hub/goethe.md\" is a path, not a note id. Prefer path or match_id",
+					},
+					"note_id": {
+						Type:        "number",
+						Description: "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id",
+					},
+					"match_id": {
+						Type:        "string",
+						Description: "String chunk id of the form \"p<pid>:c<chunk>\" (e.g. \"p32:c4\"), copied verbatim from a search match's match_id field. Alone it is enough to resolve the note and reads a focused window around that hit",
+					},
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
 					"toc_path": {
 						Type:        "array",
@@ -239,14 +271,23 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "expand",
-			Description: "Walk a note's table of contents level by level (progressive disclosure). Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+			Description: "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"path":    {Type: "string", Description: "Note path from a search result — the usual way to reference a note"},
-					"href":    {Type: "string", Description: "Note href from search results"},
-					"pid":     {Type: "number", Description: "Internal integer note id, e.g. HTML data-pid. Prefer path"},
-					"note_id": {Type: "number", Description: "Internal integer note id (rarely available). Prefer path"},
+					"path": {
+						Type:        "string",
+						Description: "String note path, e.g. \"concepts/maska-i-glubina.md\" — copy verbatim from a search result's note_path field. The default, preferred way to reference a note",
+					},
+					"href": {Type: "string", Description: "String note href, copied verbatim from a search result's href field"},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path",
+					},
+					"note_id": {
+						Type:        "number",
+						Description: "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path",
+					},
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level.",
@@ -256,16 +297,18 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			},
 		},
 		{
-			Name:        "federated_search",
-			Description: "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive). Use the breadcrumb to locate the approximate section; use federated_note_html(kb_id=..., match_id=...) to open the focused chunk.",
+			Name: "federated_search",
+			Description: fmt.Sprintf(
+				"Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to %d levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+				maxDepth,
+			),
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"query": {Type: "string", Description: "Search query"},
 					"kb_id": {
-						Type: "string",
-						Description: "Target knowledge base id; nested bases use '/' " +
-							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+						Type:        "string",
+						Description: nestedKBIDNote,
 					},
 					"kb_ids": {
 						Type: "array",
@@ -284,59 +327,93 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "federated_similar",
-			Description: "Find remote notes similar to a known note reference inside a connected knowledge base.",
+			Description: "Find remote notes similar to a known note reference inside a connected knowledge base. Preferred: path (a federated_search result's note_path field).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"kb_id": {
-						Type: "string",
-						Description: "Target knowledge base id; nested bases use '/' " +
-							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+						Type:        "string",
+						Description: nestedKBIDNote,
 					},
-					"path":    {Type: "string", Description: "Remote note path from a federated_search result"},
-					"href":    {Type: "string", Description: "Remote note href"},
-					"pid":     {Type: "number", Description: "Remote internal integer note id, rarely available. Prefer path"},
-					"note_id": {Type: "string", Description: "Remote internal integer note id as a string. Prefer path"},
-					"limit":   {Type: "number", Description: "Max number of results"},
+					"path": {
+						Type:        "string",
+						Description: "String remote note path, copied verbatim from a federated_search result's note_path field",
+					},
+					"href": {Type: "string", Description: "String remote note href, copied verbatim from a federated_search result's href field"},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Prefer path",
+					},
+					"note_id": {
+						Type:        "string",
+						Description: "Same remote note id as pid, but as a STRING (uint64) — stringify the federated_search result's note_id field. Prefer path",
+					},
+					"limit": {Type: "number", Description: "Max number of results"},
 				},
 				Required: []string{"kb_id"},
 			},
 		},
 		{
-			Name:        "federated_note_html",
-			Description: "Read a remote note inside a connected knowledge base. Preferred: path (from a federated_search result) or match_id (a focused chunk window around a search hit; match_id alone is enough to resolve the note). Only pass pid/note_id if you already have that exact id from a result.",
+			Name: "federated_note_html",
+			Description: "Read a remote note inside a connected knowledge base. Canonical call, copying fields verbatim from a federated_search result: " +
+				"federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — " +
+				"the standard way to descend into a leaf corpus and read real content there, not hub cards. " +
+				"federated_note_html(kb_id=..., match_id=<match.match_id>) reads just the focused chunk around a hit. " +
+				"Only pass pid/note_id if you already copied that exact id from a result.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"kb_id": {
-						Type: "string",
-						Description: "Target knowledge base id; nested bases use '/' " +
-							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+						Type:        "string",
+						Description: nestedKBIDNote,
 					},
-					"path":     {Type: "string", Description: "Remote note path from a federated_search result"},
-					"href":     {Type: "string", Description: "Remote note href or absolute URL from search results"},
-					"pid":      {Type: "number", Description: "Remote internal integer id, rarely available. Prefer path or match_id"},
-					"note_id":  {Type: "string", Description: "Remote internal integer id as a string. Prefer path or match_id"},
-					"match_id": {Type: "string", Description: "Focused match id from remote search results; match_id alone is enough"},
+					"path": {
+						Type:        "string",
+						Description: "String remote note path, copied verbatim from a federated_search result's note_path field",
+					},
+					"href": {
+						Type:        "string",
+						Description: "String remote note href or absolute URL, copied verbatim from a federated_search result's href field",
+					},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id",
+					},
+					"note_id": {
+						Type:        "string",
+						Description: "Same remote note id as pid, but as a STRING (uint64) — stringify the federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id",
+					},
+					"match_id": {
+						Type:        "string",
+						Description: "String chunk id of the form \"p<pid>:c<chunk>\", copied verbatim from a remote search match's match_id field; alone it is enough to resolve the note",
+					},
 				},
 				Required: []string{"kb_id"},
 			},
 		},
 		{
 			Name:        "federated_expand",
-			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"kb_id": {
-						Type: "string",
-						Description: "Target knowledge base id; nested bases use '/' " +
-							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+						Type:        "string",
+						Description: nestedKBIDNote,
 					},
-					"path":    {Type: "string", Description: "Remote note path from a federated_search result"},
-					"href":    {Type: "string", Description: "Remote note href"},
-					"pid":     {Type: "number", Description: "Remote internal integer note id, rarely available. Prefer path"},
-					"note_id": {Type: "string", Description: "Remote internal integer note id as a string. Prefer path"},
+					"path": {
+						Type:        "string",
+						Description: "String remote note path, copied verbatim from a federated_search result's note_path field",
+					},
+					"href": {Type: "string", Description: "String remote note href, copied verbatim from a federated_search result's href field"},
+					"pid": {
+						Type:        "number",
+						Description: "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Prefer path",
+					},
+					"note_id": {
+						Type:        "string",
+						Description: "Same remote note id as pid, but as a STRING (uint64) — stringify the federated_search result's note_id field. Prefer path",
+					},
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to the node to expand. Omit or [] for the top level.",
@@ -376,9 +453,8 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				Type: "object",
 				Properties: map[string]Property{
 					"kb_id": {
-						Type: "string",
-						Description: "Target knowledge base id; nested bases use '/' " +
-							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
+						Type:        "string",
+						Description: nestedKBIDNote,
 					},
 					"query":     {Type: "string", Description: "Read-only GraphQL query string"},
 					"variables": {Type: "object", Description: "Optional variables map"},

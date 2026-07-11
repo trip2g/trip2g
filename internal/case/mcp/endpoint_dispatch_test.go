@@ -71,6 +71,7 @@ func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 		FederatedFanoutConcurrencyFunc: func() int { return 5 },
 		FederatedFanoutLimitFunc:       func() int { return 7 },
 		FederatedFanoutTimeoutFunc:     func() time.Duration { return 5 * time.Second },
+		FederationMaxDepthFunc:         func() int { return 3 },
 	}
 	if verifyInboundWillFail {
 		env.FederationSecretByKIDFunc = func(_ context.Context, _ string) (db.FederationSecret, bool, error) {
