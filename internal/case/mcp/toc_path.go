@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"trip2g/internal/model"
 
@@ -239,6 +240,25 @@ func markedContext(snippet string) string {
 	if hi > len(snippet) {
 		hi = len(snippet)
 	}
+
+	// Snap to rune boundaries: the byte window above is computed from
+	// strings.Index offsets and can land inside a multi-byte UTF-8 sequence
+	// (e.g. Cyrillic). Advance lo past any leading continuation byte, and
+	// pull hi back before any trailing partial rune, so the slice below is
+	// always valid UTF-8.
+	for lo < len(snippet) && !utf8.RuneStart(snippet[lo]) {
+		lo++
+	}
+	for hi > 0 && hi < len(snippet) && !utf8.RuneStart(snippet[hi]) {
+		hi--
+	}
+	if lo > hi {
+		// Degenerate window (shouldn't happen with window=120 and short
+		// runes) — fall back to the exact match, which is always a valid
+		// boundary since <mark>/</mark> are ASCII.
+		return snippet[start:end]
+	}
+
 	return snippet[lo:hi]
 }
 
