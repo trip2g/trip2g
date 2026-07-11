@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 var (
@@ -24,6 +25,8 @@ var (
 )
 
 const federationJWTSkew = 5 * time.Second
+
+const contentTypeText = "text"
 
 type federationVerifyEnv interface {
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
@@ -165,11 +168,72 @@ func splitKBID(id string) (string, string) {
 	return head, rest
 }
 
+// prefixKBID rewrites every search result into the caller's frame by stamping
+// the local peer segment onto its kb_id. A base's id is relative to the peer
+// that mounts it, so each hop prefixes its own segment: an item with no kb_id
+// yet (a leaf note answered here) becomes localSegment; one that already
+// carries a kb_id (reported by a deeper hop) becomes localSegment/<kb_id>.
+// The pointer ref's kb_id is kept in sync for back-compat.
 func prefixKBID(localSegment string, items []SearchResultItem) {
 	for i := range items {
-		if items[i].Federation == nil || items[i].Federation.KBID == "" {
-			continue
+		if items[i].KBID == "" {
+			items[i].KBID = localSegment
+		} else {
+			items[i].KBID = localSegment + "/" + items[i].KBID
 		}
-		items[i].Federation.KBID = localSegment + "/" + items[i].Federation.KBID
+		if items[i].Federation != nil && items[i].Federation.KBID != "" {
+			items[i].Federation.KBID = localSegment + "/" + items[i].Federation.KBID
+		}
+	}
+}
+
+// rewriteFederatedResponse rewrites a federated response returned by the child
+// reached through localSegment into this hub's frame. Search results get their
+// kb_id prefixed; a not-configured status carries a prefixable hint so the
+// suggested address composes across every hop back to the root.
+func rewriteFederatedResponse(localSegment string, result *model.FederationResult) {
+	if result == nil || len(result.StructuredContent) == 0 {
+		return
+	}
+
+	var status FederationStatusPayload
+	if err := json.Unmarshal(result.StructuredContent, &status); err == nil &&
+		status.Status == "federation_not_configured" && status.KBID != "" {
+		status.KBID = localSegment + "/" + status.KBID
+		status.Message = notConfiguredMessage(status.KBID)
+		if encoded, e := json.Marshal(status); e == nil {
+			result.StructuredContent = encoded
+			result.Content = []model.FederationContent{{Type: contentTypeText, Text: status.Message}}
+		}
+		return
+	}
+
+	var payload SearchResultPayload
+	if err := json.Unmarshal(result.StructuredContent, &payload); err == nil && len(payload.Results) > 0 {
+		prefixKBID(localSegment, payload.Results)
+		if encoded, e := json.Marshal(payload); e == nil {
+			result.StructuredContent = encoded
+		}
+	}
+}
+
+// notConfiguredMessage renders the not-configured hint. A flat kb_id may live
+// under a hub, so the hint tells the caller how nested bases are addressed; a
+// composed (already nested) kb_id is stated verbatim as the address to use.
+func notConfiguredMessage(kbID string) string {
+	switch {
+	case kbID == "":
+		return "Federation is not configured for this hub. No KB-notes were found. To enable federation, create a note with mcp_federation_kb_url frontmatter pointing to another MCP endpoint."
+	case strings.Contains(kbID, "/"):
+		return fmt.Sprintf(
+			"Federation is not configured for kb_id %q. Bases reached through a hub are addressed <hub>/<base> — address this base as %q.",
+			kbID, kbID)
+	default:
+		return fmt.Sprintf(
+			"Federation is not configured for kb_id %q. If %q lives under a hub, address it as <hub>/%s (bases reached through a hub are addressed <hub>/<base>).",
+			kbID,
+			kbID,
+			kbID,
+		)
 	}
 }

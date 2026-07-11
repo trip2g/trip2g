@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"trip2g/internal/model"
 )
@@ -75,6 +74,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
+	rewriteFederatedResponse(kb.ID, &result)
 	return successResponse(id, federationResultToToolResult(result))
 }
 
@@ -211,13 +211,9 @@ func handleFederatedGraphQLRequest(ctx context.Context, env Env, id any, argsRaw
 }
 
 func federationNotConfiguredResponse(id any, kbID string) Response {
-	message := "Federation is not configured for this hub. No KB-notes were found. To enable federation, create a note with mcp_federation_kb_url frontmatter pointing to another MCP endpoint."
-	status := "federation_not_configured"
-	if kbID != "" {
-		message = fmt.Sprintf("Federation is not configured for kb_id %q.", kbID)
-	}
+	message := notConfiguredMessage(kbID)
 	payload := FederationStatusPayload{
-		Status:  status,
+		Status:  "federation_not_configured",
 		KBID:    kbID,
 		Message: message,
 	}

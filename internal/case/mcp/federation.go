@@ -169,6 +169,10 @@ func aggregateFederationResults(results []ProxiedResult, skipped []*model.MCPFed
 			})
 			continue
 		}
+		// Stamp each direct peer's results into this hub's frame before aggregating.
+		if kbID != "" {
+			rewriteFederatedResponse(kbID, &result.Result)
+		}
 		payload.Results = append(payload.Results, FederatedCallResult{
 			KBID:    kbID,
 			Result:  result.Result,

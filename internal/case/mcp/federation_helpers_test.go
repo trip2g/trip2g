@@ -56,6 +56,7 @@ func TestPrefixKBID(t *testing.T) {
 		{Title: "local"},
 		{
 			Title: "remote",
+			KBID:  "cellbio",
 			Federation: &FederationRef{
 				KBID:             "cellbio",
 				KBURL:            "https://science.example/_system/mcp",
@@ -66,7 +67,11 @@ func TestPrefixKBID(t *testing.T) {
 
 	prefixKBID("science", items)
 
+	// An ordinary leaf note answered here is stamped with the local segment.
+	require.Equal(t, "science", items[0].KBID)
 	require.Nil(t, items[0].Federation)
+	// A pointer note reported one hop down is prefixed into the caller's frame.
+	require.Equal(t, "science/cellbio", items[1].KBID)
 	require.Equal(t, "science/cellbio", items[1].Federation.KBID)
 	require.Equal(t, "https://science.example/_system/mcp", items[1].Federation.KBURL)
 	require.Equal(t, "open remote", items[1].Federation.AgentInstruction)

@@ -780,6 +780,9 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
 		item.Kind = "federation_kb"
+		// A pointer note's own address, relative to this hub. Federation hops
+		// prefix their local segment onto it on the way back to the caller.
+		item.KBID = kb.ID
 		item.Federation = &FederationRef{
 			KBID:             kb.ID,
 			KBURL:            kb.URL,

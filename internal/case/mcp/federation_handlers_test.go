@@ -118,7 +118,11 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 	require.Equal(t, "status", gotQuery)
 	result := resp.Result.(mcp.CallToolResult)
 	require.Equal(t, "remote bob", result.Content[0].Text)
-	require.JSONEq(t, `{"results":[{"title":"remote"}]}`, string(result.StructuredContent.(json.RawMessage)))
+	// A directly-federated base stamps kb_id = peer name onto every result.
+	var payload mcp.SearchResultPayload
+	require.NoError(t, json.Unmarshal(result.StructuredContent.(json.RawMessage), &payload))
+	require.Len(t, payload.Results, 1)
+	require.Equal(t, "bob", payload.Results[0].KBID)
 }
 
 func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
