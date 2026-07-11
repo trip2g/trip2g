@@ -539,33 +539,45 @@ If a real reseller use case appears, see `docs/dev/mcp_federation_marketplace.md
 
 Every federated request carries a cumulative hop counter in the
 `X-MCP-Federation-Depth` header, incremented by 1 at each outbound hop
-(`internal/federation/client.go`). On receipt each instance compares the
-**incoming** depth against its **own** `mcp-federation-max-depth` (default `3`,
-`appconfig/config.go`) and rejects with `federation max depth exceeded` when
-`incomingDepth >= localMax` (`internal/case/mcp/endpoint.go`). Direct clients
-send no header (depth 0) and are never rejected by this check — the limit only
+(`internal/federation/client.go`). The limit is **inclusive**: a request is
+rejected only when the depth would be **strictly greater** than the receiving
+instance's own `mcp-federation-max-depth` (default `3`, `appconfig/config.go`),
+i.e. `incomingDepth > localMax` (`internal/case/mcp/endpoint.go`). Direct
+clients send no header (depth 0) and are never rejected — the limit only
 governs requests arriving *through* federation.
 
-A nested `kb_id` path consumes one depth level per segment: from the root,
-`philosophers/nietzsche` reaches depth 2 (works at default 3), while
-`philosophers/nietzsche/schopenhauer` reaches depth 3 and is rejected. So the
-default `3` allows **two levels of nesting** below a direct client.
+A nested `kb_id` path consumes one depth level per segment: **N segments are
+allowed when N ≤ max**. From the root at default `3`: `philosophers/nietzsche`
+(2 segments) and `philosophers/nietzsche/schopenhauer` (3 segments) both work;
+a 4-segment path is rejected. So the default `3` allows **three levels of
+nesting**.
+
+### Early, clean rejection
+
+Before firing any outbound hop, each node checks `incomingDepth +
+segmentCount(kb_id)` against its own max and, if it exceeds, returns a single
+unwrapped message `kb_id path depth <total> exceeds federation max depth <max>`
+(`internal/case/mcp/federation_handlers.go`). Because that sum is invariant
+along the path — each hop trades one segment for one depth unit — the entry
+node (which sees the full path) rejects up front. No doomed outbound hops fire,
+so there is no triple-wrapped `federation rpc error -32603: … -32603: …`. Blind
+fan-out (`kb_id=""`, 0 segments) and cycles that only reveal their depth at
+runtime fall through to the header-depth **backstop** in `endpoint.go`, which
+still bounds them.
 
 ### Heterogeneous limits across instances
 
 The counter is global to a chain; each instance judges it by its own local max.
 Consequences when instances disagree:
 
-- The chain is cut at the **first** instance whose `max <= the depth it
-  receives at`. The **stingiest instance on the path caps everything beyond
-  it** — a larger limit downstream is useless if an upstream peer already
-  rejected.
+- The chain is cut at the **first** instance whose `max < the depth it receives
+  at`. The **stingiest instance on the path caps everything beyond it** — a
+  larger limit downstream is useless if an upstream peer already rejected.
 - Reachability is **route-dependent and asymmetric**: the same leaf may be
   reachable through one hub and not through another, purely by which instances
   sit at which positions. This is **expected**, not a bug.
-- An entry instance can reject early by checking `incomingDepth +
-  segments(kb_id)` against its **own** max, but it cannot know downstream peers'
-  limits, so deeper cuts still happen live.
+- Early rejection only enforces the entry node's *own* max — it cannot know
+  downstream peers' limits, so deeper cuts still happen live via the backstop.
 
 **Operational guidance:** keep `mcp-federation-max-depth` consistent across a
 federation you operate, or monotonically non-decreasing along expected paths
@@ -582,3 +594,10 @@ equivalent of qualifying a name toward an FQDN. The depth counter is an
 application-layer **TTL / `Max-Forwards`** (IP TTL RFC 791; HTTP `Max-Forwards`
 RFC 7231; SIP `Max-Forwards` RFC 3261) — a per-hop counter that drops a request
 when exhausted, with the same inherent, accepted route-dependence.
+
+We deliberately keep our **own** `X-MCP-Federation-Depth` header rather than
+reuse `Max-Forwards`. `Max-Forwards` is a *decrementing budget set by the
+origin client* and defined only for TRACE/OPTIONS; loop protection must be
+enforced **server-side** against the observed depth, or a client could send a
+large budget and defeat it. Our incrementing counter judged by each server's
+own max cannot be spoofed that way.
