@@ -8,6 +8,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## Unreleased
+
+### Search: one retrieval engine for site and MCP
+
+- **What.** The site (GraphQL) search and the MCP `search` tool now share one retrieval engine (text + vector + rank fusion) instead of two divergent copies. Two behavior changes for MCP clients: anonymous (and federation) clients now search **published (live)** notes, like anonymous site visitors — previously they searched the latest versions, including drafts of public notes; and vector search now skips stale embeddings after an embedding-model switch instead of ranking them arbitrarily. The unused server-rendered `/search` page is removed (the site search widget uses GraphQL and is unaffected).
+- **Why.** Retrieval fixes and tuning landed on one surface and silently missed the other; agents and visitors could see different rankings for the same query. On sites with draft previews enabled, anonymous MCP clients could read draft content of public notes.
+- **How.** Automatic. If an agent integration relied on anonymous MCP search seeing drafts, authenticate it with an API key — API-key clients still search the latest corpus.
+
 ## v0.8.0 (2026-07-01)
 
 ### Fleet agent runtime
