@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ note.Title() }}</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2129; --border: #2d333b;
+    --text: #c9d1d9; --dim: #768390; --accent: #58a6ff; --good: #3fb950;
+    --warn: #d29922; --bad: #f85149; --query: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 8px 14px;
+    background: var(--panel); border-bottom: 1px solid var(--border); flex: 0 0 auto;
+  }
+  header h1 { font-size: 14px; font-weight: 600; letter-spacing: .3px; }
+  header h1 span { color: var(--accent); }
+  #cost { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--warn); }
+  #status { color: var(--dim); max-width: 40ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  main { flex: 1 1 auto; display: flex; min-height: 0; }
+  #config {
+    width: 270px; flex: 0 0 auto; background: var(--panel);
+    border-right: 1px solid var(--border); padding: 12px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  #config label { display: block; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  #config input[type=text], #config input[type=password], #config textarea, #config select {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font: inherit;
+  }
+  #config input:focus, #config textarea:focus { outline: none; border-color: var(--accent); }
+  #config textarea { resize: vertical; min-height: 54px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .hint { color: var(--dim); font-size: 11px; }
+  #about { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+  #about a { color: var(--accent); }
+  #about h1, #about h2, #about h3 { display: none; }
+  #about p { margin: 4px 0; }
+  .modes { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .modes button { flex: 1; background: var(--bg); color: var(--dim); border: none; padding: 6px; cursor: pointer; font: inherit; }
+  .modes button.on { background: var(--accent); color: #04182e; font-weight: 600; }
+  button.big {
+    background: var(--good); color: #04180a; border: none; border-radius: 6px;
+    padding: 8px; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  button.big:disabled { background: var(--border); color: var(--dim); cursor: default; }
+  button.ghost {
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font: inherit; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--accent); }
+  button.stop { background: var(--bad); color: #2a0505; }
+  #graphwrap { flex: 1 1 auto; position: relative; min-width: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #legend {
+    position: absolute; left: 10px; bottom: 10px; background: rgba(22,27,34,.85);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: 11px; color: var(--dim); pointer-events: none; max-width: 260px;
+  }
+  .lg { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  #answer {
+    position: absolute; left: 10px; right: 10px; top: 10px; max-height: 45%;
+    overflow-y: auto; background: rgba(22,27,34,.96); border: 1px solid var(--good);
+    border-radius: 10px; padding: 12px 14px; display: none; white-space: pre-wrap;
+  }
+  #answer.err { border-color: var(--bad); }
+  #answer .close { float: right; cursor: pointer; color: var(--dim); }
+  #answer h3 { font-size: 12px; text-transform: uppercase; color: var(--good); margin-bottom: 6px; letter-spacing: .5px; }
+  #answer.err h3 { color: var(--bad); }
+  #answer a { color: var(--accent); }
+  #journal {
+    width: 340px; flex: 0 0 auto; background: var(--panel);
+    border-left: 1px solid var(--border); overflow-y: auto; padding: 8px;
+  }
+  .ev { border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; margin-bottom: 7px; }
+  .ev.think { border-left: 3px solid var(--dim); color: var(--text); white-space: pre-wrap; }
+  .ev.tool { border-left: 3px solid var(--accent); cursor: pointer; }
+  .ev.tool:hover, .ev.tool.sel { background: var(--panel2); }
+  .ev.err { border-left: 3px solid var(--bad); }
+  .ev .t { display: flex; gap: 8px; align-items: baseline; }
+  .ev .name { color: var(--accent); font-weight: 600; font-family: ui-monospace, monospace; font-size: 12px; }
+  .ev .ms { margin-left: auto; color: var(--warn); font-variant-numeric: tabular-nums; font-size: 11px; }
+  .ev .args { color: var(--dim); font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; margin-top: 2px; }
+  .ev .snip { color: var(--dim); font-size: 11px; margin-top: 4px; max-height: 52px; overflow: hidden; }
+  .turnhdr { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin: 10px 2px 5px; }
+  #inspect {
+    position: absolute; right: 10px; bottom: 10px; width: 310px; max-height: 48%;
+    overflow-y: auto; background: rgba(22,27,34,.95); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; display: none; font-size: 12px;
+  }
+  #inspect h4 { font-size: 12px; color: var(--accent); margin-bottom: 5px; padding-right: 18px; }
+  #inspect .close { float: right; cursor: pointer; color: var(--dim); }
+  #inspect .kv { color: var(--dim); margin: 3px 0; }
+  #inspect .kv b { color: var(--text); font-weight: 600; }
+  #inspect pre { white-space: pre-wrap; word-break: break-word; font: 11px ui-monospace, monospace; color: var(--dim); background: var(--bg); border-radius: 6px; padding: 6px; margin-top: 5px; max-height: 170px; overflow-y: auto; }
+  #inspect a { color: var(--accent); word-break: break-all; }
+  #inspect .reason { color: var(--text); font-style: italic; margin-top: 5px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MCP <span>graph walk</span></h1>
+  <div id="status">idle</div>
+  <div id="cost">$0.0000</div>
+</header>
+<main>
+  <div id="config">
+    <div id="keybox">
+      <label>OpenRouter API key</label>
+      <input type="password" id="apikey" placeholder="sk-or-v1-…">
+      <div class="hint">The key stays in your browser (localStorage) and is sent only to openrouter.ai. No key? Press Demo.</div>
+    </div>
+    <div>
+      <label>Model</label>
+      <input type="text" id="model" list="models" value="openai/gpt-5.4-nano">
+      <datalist id="models">
+        <option value="openai/gpt-5.4-nano"></option>
+        <option value="openai/gpt-5.4-mini"></option>
+        <option value="anthropic/claude-haiku-4.5"></option>
+        <option value="anthropic/claude-sonnet-5"></option>
+        <option value="qwen/qwen3-14b"></option>
+      </datalist>
+    </div>
+    <div>
+      <label>MCP endpoint</label>
+      <input type="text" id="endpoint" value="/_system/mcp">
+      <div class="hint">Same-origin MCP endpoint of this trip2g instance — works on any domain it runs on.</div>
+    </div>
+    <div>
+      <label>Mode</label>
+      <div class="modes">
+        <button id="mode-task" class="on">TASK</button>
+        <button id="mode-wander">WANDER</button>
+      </div>
+    </div>
+    <div id="taskbox">
+      <label>Question</label>
+      <textarea id="task" placeholder="e.g. How do I connect a private federation peer?">How does MCP federation work, and what do the philosophers say about fate?</textarea>
+    </div>
+    <div>
+      <label>Max turns: <span id="turnsval">12</span></label>
+      <input type="range" id="turns" min="2" max="30" value="12" style="width:100%">
+    </div>
+    <button class="big" id="start">▶ Start walk</button>
+    <div class="row">
+      <button class="ghost" id="replay" disabled>↻ Replay</button>
+      <button class="ghost" id="export" disabled>⤓ Export</button>
+      <button class="ghost" id="demo">Demo</button>
+    </div>
+    <div class="hint">Demo replays a pre-recorded trace (real MCP calls, real latencies) — no API key needed. Edge animation duration = the actual tool-call latency, capped at 2.5&nbsp;s.</div>
+    <div class="hint" id="about">{{ note.HTMLString() | unsafe }}</div>
+  </div>
+  <div id="graphwrap">
+    <canvas id="cv"></canvas>
+    <div id="answer"><span class="close" onclick="this.parentNode.style.display='none'">✕</span><h3 id="anshdr">Final answer</h3><div id="anstext"></div></div>
+    <div id="legend">
+      <div class="lg"><span class="dot" style="background:#e6edf3;width:13px;height:13px"></span>step (numbered — the walk's spine)</div>
+      <div class="lg"><span class="dot" style="background:#58a6ff"></span>result note (color = knowledge base)</div>
+      <div class="lg"><span class="dot" style="background:#58a6ff;box-shadow:0 0 6px #58a6ff;border:1.5px solid #e6edf3"></span>note the model actually read</div>
+      <div class="lg"><span class="dot" style="background:#d2a8ff"></span>federated base pointer</div>
+      <div class="lg">bigger circle = returned by more steps · pulsing = current step · click anything for details</div>
+    </div>
+    <div id="inspect"><span class="close" onclick="this.parentNode.style.display='none'">✕</span><div id="inspbody"></div></div>
+  </div>
+  <div id="journal"></div>
+</main>
+<script>
+'use strict';
+/* ============================== state ============================== */
+const $ = id => document.getElementById(id);
+const ALLOWED = ['search','similar','note_html','expand',
+  'federated_search','federated_similar','federated_note_html','federated_expand'];
+const KB_HINT = ' Nested bases use "/" in kb_id: e.g. kb_id="philosophers/machiavelli" routes through the philosophers peer into the base it federates.';
+const CAP_MS = 2500;
+
+let trace = null;          // {mode, task, model, events:[], cost}
+let running = false, stopFlag = false;
+let titleCache = {};       // nodeId -> title, filled from search/similar results
+let qCounter = 0;
+
+$('apikey').value = localStorage.getItem('or_key') || '';
+$('apikey').addEventListener('change', e => localStorage.setItem('or_key', e.target.value.trim()));
+$('turns').addEventListener('input', e => $('turnsval').textContent = e.target.value);
+$('mode-task').onclick = () => setMode('task');
+$('mode-wander').onclick = () => setMode('wander');
+function setMode(m) {
+  $('mode-task').classList.toggle('on', m === 'task');
+  $('mode-wander').classList.toggle('on', m === 'wander');
+  $('taskbox').style.display = m === 'task' ? '' : 'none';
+}
+const mode = () => $('mode-task').classList.contains('on') ? 'task' : 'wander';
+const setStatus = s => $('status').textContent = s;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ============================== graph ============================== */
+// Two node kinds. 'step' = one tool call, numbered, chained into the walk's spine.
+// 'result'/'kb' = notes and base pointers orbiting their step; deduped by kb+note
+// identity, so a note returned by two steps becomes one shared node (degree > 1).
+const G = { nodes: new Map(), edges: [], focus: null, selected: null };
+let stepCount = 0, prevStep = null;
+function resetGraph() {
+  G.nodes.clear(); G.edges.length = 0; G.focus = null; G.selected = null;
+  titleCache = {}; qCounter = 0; stepCount = 0; prevStep = null;
+  $('inspect').style.display = 'none';
+}
+function kbHue(kb) { // stable hue per kb id
+  let h = 0; for (const c of kb) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h % 360;
+}
+function nodeColor(n) {
+  if (n.kind === 'step') return '#e6edf3';
+  if (!n.kb || n.kb === 'hub') return n.kind === 'kb' ? '#d2a8ff' : '#58a6ff';
+  const h = kbHue(n.kb);
+  return `hsl(${h} ${n.kind === 'kb' ? 65 : 55}% ${n.kind === 'kb' ? 72 : 62}%)`;
+}
+function degree(id) { let d = 0; for (const e of G.edges) if (e.a === id || e.b === id) d++; return d; }
+function nodeRadius(n) {
+  if (n.kind === 'step') return 14;
+  let r = n.kind === 'kb' ? 8 : 5.5;
+  r += Math.min(6, (degree(n.id) - 1) * 2);   // shared nodes (convergence hubs) grow
+  if (n.read) r += 3;
+  return r;
+}
+function addNode(id, label, kind, kb, nearId, meta) {
+  let n = G.nodes.get(id);
+  if (n) {
+    if (label && !n.labelLocked) n.label = label;
+    if (meta) Object.assign(n.meta, meta);
+    return n;
+  }
+  const near = nearId && G.nodes.get(nearId);
+  const a = Math.random() * Math.PI * 2, d = kind === 'step' ? 200 : 55 + Math.random() * 25;
+  n = { id, label: label || id, kind, kb, meta: meta || {},
+        x: (near ? near.x : 0) + Math.cos(a) * d,
+        y: (near ? near.y : 0) + Math.sin(a) * d,
+        vx: 0, vy: 0, born: performance.now() };
+  G.nodes.set(id, n);
+  return n;
+}
+function addEdge(a, b, dur, spine) {
+  if (!a || a === b || !G.nodes.has(a) || !G.nodes.has(b)) return;
+  if (G.edges.some(e => (e.a === a && e.b === b) || (e.a === b && e.b === a))) return;
+  G.edges.push({ a, b, spine: !!spine, born: performance.now(),
+                 dur: Math.max(300, Math.min(dur || 600, CAP_MS)) });
+}
+
+/* physics + render */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const view = { x: 0, y: 0, k: 1 };
+function tick() {
+  const ns = [...G.nodes.values()];
+  for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) {
+    const A = ns[i], B = ns[j];
+    let dx = B.x - A.x, dy = B.y - A.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
+    const f = 2600 / d2;
+    dx /= d; dy /= d;
+    A.vx -= dx * f; A.vy -= dy * f; B.vx += dx * f; B.vy += dy * f;
+  }
+  for (const e of G.edges) {
+    const A = G.nodes.get(e.a), B = G.nodes.get(e.b);
+    let dx = B.x - A.x, dy = B.y - A.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+    // spine: long + strong so consecutive steps sit visibly apart;
+    // step->result satellites: short + weak
+    const rest = e.spine ? 230 : 70, k = e.spine ? 0.06 : 0.02;
+    const f = (d - rest) * k;
+    dx /= d; dy /= d;
+    A.vx += dx * f; A.vy += dy * f; B.vx -= dx * f; B.vy -= dy * f;
+  }
+  for (const n of ns) {
+    n.vx -= n.x * 0.002; n.vy -= n.y * 0.002;      // gravity to center
+    n.vx *= 0.85; n.vy *= 0.85;
+    n.x += n.vx; n.y += n.vy;
+  }
+  // collision: keep satellites from overlapping
+  for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) {
+    const A = ns[i], B = ns[j];
+    const min = nodeRadius(A) + nodeRadius(B) + 10;
+    let dx = B.x - A.x, dy = B.y - A.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+    if (d < min) {
+      const push = (min - d) / 2 / d;
+      A.x -= dx * push; A.y -= dy * push; B.x += dx * push; B.y += dy * push;
+    }
+  }
+  // smooth auto-fit
+  if (ns.length) {
+    let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+    for (const n of ns) { minx = Math.min(minx, n.x); maxx = Math.max(maxx, n.x); miny = Math.min(miny, n.y); maxy = Math.max(maxy, n.y); }
+    const w = cv.clientWidth, h = cv.clientHeight;
+    const kx = w / Math.max(240, maxx - minx + 240), ky = h / Math.max(240, maxy - miny + 240);
+    const tk = Math.min(1.4, Math.min(kx, ky));
+    view.k += (tk - view.k) * 0.06;
+    view.x += ((minx + maxx) / 2 - view.x) * 0.06;
+    view.y += ((miny + maxy) / 2 - view.y) * 0.06;
+  }
+}
+function draw() {
+  const dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.translate(w / 2, h / 2); ctx.scale(view.k, view.k); ctx.translate(-view.x, -view.y);
+  const now = performance.now();
+  for (const e of G.edges) {
+    const A = G.nodes.get(e.a), B = G.nodes.get(e.b);
+    const p = Math.min(1, (now - e.born) / e.dur);           // edge grows over real latency
+    const ex = A.x + (B.x - A.x) * p, ey = A.y + (B.y - A.y) * p;
+    ctx.strokeStyle = p < 1 ? '#58a6ff' : (e.spine ? '#768390' : '#30363d');
+    ctx.lineWidth = p < 1 ? 2 : (e.spine ? 2 : 1.2);
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(ex, ey); ctx.stroke();
+    if (p < 1) { // travelling spark
+      ctx.fillStyle = '#79c0ff';
+      ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, 7); ctx.fill();
+    }
+  }
+  const fscale = Math.max(view.k, 0.7);
+  for (const n of G.nodes.values()) {
+    const age = Math.min(1, (now - n.born) / 400);
+    const r = nodeRadius(n) * age;
+    if (n.id === G.focus) {
+      const pr = r + 6 + Math.sin(now / 260) * 3;
+      ctx.strokeStyle = 'rgba(88,166,255,.8)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(n.x, n.y, pr, 0, 7); ctx.stroke();
+    }
+    if (n.id === G.selected) {
+      ctx.strokeStyle = '#d29922'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 5, 0, 7); ctx.stroke();
+    }
+    if (n.read) { // note the model actually opened: glow + outline
+      ctx.save();
+      ctx.shadowColor = nodeColor(n); ctx.shadowBlur = 14;
+      ctx.fillStyle = nodeColor(n);
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#e6edf3'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.stroke();
+    } else {
+      ctx.fillStyle = nodeColor(n);
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.fill();
+    }
+    ctx.textAlign = 'center';
+    if (n.kind === 'step') {
+      ctx.fillStyle = '#0d1117';
+      ctx.font = `bold ${13 / fscale}px ui-sans-serif`;
+      ctx.fillText(n.num, n.x, n.y + 4.5 / fscale);
+      ctx.fillStyle = '#768390';
+      ctx.font = `${10 / fscale}px ui-monospace, monospace`;
+      ctx.fillText(n.label, n.x, n.y + r + 12 / fscale);
+    } else {
+      ctx.fillStyle = '#c9d1d9';
+      ctx.font = `${10.5 / fscale}px ui-sans-serif`;
+      const label = n.label.length > 28 ? n.label.slice(0, 27) + '…' : n.label;
+      ctx.fillText(label, n.x, n.y + r + 12 / fscale);
+    }
+  }
+  ctx.restore();
+}
+(function loop() { tick(); draw(); requestAnimationFrame(loop); })();
+
+/* ================= interpret tool results into graph deltas ================= */
+function nid(kb, key) { return (kb || 'hub') + '::' + key; }
+function fullKb(parentKb, childKb) { return parentKb ? parentKb + '/' + childKb : childKb; }
+function firstHeading(html) {
+  const m = /<h[1-4][^>]*>(.*?)<\/h[1-4]>/i.exec(html || '');
+  return m ? m[1].replace(/<[^>]+>/g, '') : null;
+}
+// Applies one tool call to the graph: a new numbered STEP node chained onto the
+// spine, plus deduped result satellites. dur = real latency (capped in addEdge).
+function interpret(name, args, structured, text, dur, reasoning) {
+  const kb = args.kb_id || null;
+  const sid = 's' + (++stepCount);
+  const step = addNode(sid, name.replace('federated_', 'fed.'), 'step', kb, prevStep,
+                       { name, args, ms: dur, kb, reasoning: reasoning || '' });
+  step.num = stepCount;
+  step.labelLocked = true;
+  addEdge(prevStep, sid, dur, true);
+  prevStep = sid; G.focus = sid;
+
+  const addResult = (r) => {
+    const rkb = r.url && r.url.startsWith('https://trip2g.com') ? kb : (kb || kbFromUrl(r.url));
+    if (r.kind === 'federation_kb' && r.federation) {
+      const fid = fullKb(kb, r.federation.kb_id);
+      const kn = addNode('kb::' + fid, r.title || fid, 'kb', fid, sid,
+                         { title: r.title, kbId: fid, url: r.url, snippet: firstSnippet(r) });
+      kn.labelLocked = true;
+      addEdge(sid, 'kb::' + fid, dur);
+      return;
+    }
+    // dedup by kb + note identity: a note two steps both return = ONE shared node
+    const id = nid(rkb, r.note_id != null ? r.note_id : r.note_path);
+    addNode(id, r.title, 'result', rkb, sid,
+            { title: r.title, path: r.note_path, url: r.url, snippet: firstSnippet(r) });
+    titleCache[id] = r.title;
+    if (r.note_path != null) titleCache[nid(rkb, r.note_path)] = r.title;
+    addEdge(sid, id, dur);
+  };
+
+  if (name.endsWith('search') || name.endsWith('similar')) {
+    for (const r of ((structured && structured.results) || []).slice(0, 8)) addResult(r);
+  }
+  if (!name.endsWith('search')) {
+    // note_html / expand / similar operate ON a note: link it and, for note_html,
+    // promote it to "read" and keep the content for the inspector
+    const key = args.pid != null ? args.pid : args.note_id != null ? args.note_id : (args.path || args.href || '?');
+    const id = nid(kb, key);
+    const label = titleCache[id] || firstHeading(text) || ((kb ? kb + ' ' : '') + 'note ' + key);
+    const n = addNode(id, label, 'result', kb, sid, { title: label, path: args.path });
+    if (titleCache[id]) n.labelLocked = true;
+    addEdge(sid, id, dur);
+    if (name.endsWith('note_html')) {
+      n.read = true;
+      n.meta.content = (text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+      n.meta.tocPath = args.toc_path;
+    }
+  }
+  return sid;
+}
+function firstSnippet(r) {
+  const m = r.matches && r.matches[0];
+  return m ? m.snippet.replace(/<[^>]+>/g, '') : (r.snippet || '');
+}
+
+/* ============================== inspector ============================== */
+function showInspect(id) {
+  const n = G.nodes.get(id);
+  if (!n) return;
+  G.selected = id;
+  const kv = (k, v) => v ? `<div class="kv"><b>${esc(k)}:</b> ${esc(v)}</div>` : '';
+  let html;
+  if (n.kind === 'step') {
+    const m = n.meta;
+    html = `<h4>Step ${n.num} — ${esc(m.name)} <span style="color:var(--warn)">${m.ms} ms</span></h4>` +
+      kv('query', m.args.query) + kv('kb', m.kb) +
+      (m.reasoning ? `<div class="reason">${esc(m.reasoning)}</div>` : '') +
+      `<pre>${esc(JSON.stringify(m.args, null, 1))}</pre>`;
+  } else {
+    const m = n.meta;
+    html = `<h4>${esc(n.label)}${n.read ? ' <span style="color:var(--good)">· read</span>' : ''}${n.kind === 'kb' ? ' <span style="color:#d2a8ff">· federated base</span>' : ''}</h4>` +
+      kv('kb', n.kb || 'hub') + kv('path', m.path) +
+      kv('returned by', degree(id) + ' step(s)') +
+      (m.tocPath ? kv('section', JSON.stringify(m.tocPath)) : '') +
+      (m.url ? `<div class="kv"><a href="${esc(m.url)}" target="_blank">${esc(m.url)}</a></div>` : '') +
+      (m.snippet ? `<pre>${esc(m.snippet)}</pre>` : '') +
+      (m.content ? `<pre>${esc(m.content)}</pre>` : '');
+  }
+  $('inspbody').innerHTML = html;
+  $('inspect').style.display = 'block';
+}
+function kbFromUrl(url) {
+  if (!url) return null;
+  const m = /^https?:\/\/([^./]+)\.2pub\.me/.exec(url);
+  return m ? m[1] : null;
+}
+
+/* ============================== journal ============================== */
+function journalAssistant(text) {
+  const d = document.createElement('div');
+  d.className = 'ev think'; d.textContent = text;
+  $('journal').appendChild(d); d.scrollIntoView({ block: 'end' });
+}
+function journalTurn(i) {
+  const d = document.createElement('div');
+  d.className = 'turnhdr'; d.textContent = 'turn ' + i;
+  $('journal').appendChild(d);
+}
+function journalTool(name, args, ms, snippet, nodeId, isErr) {
+  const d = document.createElement('div');
+  d.className = 'ev tool' + (isErr ? ' err' : '');
+  d.innerHTML = `<div class="t"><span class="name">${esc(name)}</span><span class="ms">${ms} ms</span></div>` +
+    `<div class="args">${esc(JSON.stringify(args))}</div>` +
+    (snippet ? `<div class="snip">${esc(snippet)}</div>` : '');
+  d.onclick = () => {
+    document.querySelectorAll('.ev.sel').forEach(e => e.classList.remove('sel'));
+    d.classList.add('sel');
+    showInspect(nodeId);
+  };
+  $('journal').appendChild(d); d.scrollIntoView({ block: 'end' });
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function showAnswer(text, isErr, hdr) {
+  $('answer').style.display = 'block';
+  $('answer').classList.toggle('err', !!isErr);
+  $('anshdr').textContent = hdr || (isErr ? 'Error' : 'Final answer');
+  $('anstext').innerHTML = esc(text)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank">$1</a>');
+}
+
+/* ============================== MCP client ============================== */
+let rpcId = 0;
+async function rpc(endpoint, method, params) {
+  const res = await fetch(endpoint, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params: params || {} }),
+  });
+  if (!res.ok) throw new Error(`MCP HTTP ${res.status}`);
+  const j = await res.json();
+  if (j.error) throw new Error(`MCP error ${j.error.code}: ${j.error.message}`); // never render errors as empty results
+  return j.result;
+}
+async function mcpInit(endpoint) {
+  await rpc(endpoint, 'initialize', {
+    protocolVersion: '2024-11-05', capabilities: {},
+    clientInfo: { name: 'mcp-graph-visualizer', version: '1.0' },
+  });
+  const { tools } = await rpc(endpoint, 'tools/list');
+  return tools.filter(t => ALLOWED.includes(t.name)).map(t => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: (t.description || '').slice(0, 900) + (t.name.startsWith('federated') ? KB_HINT : ''),
+      parameters: t.inputSchema || { type: 'object', properties: {} },
+    },
+  }));
+}
+function contentText(result) {
+  return ((result && result.content) || []).filter(c => c.type === 'text').map(c => c.text).join('\n');
+}
+// trim structuredContent for the trace so exports stay small
+function trimStructured(sc) {
+  if (!sc) return null;
+  const slim = r => ({ title: r.title, note_id: r.note_id, note_path: r.note_path, url: r.url,
+    kind: r.kind, federation: r.federation ? { kb_id: r.federation.kb_id } : undefined,
+    snippet: (r.matches && r.matches[0] && r.matches[0].snippet || '').replace(/<[^>]+>/g, '').slice(0, 300) || undefined });
+  const out = {};
+  if (sc.results) out.results = sc.results.map(slim);
+  if (sc.source) out.source = slim(sc.source);
+  if (sc.query) out.query = sc.query;
+  return out;
+}
+
+/* ============================== engine ============================== */
+const SYS_TASK = `You explore a documentation knowledge graph through MCP tools and answer the user's question from what you actually read — never from memory.
+Loop: search(query) -> read only the matched section with note_html(pid, toc_path=[...]) -> expand(pid) if the pointer looks off. Use similar(pid) for neighbors.
+If a search result has kind "federation_kb", or local search finds nothing, use federated_search (pass kb_id to target one base; follow-up reads need federated_note_html/expand/similar with the same kb_id).
+Think out loud briefly (1-2 sentences) before each tool call so an observer can follow your reasoning. Cite note URLs in the final answer. When you have enough, answer without calling more tools.`;
+const SYS_WANDER = `You are a curious wanderer in a knowledge graph, with no task. Explore through MCP tools: start with a search on whatever genuinely intrigues you, then follow your curiosity — read sections (note_html with toc_path), check neighbors (similar), descend into federated bases (federated_search with kb_id; nested bases use "/" in kb_id). Prefer depth over breadth: follow one thread until it surprises you.
+Before each tool call, say in 1-2 sentences what pulls you there. After roughly {N} hops, settle: stop calling tools and describe your final resting place — which note you ended on, the theme that emerged along the walk, and the most surprising connection you found.`;
+
+async function runLive() {
+  const key = $('apikey').value.trim();
+  if (!key) { showAnswer('Enter an OpenRouter API key (or press Demo).', true); return; }
+  const endpoint = $('endpoint').value.trim();
+  const model = $('model').value.trim();
+  const maxTurns = +$('turns').value;
+  const m = mode();
+  const task = $('task').value.trim();
+  if (m === 'task' && !task) { showAnswer('Type a question, or switch to WANDER.', true); return; }
+
+  running = true; stopFlag = false;
+  $('start').textContent = '■ Stop'; $('start').classList.add('stop');
+  $('journal').innerHTML = ''; $('answer').style.display = 'none';
+  resetGraph();
+  trace = { version: 1, mode: m, task: m === 'task' ? task : null, model,
+            endpoint, recorded: new Date().toISOString(), events: [], cost: 0 };
+  $('cost').textContent = '$0.0000';
+
+  try {
+    setStatus('connecting to MCP…');
+    const tools = await mcpInit(endpoint);
+    setStatus(`connected — ${tools.length} tools`);
+    const messages = [
+      { role: 'system', content: m === 'task' ? SYS_TASK : SYS_WANDER.replace('{N}', Math.max(4, maxTurns - 3)) },
+      { role: 'user', content: m === 'task' ? task : 'Begin your wander.' },
+    ];
+    for (let turn = 1; turn <= maxTurns && !stopFlag; turn++) {
+      journalTurn(turn);
+      setStatus(`turn ${turn}/${maxTurns} — thinking (${model})…`);
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, tools, usage: { include: true } }),
+      });
+      const j = await res.json();
+      if (j.error) throw new Error('OpenRouter: ' + (j.error.message || JSON.stringify(j.error)));
+      if (j.usage && j.usage.cost != null) {
+        trace.cost += j.usage.cost;
+        $('cost').textContent = '$' + trace.cost.toFixed(4);
+      }
+      const msg = j.choices[0].message;
+      let lastThought = '';
+      if (msg.content) {
+        journalAssistant(msg.content);
+        trace.events.push({ t: 'assistant', text: msg.content });
+        lastThought = msg.content;
+      }
+      if (!msg.tool_calls || !msg.tool_calls.length) {
+        trace.events.push({ t: 'final', text: msg.content || '(no text)' });
+        showAnswer(msg.content || '(model returned no text)', false,
+                   m === 'task' ? 'Final answer' : 'Final resting place');
+        break;
+      }
+      messages.push(msg);
+      for (const tc of msg.tool_calls) {
+        if (stopFlag) break;
+        let args = {};
+        try { args = JSON.parse(tc.function.arguments || '{}'); } catch (e) {}
+        setStatus(`calling ${tc.function.name}…`);
+        const t0 = performance.now();
+        let result = null, err = null;
+        try { result = await rpc(endpoint, 'tools/call', { name: tc.function.name, arguments: args }); }
+        catch (e) { err = String(e.message || e); }
+        const ms = Math.round(performance.now() - t0);
+        const text = err ? '' : contentText(result);
+        const structured = err ? null : (result.structuredContent || null);
+        const nodeId = err ? G.focus : interpret(tc.function.name, args, structured, text, ms, lastThought);
+        journalTool(tc.function.name, args, ms, err || text.replace(/<[^>]+>/g, ' ').slice(0, 220), nodeId, !!err);
+        trace.events.push({ t: 'tool', name: tc.function.name, args, ms, err,
+          result: err ? null : { text: text.replace(/<[^>]+>/g, ' ').slice(0, 400), structured: trimStructured(structured) } });
+        messages.push({ role: 'tool', tool_call_id: tc.id,
+          content: err ? 'ERROR: ' + err : text.slice(0, 12000) });
+        await sleep(Math.min(ms, CAP_MS) * 0.6);   // let the hop animation play
+      }
+      if (turn === maxTurns) {
+        trace.events.push({ t: 'final', text: '(max turns reached)' });
+        showAnswer('Max turns reached before the model finished.', true);
+      }
+    }
+    if (stopFlag) showAnswer('Stopped by user.', true);
+  } catch (e) {
+    trace.events.push({ t: 'error', text: String(e.message || e) });
+    showAnswer(String(e.message || e) +
+      (String(e).includes('Failed to fetch') ? '\n\nNetwork error — check the MCP endpoint and your connection.' : ''), true);
+  } finally {
+    running = false;
+    $('start').textContent = '▶ Start walk'; $('start').classList.remove('stop');
+    $('replay').disabled = $('export').disabled = !trace || !trace.events.length;
+    setStatus('idle — ' + (trace ? trace.events.length + ' events' : ''));
+  }
+}
+
+/* ============================== replay ============================== */
+async function replay(tr) {
+  if (running) return;
+  running = true; stopFlag = false;
+  $('start').textContent = '■ Stop'; $('start').classList.add('stop');
+  $('journal').innerHTML = ''; $('answer').style.display = 'none';
+  resetGraph();
+  $('cost').textContent = '$' + (tr.cost || 0).toFixed(4);
+  let turn = 0, lastThought = '';
+  for (const ev of tr.events) {
+    if (stopFlag) break;
+    if (ev.t === 'assistant') {
+      journalTurn(++turn);
+      journalAssistant(ev.text);
+      lastThought = ev.text;
+      await sleep(700);
+    } else if (ev.t === 'tool') {
+      setStatus(`replay: ${ev.name} (${ev.ms} ms)`);
+      const text = (ev.result && ev.result.text) || '';
+      const structured = ev.result && ev.result.structured;
+      const nodeId = ev.err ? G.focus : interpret(ev.name, ev.args, structured, text, ev.ms, lastThought);
+      journalTool(ev.name, ev.args, ev.ms, ev.err || text.slice(0, 220), nodeId, !!ev.err);
+      await sleep(Math.min(ev.ms, CAP_MS));        // hop takes as long as the real call did
+    } else if (ev.t === 'final') {
+      showAnswer(ev.text, false, tr.mode === 'task' ? 'Final answer' : 'Final resting place');
+    } else if (ev.t === 'error') {
+      showAnswer(ev.text, true);
+    }
+  }
+  running = false;
+  $('start').textContent = '▶ Start walk'; $('start').classList.remove('stop');
+  $('replay').disabled = $('export').disabled = !tr.events.length;
+  setStatus('replay done');
+}
+
+/* ============================== buttons ============================== */
+$('start').onclick = () => { if (running) { stopFlag = true; } else runLive(); };
+$('replay').onclick = () => trace && replay(trace);
+$('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(trace, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mcp-walk-' + Date.now() + '.json';
+  a.click();
+};
+$('demo').onclick = () => { trace = DEMO_TRACE; replay(DEMO_TRACE); };
+
+/* click a node on canvas -> inspector */
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left - r.width / 2) / view.k + view.x;
+  const y = (e.clientY - r.top - r.height / 2) / view.k + view.y;
+  let best = null, bd = 30 * 30;
+  for (const n of G.nodes.values()) {
+    const hit = Math.max(nodeRadius(n) + 8, 16);
+    const d = (n.x - x) ** 2 + (n.y - y) ** 2;
+    if (d < hit * hit && d < bd) { bd = d; best = n.id; }
+  }
+  if (best) showInspect(best);
+  else { G.selected = null; $('inspect').style.display = 'none'; }
+});
+
+/* ============================== demo trace ============================== */
+// Pre-recorded against https://trip2g.com/_system/mcp on 2026-07-11; latencies are real.
+const DEMO_TRACE = {
+ "version": 1,
+ "mode": "task",
+ "task": "How does MCP federation work, and what do the philosophers say about fate?",
+ "model": "demo (pre-recorded)",
+ "endpoint": "https://trip2g.com/_system/mcp",
+ "recorded": "2026-07-11",
+ "cost": 0,
+ "events": [
+  {
+   "t": "assistant",
+   "text": "I'll search the hub docs for how MCP federation works."
+  },
+  {
+   "t": "tool",
+   "name": "search",
+   "args": {
+    "query": "how does MCP federation work",
+    "limit": 5
+   },
+   "ms": 1470,
+   "err": null,
+   "result": {
+    "text": "Found 5 notes:\n\n1. MCP Federation\n   en/user/federation.md\n   https://trip2g.com/en/user/federation\n    MCP   federation  connects your trip2g knowledge base to other  MCP -compatible bases so your AI agent can search across all of them through a single endpoint. You point your agent at your own hub once; fr…\n   match_id: p658:c1\n\n2. One endpoint, many knowledge bases\n   en/thoughts/public-hub.md",
+    "structured": {
+     "results": [
+      {
+       "title": "MCP Federation",
+       "note_id": 658,
+       "note_path": "en/user/federation.md",
+       "url": "https://trip2g.com/en/user/federation",
+       "kind": "note",
+       "snippet": "MCP federation connects your trip2g knowledge base to other MCP-compatible bases so your AI agent can search across all of them through a single endpoint. You point your agent at your own hub once; fr…"
+      },
+      {
+       "title": "One endpoint, many knowledge bases",
+       "note_id": 1071,
+       "note_path": "en/thoughts/public-hub.md",
+       "url": "https://trip2g.com/en/thoughts/public_hub",
+       "kind": "note",
+       "snippet": "… points at the hub can reach it.\nThat is what MCP federation does. A KB-note — a note withmcp_federation_kb_url in its frontmatter — registers another MCP-compatible base.federated_search fans out acr…"
+      },
+      {
+       "title": "MCP Server",
+       "note_id": 530,
+       "note_path": "en/user/mcp.md",
+       "url": "https://trip2g.com/en/user/mcp",
+       "kind": "note",
+       "snippet": "… consultant. Connect it to any MCP-compatible client — Claude Desktop, Claude Code, Cursor, GitHub Copilot, Gemini CLI — and chat with your knowledge base directly.\nHow it works\nsequenceDiagram\n    pa…"
+      },
+      {
+       "title": "MCP memory server: persistent, self-hosted memory for AI agents",
+       "note_id": 1317,
+       "note_path": "en/user/mcp-memory-server.md",
+       "url": "https://trip2g.com/en/user/mcp_memory_server",
+       "kind": "note"
+      },
+      {
+       "title": "Obsidian MCP server: four ways to connect your vault to AI agents",
+       "note_id": 1318,
+       "note_path": "en/user/obsidian-mcp-server.md",
+       "url": "https://trip2g.com/en/user/obsidian_mcp_server",
+       "kind": "note"
+      }
+     ],
+     "query": "how does MCP federation work"
+    }
+   }
+  },
+  {
+   "t": "assistant",
+   "text": "The \"MCP Federation\" guide (pid 658) is the right note. I'll read just the private-peer section instead of the whole page."
+  },
+  {
+   "t": "tool",
+   "name": "note_html",
+   "args": {
+    "pid": 658,
+    "toc_path": [
+     "Adding a private peer (two-step exchange)"
+    ]
+   },
+   "ms": 763,
+   "err": null,
+   "result": {
+    "text": "Adding a private peer (two-step exchange)  Private peers authenticate with a shared HMAC secret. The setup is a one-time key exchange: each side generates a secret for the other. \n  sequenceDiagram\n    participant You as Your hub\n    participant Ch as Trusted channel\n    participant Bob as Bob&#39;s hub\n\n    Note over Bob: Admin -&gt; Federation -&gt; Add inbound secret\n    Bob-&gt;&gt;Bob: Generate secret for kid &#34;alice-2026&#34;&lt;br/&gt;pick allowed subgraphs\n    Bob-&gt;&gt;Ch: Send kid + secretHex\n    Ch-&gt;&gt;You: kid + secretHex\n    Note over You: Admin -&gt; Federation -&gt; Add outbound secret\n    You-&gt;&gt;You: Save kid, secretHex, Bob&#39;s kb_url\n    You-&gt;&gt;You: Create KB-note (mcp_federation_kb_url)\n    Note over You,Bob: Now your agent can federated_search Bob&",
+    "structured": null
+   }
+  },
+  {
+   "t": "assistant",
+   "text": "Got it: private peers exchange HMAC secrets once, then the hub signs JWTs per request. Let me check this note's neighbors for the bigger picture."
+  },
+  {
+   "t": "tool",
+   "name": "similar",
+   "args": {
+    "pid": 658,
+    "limit": 5
+   },
+   "ms": 955,
+   "err": null,
+   "result": {
+    "text": "Found 5 similar notes:\n\n1. MCP Federation (0.88)\n   ru/user/federation.md\n   https://trip2g.com/ru/user/federation\n\n2. How trip2g works (0.79)\n   en/user/protocol.md\n   https://trip2g.com/en/user/protocol\n\n3. Changelog (0.78)\n   en/changelog.md\n   https://trip2g.com/en/changelog\n\n4. Public hub of curated bases (0.78)\n   en/user/hub.md\n   https://trip2g.com/en/user/hub\n\n5. One endpoint, many knowle",
+    "structured": {
+     "results": [
+      {
+       "title": "MCP Federation",
+       "note_id": 663,
+       "note_path": "ru/user/federation.md",
+       "url": "https://trip2g.com/ru/user/federation",
+       "kind": "note"
+      },
+      {
+       "title": "How trip2g works",
+       "note_id": 892,
+       "note_path": "en/user/protocol.md",
+       "url": "https://trip2g.com/en/user/protocol",
+       "kind": "note"
+      },
+      {
+       "title": "Changelog",
+       "note_id": 917,
+       "note_path": "en/changelog.md",
+       "url": "https://trip2g.com/en/changelog",
+       "kind": "note"
+      },
+      {
+       "title": "Public hub of curated bases",
+       "note_id": 1109,
+       "note_path": "en/user/hub.md",
+       "url": "https://trip2g.com/en/user/hub",
+       "kind": "note"
+      },
+      {
+       "title": "One endpoint, many knowledge bases",
+       "note_id": 1071,
+       "note_path": "en/thoughts/public-hub.md",
+       "url": "https://trip2g.com/en/thoughts/public_hub",
+       "kind": "note"
+      }
+     ],
+     "source": {
+      "title": "MCP Federation",
+      "note_id": 658,
+      "note_path": "en/user/federation.md",
+      "url": "https://trip2g.com/en/user/federation",
+      "kind": "note"
+     }
+    }
+   }
+  },
+  {
+   "t": "assistant",
+   "text": "The hub federates a \"philosophers\" base. For the second half of the question I'll ask it directly about virtue and fate — a federated hop."
+  },
+  {
+   "t": "tool",
+   "name": "federated_search",
+   "args": {
+    "query": "virtue and fate",
+    "kb_id": "philosophers"
+   },
+   "ms": 1594,
+   "err": null,
+   "result": {
+    "text": "Found 6 notes:\n\n1. Fate and Control\n   en/topics/sudba-i-kontrol.md\n   https://philosophers.2pub.me/en/topics/sudba_i_kontrol\n   - **Tolstoy** (`tolstoy`) — life has meaning as the fulfilment of the will of Him who sent us: do not take apart the watch you live by. Grounding: `volya-boga`, `ne-razbiray-chasy-kotorymi-zhivesh`....\n   match_id: p43:c4\n\n2. Machiavelli — The Prince\n   en/hub/machiavell",
+    "structured": {
+     "results": [
+      {
+       "title": "Fate and Control",
+       "note_id": 43,
+       "note_path": "en/topics/sudba-i-kontrol.md",
+       "url": "https://philosophers.2pub.me/en/topics/sudba_i_kontrol",
+       "kind": "note",
+       "snippet": "- **Tolstoy** (`tolstoy`) — life has meaning as the fulfilment of the will of Him who sent us: do not take apart the watch you live by. Grounding: `volya-boga`, `ne-razbiray-chasy-kotorymi-zhivesh`...."
+      },
+      {
+       "title": "Machiavelli — The Prince",
+       "note_id": 22,
+       "note_path": "en/hub/machiavelli.md",
+       "url": "https://philosophers.2pub.me/en/hub/machiavelli",
+       "kind": "federation_kb",
+       "federation": {
+        "kb_id": "machiavelli"
+       },
+       "snippet": "ve of ch. XV→XVIII: the method, the lion and the fox, appearance. - Concept [virtù](https://machiavelli.2pub.me/virtu) — the prowess-grip-resolve that Marriott hides behind ability/valour/virtue. ##..."
+      },
+      {
+       "title": "Макиавелли — Государь",
+       "note_id": 67,
+       "note_path": "ru/hub/machiavelli.md",
+       "url": "https://philosophers.2pub.me/ru/hub/machiavelli",
+       "kind": "note",
+       "snippet": "кажимость. - Концепт [virtù](https://machiavelli.2pub.me/virtu) — доблесть-хватка-решимость, которую Marriott прячет за ability/valour/virtue. ## Не уплощать - Virtù ≠ моральная «добродетель» —..."
+      },
+      {
+       "title": "Morality",
+       "note_id": 35,
+       "note_path": "en/topics/moral.md",
+       "url": "https://philosophers.2pub.me/en/topics/moral",
+       "kind": "note"
+      },
+      {
+       "title": "Habit and Discipline",
+       "note_id": 36,
+       "note_path": "en/topics/privychka-i-distsiplina.md",
+       "url": "https://philosophers.2pub.me/en/topics/privychka_i_distsiplina",
+       "kind": "note"
+      },
+      {
+       "title": "Судьба и контроль",
+       "note_id": 88,
+       "note_path": "ru/topics/sudba-i-kontrol.md",
+       "url": "https://philosophers.2pub.me/ru/topics/sudba_i_kontrol",
+       "kind": "note"
+      }
+     ],
+     "query": "virtue and fate"
+    }
+   }
+  },
+  {
+   "t": "final",
+   "text": "**MCP federation**: one trip2g hub exposes a single MCP endpoint; other knowledge bases connect as peers. Public peers are added by URL; private peers do a one-time two-step HMAC secret exchange, after which the hub signs a JWT for every outbound query and the peer's inbound secret gates results (https://trip2g.com/en/user/federation). federated_search fans a query out across peers (or targets one via kb_id), and nested bases chain with \"/\" — e.g. philosophers/machiavelli.\n\n**On fate**, the federated philosophers base answers across authors: Tolstoy says life has meaning as fulfilment of the will of Him who sent us — \"do not take apart the watch you live by\" (https://philosophers.2pub.me/en/topics/sudba_i_kontrol), while the Machiavelli base counters with virtù — prowess and grip that wrestle fortune rather than submit to it (https://philosophers.2pub.me/en/hub/machiavelli). The demo walk itself crossed two federation boundaries to gather this."
+  }
+ ]
+};
+resetGraph();
+</script>
+</body>
+</html>
