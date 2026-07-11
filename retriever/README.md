@@ -24,6 +24,28 @@ Reranker backend is selected by `RERANKER_MODEL` (one per boot):
 One python/sentence-transformers process, both models, runs natively on arm64 and amd64.
 `memcli up --embedded` builds and runs it automatically (image `trip2g-embedding-server`).
 
+## Device selection (Metal/MPS)
+
+`DEVICE` picks the torch device explicitly (`cpu`, `mps`, `cuda`); unset, the
+server auto-detects `mps` -> `cuda` -> `cpu`. This mainly matters for running
+the server natively on Apple-silicon dev boxes (Docker on macOS has no Metal
+access, so Metal only helps outside the container).
+
+On non-CPU devices the `Qwen3Reranker` backend loads in fp16 (softmax math
+still runs in fp32) and the `/rerank` endpoint calls `torch.mps.empty_cache()`
+after each request — torch's MPS allocator otherwise grows unbounded across
+requests of different sizes. `RERANK_BATCH` (default 8) chunks the pairs
+passed to the reranker so a single large batch doesn't make lm_head
+materialize a batch x seq x vocab logits tensor and OOM.
+
+All inference (`/v1/embeddings` and `/rerank`) is serialized behind a single
+process-wide lock — FastAPI runs sync endpoints in a threadpool, and
+concurrent calls into the same model crashed the MPS graph compiler. This is
+a deliberate throughput-for-stability tradeoff; it also applies on CPU/CUDA,
+where it costs nothing today since nothing else contends for it. CPU
+behavior (default, no `DEVICE` set) is unchanged: fp32, no device moves, no
+`empty_cache` calls.
+
 ## Model cache
 
 Models (~2GB each) are cached under `HF_HOME` (`/data` inside the container).
