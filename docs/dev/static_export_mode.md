@@ -6,11 +6,15 @@ already answers the hard question — *which pages are safe to serve without the
 app* — with battle-tested gates. Mode A = drive the real fasthttp handler in-process
 over an enumerated URL list and write bodies to disk (`trip2g export --out dir`).
 Mode B = run that same export after every `commitNotes` with an atomic directory
-swap, and let nginx `try_files` the result. Do **not** attempt precise per-page
-invalidation first: today's invalidation model is deliberately "any commit → rebuild
-everything" (`ClearPageCache()` on every reload), and cross-note dependencies (Jet
-layouts query the whole corpus) make a precise graph unsound. Recommended MVP:
-Mode A (~3–5 days), then Mode B as "Mode A on commit + swap" (+2–3 days).
+swap, and let nginx `try_files` the result. **Assets go to disk in both modes:**
+export renders with a stable local-URL storage adapter (no presigned minio URLs in
+baked HTML) and mirrors every referenced asset via the existing
+`Storage.GetAssetObject` into an `_assets/` tree nginx serves directly. Do **not**
+attempt precise per-page invalidation first: today's invalidation model is
+deliberately "any commit → rebuild everything" (`ClearPageCache()` on every
+reload), and cross-note dependencies (Jet layouts query the whole corpus) make a
+precise graph unsound. Recommended MVP: Mode A (~4–6 days incl. asset mirror),
+then Mode B as "Mode A on commit + swap" (+2–3 days).
 
 ## 1. How a page is produced today
 
@@ -53,8 +57,8 @@ these gates.
 | RSS `*.rss.xml` | generated from in-memory corpus, `routing.go:128` | Exportable per publicly-readable note |
 | `content_type` notes (robots.txt, llms.txt) | `endpoint.go:229` | Exportable as raw files with correct extension/MIME (nginx types or explicit config) |
 | Embedded assets `/assets/*` | embedded FS, cache-busted `AssetURL` (`cmd/server/assets.go:126,201`) | Copy to disk once per binary version |
-| Note assets, local storage `/_assets/*` | `internal/localstorage` — stable non-expiring URLs | Copy directory |
-| Note assets, **minio presigned URLs** | `miniostorage/storage.go:182`; URLs baked into note HTML, expire → `OnURLExpiring` triggers full reload (`assets.go:26`) | **Hard blocker for Mode A** on minio-backed sites: exported HTML rots when URLs expire. Require local storage, or add a stable proxy-URL mode |
+| Note assets, local storage `/_assets/*` | `internal/localstorage` — stable non-expiring URLs | Mirror to disk (section 6) |
+| Note assets, **minio presigned URLs** | `miniostorage/storage.go:182`; URLs baked into note HTML, expire → `OnURLExpiring` triggers full reload (`assets.go:26`) | Solved by design: render with a stable-URL adapter + mirror objects to disk (section 6) — no minio at serve time |
 | HTML injections, site config | DB, `ConfigEpoch` bumps | Baked; config change must trigger re-export (Mode B) or is stale (Mode A) |
 | GraphQL (all POST), MCP, gitapi, OAuth/OIDC, payments webhooks, tg webhooks, purchase/hat/tg-auth tokens, admin SPA (`/admin`, `/_system/admin`), admin previews, federation topology, 404 tracking | `server.go`, `routing.go:200-266`, `router/endpoints_gen.go` | Dynamic-only. Mode A: dropped. Mode B: proxied to the app |
 | Custom domains | `RouteMap[host]` (`note.go:331`), strict isolation (`resolve.go:519`) | Export one tree per host; nginx `server` block per domain |
@@ -102,10 +106,10 @@ handler is strictly more faithful.
 **Baked-in decisions (MVP):** single `ui_lang` = site default; search box hidden via
 an export flag on `defaulttemplate.Ctx` (or left pointing at a dead endpoint —
 prefer hiding); telegram links/injections/similar-notes frozen at export time;
-minio storage refused with a clear error (`--allow-expiring-assets` to override).
+assets mirrored to disk with stable URLs regardless of backend (section 6).
 
-**Effort: ~3–5 days** (CLI plumbing + enumerator + synthetic-request writer + nginx
-snippet emitter + tests). No changes to the render path itself.
+**Effort: ~4–6 days** (CLI plumbing + enumerator + synthetic-request writer + asset
+mirror + nginx snippet emitter + tests). No changes to the render path itself.
 
 ## 5. Mode B — incremental static cache behind nginx
 
@@ -151,15 +155,62 @@ changed notes + their `InLinks` + hub/index pages + sitemap/RSS, everything else
 weekly) is a later optimization behind a flag, only if export time actually hurts.
 
 **Risks:** staleness window between commit and swap-complete (seconds — fine);
-config/injection changes must also trigger export (hook `ConfigEpoch` bump); minio
-URL expiry forces periodic re-export anyway (the `OnURLExpiring` reload can drive
-it); disk churn on large vaults (two full trees during swap); nginx config drift
+config/injection changes must also trigger export (hook `ConfigEpoch` bump); disk
+churn on large vaults (two full page trees during swap; assets live in a persistent
+sibling dir and are synced incrementally, section 6); nginx config drift
 (ship a generated snippet, not hand-edited instructions).
 
 **Effort on top of Mode A: ~2–3 days** (trigger wiring + debounce + atomic swap +
-nginx template + docs). Precise invalidation would be weeks and is not recommended.
+asset-mirror sync + nginx template + docs). Precise invalidation would be weeks and
+is not recommended.
 
-## 6. The 3 hardest dynamic features to degrade
+## 6. Assets on disk (both modes)
+
+**Goal:** rendered HTML references only stable local paths; nginx serves assets
+from disk; no minio (and no presigning) in the serve path.
+
+**Stable URLs at render time.** Both backends already share one canonical relative
+path: `na/<asset.ID>/<asset.FileName>` (`miniostorage/storage.go:137`,
+`localstorage/storage.go:126`), and local storage already emits stable
+`<PublicURL>/_assets/<NoteAssetPath>` URLs. Export wraps the configured `Storage`
+(the interface in `cmd/server/storage.go:20`) in a thin adapter whose
+`NoteAssetURL` returns exactly that local shape with no expiry — so `noteloader`
+bakes `/_assets/na/<id>/<file>` into `note.HTML` via `AssetReplaces`
+(`model/note.go:208`, `loader.go:397-452`) even when the real backend is minio.
+This is a boot-time swap in the export path only; the running server is untouched.
+
+**Mirroring.** After (or during) load, enumerate referenced assets from the
+exported notes' `AssetReplaces` and stream each via the existing
+`Storage.GetAssetObject` (`miniostorage/storage.go:238`, `localstorage/storage.go:143`)
+to `<out>/_assets/na/<id>/<file>` with `io.Copy` — constant memory, any file size.
+Only *referenced* assets are copied; unreferenced uploads stay in storage.
+
+- **Dedup / skip-unchanged:** `db.NoteAsset.Sha256Hash` + `Size`
+  (`internal/db/models.go:388`) are already stored and verified at upload
+  (`uploadnoteasset/resolve.go:160`). Keep a manifest (`_assets/.manifest.json`:
+  path → sha256) and skip downloads whose hash already matches — repeated exports
+  cost near-zero even against remote minio. Content-level dedup across different
+  IDs (hardlinks by hash) is a non-MVP nicety.
+- **Layout on disk:** keep `_assets/` as a *persistent sibling* of the swapped
+  pages tree (nginx gets two roots), synced incrementally: add new IDs, then sweep
+  orphans (IDs no longer in any exported note's `AssetReplaces`). This avoids
+  re-copying gigabytes into every `.tmp` tree on each Mode B swap. Asset URLs are
+  content-stable per ID — a re-uploaded asset gets a **new** ID/row, so pages
+  referencing it change and the old ID simply becomes an orphan; there is no
+  stale-asset-in-place hazard.
+- **Invalidation graph:** asset → pages is exactly `AssetReplaces` (per note), but
+  no per-page precision is needed: asset uploads arrive through
+  `uploadNoteAsset` + push/commit, which triggers the same reload → full re-export.
+  The mirror sync runs as step 1 of every export so pages never reference a
+  not-yet-mirrored file.
+- **`OnURLExpiring` (`cmd/server/assets.go:26`)** becomes irrelevant to the static
+  path: baked URLs never expire. In Mode B the app's own reload on expiry is
+  harmless (it just re-exports identical output).
+
+**Effort:** ~1–1.5 days inside the Mode A estimate (adapter + mirror + manifest +
+orphan sweep), already included above.
+
+## 7. The 3 hardest dynamic features to degrade
 
 1. **Language negotiation.** `ui_lang` is embedded server-side per request and hub
    pages 302 by cookie/Accept-Language. Static export must pick one language per
@@ -169,15 +220,17 @@ nginx template + docs). Precise invalidation would be weeks and is not recommend
    lanes. Mode A: hide it or invest in a client-side index. Mode B: proxy GraphQL —
    search survives untouched.
 3. **Minio presigned asset URLs.** Baked into note HTML with an expiry; the running
-   app re-renders on `OnURLExpiring`, a static tree cannot. Mode A must require
-   local asset storage (or a new stable-proxy-URL asset mode); Mode B must re-export
-   on the expiring callback.
+   app re-renders on `OnURLExpiring`, a static tree cannot. Addressed by design
+   (section 6): render with the stable-URL adapter + mirror objects to disk. The
+   residual hardness is operational — mirror sync ordering, orphan sweep, and disk
+   sizing for asset-heavy vaults.
 
-## 7. Recommendation
+## 8. Recommendation
 
 Build **Mode A first**; Mode B is a thin loop around it. Shared machinery: one
-`internal/staticexport` package (enumerator + synthetic-request renderer + writers +
-nginx snippet emitter), a `--export` CLI mode using the read-only boot path, and a
-reload-triggered runner for Mode B. MVP scope: local-storage sites, single default
-UI lang, search hidden, redirects via nginx map, full re-export per commit.
-Total: roughly one week for both modes.
+`internal/staticexport` package (enumerator + synthetic-request renderer + asset
+mirror with manifest + writers + nginx snippet emitter), a `--export` CLI mode
+using the read-only boot path, and a reload-triggered runner for Mode B. MVP scope:
+both storage backends via the stable-URL adapter, single default UI lang, search
+hidden, redirects via nginx map, full re-export per commit with persistent
+`_assets/` sibling dir. Total: roughly 1–1.5 weeks for both modes.
