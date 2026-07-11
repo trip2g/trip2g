@@ -279,7 +279,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 		{
 			name:    "exceeded federation depth records rejected request",
 			body:    mcpInitBody,
-			headers: map[string]string{"X-MCP-Federation-Depth": "5"},
+			headers: map[string]string{"X-MCP-Federation-Depth": "6"},
 			setup: func(_ *testing.T, env *EnvMock) {
 				env.FederationMaxDepthFunc = func() int { return 5 }
 			},

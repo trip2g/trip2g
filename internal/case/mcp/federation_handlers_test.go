@@ -257,6 +257,7 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 			require.Equal(t, "bob", kbID)
 			return federation, nil
 		},
+		FederationMaxDepthFunc: func() int { return 3 },
 	}
 
 	params := mcp.CallToolParams{

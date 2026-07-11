@@ -34,8 +34,13 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeJSONResponse(req, resp)
 	}
 
-	// Enforce federation hop depth limit. Depth is observed for every request:
-	// no header, a malformed value or a negative one all count as 0 = direct client.
+	// Enforce the federation hop-depth limit as a loop-protection backstop. Depth
+	// is observed for every request: no header, a malformed value or a negative one
+	// all count as 0 = direct client. The comparison is inclusive (a path of N
+	// segments reaches depth N and is allowed when N <= max); explicit deep paths
+	// are rejected earlier and more cleanly by federationPathDepthExceeded, so this
+	// counter mainly bounds fan-out cycles where peers federate back with no
+	// explicit segments to count.
 	resolveCtx := context.Context(req.Req)
 	depthHeader := req.Req.Request.Header.Peek("X-MCP-Federation-Depth")
 	incomingDepth := 0
@@ -46,7 +51,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 	m.ObserveFederationDepth(incomingDepth)
 	if len(depthHeader) > 0 {
-		if incomingDepth >= env.FederationMaxDepth() {
+		if incomingDepth > env.FederationMaxDepth() {
 			resp := errorResponse(rpcReq.ID, ErrCodeInternal, "federation max depth exceeded")
 			recordRejectedRequest(m, rpcReq, authAnonymous, time.Since(start).Seconds())
 			return writeJSONResponse(req, resp)
