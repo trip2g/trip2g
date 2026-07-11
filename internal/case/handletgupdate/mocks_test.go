@@ -70,6 +70,9 @@ var _ Env = &EnvMock{}
 //			ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveUserSubgraphs method")
 //			},
+//			LiveNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LiveNoteViews method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -169,6 +172,9 @@ type EnvMock struct {
 
 	// ListActiveUserSubgraphsFunc mocks the ListActiveUserSubgraphs method.
 	ListActiveUserSubgraphsFunc func(ctx context.Context, userID int64) ([]string, error)
+
+	// LiveNoteViewsFunc mocks the LiveNoteViews method.
+	LiveNoteViewsFunc func() *model.NoteViews
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -321,6 +327,9 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
+		// LiveNoteViews holds details about calls to the LiveNoteViews method.
+		LiveNoteViews []struct {
+		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
@@ -435,6 +444,7 @@ type EnvMock struct {
 	lockLatestNoteViews                       sync.RWMutex
 	lockListActiveTgChatSubgraphNamesByChatID sync.RWMutex
 	lockListActiveUserSubgraphs               sync.RWMutex
+	lockLiveNoteViews                         sync.RWMutex
 	lockLogger                                sync.RWMutex
 	lockMarkTgBotChatRemoved                  sync.RWMutex
 	lockRemoveTgChatMember                    sync.RWMutex
@@ -1006,6 +1016,33 @@ func (mock *EnvMock) ListActiveUserSubgraphsCalls() []struct {
 	mock.lockListActiveUserSubgraphs.RLock()
 	calls = mock.calls.ListActiveUserSubgraphs
 	mock.lockListActiveUserSubgraphs.RUnlock()
+	return calls
+}
+
+// LiveNoteViews calls LiveNoteViewsFunc.
+func (mock *EnvMock) LiveNoteViews() *model.NoteViews {
+	if mock.LiveNoteViewsFunc == nil {
+		panic("EnvMock.LiveNoteViewsFunc: method is nil but Env.LiveNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLiveNoteViews.Lock()
+	mock.calls.LiveNoteViews = append(mock.calls.LiveNoteViews, callInfo)
+	mock.lockLiveNoteViews.Unlock()
+	return mock.LiveNoteViewsFunc()
+}
+
+// LiveNoteViewsCalls gets all the calls that were made to LiveNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LiveNoteViewsCalls())
+func (mock *EnvMock) LiveNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLiveNoteViews.RLock()
+	calls = mock.calls.LiveNoteViews
+	mock.lockLiveNoteViews.RUnlock()
 	return calls
 }
 
