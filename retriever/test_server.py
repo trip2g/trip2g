@@ -40,8 +40,9 @@ class FakeEmbedder:
 
     last_kwargs = None
 
-    def __init__(self, model_name):
+    def __init__(self, model_name, device=None):
         self.model_name = model_name
+        self.device = device
 
     def encode(self, texts, **kwargs):
         FakeEmbedder.last_kwargs = kwargs
@@ -56,8 +57,9 @@ class FakeEmbedder:
 class FakeCrossEncoder:
     """Scores a pair high when a query word appears in the text."""
 
-    def __init__(self, model_name):
+    def __init__(self, model_name, device=None):
         self.model_name = model_name
+        self.device = device
 
     def predict(self, pairs):
         scores = []
