@@ -239,7 +239,8 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				"search(query) -> note_html(path=<result.note_path>) reads the whole note; " +
 				"search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); " +
 				"expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. " +
-				"Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one.",
+				"Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. " +
+				`path is a string like "concepts/x.md"; match_id is "p<pid>:c<chunk>"; a value like ":" or "/hub/goethe.md" is a PATH, not a note_id.`,
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -359,7 +360,8 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				"federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — " +
 				"the standard way to descend into a leaf corpus and read real content there, not hub cards. " +
 				"federated_note_html(kb_id=..., match_id=<match.match_id>) reads just the focused chunk around a hit. " +
-				"Only pass pid/note_id if you already copied that exact id from a result.",
+				"Only pass pid/note_id if you already copied that exact id from a result. " +
+				`path is a string like "concepts/x.md"; match_id is "p<pid>:c<chunk>"; a value like ":" or "/hub/goethe.md" is a PATH, not a note_id.`,
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
