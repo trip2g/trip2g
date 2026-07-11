@@ -36,19 +36,17 @@ services:
     ports:
       - "5556:5556"
 
-  # Local embedding server — bge-m3 via the official HuggingFace
-  # text-embeddings-inference image (OpenAI-compatible /v1/embeddings route,
-  # always L2-normalized output).
-  # First start downloads the model (~2.3 GB) — subsequent starts reuse shared ~/models/embedding.
-  # No healthcheck: the TEI image ships no shell/curl.
+  # Local embedding server — bge-m3 via the bundled retriever/ server
+  # (OpenAI-compatible /v1/embeddings, L2-normalized). Replaces the HuggingFace
+  # TEI image, which ships no arm64 build — see retriever/README.md.
+  # First start downloads the model (~2.3 GB) — subsequent starts reuse shared ~/models.
   embedding:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    build: ./retriever
     container_name: trip2g-test-embedding
-    command: --model-id BAAI/bge-m3 --port 8000 --auto-truncate
     ports:
       - "11434:8000"
     volumes:
-      - ${HOME}/models/embedding:/data
+      - ${HOME}/models:/data
 
   app:
     build:
