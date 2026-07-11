@@ -195,6 +195,7 @@ type SearchResultPayload struct {
 
 type SearchResultItem struct {
 	Title      string         `json:"title"`
+	KBID       string         `json:"kb_id,omitempty"`
 	NoteID     int64          `json:"note_id"`
 	NotePath   string         `json:"note_path"`
 	Href       string         `json:"href"`

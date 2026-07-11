@@ -53,10 +53,10 @@ Trigger: you have one good note and want its neighbors — related guides, the o
 This base can be connected to peer knowledge bases. The federated variants mirror the local ones, with a `kb_id` targeting a peer:
 
 - `federated_search(query, kb_id?, kb_ids?, limit?, detail_limit?)` — omit `kb_id` to fan out across all connected bases in parallel; pass `kb_id` for one base, `kb_ids` for a chosen set.
-- Nested bases: a peer's own peers are addressed with `/` — `kb_id="philosophers/nietzsche"` routes through the `philosophers` peer into the base it federates (recursive; `kb_ids` accepts the same form).
+- Nested bases: a peer's own peers are addressed with `/` — `kb_id="philosophers/nietzsche"` routes through the `philosophers` peer into the base it federates (recursive; `kb_ids` accepts the same form). A base reached _through_ a hub is addressed `<hub>/<base>`: a `philosophers` hub note advertising `kb_id: montaigne` is `philosophers/montaigne` from an outer hub, not `montaigne`.
 - `federated_note_html(kb_id, ...)`, `federated_expand(kb_id, ...)`, `federated_similar(kb_id, ...)` — same arguments as their local twins, `kb_id` required.
 
-Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Results from a peer name their `kb_id` — keep passing it on every follow-up call.
+Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Every search result now carries an absolute `kb_id` in the caller's frame — use it verbatim to open or re-search that result; keep passing it on every follow-up call.
 
 **Discovering connected bases.** For a browsable directory of the peers instead of blind fan-out, read the hub index: `search("hub")` or `note_html(path="en/hub/_index.md")`. It links one note per base (e.g. `en/hub/foragent.md`), and each of those names its `kb_id` in the frontmatter. Use that to pick a target for `federated_search(kb_id="foragent")` deliberately, rather than fanning out to every peer or waiting for a `kind: "federation_kb"` pointer to surface.
 
