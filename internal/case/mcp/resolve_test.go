@@ -23,6 +23,7 @@ func TestResolve(t *testing.T) {
 
 	t.Run("initialize returns server info", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -56,6 +57,7 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -106,6 +108,7 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -136,6 +139,7 @@ soul_profile:
 
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -182,6 +186,7 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -235,6 +240,7 @@ soul_profile:
 
 	t.Run("invalid call params returns error", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -284,6 +290,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -361,6 +368,7 @@ func TestExpandReturnsDirectChildren(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{
 				List:    []*appmodel.NoteView{note},
@@ -416,6 +424,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -486,6 +495,7 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
@@ -550,6 +560,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
@@ -599,6 +610,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
+		SiteConfigFunc:      func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: appmodel.NewNoteViews,
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
@@ -652,6 +664,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
@@ -712,6 +725,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: note,
@@ -769,6 +783,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 
 func noteHTMLEnv(note *appmodel.NoteView) *EnvMock {
 	return &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			noteViews := appmodel.NewNoteViews()
 			noteViews.RegisterNote(note)
@@ -791,6 +806,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -837,6 +853,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -879,6 +896,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -946,6 +964,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1051,6 +1070,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1094,6 +1114,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1139,6 +1160,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1285,6 +1307,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1316,6 +1339,7 @@ func TestHandleNoteHtml(t *testing.T) {
 
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{},
@@ -1373,6 +1397,7 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 	noteViews.List = []*appmodel.NoteView{sourceNote, similarNote}
 
 	env := &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		FeaturesFunc: func() features.Features {
 			return features.Features{
 				VectorSearch: features.VectorSearchConfig{Enabled: true},
@@ -1436,6 +1461,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1476,6 +1502,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1516,6 +1543,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1557,6 +1585,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1595,6 +1624,7 @@ func TestStripFrontmatter(t *testing.T) {
 func TestHandleSimilarLimitValidation(t *testing.T) {
 	t.Run("uses default when limit is zero", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -1645,6 +1675,7 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 
 	t.Run("caps limit at maximum", func(t *testing.T) {
 		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -1708,6 +1739,7 @@ func makeSearchNote(pathID int64, path, title string) *appmodel.NoteView {
 func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 	t.Helper()
 	return &EnvMock{
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return results, nil
 		},

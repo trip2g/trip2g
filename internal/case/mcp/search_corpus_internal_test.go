@@ -28,6 +28,9 @@ func (e *fedCorpusEnv) SearchLiveNotes(string) ([]model.SearchResult, error) {
 func (e *fedCorpusEnv) LiveNoteChunks() []model.NoteChunk { return nil }
 func (e *fedCorpusEnv) Features() features.Features       { return features.Features{} }
 func (e *fedCorpusEnv) NoteURL(n *model.NoteView) string  { return "https://x.test" + n.Permalink }
+func (e *fedCorpusEnv) SiteConfig(context.Context) model.SiteConfig {
+	return model.SiteConfig{}
+}
 
 // Federation-JWT clients must search the LIVE corpus, like anonymous clients —
 // only API-key (admin) auth gets the latest (draft) corpus.

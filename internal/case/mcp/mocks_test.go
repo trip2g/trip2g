@@ -104,6 +104,9 @@ var _ mcp.Env = &EnvMock{}
 //			SearchLiveNotesFunc: func(query string) ([]model.SearchResult, error) {
 //				panic("mock out the SearchLiveNotes method")
 //			},
+//			SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+//				panic("mock out the SiteConfig method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires mcp.Env
@@ -188,6 +191,9 @@ type EnvMock struct {
 
 	// SearchLiveNotesFunc mocks the SearchLiveNotes method.
 	SearchLiveNotesFunc func(query string) ([]model.SearchResult, error)
+
+	// SiteConfigFunc mocks the SiteConfig method.
+	SiteConfigFunc func(ctx context.Context) model.SiteConfig
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -317,6 +323,11 @@ type EnvMock struct {
 			// Query is the query argument value.
 			Query string
 		}
+		// SiteConfig holds details about calls to the SiteConfig method.
+		SiteConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 	}
 	lockCanReadNote                        sync.RWMutex
 	lockDecryptData                        sync.RWMutex
@@ -344,6 +355,7 @@ type EnvMock struct {
 	lockResolveAPIKey                      sync.RWMutex
 	lockSearchLatestNotes                  sync.RWMutex
 	lockSearchLiveNotes                    sync.RWMutex
+	lockSiteConfig                         sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -1153,5 +1165,37 @@ func (mock *EnvMock) SearchLiveNotesCalls() []struct {
 	mock.lockSearchLiveNotes.RLock()
 	calls = mock.calls.SearchLiveNotes
 	mock.lockSearchLiveNotes.RUnlock()
+	return calls
+}
+
+// SiteConfig calls SiteConfigFunc.
+func (mock *EnvMock) SiteConfig(ctx context.Context) model.SiteConfig {
+	if mock.SiteConfigFunc == nil {
+		panic("EnvMock.SiteConfigFunc: method is nil but Env.SiteConfig was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockSiteConfig.Lock()
+	mock.calls.SiteConfig = append(mock.calls.SiteConfig, callInfo)
+	mock.lockSiteConfig.Unlock()
+	return mock.SiteConfigFunc(ctx)
+}
+
+// SiteConfigCalls gets all the calls that were made to SiteConfig.
+// Check the length with:
+//
+//	len(mockedEnv.SiteConfigCalls())
+func (mock *EnvMock) SiteConfigCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockSiteConfig.RLock()
+	calls = mock.calls.SiteConfig
+	mock.lockSiteConfig.RUnlock()
 	return calls
 }

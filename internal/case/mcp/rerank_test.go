@@ -99,6 +99,7 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 		CanReadNoteFunc: func(context.Context, *appmodel.NoteView) (bool, error) {
 			return true, nil
 		},
+		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 	}
 }
 

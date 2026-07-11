@@ -42,12 +42,13 @@ func (e *gqlRequestEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error
 func (e *gqlRequestEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error) {
 	panic("unexpected")
 }
-func (e *gqlRequestEnv) LiveNoteChunks() []model.NoteChunk { panic("unexpected") }
-func (e *gqlRequestEnv) LiveNoteViews() *model.NoteViews   { panic("unexpected") }
-func (e *gqlRequestEnv) OpenAI() *openai.Client            { panic("unexpected") }
-func (e *gqlRequestEnv) PublicURL() string                 { panic("unexpected") }
-func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string  { panic("unexpected") }
-func (e *gqlRequestEnv) Logger() logger.Logger             { return &logger.DummyLogger{} }
+func (e *gqlRequestEnv) LiveNoteChunks() []model.NoteChunk             { panic("unexpected") }
+func (e *gqlRequestEnv) LiveNoteViews() *model.NoteViews               { panic("unexpected") }
+func (e *gqlRequestEnv) OpenAI() *openai.Client                        { panic("unexpected") }
+func (e *gqlRequestEnv) SiteConfig(_ context.Context) model.SiteConfig { panic("unexpected") }
+func (e *gqlRequestEnv) PublicURL() string                             { panic("unexpected") }
+func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string              { panic("unexpected") }
+func (e *gqlRequestEnv) Logger() logger.Logger                         { return &logger.DummyLogger{} }
 func (e *gqlRequestEnv) FederationSecretByKBURL(_ context.Context, _ string) (db.FederationSecret, bool, error) {
 	panic("unexpected")
 }
