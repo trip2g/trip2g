@@ -53,6 +53,7 @@ Trigger: you have one good note and want its neighbors — related guides, the o
 This base can be connected to peer knowledge bases. The federated variants mirror the local ones, with a `kb_id` targeting a peer:
 
 - `federated_search(query, kb_id?, kb_ids?, limit?, detail_limit?)` — omit `kb_id` to fan out across all connected bases in parallel; pass `kb_id` for one base, `kb_ids` for a chosen set.
+- Nested bases: a peer's own peers are addressed with `/` — `kb_id="philosophers/nietzsche"` routes through the `philosophers` peer into the base it federates (recursive; `kb_ids` accepts the same form).
 - `federated_note_html(kb_id, ...)`, `federated_expand(kb_id, ...)`, `federated_similar(kb_id, ...)` — same arguments as their local twins, `kb_id` required.
 
 Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Results from a peer name their `kb_id` — keep passing it on every follow-up call.
