@@ -138,6 +138,10 @@ type FederatedNoteHTMLArguments struct {
 	MatchID string `json:"match_id,omitempty"`
 }
 
+type FederatedInstructionsArguments struct {
+	KBID string `json:"kb_id"`
+}
+
 type FederatedExpandArguments struct {
 	KBID    string   `json:"kb_id"`
 	PID     int64    `json:"pid,omitempty"`

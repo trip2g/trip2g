@@ -26,6 +26,9 @@ var _ mcp.Env = &EnvMock{}
 //
 //		// make and configure a mocked mcp.Env
 //		mockedEnv := &EnvMock{
+//			CachedFederatedInstructionsFunc: func(kbID string) (model.FederationResult, bool) {
+//				panic("mock out the CachedFederatedInstructions method")
+//			},
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
@@ -107,6 +110,9 @@ var _ mcp.Env = &EnvMock{}
 //			SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
 //				panic("mock out the SiteConfig method")
 //			},
+//			StoreFederatedInstructionsFunc: func(kbID string, result model.FederationResult)  {
+//				panic("mock out the StoreFederatedInstructions method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires mcp.Env
@@ -114,6 +120,9 @@ var _ mcp.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CachedFederatedInstructionsFunc mocks the CachedFederatedInstructions method.
+	CachedFederatedInstructionsFunc func(kbID string) (model.FederationResult, bool)
+
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
@@ -195,8 +204,16 @@ type EnvMock struct {
 	// SiteConfigFunc mocks the SiteConfig method.
 	SiteConfigFunc func(ctx context.Context) model.SiteConfig
 
+	// StoreFederatedInstructionsFunc mocks the StoreFederatedInstructions method.
+	StoreFederatedInstructionsFunc func(kbID string, result model.FederationResult)
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// CachedFederatedInstructions holds details about calls to the CachedFederatedInstructions method.
+		CachedFederatedInstructions []struct {
+			// KbID is the kbID argument value.
+			KbID string
+		}
 		// CanReadNote holds details about calls to the CanReadNote method.
 		CanReadNote []struct {
 			// Ctx is the ctx argument value.
@@ -328,7 +345,15 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// StoreFederatedInstructions holds details about calls to the StoreFederatedInstructions method.
+		StoreFederatedInstructions []struct {
+			// KbID is the kbID argument value.
+			KbID string
+			// Result is the result argument value.
+			Result model.FederationResult
+		}
 	}
+	lockCachedFederatedInstructions        sync.RWMutex
 	lockCanReadNote                        sync.RWMutex
 	lockDecryptData                        sync.RWMutex
 	lockFeatures                           sync.RWMutex
@@ -356,6 +381,39 @@ type EnvMock struct {
 	lockSearchLatestNotes                  sync.RWMutex
 	lockSearchLiveNotes                    sync.RWMutex
 	lockSiteConfig                         sync.RWMutex
+	lockStoreFederatedInstructions         sync.RWMutex
+}
+
+// CachedFederatedInstructions calls CachedFederatedInstructionsFunc.
+func (mock *EnvMock) CachedFederatedInstructions(kbID string) (model.FederationResult, bool) {
+	if mock.CachedFederatedInstructionsFunc == nil {
+		panic("EnvMock.CachedFederatedInstructionsFunc: method is nil but Env.CachedFederatedInstructions was just called")
+	}
+	callInfo := struct {
+		KbID string
+	}{
+		KbID: kbID,
+	}
+	mock.lockCachedFederatedInstructions.Lock()
+	mock.calls.CachedFederatedInstructions = append(mock.calls.CachedFederatedInstructions, callInfo)
+	mock.lockCachedFederatedInstructions.Unlock()
+	return mock.CachedFederatedInstructionsFunc(kbID)
+}
+
+// CachedFederatedInstructionsCalls gets all the calls that were made to CachedFederatedInstructions.
+// Check the length with:
+//
+//	len(mockedEnv.CachedFederatedInstructionsCalls())
+func (mock *EnvMock) CachedFederatedInstructionsCalls() []struct {
+	KbID string
+} {
+	var calls []struct {
+		KbID string
+	}
+	mock.lockCachedFederatedInstructions.RLock()
+	calls = mock.calls.CachedFederatedInstructions
+	mock.lockCachedFederatedInstructions.RUnlock()
+	return calls
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -1197,5 +1255,41 @@ func (mock *EnvMock) SiteConfigCalls() []struct {
 	mock.lockSiteConfig.RLock()
 	calls = mock.calls.SiteConfig
 	mock.lockSiteConfig.RUnlock()
+	return calls
+}
+
+// StoreFederatedInstructions calls StoreFederatedInstructionsFunc.
+func (mock *EnvMock) StoreFederatedInstructions(kbID string, result model.FederationResult) {
+	if mock.StoreFederatedInstructionsFunc == nil {
+		panic("EnvMock.StoreFederatedInstructionsFunc: method is nil but Env.StoreFederatedInstructions was just called")
+	}
+	callInfo := struct {
+		KbID   string
+		Result model.FederationResult
+	}{
+		KbID:   kbID,
+		Result: result,
+	}
+	mock.lockStoreFederatedInstructions.Lock()
+	mock.calls.StoreFederatedInstructions = append(mock.calls.StoreFederatedInstructions, callInfo)
+	mock.lockStoreFederatedInstructions.Unlock()
+	mock.StoreFederatedInstructionsFunc(kbID, result)
+}
+
+// StoreFederatedInstructionsCalls gets all the calls that were made to StoreFederatedInstructions.
+// Check the length with:
+//
+//	len(mockedEnv.StoreFederatedInstructionsCalls())
+func (mock *EnvMock) StoreFederatedInstructionsCalls() []struct {
+	KbID   string
+	Result model.FederationResult
+} {
+	var calls []struct {
+		KbID   string
+		Result model.FederationResult
+	}
+	mock.lockStoreFederatedInstructions.RLock()
+	calls = mock.calls.StoreFederatedInstructions
+	mock.lockStoreFederatedInstructions.RUnlock()
 	return calls
 }

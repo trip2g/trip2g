@@ -92,32 +92,85 @@ func callFederatedSingleKB(
 	kbID string,
 	call func(client model.Federation, rest string) (model.FederationResult, error),
 ) Response {
-	if errResp := federationPathDepthExceeded(ctx, env, id, kbID); errResp != nil {
+	result, errResp := federatedSingleKBResult(ctx, env, id, kbID, call)
+	if errResp != nil {
 		return *errResp
+	}
+	return successResponse(id, federationResultToToolResult(result))
+}
+
+// federatedSingleKBResult is the shared core of callFederatedSingleKB that hands
+// back the raw result so callers can post-process it (e.g. cache it) before
+// building the tool response. On any failure it returns the error Response.
+func federatedSingleKBResult(
+	ctx context.Context,
+	env Env,
+	id any,
+	kbID string,
+	call func(client model.Federation, rest string) (model.FederationResult, error),
+) (model.FederationResult, *Response) {
+	if errResp := federationPathDepthExceeded(ctx, env, id, kbID); errResp != nil {
+		return model.FederationResult{}, errResp
 	}
 	kbs, err := accessibleKBNotes(ctx, env)
 	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
+		resp := errorResponse(id, ErrCodeInternal, err.Error())
+		return model.FederationResult{}, &resp
 	}
 	if len(kbs) == 0 {
-		return federationNotConfiguredResponse(id, kbID)
+		resp := federationNotConfiguredResponse(id, kbID)
+		return model.FederationResult{}, &resp
 	}
 	kb, rest := findFederationKB(kbs, kbID)
 	if kb == nil {
-		return federationNotConfiguredResponse(id, kbID)
+		resp := federationNotConfiguredResponse(id, kbID)
+		return model.FederationResult{}, &resp
 	}
 	client, err := env.FederationClient(ctx, kb.ID)
 	if err != nil {
 		// A client that can't be built is still a failed outbound attempt,
 		// same as on the fan-out path.
 		metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
-		return errorResponse(id, ErrCodeInternal, err.Error())
+		resp := errorResponse(id, ErrCodeInternal, err.Error())
+		return model.FederationResult{}, &resp
 	}
 	result, err := call(client, rest)
 	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
-		return errorResponse(id, ErrCodeInternal, err.Error())
+		resp := errorResponse(id, ErrCodeInternal, err.Error())
+		return model.FederationResult{}, &resp
 	}
+	return result, nil
+}
+
+// handleFederatedInstructions fetches a federated base's own instructions by
+// kb_id, forwarding through the federation hop chain like the other federated
+// tools. Results are cached per full kb_id path so repeat calls (and
+// already-visited routes) are served without re-forwarding.
+func handleFederatedInstructions(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+	args, errResp := unmarshalArgs[FederatedInstructionsArguments](argsRaw, id, "federated_instructions")
+	if errResp != nil {
+		return *errResp
+	}
+	if args.KBID == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
+	}
+
+	if cached, ok := env.CachedFederatedInstructions(args.KBID); ok {
+		return successResponse(id, federationResultToToolResult(cached))
+	}
+
+	result, errResp := federatedSingleKBResult(ctx, env, id, args.KBID,
+		func(client model.Federation, rest string) (model.FederationResult, error) {
+			if rest == "" {
+				return client.Instructions(ctx)
+			}
+			return client.FederatedInstructions(ctx, model.FederationInstructionsParams{KBID: rest})
+		})
+	if errResp != nil {
+		return *errResp
+	}
+	env.StoreFederatedInstructions(args.KBID, result)
 	return successResponse(id, federationResultToToolResult(result))
 }
 

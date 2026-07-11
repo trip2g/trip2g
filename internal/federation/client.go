@@ -82,6 +82,14 @@ func (c *Client) GraphQLRequest(ctx context.Context, params model.FederationGrap
 	return c.callTool(ctx, "graphql_request", params)
 }
 
+func (c *Client) Instructions(ctx context.Context) (model.FederationResult, error) {
+	return c.callTool(ctx, "instructions", nil)
+}
+
+func (c *Client) FederatedInstructions(ctx context.Context, params model.FederationInstructionsParams) (model.FederationResult, error) {
+	return c.callTool(ctx, "federated_instructions", params)
+}
+
 func (c *Client) callTool(ctx context.Context, name string, args any) (model.FederationResult, error) {
 	if c == nil {
 		return model.FederationResult{}, errors.New("federation client is nil")

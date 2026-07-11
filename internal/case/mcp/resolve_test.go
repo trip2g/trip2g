@@ -161,7 +161,7 @@ soul_profile:
 		require.Nil(t, resp.Error)
 
 		result := resp.Result.(mcp.ListToolsResult)
-		require.Len(t, result.Tools, 8)
+		require.Len(t, result.Tools, 9)
 
 		var toolNames []string
 		for _, tool := range result.Tools {
@@ -176,6 +176,7 @@ soul_profile:
 			"federated_similar",
 			"federated_note_html",
 			"federated_expand",
+			"federated_instructions",
 		}, toolNames)
 	})
 
@@ -215,13 +216,54 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Len(t, toolNames, 9)
+		require.Len(t, toolNames, 10)
 		require.Contains(t, toolNames, "code-review")
 
 		// Dynamic tool carries description and empty schema
-		dynTool := result.Tools[8]
+		dynTool := result.Tools[9]
 		require.Equal(t, "code-review", dynTool.Name)
 		require.Equal(t, "Detailed code review", dynTool.Description)
+	})
+
+	t.Run("tools/list dedupes notes sharing an mcp_method", func(t *testing.T) {
+		// Localized en/ru notes both declaring mcp_method: instructions must not
+		// produce two tools with the same name. The first note in path-sorted
+		// order wins, matching handleDynamicMethod's resolution.
+		en := &appmodel.NoteView{
+			Path:           "_mcp_instructions.md",
+			MCPMethod:      "instructions",
+			MCPDescription: "Full tool reference (EN)",
+			Content:        []byte("EN instructions"),
+		}
+		ru := &appmodel.NoteView{
+			Path:           "ru/_mcp_instructions.md",
+			MCPMethod:      "instructions",
+			MCPDescription: "MCP Инструкции (RU)",
+			Content:        []byte("RU instructions"),
+		}
+		env := &EnvMock{
+			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{List: []*appmodel.NoteView{en, ru}, PathMap: map[string]*appmodel.NoteView{}}
+			},
+			CanReadNoteFunc:             func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+			FederatedGraphQLEnabledFunc: func() bool { return false },
+			FederationMaxDepthFunc:      func() int { return 3 },
+		}
+
+		resp := mcp.Resolve(ctx, env, mcp.Request{JSONRPC: "2.0", Method: "tools/list", ID: 6})
+		result := resp.Result.(mcp.ListToolsResult)
+
+		count := 0
+		var desc string
+		for _, tool := range result.Tools {
+			if tool.Name == "instructions" {
+				count++
+				desc = tool.Description
+			}
+		}
+		require.Equal(t, 1, count, "instructions must appear exactly once")
+		require.Equal(t, "Full tool reference (EN)", desc, "first note in path order wins")
 	})
 
 	t.Run("method not found returns error", func(t *testing.T) {

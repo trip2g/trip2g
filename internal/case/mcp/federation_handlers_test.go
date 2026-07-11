@@ -17,6 +17,9 @@ type federationMock struct {
 	noteHTMLFunc        func(ctx context.Context, params appmodel.FederationNoteHTMLParams) (appmodel.FederationResult, error)
 	expandFunc          func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
 	federatedExpandFunc func(ctx context.Context, params appmodel.FederationExpandParams) (appmodel.FederationResult, error)
+
+	instructionsFunc          func(ctx context.Context) (appmodel.FederationResult, error)
+	federatedInstructionsFunc func(ctx context.Context, params appmodel.FederationInstructionsParams) (appmodel.FederationResult, error)
 }
 
 func (m *federationMock) Search(ctx context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
@@ -68,6 +71,20 @@ func (m *federationMock) FederatedExpand(ctx context.Context, params appmodel.Fe
 		panic("unexpected FederatedExpand call")
 	}
 	return m.federatedExpandFunc(ctx, params)
+}
+
+func (m *federationMock) Instructions(ctx context.Context) (appmodel.FederationResult, error) {
+	if m.instructionsFunc == nil {
+		panic("unexpected Instructions call")
+	}
+	return m.instructionsFunc(ctx)
+}
+
+func (m *federationMock) FederatedInstructions(ctx context.Context, params appmodel.FederationInstructionsParams) (appmodel.FederationResult, error) {
+	if m.federatedInstructionsFunc == nil {
+		panic("unexpected FederatedInstructions call")
+	}
+	return m.federatedInstructionsFunc(ctx, params)
 }
 
 func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {

@@ -17,6 +17,8 @@ type Federation interface {
 	Expand(ctx context.Context, params FederationExpandParams) (FederationResult, error)
 	FederatedExpand(ctx context.Context, params FederationExpandParams) (FederationResult, error)
 	GraphQLRequest(ctx context.Context, params FederationGraphQLParams) (FederationResult, error)
+	Instructions(ctx context.Context) (FederationResult, error)
+	FederatedInstructions(ctx context.Context, params FederationInstructionsParams) (FederationResult, error)
 }
 
 type FederationClientFactory interface {
@@ -45,6 +47,10 @@ type FederationSimilarParams struct {
 	Path   string `json:"path,omitempty"`
 	Href   string `json:"href,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
+}
+
+type FederationInstructionsParams struct {
+	KBID string `json:"kb_id,omitempty"`
 }
 
 type FederationGraphQLParams struct {

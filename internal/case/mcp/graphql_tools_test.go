@@ -65,6 +65,12 @@ func (e *gqlRequestEnv) FederatedFanoutLimit() int            { panic("unexpecte
 func (e *gqlRequestEnv) FederatedFanoutTimeout() time.Duration {
 	panic("unexpected")
 }
+func (e *gqlRequestEnv) CachedFederatedInstructions(_ string) (model.FederationResult, bool) {
+	panic("unexpected")
+}
+func (e *gqlRequestEnv) StoreFederatedInstructions(_ string, _ model.FederationResult) {
+	panic("unexpected")
+}
 func (e *gqlRequestEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, error) {
 	panic("unexpected")
 }
