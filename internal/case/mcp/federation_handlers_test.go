@@ -172,6 +172,58 @@ func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
 	require.Zero(t, gotParams.PID)
 }
 
+func TestFederatedNoteHTMLForwardsMatchIDOnly(t *testing.T) {
+	// federated_search's description tells agents to open a found chunk with
+	// federated_note_html(kb_id=..., match_id=...) — the hub must forward a
+	// match_id-only read instead of rejecting it.
+	kbNote := &appmodel.NoteView{
+		PathID:             17,
+		MCPFederationKBURL: "https://bob.example/_system/mcp",
+		MCPFederationKBID:  "nietzsche",
+	}
+	nvs := appmodel.NewNoteViews()
+	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
+
+	var gotParams appmodel.FederationNoteHTMLParams
+	federation := &federationMock{
+		noteHTMLFunc: func(ctx context.Context, params appmodel.FederationNoteHTMLParams) (appmodel.FederationResult, error) {
+			gotParams = params
+			return appmodel.FederationResult{
+				Content: []appmodel.FederationContent{{Type: "text", Text: "focused chunk"}},
+			}, nil
+		},
+	}
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *appmodel.NoteViews {
+			return nvs
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
+			return federation, nil
+		},
+	}
+
+	params := mcp.CallToolParams{
+		Name:      "federated_note_html",
+		Arguments: json.RawMessage(`{"kb_id":"nietzsche","match_id":"p12:c0","note_id":""}`),
+	}
+	paramsJSON, _ := json.Marshal(params)
+	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		JSONRPC: "2.0",
+		Method:  "tools/call",
+		Params:  paramsJSON,
+		ID:      1,
+	})
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.Equal(t, "focused chunk", result.Content[0].Text)
+	require.Equal(t, "p12:c0", gotParams.MatchID)
+	require.Empty(t, gotParams.NoteID)
+}
+
 func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 	kbNote := &appmodel.NoteView{
 		PathID:             17,

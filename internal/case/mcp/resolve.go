@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -217,12 +218,12 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 		{
 			Name:        "note_html",
-			Description: "Read a note by pid, note_id, href, or path. Use match_id for a focused chunk window around a specific search hit. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
+			Description: "Read a note by pid, note_id, href, path, or match_id. Use match_id for a focused chunk window around a specific search hit; match_id alone is enough to resolve the note. Use toc_path (from a search match's toc_path, or from expand) to read an exact section: search -> breadcrumb (approximate) -> toc_path (precise) -> note_html(toc_path=[...]).",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
 					"path":          {Type: "string", Description: "Note path from search results"},
-					"href":          {Type: "string", Description: "Note href from search results"},
+					"href":          {Type: "string", Description: "Note href or absolute URL from search results"},
 					"pid":           {Type: "number", Description: "Stable note id from search results or HTML data-pid"},
 					"note_id":       {Type: "number", Description: "Stable note id from search results"},
 					"match_id":      {Type: "string", Description: "Focused match id from search results, such as p32:c4"},
@@ -312,10 +313,10 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 							`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively)`,
 					},
 					"path":     {Type: "string", Description: "Remote note path"},
-					"href":     {Type: "string", Description: "Remote note href"},
+					"href":     {Type: "string", Description: "Remote note href or absolute URL from search results"},
 					"pid":      {Type: "number", Description: "Remote stable note id"},
 					"note_id":  {Type: "string", Description: "Remote stable note id (uint64 string)"},
-					"match_id": {Type: "string", Description: "Focused match id from remote search results"},
+					"match_id": {Type: "string", Description: "Focused match id from remote search results; match_id alone is enough"},
 				},
 				Required: []string{"kb_id"},
 			},
@@ -918,14 +919,15 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		return *errResp
 	}
 
-	if args.Path == "" && args.Href == "" && args.PID.Value == 0 && args.PID.Raw == "" && args.NoteID == 0 {
-		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
+	if args.Path == "" && args.Href == "" && args.PID.Value == 0 && args.PID.Raw == "" &&
+		args.NoteID.Value == 0 && args.NoteID.Raw == "" && args.MatchID == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, href, or match_id is required")
 	}
 
 	noteViews := env.LatestNoteViews()
 	note := resolveNoteReference(noteViews, *args)
 	if note == nil {
-		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "pid_raw", args.PID.Raw, "note_id", args.NoteID)
+		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "pid_raw", args.PID.Raw, "note_id", args.NoteID.Value)
 		if args.PID.Raw != "" && args.PID.Value == 0 {
 			return errorResponse(id, ErrCodeInvalidParams,
 				fmt.Sprintf("pid %q is not a note id; note ids are numbers from search results — chunk refs like \"p36:c2\" go in match_id", args.PID.Raw))
@@ -938,7 +940,7 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		return errorResponse(id, ErrCodeInternal, "Note HTML failed: "+err.Error())
 	}
 	if !canRead {
-		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "note_id", args.NoteID)
+		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID.Value, "note_id", args.NoteID.Value)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 
@@ -1009,7 +1011,7 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		Path:   args.Path,
 		Href:   args.Href,
 		PID:    PID{Value: args.PID},
-		NoteID: args.NoteID,
+		NoteID: PID{Value: args.NoteID},
 	})
 	if note == nil {
 		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
@@ -1103,7 +1105,7 @@ func parseChunkMatchID(matchID string) (int64, int, bool) {
 func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *model.NoteView {
 	id := args.PID.Value
 	if id == 0 {
-		id = args.NoteID
+		id = args.NoteID.Value
 	}
 	if id != 0 {
 		if note := noteViews.GetByPathID(id); note != nil {
@@ -1118,9 +1120,29 @@ func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *m
 		}
 	}
 	if args.Href != "" {
-		return noteViews.GetByPath(args.Href)
+		if note := noteViews.GetByPath(normalizeHref(args.Href)); note != nil {
+			return note
+		}
+	}
+	// A match_id like "p12:c0" carries the note id — search results hand it
+	// back as the primary pointer, so it must resolve on its own.
+	if pathID, _, ok := parseChunkMatchID(args.MatchID); ok {
+		return noteViews.GetByPathID(pathID)
 	}
 	return nil
+}
+
+// normalizeHref reduces an absolute URL (the url field of search results) to
+// its path component so it resolves like a relative href.
+func normalizeHref(href string) string {
+	if !strings.Contains(href, "://") {
+		return href
+	}
+	u, err := url.Parse(href)
+	if err != nil || u.Path == "" {
+		return href
+	}
+	return u.Path
 }
 
 func handleDynamicMethod(ctx context.Context, env Env, id any, methodName string) Response {
