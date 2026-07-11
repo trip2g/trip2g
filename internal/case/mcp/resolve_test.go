@@ -934,6 +934,110 @@ func TestHandleNoteHtml(t *testing.T) {
 		require.NotContains(t, result.Content[0].Text, "FULL NOTE HTML")
 	})
 
+	t.Run("match_id alone resolves the note and returns its focused chunk", func(t *testing.T) {
+		// Search results hand back match_id as the primary pointer and the
+		// tool description advertises note reads by match_id — a match_id-only
+		// call must resolve the note instead of demanding another ref.
+		note := &appmodel.NoteView{
+			Path:      "Книги/Книга 06.md",
+			PathID:    32,
+			Permalink: "/knigi/kniga_06",
+			HTML:      "<h1>Книга 06</h1><p>FULL NOTE HTML</p>",
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				noteViews := appmodel.NewNoteViews()
+				noteViews.RegisterNote(note)
+				return noteViews
+			},
+			LatestNoteChunksFunc: func() []appmodel.NoteChunk {
+				return []appmodel.NoteChunk{
+					{
+						NotePath:   note.Path,
+						ChunkIndex: 1,
+						Content:    "Книга 06\n\nЛучший способ отомстить - не уподобляться обидчику.",
+					},
+				}
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"match_id": "p32:c1"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 30,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Лучший способ отомстить - не уподобляться обидчику.")
+		require.NotContains(t, result.Content[0].Text, "FULL NOTE HTML")
+	})
+
+	t.Run("absolute URL href resolves", func(t *testing.T) {
+		// Search results return absolute URLs in their url field; models feed
+		// them back as href — the path component must resolve like a relative href.
+		note := &appmodel.NoteView{
+			Path:      "concepts/sverkhchelovek.md",
+			PathID:    12,
+			Permalink: "/concepts/sverkhchelovek",
+			HTML:      "<h1>Сверхчеловек</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"href": "https://nietzsche.2pub.me/concepts/sverkhchelovek"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 31,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Сверхчеловек")
+	})
+
+	t.Run("empty note_id string does not break resolution via href", func(t *testing.T) {
+		// Live repro: {kb_id, href: absolute URL, match_id, note_id: ""} —
+		// the empty note_id must fall through, not fail the whole call.
+		note := &appmodel.NoteView{
+			Path:      "concepts/sverkhchelovek.md",
+			PathID:    12,
+			Permalink: "/concepts/sverkhchelovek",
+			HTML:      "<h1>Сверхчеловек</h1>",
+		}
+
+		env := noteHTMLEnv(note)
+
+		params := mcp.CallToolParams{
+			Name:      "note_html",
+			Arguments: json.RawMessage(`{"note_id": "", "href": "https://nietzsche.2pub.me/concepts/sverkhchelovek"}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 32,
+		})
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		require.Contains(t, result.Content[0].Text, "Сверхчеловек")
+	})
+
 	t.Run("bad toc_path returns error with top-level sections, not the full note", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			Path:      "Книги/Книга 06.md",

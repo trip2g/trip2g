@@ -237,7 +237,7 @@ type NoteHTMLArguments struct {
 	Path         string   `json:"path,omitempty"`
 	Href         string   `json:"href,omitempty"`
 	PID          PID      `json:"pid,omitzero"`
-	NoteID       int64    `json:"note_id,omitempty"`
+	NoteID       PID      `json:"note_id,omitzero"`
 	MatchID      string   `json:"match_id,omitempty"`
 	ContextWords int      `json:"context_words,omitempty"`
 	TocPath      []string `json:"toc_path,omitempty"`
