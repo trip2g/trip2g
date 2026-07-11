@@ -66,6 +66,8 @@ cd cli/memcli && npm install && npm run codegen && npm run build
 | `--no-hub` | — | Skip writing the federation hub note |
 | `--hub-url <url>` | `https://trip2g.com/_system/mcp` | Point the hub at a different MCP endpoint |
 | `--name <id>` | — | Run a second isolated instance `trip2g-memory-<id>`; pass the same `--name` to `down`/`status`/`logs`, and give it a distinct `--port` |
+| `--embedded` | off | Start a local embedding sidecar (bge-m3) and enable vector search |
+| `--reranker` | off | Also start a reranker sidecar (bge-reranker-v2-m3) for second-stage reranking; implies `--embedded` |
 | `--dry-run` | — | Print commands without executing |
 
 To run two instances side-by-side, give the second one a `--name` and a distinct `--port`. State stays per-`--folder`, so each instance keeps its own vault:
@@ -75,6 +77,14 @@ node cli/memcli/dist/memcli.js up --folder ./vault-blog --name blog --port 24181
 node cli/memcli/dist/memcli.js up --folder ./vault-work --name work --port 24281
 # stop by name:
 node cli/memcli/dist/memcli.js down --name blog
+```
+
+### Local vector search (`--embedded` / `--reranker`)
+
+Both are off by default: each model is ~2GB, runs on CPU, and the first boot downloads it (can take minutes). `--embedded` starts the bundled [retriever](../../../retriever/README.md) sidecar with `BAAI/bge-m3` next to the instance (it builds the docker image on first use) and wires `FEATURES` so search uses embeddings, not just full-text. `--reranker` also loads `BAAI/bge-reranker-v2-m3` on the same sidecar for a second reranking stage and implies `--embedded`. The server runs natively on arm64 and amd64. Models cache in the `MODELS_DIR` env dir (default `~/models`), so later boots are fast. `down` removes the sidecar, `status` shows it.
+
+```bash
+node cli/memcli/dist/memcli.js up --folder ./vault --embedded --reranker
 ```
 
 **Flags for `daily` / `log`:**

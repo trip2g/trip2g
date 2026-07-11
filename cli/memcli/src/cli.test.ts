@@ -16,6 +16,8 @@ import {
   buildServerEnv,
   buildDataJson,
   buildDockerRunArgs,
+  buildFeaturesJson,
+  buildEmbedServerRunArgs,
   buildHubNote,
   hubSlug,
   _stampBlock,
@@ -1363,6 +1365,103 @@ test('parseArgs: --kanban and --kanban-bundle together', () => {
   const { flags } = parseArgs(['up', '--folder', '/tmp/v', '--kanban', '--kanban-bundle', 'http://localhost:8770/kanban.js']);
   assert.equal(flags.kanban, true);
   assert.equal(flags.kanbanBundle, 'http://localhost:8770/kanban.js');
+});
+
+// --embedded / --reranker (local vector-search sidecars)
+
+test('parseArgs: embedded and reranker default to false', () => {
+  const { flags } = parseArgs(['up']);
+  assert.equal(flags.embedded, false);
+  assert.equal(flags.reranker, false);
+});
+
+test('parseArgs: --embedded sets flags.embedded=true', () => {
+  const { flags } = parseArgs(['up', '--embedded']);
+  assert.equal(flags.embedded, true);
+});
+
+test('parseArgs: --reranker sets flags.reranker=true', () => {
+  const { flags } = parseArgs(['up', '--reranker']);
+  assert.equal(flags.reranker, true);
+});
+
+test('buildFeaturesJson: embedding only', () => {
+  const json = buildFeaturesJson('trip2g-memory-embedding', false);
+  const parsed = JSON.parse(json);
+  assert.deepEqual(parsed, {
+    vector_search: {
+      enabled: true,
+      model: 'bge-m3',
+      base_url: 'http://trip2g-memory-embedding:8000/v1',
+    },
+  });
+});
+
+test('buildFeaturesJson: with reranker on the same server', () => {
+  const json = buildFeaturesJson('t-embedding', true);
+  const parsed = JSON.parse(json);
+  assert.equal(parsed.vector_search.enabled, true);
+  assert.deepEqual(parsed.vector_search.reranker, {
+    enabled: true,
+    base_url: 'http://t-embedding:8000/rerank',
+    model: 'BAAI/bge-reranker-v2-m3',
+  });
+});
+
+test('buildEmbedServerRunArgs: embedding-only shape', () => {
+  const args = buildEmbedServerRunArgs({
+    name: 'trip2g-memory-embedding',
+    network: 'trip2g-memory-net',
+    hostPort: 24083,
+    modelsDir: '/home/u/models',
+    loadReranker: false,
+  });
+  assert.deepEqual(args, [
+    '-d',
+    '--name', 'trip2g-memory-embedding',
+    '--network', 'trip2g-memory-net',
+    '-p', '127.0.0.1:24083:8000',
+    '-v', '/home/u/models:/data',
+    'trip2g-embedding-server',
+  ]);
+});
+
+test('buildEmbedServerRunArgs: loadReranker adds LOAD_RERANKER=1', () => {
+  const args = buildEmbedServerRunArgs({
+    name: 'trip2g-memory-embedding',
+    network: 'trip2g-memory-net',
+    hostPort: 24083,
+    modelsDir: '/home/u/models',
+    loadReranker: true,
+  });
+  const eIdx = args.indexOf('-e');
+  assert.ok(eIdx >= 0 && args[eIdx + 1] === 'LOAD_RERANKER=1');
+  assert.equal(args[args.length - 1], 'trip2g-embedding-server');
+});
+
+test('buildDockerRunArgs: includes --network and FEATURES when embedded', () => {
+  const args = buildDockerRunArgs({
+    port: 24081, iport: 24082, email: 'a@b.com', secret: 'x',
+    encryptionKey: TEST_ENC_KEY, stateDir: '/tmp/state', image: 'img:latest',
+    network: 'trip2g-memory-net',
+    features: buildFeaturesJson('trip2g-memory-embedding', false),
+  });
+  const netIdx = args.indexOf('--network');
+  assert.ok(netIdx >= 0, 'must include --network');
+  assert.equal(args[netIdx + 1], 'trip2g-memory-net');
+  assert.ok(
+    args.some((a) => a.startsWith('FEATURES={') && a.includes('vector_search')),
+    'must include FEATURES env',
+  );
+});
+
+test('buildDockerRunArgs: no --network or FEATURES by default', () => {
+  const args = buildDockerRunArgs({
+    port: 24081, iport: 24082, email: 'a@b.com', secret: 'x',
+    encryptionKey: TEST_ENC_KEY, stateDir: '/tmp/state', image: 'img:latest',
+  });
+  assert.ok(!args.includes('--network'));
+  assert.ok(!args.some((a) => a.startsWith('FEATURES=')));
 });
 
 // ---------------------------------------------------------------------------

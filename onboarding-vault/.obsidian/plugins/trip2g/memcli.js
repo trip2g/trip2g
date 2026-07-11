@@ -29,9 +29,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../../../../node_modules/graphql/version.js
+// ../../node_modules/graphql/version.js
 var require_version = __commonJS({
-  "../../../../../node_modules/graphql/version.js"(exports) {
+  "../../node_modules/graphql/version.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -49,9 +49,9 @@ var require_version = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/devAssert.js
+// ../../node_modules/graphql/jsutils/devAssert.js
 var require_devAssert = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/devAssert.js"(exports) {
+  "../../node_modules/graphql/jsutils/devAssert.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -66,9 +66,9 @@ var require_devAssert = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/isPromise.js
+// ../../node_modules/graphql/jsutils/isPromise.js
 var require_isPromise = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/isPromise.js"(exports) {
+  "../../node_modules/graphql/jsutils/isPromise.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -80,9 +80,9 @@ var require_isPromise = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/isObjectLike.js
+// ../../node_modules/graphql/jsutils/isObjectLike.js
 var require_isObjectLike = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/isObjectLike.js"(exports) {
+  "../../node_modules/graphql/jsutils/isObjectLike.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -94,9 +94,9 @@ var require_isObjectLike = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/invariant.js
+// ../../node_modules/graphql/jsutils/invariant.js
 var require_invariant = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/invariant.js"(exports) {
+  "../../node_modules/graphql/jsutils/invariant.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -113,9 +113,9 @@ var require_invariant = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/location.js
+// ../../node_modules/graphql/language/location.js
 var require_location = __commonJS({
-  "../../../../../node_modules/graphql/language/location.js"(exports) {
+  "../../node_modules/graphql/language/location.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -142,9 +142,9 @@ var require_location = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/printLocation.js
+// ../../node_modules/graphql/language/printLocation.js
 var require_printLocation = __commonJS({
-  "../../../../../node_modules/graphql/language/printLocation.js"(exports) {
+  "../../node_modules/graphql/language/printLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -200,9 +200,9 @@ var require_printLocation = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/error/GraphQLError.js
+// ../../node_modules/graphql/error/GraphQLError.js
 var require_GraphQLError = __commonJS({
-  "../../../../../node_modules/graphql/error/GraphQLError.js"(exports) {
+  "../../node_modules/graphql/error/GraphQLError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -372,9 +372,9 @@ var require_GraphQLError = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/error/syntaxError.js
+// ../../node_modules/graphql/error/syntaxError.js
 var require_syntaxError = __commonJS({
-  "../../../../../node_modules/graphql/error/syntaxError.js"(exports) {
+  "../../node_modules/graphql/error/syntaxError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -390,9 +390,9 @@ var require_syntaxError = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/ast.js
+// ../../node_modules/graphql/language/ast.js
 var require_ast = __commonJS({
-  "../../../../../node_modules/graphql/language/ast.js"(exports) {
+  "../../node_modules/graphql/language/ast.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -574,9 +574,9 @@ var require_ast = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/directiveLocation.js
+// ../../node_modules/graphql/language/directiveLocation.js
 var require_directiveLocation = __commonJS({
-  "../../../../../node_modules/graphql/language/directiveLocation.js"(exports) {
+  "../../node_modules/graphql/language/directiveLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -608,9 +608,9 @@ var require_directiveLocation = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/kinds.js
+// ../../node_modules/graphql/language/kinds.js
 var require_kinds = __commonJS({
-  "../../../../../node_modules/graphql/language/kinds.js"(exports) {
+  "../../node_modules/graphql/language/kinds.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -666,9 +666,9 @@ var require_kinds = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/characterClasses.js
+// ../../node_modules/graphql/language/characterClasses.js
 var require_characterClasses = __commonJS({
-  "../../../../../node_modules/graphql/language/characterClasses.js"(exports) {
+  "../../node_modules/graphql/language/characterClasses.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -697,9 +697,9 @@ var require_characterClasses = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/blockString.js
+// ../../node_modules/graphql/language/blockString.js
 var require_blockString = __commonJS({
-  "../../../../../node_modules/graphql/language/blockString.js"(exports) {
+  "../../node_modules/graphql/language/blockString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -819,9 +819,9 @@ var require_blockString = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/tokenKind.js
+// ../../node_modules/graphql/language/tokenKind.js
 var require_tokenKind = __commonJS({
-  "../../../../../node_modules/graphql/language/tokenKind.js"(exports) {
+  "../../node_modules/graphql/language/tokenKind.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -856,9 +856,9 @@ var require_tokenKind = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/lexer.js
+// ../../node_modules/graphql/language/lexer.js
 var require_lexer = __commonJS({
-  "../../../../../node_modules/graphql/language/lexer.js"(exports) {
+  "../../node_modules/graphql/language/lexer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1494,9 +1494,9 @@ var require_lexer = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/inspect.js
+// ../../node_modules/graphql/jsutils/inspect.js
 var require_inspect = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/inspect.js"(exports) {
+  "../../node_modules/graphql/jsutils/inspect.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1586,9 +1586,9 @@ var require_inspect = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/instanceOf.js
+// ../../node_modules/graphql/jsutils/instanceOf.js
 var require_instanceOf = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/instanceOf.js"(exports) {
+  "../../node_modules/graphql/jsutils/instanceOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1636,9 +1636,9 @@ spurious results.`);
   }
 });
 
-// ../../../../../node_modules/graphql/language/source.js
+// ../../node_modules/graphql/language/source.js
 var require_source = __commonJS({
-  "../../../../../node_modules/graphql/language/source.js"(exports) {
+  "../../node_modules/graphql/language/source.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1680,9 +1680,9 @@ var require_source = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/parser.js
+// ../../node_modules/graphql/language/parser.js
 var require_parser = __commonJS({
-  "../../../../../node_modules/graphql/language/parser.js"(exports) {
+  "../../node_modules/graphql/language/parser.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -2997,9 +2997,9 @@ var require_parser = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/didYouMean.js
+// ../../node_modules/graphql/jsutils/didYouMean.js
 var require_didYouMean = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/didYouMean.js"(exports) {
+  "../../node_modules/graphql/jsutils/didYouMean.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3028,9 +3028,9 @@ var require_didYouMean = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/identityFunc.js
+// ../../node_modules/graphql/jsutils/identityFunc.js
 var require_identityFunc = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/identityFunc.js"(exports) {
+  "../../node_modules/graphql/jsutils/identityFunc.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3042,9 +3042,9 @@ var require_identityFunc = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/keyMap.js
+// ../../node_modules/graphql/jsutils/keyMap.js
 var require_keyMap = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/keyMap.js"(exports) {
+  "../../node_modules/graphql/jsutils/keyMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3060,9 +3060,9 @@ var require_keyMap = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/keyValMap.js
+// ../../node_modules/graphql/jsutils/keyValMap.js
 var require_keyValMap = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/keyValMap.js"(exports) {
+  "../../node_modules/graphql/jsutils/keyValMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3078,9 +3078,9 @@ var require_keyValMap = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/mapValue.js
+// ../../node_modules/graphql/jsutils/mapValue.js
 var require_mapValue = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/mapValue.js"(exports) {
+  "../../node_modules/graphql/jsutils/mapValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3096,9 +3096,9 @@ var require_mapValue = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/naturalCompare.js
+// ../../node_modules/graphql/jsutils/naturalCompare.js
 var require_naturalCompare = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/naturalCompare.js"(exports) {
+  "../../node_modules/graphql/jsutils/naturalCompare.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3150,9 +3150,9 @@ var require_naturalCompare = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/suggestionList.js
+// ../../node_modules/graphql/jsutils/suggestionList.js
 var require_suggestionList = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/suggestionList.js"(exports) {
+  "../../node_modules/graphql/jsutils/suggestionList.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3251,9 +3251,9 @@ var require_suggestionList = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/toObjMap.js
+// ../../node_modules/graphql/jsutils/toObjMap.js
 var require_toObjMap = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/toObjMap.js"(exports) {
+  "../../node_modules/graphql/jsutils/toObjMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3275,9 +3275,9 @@ var require_toObjMap = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/printString.js
+// ../../node_modules/graphql/language/printString.js
 var require_printString = __commonJS({
-  "../../../../../node_modules/graphql/language/printString.js"(exports) {
+  "../../node_modules/graphql/language/printString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3460,9 +3460,9 @@ var require_printString = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/visitor.js
+// ../../node_modules/graphql/language/visitor.js
 var require_visitor = __commonJS({
-  "../../../../../node_modules/graphql/language/visitor.js"(exports) {
+  "../../node_modules/graphql/language/visitor.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3671,9 +3671,9 @@ var require_visitor = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/printer.js
+// ../../node_modules/graphql/language/printer.js
 var require_printer = __commonJS({
-  "../../../../../node_modules/graphql/language/printer.js"(exports) {
+  "../../node_modules/graphql/language/printer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3925,9 +3925,9 @@ var require_printer = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/valueFromASTUntyped.js
+// ../../node_modules/graphql/utilities/valueFromASTUntyped.js
 var require_valueFromASTUntyped = __commonJS({
-  "../../../../../node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
+  "../../node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3964,9 +3964,9 @@ var require_valueFromASTUntyped = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/assertName.js
+// ../../node_modules/graphql/type/assertName.js
 var require_assertName = __commonJS({
-  "../../../../../node_modules/graphql/type/assertName.js"(exports) {
+  "../../node_modules/graphql/type/assertName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4009,9 +4009,9 @@ var require_assertName = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/definition.js
+// ../../node_modules/graphql/type/definition.js
 var require_definition = __commonJS({
-  "../../../../../node_modules/graphql/type/definition.js"(exports) {
+  "../../node_modules/graphql/type/definition.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4837,9 +4837,9 @@ var require_definition = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/typeComparators.js
+// ../../node_modules/graphql/utilities/typeComparators.js
 var require_typeComparators = __commonJS({
-  "../../../../../node_modules/graphql/utilities/typeComparators.js"(exports) {
+  "../../node_modules/graphql/utilities/typeComparators.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4902,9 +4902,9 @@ var require_typeComparators = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/scalars.js
+// ../../node_modules/graphql/type/scalars.js
 var require_scalars = __commonJS({
-  "../../../../../node_modules/graphql/type/scalars.js"(exports) {
+  "../../node_modules/graphql/type/scalars.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5183,9 +5183,9 @@ var require_scalars = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/directives.js
+// ../../node_modules/graphql/type/directives.js
 var require_directives = __commonJS({
-  "../../../../../node_modules/graphql/type/directives.js"(exports) {
+  "../../node_modules/graphql/type/directives.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5342,9 +5342,9 @@ var require_directives = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/isIterableObject.js
+// ../../node_modules/graphql/jsutils/isIterableObject.js
 var require_isIterableObject = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/isIterableObject.js"(exports) {
+  "../../node_modules/graphql/jsutils/isIterableObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5356,9 +5356,9 @@ var require_isIterableObject = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/astFromValue.js
+// ../../node_modules/graphql/utilities/astFromValue.js
 var require_astFromValue = __commonJS({
-  "../../../../../node_modules/graphql/utilities/astFromValue.js"(exports) {
+  "../../node_modules/graphql/utilities/astFromValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5479,9 +5479,9 @@ var require_astFromValue = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/introspection.js
+// ../../node_modules/graphql/type/introspection.js
 var require_introspection = __commonJS({
-  "../../../../../node_modules/graphql/type/introspection.js"(exports) {
+  "../../node_modules/graphql/type/introspection.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6012,9 +6012,9 @@ var require_introspection = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/schema.js
+// ../../node_modules/graphql/type/schema.js
 var require_schema = __commonJS({
-  "../../../../../node_modules/graphql/type/schema.js"(exports) {
+  "../../node_modules/graphql/type/schema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6247,9 +6247,9 @@ var require_schema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/validate.js
+// ../../node_modules/graphql/type/validate.js
 var require_validate = __commonJS({
-  "../../../../../node_modules/graphql/type/validate.js"(exports) {
+  "../../node_modules/graphql/type/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6719,9 +6719,9 @@ var require_validate = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/typeFromAST.js
+// ../../node_modules/graphql/utilities/typeFromAST.js
 var require_typeFromAST = __commonJS({
-  "../../../../../node_modules/graphql/utilities/typeFromAST.js"(exports) {
+  "../../node_modules/graphql/utilities/typeFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6746,9 +6746,9 @@ var require_typeFromAST = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/TypeInfo.js
+// ../../node_modules/graphql/utilities/TypeInfo.js
 var require_TypeInfo = __commonJS({
-  "../../../../../node_modules/graphql/utilities/TypeInfo.js"(exports) {
+  "../../node_modules/graphql/utilities/TypeInfo.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7023,9 +7023,9 @@ var require_TypeInfo = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/predicates.js
+// ../../node_modules/graphql/language/predicates.js
 var require_predicates = __commonJS({
-  "../../../../../node_modules/graphql/language/predicates.js"(exports) {
+  "../../node_modules/graphql/language/predicates.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7074,9 +7074,9 @@ var require_predicates = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
+// ../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
 var require_ExecutableDefinitionsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7108,9 +7108,9 @@ var require_ExecutableDefinitionsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
+// ../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
 var require_FieldsOnCorrectTypeRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7197,9 +7197,9 @@ var require_FieldsOnCorrectTypeRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
+// ../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
 var require_FragmentsOnCompositeTypesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7253,9 +7253,9 @@ var require_FragmentsOnCompositeTypesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
+// ../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
 var require_KnownArgumentNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7339,9 +7339,9 @@ var require_KnownArgumentNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/KnownDirectivesRule.js
+// ../../node_modules/graphql/validation/rules/KnownDirectivesRule.js
 var require_KnownDirectivesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7461,9 +7461,9 @@ var require_KnownDirectivesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
+// ../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
 var require_KnownFragmentNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7491,9 +7491,9 @@ var require_KnownFragmentNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js
+// ../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js
 var require_KnownTypeNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7554,9 +7554,9 @@ var require_KnownTypeNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
+// ../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
 var require_LoneAnonymousOperationRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7589,9 +7589,9 @@ var require_LoneAnonymousOperationRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
+// ../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
 var require_LoneSchemaDefinitionRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7633,9 +7633,9 @@ var require_LoneSchemaDefinitionRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
+// ../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
 var require_MaxIntrospectionDepthRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7699,9 +7699,9 @@ var require_MaxIntrospectionDepthRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
+// ../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
 var require_NoFragmentCyclesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7759,9 +7759,9 @@ var require_NoFragmentCyclesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
+// ../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
 var require_NoUndefinedVariablesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7800,9 +7800,9 @@ var require_NoUndefinedVariablesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
+// ../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
 var require_NoUnusedFragmentsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7851,9 +7851,9 @@ var require_NoUnusedFragmentsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
+// ../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
 var require_NoUnusedVariablesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7896,9 +7896,9 @@ var require_NoUnusedVariablesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/sortValueNode.js
+// ../../node_modules/graphql/utilities/sortValueNode.js
 var require_sortValueNode = __commonJS({
-  "../../../../../node_modules/graphql/utilities/sortValueNode.js"(exports) {
+  "../../node_modules/graphql/utilities/sortValueNode.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7933,9 +7933,9 @@ var require_sortValueNode = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
+// ../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
 var require_OverlappingFieldsCanBeMergedRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8462,9 +8462,9 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
+// ../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
 var require_PossibleFragmentSpreadsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8535,9 +8535,9 @@ var require_PossibleFragmentSpreadsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
+// ../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
 var require_PossibleTypeExtensionsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8667,9 +8667,9 @@ var require_PossibleTypeExtensionsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
+// ../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
 var require_ProvidedRequiredArgumentsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8773,9 +8773,9 @@ var require_ProvidedRequiredArgumentsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/ScalarLeafsRule.js
+// ../../node_modules/graphql/validation/rules/ScalarLeafsRule.js
 var require_ScalarLeafsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8833,9 +8833,9 @@ var require_ScalarLeafsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/printPathArray.js
+// ../../node_modules/graphql/jsutils/printPathArray.js
 var require_printPathArray = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/printPathArray.js"(exports) {
+  "../../node_modules/graphql/jsutils/printPathArray.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8849,9 +8849,9 @@ var require_printPathArray = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/Path.js
+// ../../node_modules/graphql/jsutils/Path.js
 var require_Path = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/Path.js"(exports) {
+  "../../node_modules/graphql/jsutils/Path.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8877,9 +8877,9 @@ var require_Path = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/coerceInputValue.js
+// ../../node_modules/graphql/utilities/coerceInputValue.js
 var require_coerceInputValue = __commonJS({
-  "../../../../../node_modules/graphql/utilities/coerceInputValue.js"(exports) {
+  "../../node_modules/graphql/utilities/coerceInputValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9048,9 +9048,9 @@ var require_coerceInputValue = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/valueFromAST.js
+// ../../node_modules/graphql/utilities/valueFromAST.js
 var require_valueFromAST = __commonJS({
-  "../../../../../node_modules/graphql/utilities/valueFromAST.js"(exports) {
+  "../../node_modules/graphql/utilities/valueFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9170,9 +9170,9 @@ var require_valueFromAST = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/values.js
+// ../../node_modules/graphql/execution/values.js
 var require_values = __commonJS({
-  "../../../../../node_modules/graphql/execution/values.js"(exports) {
+  "../../node_modules/graphql/execution/values.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9381,9 +9381,9 @@ var require_values = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/collectFields.js
+// ../../node_modules/graphql/execution/collectFields.js
 var require_collectFields = __commonJS({
-  "../../../../../node_modules/graphql/execution/collectFields.js"(exports) {
+  "../../node_modules/graphql/execution/collectFields.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9523,9 +9523,9 @@ var require_collectFields = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
+// ../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
 var require_SingleFieldSubscriptionsRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9592,9 +9592,9 @@ var require_SingleFieldSubscriptionsRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/groupBy.js
+// ../../node_modules/graphql/jsutils/groupBy.js
 var require_groupBy = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/groupBy.js"(exports) {
+  "../../node_modules/graphql/jsutils/groupBy.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9616,9 +9616,9 @@ var require_groupBy = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
 var require_UniqueArgumentDefinitionNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9673,9 +9673,9 @@ var require_UniqueArgumentDefinitionNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
 var require_UniqueArgumentNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9712,9 +9712,9 @@ var require_UniqueArgumentNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
 var require_UniqueDirectiveNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9757,9 +9757,9 @@ var require_UniqueDirectiveNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
+// ../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
 var require_UniqueDirectivesPerLocationRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9827,9 +9827,9 @@ var require_UniqueDirectivesPerLocationRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
 var require_UniqueEnumValueNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9884,9 +9884,9 @@ var require_UniqueEnumValueNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
 var require_UniqueFieldDefinitionNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9950,9 +9950,9 @@ var require_UniqueFieldDefinitionNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
 var require_UniqueFragmentNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9984,9 +9984,9 @@ var require_UniqueFragmentNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
 var require_UniqueInputFieldNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10029,9 +10029,9 @@ var require_UniqueInputFieldNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
 var require_UniqueOperationNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10068,9 +10068,9 @@ var require_UniqueOperationNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
 var require_UniqueOperationTypesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10123,9 +10123,9 @@ var require_UniqueOperationTypesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
 var require_UniqueTypeNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10174,9 +10174,9 @@ var require_UniqueTypeNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
+// ../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
 var require_UniqueVariableNamesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10211,9 +10211,9 @@ var require_UniqueVariableNamesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
+// ../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
 var require_ValuesOfCorrectTypeRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10429,9 +10429,9 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
+// ../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
 var require_VariablesAreInputTypesRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10466,9 +10466,9 @@ var require_VariablesAreInputTypesRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
+// ../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
 var require_VariablesInAllowedPositionRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10541,9 +10541,9 @@ var require_VariablesInAllowedPositionRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/specifiedRules.js
+// ../../node_modules/graphql/validation/specifiedRules.js
 var require_specifiedRules = __commonJS({
-  "../../../../../node_modules/graphql/validation/specifiedRules.js"(exports) {
+  "../../node_modules/graphql/validation/specifiedRules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10639,9 +10639,9 @@ var require_specifiedRules = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/ValidationContext.js
+// ../../node_modules/graphql/validation/ValidationContext.js
 var require_ValidationContext = __commonJS({
-  "../../../../../node_modules/graphql/validation/ValidationContext.js"(exports) {
+  "../../node_modules/graphql/validation/ValidationContext.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10817,9 +10817,9 @@ var require_ValidationContext = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/validate.js
+// ../../node_modules/graphql/validation/validate.js
 var require_validate2 = __commonJS({
-  "../../../../../node_modules/graphql/validation/validate.js"(exports) {
+  "../../node_modules/graphql/validation/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10901,9 +10901,9 @@ var require_validate2 = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/memoize3.js
+// ../../node_modules/graphql/jsutils/memoize3.js
 var require_memoize3 = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/memoize3.js"(exports) {
+  "../../node_modules/graphql/jsutils/memoize3.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10936,9 +10936,9 @@ var require_memoize3 = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/promiseForObject.js
+// ../../node_modules/graphql/jsutils/promiseForObject.js
 var require_promiseForObject = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/promiseForObject.js"(exports) {
+  "../../node_modules/graphql/jsutils/promiseForObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10956,9 +10956,9 @@ var require_promiseForObject = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/promiseReduce.js
+// ../../node_modules/graphql/jsutils/promiseReduce.js
 var require_promiseReduce = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/promiseReduce.js"(exports) {
+  "../../node_modules/graphql/jsutils/promiseReduce.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10975,9 +10975,9 @@ var require_promiseReduce = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/toError.js
+// ../../node_modules/graphql/jsutils/toError.js
 var require_toError = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/toError.js"(exports) {
+  "../../node_modules/graphql/jsutils/toError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10997,9 +10997,9 @@ var require_toError = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/error/locatedError.js
+// ../../node_modules/graphql/error/locatedError.js
 var require_locatedError = __commonJS({
-  "../../../../../node_modules/graphql/error/locatedError.js"(exports) {
+  "../../node_modules/graphql/error/locatedError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11027,9 +11027,9 @@ var require_locatedError = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/execute.js
+// ../../node_modules/graphql/execution/execute.js
 var require_execute = __commonJS({
-  "../../../../../node_modules/graphql/execution/execute.js"(exports) {
+  "../../node_modules/graphql/execution/execute.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11663,9 +11663,9 @@ var require_execute = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/graphql.js
+// ../../node_modules/graphql/graphql.js
 var require_graphql = __commonJS({
-  "../../../../../node_modules/graphql/graphql.js"(exports) {
+  "../../node_modules/graphql/graphql.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11737,9 +11737,9 @@ var require_graphql = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/type/index.js
+// ../../node_modules/graphql/type/index.js
 var require_type = __commonJS({
-  "../../../../../node_modules/graphql/type/index.js"(exports) {
+  "../../node_modules/graphql/type/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12288,9 +12288,9 @@ var require_type = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/language/index.js
+// ../../node_modules/graphql/language/index.js
 var require_language = __commonJS({
-  "../../../../../node_modules/graphql/language/index.js"(exports) {
+  "../../node_modules/graphql/language/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12496,9 +12496,9 @@ var require_language = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/jsutils/isAsyncIterable.js
+// ../../node_modules/graphql/jsutils/isAsyncIterable.js
 var require_isAsyncIterable = __commonJS({
-  "../../../../../node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
+  "../../node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12510,9 +12510,9 @@ var require_isAsyncIterable = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/mapAsyncIterator.js
+// ../../node_modules/graphql/execution/mapAsyncIterator.js
 var require_mapAsyncIterator = __commonJS({
-  "../../../../../node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
+  "../../node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12563,9 +12563,9 @@ var require_mapAsyncIterator = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/subscribe.js
+// ../../node_modules/graphql/execution/subscribe.js
 var require_subscribe = __commonJS({
-  "../../../../../node_modules/graphql/execution/subscribe.js"(exports) {
+  "../../node_modules/graphql/execution/subscribe.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12702,9 +12702,9 @@ var require_subscribe = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/execution/index.js
+// ../../node_modules/graphql/execution/index.js
 var require_execution = __commonJS({
-  "../../../../../node_modules/graphql/execution/index.js"(exports) {
+  "../../node_modules/graphql/execution/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12776,9 +12776,9 @@ var require_execution = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
+// ../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
 var require_NoDeprecatedCustomRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12876,9 +12876,9 @@ var require_NoDeprecatedCustomRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
+// ../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
 var require_NoSchemaIntrospectionCustomRule = __commonJS({
-  "../../../../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
+  "../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12907,9 +12907,9 @@ var require_NoSchemaIntrospectionCustomRule = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/validation/index.js
+// ../../node_modules/graphql/validation/index.js
 var require_validation = __commonJS({
-  "../../../../../node_modules/graphql/validation/index.js"(exports) {
+  "../../node_modules/graphql/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13203,9 +13203,9 @@ var require_validation = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/error/index.js
+// ../../node_modules/graphql/error/index.js
 var require_error = __commonJS({
-  "../../../../../node_modules/graphql/error/index.js"(exports) {
+  "../../node_modules/graphql/error/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13246,9 +13246,9 @@ var require_error = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/getIntrospectionQuery.js
+// ../../node_modules/graphql/utilities/getIntrospectionQuery.js
 var require_getIntrospectionQuery = __commonJS({
-  "../../../../../node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
+  "../../node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13383,9 +13383,9 @@ var require_getIntrospectionQuery = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/getOperationAST.js
+// ../../node_modules/graphql/utilities/getOperationAST.js
 var require_getOperationAST = __commonJS({
-  "../../../../../node_modules/graphql/utilities/getOperationAST.js"(exports) {
+  "../../node_modules/graphql/utilities/getOperationAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13412,9 +13412,9 @@ var require_getOperationAST = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/getOperationRootType.js
+// ../../node_modules/graphql/utilities/getOperationRootType.js
 var require_getOperationRootType = __commonJS({
-  "../../../../../node_modules/graphql/utilities/getOperationRootType.js"(exports) {
+  "../../node_modules/graphql/utilities/getOperationRootType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13468,9 +13468,9 @@ var require_getOperationRootType = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/introspectionFromSchema.js
+// ../../node_modules/graphql/utilities/introspectionFromSchema.js
 var require_introspectionFromSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13502,9 +13502,9 @@ var require_introspectionFromSchema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/buildClientSchema.js
+// ../../node_modules/graphql/utilities/buildClientSchema.js
 var require_buildClientSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/buildClientSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/buildClientSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13792,9 +13792,9 @@ var require_buildClientSchema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/extendSchema.js
+// ../../node_modules/graphql/utilities/extendSchema.js
 var require_extendSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/extendSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/extendSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14283,9 +14283,9 @@ var require_extendSchema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/buildASTSchema.js
+// ../../node_modules/graphql/utilities/buildASTSchema.js
 var require_buildASTSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/buildASTSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/buildASTSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14359,9 +14359,9 @@ var require_buildASTSchema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/lexicographicSortSchema.js
+// ../../node_modules/graphql/utilities/lexicographicSortSchema.js
 var require_lexicographicSortSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14498,9 +14498,9 @@ var require_lexicographicSortSchema = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/printSchema.js
+// ../../node_modules/graphql/utilities/printSchema.js
 var require_printSchema = __commonJS({
-  "../../../../../node_modules/graphql/utilities/printSchema.js"(exports) {
+  "../../node_modules/graphql/utilities/printSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14707,9 +14707,9 @@ ${operationTypes.join("\n")}
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/concatAST.js
+// ../../node_modules/graphql/utilities/concatAST.js
 var require_concatAST = __commonJS({
-  "../../../../../node_modules/graphql/utilities/concatAST.js"(exports) {
+  "../../node_modules/graphql/utilities/concatAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14729,9 +14729,9 @@ var require_concatAST = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/separateOperations.js
+// ../../node_modules/graphql/utilities/separateOperations.js
 var require_separateOperations = __commonJS({
-  "../../../../../node_modules/graphql/utilities/separateOperations.js"(exports) {
+  "../../node_modules/graphql/utilities/separateOperations.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14794,9 +14794,9 @@ var require_separateOperations = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/stripIgnoredCharacters.js
+// ../../node_modules/graphql/utilities/stripIgnoredCharacters.js
 var require_stripIgnoredCharacters = __commonJS({
-  "../../../../../node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
+  "../../node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14838,9 +14838,9 @@ var require_stripIgnoredCharacters = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/assertValidName.js
+// ../../node_modules/graphql/utilities/assertValidName.js
 var require_assertValidName = __commonJS({
-  "../../../../../node_modules/graphql/utilities/assertValidName.js"(exports) {
+  "../../node_modules/graphql/utilities/assertValidName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14873,9 +14873,9 @@ var require_assertValidName = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/findBreakingChanges.js
+// ../../node_modules/graphql/utilities/findBreakingChanges.js
 var require_findBreakingChanges = __commonJS({
-  "../../../../../node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
+  "../../node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -15287,9 +15287,9 @@ var require_findBreakingChanges = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/utilities/index.js
+// ../../node_modules/graphql/utilities/index.js
 var require_utilities = __commonJS({
-  "../../../../../node_modules/graphql/utilities/index.js"(exports) {
+  "../../node_modules/graphql/utilities/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -15504,9 +15504,9 @@ var require_utilities = __commonJS({
   }
 });
 
-// ../../../../../node_modules/graphql/index.js
+// ../../node_modules/graphql/index.js
 var require_graphql2 = __commonJS({
-  "../../../../../node_modules/graphql/index.js"(exports) {
+  "../../node_modules/graphql/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -16794,6 +16794,7 @@ import crypto from "node:crypto";
 import { spawnSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 
 // src/generated/graphql.ts
@@ -16812,6 +16813,15 @@ var DEFAULT_IMAGE = "ghcr.io/trip2g/trip2g:latest";
 var DEFAULT_EMAIL = "memory@local";
 var READY_TIMEOUT_MS = 6e4;
 var READY_POLL_MS = 500;
+var EMBED_SERVER_IMAGE = "trip2g-embedding-server";
+var EMBED_READY_TIMEOUT_MS = 9e5;
+var EMBED_READY_POLL_MS = 2e3;
+function networkName(name) {
+  return `${name}-net`;
+}
+function embeddingContainerName(name) {
+  return `${name}-embedding`;
+}
 var DEFAULT_HUB_URL = "https://trip2g.com/_system/mcp";
 var DEFAULT_STALE_DAYS = 60;
 function base64url(buf) {
@@ -17057,6 +17067,7 @@ function parseArgs(argv) {
     help: false,
     folder: "./memory-vault",
     port: DEFAULT_PORT,
+    host: "127.0.0.1",
     email: DEFAULT_EMAIL,
     image: DEFAULT_IMAGE,
     publicUrl: null,
@@ -17068,7 +17079,9 @@ function parseArgs(argv) {
     id: null,
     name: null,
     kanban: false,
-    kanbanBundle: null
+    kanbanBundle: null,
+    embedded: false,
+    reranker: false
   };
   let cmd = "up";
   let i = 0;
@@ -17089,6 +17102,12 @@ function parseArgs(argv) {
       flags.folder = argv[++i];
     } else if (arg === "--port") {
       flags.port = parseInt(argv[++i], 10);
+    } else if (arg === "--host") {
+      const h = argv[++i];
+      if (!h.startsWith("127.")) {
+        throw new Error("--host must be a loopback address (127.x.x.x)");
+      }
+      flags.host = h;
     } else if (arg === "--email") {
       flags.email = argv[++i];
     } else if (arg === "--image") {
@@ -17113,6 +17132,10 @@ function parseArgs(argv) {
       flags.kanban = true;
     } else if (arg === "--kanban-bundle") {
       flags.kanbanBundle = argv[++i];
+    } else if (arg === "--embedded") {
+      flags.embedded = true;
+    } else if (arg === "--reranker") {
+      flags.reranker = true;
     } else if (!arg.startsWith("-")) {
       positional.push(arg);
     }
@@ -17146,7 +17169,9 @@ function buildToolList() {
           hubUrl: { type: "string", description: "Override hub MCP endpoint URL" },
           publicUrl: { type: "string", description: "Override PUBLIC_URL for the server" },
           kanban: { type: "boolean", description: "Install the trip2g kanban template into <vault>/_layouts/kanban.html and seed a sample kanban.md board" },
-          kanbanBundle: { type: "string", description: "Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)" }
+          kanbanBundle: { type: "string", description: "Override the kanban.js bundle <script src> URL (local-dev override, e.g. http://localhost:8770/kanban.js)" },
+          embedded: { type: "boolean", description: "Start the local retriever sidecar (bge-m3, ~2GB, CPU-heavy) and enable vector search" },
+          reranker: { type: "boolean", description: "Also start a reranker sidecar (bge-reranker-v2-m3, ~2GB); implies embedded" }
         },
         required: []
       }
@@ -17265,6 +17290,7 @@ function buildServerEnv(opts) {
     STORAGE_BACKEND: "local",
     STORAGE_LOCAL_DIR: "/data/storage"
   };
+  if (opts.features) env.FEATURES = opts.features;
   const forbidden = ["DEV", "RESEND_API_KEY", "SMTP_PASSWORD", "GIT_API_REPO_PATH"];
   for (const k of forbidden) {
     if (k in env) {
@@ -17275,24 +17301,62 @@ function buildServerEnv(opts) {
 }
 function buildDockerRunArgs(opts) {
   const { port, iport, stateDir, image } = opts;
+  const host = opts.host ?? "127.0.0.1";
   const cName = opts.containerName ?? CONTAINER_NAME;
   const env = buildServerEnv(opts);
   const args = [
     "-d",
     "--name",
-    cName,
-    // Loopback bind — only reachable from localhost
+    cName
+  ];
+  if (opts.network) {
+    args.push("--network", opts.network);
+  }
+  args.push(
+    // Bind main port to the requested loopback address
     "-p",
-    `127.0.0.1:${port}:${port}`,
+    `${host}:${port}:${port}`,
+    // Internal port always stays on 127.0.0.1 (backend-only)
     "-p",
     `127.0.0.1:${iport}:${iport}`,
     "-v",
     `${stateDir}/data:/data`
-  ];
+  );
   for (const [k, v] of Object.entries(env)) {
     args.push("-e", `${k}=${v}`);
   }
   args.push(image);
+  return args;
+}
+function buildFeaturesJson(serverContainer, reranker) {
+  const vectorSearch = {
+    enabled: true,
+    model: "bge-m3",
+    base_url: `http://${serverContainer}:8000/v1`
+  };
+  if (reranker) {
+    vectorSearch.reranker = {
+      enabled: true,
+      base_url: `http://${serverContainer}:8000/rerank`,
+      model: "BAAI/bge-reranker-v2-m3"
+    };
+  }
+  return JSON.stringify({ vector_search: vectorSearch });
+}
+function buildEmbedServerRunArgs(opts) {
+  const args = [
+    "-d",
+    "--name",
+    opts.name,
+    "--network",
+    opts.network,
+    "-p",
+    `127.0.0.1:${opts.hostPort}:8000`,
+    "-v",
+    `${opts.modelsDir}:/data`
+  ];
+  if (opts.loadReranker) args.push("-e", "LOAD_RERANKER=1");
+  args.push(EMBED_SERVER_IMAGE);
   return args;
 }
 function buildDataJson(vault, publicUrl, apiKey) {
@@ -17356,12 +17420,18 @@ async function waitReady(url, timeoutMs, pollMs) {
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
 }
-function isPortBusy(port) {
+function isPortBusy(port, host = "127.0.0.1") {
   return new Promise((resolve) => {
     const srv = net.createServer();
-    srv.once("error", () => resolve(true));
+    srv.once("error", (err) => {
+      if (err.code === "EACCES") {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
     srv.once("listening", () => srv.close(() => resolve(false)));
-    srv.listen(port, "127.0.0.1");
+    srv.listen(port, host);
   });
 }
 async function hatAuth(publicUrl, secret, email) {
@@ -17417,6 +17487,71 @@ function isPidAlive(pid, cmdlinePattern) {
     }
   } catch {
     return false;
+  }
+}
+function isContainerRunning(name) {
+  try {
+    const out = spawnSync("docker", ["ps", "-q", "--filter", `name=^${name}$`], { encoding: "utf8" });
+    return (out.stdout || "").trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+function containerExists(name) {
+  try {
+    const out = spawnSync("docker", ["ps", "-aq", "--filter", `name=^${name}$`], { encoding: "utf8" });
+    return (out.stdout || "").trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+function ensureNetwork(netName, dryRun) {
+  if (dryRun) {
+    console.log(`[dry-run] docker network create ${netName} (if absent)`);
+    return;
+  }
+  const inspect = spawnSync("docker", ["network", "inspect", netName], { encoding: "utf8" });
+  if (inspect.status === 0) return;
+  spawnSync("docker", ["network", "create", netName], { encoding: "utf8" });
+  console.log(`Created docker network ${netName}.`);
+}
+function ensureEmbedServerImage(dryRun) {
+  const buildDir = path.join(repoRoot(), "retriever");
+  if (dryRun) {
+    console.log(`[dry-run] docker build -t ${EMBED_SERVER_IMAGE} ${buildDir} (if image absent)`);
+    return;
+  }
+  const inspect = spawnSync("docker", ["image", "inspect", EMBED_SERVER_IMAGE], { encoding: "utf8" });
+  if (inspect.status === 0) return;
+  console.log(`Building ${EMBED_SERVER_IMAGE} image from ${buildDir} (first time \u2014 a few minutes)...`);
+  const build = spawnSync("docker", ["build", "-t", EMBED_SERVER_IMAGE, buildDir], { encoding: "utf8" });
+  if (build.status !== 0) {
+    throw new Error(`docker build ${EMBED_SERVER_IMAGE} failed: ${(build.stderr || build.stdout || "").trim().slice(-2e3)}`);
+  }
+  console.log(`Built ${EMBED_SERVER_IMAGE}.`);
+}
+function ensureEmbedServerSidecar(opts, dryRun) {
+  const args = buildEmbedServerRunArgs(opts);
+  if (dryRun) {
+    console.log(`[dry-run] docker run ${args.join(" ")}`);
+    return;
+  }
+  if (isContainerRunning(opts.name)) {
+    const env = spawnSync("docker", ["inspect", opts.name, "--format", "{{json .Config.Env}}"], { encoding: "utf8" });
+    const hasReranker = (env.stdout || "").includes("LOAD_RERANKER=1");
+    if (hasReranker === opts.loadReranker) {
+      console.log(`Sidecar ${opts.name} already running.`);
+      return;
+    }
+    console.log(`Sidecar ${opts.name} running without matching reranker mode \u2014 recreating.`);
+  }
+  if (containerExists(opts.name)) {
+    spawnSync("docker", ["rm", "-f", opts.name], { encoding: "utf8" });
+  }
+  console.log(`Starting sidecar ${opts.name} (bge-m3${opts.loadReranker ? " + bge-reranker-v2-m3" : ""})...`);
+  const run = spawnSync("docker", ["run", ...args], { encoding: "utf8" });
+  if (run.status !== 0) {
+    throw new Error(`docker run ${opts.name} failed: ${(run.stderr || run.stdout || "").trim()}`);
   }
 }
 function repoRoot() {
@@ -17981,6 +18116,12 @@ FLAGS (up)
   --kanban             Install the trip2g kanban template into <vault>/_layouts/kanban.html
                        and seed a sample kanban.md board (skipped with --no-seed)
   --kanban-bundle <url>  Override the kanban.js bundle <script src> (local-dev, e.g. http://localhost:8770/kanban.js)
+  --embedded           Start the local embedding server sidecar (bge-m3) and enable
+                       vector search. Off by default: the model is ~2GB and CPU-heavy;
+                       first boot downloads it and can take minutes. Model cache dir:
+                       MODELS_DIR env (default ~/models).
+  --reranker           Also load the reranker (bge-reranker-v2-m3, ~2GB) on the same
+                       sidecar for second-stage reranking. Implies --embedded.
 
 FLAGS (lint)
   --folder <path>      Vault directory (default: ./memory-vault)
@@ -18023,16 +18164,15 @@ async function cmdUp(flags, dryRun) {
   const pidFile = path.join(stateDir, "watch.pid");
   const iport = port + 1;
   const publicUrl = flags.publicUrl || `http://localhost:${port}`;
-  const containerRunning = (() => {
-    try {
-      const out = spawnSync("docker", ["ps", "-q", "--filter", `name=^${name}$`], {
-        encoding: "utf8"
-      });
-      return (out.stdout || "").trim().length > 0;
-    } catch {
-      return false;
-    }
-  })();
+  const embedded = flags.embedded || flags.reranker;
+  if (flags.reranker && !flags.embedded) {
+    console.log("--reranker implies --embedded: enabling the embedding sidecar too.");
+  }
+  const netName = networkName(name);
+  const embName = embeddingContainerName(name);
+  const embPort = port + 2;
+  const containerRunning = isContainerRunning(name);
+  const sidecarsUp = !embedded || isContainerRunning(embName);
   let watcherAlive = false;
   if (fs.existsSync(pidFile)) {
     const pid = parseInt(fs.readFileSync(pidFile, "utf8").trim(), 10);
@@ -18040,7 +18180,7 @@ async function cmdUp(flags, dryRun) {
       watcherAlive = isPidAlive(pid, /trip2g-sync/);
     }
   }
-  if (containerRunning && watcherAlive && !dryRun) {
+  if (containerRunning && watcherAlive && sidecarsUp && !dryRun) {
     console.log(`${name} is already up. Web: ${publicUrl}`);
     return;
   }
@@ -18070,11 +18210,43 @@ async function cmdUp(flags, dryRun) {
   } else if (dryRun && needsWrite) {
     console.log("[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to", envFile);
   }
-  if (!dryRun && !containerRunning && await isPortBusy(port)) {
+  if (!dryRun && !containerRunning && await isPortBusy(port, flags.host)) {
     console.error(`Error: port ${port} is busy \u2014 pass --port for this instance (or stop what holds it).`);
     process.exit(1);
   }
-  const dockerArgs = buildDockerRunArgs({ port, iport, email, secret, encryptionKey, stateDir, image, containerName: name });
+  if (embedded) {
+    ensureNetwork(netName, dryRun);
+    ensureEmbedServerImage(dryRun);
+    ensureEmbedServerSidecar({
+      name: embName,
+      network: netName,
+      hostPort: embPort,
+      modelsDir: process.env.MODELS_DIR || path.join(os.homedir(), "models"),
+      loadReranker: flags.reranker
+    }, dryRun);
+    if (dryRun) {
+      console.log(`[dry-run] Would poll http://localhost:${embPort}/health until 200 (timeout ${EMBED_READY_TIMEOUT_MS}ms)`);
+    } else {
+      console.log(`Waiting for embedding server at http://localhost:${embPort}/health (first run downloads ~2GB models \u2014 this can take minutes)...`);
+      await waitReady(`http://localhost:${embPort}/health`, EMBED_READY_TIMEOUT_MS, EMBED_READY_POLL_MS);
+      console.log("Embedding server is ready.");
+    }
+  }
+  const dockerArgs = buildDockerRunArgs({
+    port,
+    iport,
+    host: flags.host,
+    email,
+    secret,
+    encryptionKey,
+    stateDir,
+    image,
+    containerName: name,
+    ...embedded ? {
+      network: netName,
+      features: buildFeaturesJson(embName, flags.reranker)
+    } : {}
+  });
   if (dryRun) {
     console.log(`[dry-run] docker run ${dockerArgs.join(" ")}`);
   } else if (!containerRunning) {
@@ -18083,6 +18255,9 @@ async function cmdUp(flags, dryRun) {
     spawnSync("docker", ["run", ...dockerArgs], { encoding: "utf8" });
   } else {
     console.log(`Container ${name} already running, skipping docker run.`);
+    if (embedded) {
+      console.log("NOTE: FEATURES/network apply only on container create \u2014 run `down` first to rewire an existing container.");
+    }
   }
   const readyzUrl = `http://localhost:${iport}/readyz`;
   if (dryRun) {
@@ -18195,6 +18370,8 @@ function cmdDown(dryRun, folder, name) {
   if (dryRun) {
     console.log(`[dry-run] docker stop ${name}`);
     console.log(`[dry-run] docker rm ${name}`);
+    console.log(`[dry-run] docker rm -f ${embeddingContainerName(name)} (if present)`);
+    console.log(`[dry-run] docker network rm ${networkName(name)} (if present)`);
     if (folder) {
       const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
       console.log(`[dry-run] Would kill watcher PID from ${pidFile} and remove pid file`);
@@ -18209,6 +18386,16 @@ function cmdDown(dryRun, folder, name) {
     } catch {
     }
     console.log(`Container ${name} stopped and removed.`);
+    for (const sidecar of [embeddingContainerName(name)]) {
+      if (containerExists(sidecar)) {
+        spawnSync("docker", ["rm", "-f", sidecar], { encoding: "utf8" });
+        console.log(`Sidecar ${sidecar} removed.`);
+      }
+    }
+    try {
+      spawnSync("docker", ["network", "rm", networkName(name)], { encoding: "utf8" });
+    } catch {
+    }
     if (folder) {
       const pidFile = path.join(path.resolve(folder), ".trip2g-memory", "watch.pid");
       if (fs.existsSync(pidFile)) {
@@ -18238,6 +18425,8 @@ function cmdStatus(name) {
       "-a",
       "--filter",
       `name=^${name}$`,
+      "--filter",
+      `name=^${embeddingContainerName(name)}$`,
       "--format",
       "table {{.Names}}	{{.Status}}	{{.Ports}}"
     ],
@@ -18337,7 +18526,9 @@ function defaultFlags() {
     id: null,
     name: null,
     kanban: false,
-    kanbanBundle: null
+    kanbanBundle: null,
+    embedded: false,
+    reranker: false
   };
 }
 async function dispatchMcpTool(name, args) {
@@ -18354,6 +18545,8 @@ async function dispatchMcpTool(name, args) {
     if (typeof a.name === "string") f.name = a.name;
     if (typeof a.kanban === "boolean") f.kanban = a.kanban;
     if (typeof a.kanbanBundle === "string") f.kanbanBundle = a.kanbanBundle;
+    if (typeof a.embedded === "boolean") f.embedded = a.embedded;
+    if (typeof a.reranker === "boolean") f.reranker = a.reranker;
     return f;
   }
   let result;
@@ -18533,6 +18726,7 @@ if (_mainUrl === _argv1Url) {
   }
 }
 export {
+  EMBED_SERVER_IMAGE,
   KANBAN_RELEASE_URL,
   KANBAN_SENTINEL,
   _plainBlock,
@@ -18544,6 +18738,8 @@ export {
   buildDailyEntry,
   buildDataJson,
   buildDockerRunArgs,
+  buildEmbedServerRunArgs,
+  buildFeaturesJson,
   buildHatLoginUrl,
   buildHeaderNote,
   buildHomeNote,
@@ -18555,13 +18751,16 @@ export {
   buildServerEnv,
   buildToolList,
   containerName,
+  embeddingContainerName,
   ensureDailyIndex,
   extractWikilinks,
   findBrokenLinks,
   formatLintReport,
   hubSlug,
   installKanban,
+  isPortBusy,
   lintVault,
+  networkName,
   parseArgs,
   runDaily,
   runDown,
