@@ -54,3 +54,32 @@ Migration for users: **none needed** — no known vault has a real `.html.json`.
 ## 6. Relation to grid_layouts
 
 Grid layouts is a different, better-scoped idea (page chrome as a configurable CSS grid) and does **not** depend on this format — it needs a schema designed around tracks/areas/slots. If/when it gets its full plan, start that schema clean; the JSON→Jet emitter pattern (the useful lesson from `json_layout.go`) is recoverable from git in minutes. Cutting now does not close that door.
+
+---
+
+## Addendum (2026-07-11): verdict revised — CUT withdrawn, analysis kept
+
+Two corrections from the owner overturn the recommendation:
+
+1. **The frontend editor DOES exist.** The audit's "no frontend component
+   consumes any of it" was wrong: the $mol admin carries started (unfinished)
+   builder components — `assets/ui/admin/layout/editor/` and
+   `assets/ui/admin/layout/block/editor/` (view.tree + css), with `LayoutBlocks`
+   wired in `assets/ui/graphql/queries.ts`. The correct state is "editor
+   started, not finished" — which shifts the honest options from CUT toward
+   FINISH/FREEZE.
+
+2. **Architecture reframe: JSON over Jet, not JSON vs Jet.** The owner's
+   direction: `layout.json` is the *machine-editable composition manifest* that
+   sits ON TOP of the Jet `{{ block }}/{{ yield }}` library — the admin builder
+   edits JSON (easy to generate/diff/validate), the renderer expands it into
+   Jet block calls (`internal/layoutloader/json_layout.go` already does exactly
+   this). Under that framing the two systems are complements: Jet is the block
+   vocabulary, JSON is the assembly format a UI can safely write. The original
+   verdict treated them as competing page formats, which undercounted JSON's
+   value as the builder's serialization target.
+
+**Standing decision: KEEP the backend and this analysis; do not cut.** The
+open question is now sequencing only: finish the existing admin editor against
+today's block-call JSON, or wait for grid_layouts and extend the manifest
+schema then. Effort estimate for finishing (10-20 pd) still stands.
