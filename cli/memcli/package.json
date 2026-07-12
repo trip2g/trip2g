@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Minimal self-hosted agent memory backed by trip2g — boots a local trip2g server + sync watcher, mints an admin API key.",
   "bin": {
     "memcli": "dist/memcli.js"

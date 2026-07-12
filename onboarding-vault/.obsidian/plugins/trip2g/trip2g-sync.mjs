@@ -1,14 +1,1888 @@
 #!/usr/bin/env node
 import{fileURLToPath as __fU2P}from"node:url";import{dirname as __dn}from"node:path";const __filename=__fU2P(import.meta.url);const __dirname=__dn(__filename);
-var de=Object.defineProperty;var ut=(r,t)=>()=>(r&&(t=r(r=0)),t);var he=(r,t)=>{for(var e in t)de(r,e,{get:t[e],enumerable:!0})};import{stat as De,lstat as Ut,readdir as We,realpath as He}from"node:fs/promises";import{Readable as Le}from"node:stream";import{resolve as _t,relative as $e,join as Ge,sep as Ve}from"node:path";function Lt(r,t={}){let e=t.entryType||t.type;if(e==="both"&&(e=x.FILE_DIR_TYPE),e&&(t.type=e),r){if(typeof r!="string")throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");if(e&&!Bt.includes(e))throw new Error(`readdirp: Invalid type passed. Use one of ${Bt.join(", ")}`)}else throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");return t.root=r,new gt(t)}var x,yt,Ht,je,Bt,Qe,qe,Ke,ze,Dt,Wt,gt,$t=ut(()=>{x={FILE_TYPE:"files",DIR_TYPE:"directories",FILE_DIR_TYPE:"files_directories",EVERYTHING_TYPE:"all"},yt={root:".",fileFilter:r=>!0,directoryFilter:r=>!0,type:x.FILE_TYPE,lstat:!1,depth:2147483648,alwaysStat:!1,highWaterMark:4096};Object.freeze(yt);Ht="READDIRP_RECURSIVE_ERROR",je=new Set(["ENOENT","EPERM","EACCES","ELOOP",Ht]),Bt=[x.DIR_TYPE,x.EVERYTHING_TYPE,x.FILE_DIR_TYPE,x.FILE_TYPE],Qe=new Set([x.DIR_TYPE,x.EVERYTHING_TYPE,x.FILE_DIR_TYPE]),qe=new Set([x.EVERYTHING_TYPE,x.FILE_DIR_TYPE,x.FILE_TYPE]),Ke=r=>je.has(r.code),ze=process.platform==="win32",Dt=r=>!0,Wt=r=>{if(r===void 0)return Dt;if(typeof r=="function")return r;if(typeof r=="string"){let t=r.trim();return e=>e.basename===t}if(Array.isArray(r)){let t=r.map(e=>e.trim());return e=>t.some(o=>e.basename===o)}return Dt},gt=class extends Le{constructor(t={}){super({objectMode:!0,autoDestroy:!0,highWaterMark:t.highWaterMark});let e={...yt,...t},{root:o,type:a}=e;this._fileFilter=Wt(e.fileFilter),this._directoryFilter=Wt(e.directoryFilter);let s=e.lstat?Ut:De;ze?this._stat=i=>s(i,{bigint:!0}):this._stat=s,this._maxDepth=e.depth??yt.depth,this._wantsDir=a?Qe.has(a):!1,this._wantsFile=a?qe.has(a):!1,this._wantsEverything=a===x.EVERYTHING_TYPE,this._root=_t(o),this._isDirent=!e.alwaysStat,this._statsProp=this._isDirent?"dirent":"stats",this._rdOptions={encoding:"utf8",withFileTypes:this._isDirent},this.parents=[this._exploreDir(o,1)],this.reading=!1,this.parent=void 0}async _read(t){if(!this.reading){this.reading=!0;try{for(;!this.destroyed&&t>0;){let e=this.parent,o=e&&e.files;if(o&&o.length>0){let{path:a,depth:s}=e,i=o.splice(0,t).map(l=>this._formatEntry(l,a)),n=await Promise.all(i);for(let l of n){if(!l)continue;if(this.destroyed)return;let u=await this._getEntryType(l);u==="directory"&&this._directoryFilter(l)?(s<=this._maxDepth&&this.parents.push(this._exploreDir(l.fullPath,s+1)),this._wantsDir&&(this.push(l),t--)):(u==="file"||this._includeAsFile(l))&&this._fileFilter(l)&&this._wantsFile&&(this.push(l),t--)}}else{let a=this.parents.pop();if(!a){this.push(null);break}if(this.parent=await a,this.destroyed)return}}}catch(e){this.destroy(e)}finally{this.reading=!1}}}async _exploreDir(t,e){let o;try{o=await We(t,this._rdOptions)}catch(a){this._onError(a)}return{files:o,depth:e,path:t}}async _formatEntry(t,e){let o,a=this._isDirent?t.name:t;try{let s=_t(Ge(e,a));o={path:$e(this._root,s),fullPath:s,basename:a},o[this._statsProp]=this._isDirent?t:await this._stat(s)}catch(s){this._onError(s);return}return o}_onError(t){Ke(t)&&!this.destroyed?this.emit("warn",t):this.destroy(t)}async _getEntryType(t){if(!t&&this._statsProp in t)return"";let e=t[this._statsProp];if(e.isFile())return"file";if(e.isDirectory())return"directory";if(e&&e.isSymbolicLink()){let o=t.fullPath;try{let a=await He(o),s=await Ut(a);if(s.isFile())return"file";if(s.isDirectory()){let i=a.length;if(o.startsWith(a)&&o.substr(i,1)===Ve){let n=new Error(`Circular symlink detected: "${o}" points to "${a}"`);return n.code=Ht,this._onError(n)}return"directory"}}catch(a){return this._onError(a),""}}}_includeAsFile(t){let e=t&&t[this._statsProp];return e&&this._wantsEverything&&!e.isDirectory()}}});import{watchFile as Je,unwatchFile as Gt,watch as Ye}from"fs";import{open as Xe,stat as jt,lstat as Ze,realpath as mt}from"fs/promises";import*as f from"path";import{type as tr}from"os";function Vt(r,t,e,o,a){let s=(i,n)=>{e(r),a(i,n,{watchedPath:r}),n&&r!==n&&et(f.resolve(r,n),U,f.join(r,n))};try{return Ye(r,{persistent:t.persistent},s)}catch(i){o(i);return}}var er,At,Qt,at,ot,Pt,rr,ar,or,qt,A,k,nr,sr,U,Z,D,ir,lr,ur,ft,L,pr,$,Kt,tt,et,cr,St,dr,rt,zt=ut(()=>{er="data",At="end",Qt="close",at=()=>{},ot=process.platform,Pt=ot==="win32",rr=ot==="darwin",ar=ot==="linux",or=ot==="freebsd",qt=tr()==="OS400",A={ALL:"all",READY:"ready",ADD:"add",CHANGE:"change",ADD_DIR:"addDir",UNLINK:"unlink",UNLINK_DIR:"unlinkDir",RAW:"raw",ERROR:"error"},k=A,nr="watch",sr={lstat:Ze,stat:jt},U="listeners",Z="errHandlers",D="rawEmitters",ir=[U,Z,D],lr=new Set(["3dm","3ds","3g2","3gp","7z","a","aac","adp","afdesign","afphoto","afpub","ai","aif","aiff","alz","ape","apk","appimage","ar","arj","asf","au","avi","bak","baml","bh","bin","bk","bmp","btif","bz2","bzip2","cab","caf","cgm","class","cmx","cpio","cr2","cur","dat","dcm","deb","dex","djvu","dll","dmg","dng","doc","docm","docx","dot","dotm","dra","DS_Store","dsk","dts","dtshd","dvb","dwg","dxf","ecelp4800","ecelp7470","ecelp9600","egg","eol","eot","epub","exe","f4v","fbs","fh","fla","flac","flatpak","fli","flv","fpx","fst","fvt","g3","gh","gif","graffle","gz","gzip","h261","h263","h264","icns","ico","ief","img","ipa","iso","jar","jpeg","jpg","jpgv","jpm","jxr","key","ktx","lha","lib","lvp","lz","lzh","lzma","lzo","m3u","m4a","m4v","mar","mdi","mht","mid","midi","mj2","mka","mkv","mmr","mng","mobi","mov","movie","mp3","mp4","mp4a","mpeg","mpg","mpga","mxu","nef","npx","numbers","nupkg","o","odp","ods","odt","oga","ogg","ogv","otf","ott","pages","pbm","pcx","pdb","pdf","pea","pgm","pic","png","pnm","pot","potm","potx","ppa","ppam","ppm","pps","ppsm","ppsx","ppt","pptm","pptx","psd","pya","pyc","pyo","pyv","qt","rar","ras","raw","resources","rgb","rip","rlc","rmf","rmvb","rpm","rtf","rz","s3m","s7z","scpt","sgi","shar","snap","sil","sketch","slk","smv","snk","so","stl","suo","sub","swf","tar","tbz","tbz2","tga","tgz","thmx","tif","tiff","tlz","ttc","ttf","txz","udf","uvh","uvi","uvm","uvp","uvs","uvu","viv","vob","war","wav","wax","wbmp","wdp","weba","webm","webp","whl","wim","wm","wma","wmv","wmx","woff","woff2","wrm","wvx","xbm","xif","xla","xlam","xls","xlsb","xlsm","xlsx","xlt","xltm","xltx","xm","xmind","xpi","xpm","xwd","xz","z","zip","zipx"]),ur=r=>lr.has(f.extname(r).slice(1).toLowerCase()),ft=(r,t)=>{r instanceof Set?r.forEach(t):t(r)},L=(r,t,e)=>{let o=r[t];o instanceof Set||(r[t]=o=new Set([o])),o.add(e)},pr=r=>t=>{let e=r[t];e instanceof Set?e.clear():delete r[t]},$=(r,t,e)=>{let o=r[t];o instanceof Set?o.delete(e):o===e&&delete r[t]},Kt=r=>r instanceof Set?r.size===0:!r,tt=new Map;et=(r,t,e,o,a)=>{let s=tt.get(r);s&&ft(s[t],i=>{i(e,o,a)})},cr=(r,t,e,o)=>{let{listener:a,errHandler:s,rawEmitter:i}=o,n=tt.get(t),l;if(!e.persistent)return l=Vt(r,e,a,s,i),l?l.close.bind(l):void 0;if(n)L(n,U,a),L(n,Z,s),L(n,D,i);else{if(l=Vt(r,e,et.bind(null,t,U),s,et.bind(null,t,D)),!l)return;l.on(k.ERROR,async u=>{let p=et.bind(null,t,Z);if(n&&(n.watcherUnusable=!0),Pt&&u.code==="EPERM")try{await(await Xe(r,"r")).close(),p(u)}catch{}else p(u)}),n={listeners:a,errHandlers:s,rawEmitters:i,watcher:l},tt.set(t,n)}return()=>{$(n,U,a),$(n,Z,s),$(n,D,i),Kt(n.listeners)&&(n.watcher.close(),tt.delete(t),ir.forEach(pr(n)),n.watcher=void 0,Object.freeze(n))}},St=new Map,dr=(r,t,e,o)=>{let{listener:a,rawEmitter:s}=o,i=St.get(t),n=i&&i.options;return n&&(n.persistent<e.persistent||n.interval>e.interval)&&(Gt(t),i=void 0),i?(L(i,U,a),L(i,D,s)):(i={listeners:a,rawEmitters:s,options:e,watcher:Je(t,e,(l,u)=>{ft(i.rawEmitters,c=>{c(k.CHANGE,t,{curr:l,prev:u})});let p=l.mtimeMs;(l.size!==u.size||p>u.mtimeMs||p===0)&&ft(i.listeners,c=>c(r,l))})},St.set(t,i)),()=>{$(i,U,a),$(i,D,s),Kt(i.listeners)&&(St.delete(t),Gt(t),i.options=i.watcher=void 0,Object.freeze(i))}},rt=class{constructor(t){this.fsw=t,this._boundHandleError=e=>t._handleError(e)}_watchWithNodeFs(t,e){let o=this.fsw.options,a=f.dirname(t),s=f.basename(t);this.fsw._getWatchedDir(a).add(s);let n=f.resolve(t),l={persistent:o.persistent};e||(e=at);let u;if(o.usePolling){let p=o.interval!==o.binaryInterval;l.interval=p&&ur(s)?o.binaryInterval:o.interval,u=dr(t,n,l,{listener:e,rawEmitter:this.fsw._emitRaw})}else u=cr(t,n,l,{listener:e,errHandler:this._boundHandleError,rawEmitter:this.fsw._emitRaw});return u}_handleFile(t,e,o){if(this.fsw.closed)return;let a=f.dirname(t),s=f.basename(t),i=this.fsw._getWatchedDir(a),n=e;if(i.has(s))return;let l=async(p,c)=>{if(this.fsw._throttle(nr,t,5)){if(!c||c.mtimeMs===0)try{let d=await jt(t);if(this.fsw.closed)return;let y=d.atimeMs,h=d.mtimeMs;if((!y||y<=h||h!==n.mtimeMs)&&this.fsw._emit(k.CHANGE,t,d),(rr||ar||or)&&n.ino!==d.ino){this.fsw._closeFile(p),n=d;let S=this._watchWithNodeFs(t,l);S&&this.fsw._addPathCloser(p,S)}else n=d}catch{this.fsw._remove(a,s)}else if(i.has(s)){let d=c.atimeMs,y=c.mtimeMs;(!d||d<=y||y!==n.mtimeMs)&&this.fsw._emit(k.CHANGE,t,c),n=c}}},u=this._watchWithNodeFs(t,l);if(!(o&&this.fsw.options.ignoreInitial)&&this.fsw._isntIgnored(t)){if(!this.fsw._throttle(k.ADD,t,0))return;this.fsw._emit(k.ADD,t,e)}return u}async _handleSymlink(t,e,o,a){if(this.fsw.closed)return;let s=t.fullPath,i=this.fsw._getWatchedDir(e);if(!this.fsw.options.followSymlinks){this.fsw._incrReadyCount();let n;try{n=await mt(o)}catch{return this.fsw._emitReady(),!0}return this.fsw.closed?void 0:(i.has(a)?this.fsw._symlinkPaths.get(s)!==n&&(this.fsw._symlinkPaths.set(s,n),this.fsw._emit(k.CHANGE,o,t.stats)):(i.add(a),this.fsw._symlinkPaths.set(s,n),this.fsw._emit(k.ADD,o,t.stats)),this.fsw._emitReady(),!0)}if(this.fsw._symlinkPaths.has(s))return!0;this.fsw._symlinkPaths.set(s,!0)}_handleRead(t,e,o,a,s,i,n){if(t=f.join(t,""),n=this.fsw._throttle("readdir",t,1e3),!n)return;let l=this.fsw._getWatchedDir(o.path),u=new Set,p=this.fsw._readdirp(t,{fileFilter:c=>o.filterPath(c),directoryFilter:c=>o.filterDir(c)});if(p)return p.on(er,async c=>{if(this.fsw.closed){p=void 0;return}let d=c.path,y=f.join(t,d);if(u.add(d),!(c.stats.isSymbolicLink()&&await this._handleSymlink(c,t,y,d))){if(this.fsw.closed){p=void 0;return}(d===a||!a&&!l.has(d))&&(this.fsw._incrReadyCount(),y=f.join(s,f.relative(s,y)),this._addToNodeFs(y,e,o,i+1))}}).on(k.ERROR,this._boundHandleError),new Promise((c,d)=>{if(!p)return d();p.once(At,()=>{if(this.fsw.closed){p=void 0;return}let y=n?n.clear():!1;c(void 0),l.getChildren().filter(h=>h!==t&&!u.has(h)).forEach(h=>{this.fsw._remove(t,h)}),p=void 0,y&&this._handleRead(t,!1,o,a,s,i,n)})})}async _handleDir(t,e,o,a,s,i,n){let l=this.fsw._getWatchedDir(f.dirname(t)),u=l.has(f.basename(t));!(o&&this.fsw.options.ignoreInitial)&&!s&&!u&&this.fsw._emit(k.ADD_DIR,t,e),l.add(f.basename(t)),this.fsw._getWatchedDir(t);let p,c,d=this.fsw.options.depth;if((d==null||a<=d)&&!this.fsw._symlinkPaths.has(n)){if(!s&&(await this._handleRead(t,o,i,s,t,a,p),this.fsw.closed))return;c=this._watchWithNodeFs(t,(y,h)=>{h&&h.mtimeMs===0||this._handleRead(y,!1,i,s,t,a,p)})}return c}async _addToNodeFs(t,e,o,a,s){let i=this.fsw._emitReady;if(this.fsw._isIgnored(t)||this.fsw.closed)return i(),!1;let n=this.fsw._getWatchHelpers(t);o&&(n.filterPath=l=>o.filterPath(l),n.filterDir=l=>o.filterDir(l));try{let l=await sr[n.statMethod](n.watchPath);if(this.fsw.closed)return;if(this.fsw._isIgnored(n.watchPath,l))return i(),!1;let u=this.fsw.options.followSymlinks,p;if(l.isDirectory()){let c=f.resolve(t),d=u?await mt(t):t;if(this.fsw.closed||(p=await this._handleDir(n.watchPath,l,e,a,s,n,d),this.fsw.closed))return;c!==d&&d!==void 0&&this.fsw._symlinkPaths.set(c,d)}else if(l.isSymbolicLink()){let c=u?await mt(t):t;if(this.fsw.closed)return;let d=f.dirname(n.watchPath);if(this.fsw._getWatchedDir(d).add(n.watchPath),this.fsw._emit(k.ADD,n.watchPath,l),p=await this._handleDir(d,l,e,a,t,n,c),this.fsw.closed)return;c!==void 0&&this.fsw._symlinkPaths.set(f.resolve(t),c)}else p=this._handleFile(n.watchPath,l,e);return i(),p&&this.fsw._addPathCloser(t,p),!1}catch(l){if(this.fsw._handleError(l))return i(),t}}}});var oe={};he(oe,{FSWatcher:()=>G,WatchHelper:()=>st,default:()=>Nr,watch:()=>ae});import{stat as hr}from"fs";import{stat as yr,readdir as gr}from"fs/promises";import{EventEmitter as mr}from"events";import*as m from"path";function nt(r){return Array.isArray(r)?r:[r]}function Cr(r){return typeof r=="function"?r:typeof r=="string"?t=>r===t:r instanceof RegExp?t=>r.test(t):typeof r=="object"&&r!==null?t=>{if(r.path===t)return!0;if(r.recursive){let e=m.relative(r.path,t);return e?!e.startsWith("..")&&!m.isAbsolute(e):!1}return!1}:()=>!1}function xr(r){if(typeof r!="string")throw new Error("string expected");r=m.normalize(r),r=r.replace(/\\/g,"/");let t=!1;r.startsWith("//")&&(t=!0);let e=/\/\//;for(;r.match(e);)r=r.replace(e,"/");return t&&(r="/"+r),r}function Yt(r,t,e){let o=xr(t);for(let a=0;a<r.length;a++){let s=r[a];if(s(o,e))return!0}return!1}function Er(r,t){if(r==null)throw new TypeError("anymatch: specify first argument");let o=nt(r).map(a=>Cr(a));return t==null?(a,s)=>Yt(o,a,s):Yt(o,t)}function ae(r,t={}){let e=new G(t);return e.add(r),e}var bt,Sr,ee,fr,Ar,Pr,Jt,br,Ir,It,Xt,Zt,re,te,Tr,wr,Ct,vr,kr,st,G,Nr,ne=ut(()=>{$t();zt();bt="/",Sr="//",ee=".",fr="..",Ar="string",Pr=/\\/g,Jt=/\/\//,br=/\..*\.(sw[px])$|~$|\.subl.*\.tmp/,Ir=/^\.[/\\]/;It=r=>typeof r=="object"&&r!==null&&!(r instanceof RegExp);Xt=r=>{let t=nt(r).flat();if(!t.every(e=>typeof e===Ar))throw new TypeError(`Non-string provided as watch path: ${t}`);return t.map(re)},Zt=r=>{let t=r.replace(Pr,bt),e=!1;for(t.startsWith(Sr)&&(e=!0);t.match(Jt);)t=t.replace(Jt,bt);return e&&(t=bt+t),t},re=r=>Zt(m.normalize(Zt(r))),te=(r="")=>t=>typeof t=="string"?re(m.isAbsolute(t)?t:m.join(r,t)):t,Tr=(r,t)=>m.isAbsolute(r)?r:m.join(t,r),wr=Object.freeze(new Set),Ct=class{constructor(t,e){this.path=t,this._removeWatcher=e,this.items=new Set}add(t){let{items:e}=this;e&&t!==ee&&t!==fr&&e.add(t)}async remove(t){let{items:e}=this;if(!e||(e.delete(t),e.size>0))return;let o=this.path;try{await gr(o)}catch{this._removeWatcher&&this._removeWatcher(m.dirname(o),m.basename(o))}}has(t){let{items:e}=this;if(e)return e.has(t)}getChildren(){let{items:t}=this;return t?[...t.values()]:[]}dispose(){this.items.clear(),this.path="",this._removeWatcher=at,this.items=wr,Object.freeze(this)}},vr="stat",kr="lstat",st=class{constructor(t,e,o){this.fsw=o;let a=t;this.path=t=t.replace(Ir,""),this.watchPath=a,this.fullWatchPath=m.resolve(a),this.dirParts=[],this.dirParts.forEach(s=>{s.length>1&&s.pop()}),this.followSymlinks=e,this.statMethod=e?vr:kr}entryPath(t){return m.join(this.watchPath,m.relative(this.watchPath,t.fullPath))}filterPath(t){let{stats:e}=t;if(e&&e.isSymbolicLink())return this.filterDir(t);let o=this.entryPath(t);return this.fsw._isntIgnored(o,e)&&this.fsw._hasReadPermissions(e)}filterDir(t){return this.fsw._isntIgnored(this.entryPath(t),t.stats)}},G=class extends mr{constructor(t={}){super(),this.closed=!1,this._closers=new Map,this._ignoredPaths=new Set,this._throttled=new Map,this._streams=new Set,this._symlinkPaths=new Map,this._watched=new Map,this._pendingWrites=new Map,this._pendingUnlinks=new Map,this._readyCount=0,this._readyEmitted=!1;let e=t.awaitWriteFinish,o={stabilityThreshold:2e3,pollInterval:100},a={persistent:!0,ignoreInitial:!1,ignorePermissionErrors:!1,interval:100,binaryInterval:300,followSymlinks:!0,usePolling:!1,atomic:!0,...t,ignored:t.ignored?nt(t.ignored):nt([]),awaitWriteFinish:e===!0?o:typeof e=="object"?{...o,...e}:!1};qt&&(a.usePolling=!0),a.atomic===void 0&&(a.atomic=!a.usePolling);let s=process.env.CHOKIDAR_USEPOLLING;if(s!==void 0){let l=s.toLowerCase();l==="false"||l==="0"?a.usePolling=!1:l==="true"||l==="1"?a.usePolling=!0:a.usePolling=!!l}let i=process.env.CHOKIDAR_INTERVAL;i&&(a.interval=Number.parseInt(i,10));let n=0;this._emitReady=()=>{n++,n>=this._readyCount&&(this._emitReady=at,this._readyEmitted=!0,process.nextTick(()=>this.emit(A.READY)))},this._emitRaw=(...l)=>this.emit(A.RAW,...l),this._boundRemove=this._remove.bind(this),this.options=a,this._nodeFsHandler=new rt(this),Object.freeze(a)}_addIgnoredPath(t){if(It(t)){for(let e of this._ignoredPaths)if(It(e)&&e.path===t.path&&e.recursive===t.recursive)return}this._ignoredPaths.add(t)}_removeIgnoredPath(t){if(this._ignoredPaths.delete(t),typeof t=="string")for(let e of this._ignoredPaths)It(e)&&e.path===t&&this._ignoredPaths.delete(e)}add(t,e,o){let{cwd:a}=this.options;this.closed=!1,this._closePromise=void 0;let s=Xt(t);return a&&(s=s.map(i=>Tr(i,a))),s.forEach(i=>{this._removeIgnoredPath(i)}),this._userIgnored=void 0,this._readyCount||(this._readyCount=0),this._readyCount+=s.length,Promise.all(s.map(async i=>{let n=await this._nodeFsHandler._addToNodeFs(i,!o,void 0,0,e);return n&&this._emitReady(),n})).then(i=>{this.closed||i.forEach(n=>{n&&this.add(m.dirname(n),m.basename(e||n))})}),this}unwatch(t){if(this.closed)return this;let e=Xt(t),{cwd:o}=this.options;return e.forEach(a=>{!m.isAbsolute(a)&&!this._closers.has(a)&&(o&&(a=m.join(o,a)),a=m.resolve(a)),this._closePath(a),this._addIgnoredPath(a),this._watched.has(a)&&this._addIgnoredPath({path:a,recursive:!0}),this._userIgnored=void 0}),this}close(){if(this._closePromise)return this._closePromise;this.closed=!0,this.removeAllListeners();let t=[];return this._closers.forEach(e=>e.forEach(o=>{let a=o();a instanceof Promise&&t.push(a)})),this._streams.forEach(e=>e.destroy()),this._userIgnored=void 0,this._readyCount=0,this._readyEmitted=!1,this._watched.forEach(e=>e.dispose()),this._closers.clear(),this._watched.clear(),this._streams.clear(),this._symlinkPaths.clear(),this._throttled.clear(),this._closePromise=t.length?Promise.all(t).then(()=>{}):Promise.resolve(),this._closePromise}getWatched(){let t={};return this._watched.forEach((e,o)=>{let s=(this.options.cwd?m.relative(this.options.cwd,o):o)||ee;t[s]=e.getChildren().sort()}),t}emitWithAll(t,e){this.emit(t,...e),t!==A.ERROR&&this.emit(A.ALL,t,...e)}async _emit(t,e,o){if(this.closed)return;let a=this.options;Pt&&(e=m.normalize(e)),a.cwd&&(e=m.relative(a.cwd,e));let s=[e];o!=null&&s.push(o);let i=a.awaitWriteFinish,n;if(i&&(n=this._pendingWrites.get(e)))return n.lastChange=new Date,this;if(a.atomic){if(t===A.UNLINK)return this._pendingUnlinks.set(e,[t,...s]),setTimeout(()=>{this._pendingUnlinks.forEach((l,u)=>{this.emit(...l),this.emit(A.ALL,...l),this._pendingUnlinks.delete(u)})},typeof a.atomic=="number"?a.atomic:100),this;t===A.ADD&&this._pendingUnlinks.has(e)&&(t=A.CHANGE,this._pendingUnlinks.delete(e))}if(i&&(t===A.ADD||t===A.CHANGE)&&this._readyEmitted){let l=(u,p)=>{u?(t=A.ERROR,s[0]=u,this.emitWithAll(t,s)):p&&(s.length>1?s[1]=p:s.push(p),this.emitWithAll(t,s))};return this._awaitWriteFinish(e,i.stabilityThreshold,t,l),this}if(t===A.CHANGE&&!this._throttle(A.CHANGE,e,50))return this;if(a.alwaysStat&&o===void 0&&(t===A.ADD||t===A.ADD_DIR||t===A.CHANGE)){let l=a.cwd?m.join(a.cwd,e):e,u;try{u=await yr(l)}catch{}if(!u||this.closed)return;s.push(u)}return this.emitWithAll(t,s),this}_handleError(t){let e=t&&t.code;return t&&e!=="ENOENT"&&e!=="ENOTDIR"&&(!this.options.ignorePermissionErrors||e!=="EPERM"&&e!=="EACCES")&&this.emit(A.ERROR,t),t||this.closed}_throttle(t,e,o){this._throttled.has(t)||this._throttled.set(t,new Map);let a=this._throttled.get(t);if(!a)throw new Error("invalid throttle");let s=a.get(e);if(s)return s.count++,!1;let i,n=()=>{let u=a.get(e),p=u?u.count:0;return a.delete(e),clearTimeout(i),u&&clearTimeout(u.timeoutObject),p};i=setTimeout(n,o);let l={timeoutObject:i,clear:n,count:0};return a.set(e,l),l}_incrReadyCount(){return this._readyCount++}_awaitWriteFinish(t,e,o,a){let s=this.options.awaitWriteFinish;if(typeof s!="object")return;let i=s.pollInterval,n,l=t;this.options.cwd&&!m.isAbsolute(t)&&(l=m.join(this.options.cwd,t));let u=new Date,p=this._pendingWrites;function c(d){hr(l,(y,h)=>{if(y||!p.has(t)){y&&y.code!=="ENOENT"&&a(y);return}let S=Number(new Date);d&&h.size!==d.size&&(p.get(t).lastChange=S);let g=p.get(t);S-g.lastChange>=e?(p.delete(t),a(void 0,h)):n=setTimeout(c,i,h)})}p.has(t)||(p.set(t,{lastChange:u,cancelWait:()=>(p.delete(t),clearTimeout(n),o)}),n=setTimeout(c,i))}_isIgnored(t,e){if(this.options.atomic&&br.test(t))return!0;if(!this._userIgnored){let{cwd:o}=this.options,s=(this.options.ignored||[]).map(te(o)),n=[...[...this._ignoredPaths].map(te(o)),...s];this._userIgnored=Er(n,void 0)}return this._userIgnored(t,e)}_isntIgnored(t,e){return!this._isIgnored(t,e)}_getWatchHelpers(t){return new st(t,this.options.followSymlinks,this)}_getWatchedDir(t){let e=m.resolve(t);return this._watched.has(e)||this._watched.set(e,new Ct(e,this._boundRemove)),this._watched.get(e)}_hasReadPermissions(t){return this.options.ignorePermissionErrors?!0:!!(Number(t.mode)&256)}_remove(t,e,o){let a=m.join(t,e),s=m.resolve(a);if(o=o??(this._watched.has(a)||this._watched.has(s)),!this._throttle("remove",a,100))return;!o&&this._watched.size===1&&this.add(t,e,!0),this._getWatchedDir(a).getChildren().forEach(d=>this._remove(a,d));let l=this._getWatchedDir(t),u=l.has(e);l.remove(e),this._symlinkPaths.has(s)&&this._symlinkPaths.delete(s);let p=a;if(this.options.cwd&&(p=m.relative(this.options.cwd,a)),this.options.awaitWriteFinish&&this._pendingWrites.has(p)&&this._pendingWrites.get(p).cancelWait()===A.ADD)return;this._watched.delete(a),this._watched.delete(s);let c=o?A.UNLINK_DIR:A.UNLINK;u&&!this._isIgnored(a)&&this._emit(c,a),this._closePath(a)}_closePath(t){this._closeFile(t);let e=m.dirname(t);this._getWatchedDir(e).remove(m.basename(t))}_closeFile(t){let e=this._closers.get(t);e&&(e.forEach(o=>o()),this._closers.delete(t))}_addPathCloser(t,e){if(!e)return;let o=this._closers.get(t);o||(o=[],this._closers.set(t,o)),o.push(e)}_readdirp(t,e){if(this.closed)return;let o={type:A.ALL,alwaysStat:!0,lstat:!0,...e,depth:0},a=Lt(t,o);return this._streams.add(a),a.once(Qt,()=>{a=void 0}),a.once(At,()=>{a&&(this._streams.delete(a),a=void 0)}),a}};Nr={watch:ae,FSWatcher:G}});import*as lt from"fs";import*as ie from"path";import*as b from"fs";import*as I from"path";import*as ct from"crypto";function j(r){return!!(r.startsWith("_layouts/")&&(r.endsWith(".html")||r.endsWith(".html.json")))}import*as R from"path";function vt(r,t,e){if(t.startsWith("./")){let s=R.dirname(e),i=R.join(s,t.slice(2));return r.fileExistsSync(i)?i:null}if(t.startsWith("/")){let s=t.slice(1);return r.fileExistsSync(s)?s:null}if(t.includes("/"))return r.fileExistsSync(t)?t:null;if(r.fileExistsSync(t))return t;let o=R.posix.join("assets",t);if(r.fileExistsSync(o))return o;let a=R.dirname(e);if(a&&a!=="."){let s=R.posix.join(a,t);if(r.fileExistsSync(s))return s}return null}var Q=class{constructor(t,e={}){this.url=t;this.options=e}async request(t){let e=typeof t.document=="string"?t.document:t.document.loc?.source.body;if(!e)throw new Error("Invalid GraphQL document: no query string found");let o=await fetch(this.url,{method:"POST",headers:{"Content-Type":"application/json",...this.options.headers,...t.requestHeaders},body:JSON.stringify({query:e,variables:t.variables}),signal:t.signal});if(!o.ok){let s=await o.text().catch(()=>"");throw new Error(`HTTP ${o.status}: ${o.statusText}${s?`
-${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.message).join("; "),i=new Error(`GraphQL Error: ${s}`);throw i.graphqlErrors=a.errors,i.response=a,i}if(!a.data)throw new Error("GraphQL response missing data");return a.data}};function v(r,...t){let e=r[0];for(let o=0;o<t.length;o++)e+=String(t[o])+r[o+1];return{loc:{source:{body:e}}}}var ye=v`
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// ../../../home/alexes/projects2/trip2g/node_modules/readdirp/esm/index.js
+import { stat, lstat, readdir, realpath } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
+function readdirp(root, options = {}) {
+  let type = options.entryType || options.type;
+  if (type === "both")
+    type = EntryTypes.FILE_DIR_TYPE;
+  if (type)
+    options.type = type;
+  if (!root) {
+    throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");
+  } else if (typeof root !== "string") {
+    throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");
+  } else if (type && !ALL_TYPES.includes(type)) {
+    throw new Error(`readdirp: Invalid type passed. Use one of ${ALL_TYPES.join(", ")}`);
+  }
+  options.root = root;
+  return new ReaddirpStream(options);
+}
+var EntryTypes, defaultOptions, RECURSIVE_ERROR_CODE, NORMAL_FLOW_ERRORS, ALL_TYPES, DIR_TYPES, FILE_TYPES, isNormalFlowError, wantBigintFsStats, emptyFn, normalizeFilter, ReaddirpStream;
+var init_esm = __esm({
+  "../../../home/alexes/projects2/trip2g/node_modules/readdirp/esm/index.js"() {
+    EntryTypes = {
+      FILE_TYPE: "files",
+      DIR_TYPE: "directories",
+      FILE_DIR_TYPE: "files_directories",
+      EVERYTHING_TYPE: "all"
+    };
+    defaultOptions = {
+      root: ".",
+      fileFilter: /* @__PURE__ */ __name((_entryInfo) => true, "fileFilter"),
+      directoryFilter: /* @__PURE__ */ __name((_entryInfo) => true, "directoryFilter"),
+      type: EntryTypes.FILE_TYPE,
+      lstat: false,
+      depth: 2147483648,
+      alwaysStat: false,
+      highWaterMark: 4096
+    };
+    Object.freeze(defaultOptions);
+    RECURSIVE_ERROR_CODE = "READDIRP_RECURSIVE_ERROR";
+    NORMAL_FLOW_ERRORS = /* @__PURE__ */ new Set(["ENOENT", "EPERM", "EACCES", "ELOOP", RECURSIVE_ERROR_CODE]);
+    ALL_TYPES = [
+      EntryTypes.DIR_TYPE,
+      EntryTypes.EVERYTHING_TYPE,
+      EntryTypes.FILE_DIR_TYPE,
+      EntryTypes.FILE_TYPE
+    ];
+    DIR_TYPES = /* @__PURE__ */ new Set([
+      EntryTypes.DIR_TYPE,
+      EntryTypes.EVERYTHING_TYPE,
+      EntryTypes.FILE_DIR_TYPE
+    ]);
+    FILE_TYPES = /* @__PURE__ */ new Set([
+      EntryTypes.EVERYTHING_TYPE,
+      EntryTypes.FILE_DIR_TYPE,
+      EntryTypes.FILE_TYPE
+    ]);
+    isNormalFlowError = /* @__PURE__ */ __name((error) => NORMAL_FLOW_ERRORS.has(error.code), "isNormalFlowError");
+    wantBigintFsStats = process.platform === "win32";
+    emptyFn = /* @__PURE__ */ __name((_entryInfo) => true, "emptyFn");
+    normalizeFilter = /* @__PURE__ */ __name((filter) => {
+      if (filter === void 0)
+        return emptyFn;
+      if (typeof filter === "function")
+        return filter;
+      if (typeof filter === "string") {
+        const fl = filter.trim();
+        return (entry) => entry.basename === fl;
+      }
+      if (Array.isArray(filter)) {
+        const trItems = filter.map((item) => item.trim());
+        return (entry) => trItems.some((f) => entry.basename === f);
+      }
+      return emptyFn;
+    }, "normalizeFilter");
+    ReaddirpStream = class extends Readable {
+      static {
+        __name(this, "ReaddirpStream");
+      }
+      constructor(options = {}) {
+        super({
+          objectMode: true,
+          autoDestroy: true,
+          highWaterMark: options.highWaterMark
+        });
+        const opts = { ...defaultOptions, ...options };
+        const { root, type } = opts;
+        this._fileFilter = normalizeFilter(opts.fileFilter);
+        this._directoryFilter = normalizeFilter(opts.directoryFilter);
+        const statMethod = opts.lstat ? lstat : stat;
+        if (wantBigintFsStats) {
+          this._stat = (path5) => statMethod(path5, { bigint: true });
+        } else {
+          this._stat = statMethod;
+        }
+        this._maxDepth = opts.depth ?? defaultOptions.depth;
+        this._wantsDir = type ? DIR_TYPES.has(type) : false;
+        this._wantsFile = type ? FILE_TYPES.has(type) : false;
+        this._wantsEverything = type === EntryTypes.EVERYTHING_TYPE;
+        this._root = presolve(root);
+        this._isDirent = !opts.alwaysStat;
+        this._statsProp = this._isDirent ? "dirent" : "stats";
+        this._rdOptions = { encoding: "utf8", withFileTypes: this._isDirent };
+        this.parents = [this._exploreDir(root, 1)];
+        this.reading = false;
+        this.parent = void 0;
+      }
+      async _read(batch) {
+        if (this.reading)
+          return;
+        this.reading = true;
+        try {
+          while (!this.destroyed && batch > 0) {
+            const par = this.parent;
+            const fil = par && par.files;
+            if (fil && fil.length > 0) {
+              const { path: path5, depth } = par;
+              const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path5));
+              const awaited = await Promise.all(slice);
+              for (const entry of awaited) {
+                if (!entry)
+                  continue;
+                if (this.destroyed)
+                  return;
+                const entryType = await this._getEntryType(entry);
+                if (entryType === "directory" && this._directoryFilter(entry)) {
+                  if (depth <= this._maxDepth) {
+                    this.parents.push(this._exploreDir(entry.fullPath, depth + 1));
+                  }
+                  if (this._wantsDir) {
+                    this.push(entry);
+                    batch--;
+                  }
+                } else if ((entryType === "file" || this._includeAsFile(entry)) && this._fileFilter(entry)) {
+                  if (this._wantsFile) {
+                    this.push(entry);
+                    batch--;
+                  }
+                }
+              }
+            } else {
+              const parent = this.parents.pop();
+              if (!parent) {
+                this.push(null);
+                break;
+              }
+              this.parent = await parent;
+              if (this.destroyed)
+                return;
+            }
+          }
+        } catch (error) {
+          this.destroy(error);
+        } finally {
+          this.reading = false;
+        }
+      }
+      async _exploreDir(path5, depth) {
+        let files;
+        try {
+          files = await readdir(path5, this._rdOptions);
+        } catch (error) {
+          this._onError(error);
+        }
+        return { files, depth, path: path5 };
+      }
+      async _formatEntry(dirent, path5) {
+        let entry;
+        const basename3 = this._isDirent ? dirent.name : dirent;
+        try {
+          const fullPath = presolve(pjoin(path5, basename3));
+          entry = { path: prelative(this._root, fullPath), fullPath, basename: basename3 };
+          entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
+        } catch (err) {
+          this._onError(err);
+          return;
+        }
+        return entry;
+      }
+      _onError(err) {
+        if (isNormalFlowError(err) && !this.destroyed) {
+          this.emit("warn", err);
+        } else {
+          this.destroy(err);
+        }
+      }
+      async _getEntryType(entry) {
+        if (!entry && this._statsProp in entry) {
+          return "";
+        }
+        const stats = entry[this._statsProp];
+        if (stats.isFile())
+          return "file";
+        if (stats.isDirectory())
+          return "directory";
+        if (stats && stats.isSymbolicLink()) {
+          const full = entry.fullPath;
+          try {
+            const entryRealPath = await realpath(full);
+            const entryRealPathStats = await lstat(entryRealPath);
+            if (entryRealPathStats.isFile()) {
+              return "file";
+            }
+            if (entryRealPathStats.isDirectory()) {
+              const len = entryRealPath.length;
+              if (full.startsWith(entryRealPath) && full.substr(len, 1) === psep) {
+                const recursiveError = new Error(`Circular symlink detected: "${full}" points to "${entryRealPath}"`);
+                recursiveError.code = RECURSIVE_ERROR_CODE;
+                return this._onError(recursiveError);
+              }
+              return "directory";
+            }
+          } catch (error) {
+            this._onError(error);
+            return "";
+          }
+        }
+      }
+      _includeAsFile(entry) {
+        const stats = entry && entry[this._statsProp];
+        return stats && this._wantsEverything && !stats.isDirectory();
+      }
+    };
+    __name(readdirp, "readdirp");
+  }
+});
+
+// ../../../home/alexes/projects2/trip2g/node_modules/chokidar/esm/handler.js
+import { watchFile, unwatchFile, watch as fs_watch } from "fs";
+import { open, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
+import * as sysPath from "path";
+import { type as osType } from "os";
+function createFsWatchInstance(path5, options, listener, errHandler, emitRaw) {
+  const handleEvent = /* @__PURE__ */ __name((rawEvent, evPath) => {
+    listener(path5);
+    emitRaw(rawEvent, evPath, { watchedPath: path5 });
+    if (evPath && path5 !== evPath) {
+      fsWatchBroadcast(sysPath.resolve(path5, evPath), KEY_LISTENERS, sysPath.join(path5, evPath));
+    }
+  }, "handleEvent");
+  try {
+    return fs_watch(path5, {
+      persistent: options.persistent
+    }, handleEvent);
+  } catch (error) {
+    errHandler(error);
+    return void 0;
+  }
+}
+var STR_DATA, STR_END, STR_CLOSE, EMPTY_FN, pl, isWindows, isMacos, isLinux, isFreeBSD, isIBMi, EVENTS, EV, THROTTLE_MODE_WATCH, statMethods, KEY_LISTENERS, KEY_ERR, KEY_RAW, HANDLER_KEYS, binaryExtensions, isBinaryPath, foreach, addAndConvert, clearItem, delFromSet, isEmptySet, FsWatchInstances, fsWatchBroadcast, setFsWatchListener, FsWatchFileInstances, setFsWatchFileListener, NodeFsHandler;
+var init_handler = __esm({
+  "../../../home/alexes/projects2/trip2g/node_modules/chokidar/esm/handler.js"() {
+    STR_DATA = "data";
+    STR_END = "end";
+    STR_CLOSE = "close";
+    EMPTY_FN = /* @__PURE__ */ __name(() => {
+    }, "EMPTY_FN");
+    pl = process.platform;
+    isWindows = pl === "win32";
+    isMacos = pl === "darwin";
+    isLinux = pl === "linux";
+    isFreeBSD = pl === "freebsd";
+    isIBMi = osType() === "OS400";
+    EVENTS = {
+      ALL: "all",
+      READY: "ready",
+      ADD: "add",
+      CHANGE: "change",
+      ADD_DIR: "addDir",
+      UNLINK: "unlink",
+      UNLINK_DIR: "unlinkDir",
+      RAW: "raw",
+      ERROR: "error"
+    };
+    EV = EVENTS;
+    THROTTLE_MODE_WATCH = "watch";
+    statMethods = { lstat: lstat2, stat: stat2 };
+    KEY_LISTENERS = "listeners";
+    KEY_ERR = "errHandlers";
+    KEY_RAW = "rawEmitters";
+    HANDLER_KEYS = [KEY_LISTENERS, KEY_ERR, KEY_RAW];
+    binaryExtensions = /* @__PURE__ */ new Set([
+      "3dm",
+      "3ds",
+      "3g2",
+      "3gp",
+      "7z",
+      "a",
+      "aac",
+      "adp",
+      "afdesign",
+      "afphoto",
+      "afpub",
+      "ai",
+      "aif",
+      "aiff",
+      "alz",
+      "ape",
+      "apk",
+      "appimage",
+      "ar",
+      "arj",
+      "asf",
+      "au",
+      "avi",
+      "bak",
+      "baml",
+      "bh",
+      "bin",
+      "bk",
+      "bmp",
+      "btif",
+      "bz2",
+      "bzip2",
+      "cab",
+      "caf",
+      "cgm",
+      "class",
+      "cmx",
+      "cpio",
+      "cr2",
+      "cur",
+      "dat",
+      "dcm",
+      "deb",
+      "dex",
+      "djvu",
+      "dll",
+      "dmg",
+      "dng",
+      "doc",
+      "docm",
+      "docx",
+      "dot",
+      "dotm",
+      "dra",
+      "DS_Store",
+      "dsk",
+      "dts",
+      "dtshd",
+      "dvb",
+      "dwg",
+      "dxf",
+      "ecelp4800",
+      "ecelp7470",
+      "ecelp9600",
+      "egg",
+      "eol",
+      "eot",
+      "epub",
+      "exe",
+      "f4v",
+      "fbs",
+      "fh",
+      "fla",
+      "flac",
+      "flatpak",
+      "fli",
+      "flv",
+      "fpx",
+      "fst",
+      "fvt",
+      "g3",
+      "gh",
+      "gif",
+      "graffle",
+      "gz",
+      "gzip",
+      "h261",
+      "h263",
+      "h264",
+      "icns",
+      "ico",
+      "ief",
+      "img",
+      "ipa",
+      "iso",
+      "jar",
+      "jpeg",
+      "jpg",
+      "jpgv",
+      "jpm",
+      "jxr",
+      "key",
+      "ktx",
+      "lha",
+      "lib",
+      "lvp",
+      "lz",
+      "lzh",
+      "lzma",
+      "lzo",
+      "m3u",
+      "m4a",
+      "m4v",
+      "mar",
+      "mdi",
+      "mht",
+      "mid",
+      "midi",
+      "mj2",
+      "mka",
+      "mkv",
+      "mmr",
+      "mng",
+      "mobi",
+      "mov",
+      "movie",
+      "mp3",
+      "mp4",
+      "mp4a",
+      "mpeg",
+      "mpg",
+      "mpga",
+      "mxu",
+      "nef",
+      "npx",
+      "numbers",
+      "nupkg",
+      "o",
+      "odp",
+      "ods",
+      "odt",
+      "oga",
+      "ogg",
+      "ogv",
+      "otf",
+      "ott",
+      "pages",
+      "pbm",
+      "pcx",
+      "pdb",
+      "pdf",
+      "pea",
+      "pgm",
+      "pic",
+      "png",
+      "pnm",
+      "pot",
+      "potm",
+      "potx",
+      "ppa",
+      "ppam",
+      "ppm",
+      "pps",
+      "ppsm",
+      "ppsx",
+      "ppt",
+      "pptm",
+      "pptx",
+      "psd",
+      "pya",
+      "pyc",
+      "pyo",
+      "pyv",
+      "qt",
+      "rar",
+      "ras",
+      "raw",
+      "resources",
+      "rgb",
+      "rip",
+      "rlc",
+      "rmf",
+      "rmvb",
+      "rpm",
+      "rtf",
+      "rz",
+      "s3m",
+      "s7z",
+      "scpt",
+      "sgi",
+      "shar",
+      "snap",
+      "sil",
+      "sketch",
+      "slk",
+      "smv",
+      "snk",
+      "so",
+      "stl",
+      "suo",
+      "sub",
+      "swf",
+      "tar",
+      "tbz",
+      "tbz2",
+      "tga",
+      "tgz",
+      "thmx",
+      "tif",
+      "tiff",
+      "tlz",
+      "ttc",
+      "ttf",
+      "txz",
+      "udf",
+      "uvh",
+      "uvi",
+      "uvm",
+      "uvp",
+      "uvs",
+      "uvu",
+      "viv",
+      "vob",
+      "war",
+      "wav",
+      "wax",
+      "wbmp",
+      "wdp",
+      "weba",
+      "webm",
+      "webp",
+      "whl",
+      "wim",
+      "wm",
+      "wma",
+      "wmv",
+      "wmx",
+      "woff",
+      "woff2",
+      "wrm",
+      "wvx",
+      "xbm",
+      "xif",
+      "xla",
+      "xlam",
+      "xls",
+      "xlsb",
+      "xlsm",
+      "xlsx",
+      "xlt",
+      "xltm",
+      "xltx",
+      "xm",
+      "xmind",
+      "xpi",
+      "xpm",
+      "xwd",
+      "xz",
+      "z",
+      "zip",
+      "zipx"
+    ]);
+    isBinaryPath = /* @__PURE__ */ __name((filePath) => binaryExtensions.has(sysPath.extname(filePath).slice(1).toLowerCase()), "isBinaryPath");
+    foreach = /* @__PURE__ */ __name((val, fn) => {
+      if (val instanceof Set) {
+        val.forEach(fn);
+      } else {
+        fn(val);
+      }
+    }, "foreach");
+    addAndConvert = /* @__PURE__ */ __name((main2, prop, item) => {
+      let container = main2[prop];
+      if (!(container instanceof Set)) {
+        main2[prop] = container = /* @__PURE__ */ new Set([container]);
+      }
+      container.add(item);
+    }, "addAndConvert");
+    clearItem = /* @__PURE__ */ __name((cont) => (key) => {
+      const set = cont[key];
+      if (set instanceof Set) {
+        set.clear();
+      } else {
+        delete cont[key];
+      }
+    }, "clearItem");
+    delFromSet = /* @__PURE__ */ __name((main2, prop, item) => {
+      const container = main2[prop];
+      if (container instanceof Set) {
+        container.delete(item);
+      } else if (container === item) {
+        delete main2[prop];
+      }
+    }, "delFromSet");
+    isEmptySet = /* @__PURE__ */ __name((val) => val instanceof Set ? val.size === 0 : !val, "isEmptySet");
+    FsWatchInstances = /* @__PURE__ */ new Map();
+    __name(createFsWatchInstance, "createFsWatchInstance");
+    fsWatchBroadcast = /* @__PURE__ */ __name((fullPath, listenerType, val1, val2, val3) => {
+      const cont = FsWatchInstances.get(fullPath);
+      if (!cont)
+        return;
+      foreach(cont[listenerType], (listener) => {
+        listener(val1, val2, val3);
+      });
+    }, "fsWatchBroadcast");
+    setFsWatchListener = /* @__PURE__ */ __name((path5, fullPath, options, handlers) => {
+      const { listener, errHandler, rawEmitter } = handlers;
+      let cont = FsWatchInstances.get(fullPath);
+      let watcher;
+      if (!options.persistent) {
+        watcher = createFsWatchInstance(path5, options, listener, errHandler, rawEmitter);
+        if (!watcher)
+          return;
+        return watcher.close.bind(watcher);
+      }
+      if (cont) {
+        addAndConvert(cont, KEY_LISTENERS, listener);
+        addAndConvert(cont, KEY_ERR, errHandler);
+        addAndConvert(cont, KEY_RAW, rawEmitter);
+      } else {
+        watcher = createFsWatchInstance(
+          path5,
+          options,
+          fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
+          errHandler,
+          // no need to use broadcast here
+          fsWatchBroadcast.bind(null, fullPath, KEY_RAW)
+        );
+        if (!watcher)
+          return;
+        watcher.on(EV.ERROR, async (error) => {
+          const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
+          if (cont)
+            cont.watcherUnusable = true;
+          if (isWindows && error.code === "EPERM") {
+            try {
+              const fd = await open(path5, "r");
+              await fd.close();
+              broadcastErr(error);
+            } catch (err) {
+            }
+          } else {
+            broadcastErr(error);
+          }
+        });
+        cont = {
+          listeners: listener,
+          errHandlers: errHandler,
+          rawEmitters: rawEmitter,
+          watcher
+        };
+        FsWatchInstances.set(fullPath, cont);
+      }
+      return () => {
+        delFromSet(cont, KEY_LISTENERS, listener);
+        delFromSet(cont, KEY_ERR, errHandler);
+        delFromSet(cont, KEY_RAW, rawEmitter);
+        if (isEmptySet(cont.listeners)) {
+          cont.watcher.close();
+          FsWatchInstances.delete(fullPath);
+          HANDLER_KEYS.forEach(clearItem(cont));
+          cont.watcher = void 0;
+          Object.freeze(cont);
+        }
+      };
+    }, "setFsWatchListener");
+    FsWatchFileInstances = /* @__PURE__ */ new Map();
+    setFsWatchFileListener = /* @__PURE__ */ __name((path5, fullPath, options, handlers) => {
+      const { listener, rawEmitter } = handlers;
+      let cont = FsWatchFileInstances.get(fullPath);
+      const copts = cont && cont.options;
+      if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
+        unwatchFile(fullPath);
+        cont = void 0;
+      }
+      if (cont) {
+        addAndConvert(cont, KEY_LISTENERS, listener);
+        addAndConvert(cont, KEY_RAW, rawEmitter);
+      } else {
+        cont = {
+          listeners: listener,
+          rawEmitters: rawEmitter,
+          options,
+          watcher: watchFile(fullPath, options, (curr, prev) => {
+            foreach(cont.rawEmitters, (rawEmitter2) => {
+              rawEmitter2(EV.CHANGE, fullPath, { curr, prev });
+            });
+            const currmtime = curr.mtimeMs;
+            if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
+              foreach(cont.listeners, (listener2) => listener2(path5, curr));
+            }
+          })
+        };
+        FsWatchFileInstances.set(fullPath, cont);
+      }
+      return () => {
+        delFromSet(cont, KEY_LISTENERS, listener);
+        delFromSet(cont, KEY_RAW, rawEmitter);
+        if (isEmptySet(cont.listeners)) {
+          FsWatchFileInstances.delete(fullPath);
+          unwatchFile(fullPath);
+          cont.options = cont.watcher = void 0;
+          Object.freeze(cont);
+        }
+      };
+    }, "setFsWatchFileListener");
+    NodeFsHandler = class {
+      static {
+        __name(this, "NodeFsHandler");
+      }
+      constructor(fsW) {
+        this.fsw = fsW;
+        this._boundHandleError = (error) => fsW._handleError(error);
+      }
+      /**
+       * Watch file for changes with fs_watchFile or fs_watch.
+       * @param path to file or dir
+       * @param listener on fs change
+       * @returns closer for the watcher instance
+       */
+      _watchWithNodeFs(path5, listener) {
+        const opts = this.fsw.options;
+        const directory = sysPath.dirname(path5);
+        const basename3 = sysPath.basename(path5);
+        const parent = this.fsw._getWatchedDir(directory);
+        parent.add(basename3);
+        const absolutePath = sysPath.resolve(path5);
+        const options = {
+          persistent: opts.persistent
+        };
+        if (!listener)
+          listener = EMPTY_FN;
+        let closer;
+        if (opts.usePolling) {
+          const enableBin = opts.interval !== opts.binaryInterval;
+          options.interval = enableBin && isBinaryPath(basename3) ? opts.binaryInterval : opts.interval;
+          closer = setFsWatchFileListener(path5, absolutePath, options, {
+            listener,
+            rawEmitter: this.fsw._emitRaw
+          });
+        } else {
+          closer = setFsWatchListener(path5, absolutePath, options, {
+            listener,
+            errHandler: this._boundHandleError,
+            rawEmitter: this.fsw._emitRaw
+          });
+        }
+        return closer;
+      }
+      /**
+       * Watch a file and emit add event if warranted.
+       * @returns closer for the watcher instance
+       */
+      _handleFile(file, stats, initialAdd) {
+        if (this.fsw.closed) {
+          return;
+        }
+        const dirname4 = sysPath.dirname(file);
+        const basename3 = sysPath.basename(file);
+        const parent = this.fsw._getWatchedDir(dirname4);
+        let prevStats = stats;
+        if (parent.has(basename3))
+          return;
+        const listener = /* @__PURE__ */ __name(async (path5, newStats) => {
+          if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
+            return;
+          if (!newStats || newStats.mtimeMs === 0) {
+            try {
+              const newStats2 = await stat2(file);
+              if (this.fsw.closed)
+                return;
+              const at = newStats2.atimeMs;
+              const mt = newStats2.mtimeMs;
+              if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+                this.fsw._emit(EV.CHANGE, file, newStats2);
+              }
+              if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
+                this.fsw._closeFile(path5);
+                prevStats = newStats2;
+                const closer2 = this._watchWithNodeFs(file, listener);
+                if (closer2)
+                  this.fsw._addPathCloser(path5, closer2);
+              } else {
+                prevStats = newStats2;
+              }
+            } catch (error) {
+              this.fsw._remove(dirname4, basename3);
+            }
+          } else if (parent.has(basename3)) {
+            const at = newStats.atimeMs;
+            const mt = newStats.mtimeMs;
+            if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+              this.fsw._emit(EV.CHANGE, file, newStats);
+            }
+            prevStats = newStats;
+          }
+        }, "listener");
+        const closer = this._watchWithNodeFs(file, listener);
+        if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
+          if (!this.fsw._throttle(EV.ADD, file, 0))
+            return;
+          this.fsw._emit(EV.ADD, file, stats);
+        }
+        return closer;
+      }
+      /**
+       * Handle symlinks encountered while reading a dir.
+       * @param entry returned by readdirp
+       * @param directory path of dir being read
+       * @param path of this item
+       * @param item basename of this item
+       * @returns true if no more processing is needed for this entry.
+       */
+      async _handleSymlink(entry, directory, path5, item) {
+        if (this.fsw.closed) {
+          return;
+        }
+        const full = entry.fullPath;
+        const dir = this.fsw._getWatchedDir(directory);
+        if (!this.fsw.options.followSymlinks) {
+          this.fsw._incrReadyCount();
+          let linkPath;
+          try {
+            linkPath = await fsrealpath(path5);
+          } catch (e) {
+            this.fsw._emitReady();
+            return true;
+          }
+          if (this.fsw.closed)
+            return;
+          if (dir.has(item)) {
+            if (this.fsw._symlinkPaths.get(full) !== linkPath) {
+              this.fsw._symlinkPaths.set(full, linkPath);
+              this.fsw._emit(EV.CHANGE, path5, entry.stats);
+            }
+          } else {
+            dir.add(item);
+            this.fsw._symlinkPaths.set(full, linkPath);
+            this.fsw._emit(EV.ADD, path5, entry.stats);
+          }
+          this.fsw._emitReady();
+          return true;
+        }
+        if (this.fsw._symlinkPaths.has(full)) {
+          return true;
+        }
+        this.fsw._symlinkPaths.set(full, true);
+      }
+      _handleRead(directory, initialAdd, wh, target, dir, depth, throttler) {
+        directory = sysPath.join(directory, "");
+        throttler = this.fsw._throttle("readdir", directory, 1e3);
+        if (!throttler)
+          return;
+        const previous = this.fsw._getWatchedDir(wh.path);
+        const current = /* @__PURE__ */ new Set();
+        let stream = this.fsw._readdirp(directory, {
+          fileFilter: /* @__PURE__ */ __name((entry) => wh.filterPath(entry), "fileFilter"),
+          directoryFilter: /* @__PURE__ */ __name((entry) => wh.filterDir(entry), "directoryFilter")
+        });
+        if (!stream)
+          return;
+        stream.on(STR_DATA, async (entry) => {
+          if (this.fsw.closed) {
+            stream = void 0;
+            return;
+          }
+          const item = entry.path;
+          let path5 = sysPath.join(directory, item);
+          current.add(item);
+          if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path5, item)) {
+            return;
+          }
+          if (this.fsw.closed) {
+            stream = void 0;
+            return;
+          }
+          if (item === target || !target && !previous.has(item)) {
+            this.fsw._incrReadyCount();
+            path5 = sysPath.join(dir, sysPath.relative(dir, path5));
+            this._addToNodeFs(path5, initialAdd, wh, depth + 1);
+          }
+        }).on(EV.ERROR, this._boundHandleError);
+        return new Promise((resolve5, reject) => {
+          if (!stream)
+            return reject();
+          stream.once(STR_END, () => {
+            if (this.fsw.closed) {
+              stream = void 0;
+              return;
+            }
+            const wasThrottled = throttler ? throttler.clear() : false;
+            resolve5(void 0);
+            previous.getChildren().filter((item) => {
+              return item !== directory && !current.has(item);
+            }).forEach((item) => {
+              this.fsw._remove(directory, item);
+            });
+            stream = void 0;
+            if (wasThrottled)
+              this._handleRead(directory, false, wh, target, dir, depth, throttler);
+          });
+        });
+      }
+      /**
+       * Read directory to add / remove files from `@watched` list and re-read it on change.
+       * @param dir fs path
+       * @param stats
+       * @param initialAdd
+       * @param depth relative to user-supplied path
+       * @param target child path targeted for watch
+       * @param wh Common watch helpers for this path
+       * @param realpath
+       * @returns closer for the watcher instance.
+       */
+      async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath2) {
+        const parentDir = this.fsw._getWatchedDir(sysPath.dirname(dir));
+        const tracked = parentDir.has(sysPath.basename(dir));
+        if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
+          this.fsw._emit(EV.ADD_DIR, dir, stats);
+        }
+        parentDir.add(sysPath.basename(dir));
+        this.fsw._getWatchedDir(dir);
+        let throttler;
+        let closer;
+        const oDepth = this.fsw.options.depth;
+        if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath2)) {
+          if (!target) {
+            await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
+            if (this.fsw.closed)
+              return;
+          }
+          closer = this._watchWithNodeFs(dir, (dirPath, stats2) => {
+            if (stats2 && stats2.mtimeMs === 0)
+              return;
+            this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
+          });
+        }
+        return closer;
+      }
+      /**
+       * Handle added file, directory, or glob pattern.
+       * Delegates call to _handleFile / _handleDir after checks.
+       * @param path to file or ir
+       * @param initialAdd was the file added at watch instantiation?
+       * @param priorWh depth relative to user-supplied path
+       * @param depth Child path actually targeted for watch
+       * @param target Child path actually targeted for watch
+       */
+      async _addToNodeFs(path5, initialAdd, priorWh, depth, target) {
+        const ready = this.fsw._emitReady;
+        if (this.fsw._isIgnored(path5) || this.fsw.closed) {
+          ready();
+          return false;
+        }
+        const wh = this.fsw._getWatchHelpers(path5);
+        if (priorWh) {
+          wh.filterPath = (entry) => priorWh.filterPath(entry);
+          wh.filterDir = (entry) => priorWh.filterDir(entry);
+        }
+        try {
+          const stats = await statMethods[wh.statMethod](wh.watchPath);
+          if (this.fsw.closed)
+            return;
+          if (this.fsw._isIgnored(wh.watchPath, stats)) {
+            ready();
+            return false;
+          }
+          const follow = this.fsw.options.followSymlinks;
+          let closer;
+          if (stats.isDirectory()) {
+            const absPath = sysPath.resolve(path5);
+            const targetPath = follow ? await fsrealpath(path5) : path5;
+            if (this.fsw.closed)
+              return;
+            closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
+            if (this.fsw.closed)
+              return;
+            if (absPath !== targetPath && targetPath !== void 0) {
+              this.fsw._symlinkPaths.set(absPath, targetPath);
+            }
+          } else if (stats.isSymbolicLink()) {
+            const targetPath = follow ? await fsrealpath(path5) : path5;
+            if (this.fsw.closed)
+              return;
+            const parent = sysPath.dirname(wh.watchPath);
+            this.fsw._getWatchedDir(parent).add(wh.watchPath);
+            this.fsw._emit(EV.ADD, wh.watchPath, stats);
+            closer = await this._handleDir(parent, stats, initialAdd, depth, path5, wh, targetPath);
+            if (this.fsw.closed)
+              return;
+            if (targetPath !== void 0) {
+              this.fsw._symlinkPaths.set(sysPath.resolve(path5), targetPath);
+            }
+          } else {
+            closer = this._handleFile(wh.watchPath, stats, initialAdd);
+          }
+          ready();
+          if (closer)
+            this.fsw._addPathCloser(path5, closer);
+          return false;
+        } catch (error) {
+          if (this.fsw._handleError(error)) {
+            ready();
+            return path5;
+          }
+        }
+      }
+    };
+  }
+});
+
+// ../../../home/alexes/projects2/trip2g/node_modules/chokidar/esm/index.js
+var esm_exports = {};
+__export(esm_exports, {
+  FSWatcher: () => FSWatcher,
+  WatchHelper: () => WatchHelper,
+  default: () => esm_default,
+  watch: () => watch
+});
+import { stat as statcb } from "fs";
+import { stat as stat3, readdir as readdir2 } from "fs/promises";
+import { EventEmitter } from "events";
+import * as sysPath2 from "path";
+function arrify(item) {
+  return Array.isArray(item) ? item : [item];
+}
+function createPattern(matcher) {
+  if (typeof matcher === "function")
+    return matcher;
+  if (typeof matcher === "string")
+    return (string) => matcher === string;
+  if (matcher instanceof RegExp)
+    return (string) => matcher.test(string);
+  if (typeof matcher === "object" && matcher !== null) {
+    return (string) => {
+      if (matcher.path === string)
+        return true;
+      if (matcher.recursive) {
+        const relative5 = sysPath2.relative(matcher.path, string);
+        if (!relative5) {
+          return false;
+        }
+        return !relative5.startsWith("..") && !sysPath2.isAbsolute(relative5);
+      }
+      return false;
+    };
+  }
+  return () => false;
+}
+function normalizePath(path5) {
+  if (typeof path5 !== "string")
+    throw new Error("string expected");
+  path5 = sysPath2.normalize(path5);
+  path5 = path5.replace(/\\/g, "/");
+  let prepend = false;
+  if (path5.startsWith("//"))
+    prepend = true;
+  const DOUBLE_SLASH_RE2 = /\/\//;
+  while (path5.match(DOUBLE_SLASH_RE2))
+    path5 = path5.replace(DOUBLE_SLASH_RE2, "/");
+  if (prepend)
+    path5 = "/" + path5;
+  return path5;
+}
+function matchPatterns(patterns, testString, stats) {
+  const path5 = normalizePath(testString);
+  for (let index = 0; index < patterns.length; index++) {
+    const pattern = patterns[index];
+    if (pattern(path5, stats)) {
+      return true;
+    }
+  }
+  return false;
+}
+function anymatch(matchers, testString) {
+  if (matchers == null) {
+    throw new TypeError("anymatch: specify first argument");
+  }
+  const matchersArray = arrify(matchers);
+  const patterns = matchersArray.map((matcher) => createPattern(matcher));
+  if (testString == null) {
+    return (testString2, stats) => {
+      return matchPatterns(patterns, testString2, stats);
+    };
+  }
+  return matchPatterns(patterns, testString);
+}
+function watch(paths, options = {}) {
+  const watcher = new FSWatcher(options);
+  watcher.add(paths);
+  return watcher;
+}
+var SLASH, SLASH_SLASH, ONE_DOT, TWO_DOTS, STRING_TYPE, BACK_SLASH_RE, DOUBLE_SLASH_RE, DOT_RE, REPLACER_RE, isMatcherObject, unifyPaths, toUnix, normalizePathToUnix, normalizeIgnored, getAbsolutePath, EMPTY_SET, DirEntry, STAT_METHOD_F, STAT_METHOD_L, WatchHelper, FSWatcher, esm_default;
+var init_esm2 = __esm({
+  "../../../home/alexes/projects2/trip2g/node_modules/chokidar/esm/index.js"() {
+    init_esm();
+    init_handler();
+    SLASH = "/";
+    SLASH_SLASH = "//";
+    ONE_DOT = ".";
+    TWO_DOTS = "..";
+    STRING_TYPE = "string";
+    BACK_SLASH_RE = /\\/g;
+    DOUBLE_SLASH_RE = /\/\//;
+    DOT_RE = /\..*\.(sw[px])$|~$|\.subl.*\.tmp/;
+    REPLACER_RE = /^\.[/\\]/;
+    __name(arrify, "arrify");
+    isMatcherObject = /* @__PURE__ */ __name((matcher) => typeof matcher === "object" && matcher !== null && !(matcher instanceof RegExp), "isMatcherObject");
+    __name(createPattern, "createPattern");
+    __name(normalizePath, "normalizePath");
+    __name(matchPatterns, "matchPatterns");
+    __name(anymatch, "anymatch");
+    unifyPaths = /* @__PURE__ */ __name((paths_) => {
+      const paths = arrify(paths_).flat();
+      if (!paths.every((p) => typeof p === STRING_TYPE)) {
+        throw new TypeError(`Non-string provided as watch path: ${paths}`);
+      }
+      return paths.map(normalizePathToUnix);
+    }, "unifyPaths");
+    toUnix = /* @__PURE__ */ __name((string) => {
+      let str = string.replace(BACK_SLASH_RE, SLASH);
+      let prepend = false;
+      if (str.startsWith(SLASH_SLASH)) {
+        prepend = true;
+      }
+      while (str.match(DOUBLE_SLASH_RE)) {
+        str = str.replace(DOUBLE_SLASH_RE, SLASH);
+      }
+      if (prepend) {
+        str = SLASH + str;
+      }
+      return str;
+    }, "toUnix");
+    normalizePathToUnix = /* @__PURE__ */ __name((path5) => toUnix(sysPath2.normalize(toUnix(path5))), "normalizePathToUnix");
+    normalizeIgnored = /* @__PURE__ */ __name((cwd = "") => (path5) => {
+      if (typeof path5 === "string") {
+        return normalizePathToUnix(sysPath2.isAbsolute(path5) ? path5 : sysPath2.join(cwd, path5));
+      } else {
+        return path5;
+      }
+    }, "normalizeIgnored");
+    getAbsolutePath = /* @__PURE__ */ __name((path5, cwd) => {
+      if (sysPath2.isAbsolute(path5)) {
+        return path5;
+      }
+      return sysPath2.join(cwd, path5);
+    }, "getAbsolutePath");
+    EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
+    DirEntry = class {
+      static {
+        __name(this, "DirEntry");
+      }
+      constructor(dir, removeWatcher) {
+        this.path = dir;
+        this._removeWatcher = removeWatcher;
+        this.items = /* @__PURE__ */ new Set();
+      }
+      add(item) {
+        const { items } = this;
+        if (!items)
+          return;
+        if (item !== ONE_DOT && item !== TWO_DOTS)
+          items.add(item);
+      }
+      async remove(item) {
+        const { items } = this;
+        if (!items)
+          return;
+        items.delete(item);
+        if (items.size > 0)
+          return;
+        const dir = this.path;
+        try {
+          await readdir2(dir);
+        } catch (err) {
+          if (this._removeWatcher) {
+            this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
+          }
+        }
+      }
+      has(item) {
+        const { items } = this;
+        if (!items)
+          return;
+        return items.has(item);
+      }
+      getChildren() {
+        const { items } = this;
+        if (!items)
+          return [];
+        return [...items.values()];
+      }
+      dispose() {
+        this.items.clear();
+        this.path = "";
+        this._removeWatcher = EMPTY_FN;
+        this.items = EMPTY_SET;
+        Object.freeze(this);
+      }
+    };
+    STAT_METHOD_F = "stat";
+    STAT_METHOD_L = "lstat";
+    WatchHelper = class {
+      static {
+        __name(this, "WatchHelper");
+      }
+      constructor(path5, follow, fsw) {
+        this.fsw = fsw;
+        const watchPath = path5;
+        this.path = path5 = path5.replace(REPLACER_RE, "");
+        this.watchPath = watchPath;
+        this.fullWatchPath = sysPath2.resolve(watchPath);
+        this.dirParts = [];
+        this.dirParts.forEach((parts) => {
+          if (parts.length > 1)
+            parts.pop();
+        });
+        this.followSymlinks = follow;
+        this.statMethod = follow ? STAT_METHOD_F : STAT_METHOD_L;
+      }
+      entryPath(entry) {
+        return sysPath2.join(this.watchPath, sysPath2.relative(this.watchPath, entry.fullPath));
+      }
+      filterPath(entry) {
+        const { stats } = entry;
+        if (stats && stats.isSymbolicLink())
+          return this.filterDir(entry);
+        const resolvedPath = this.entryPath(entry);
+        return this.fsw._isntIgnored(resolvedPath, stats) && this.fsw._hasReadPermissions(stats);
+      }
+      filterDir(entry) {
+        return this.fsw._isntIgnored(this.entryPath(entry), entry.stats);
+      }
+    };
+    FSWatcher = class extends EventEmitter {
+      static {
+        __name(this, "FSWatcher");
+      }
+      // Not indenting methods for history sake; for now.
+      constructor(_opts = {}) {
+        super();
+        this.closed = false;
+        this._closers = /* @__PURE__ */ new Map();
+        this._ignoredPaths = /* @__PURE__ */ new Set();
+        this._throttled = /* @__PURE__ */ new Map();
+        this._streams = /* @__PURE__ */ new Set();
+        this._symlinkPaths = /* @__PURE__ */ new Map();
+        this._watched = /* @__PURE__ */ new Map();
+        this._pendingWrites = /* @__PURE__ */ new Map();
+        this._pendingUnlinks = /* @__PURE__ */ new Map();
+        this._readyCount = 0;
+        this._readyEmitted = false;
+        const awf = _opts.awaitWriteFinish;
+        const DEF_AWF = { stabilityThreshold: 2e3, pollInterval: 100 };
+        const opts = {
+          // Defaults
+          persistent: true,
+          ignoreInitial: false,
+          ignorePermissionErrors: false,
+          interval: 100,
+          binaryInterval: 300,
+          followSymlinks: true,
+          usePolling: false,
+          // useAsync: false,
+          atomic: true,
+          // NOTE: overwritten later (depends on usePolling)
+          ..._opts,
+          // Change format
+          ignored: _opts.ignored ? arrify(_opts.ignored) : arrify([]),
+          awaitWriteFinish: awf === true ? DEF_AWF : typeof awf === "object" ? { ...DEF_AWF, ...awf } : false
+        };
+        if (isIBMi)
+          opts.usePolling = true;
+        if (opts.atomic === void 0)
+          opts.atomic = !opts.usePolling;
+        const envPoll = process.env.CHOKIDAR_USEPOLLING;
+        if (envPoll !== void 0) {
+          const envLower = envPoll.toLowerCase();
+          if (envLower === "false" || envLower === "0")
+            opts.usePolling = false;
+          else if (envLower === "true" || envLower === "1")
+            opts.usePolling = true;
+          else
+            opts.usePolling = !!envLower;
+        }
+        const envInterval = process.env.CHOKIDAR_INTERVAL;
+        if (envInterval)
+          opts.interval = Number.parseInt(envInterval, 10);
+        let readyCalls = 0;
+        this._emitReady = () => {
+          readyCalls++;
+          if (readyCalls >= this._readyCount) {
+            this._emitReady = EMPTY_FN;
+            this._readyEmitted = true;
+            process.nextTick(() => this.emit(EVENTS.READY));
+          }
+        };
+        this._emitRaw = (...args) => this.emit(EVENTS.RAW, ...args);
+        this._boundRemove = this._remove.bind(this);
+        this.options = opts;
+        this._nodeFsHandler = new NodeFsHandler(this);
+        Object.freeze(opts);
+      }
+      _addIgnoredPath(matcher) {
+        if (isMatcherObject(matcher)) {
+          for (const ignored of this._ignoredPaths) {
+            if (isMatcherObject(ignored) && ignored.path === matcher.path && ignored.recursive === matcher.recursive) {
+              return;
+            }
+          }
+        }
+        this._ignoredPaths.add(matcher);
+      }
+      _removeIgnoredPath(matcher) {
+        this._ignoredPaths.delete(matcher);
+        if (typeof matcher === "string") {
+          for (const ignored of this._ignoredPaths) {
+            if (isMatcherObject(ignored) && ignored.path === matcher) {
+              this._ignoredPaths.delete(ignored);
+            }
+          }
+        }
+      }
+      // Public methods
+      /**
+       * Adds paths to be watched on an existing FSWatcher instance.
+       * @param paths_ file or file list. Other arguments are unused
+       */
+      add(paths_, _origAdd, _internal) {
+        const { cwd } = this.options;
+        this.closed = false;
+        this._closePromise = void 0;
+        let paths = unifyPaths(paths_);
+        if (cwd) {
+          paths = paths.map((path5) => {
+            const absPath = getAbsolutePath(path5, cwd);
+            return absPath;
+          });
+        }
+        paths.forEach((path5) => {
+          this._removeIgnoredPath(path5);
+        });
+        this._userIgnored = void 0;
+        if (!this._readyCount)
+          this._readyCount = 0;
+        this._readyCount += paths.length;
+        Promise.all(paths.map(async (path5) => {
+          const res = await this._nodeFsHandler._addToNodeFs(path5, !_internal, void 0, 0, _origAdd);
+          if (res)
+            this._emitReady();
+          return res;
+        })).then((results) => {
+          if (this.closed)
+            return;
+          results.forEach((item) => {
+            if (item)
+              this.add(sysPath2.dirname(item), sysPath2.basename(_origAdd || item));
+          });
+        });
+        return this;
+      }
+      /**
+       * Close watchers or start ignoring events from specified paths.
+       */
+      unwatch(paths_) {
+        if (this.closed)
+          return this;
+        const paths = unifyPaths(paths_);
+        const { cwd } = this.options;
+        paths.forEach((path5) => {
+          if (!sysPath2.isAbsolute(path5) && !this._closers.has(path5)) {
+            if (cwd)
+              path5 = sysPath2.join(cwd, path5);
+            path5 = sysPath2.resolve(path5);
+          }
+          this._closePath(path5);
+          this._addIgnoredPath(path5);
+          if (this._watched.has(path5)) {
+            this._addIgnoredPath({
+              path: path5,
+              recursive: true
+            });
+          }
+          this._userIgnored = void 0;
+        });
+        return this;
+      }
+      /**
+       * Close watchers and remove all listeners from watched paths.
+       */
+      close() {
+        if (this._closePromise) {
+          return this._closePromise;
+        }
+        this.closed = true;
+        this.removeAllListeners();
+        const closers = [];
+        this._closers.forEach((closerList) => closerList.forEach((closer) => {
+          const promise = closer();
+          if (promise instanceof Promise)
+            closers.push(promise);
+        }));
+        this._streams.forEach((stream) => stream.destroy());
+        this._userIgnored = void 0;
+        this._readyCount = 0;
+        this._readyEmitted = false;
+        this._watched.forEach((dirent) => dirent.dispose());
+        this._closers.clear();
+        this._watched.clear();
+        this._streams.clear();
+        this._symlinkPaths.clear();
+        this._throttled.clear();
+        this._closePromise = closers.length ? Promise.all(closers).then(() => void 0) : Promise.resolve();
+        return this._closePromise;
+      }
+      /**
+       * Expose list of watched paths
+       * @returns for chaining
+       */
+      getWatched() {
+        const watchList = {};
+        this._watched.forEach((entry, dir) => {
+          const key = this.options.cwd ? sysPath2.relative(this.options.cwd, dir) : dir;
+          const index = key || ONE_DOT;
+          watchList[index] = entry.getChildren().sort();
+        });
+        return watchList;
+      }
+      emitWithAll(event, args) {
+        this.emit(event, ...args);
+        if (event !== EVENTS.ERROR)
+          this.emit(EVENTS.ALL, event, ...args);
+      }
+      // Common helpers
+      // --------------
+      /**
+       * Normalize and emit events.
+       * Calling _emit DOES NOT MEAN emit() would be called!
+       * @param event Type of event
+       * @param path File or directory path
+       * @param stats arguments to be passed with event
+       * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+       */
+      async _emit(event, path5, stats) {
+        if (this.closed)
+          return;
+        const opts = this.options;
+        if (isWindows)
+          path5 = sysPath2.normalize(path5);
+        if (opts.cwd)
+          path5 = sysPath2.relative(opts.cwd, path5);
+        const args = [path5];
+        if (stats != null)
+          args.push(stats);
+        const awf = opts.awaitWriteFinish;
+        let pw;
+        if (awf && (pw = this._pendingWrites.get(path5))) {
+          pw.lastChange = /* @__PURE__ */ new Date();
+          return this;
+        }
+        if (opts.atomic) {
+          if (event === EVENTS.UNLINK) {
+            this._pendingUnlinks.set(path5, [event, ...args]);
+            setTimeout(() => {
+              this._pendingUnlinks.forEach((entry, path6) => {
+                this.emit(...entry);
+                this.emit(EVENTS.ALL, ...entry);
+                this._pendingUnlinks.delete(path6);
+              });
+            }, typeof opts.atomic === "number" ? opts.atomic : 100);
+            return this;
+          }
+          if (event === EVENTS.ADD && this._pendingUnlinks.has(path5)) {
+            event = EVENTS.CHANGE;
+            this._pendingUnlinks.delete(path5);
+          }
+        }
+        if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
+          const awfEmit = /* @__PURE__ */ __name((err, stats2) => {
+            if (err) {
+              event = EVENTS.ERROR;
+              args[0] = err;
+              this.emitWithAll(event, args);
+            } else if (stats2) {
+              if (args.length > 1) {
+                args[1] = stats2;
+              } else {
+                args.push(stats2);
+              }
+              this.emitWithAll(event, args);
+            }
+          }, "awfEmit");
+          this._awaitWriteFinish(path5, awf.stabilityThreshold, event, awfEmit);
+          return this;
+        }
+        if (event === EVENTS.CHANGE) {
+          const isThrottled = !this._throttle(EVENTS.CHANGE, path5, 50);
+          if (isThrottled)
+            return this;
+        }
+        if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
+          const fullPath = opts.cwd ? sysPath2.join(opts.cwd, path5) : path5;
+          let stats2;
+          try {
+            stats2 = await stat3(fullPath);
+          } catch (err) {
+          }
+          if (!stats2 || this.closed)
+            return;
+          args.push(stats2);
+        }
+        this.emitWithAll(event, args);
+        return this;
+      }
+      /**
+       * Common handler for errors
+       * @returns The error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+       */
+      _handleError(error) {
+        const code = error && error.code;
+        if (error && code !== "ENOENT" && code !== "ENOTDIR" && (!this.options.ignorePermissionErrors || code !== "EPERM" && code !== "EACCES")) {
+          this.emit(EVENTS.ERROR, error);
+        }
+        return error || this.closed;
+      }
+      /**
+       * Helper utility for throttling
+       * @param actionType type being throttled
+       * @param path being acted upon
+       * @param timeout duration of time to suppress duplicate actions
+       * @returns tracking object or false if action should be suppressed
+       */
+      _throttle(actionType, path5, timeout) {
+        if (!this._throttled.has(actionType)) {
+          this._throttled.set(actionType, /* @__PURE__ */ new Map());
+        }
+        const action = this._throttled.get(actionType);
+        if (!action)
+          throw new Error("invalid throttle");
+        const actionPath = action.get(path5);
+        if (actionPath) {
+          actionPath.count++;
+          return false;
+        }
+        let timeoutObject;
+        const clear = /* @__PURE__ */ __name(() => {
+          const item = action.get(path5);
+          const count = item ? item.count : 0;
+          action.delete(path5);
+          clearTimeout(timeoutObject);
+          if (item)
+            clearTimeout(item.timeoutObject);
+          return count;
+        }, "clear");
+        timeoutObject = setTimeout(clear, timeout);
+        const thr = { timeoutObject, clear, count: 0 };
+        action.set(path5, thr);
+        return thr;
+      }
+      _incrReadyCount() {
+        return this._readyCount++;
+      }
+      /**
+       * Awaits write operation to finish.
+       * Polls a newly created file for size variations. When files size does not change for 'threshold' milliseconds calls callback.
+       * @param path being acted upon
+       * @param threshold Time in milliseconds a file size must be fixed before acknowledging write OP is finished
+       * @param event
+       * @param awfEmit Callback to be called when ready for event to be emitted.
+       */
+      _awaitWriteFinish(path5, threshold, event, awfEmit) {
+        const awf = this.options.awaitWriteFinish;
+        if (typeof awf !== "object")
+          return;
+        const pollInterval = awf.pollInterval;
+        let timeoutHandler;
+        let fullPath = path5;
+        if (this.options.cwd && !sysPath2.isAbsolute(path5)) {
+          fullPath = sysPath2.join(this.options.cwd, path5);
+        }
+        const now = /* @__PURE__ */ new Date();
+        const writes = this._pendingWrites;
+        function awaitWriteFinishFn(prevStat) {
+          statcb(fullPath, (err, curStat) => {
+            if (err || !writes.has(path5)) {
+              if (err && err.code !== "ENOENT")
+                awfEmit(err);
+              return;
+            }
+            const now2 = Number(/* @__PURE__ */ new Date());
+            if (prevStat && curStat.size !== prevStat.size) {
+              writes.get(path5).lastChange = now2;
+            }
+            const pw = writes.get(path5);
+            const df = now2 - pw.lastChange;
+            if (df >= threshold) {
+              writes.delete(path5);
+              awfEmit(void 0, curStat);
+            } else {
+              timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
+            }
+          });
+        }
+        __name(awaitWriteFinishFn, "awaitWriteFinishFn");
+        if (!writes.has(path5)) {
+          writes.set(path5, {
+            lastChange: now,
+            cancelWait: /* @__PURE__ */ __name(() => {
+              writes.delete(path5);
+              clearTimeout(timeoutHandler);
+              return event;
+            }, "cancelWait")
+          });
+          timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval);
+        }
+      }
+      /**
+       * Determines whether user has asked to ignore this path.
+       */
+      _isIgnored(path5, stats) {
+        if (this.options.atomic && DOT_RE.test(path5))
+          return true;
+        if (!this._userIgnored) {
+          const { cwd } = this.options;
+          const ign = this.options.ignored;
+          const ignored = (ign || []).map(normalizeIgnored(cwd));
+          const ignoredPaths = [...this._ignoredPaths];
+          const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
+          this._userIgnored = anymatch(list, void 0);
+        }
+        return this._userIgnored(path5, stats);
+      }
+      _isntIgnored(path5, stat4) {
+        return !this._isIgnored(path5, stat4);
+      }
+      /**
+       * Provides a set of common helpers and properties relating to symlink handling.
+       * @param path file or directory pattern being watched
+       */
+      _getWatchHelpers(path5) {
+        return new WatchHelper(path5, this.options.followSymlinks, this);
+      }
+      // Directory helpers
+      // -----------------
+      /**
+       * Provides directory tracking objects
+       * @param directory path of the directory
+       */
+      _getWatchedDir(directory) {
+        const dir = sysPath2.resolve(directory);
+        if (!this._watched.has(dir))
+          this._watched.set(dir, new DirEntry(dir, this._boundRemove));
+        return this._watched.get(dir);
+      }
+      // File helpers
+      // ------------
+      /**
+       * Check for read permissions: https://stackoverflow.com/a/11781404/1358405
+       */
+      _hasReadPermissions(stats) {
+        if (this.options.ignorePermissionErrors)
+          return true;
+        return Boolean(Number(stats.mode) & 256);
+      }
+      /**
+       * Handles emitting unlink events for
+       * files and directories, and via recursion, for
+       * files and directories within directories that are unlinked
+       * @param directory within which the following item is located
+       * @param item      base path of item/directory
+       */
+      _remove(directory, item, isDirectory) {
+        const path5 = sysPath2.join(directory, item);
+        const fullPath = sysPath2.resolve(path5);
+        isDirectory = isDirectory != null ? isDirectory : this._watched.has(path5) || this._watched.has(fullPath);
+        if (!this._throttle("remove", path5, 100))
+          return;
+        if (!isDirectory && this._watched.size === 1) {
+          this.add(directory, item, true);
+        }
+        const wp = this._getWatchedDir(path5);
+        const nestedDirectoryChildren = wp.getChildren();
+        nestedDirectoryChildren.forEach((nested) => this._remove(path5, nested));
+        const parent = this._getWatchedDir(directory);
+        const wasTracked = parent.has(item);
+        parent.remove(item);
+        if (this._symlinkPaths.has(fullPath)) {
+          this._symlinkPaths.delete(fullPath);
+        }
+        let relPath = path5;
+        if (this.options.cwd)
+          relPath = sysPath2.relative(this.options.cwd, path5);
+        if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
+          const event = this._pendingWrites.get(relPath).cancelWait();
+          if (event === EVENTS.ADD)
+            return;
+        }
+        this._watched.delete(path5);
+        this._watched.delete(fullPath);
+        const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
+        if (wasTracked && !this._isIgnored(path5))
+          this._emit(eventName, path5);
+        this._closePath(path5);
+      }
+      /**
+       * Closes all watchers for a path
+       */
+      _closePath(path5) {
+        this._closeFile(path5);
+        const dir = sysPath2.dirname(path5);
+        this._getWatchedDir(dir).remove(sysPath2.basename(path5));
+      }
+      /**
+       * Closes only file-specific watchers
+       */
+      _closeFile(path5) {
+        const closers = this._closers.get(path5);
+        if (!closers)
+          return;
+        closers.forEach((closer) => closer());
+        this._closers.delete(path5);
+      }
+      _addPathCloser(path5, closer) {
+        if (!closer)
+          return;
+        let list = this._closers.get(path5);
+        if (!list) {
+          list = [];
+          this._closers.set(path5, list);
+        }
+        list.push(closer);
+      }
+      _readdirp(root, opts) {
+        if (this.closed)
+          return;
+        const options = { type: EVENTS.ALL, alwaysStat: true, lstat: true, ...opts, depth: 0 };
+        let stream = readdirp(root, options);
+        this._streams.add(stream);
+        stream.once(STR_CLOSE, () => {
+          stream = void 0;
+        });
+        stream.once(STR_END, () => {
+          if (stream) {
+            this._streams.delete(stream);
+            stream = void 0;
+          }
+        });
+        return stream;
+      }
+    };
+    __name(watch, "watch");
+    esm_default = { watch, FSWatcher };
+  }
+});
+
+// src/sync/cli/cmd.ts
+import * as fs3 from "fs";
+import * as path4 from "path";
+
+// src/sync/cli/env.ts
+import * as fs from "fs";
+import * as path2 from "path";
+import * as crypto from "crypto";
+
+// src/sync/utils.ts
+function isAlwaysPublishable(path5) {
+  if (path5.startsWith("_layouts/") && (path5.endsWith(".html") || path5.endsWith(".html.json"))) {
+    return true;
+  }
+  return false;
+}
+__name(isAlwaysPublishable, "isAlwaysPublishable");
+
+// src/sync/resolve.ts
+import * as path from "path";
+function resolveAssetPath(env, assetPath, notePath) {
+  if (assetPath.startsWith("./")) {
+    const noteDir2 = path.dirname(notePath);
+    const relativePath = path.join(noteDir2, assetPath.slice(2));
+    if (env.fileExistsSync(relativePath)) {
+      return relativePath;
+    }
+    return null;
+  }
+  if (assetPath.startsWith("/")) {
+    const absolutePath = assetPath.slice(1);
+    if (env.fileExistsSync(absolutePath)) {
+      return absolutePath;
+    }
+    return null;
+  }
+  if (assetPath.includes("/")) {
+    if (env.fileExistsSync(assetPath)) {
+      return assetPath;
+    }
+    return null;
+  }
+  if (env.fileExistsSync(assetPath)) {
+    return assetPath;
+  }
+  const assetsPath = path.posix.join("assets", assetPath);
+  if (env.fileExistsSync(assetsPath)) {
+    return assetsPath;
+  }
+  const noteDir = path.dirname(notePath);
+  if (noteDir && noteDir !== ".") {
+    const relativePath = path.posix.join(noteDir, assetPath);
+    if (env.fileExistsSync(relativePath)) {
+      return relativePath;
+    }
+  }
+  return null;
+}
+__name(resolveAssetPath, "resolveAssetPath");
+
+// src/sync/cli/graphql-client.ts
+var GraphQLClient = class {
+  constructor(url, options = {}) {
+    this.url = url;
+    this.options = options;
+  }
+  static {
+    __name(this, "GraphQLClient");
+  }
+  async request(params) {
+    const query = typeof params.document === "string" ? params.document : params.document.loc?.source.body;
+    if (!query) {
+      throw new Error("Invalid GraphQL document: no query string found");
+    }
+    const response = await fetch(this.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.options.headers,
+        ...params.requestHeaders
+      },
+      body: JSON.stringify({ query, variables: params.variables }),
+      signal: params.signal
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`HTTP ${response.status}: ${response.statusText}${body ? `
+${body}` : ""}`);
+    }
+    const json = await response.json();
+    if (json.errors?.length) {
+      const summary = json.errors.map((e) => e.message).join("; ");
+      const err = new Error(`GraphQL Error: ${summary}`);
+      err.graphqlErrors = json.errors;
+      err.response = json;
+      throw err;
+    }
+    if (!json.data) {
+      throw new Error("GraphQL response missing data");
+    }
+    return json.data;
+  }
+};
+
+// src/sync/cli/graphql-tag-shim.ts
+function gql(strings, ...values) {
+  let result = strings[0];
+  for (let i = 0; i < values.length; i++) {
+    result += String(values[i]) + strings[i + 1];
+  }
+  return {
+    loc: {
+      source: {
+        body: result
+      }
+    }
+  };
+}
+__name(gql, "gql");
+
+// src/graphql.ts
+var FetchServerHashesDocument = gql`
     query FetchServerHashes {
   notePaths {
     path: value
     hash: latestContentHash
   }
 }
-    `,ge=v`
+    `;
+var FetchPublishedUrlsDocument = gql`
     query FetchPublishedUrls {
   notePaths {
     path: value
@@ -17,7 +1891,8 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,me=v`
+    `;
+var FetchAllWarningsDocument = gql`
     query FetchAllWarnings {
   notePaths {
     path: value
@@ -30,14 +1905,16 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,Se=v`
+    `;
+var FetchNoteContentsDocument = gql`
     query FetchNoteContents($filter: NotePathsFilter) {
   notePaths(filter: $filter) {
     path: value
     content
   }
 }
-    `,fe=v`
+    `;
+var FetchNoteAssetsDocument = gql`
     query FetchNoteAssets($filter: NotePathsFilter) {
   notePaths(filter: $filter) {
     path: value
@@ -49,7 +1926,8 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,Ae=v`
+    `;
+var PushNotesDocument = gql`
     mutation PushNotes($input: PushNotesInput!) {
   pushNotes(input: $input) {
     ... on ErrorPayload {
@@ -73,7 +1951,8 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,Pe=v`
+    `;
+var HideNotesDocument = gql`
     mutation HideNotes($input: HideNotesInput!) {
   hideNotes(input: $input) {
     ... on HideNotesPayload {
@@ -84,7 +1963,8 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,be=v`
+    `;
+var UploadNoteAssetDocument = gql`
     mutation UploadNoteAsset($input: UploadNoteAssetInput!) {
   uploadNoteAsset(input: $input) {
     ... on ErrorPayload {
@@ -97,7 +1977,8 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,Ie=v`
+    `;
+var CommitNotesDocument = gql`
     mutation CommitNotes {
   commitNotes {
     ... on CommitNotesPayload {
@@ -116,7 +1997,352 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
     }
   }
 }
-    `,Ce=(r,t,e,o)=>r();function kt(r,t=Ce){return{FetchServerHashes(e,o,a){return t(s=>r.request({document:ye,variables:e,requestHeaders:{...o,...s},signal:a}),"FetchServerHashes","query",e)},FetchPublishedUrls(e,o,a){return t(s=>r.request({document:ge,variables:e,requestHeaders:{...o,...s},signal:a}),"FetchPublishedUrls","query",e)},FetchAllWarnings(e,o,a){return t(s=>r.request({document:me,variables:e,requestHeaders:{...o,...s},signal:a}),"FetchAllWarnings","query",e)},FetchNoteContents(e,o,a){return t(s=>r.request({document:Se,variables:e,requestHeaders:{...o,...s},signal:a}),"FetchNoteContents","query",e)},FetchNoteAssets(e,o,a){return t(s=>r.request({document:fe,variables:e,requestHeaders:{...o,...s},signal:a}),"FetchNoteAssets","query",e)},PushNotes(e,o,a){return t(s=>r.request({document:Ae,variables:e,requestHeaders:{...o,...s},signal:a}),"PushNotes","mutation",e)},HideNotes(e,o,a){return t(s=>r.request({document:Pe,variables:e,requestHeaders:{...o,...s},signal:a}),"HideNotes","mutation",e)},UploadNoteAsset(e,o,a){return t(s=>r.request({document:be,variables:e,requestHeaders:{...o,...s},signal:a}),"UploadNoteAsset","mutation",e)},CommitNotes(e,o,a){return t(s=>r.request({document:Ie,variables:e,requestHeaders:{...o,...s},signal:a}),"CommitNotes","mutation",e)}}}function q(r){let t=new Q(r.apiUrl,{headers:{"X-API-Key":r.apiKey}});return kt(t)}var pt=".sync-state.json";function xe(r){if(!r)return pt;try{let e=new URL(r).host.replace(/[^a-zA-Z0-9.-]/g,"_");return e?`.sync-state.${e}.json`:pt}catch{return pt}}var B=class{constructor(t){this.pushBatchSize=100;this.folder=I.resolve(t.folder),this.prefix=t.prefix?t.prefix.replace(/\/$/,""):"",this.twoWaySync=t.twoWaySync,this.verbose=t.verbose??!1,this.conflictResolution=t.conflictResolution??"local",this.publishField=t.publishField??"",this.meta=t.meta??{},this.apiUrl=t.apiUrl,this.apiKey=t.apiKey,t.stateFile?this.statePath=I.isAbsolute(t.stateFile)?t.stateFile:I.join(this.folder,t.stateFile):this.statePath=I.join(this.folder,xe(t.apiUrl)),this.syncState=this.loadSyncState(),this.sdk=q({apiUrl:t.apiUrl,apiKey:t.apiKey})}toRemotePath(t){return this.prefix?`${this.prefix}/${t}`:t}toLocalPath(t){return this.prefix&&t.startsWith(this.prefix+"/")?t.substring(this.prefix.length+1):t}matchesPrefix(t){return this.prefix?t.startsWith(this.prefix+"/"):!0}loadSyncState(){try{if(b.existsSync(this.statePath)){let t=b.readFileSync(this.statePath,"utf-8");return JSON.parse(t)}}catch(t){this.log(`Warning: Could not load sync state: ${t}`)}return{files:{}}}log(t){this.verbose&&console.log(t)}async getLocalFiles(){let t=[],e=o=>{let a=b.readdirSync(o,{withFileTypes:!0});for(let s of a){if(s.name.startsWith(".")||s.name==="node_modules")continue;let i=I.join(o,s.name);if(s.isDirectory())e(i);else if(s.isFile()){let n=I.extname(s.name).toLowerCase();if(n===".md"||n===".html"||n===".canvas"||n===".base"||n===".excalidraw"||s.name.endsWith(".html.json")){let l=b.statSync(i),u=I.relative(this.folder,i);t.push({path:this.toRemotePath(u),mtime:l.mtimeMs})}}}};return e(this.folder),t}async getServerHashes(){try{return(await this.sdk.FetchServerHashes()).notePaths.filter(e=>this.matchesPrefix(e.path)).map(e=>({path:e.path,hash:e.hash}))}catch(t){return console.error(`\u274C Failed to fetch server hashes: ${t}`),[]}}getSyncState(){return this.syncState}async computeHash(t){return ct.createHash("sha256").update(t,"utf-8").digest().toString("base64").replace(/\+/g,"-").replace(/\//g,"_")}async readFileContent(t){let e=this.toLocalPath(t),o=I.join(this.folder,e);return b.readFileSync(o,"utf-8")}async writeFile(t,e){let o=I.join(this.folder,t);b.writeFileSync(o,e,"utf-8")}async writeBinaryFile(t,e){let o=I.join(this.folder,t);b.writeFileSync(o,Buffer.from(e))}async readBinaryFile(t){let e=I.join(this.folder,t),o=b.readFileSync(e);return o.buffer.slice(o.byteOffset,o.byteOffset+o.byteLength)}async deleteFile(t){let e=I.join(this.folder,t);b.existsSync(e)&&b.unlinkSync(e)}async createFolder(t){let e=I.join(this.folder,t);b.mkdirSync(e,{recursive:!0})}async fileExists(t){return this.fileExistsSync(t)}fileExistsSync(t){let e=I.join(this.folder,t);return b.existsSync(e)}async pushNotes(t,e){if(t.length===0)return[];let o=t.map(a=>({path:a.path,content:this.injectMeta(a.content)}));if(this.publishField){for(let a of o)if(!this.hasPublishFieldInContent(a.content,a.path))throw new Error(`[Security] Attempted to push note "${a.path}" without publish field "${this.publishField}". This is a bug in the sync logic - please report it.`)}try{let a=await this.sdk.PushNotes({input:{updates:o.map(i=>({path:i.path,content:i.content})),skipCommit:e}});if("message"in a.pushNotes)throw new Error(`Push failed: ${a.pushNotes.message}`);console.log(`\u2705 Pushed ${t.length} notes`);let s=new Map((a.pushNotes.updated??[]).map(i=>[i.path,i.url??null]));return a.pushNotes.notes.map(i=>({id:String(i.id),path:i.path,assets:i.assets.map(n=>({path:n.path,sha256Hash:n.sha256Hash??null,absolutePath:n.absolutePath??null,url:n.url??null})),url:s.get(i.path)??null}))}catch(a){let s=o.map(n=>n.path).join(", ");console.error(`\u274C Failed to push notes (batch paths: ${s}):`),console.error(a);let i=a;return i.response&&console.error("   response:",JSON.stringify(i.response,null,2)),i.request&&console.error("   request:",JSON.stringify(i.request,null,2)),console.error("   own props:",Object.getOwnPropertyNames(a)),[]}}async hideNotes(t){if(t.length!==0)try{let e=await this.sdk.HideNotes({input:{paths:t}});if("message"in e.hideNotes)throw new Error(`Hide failed: ${e.hideNotes.message}`);console.log(`\u2705 Hidden ${t.length} notes`)}catch(e){console.error(`\u274C Failed to hide notes: ${e}`)}}async fetchNoteContents(t){if(t.length===0)return[];try{return(await this.sdk.FetchNoteContents({filter:{paths:t}})).notePaths.map(o=>({path:o.path,content:o.content}))}catch(e){return console.error(`\u274C Failed to fetch note contents: ${e}`),[]}}async fetchNoteAssets(t){if(t.length===0)return[];try{let e=await this.sdk.PushNotes({input:{updates:[]}});if("message"in e.pushNotes)return console.error(`\u274C Failed to fetch note assets: ${e.pushNotes.message}`),[];let o=new Set(t);return e.pushNotes.notes.filter(a=>o.has(a.path)).map(a=>({path:a.path,noteId:String(a.id),assets:a.assets.map(s=>({id:s.path,url:s.url,hash:s.sha256Hash??"",absolutePath:s.absolutePath}))}))}catch(e){return console.error(`\u274C Failed to fetch note assets: ${e}`),[]}}async uploadAsset(t){for(let o=1;o<=10;o++)try{if(await this.uploadAssetOnce(t))return!0}catch(a){if(o<10){this.log(`\u26A0\uFE0F Upload attempt ${o} failed, retrying: ${t.relativePath}`);continue}return console.error(`\u274C Failed to upload asset ${t.relativePath} after 10 attempts: ${a}`),!1}return!1}async uploadAssetOnce(t){let o=JSON.stringify({query:`mutation UploadNoteAsset($input: UploadNoteAssetInput!) {
+    `;
+var defaultWrapper = /* @__PURE__ */ __name((action, _operationName, _operationType, _variables) => action(), "defaultWrapper");
+function getSdk(client, withWrapper = defaultWrapper) {
+  return {
+    FetchServerHashes(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: FetchServerHashesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "FetchServerHashes", "query", variables);
+    },
+    FetchPublishedUrls(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: FetchPublishedUrlsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "FetchPublishedUrls", "query", variables);
+    },
+    FetchAllWarnings(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: FetchAllWarningsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "FetchAllWarnings", "query", variables);
+    },
+    FetchNoteContents(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: FetchNoteContentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "FetchNoteContents", "query", variables);
+    },
+    FetchNoteAssets(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: FetchNoteAssetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "FetchNoteAssets", "query", variables);
+    },
+    PushNotes(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: PushNotesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "PushNotes", "mutation", variables);
+    },
+    HideNotes(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: HideNotesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "HideNotes", "mutation", variables);
+    },
+    UploadNoteAsset(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: UploadNoteAssetDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "UploadNoteAsset", "mutation", variables);
+    },
+    CommitNotes(variables, requestHeaders, signal) {
+      return withWrapper((wrappedRequestHeaders) => client.request({ document: CommitNotesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), "CommitNotes", "mutation", variables);
+    }
+  };
+}
+__name(getSdk, "getSdk");
+
+// src/sync/cli/client.ts
+function createClient(options) {
+  const client = new GraphQLClient(options.apiUrl, {
+    headers: {
+      "X-API-Key": options.apiKey
+    }
+  });
+  return getSdk(client);
+}
+__name(createClient, "createClient");
+
+// src/sync/cli/env.ts
+var LEGACY_STATE_FILE = ".sync-state.json";
+function stateFileNameForApiUrl(apiUrl) {
+  if (!apiUrl) return LEGACY_STATE_FILE;
+  try {
+    const url = new URL(apiUrl);
+    const sanitized = url.host.replace(/[^a-zA-Z0-9.-]/g, "_");
+    if (!sanitized) return LEGACY_STATE_FILE;
+    return `.sync-state.${sanitized}.json`;
+  } catch {
+    return LEGACY_STATE_FILE;
+  }
+}
+__name(stateFileNameForApiUrl, "stateFileNameForApiUrl");
+var NodeEnv = class {
+  constructor(options) {
+    this.pushBatchSize = 100;
+    this.folder = path2.resolve(options.folder);
+    this.prefix = options.prefix ? options.prefix.replace(/\/$/, "") : "";
+    this.twoWaySync = options.twoWaySync;
+    this.verbose = options.verbose ?? false;
+    this.conflictResolution = options.conflictResolution ?? "local";
+    this.publishField = options.publishField ?? "";
+    this.meta = options.meta ?? {};
+    this.apiUrl = options.apiUrl;
+    this.apiKey = options.apiKey;
+    if (options.stateFile) {
+      this.statePath = path2.isAbsolute(options.stateFile) ? options.stateFile : path2.join(this.folder, options.stateFile);
+    } else {
+      this.statePath = path2.join(this.folder, stateFileNameForApiUrl(options.apiUrl));
+    }
+    this.syncState = this.loadSyncState();
+    this.sdk = createClient({ apiUrl: options.apiUrl, apiKey: options.apiKey });
+  }
+  static {
+    __name(this, "NodeEnv");
+  }
+  /** Add prefix to local path for remote path */
+  toRemotePath(localPath) {
+    return this.prefix ? `${this.prefix}/${localPath}` : localPath;
+  }
+  /** Remove prefix from remote path to get local path */
+  toLocalPath(remotePath) {
+    if (this.prefix && remotePath.startsWith(this.prefix + "/")) {
+      return remotePath.substring(this.prefix.length + 1);
+    }
+    return remotePath;
+  }
+  /** Check if remote path belongs to this prefix */
+  matchesPrefix(remotePath) {
+    if (!this.prefix) return true;
+    return remotePath.startsWith(this.prefix + "/");
+  }
+  loadSyncState() {
+    try {
+      if (fs.existsSync(this.statePath)) {
+        const data = fs.readFileSync(this.statePath, "utf-8");
+        return JSON.parse(data);
+      }
+    } catch (e) {
+      this.log(`Warning: Could not load sync state: ${e}`);
+    }
+    return { files: {} };
+  }
+  log(message) {
+    if (this.verbose) {
+      console.log(message);
+    }
+  }
+  // ============ ClassifyEnv ============
+  async getLocalFiles() {
+    const files = [];
+    const walk = /* @__PURE__ */ __name((dir) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules") {
+          continue;
+        }
+        const fullPath = path2.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(fullPath);
+        } else if (entry.isFile()) {
+          const ext = path2.extname(entry.name).toLowerCase();
+          if (ext === ".md" || ext === ".html" || ext === ".canvas" || ext === ".base" || ext === ".excalidraw" || entry.name.endsWith(".html.json")) {
+            const stat4 = fs.statSync(fullPath);
+            const relPath = path2.relative(this.folder, fullPath);
+            files.push({
+              // Use remote path with prefix for sync comparison
+              path: this.toRemotePath(relPath),
+              mtime: stat4.mtimeMs
+            });
+          }
+        }
+      }
+    }, "walk");
+    walk(this.folder);
+    return files;
+  }
+  async getServerHashes() {
+    try {
+      const result = await this.sdk.FetchServerHashes();
+      return result.notePaths.filter((np) => this.matchesPrefix(np.path)).map((np) => ({
+        path: np.path,
+        hash: np.hash
+      }));
+    } catch (e) {
+      console.error(`\u274C Failed to fetch server hashes: ${e}`);
+      return [];
+    }
+  }
+  getSyncState() {
+    return this.syncState;
+  }
+  async computeHash(content) {
+    const hash = crypto.createHash("sha256").update(content, "utf-8").digest();
+    const b64 = hash.toString("base64");
+    return b64.replace(/\+/g, "-").replace(/\//g, "_");
+  }
+  async readFileContent(filePath) {
+    const localPath = this.toLocalPath(filePath);
+    const fullPath = path2.join(this.folder, localPath);
+    return fs.readFileSync(fullPath, "utf-8");
+  }
+  // ============ File Operations ============
+  async writeFile(filePath, content) {
+    const fullPath = path2.join(this.folder, filePath);
+    fs.writeFileSync(fullPath, content, "utf-8");
+  }
+  async writeBinaryFile(filePath, data) {
+    const fullPath = path2.join(this.folder, filePath);
+    fs.writeFileSync(fullPath, Buffer.from(data));
+  }
+  async readBinaryFile(filePath) {
+    const fullPath = path2.join(this.folder, filePath);
+    const buffer = fs.readFileSync(fullPath);
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  }
+  async deleteFile(filePath) {
+    const fullPath = path2.join(this.folder, filePath);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  }
+  async createFolder(folderPath) {
+    const fullPath = path2.join(this.folder, folderPath);
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+  async fileExists(filePath) {
+    return this.fileExistsSync(filePath);
+  }
+  fileExistsSync(filePath) {
+    const fullPath = path2.join(this.folder, filePath);
+    return fs.existsSync(fullPath);
+  }
+  // ============ Server Operations ============
+  async pushNotes(updates, skipCommit) {
+    if (updates.length === 0) {
+      return [];
+    }
+    const processedUpdates = updates.map((u) => ({
+      path: u.path,
+      content: this.injectMeta(u.content)
+    }));
+    if (this.publishField) {
+      for (const update of processedUpdates) {
+        if (!this.hasPublishFieldInContent(update.content, update.path)) {
+          throw new Error(
+            `[Security] Attempted to push note "${update.path}" without publish field "${this.publishField}". This is a bug in the sync logic - please report it.`
+          );
+        }
+      }
+    }
+    try {
+      const result = await this.sdk.PushNotes({
+        input: {
+          updates: processedUpdates.map((u) => ({
+            path: u.path,
+            content: u.content
+          })),
+          skipCommit
+        }
+      });
+      if ("message" in result.pushNotes) {
+        throw new Error(`Push failed: ${result.pushNotes.message}`);
+      }
+      console.log(`\u2705 Pushed ${updates.length} notes`);
+      const urlMap = new Map(
+        (result.pushNotes.updated ?? []).map((u) => [u.path, u.url ?? null])
+      );
+      return result.pushNotes.notes.map((n) => ({
+        id: String(n.id),
+        path: n.path,
+        assets: n.assets.map((a) => ({
+          path: a.path,
+          sha256Hash: a.sha256Hash ?? null,
+          absolutePath: a.absolutePath ?? null,
+          url: a.url ?? null
+        })),
+        url: urlMap.get(n.path) ?? null
+      }));
+    } catch (e) {
+      const paths = processedUpdates.map((u) => u.path).join(", ");
+      console.error(`\u274C Failed to push notes (batch paths: ${paths}):`);
+      console.error(e);
+      const anyE = e;
+      if (anyE.response) {
+        console.error("   response:", JSON.stringify(anyE.response, null, 2));
+      }
+      if (anyE.request) {
+        console.error("   request:", JSON.stringify(anyE.request, null, 2));
+      }
+      console.error("   own props:", Object.getOwnPropertyNames(e));
+      return [];
+    }
+  }
+  async hideNotes(paths) {
+    if (paths.length === 0) {
+      return;
+    }
+    try {
+      const result = await this.sdk.HideNotes({
+        input: { paths }
+      });
+      if ("message" in result.hideNotes) {
+        throw new Error(`Hide failed: ${result.hideNotes.message}`);
+      }
+      console.log(`\u2705 Hidden ${paths.length} notes`);
+    } catch (e) {
+      console.error(`\u274C Failed to hide notes: ${e}`);
+    }
+  }
+  async fetchNoteContents(paths) {
+    if (paths.length === 0) {
+      return [];
+    }
+    try {
+      const result = await this.sdk.FetchNoteContents({
+        filter: { paths }
+      });
+      return result.notePaths.map((np) => ({
+        path: np.path,
+        content: np.content
+      }));
+    } catch (e) {
+      console.error(`\u274C Failed to fetch note contents: ${e}`);
+      return [];
+    }
+  }
+  async fetchNoteAssets(paths) {
+    if (paths.length === 0) {
+      return [];
+    }
+    try {
+      const result = await this.sdk.PushNotes({
+        input: { updates: [] }
+      });
+      if ("message" in result.pushNotes) {
+        console.error(`\u274C Failed to fetch note assets: ${result.pushNotes.message}`);
+        return [];
+      }
+      const pathSet = new Set(paths);
+      return result.pushNotes.notes.filter((note) => pathSet.has(note.path)).map((note) => ({
+        path: note.path,
+        noteId: String(note.id),
+        // version ID for upload
+        assets: note.assets.map((a) => ({
+          id: a.path,
+          // relative path used as asset identifier
+          url: a.url,
+          hash: a.sha256Hash ?? "",
+          // empty string for null (not uploaded)
+          absolutePath: a.absolutePath
+        }))
+      }));
+    } catch (e) {
+      console.error(`\u274C Failed to fetch note assets: ${e}`);
+      return [];
+    }
+  }
+  async uploadAsset(params) {
+    const maxRetries = 10;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const success = await this.uploadAssetOnce(params);
+        if (success) {
+          return true;
+        }
+      } catch (e) {
+        if (attempt < maxRetries) {
+          this.log(`\u26A0\uFE0F Upload attempt ${attempt} failed, retrying: ${params.relativePath}`);
+          continue;
+        }
+        console.error(`\u274C Failed to upload asset ${params.relativePath} after ${maxRetries} attempts: ${e}`);
+        return false;
+      }
+    }
+    return false;
+  }
+  async uploadAssetOnce(params) {
+    const query = `mutation UploadNoteAsset($input: UploadNoteAssetInput!) {
 	uploadNoteAsset(input: $input) {
 		... on ErrorPayload {
 			__typename
@@ -127,17 +2353,1165 @@ ${s}`:""}`)}let a=await o.json();if(a.errors?.length){let s=a.errors.map(n=>n.me
 			uploadSkipped
 		}
 	}
-}`,variables:{input:{skipCommit:!0,file:null,noteId:parseInt(t.noteId),sha256Hash:t.sha256Hash,path:t.relativePath,absolutePath:t.absolutePath}}}),a=JSON.stringify({0:["variables.input.file"]}),s=new FormData;s.append("operations",o),s.append("map",a),s.append("0",t.blob,t.fileName);let i=await fetch(this.apiUrl,{method:"POST",headers:{"X-API-Key":this.apiKey},body:s});if(!i.ok){let u=await i.text();throw new Error(`HTTP ${i.status}: ${i.statusText}
-${u}`)}let n=await i.json();if(n.errors)throw new Error(n.errors[0]?.message||"Unknown GraphQL error");let l=n.data?.uploadNoteAsset;if(l?.__typename==="ErrorPayload")throw new Error(`Upload failed: ${l.message}`);return l?.uploadSkipped?this.log(`\u23E9 Asset skipped (already exists): ${t.relativePath}`):console.log(`\u2705 Asset uploaded: ${t.relativePath}`),!0}async downloadAsset(t){try{let e=await fetch(t);return e.ok?await e.arrayBuffer():(console.error(`\u274C Failed to download asset: HTTP ${e.status}`),null)}catch(e){return console.error(`\u274C Failed to download asset from ${t}: ${e}`),null}}async commitNotes(){try{let t=await this.sdk.CommitNotes();if("message"in t.commitNotes)throw new Error(`Commit failed: ${t.commitNotes.message}`);return console.log("\u2705 Notes committed"),{updated:(t.commitNotes.updated??[]).map(e=>({path:e.path,url:e.url??"",warnings:(e.warnings??[]).map(o=>({level:o.level,message:o.message}))}))}}catch(t){return console.error(`\u274C Failed to commit notes: ${t}`),{updated:[]}}}async saveSyncState(t){t.lastSyncedAt=Date.now(),b.writeFileSync(this.statePath,JSON.stringify(t,null,2),"utf-8"),this.syncState=t}async computeBinaryHash(t){return ct.createHash("sha256").update(Buffer.from(t)).digest("hex")}async resolveAssetPath(t,e){return vt(this,t,e)}onProgress(t){this.verbose&&console.log(`  [${t.step}] ${t.current}/${t.total}: ${t.path??""}`)}async onConflict(t){if(this.conflictResolution==="fail"){console.error(`\u274C ${t.length} conflicts detected:`);for(let o of t)console.error(`   - ${o.path}`);throw new Error("Conflicts detected and --conflict-resolution=fail is set")}let e=this.cliToConflictResolution(this.conflictResolution);return console.log(`\u26A0\uFE0F ${t.length} conflicts detected, resolving with: ${this.conflictResolution}`),t.map(()=>e)}async onAssetConflict(t){if(this.conflictResolution==="fail"){console.error(`\u274C ${t.length} asset conflicts detected:`);for(let o of t)console.error(`   - ${o.path}`);throw new Error("Asset conflicts detected and --conflict-resolution=fail is set")}let e=this.cliToAssetConflictResolution(this.conflictResolution);return console.log(`\u26A0\uFE0F ${t.length} asset conflicts detected, resolving with: ${this.conflictResolution}`),t.map(()=>e)}cliToConflictResolution(t){switch(t){case"local":return"keep_local";case"remote":return"keep_remote";case"skip":return"skip";default:return"keep_local"}}cliToAssetConflictResolution(t){switch(t){case"local":return"keep_local";case"remote":return"keep_remote";case"skip":return"skip";default:return"keep_local"}}async onServerDeleted(t){return console.log(`\u26A0\uFE0F ${t.length} files deleted on server, keeping local copies`),!1}async confirmPush(t){return console.log(`\u{1F4E4} Pushing ${t.length} files...`),!0}injectMeta(t){if(Object.keys(this.meta).length===0)return t;if(t.startsWith("---")){let o=t.indexOf(`
----`,3);if(o!==-1){let a=t.slice(4,o),s=t.slice(o+4);for(let[i,n]of Object.entries(this.meta)){let l=new RegExp(`^${i}\\s*:.*$`,"m");l.test(a)?a=a.replace(l,`${i}: ${n}`):a=a.trimEnd()+`
-${i}: ${n}`}return`---
-${a}
----${s}`}}return`---
-${Object.entries(this.meta).map(([o,a])=>`${o}: ${a}`).join(`
-`)}
+}`;
+    const operations = JSON.stringify({
+      query,
+      variables: {
+        input: {
+          skipCommit: true,
+          // batch: skip per-upload PrepareLatestNotes; executePlan commits once at the end
+          file: null,
+          // Will be replaced by multipart map
+          noteId: parseInt(params.noteId),
+          sha256Hash: params.sha256Hash,
+          path: params.relativePath,
+          absolutePath: params.absolutePath
+        }
+      }
+    });
+    const map = JSON.stringify({
+      "0": ["variables.input.file"]
+    });
+    const formData = new FormData();
+    formData.append("operations", operations);
+    formData.append("map", map);
+    formData.append("0", params.blob, params.fileName);
+    const response = await fetch(this.apiUrl, {
+      method: "POST",
+      headers: {
+        "X-API-Key": this.apiKey
+      },
+      body: formData
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`HTTP ${response.status}: ${response.statusText}
+${body}`);
+    }
+    const result = await response.json();
+    if (result.errors) {
+      throw new Error(result.errors[0]?.message || "Unknown GraphQL error");
+    }
+    const payload = result.data?.uploadNoteAsset;
+    if (payload?.__typename === "ErrorPayload") {
+      throw new Error(`Upload failed: ${payload.message}`);
+    }
+    if (payload?.uploadSkipped) {
+      this.log(`\u23E9 Asset skipped (already exists): ${params.relativePath}`);
+    } else {
+      console.log(`\u2705 Asset uploaded: ${params.relativePath}`);
+    }
+    return true;
+  }
+  async downloadAsset(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`\u274C Failed to download asset: HTTP ${response.status}`);
+        return null;
+      }
+      return await response.arrayBuffer();
+    } catch (e) {
+      console.error(`\u274C Failed to download asset from ${url}: ${e}`);
+      return null;
+    }
+  }
+  async commitNotes() {
+    try {
+      const result = await this.sdk.CommitNotes();
+      if ("message" in result.commitNotes) {
+        throw new Error(`Commit failed: ${result.commitNotes.message}`);
+      }
+      console.log("\u2705 Notes committed");
+      return {
+        updated: (result.commitNotes.updated ?? []).map((n) => ({
+          path: n.path,
+          url: n.url ?? "",
+          warnings: (n.warnings ?? []).map((w) => ({ level: w.level, message: w.message }))
+        }))
+      };
+    } catch (e) {
+      console.error(`\u274C Failed to commit notes: ${e}`);
+      return { updated: [] };
+    }
+  }
+  // ============ State ============
+  async saveSyncState(state) {
+    state.lastSyncedAt = Date.now();
+    fs.writeFileSync(this.statePath, JSON.stringify(state, null, 2), "utf-8");
+    this.syncState = state;
+  }
+  // ============ Asset Operations ============
+  async computeBinaryHash(data) {
+    return crypto.createHash("sha256").update(Buffer.from(data)).digest("hex");
+  }
+  async resolveAssetPath(assetPath, notePath) {
+    return resolveAssetPath(this, assetPath, notePath);
+  }
+  // ============ UI Callbacks (CLI versions) ============
+  onProgress(progress) {
+    if (this.verbose) {
+      console.log(`  [${progress.step}] ${progress.current}/${progress.total}: ${progress.path ?? ""}`);
+    }
+  }
+  async onConflict(conflicts) {
+    if (this.conflictResolution === "fail") {
+      console.error(`\u274C ${conflicts.length} conflicts detected:`);
+      for (const c of conflicts) {
+        console.error(`   - ${c.path}`);
+      }
+      throw new Error(`Conflicts detected and --conflict-resolution=fail is set`);
+    }
+    const resolution = this.cliToConflictResolution(this.conflictResolution);
+    console.log(`\u26A0\uFE0F ${conflicts.length} conflicts detected, resolving with: ${this.conflictResolution}`);
+    return conflicts.map(() => resolution);
+  }
+  async onAssetConflict(conflicts) {
+    if (this.conflictResolution === "fail") {
+      console.error(`\u274C ${conflicts.length} asset conflicts detected:`);
+      for (const c of conflicts) {
+        console.error(`   - ${c.path}`);
+      }
+      throw new Error(`Asset conflicts detected and --conflict-resolution=fail is set`);
+    }
+    const resolution = this.cliToAssetConflictResolution(this.conflictResolution);
+    console.log(`\u26A0\uFE0F ${conflicts.length} asset conflicts detected, resolving with: ${this.conflictResolution}`);
+    return conflicts.map(() => resolution);
+  }
+  cliToConflictResolution(cli) {
+    switch (cli) {
+      case "local":
+        return "keep_local";
+      case "remote":
+        return "keep_remote";
+      case "skip":
+        return "skip";
+      default:
+        return "keep_local";
+    }
+  }
+  cliToAssetConflictResolution(cli) {
+    switch (cli) {
+      case "local":
+        return "keep_local";
+      case "remote":
+        return "keep_remote";
+      case "skip":
+        return "skip";
+      default:
+        return "keep_local";
+    }
+  }
+  async onServerDeleted(paths) {
+    console.log(`\u26A0\uFE0F ${paths.length} files deleted on server, keeping local copies`);
+    return false;
+  }
+  async confirmPush(paths) {
+    console.log(`\u{1F4E4} Pushing ${paths.length} files...`);
+    return true;
+  }
+  /**
+   * Inject meta fields into frontmatter.
+   * - If no meta configured, returns content unchanged.
+   * - If frontmatter exists, adds/updates fields.
+   * - If no frontmatter, creates one with meta fields.
+   */
+  injectMeta(content) {
+    if (Object.keys(this.meta).length === 0) {
+      return content;
+    }
+    if (content.startsWith("---")) {
+      const endIndex = content.indexOf("\n---", 3);
+      if (endIndex !== -1) {
+        let frontmatter = content.slice(4, endIndex);
+        const afterFrontmatter = content.slice(endIndex + 4);
+        for (const [key, value] of Object.entries(this.meta)) {
+          const regex = new RegExp(`^${key}\\s*:.*$`, "m");
+          if (regex.test(frontmatter)) {
+            frontmatter = frontmatter.replace(regex, `${key}: ${value}`);
+          } else {
+            frontmatter = frontmatter.trimEnd() + `
+${key}: ${value}`;
+          }
+        }
+        return `---
+${frontmatter}
+---${afterFrontmatter}`;
+      }
+    }
+    const metaLines = Object.entries(this.meta).map(([key, value]) => `${key}: ${value}`).join("\n");
+    return `---
+${metaLines}
 ---
-${t}`}hasPublishFieldInContent(t,e){if(!this.publishField||j(e))return!0;if(!t.startsWith("---"))return!1;let o=t.indexOf(`
----`,3);if(o===-1)return!1;let a=t.slice(4,o),s=this.publishField.split(",").map(i=>i.trim()).filter(i=>i);for(let i of s){let n=new RegExp(`^${i}\\s*:\\s*(.+)$`,"m"),l=a.match(n);if(l){let u=l[1].trim().toLowerCase();if(u==="true"||u==="yes"||u==="1"||u==='"true"'||u==="'true'")return!0}}return!1}};function dt(r,t,e){return r===null&&t===null||r===t?"unchanged":r!==null&&t===null?e?"server_deleted":"local_only":r===null&&t!==null?e?"local_deleted":"remote_only":e?r===e?"pull":t===e?"push":"conflict":"conflict"}async function K(r){let t=r.getSyncState(),[e,o]=await Promise.all([r.getLocalFiles(),r.getServerHashes()]),a=new Map;for(let P of o)a.set(P.path,P.hash);let s=new Map,i=t.mtimes||{},n=t.localHashes||{};for(let P of e){let F=i[P.path],O=n[P.path];if(F===P.mtime&&O)s.set(P.path,O);else{let _=await r.readFileContent(P.path),W=await r.computeHash(_);s.set(P.path,W)}}let l=new Set([...s.keys(),...a.keys()]),u=[],p=[],c=[],d=[],y=[],h=[],S=[],g=[],T=0;for(let P of l){let F=s.get(P)||null,O=a.get(P)||null,_=t.files[P]||null,W=dt(F,O,_),w={path:P,action:W,localHash:F,remoteHash:O,lastSyncedHash:_};switch(u.push(w),W){case"unchanged":T++;break;case"pull":p.push(w);break;case"push":c.push(w);break;case"conflict":d.push(w);break;case"local_only":y.push(w);break;case"remote_only":h.push(w);break;case"local_deleted":S.push(w);break;case"server_deleted":g.push(w);break}}return{classifications:u,pulls:p,pushes:c,conflicts:d,localOnly:y,remoteOnly:h,localDeleted:S,serverDeleted:g,unchanged:T}}function z(r,t){let{twoWaySync:e,hasPublishFields:o,isExcluded:a}=t,s=g=>o?o(g):!0,i=g=>a?a(g):!1,n=[],l=[],u=[],p=[],c=[],d=[],y=[],h=[],S=0;for(let g of r.classifications){if(i(g.path)){if(g.remoteHash!==null){let P=g.action==="local_deleted"?g:{...g,action:"local_deleted"};n.push(P),y.push(P)}continue}let T=s(g.path);switch(g.action){case"unchanged":n.push(g),S++;break;case"pull":e&&T&&(n.push(g),l.push(g));break;case"push":T&&(n.push(g),u.push(g));break;case"conflict":if(e)T&&(n.push(g),p.push(g));else if(T){let P={...g,action:"push"};n.push(P),u.push(P)}break;case"local_only":T&&(n.push(g),c.push(g));break;case"remote_only":e&&(n.push(g),d.push(g));break;case"local_deleted":T&&(n.push(g),y.push(g));break;case"server_deleted":e&&(n.push(g),h.push(g));break}}return{classifications:n,pulls:l,pushes:u,conflicts:p,localOnly:c,remoteOnly:d,localDeleted:y,serverDeleted:h,unchanged:S}}async function J(r,t,e={twoWaySync:!1}){let o={pulled:0,pushed:0,conflictsResolved:0,assetsUploaded:0,assetsDownloaded:0,errors:[],updatedUrls:[],warnings:[]},a=r.getSyncState(),s=[];if(t.pulls.length>0||t.remoteOnly.length>0){let u=[...t.pulls,...t.remoteOnly],p=await Te(r,u,a);o.pulled=p.count,o.errors.push(...p.errors),s.push(...p.pulledPaths)}if(s.length>0){let u=await Nt(r,s);o.assetsDownloaded+=u.downloaded,o.errors.push(...u.errors)}if(e.twoWaySync){let u=t.classifications.filter(p=>p.action==="unchanged"&&p.remoteHash!==null).map(p=>p.path);if(u.length>0){let p=await Nt(r,u);o.assetsDownloaded+=p.downloaded,o.errors.push(...p.errors)}}if(t.serverDeleted.length>0&&await Ne(r,t.serverDeleted,a),t.conflicts.length>0){let u=await ve(r,t.conflicts,a);o.conflictsResolved=u.resolved,o.errors.push(...u.errors)}let i=[...t.pushes,...t.localOnly],n=[];if(i.length>0&&await r.confirmPush(i.map(p=>p.path))){let p=await we(r,i,a);o.pushed=p.count,o.errors.push(...p.errors),n=p.pushedNotes}if(t.localDeleted.length>0&&await Oe(r,t.localDeleted,a),n.length>0){let u=await Me(r,n,e.twoWaySync);o.assetsUploaded=u.uploaded,o.assetsDownloaded=u.downloaded,o.errors.push(...u.errors)}let l=t.classifications.filter(u=>u.action==="unchanged"&&u.remoteHash!==null).map(u=>u.path);if(l.length>0){let u=await Fe(r,l);o.assetsUploaded+=u.uploaded,o.errors.push(...u.errors)}if(o.pushed>0||o.assetsUploaded>0){let u=await r.commitNotes();o.updatedUrls=u.updated.map(({path:p,url:c})=>({path:p,url:c}));for(let p of u.updated)for(let c of p.warnings)o.warnings.push({path:p.path,level:c.level,message:c.message})}return await r.saveSyncState(a),o}async function Ee(r,t){if(!await r.fileExists(t))return!1;try{return(await r.readFileContent(t)).trim()!==""}catch{return!1}}async function Te(r,t,e){if(t.length===0)return{count:0,errors:[],pulledPaths:[]};let o=t.map(c=>c.path),a=[],s=[],i=0,n=await r.fetchNoteContents(o),l=new Map(n.map(c=>[c.path,c.content])),u=t.length,p=0;for(let c of t){p++,r.onProgress({step:"pull",current:p,total:u,path:c.path});let d=l.get(c.path);if(d===void 0){a.push(`Failed to fetch: ${c.path}`);continue}let y=d.trim()===""?await r.computeHash(d):null;if(y!==null&&y!==c.remoteHash&&await Ee(r,c.path)){a.push(`Refused to overwrite non-empty ${c.path} with empty server content (hash mismatch)`);continue}try{let h=c.path.substring(0,c.path.lastIndexOf("/"));h&&await r.createFolder(h),await r.writeFile(c.path,d);let S=await r.computeHash(d);e.files[c.path]=S,i++,s.push(c.path)}catch(h){a.push(`Failed to write ${c.path}: ${h}`)}}return{count:i,errors:a,pulledPaths:s}}async function we(r,t,e){if(t.length===0)return{count:0,errors:[],pushedNotes:[],urls:[]};let o=[],a=[],s=t.length,i=0;for(let h of t){i++,r.onProgress({step:"push",current:i,total:s,path:h.path});try{let S=await r.readFileContent(h.path);a.push({path:h.path,content:S})}catch(S){o.push(`Failed to read ${h.path}: ${S}`)}}if(a.length===0)return{count:0,errors:o,pushedNotes:[],urls:[]};let n=new Set(a.map(h=>h.path)),l=r.pushBatchSize||100,u=[];for(let h=0;h<a.length;h+=l){let S=a.slice(h,h+l),g=await r.pushNotes(S,!0);u.push(...g)}let p=new Set(u.map(h=>h.path)),c=0;for(let h of a)if(p.has(h.path)){let S=await r.computeHash(h.content);e.files[h.path]=S,c++}let d=u.filter(h=>n.has(h.path)),y=d.filter(h=>typeof h.url=="string").map(h=>({path:h.path,url:h.url}));return{count:c,errors:o,pushedNotes:d,urls:y}}async function ve(r,t,e){if(t.length===0)return{resolved:0,errors:[]};let o=[],a=t.map(p=>p.path),s=await r.fetchNoteContents(a),i=new Map(s.map(p=>[p.path,p.content])),n=[];for(let p of t){let c=i.get(p.path);if(c!==void 0)try{let d=await r.readFileContent(p.path);n.push({path:p.path,localContent:d,remoteContent:c,localHash:p.localHash,remoteHash:p.remoteHash})}catch(d){console.warn(`Failed to read local file for conflict ${p.path}:`,d),o.push(`Failed to read local file for conflict: ${p.path}`)}}if(n.length===0)return{resolved:0,errors:o};let l=await r.onConflict(n),u=0;for(let p=0;p<n.length;p++){let c=n[p],d=l[p]||"skip";try{await ke(r,c,d,e),d!=="skip"&&u++}catch(y){o.push(`Failed to resolve conflict for ${c.path}: ${y}`)}}return{resolved:u,errors:o}}async function ke(r,t,e,o){switch(e){case"keep_local":await r.pushNotes([{path:t.path,content:t.localContent}],!0),o.files[t.path]=t.localHash;break;case"keep_remote":await r.writeFile(t.path,t.remoteContent),o.files[t.path]=t.remoteHash;break;case"keep_both":{let a=t.path.substring(t.path.lastIndexOf(".")),i=`${t.path.substring(0,t.path.lastIndexOf("."))} (server)${a}`;await r.writeFile(i,t.remoteContent),o.files[t.path]=t.localHash;let n=await r.computeHash(t.remoteContent);o.files[i]=n;break}case"skip":break}}async function Ne(r,t,e){if(t.length===0)return;let o=t.map(s=>s.path);if(await r.onServerDeleted(o))for(let s of t)try{await r.deleteFile(s.path),delete e.files[s.path]}catch(i){console.warn(`Failed to delete file ${s.path}:`,i)}else for(let s of t)s.localHash&&(e.files[s.path]=s.localHash)}async function Oe(r,t,e){if(t.length===0)return;let o=t.map(a=>a.path);await r.hideNotes(o);for(let a of o)delete e.files[a]}async function Me(r,t,e){console.log(`[Trip2g Sync] syncAssets called with ${t.length} notes, twoWaySync=${e}`);let o={uploaded:0,downloaded:0,conflictsResolved:0,errors:[]};if(t.length===0)return o;let a=[],s=[],i=[];for(let n of t)if(console.log(`[Trip2g Sync] Processing assets for note: ${n.path}, assets count: ${n.assets?.length??0}`),!(!n.assets||n.assets.length===0))for(let l of n.assets){let u=await r.resolveAssetPath(l.path,n.path);if(console.log(`[Trip2g Sync] Asset "${l.path}" -> localPath: ${u??"NOT FOUND"}, sha256Hash: ${l.sha256Hash??"null"}`),!u)continue;if(!l.sha256Hash||!l.absolutePath||!l.url){console.log(`[Trip2g Sync] Queuing upload: ${l.path} (no hash on server)`),a.push({noteId:n.id,notePath:n.path,asset:l,localPath:u});continue}if(await r.fileExists(u))try{let c=await r.readBinaryFile(u),d=await r.computeBinaryHash(c);if(d===l.sha256Hash)continue;i.push({path:l.path,absolutePath:u,noteId:n.id,localHash:d,remoteHash:l.sha256Hash,remoteUrl:l.url})}catch(c){o.errors.push(`Failed to read local asset ${u}: ${c}`)}else e&&s.push({asset:l,localPath:u})}if(console.log(`[Trip2g Sync] Assets to upload: ${a.length}, to download: ${s.length}, conflicts: ${i.length}`),a.length>0){let n=new Map;for(let c of a){let d=`${c.noteId}:${c.localPath}`;n.has(d)||n.set(d,c)}let l=Array.from(n.values()),u=l.length,p=0;console.log(`[Trip2g Sync] Uploading ${u} unique (note, asset) pairs`);for(let c of l){p++,console.log(`[Trip2g Sync] Uploading asset ${p}/${u}: ${c.localPath}`),r.onProgress({step:"upload_asset",current:p,total:u,path:c.asset.path});try{let d=await r.readBinaryFile(c.localPath),y=await r.computeBinaryHash(d),h=new Blob([d]),S=c.localPath.substring(c.localPath.lastIndexOf("/")+1);await r.uploadAsset({noteId:c.noteId,blob:h,fileName:S,relativePath:c.asset.path,absolutePath:c.localPath,sha256Hash:y})&&o.uploaded++}catch(d){o.errors.push(`Failed to upload asset ${c.asset.path}: ${d}`)}}}if(s.length>0){let n=s.length,l=0;for(let u of s)if(l++,r.onProgress({step:"download_asset",current:l,total:n,path:u.asset.path}),!!u.asset.url)try{let p=await r.downloadAsset(u.asset.url);if(!p){o.errors.push(`Failed to download asset ${u.asset.path}`);continue}let c=u.localPath.substring(0,u.localPath.lastIndexOf("/"));c&&await r.createFolder(c),await r.writeBinaryFile(u.localPath,p),o.downloaded++}catch(p){o.errors.push(`Failed to download asset ${u.asset.path}: ${p}`)}}if(i.length>0){let n=await Re(r,i,e);o.uploaded+=n.uploaded,o.downloaded+=n.downloaded,o.conflictsResolved=n.conflictsResolved,o.errors.push(...n.errors)}return o}async function Re(r,t,e){let o={uploaded:0,downloaded:0,conflictsResolved:0,errors:[]};if(t.length===0)return o;let a;e?a=await r.onAssetConflict(t):a=t.map(()=>"keep_local");for(let s=0;s<t.length;s++){let i=t[s],n=a[s]||"skip";try{if(n==="keep_local"){let l=await r.readBinaryFile(i.absolutePath),u=new Blob([l]),p=i.absolutePath.substring(i.absolutePath.lastIndexOf("/")+1);await r.uploadAsset({noteId:i.noteId,blob:u,fileName:p,relativePath:i.path,absolutePath:i.absolutePath,sha256Hash:i.localHash})&&(o.uploaded++,o.conflictsResolved++)}else if(n==="keep_remote"){let l=await r.downloadAsset(i.remoteUrl);l?(await r.writeBinaryFile(i.absolutePath,l),o.downloaded++,o.conflictsResolved++):o.errors.push(`Failed to download asset ${i.path}`)}}catch(l){o.errors.push(`Failed to resolve asset conflict for ${i.path}: ${l}`)}}return o}async function Nt(r,t){let e={downloaded:0,errors:[]};if(t.length===0)return e;let o=await r.fetchNoteAssets(t);if(o.length===0)return e;let a=new Map;for(let n of o)for(let l of n.assets){let u=l.absolutePath.replace(/^\//,"");a.has(u)||await r.fileExists(u)||a.set(u,{url:l.url,hash:l.hash})}if(a.size===0)return e;let s=a.size,i=0;for(let[n,{url:l}]of a){i++,r.onProgress({step:"download_asset",current:i,total:s,path:n});try{let u=await r.downloadAsset(l);if(!u){e.errors.push(`Failed to download asset ${n}`);continue}let p=n.substring(0,n.lastIndexOf("/"));p&&await r.createFolder(p),await r.writeBinaryFile(n,u),e.downloaded++}catch(u){e.errors.push(`Failed to download asset ${n}: ${u}`)}}return e}async function Fe(r,t){let e={uploaded:0,errors:[]};if(t.length===0)return e;let o=await r.fetchNoteAssets(t);if(o.length===0)return e;let a=[];for(let n of o)for(let l of n.assets){let u=l.absolutePath?.replace(/^\//,"");if(!u&&l.id){let c=n.path.includes("/")?n.path.substring(0,n.path.lastIndexOf("/")):"",d=l.id.replace(/^\.\//,"");u=c?`${c}/${d}`:d}if(!(!u||!await r.fileExists(u)))try{let c=await r.readBinaryFile(u),d=await r.computeBinaryHash(c);if(d===l.hash)continue;a.push({noteId:n.noteId,notePath:n.path,assetPath:l.id,localPath:u,localHash:d})}catch(c){e.errors.push(`Failed to read local asset ${u}: ${c}`)}}if(a.length===0)return e;let s=a.length,i=0;for(let n of a){i++,r.onProgress({step:"upload_asset",current:i,total:s,path:n.assetPath});try{let l=await r.readBinaryFile(n.localPath),u=new Blob([l]),p=n.localPath.substring(n.localPath.lastIndexOf("/")+1);await r.uploadAsset({noteId:n.noteId,blob:u,fileName:p,relativePath:n.assetPath,absolutePath:n.localPath,sha256Hash:n.localHash})&&e.uploaded++}catch(l){e.errors.push(`Failed to upload asset ${n.assetPath}: ${l}`)}}return e}function Y(r){let t=r.map(o=>o.trim().replace(/\/+$/,"")).filter(o=>o.length>0);if(t.length===0)return()=>!1;let e=t.map(Ue);return o=>e.some(a=>a.test(o))}function Ue(r){return/[*?]/.test(r)?new RegExp("^"+_e(r)+"$"):new RegExp("^"+Ot(r)+"(?:/.*)?$")}function _e(r){let t="";for(let e=0;e<r.length;e++){let o=r[e];o==="*"?r[e+1]==="*"?(t+=".*",e++):t+="[^/]*":o==="?"?t+="[^/]":t+=Ot(o)}return t}function Ot(r){return r.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}import*as it from"fs";import*as E from"path";async function Rt(r,t,e){let o=[],a=0,s=[],n=t.filter(u=>u.__typename==="NoteUpsertEvent").filter(u=>u.noteView===null).map(u=>u.path),l=new Map;if(n.length>0){let u=await r.fetchNoteContents(n);for(let p of u)l.set(p.path,p.content)}for(let u of t){if(u.__typename==="NoteHideEvent"){await r.fileExists(u.path)&&e.files[u.path]!==void 0&&s.push(u.path);continue}let p=u.noteView?.content??l.get(u.path);if(p===void 0)continue;let c=await r.computeHash(p),y=await r.fileExists(u.path)?await r.readFileContent(u.path):null,h=y!==null?await r.computeHash(y):null,S=e.files[u.path]??null;if(j(u.path)&&p.trim()===""&&y!==null&&y.trim()!==""){a++;continue}if(u.eventType==="create"&&h===null){await Mt(r,e,u.path,p,c,o);continue}let g=dt(h,c,S);g==="pull"?await Mt(r,e,u.path,p,c,o):g==="conflict"&&a++}return{pulledPaths:o,conflictCount:a,hiddenPaths:s}}async function Mt(r,t,e,o,a,s){let i=e.substring(0,e.lastIndexOf("/"));i&&await r.createFolder(i),await r.writeFile(e,o),t.files[e]=a,s.push(e)}var Be=`subscription NoteChanges($filter: NoteChangesFilter!) {
+${content}`;
+  }
+  /**
+   * Check if content has any of the publish fields with a truthy value in frontmatter.
+   * Parses YAML frontmatter from the content string.
+   */
+  hasPublishFieldInContent(content, path5) {
+    if (!this.publishField) return true;
+    if (isAlwaysPublishable(path5)) return true;
+    if (!content.startsWith("---")) return false;
+    const endIndex = content.indexOf("\n---", 3);
+    if (endIndex === -1) return false;
+    const frontmatterText = content.slice(4, endIndex);
+    const fields = this.publishField.split(",").map((f) => f.trim()).filter((f) => f);
+    for (const field of fields) {
+      const regex = new RegExp(`^${field}\\s*:\\s*(.+)$`, "m");
+      const match = frontmatterText.match(regex);
+      if (match) {
+        const value = match[1].trim().toLowerCase();
+        if (value === "true" || value === "yes" || value === "1" || value === '"true"' || value === "'true'") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+};
+
+// src/sync/classify.ts
+function classifyFile(localHash, remoteHash, lastSyncedHash) {
+  if (localHash === null && remoteHash === null) {
+    return "unchanged";
+  }
+  if (localHash === remoteHash) {
+    return "unchanged";
+  }
+  if (localHash !== null && remoteHash === null) {
+    if (lastSyncedHash) {
+      return "server_deleted";
+    }
+    return "local_only";
+  }
+  if (localHash === null && remoteHash !== null) {
+    if (lastSyncedHash) {
+      return "local_deleted";
+    }
+    return "remote_only";
+  }
+  if (!lastSyncedHash) {
+    return "conflict";
+  }
+  if (localHash === lastSyncedHash) {
+    return "pull";
+  }
+  if (remoteHash === lastSyncedHash) {
+    return "push";
+  }
+  return "conflict";
+}
+__name(classifyFile, "classifyFile");
+async function classifySync(env) {
+  const syncState = env.getSyncState();
+  const [localFiles, serverHashes] = await Promise.all([
+    env.getLocalFiles(),
+    env.getServerHashes()
+  ]);
+  const serverHashMap = /* @__PURE__ */ new Map();
+  for (const item of serverHashes) {
+    serverHashMap.set(item.path, item.hash);
+  }
+  const localHashes = /* @__PURE__ */ new Map();
+  const cachedMtimes = syncState.mtimes || {};
+  const cachedLocalHashes = syncState.localHashes || {};
+  for (const file of localFiles) {
+    const cachedMtime = cachedMtimes[file.path];
+    const cachedHash = cachedLocalHashes[file.path];
+    if (cachedMtime === file.mtime && cachedHash) {
+      localHashes.set(file.path, cachedHash);
+    } else {
+      const content = await env.readFileContent(file.path);
+      const hash = await env.computeHash(content);
+      localHashes.set(file.path, hash);
+    }
+  }
+  const allPaths = /* @__PURE__ */ new Set([
+    ...localHashes.keys(),
+    ...serverHashMap.keys()
+  ]);
+  const classifications = [];
+  const pulls = [];
+  const pushes = [];
+  const conflicts = [];
+  const localOnly = [];
+  const remoteOnly = [];
+  const localDeleted = [];
+  const serverDeleted = [];
+  let unchanged = 0;
+  for (const path5 of allPaths) {
+    const localHash = localHashes.get(path5) || null;
+    const remoteHash = serverHashMap.get(path5) || null;
+    const lastSyncedHash = syncState.files[path5] || null;
+    const action = classifyFile(localHash, remoteHash, lastSyncedHash);
+    const classification = {
+      path: path5,
+      action,
+      localHash,
+      remoteHash,
+      lastSyncedHash
+    };
+    classifications.push(classification);
+    switch (action) {
+      case "unchanged":
+        unchanged++;
+        break;
+      case "pull":
+        pulls.push(classification);
+        break;
+      case "push":
+        pushes.push(classification);
+        break;
+      case "conflict":
+        conflicts.push(classification);
+        break;
+      case "local_only":
+        localOnly.push(classification);
+        break;
+      case "remote_only":
+        remoteOnly.push(classification);
+        break;
+      case "local_deleted":
+        localDeleted.push(classification);
+        break;
+      case "server_deleted":
+        serverDeleted.push(classification);
+        break;
+    }
+  }
+  return {
+    classifications,
+    pulls,
+    pushes,
+    conflicts,
+    localOnly,
+    remoteOnly,
+    localDeleted,
+    serverDeleted,
+    unchanged
+  };
+}
+__name(classifySync, "classifySync");
+
+// src/sync/filter.ts
+function filterPlan(plan, options) {
+  const { twoWaySync, prune, hasPublishFields, isExcluded } = options;
+  const isPublishable = /* @__PURE__ */ __name((path5) => {
+    if (!hasPublishFields) return true;
+    return hasPublishFields(path5);
+  }, "isPublishable");
+  const excluded = /* @__PURE__ */ __name((path5) => {
+    if (!isExcluded) return false;
+    return isExcluded(path5);
+  }, "excluded");
+  const filteredClassifications = [];
+  const pulls = [];
+  const pushes = [];
+  const conflicts = [];
+  const localOnly = [];
+  const remoteOnly = [];
+  const localDeleted = [];
+  const serverDeleted = [];
+  let unchanged = 0;
+  for (const c of plan.classifications) {
+    if (excluded(c.path)) {
+      if (c.remoteHash !== null) {
+        const asHide = c.action === "local_deleted" ? c : { ...c, action: "local_deleted" };
+        filteredClassifications.push(asHide);
+        localDeleted.push(asHide);
+      }
+      continue;
+    }
+    const publishable = isPublishable(c.path);
+    switch (c.action) {
+      case "unchanged":
+        filteredClassifications.push(c);
+        unchanged++;
+        break;
+      case "pull":
+        if (twoWaySync && publishable) {
+          filteredClassifications.push(c);
+          pulls.push(c);
+        }
+        break;
+      case "push":
+        if (publishable) {
+          filteredClassifications.push(c);
+          pushes.push(c);
+        }
+        break;
+      case "conflict":
+        if (!twoWaySync) {
+          if (publishable) {
+            const asPush = { ...c, action: "push" };
+            filteredClassifications.push(asPush);
+            pushes.push(asPush);
+          }
+        } else if (publishable) {
+          filteredClassifications.push(c);
+          conflicts.push(c);
+        }
+        break;
+      case "local_only":
+        if (publishable) {
+          filteredClassifications.push(c);
+          localOnly.push(c);
+        }
+        break;
+      case "remote_only":
+        if (twoWaySync) {
+          filteredClassifications.push(c);
+          remoteOnly.push(c);
+        } else if (prune) {
+          const asHide = { ...c, action: "local_deleted" };
+          filteredClassifications.push(asHide);
+          localDeleted.push(asHide);
+        }
+        break;
+      case "local_deleted":
+        if (publishable) {
+          filteredClassifications.push(c);
+          localDeleted.push(c);
+        }
+        break;
+      case "server_deleted":
+        if (twoWaySync) {
+          filteredClassifications.push(c);
+          serverDeleted.push(c);
+        }
+        break;
+    }
+  }
+  return {
+    classifications: filteredClassifications,
+    pulls,
+    pushes,
+    conflicts,
+    localOnly,
+    remoteOnly,
+    localDeleted,
+    serverDeleted,
+    unchanged
+  };
+}
+__name(filterPlan, "filterPlan");
+
+// src/sync/execute.ts
+async function executePlan(env, plan, options = { twoWaySync: false }) {
+  const result = {
+    pulled: 0,
+    pushed: 0,
+    conflictsResolved: 0,
+    assetsUploaded: 0,
+    assetsDownloaded: 0,
+    errors: [],
+    updatedUrls: [],
+    warnings: []
+  };
+  const syncState = env.getSyncState();
+  const pulledPaths = [];
+  if (plan.pulls.length > 0 || plan.remoteOnly.length > 0) {
+    const toPull = [...plan.pulls, ...plan.remoteOnly];
+    const pullResult = await executePulls(env, toPull, syncState);
+    result.pulled = pullResult.count;
+    result.errors.push(...pullResult.errors);
+    pulledPaths.push(...pullResult.pulledPaths);
+  }
+  if (pulledPaths.length > 0) {
+    const assetResult = await downloadAssetsForNotes(env, pulledPaths);
+    result.assetsDownloaded += assetResult.downloaded;
+    result.errors.push(...assetResult.errors);
+  }
+  if (options.twoWaySync) {
+    const unchangedServerPaths = plan.classifications.filter((c) => c.action === "unchanged" && c.remoteHash !== null).map((c) => c.path);
+    if (unchangedServerPaths.length > 0) {
+      const assetResult = await downloadAssetsForNotes(env, unchangedServerPaths);
+      result.assetsDownloaded += assetResult.downloaded;
+      result.errors.push(...assetResult.errors);
+    }
+  }
+  if (plan.serverDeleted.length > 0) {
+    await handleServerDeleted(env, plan.serverDeleted, syncState);
+  }
+  if (plan.conflicts.length > 0) {
+    const conflictResult = await handleConflicts(env, plan.conflicts, syncState);
+    result.conflictsResolved = conflictResult.resolved;
+    result.errors.push(...conflictResult.errors);
+  }
+  const toPush = [...plan.pushes, ...plan.localOnly];
+  let pushedNotes = [];
+  if (toPush.length > 0) {
+    const confirmed = await env.confirmPush(toPush.map((c) => c.path));
+    if (confirmed) {
+      const pushResult = await executePushes(env, toPush, syncState);
+      result.pushed = pushResult.count;
+      result.errors.push(...pushResult.errors);
+      pushedNotes = pushResult.pushedNotes;
+    }
+  }
+  if (plan.localDeleted.length > 0) {
+    await handleLocalDeleted(env, plan.localDeleted, syncState);
+  }
+  if (pushedNotes.length > 0) {
+    const assetResult = await syncAssets(env, pushedNotes, options.twoWaySync);
+    result.assetsUploaded = assetResult.uploaded;
+    result.assetsDownloaded = assetResult.downloaded;
+    result.errors.push(...assetResult.errors);
+  }
+  const unchangedPaths = plan.classifications.filter((c) => c.action === "unchanged" && c.remoteHash !== null).map((c) => c.path);
+  if (unchangedPaths.length > 0) {
+    const assetResult = await uploadMissingAssetsForNotes(env, unchangedPaths);
+    result.assetsUploaded += assetResult.uploaded;
+    result.errors.push(...assetResult.errors);
+  }
+  if (result.pushed > 0 || result.assetsUploaded > 0) {
+    const commitResult = await env.commitNotes();
+    result.updatedUrls = commitResult.updated.map(({ path: path5, url }) => ({ path: path5, url }));
+    for (const note of commitResult.updated) {
+      for (const w of note.warnings) {
+        result.warnings.push({ path: note.path, level: w.level, message: w.message });
+      }
+    }
+  }
+  await env.saveSyncState(syncState);
+  return result;
+}
+__name(executePlan, "executePlan");
+async function localFileIsNonEmpty(env, path5) {
+  if (!await env.fileExists(path5)) {
+    return false;
+  }
+  try {
+    const local = await env.readFileContent(path5);
+    return local.trim() !== "";
+  } catch {
+    return false;
+  }
+}
+__name(localFileIsNonEmpty, "localFileIsNonEmpty");
+async function executePulls(env, pulls, syncState) {
+  if (pulls.length === 0) {
+    return { count: 0, errors: [], pulledPaths: [] };
+  }
+  const paths = pulls.map((p) => p.path);
+  const errors = [];
+  const pulledPaths = [];
+  let count = 0;
+  const contents = await env.fetchNoteContents(paths);
+  const contentMap = new Map(contents.map((c) => [c.path, c.content]));
+  const total = pulls.length;
+  let current = 0;
+  for (const pull of pulls) {
+    current++;
+    env.onProgress({ step: "pull", current, total, path: pull.path });
+    const content = contentMap.get(pull.path);
+    if (content === void 0) {
+      errors.push(`Failed to fetch: ${pull.path}`);
+      continue;
+    }
+    const fetchedHash = content.trim() === "" ? await env.computeHash(content) : null;
+    if (fetchedHash !== null && fetchedHash !== pull.remoteHash && await localFileIsNonEmpty(env, pull.path)) {
+      errors.push(`Refused to overwrite non-empty ${pull.path} with empty server content (hash mismatch)`);
+      continue;
+    }
+    try {
+      const dirPath = pull.path.substring(0, pull.path.lastIndexOf("/"));
+      if (dirPath) {
+        await env.createFolder(dirPath);
+      }
+      await env.writeFile(pull.path, content);
+      const hash = await env.computeHash(content);
+      syncState.files[pull.path] = hash;
+      count++;
+      pulledPaths.push(pull.path);
+    } catch (e) {
+      errors.push(`Failed to write ${pull.path}: ${e}`);
+    }
+  }
+  return { count, errors, pulledPaths };
+}
+__name(executePulls, "executePulls");
+async function executePushes(env, pushes, syncState) {
+  if (pushes.length === 0) {
+    return { count: 0, errors: [], pushedNotes: [], urls: [] };
+  }
+  const errors = [];
+  const updates = [];
+  const total = pushes.length;
+  let current = 0;
+  for (const push of pushes) {
+    current++;
+    env.onProgress({ step: "push", current, total, path: push.path });
+    try {
+      const content = await env.readFileContent(push.path);
+      updates.push({ path: push.path, content });
+    } catch (e) {
+      errors.push(`Failed to read ${push.path}: ${e}`);
+    }
+  }
+  if (updates.length === 0) {
+    return { count: 0, errors, pushedNotes: [], urls: [] };
+  }
+  const updatePaths = new Set(updates.map((u) => u.path));
+  const batchSize = env.pushBatchSize || 100;
+  const pushedNotes = [];
+  for (let i = 0; i < updates.length; i += batchSize) {
+    const batch = updates.slice(i, i + batchSize);
+    const batchNotes = await env.pushNotes(batch, true);
+    pushedNotes.push(...batchNotes);
+  }
+  const serverPaths = new Set(pushedNotes.map((n) => n.path));
+  let pushedCount = 0;
+  for (const update of updates) {
+    if (serverPaths.has(update.path)) {
+      const hash = await env.computeHash(update.content);
+      syncState.files[update.path] = hash;
+      pushedCount++;
+    }
+  }
+  const filteredNotes = pushedNotes.filter((n) => updatePaths.has(n.path));
+  const urls = filteredNotes.filter((n) => typeof n.url === "string").map((n) => ({ path: n.path, url: n.url }));
+  return { count: pushedCount, errors, pushedNotes: filteredNotes, urls };
+}
+__name(executePushes, "executePushes");
+async function handleConflicts(env, conflicts, syncState) {
+  if (conflicts.length === 0) {
+    return { resolved: 0, errors: [] };
+  }
+  const errors = [];
+  const paths = conflicts.map((c) => c.path);
+  const remoteContents = await env.fetchNoteContents(paths);
+  const remoteMap = new Map(remoteContents.map((c) => [c.path, c.content]));
+  const conflictInfos = [];
+  for (const conflict of conflicts) {
+    const remoteContent = remoteMap.get(conflict.path);
+    if (remoteContent === void 0) {
+      continue;
+    }
+    try {
+      const localContent = await env.readFileContent(conflict.path);
+      conflictInfos.push({
+        path: conflict.path,
+        localContent,
+        remoteContent,
+        localHash: conflict.localHash,
+        remoteHash: conflict.remoteHash
+      });
+    } catch (e) {
+      console.warn(`Failed to read local file for conflict ${conflict.path}:`, e);
+      errors.push(`Failed to read local file for conflict: ${conflict.path}`);
+    }
+  }
+  if (conflictInfos.length === 0) {
+    return { resolved: 0, errors };
+  }
+  const resolutions = await env.onConflict(conflictInfos);
+  let resolved = 0;
+  for (let i = 0; i < conflictInfos.length; i++) {
+    const info = conflictInfos[i];
+    const resolution = resolutions[i] || "skip";
+    try {
+      await resolveConflict(env, info, resolution, syncState);
+      if (resolution !== "skip") {
+        resolved++;
+      }
+    } catch (e) {
+      errors.push(`Failed to resolve conflict for ${info.path}: ${e}`);
+    }
+  }
+  return { resolved, errors };
+}
+__name(handleConflicts, "handleConflicts");
+async function resolveConflict(env, conflict, resolution, syncState) {
+  switch (resolution) {
+    case "keep_local":
+      await env.pushNotes([{ path: conflict.path, content: conflict.localContent }], true);
+      syncState.files[conflict.path] = conflict.localHash;
+      break;
+    case "keep_remote":
+      await env.writeFile(conflict.path, conflict.remoteContent);
+      syncState.files[conflict.path] = conflict.remoteHash;
+      break;
+    case "keep_both": {
+      const ext = conflict.path.substring(conflict.path.lastIndexOf("."));
+      const baseName = conflict.path.substring(0, conflict.path.lastIndexOf("."));
+      const newPath = `${baseName} (server)${ext}`;
+      await env.writeFile(newPath, conflict.remoteContent);
+      syncState.files[conflict.path] = conflict.localHash;
+      const remoteHash = await env.computeHash(conflict.remoteContent);
+      syncState.files[newPath] = remoteHash;
+      break;
+    }
+    // Stryker disable next-line StringLiteral,ConditionalExpression: skip case is intentionally empty
+    case "skip":
+      break;
+  }
+}
+__name(resolveConflict, "resolveConflict");
+async function handleServerDeleted(env, serverDeleted, syncState) {
+  if (serverDeleted.length === 0) {
+    return;
+  }
+  const paths = serverDeleted.map((c) => c.path);
+  const deleteLocally = await env.onServerDeleted(paths);
+  if (deleteLocally) {
+    for (const c of serverDeleted) {
+      try {
+        await env.deleteFile(c.path);
+        delete syncState.files[c.path];
+      } catch (e) {
+        console.warn(`Failed to delete file ${c.path}:`, e);
+      }
+    }
+  } else {
+    for (const c of serverDeleted) {
+      if (c.localHash) {
+        syncState.files[c.path] = c.localHash;
+      }
+    }
+  }
+}
+__name(handleServerDeleted, "handleServerDeleted");
+async function handleLocalDeleted(env, localDeleted, syncState) {
+  if (localDeleted.length === 0) {
+    return;
+  }
+  const paths = localDeleted.map((c) => c.path);
+  await env.hideNotes(paths);
+  for (const path5 of paths) {
+    delete syncState.files[path5];
+  }
+}
+__name(handleLocalDeleted, "handleLocalDeleted");
+async function syncAssets(env, pushedNotes, twoWaySync) {
+  console.log(`[Trip2g Sync] syncAssets called with ${pushedNotes.length} notes, twoWaySync=${twoWaySync}`);
+  const result = {
+    uploaded: 0,
+    downloaded: 0,
+    conflictsResolved: 0,
+    errors: []
+  };
+  if (pushedNotes.length === 0) {
+    return result;
+  }
+  const toUpload = [];
+  const toDownload = [];
+  const conflicts = [];
+  for (const note of pushedNotes) {
+    console.log(`[Trip2g Sync] Processing assets for note: ${note.path}, assets count: ${note.assets?.length ?? 0}`);
+    if (!note.assets || note.assets.length === 0) {
+      continue;
+    }
+    for (const asset of note.assets) {
+      const localPath = await env.resolveAssetPath(asset.path, note.path);
+      console.log(`[Trip2g Sync] Asset "${asset.path}" -> localPath: ${localPath ?? "NOT FOUND"}, sha256Hash: ${asset.sha256Hash ?? "null"}`);
+      if (!localPath) {
+        continue;
+      }
+      if (!asset.sha256Hash || !asset.absolutePath || !asset.url) {
+        console.log(`[Trip2g Sync] Queuing upload: ${asset.path} (no hash on server)`);
+        toUpload.push({ noteId: note.id, notePath: note.path, asset, localPath });
+        continue;
+      }
+      const exists = await env.fileExists(localPath);
+      if (exists) {
+        try {
+          const localData = await env.readBinaryFile(localPath);
+          const localHash = await env.computeBinaryHash(localData);
+          if (localHash === asset.sha256Hash) {
+            continue;
+          }
+          conflicts.push({
+            path: asset.path,
+            absolutePath: localPath,
+            noteId: note.id,
+            localHash,
+            remoteHash: asset.sha256Hash,
+            remoteUrl: asset.url
+          });
+        } catch (e) {
+          result.errors.push(`Failed to read local asset ${localPath}: ${e}`);
+        }
+      } else if (twoWaySync) {
+        toDownload.push({ asset, localPath });
+      }
+    }
+  }
+  console.log(`[Trip2g Sync] Assets to upload: ${toUpload.length}, to download: ${toDownload.length}, conflicts: ${conflicts.length}`);
+  if (toUpload.length > 0) {
+    const uniqueUploads = /* @__PURE__ */ new Map();
+    for (const item of toUpload) {
+      const key = `${item.noteId}:${item.localPath}`;
+      if (!uniqueUploads.has(key)) {
+        uniqueUploads.set(key, item);
+      }
+    }
+    const deduped = Array.from(uniqueUploads.values());
+    const uploadTotal = deduped.length;
+    let uploadCurrent = 0;
+    console.log(`[Trip2g Sync] Uploading ${uploadTotal} unique (note, asset) pairs`);
+    for (const item of deduped) {
+      uploadCurrent++;
+      console.log(`[Trip2g Sync] Uploading asset ${uploadCurrent}/${uploadTotal}: ${item.localPath}`);
+      env.onProgress({ step: "upload_asset", current: uploadCurrent, total: uploadTotal, path: item.asset.path });
+      try {
+        const localData = await env.readBinaryFile(item.localPath);
+        const localHash = await env.computeBinaryHash(localData);
+        const blob = new Blob([localData]);
+        const fileName = item.localPath.substring(item.localPath.lastIndexOf("/") + 1);
+        const success = await env.uploadAsset({
+          noteId: item.noteId,
+          blob,
+          fileName,
+          relativePath: item.asset.path,
+          absolutePath: item.localPath,
+          sha256Hash: localHash
+        });
+        if (success) {
+          result.uploaded++;
+        }
+      } catch (e) {
+        result.errors.push(`Failed to upload asset ${item.asset.path}: ${e}`);
+      }
+    }
+  }
+  if (toDownload.length > 0) {
+    const downloadTotal = toDownload.length;
+    let downloadCurrent = 0;
+    for (const item of toDownload) {
+      downloadCurrent++;
+      env.onProgress({ step: "download_asset", current: downloadCurrent, total: downloadTotal, path: item.asset.path });
+      if (!item.asset.url) {
+        continue;
+      }
+      try {
+        const data = await env.downloadAsset(item.asset.url);
+        if (!data) {
+          result.errors.push(`Failed to download asset ${item.asset.path}`);
+          continue;
+        }
+        const dirPath = item.localPath.substring(0, item.localPath.lastIndexOf("/"));
+        if (dirPath) {
+          await env.createFolder(dirPath);
+        }
+        await env.writeBinaryFile(item.localPath, data);
+        result.downloaded++;
+      } catch (e) {
+        result.errors.push(`Failed to download asset ${item.asset.path}: ${e}`);
+      }
+    }
+  }
+  if (conflicts.length > 0) {
+    const assetResult = await handleAssetConflicts(env, conflicts, twoWaySync);
+    result.uploaded += assetResult.uploaded;
+    result.downloaded += assetResult.downloaded;
+    result.conflictsResolved = assetResult.conflictsResolved;
+    result.errors.push(...assetResult.errors);
+  }
+  return result;
+}
+__name(syncAssets, "syncAssets");
+async function handleAssetConflicts(env, conflicts, twoWaySync) {
+  const result = {
+    uploaded: 0,
+    downloaded: 0,
+    conflictsResolved: 0,
+    errors: []
+  };
+  if (conflicts.length === 0) {
+    return result;
+  }
+  let resolutions;
+  if (twoWaySync) {
+    resolutions = await env.onAssetConflict(conflicts);
+  } else {
+    resolutions = conflicts.map(() => "keep_local");
+  }
+  for (let i = 0; i < conflicts.length; i++) {
+    const conflict = conflicts[i];
+    const resolution = resolutions[i] || "skip";
+    try {
+      if (resolution === "keep_local") {
+        const localData = await env.readBinaryFile(conflict.absolutePath);
+        const blob = new Blob([localData]);
+        const fileName = conflict.absolutePath.substring(conflict.absolutePath.lastIndexOf("/") + 1);
+        const success = await env.uploadAsset({
+          noteId: conflict.noteId,
+          blob,
+          fileName,
+          relativePath: conflict.path,
+          absolutePath: conflict.absolutePath,
+          sha256Hash: conflict.localHash
+        });
+        if (success) {
+          result.uploaded++;
+          result.conflictsResolved++;
+        }
+      } else if (resolution === "keep_remote") {
+        const data = await env.downloadAsset(conflict.remoteUrl);
+        if (data) {
+          await env.writeBinaryFile(conflict.absolutePath, data);
+          result.downloaded++;
+          result.conflictsResolved++;
+        } else {
+          result.errors.push(`Failed to download asset ${conflict.path}`);
+        }
+      }
+    } catch (e) {
+      result.errors.push(`Failed to resolve asset conflict for ${conflict.path}: ${e}`);
+    }
+  }
+  return result;
+}
+__name(handleAssetConflicts, "handleAssetConflicts");
+async function downloadAssetsForNotes(env, notePaths) {
+  const result = { downloaded: 0, errors: [] };
+  if (notePaths.length === 0) {
+    return result;
+  }
+  const noteAssets = await env.fetchNoteAssets(notePaths);
+  if (noteAssets.length === 0) {
+    return result;
+  }
+  const toDownload = /* @__PURE__ */ new Map();
+  for (const note of noteAssets) {
+    for (const asset of note.assets) {
+      const absolutePath = asset.absolutePath.replace(/^\//, "");
+      if (!toDownload.has(absolutePath)) {
+        const exists = await env.fileExists(absolutePath);
+        if (!exists) {
+          toDownload.set(absolutePath, { url: asset.url, hash: asset.hash });
+        }
+      }
+    }
+  }
+  if (toDownload.size === 0) {
+    return result;
+  }
+  const total = toDownload.size;
+  let current = 0;
+  for (const [absolutePath, { url }] of toDownload) {
+    current++;
+    env.onProgress({ step: "download_asset", current, total, path: absolutePath });
+    try {
+      const data = await env.downloadAsset(url);
+      if (!data) {
+        result.errors.push(`Failed to download asset ${absolutePath}`);
+        continue;
+      }
+      const dirPath = absolutePath.substring(0, absolutePath.lastIndexOf("/"));
+      if (dirPath) {
+        await env.createFolder(dirPath);
+      }
+      await env.writeBinaryFile(absolutePath, data);
+      result.downloaded++;
+    } catch (e) {
+      result.errors.push(`Failed to download asset ${absolutePath}: ${e}`);
+    }
+  }
+  return result;
+}
+__name(downloadAssetsForNotes, "downloadAssetsForNotes");
+async function uploadMissingAssetsForNotes(env, notePaths) {
+  const result = { uploaded: 0, errors: [] };
+  if (notePaths.length === 0) {
+    return result;
+  }
+  const noteAssets = await env.fetchNoteAssets(notePaths);
+  if (noteAssets.length === 0) {
+    return result;
+  }
+  const toUpload = [];
+  for (const note of noteAssets) {
+    for (const asset of note.assets) {
+      let localPath = asset.absolutePath?.replace(/^\//, "");
+      if (!localPath && asset.id) {
+        const noteDir = note.path.includes("/") ? note.path.substring(0, note.path.lastIndexOf("/")) : "";
+        const assetPath = asset.id.replace(/^\.\//, "");
+        localPath = noteDir ? `${noteDir}/${assetPath}` : assetPath;
+      }
+      if (!localPath) {
+        continue;
+      }
+      const exists = await env.fileExists(localPath);
+      if (!exists) {
+        continue;
+      }
+      try {
+        const localData = await env.readBinaryFile(localPath);
+        const localHash = await env.computeBinaryHash(localData);
+        if (localHash === asset.hash) {
+          continue;
+        }
+        toUpload.push({
+          noteId: note.noteId,
+          // version ID from server
+          notePath: note.path,
+          assetPath: asset.id,
+          localPath,
+          localHash
+        });
+      } catch (e) {
+        result.errors.push(`Failed to read local asset ${localPath}: ${e}`);
+      }
+    }
+  }
+  if (toUpload.length === 0) {
+    return result;
+  }
+  const total = toUpload.length;
+  let current = 0;
+  for (const item of toUpload) {
+    current++;
+    env.onProgress({ step: "upload_asset", current, total, path: item.assetPath });
+    try {
+      const localData = await env.readBinaryFile(item.localPath);
+      const blob = new Blob([localData]);
+      const fileName = item.localPath.substring(item.localPath.lastIndexOf("/") + 1);
+      const success = await env.uploadAsset({
+        noteId: item.noteId,
+        blob,
+        fileName,
+        relativePath: item.assetPath,
+        absolutePath: item.localPath,
+        sha256Hash: item.localHash
+        // Use pre-computed hash
+      });
+      if (success) {
+        result.uploaded++;
+      }
+    } catch (e) {
+      result.errors.push(`Failed to upload asset ${item.assetPath}: ${e}`);
+    }
+  }
+  return result;
+}
+__name(uploadMissingAssetsForNotes, "uploadMissingAssetsForNotes");
+
+// src/sync/exclude.ts
+function makeExcludeMatcher(patterns) {
+  const normalized = patterns.map((p) => p.trim().replace(/\/+$/, "")).filter((p) => p.length > 0);
+  if (normalized.length === 0) {
+    return () => false;
+  }
+  const regexes = normalized.map(patternToRegex);
+  return (path5) => regexes.some((re) => re.test(path5));
+}
+__name(makeExcludeMatcher, "makeExcludeMatcher");
+function patternToRegex(pattern) {
+  if (/[*?]/.test(pattern)) {
+    return new RegExp("^" + globToRegexSource(pattern) + "$");
+  }
+  return new RegExp("^" + escapeRegex(pattern) + "(?:/.*)?$");
+}
+__name(patternToRegex, "patternToRegex");
+function globToRegexSource(pattern) {
+  let out = "";
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        out += ".*";
+        i++;
+      } else {
+        out += "[^/]*";
+      }
+    } else if (ch === "?") {
+      out += "[^/]";
+    } else {
+      out += escapeRegex(ch);
+    }
+  }
+  return out;
+}
+__name(globToRegexSource, "globToRegexSource");
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+__name(escapeRegex, "escapeRegex");
+
+// src/sync/prune.ts
+function summarizePrune(plan, prunedPlan) {
+  return {
+    paths: prunedPlan.localDeleted.map((c) => c.path),
+    localPresent: plan.classifications.filter((c) => c.localHash !== null).length,
+    serverPresent: plan.classifications.filter((c) => c.remoteHash !== null).length
+  };
+}
+__name(summarizePrune, "summarizePrune");
+function pruneNeedsForce(summary) {
+  return summary.localPresent === 0 && summary.paths.length > 0;
+}
+__name(pruneNeedsForce, "pruneNeedsForce");
+
+// src/sync/cli/watch.ts
+import * as fs2 from "fs";
+import * as path3 from "path";
+
+// src/sync/live-apply.ts
+async function applyLiveChanges(env, changes, syncState) {
+  const pulledPaths = [];
+  let conflictCount = 0;
+  const hiddenPaths = [];
+  const upserts = changes.filter(
+    (c) => c.__typename === "NoteUpsertEvent"
+  );
+  const missingContentPaths = upserts.filter((c) => c.noteView === null).map((c) => c.path);
+  const fetchedContent = /* @__PURE__ */ new Map();
+  if (missingContentPaths.length > 0) {
+    const contents = await env.fetchNoteContents(missingContentPaths);
+    for (const c of contents) {
+      fetchedContent.set(c.path, c.content);
+    }
+  }
+  for (const change of changes) {
+    if (change.__typename === "NoteHideEvent") {
+      if (await env.fileExists(change.path) && syncState.files[change.path] !== void 0) {
+        hiddenPaths.push(change.path);
+      }
+      continue;
+    }
+    const content = change.noteView?.content ?? fetchedContent.get(change.path);
+    if (content === void 0) {
+      continue;
+    }
+    const remoteHash = await env.computeHash(content);
+    const exists = await env.fileExists(change.path);
+    const localContent = exists ? await env.readFileContent(change.path) : null;
+    const localHash = localContent !== null ? await env.computeHash(localContent) : null;
+    const lastSynced = syncState.files[change.path] ?? null;
+    if (isAlwaysPublishable(change.path) && content.trim() === "" && localContent !== null && localContent.trim() !== "") {
+      conflictCount++;
+      continue;
+    }
+    if (change.eventType === "create" && localHash === null) {
+      await writeAndRecord(env, syncState, change.path, content, remoteHash, pulledPaths);
+      continue;
+    }
+    const action = classifyFile(localHash, remoteHash, lastSynced);
+    if (action === "pull") {
+      await writeAndRecord(env, syncState, change.path, content, remoteHash, pulledPaths);
+    } else if (action === "conflict") {
+      conflictCount++;
+    }
+  }
+  return { pulledPaths, conflictCount, hiddenPaths };
+}
+__name(applyLiveChanges, "applyLiveChanges");
+async function writeAndRecord(env, syncState, path5, content, remoteHash, pulledPaths) {
+  const dirPath = path5.substring(0, path5.lastIndexOf("/"));
+  if (dirPath) {
+    await env.createFolder(dirPath);
+  }
+  await env.writeFile(path5, content);
+  syncState.files[path5] = remoteHash;
+  pulledPaths.push(path5);
+}
+__name(writeAndRecord, "writeAndRecord");
+
+// src/sync/LivePullConnection.ts
+var SUBSCRIPTION_DOCUMENT = `subscription NoteChanges($filter: NoteChangesFilter!) {
 	noteChanges(filter: $filter) {
 		changes {
 			__typename
@@ -153,8 +3527,614 @@ ${t}`}hasPublishFieldInContent(t,e){if(!this.publishField||j(e))return!0;if(!t.s
 			}
 		}
 	}
-}`,Ft=[3e3,6e3,12e3,3e4],ht=6e4,X=class{constructor(t){this.abort=null;this.stopped=!1;this.backoffIndex=0;this.lastByteAt=0;this.healthTimer=null;this.options=t}connect(){!this.stopped&&this.abort||(this.stopped=!1,this.startHealthCheck(),this.loop())}disconnect(){this.stopped=!0,this.stopHealthCheck(),this.abort&&(this.abort.abort(),this.abort=null)}reconnectIfDead(){if(!this.stopped){if(!this.abort){this.connect();return}Date.now()-this.lastByteAt>ht&&this.abort.abort()}}startHealthCheck(){this.stopHealthCheck(),this.healthTimer=setInterval(()=>{this.stopped||!this.abort||Date.now()-this.lastByteAt>ht&&this.abort.abort()},ht)}stopHealthCheck(){this.healthTimer!==null&&(clearInterval(this.healthTimer),this.healthTimer=null)}async loop(){for(;!this.stopped;){try{await this.stream(),this.backoffIndex=0}catch(e){if(this.stopped)return;console.warn("[Trip2g Sync] Live-pull stream error:",e)}if(this.stopped)return;let t=Ft[Math.min(this.backoffIndex,Ft.length-1)];this.backoffIndex++,await new Promise(e=>setTimeout(e,t))}}async stream(){let t=new AbortController;this.abort=t,this.lastByteAt=Date.now();let e=await fetch(this.options.endpoint??`${this.options.apiUrl}/_system/graphql`,{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream","X-API-Key":this.options.apiKey,"X-Plugin-Version":this.options.pluginVersion},body:JSON.stringify({query:Be,variables:{filter:{includePatterns:this.options.includePatterns,excludePatterns:this.options.excludePatterns??[]}}}),signal:t.signal});if(!e.ok||!e.body)throw new Error(`Live-pull: ${e.status} ${e.statusText}`);let o=e.body.getReader(),a=new TextDecoder,s="",i="";this.backoffIndex=0,this.lastByteAt=Date.now(),this.options.onConnected();try{for(;;){let{done:n,value:l}=await o.read();if(n)break;this.lastByteAt=Date.now(),s+=a.decode(l,{stream:!0});let u=s.split(`
-`);s=u.pop()??"";for(let p of u)if(p.startsWith("event:"))i=p.slice(6).trim();else if(p.startsWith("data:")){let c=p.slice(5).trim();if(i==="next")this.handleNext(c);else if(i==="complete")return;i=""}}}finally{o.releaseLock()}}handleNext(t){let e;try{e=JSON.parse(t)}catch(a){console.warn("[Trip2g Sync] Live-pull bad payload:",a);return}if(e.errors){console.warn("[Trip2g Sync] Live-pull subscription error:",e.errors);return}let o=e.data?.noteChanges?.changes;o&&o.length>0&&this.options.onChanges(o)}};var Or=500,Mr=2e4,Rr={setInterval:(r,t)=>setInterval(r,t),clearInterval:r=>clearInterval(r),setTimeout:(r,t)=>setTimeout(r,t),clearTimeout:r=>clearTimeout(r)},Fr=r=>{process.once("SIGINT",()=>r("SIGINT")),process.once("SIGTERM",()=>r("SIGTERM"))};function N(r){console.log(r)}function Ur(){let r=[E.join(process.cwd(),"manifest.json"),E.join(__dirname,"..","..","..","manifest.json")];for(let t of r)try{let e=JSON.parse(it.readFileSync(t,"utf-8"));if(typeof e?.version=="string"&&e.version)return e.version}catch{}return"cli"}function _r(r){let t=r.split(E.sep).join("/");if(t.startsWith(".trip2g-memory/")||t===".trip2g-memory")return!1;for(let e of t.split("/"))if(e==="node_modules"||e.startsWith("."))return!1;return!0}function Br(){let r=Promise.resolve();return{run(t){let e=r.then(()=>t());return r=e.then(()=>{},()=>{}),e},idle(){return r.then(()=>{})}}}async function se(r,t={}){let e=t.clock??Rr,o=t.now??Date.now,a=t.envFactory?.(r)??new B({folder:r.folder,apiUrl:r.apiUrl,apiKey:r.apiKey,twoWaySync:!0,verbose:r.verbose,conflictResolution:r.conflictResolution,meta:r.meta}),s=Y(r.exclude),i=Br(),n=!1,l=!1,u=!1,p=[],c=null,d=null,y=null,h=null,S=null;N(`\u{1F440} watch: starting for ${r.folder}`);let g=async C=>{if(!u){if(n=!0,N(`\u{1F6D1} watch: ${C} received, draining\u2026`),y!==null&&(e.clearTimeout(y),y=null),h!==null&&(e.clearInterval(h),h=null),c&&c.disconnect(),d)try{await d.close()}catch{}await i.idle(),await a.saveSyncState(a.getSyncState()),u=!0,N("\u2705 watch: drained, exiting"),S&&S({exitCode:0})}};(t.signals??Fr)(C=>void g(C));let P=a,F=C=>{if(!l){p.push(C);return}n||i.run(async()=>{let M=a.getSyncState(),H=await Rt(P,C,M);for(let wt of H.hiddenPaths)await a.deleteFile(wt),delete M.files[wt];H.pulledPaths.length>0&&N(`\u{1F4E5} watch: pulled ${H.pulledPaths.length} note(s) from server`),H.hiddenPaths.length>0&&N(`\u{1F5D1}\uFE0F  watch: removed ${H.hiddenPaths.length} hidden note(s)`),await a.saveSyncState(M)})},O=Dr(r),_=Ur(),w=(t.livePullFactory??(C=>new X(C)))({apiUrl:r.apiUrl,apiKey:r.apiKey,pluginVersion:_,endpoint:r.apiUrl,includePatterns:O.include,excludePatterns:O.exclude,onConnected:()=>N("\u{1F50C} watch: live-pull connected"),onChanges:F});if(c=w,await i.run(async()=>{N("\u{1F4CA} watch: reconciling\u2026"),await xt(a,s),l=!0,N("\u2705 watch: reconcile complete")}),n)return{exitCode:0};if(w.connect(),p.length>0){let C=p.splice(0,p.length);for(let M of C)F(M)}let V=new Set,ue=()=>{if(y=null,n||V.size===0)return;let C=Array.from(V);V.clear(),i.run(async()=>{N(`\u{1F4E4} watch: pushing ${C.length} local change(s)`),await xt(a,s)})},pe=C=>{if(n)return;let M=E.isAbsolute(C)?E.relative(E.resolve(r.folder),C):C;_r(M)&&(V.add(M),y!==null&&e.clearTimeout(y),y=e.setTimeout(ue,Or))},{watcher:Tt,usingFallback:ce}=await Wr(r.folder,t);return d=Tt,Tt.onChange(pe),ce&&(N("\u26A0\uFE0F  watch: chokidar unavailable, using fs.watch + periodic sweep (best-effort)"),h=e.setInterval(()=>{n||i.run(async()=>{await xt(a,s)})},Mr)),u?{exitCode:0}:await new Promise(C=>{S=C})}function Dr(r){let t=r.include.length>0?r.include:r.dataInclude&&r.dataInclude.length>0?r.dataInclude:["**"],e=r.exclude.length>0?r.exclude:r.dataExclude&&r.dataExclude.length>0?r.dataExclude:[];return{include:t,exclude:e}}async function xt(r,t){let e=await K(r),o=z(e,{twoWaySync:!0,isExcluded:t});await J(r,o,{twoWaySync:!0})}async function Wr(r,t){if(t.watcherFactory)return{watcher:t.watcherFactory(r),usingFallback:!1};try{let o=await(t.importChokidar??(()=>Promise.resolve().then(()=>(ne(),oe))))(),a=o.default??o;if(typeof a?.watch!="function")throw new Error("chokidar.watch unavailable");let s=a.watch(r,{ignoreInitial:!0,ignored:/(^|[/\\])\../});return{watcher:{onChange(n){s.on("add",n),s.on("change",n),s.on("unlink",n)},close(){return s.close()}},usingFallback:!1}}catch{let e=E.resolve(r),o=[],a=it.watch(e,{recursive:!0},(i,n)=>{if(!n)return;let l=typeof n=="string"?n:n.toString();for(let u of o)u(l)});return{watcher:{onChange(i){o.push(i)},close(){a.close()}},usingFallback:!0}}}function Et(){try{let r=ie.join(process.cwd(),".obsidian","plugins","trip2g","data.json"),e=JSON.parse(lt.readFileSync(r,"utf8"))?.syncDirs?.[0];return e?{apiUrl:e.apiUrl?`${e.apiUrl}/_system/graphql`:void 0,apiKey:e.apiKey||void 0,livePullIncludePatterns:e.livePullIncludePatterns??void 0,livePullExcludePatterns:e.livePullExcludePatterns??void 0}:{}}catch{return{}}}function Hr(){let r=process.argv.slice(2),t=Et(),e={folder:"",prefix:"",apiUrl:process.env.TRIP2G_ENDPOINT||process.env.ENDPOINT||t.apiUrl||"http://localhost:8081/_system/graphql",apiKey:process.env.TRIP2G_API_KEY||process.env.API_KEY||t.apiKey||"",twoWaySync:!1,watch:!1,verbose:!1,dryRun:!1,conflictResolution:"local",meta:{},updatedOutput:"",exclude:[],include:[],stateFile:""},o=[];for(let a=0;a<r.length;a++){let s=r[a],i;if(s.includes("=")&&s.startsWith("-")){let n=s.indexOf("=");i=s.substring(n+1),s=s.substring(0,n)}switch(s){case"--api-url":case"-u":e.apiUrl=i??r[++a];break;case"--api-key":case"-k":e.apiKey=i??r[++a];break;case"--two-way":case"-2":e.twoWaySync=!0;break;case"--watch":case"-w":e.watch=!0,e.twoWaySync=!0;break;case"--include":case"-i":{let n=i??r[++a];n&&e.include.push(n);break}case"--verbose":case"-v":e.verbose=!0;break;case"--dry-run":case"-n":e.dryRun=!0;break;case"--conflict-resolution":case"-c":{let n=i??r[++a];n==="local"||n==="remote"||n==="skip"||n==="fail"?e.conflictResolution=n:(console.error(`\u274C Invalid conflict resolution: ${n}. Use: local, remote, skip, fail`),process.exit(1));break}case"--meta":case"-m":{let n=i??r[++a];if(n&&n.includes("=")){let l=n.indexOf("="),u=n.substring(0,l),p=n.substring(l+1);e.meta[u]=p}else console.error(`\u274C Invalid --meta format: ${n}. Use: --meta key=value`),process.exit(1);break}case"--updated-output":case"-o":e.updatedOutput=i??r[++a];break;case"--state-file":case"-s":e.stateFile=i??r[++a];break;case"--exclude":case"-x":{let n=i??r[++a];n&&e.exclude.push(n);break}case"--help":case"-h":le(),process.exit(0);break;default:s.startsWith("-")||o.push(s)}}return o.length>=1&&(e.folder=o[0]),o.length>=2&&(e.prefix=o[1]),e}function le(){console.log(`
+}`;
+var BACKOFF_MS = [3e3, 6e3, 12e3, 3e4];
+var HEALTH_CHECK_INTERVAL_MS = 6e4;
+var LivePullConnection = class {
+  constructor(options) {
+    this.abort = null;
+    this.stopped = false;
+    this.backoffIndex = 0;
+    this.lastByteAt = 0;
+    this.healthTimer = null;
+    this.options = options;
+  }
+  static {
+    __name(this, "LivePullConnection");
+  }
+  /** Start the self-reconnecting stream loop. Safe to call once. */
+  connect() {
+    if (!this.stopped && this.abort) {
+      return;
+    }
+    this.stopped = false;
+    this.startHealthCheck();
+    void this.loop();
+  }
+  /** Stop the stream and cleanup. Safe to call multiple times. */
+  disconnect() {
+    this.stopped = true;
+    this.stopHealthCheck();
+    if (this.abort) {
+      this.abort.abort();
+      this.abort = null;
+    }
+  }
+  /**
+   * If the stream looks dead (no bytes for longer than the health interval),
+   * abort the current connection so the loop reconnects. Used on window focus.
+   */
+  reconnectIfDead() {
+    if (this.stopped) {
+      return;
+    }
+    if (!this.abort) {
+      this.connect();
+      return;
+    }
+    if (Date.now() - this.lastByteAt > HEALTH_CHECK_INTERVAL_MS) {
+      this.abort.abort();
+    }
+  }
+  startHealthCheck() {
+    this.stopHealthCheck();
+    this.healthTimer = setInterval(() => {
+      if (this.stopped || !this.abort) {
+        return;
+      }
+      if (Date.now() - this.lastByteAt > HEALTH_CHECK_INTERVAL_MS) {
+        this.abort.abort();
+      }
+    }, HEALTH_CHECK_INTERVAL_MS);
+  }
+  stopHealthCheck() {
+    if (this.healthTimer !== null) {
+      clearInterval(this.healthTimer);
+      this.healthTimer = null;
+    }
+  }
+  async loop() {
+    while (!this.stopped) {
+      try {
+        await this.stream();
+        this.backoffIndex = 0;
+      } catch (e) {
+        if (this.stopped) {
+          return;
+        }
+        console.warn("[Trip2g Sync] Live-pull stream error:", e);
+      }
+      if (this.stopped) {
+        return;
+      }
+      const delay = BACKOFF_MS[Math.min(this.backoffIndex, BACKOFF_MS.length - 1)];
+      this.backoffIndex++;
+      await new Promise((resolve5) => setTimeout(resolve5, delay));
+    }
+  }
+  async stream() {
+    const abort = new AbortController();
+    this.abort = abort;
+    this.lastByteAt = Date.now();
+    const response = await fetch(this.options.endpoint ?? `${this.options.apiUrl}/_system/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        "X-API-Key": this.options.apiKey,
+        "X-Plugin-Version": this.options.pluginVersion
+      },
+      body: JSON.stringify({
+        query: SUBSCRIPTION_DOCUMENT,
+        variables: {
+          filter: {
+            includePatterns: this.options.includePatterns,
+            excludePatterns: this.options.excludePatterns ?? []
+          }
+        }
+      }),
+      signal: abort.signal
+    });
+    if (!response.ok || !response.body) {
+      throw new Error(`Live-pull: ${response.status} ${response.statusText}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let eventType = "";
+    this.backoffIndex = 0;
+    this.lastByteAt = Date.now();
+    this.options.onConnected();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        this.lastByteAt = Date.now();
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (line.startsWith("event:")) {
+            eventType = line.slice(6).trim();
+          } else if (line.startsWith("data:")) {
+            const payload = line.slice(5).trim();
+            if (eventType === "next") {
+              this.handleNext(payload);
+            } else if (eventType === "complete") {
+              return;
+            }
+            eventType = "";
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  handleNext(payload) {
+    let parsed;
+    try {
+      parsed = JSON.parse(payload);
+    } catch (e) {
+      console.warn("[Trip2g Sync] Live-pull bad payload:", e);
+      return;
+    }
+    if (parsed.errors) {
+      console.warn("[Trip2g Sync] Live-pull subscription error:", parsed.errors);
+      return;
+    }
+    const changes = parsed.data?.noteChanges?.changes;
+    if (changes && changes.length > 0) {
+      this.options.onChanges(changes);
+    }
+  }
+};
+
+// src/sync/cli/watch.ts
+var FS_DEBOUNCE_MS = 500;
+var FALLBACK_SWEEP_MS = 2e4;
+var realClock = {
+  setInterval: /* @__PURE__ */ __name((h, ms) => setInterval(h, ms), "setInterval"),
+  clearInterval: /* @__PURE__ */ __name((h) => clearInterval(h), "clearInterval"),
+  setTimeout: /* @__PURE__ */ __name((h, ms) => setTimeout(h, ms), "setTimeout"),
+  clearTimeout: /* @__PURE__ */ __name((h) => clearTimeout(h), "clearTimeout")
+};
+var realSignals = /* @__PURE__ */ __name((handler) => {
+  process.once("SIGINT", () => handler("SIGINT"));
+  process.once("SIGTERM", () => handler("SIGTERM"));
+}, "realSignals");
+function log(message) {
+  console.log(message);
+}
+__name(log, "log");
+function readPluginVersion() {
+  const candidates = [
+    path3.join(process.cwd(), "manifest.json"),
+    path3.join(__dirname, "..", "..", "..", "manifest.json")
+  ];
+  for (const file of candidates) {
+    try {
+      const data = JSON.parse(fs2.readFileSync(file, "utf-8"));
+      if (typeof data?.version === "string" && data.version) {
+        return data.version;
+      }
+    } catch {
+    }
+  }
+  return "cli";
+}
+__name(readPluginVersion, "readPluginVersion");
+function isWatchablePath(relPath) {
+  const norm = relPath.split(path3.sep).join("/");
+  if (norm.startsWith(".trip2g-memory/") || norm === ".trip2g-memory") {
+    return false;
+  }
+  for (const segment of norm.split("/")) {
+    if (segment === "node_modules") return false;
+    if (segment.startsWith(".")) return false;
+  }
+  return true;
+}
+__name(isWatchablePath, "isWatchablePath");
+function createLock() {
+  let tail = Promise.resolve();
+  return {
+    run(fn) {
+      const result = tail.then(() => fn());
+      tail = result.then(
+        () => void 0,
+        () => void 0
+      );
+      return result;
+    },
+    /** Resolves when the current chain is drained. */
+    idle() {
+      return tail.then(() => void 0);
+    }
+  };
+}
+__name(createLock, "createLock");
+async function runWatch(args, deps = {}) {
+  const clock = deps.clock ?? realClock;
+  const now = deps.now ?? Date.now;
+  const env = deps.envFactory?.(args) ?? new NodeEnv({
+    folder: args.folder,
+    apiUrl: args.apiUrl,
+    apiKey: args.apiKey,
+    twoWaySync: true,
+    verbose: args.verbose,
+    conflictResolution: args.conflictResolution,
+    meta: args.meta
+  });
+  const isExcluded = makeExcludeMatcher(args.exclude);
+  const lock = createLock();
+  let draining = false;
+  let reconcileDone = false;
+  let settled = false;
+  const pendingSse = [];
+  let livePullRef = null;
+  let watcherRef = null;
+  let debounceTimer = null;
+  let sweepTimer = null;
+  let resolveRun = null;
+  log(`\u{1F440} watch: starting for ${args.folder}`);
+  const drain = /* @__PURE__ */ __name(async (signal) => {
+    if (settled) {
+      return;
+    }
+    draining = true;
+    log(`\u{1F6D1} watch: ${signal} received, draining\u2026`);
+    if (debounceTimer !== null) {
+      clock.clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    if (sweepTimer !== null) {
+      clock.clearInterval(sweepTimer);
+      sweepTimer = null;
+    }
+    if (livePullRef) {
+      livePullRef.disconnect();
+    }
+    if (watcherRef) {
+      try {
+        await watcherRef.close();
+      } catch {
+      }
+    }
+    await lock.idle();
+    await env.saveSyncState(env.getSyncState());
+    settled = true;
+    log("\u2705 watch: drained, exiting");
+    if (resolveRun) {
+      resolveRun({ exitCode: 0 });
+    }
+  }, "drain");
+  const registerSignals = deps.signals ?? realSignals;
+  registerSignals((signal) => void drain(signal));
+  const applyEnv = env;
+  const handleChanges = /* @__PURE__ */ __name((changes) => {
+    if (!reconcileDone) {
+      pendingSse.push(changes);
+      return;
+    }
+    if (draining) {
+      return;
+    }
+    void lock.run(async () => {
+      const syncState = env.getSyncState();
+      const result = await applyLiveChanges(applyEnv, changes, syncState);
+      for (const hidePath of result.hiddenPaths) {
+        await env.deleteFile(hidePath);
+        delete syncState.files[hidePath];
+      }
+      if (result.pulledPaths.length > 0) {
+        log(`\u{1F4E5} watch: pulled ${result.pulledPaths.length} note(s) from server`);
+      }
+      if (result.hiddenPaths.length > 0) {
+        log(`\u{1F5D1}\uFE0F  watch: removed ${result.hiddenPaths.length} hidden note(s)`);
+      }
+      await env.saveSyncState(syncState);
+    });
+  }, "handleChanges");
+  const patterns = resolveWatchPatterns(args);
+  const pluginVersion = readPluginVersion();
+  const livePullFactory = deps.livePullFactory ?? ((opts) => new LivePullConnection(opts));
+  const livePull = livePullFactory({
+    apiUrl: args.apiUrl,
+    apiKey: args.apiKey,
+    pluginVersion,
+    endpoint: args.apiUrl,
+    includePatterns: patterns.include,
+    excludePatterns: patterns.exclude,
+    onConnected: /* @__PURE__ */ __name(() => log("\u{1F50C} watch: live-pull connected"), "onConnected"),
+    onChanges: handleChanges
+  });
+  livePullRef = livePull;
+  await lock.run(async () => {
+    log("\u{1F4CA} watch: reconciling\u2026");
+    await runOneShot(env, isExcluded);
+    reconcileDone = true;
+    log("\u2705 watch: reconcile complete");
+  });
+  if (draining) {
+    return { exitCode: 0 };
+  }
+  livePull.connect();
+  if (pendingSse.length > 0) {
+    const queued = pendingSse.splice(0, pendingSse.length);
+    for (const batch of queued) {
+      handleChanges(batch);
+    }
+  }
+  const dirtyPaths = /* @__PURE__ */ new Set();
+  const flushBatch = /* @__PURE__ */ __name(() => {
+    debounceTimer = null;
+    if (draining) {
+      return;
+    }
+    if (dirtyPaths.size === 0) {
+      return;
+    }
+    const batch = Array.from(dirtyPaths);
+    dirtyPaths.clear();
+    void lock.run(async () => {
+      log(`\u{1F4E4} watch: pushing ${batch.length} local change(s)`);
+      await runOneShot(env, isExcluded);
+    });
+  }, "flushBatch");
+  const onFsChange = /* @__PURE__ */ __name((filePath) => {
+    if (draining) {
+      return;
+    }
+    const rel = path3.isAbsolute(filePath) ? path3.relative(path3.resolve(args.folder), filePath) : filePath;
+    if (!isWatchablePath(rel)) {
+      return;
+    }
+    dirtyPaths.add(rel);
+    if (debounceTimer !== null) {
+      clock.clearTimeout(debounceTimer);
+    }
+    debounceTimer = clock.setTimeout(flushBatch, FS_DEBOUNCE_MS);
+  }, "onFsChange");
+  const { watcher, usingFallback } = await createWatcher(args.folder, deps);
+  watcherRef = watcher;
+  watcher.onChange(onFsChange);
+  if (usingFallback) {
+    log("\u26A0\uFE0F  watch: chokidar unavailable, using fs.watch + periodic sweep (best-effort)");
+    sweepTimer = clock.setInterval(() => {
+      if (draining) {
+        return;
+      }
+      void lock.run(async () => {
+        await runOneShot(env, isExcluded);
+      });
+    }, FALLBACK_SWEEP_MS);
+  }
+  void now;
+  if (settled) {
+    return { exitCode: 0 };
+  }
+  return await new Promise((resolve5) => {
+    resolveRun = resolve5;
+  });
+}
+__name(runWatch, "runWatch");
+function resolveWatchPatterns(args) {
+  const include = args.include.length > 0 ? args.include : args.dataInclude && args.dataInclude.length > 0 ? args.dataInclude : ["**"];
+  const exclude = args.exclude.length > 0 ? args.exclude : args.dataExclude && args.dataExclude.length > 0 ? args.dataExclude : [];
+  return { include, exclude };
+}
+__name(resolveWatchPatterns, "resolveWatchPatterns");
+async function runOneShot(env, isExcluded) {
+  const plan = await classifySync(env);
+  const filtered = filterPlan(plan, { twoWaySync: true, isExcluded });
+  await executePlan(env, filtered, { twoWaySync: true });
+}
+__name(runOneShot, "runOneShot");
+async function createWatcher(folder, deps) {
+  if (deps.watcherFactory) {
+    return { watcher: deps.watcherFactory(folder), usingFallback: false };
+  }
+  try {
+    const importChokidar = deps.importChokidar ?? (() => Promise.resolve().then(() => (init_esm2(), esm_exports)));
+    const chokidarMod = await importChokidar();
+    const chokidar = chokidarMod.default ?? chokidarMod;
+    if (typeof chokidar?.watch !== "function") {
+      throw new Error("chokidar.watch unavailable");
+    }
+    const fsw = chokidar.watch(folder, {
+      ignoreInitial: true,
+      ignored: /(^|[/\\])\../
+      // dotfiles
+    });
+    const watcher = {
+      onChange(listener) {
+        fsw.on("add", listener);
+        fsw.on("change", listener);
+        fsw.on("unlink", listener);
+      },
+      close() {
+        return fsw.close();
+      }
+    };
+    return { watcher, usingFallback: false };
+  } catch {
+    const resolved = path3.resolve(folder);
+    const listeners = [];
+    const fsWatcher = fs2.watch(resolved, { recursive: true }, (_event, filename) => {
+      if (!filename) return;
+      const rel = typeof filename === "string" ? filename : filename.toString();
+      for (const l of listeners) {
+        l(rel);
+      }
+    });
+    const watcher = {
+      onChange(listener) {
+        listeners.push(listener);
+      },
+      close() {
+        fsWatcher.close();
+      }
+    };
+    return { watcher, usingFallback: true };
+  }
+}
+__name(createWatcher, "createWatcher");
+
+// src/sync/cli/cmd.ts
+function readDataJson() {
+  try {
+    const dataPath = path4.join(process.cwd(), ".obsidian", "plugins", "trip2g", "data.json");
+    const data = JSON.parse(fs3.readFileSync(dataPath, "utf8"));
+    const dir = data?.syncDirs?.[0];
+    if (!dir) return {};
+    return {
+      apiUrl: dir.apiUrl ? `${dir.apiUrl}/_system/graphql` : void 0,
+      apiKey: dir.apiKey || void 0,
+      livePullIncludePatterns: dir.livePullIncludePatterns ?? void 0,
+      livePullExcludePatterns: dir.livePullExcludePatterns ?? void 0
+    };
+  } catch {
+    return {};
+  }
+}
+__name(readDataJson, "readDataJson");
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const dataJson = readDataJson();
+  const result = {
+    folder: "",
+    prefix: "",
+    apiUrl: process.env.TRIP2G_ENDPOINT || process.env.ENDPOINT || dataJson.apiUrl || "http://localhost:8081/_system/graphql",
+    apiKey: process.env.TRIP2G_API_KEY || process.env.API_KEY || dataJson.apiKey || "",
+    twoWaySync: false,
+    watch: false,
+    verbose: false,
+    dryRun: false,
+    prune: false,
+    force: false,
+    conflictResolution: "local",
+    meta: {},
+    updatedOutput: "",
+    exclude: [],
+    include: [],
+    stateFile: ""
+  };
+  const positionalArgs = [];
+  for (let i = 0; i < args.length; i++) {
+    let arg = args[i];
+    let value;
+    if (arg.includes("=") && arg.startsWith("-")) {
+      const eqIndex = arg.indexOf("=");
+      value = arg.substring(eqIndex + 1);
+      arg = arg.substring(0, eqIndex);
+    }
+    switch (arg) {
+      case "--api-url":
+      case "-u":
+        result.apiUrl = value ?? args[++i];
+        break;
+      case "--api-key":
+      case "-k":
+        result.apiKey = value ?? args[++i];
+        break;
+      case "--two-way":
+      case "-2":
+        result.twoWaySync = true;
+        break;
+      case "--watch":
+      case "-w":
+        result.watch = true;
+        result.twoWaySync = true;
+        break;
+      case "--include":
+      case "-i": {
+        const includeValue = value ?? args[++i];
+        if (includeValue) {
+          result.include.push(includeValue);
+        }
+        break;
+      }
+      case "--verbose":
+      case "-v":
+        result.verbose = true;
+        break;
+      case "--dry-run":
+      case "-n":
+        result.dryRun = true;
+        break;
+      case "--prune":
+      case "--mirror":
+        result.prune = true;
+        break;
+      case "--force":
+        result.force = true;
+        break;
+      case "--conflict-resolution":
+      case "-c": {
+        const crValue = value ?? args[++i];
+        if (crValue === "local" || crValue === "remote" || crValue === "skip" || crValue === "fail") {
+          result.conflictResolution = crValue;
+        } else {
+          console.error(`\u274C Invalid conflict resolution: ${crValue}. Use: local, remote, skip, fail`);
+          process.exit(1);
+        }
+        break;
+      }
+      case "--meta":
+      case "-m": {
+        const metaValue = value ?? args[++i];
+        if (metaValue && metaValue.includes("=")) {
+          const eqIndex = metaValue.indexOf("=");
+          const metaKey = metaValue.substring(0, eqIndex);
+          const metaVal = metaValue.substring(eqIndex + 1);
+          result.meta[metaKey] = metaVal;
+        } else {
+          console.error(`\u274C Invalid --meta format: ${metaValue}. Use: --meta key=value`);
+          process.exit(1);
+        }
+        break;
+      }
+      case "--updated-output":
+      case "-o":
+        result.updatedOutput = value ?? args[++i];
+        break;
+      case "--state-file":
+      case "-s":
+        result.stateFile = value ?? args[++i];
+        break;
+      case "--exclude":
+      case "-x": {
+        const excludeValue = value ?? args[++i];
+        if (excludeValue) {
+          result.exclude.push(excludeValue);
+        }
+        break;
+      }
+      case "--help":
+      case "-h":
+        printHelp();
+        process.exit(0);
+        break;
+      default:
+        if (!arg.startsWith("-")) {
+          positionalArgs.push(arg);
+        }
+    }
+  }
+  if (positionalArgs.length >= 1) {
+    result.folder = positionalArgs[0];
+  }
+  if (positionalArgs.length >= 2) {
+    result.prefix = positionalArgs[1];
+  }
+  return result;
+}
+__name(parseArgs, "parseArgs");
+function printHelp() {
+  console.log(`
 obsidian-sync CLI
 
 Usage:
@@ -189,6 +4169,18 @@ Options:
                            directory and everything under it. In --watch mode,
                            flags take priority over data.json livePullExcludePatterns.
                            Default: none.
+      --prune, --mirror    Server-truth deletion (rsync --delete semantics):
+                           hide every server note under the synced prefix that
+                           is NOT present locally, even ones the local
+                           sync-state has no record of. Fixes orphaned server
+                           notes left behind after a sync-state reset/replace
+                           (they are classified remote_only and normally
+                           ignored, so they are never hidden). Opt-in; without
+                           it behavior is 100% unchanged. Prints a loud summary
+                           before hiding and honors --dry-run. Refuses to run
+                           when the local tree is empty but the server has notes
+                           (partial/reset copy) unless --force is also given.
+      --force              Allow --prune even when the local tree looks empty.
   -v, --verbose            Verbose output
   -n, --dry-run            Show what would be done without making changes
   -h, --help               Show this help
@@ -209,23 +4201,213 @@ Examples:
   # Exclude folders from a publish (they get hidden on the server if present)
   trip2g-sync ./docs --exclude dev --exclude demo
 
+  # Mirror: hide any server note not present locally (orphaned-note cleanup)
+  trip2g-sync ./docs --prune --dry-run   # preview what would be hidden
+  trip2g-sync ./docs --prune             # actually hide them
+
   # Multi-repo setup: each repo pushes to different folder with different meta
   trip2g-sync ./docs docs --meta subgraph=docs
   trip2g-sync ./blog blog --meta subgraph=blog
   trip2g-sync ./wiki wiki --meta subgraph=team-wiki
-`)}async function Lr(){let r=Et(),t=process.env.TRIP2G_ENDPOINT||process.env.ENDPOINT||r.apiUrl||"http://localhost:8081/_system/graphql",e=process.env.TRIP2G_API_KEY||process.env.API_KEY||r.apiKey||"";e||(console.error("\u274C TRIP2G_API_KEY or API_KEY required"),process.exit(1));let a=await q({apiUrl:t,apiKey:e}).FetchAllWarnings(),s=[];for(let i of a.notePaths){let n=i.latestNoteView;if(n)for(let l of n.warnings??[])s.push({path:i.path,level:l.level,message:l.message,url:n.url??""})}console.log(JSON.stringify(s,null,2))}async function $r(){if(process.argv[2]==="warnings"){await Lr();return}let r=Hr();if(r.folder||(console.error("\u274C Error: --folder is required"),le(),process.exit(1)),r.apiKey||(console.error("\u274C Error: --api-key or API_KEY environment variable is required"),process.exit(1)),r.prefix&&r.twoWaySync&&(console.error("\u274C Error: prefix is not supported with --two-way sync"),process.exit(1)),r.watch){let l=Et(),{exitCode:u}=await se({folder:r.folder,apiUrl:r.apiUrl,apiKey:r.apiKey,include:r.include,exclude:r.exclude,conflictResolution:r.conflictResolution,meta:r.meta,verbose:r.verbose,dataInclude:l.livePullIncludePatterns,dataExclude:l.livePullExcludePatterns});process.exit(u)}r.dryRun&&console.log(`[dry-run] folder=${r.folder}${r.prefix?` prefix=${r.prefix}`:""}`);let t=new B({folder:r.folder,prefix:r.prefix,apiUrl:r.apiUrl,apiKey:r.apiKey,twoWaySync:r.twoWaySync,verbose:r.verbose,conflictResolution:r.conflictResolution,meta:r.meta,stateFile:r.stateFile||void 0});console.log(`
-\u{1F4CA} Classifying files...`);let e=await K(t),o=Y(r.exclude),a=z(e,{twoWaySync:r.twoWaySync,isExcluded:o});if(r.exclude.length>0&&console.log(`\u{1F6AB} Excluding: ${r.exclude.join(", ")}`),console.log(`
-\u{1F4CB} Sync Plan:`),console.log("-".repeat(40)),console.log(`  Unchanged:      ${a.unchanged}`),console.log(`  To push:        ${a.pushes.length}`),console.log(`  Local only:     ${a.localOnly.length}`),console.log(`  To pull:        ${a.pulls.length}`),console.log(`  Remote only:    ${a.remoteOnly.length}`),console.log(`  Conflicts:      ${a.conflicts.length}`),console.log(`  Local deleted:  ${a.localDeleted.length}`),console.log(`  Server deleted: ${a.serverDeleted.length}`),console.log("-".repeat(40)),r.verbose){if(a.pushes.length>0){console.log(`
-\u{1F4E4} Files to push:`);for(let l of a.pushes)console.log(`  ${l.path}`)}if(a.localOnly.length>0){console.log(`
-\u{1F195} New local files:`);for(let l of a.localOnly)console.log(`  ${l.path}`)}if(a.pulls.length>0){console.log(`
-\u{1F4E5} Files to pull:`);for(let l of a.pulls)console.log(`  ${l.path}`)}if(a.remoteOnly.length>0){console.log(`
-\u{1F310} New remote files:`);for(let l of a.remoteOnly)console.log(`  ${l.path}`)}if(a.localDeleted.length>0){console.log(`
-\u{1F5D1}\uFE0F To hide on server:`);for(let l of a.localDeleted)console.log(`  ${l.path}`)}}if(r.dryRun){console.log(`
-\u23F8\uFE0F Dry run - no changes made`);return}let s=a.pushes.length+a.localOnly.length+a.pulls.length+a.remoteOnly.length+a.conflicts.length+a.localDeleted.length+a.serverDeleted.length;console.log(`
-\u{1F680} Executing sync...`);let i=await J(t,a,{twoWaySync:r.twoWaySync});if(s===0&&i.assetsUploaded===0&&i.assetsDownloaded===0){console.log(`
-\u2705 Everything is up to date!`);return}if(console.log(`
-`+"=".repeat(60)),console.log("\u{1F4CA} SYNC RESULTS:"),console.log("=".repeat(60)),console.log(`  Pushed:             ${i.pushed}`),console.log(`  Pulled:             ${i.pulled}`),console.log(`  Conflicts resolved: ${i.conflictsResolved}`),console.log(`  Assets uploaded:    ${i.assetsUploaded}`),console.log(`  Assets downloaded:  ${i.assetsDownloaded}`),i.errors.length>0){console.log(`  Errors:             ${i.errors.length}`);for(let l of i.errors)console.log(`    \u274C ${l}`)}if(i.warnings.length>0){console.log(`  Warnings:           ${i.warnings.length}`);for(let l of i.warnings)console.log(`    \u26A0\uFE0F  [${l.level}] ${l.path}: ${l.message}`)}console.log("=".repeat(60));let n=i.updatedUrls??[];if(n.length>0){if(console.log(`
-\u{1F4CE} Published:`),n.length<=20)for(let{path:l,url:u}of n)console.log(`  ${l} \u2192 ${u}`);r.updatedOutput?(lt.writeFileSync(r.updatedOutput,JSON.stringify(n,null,2)),console.log(`\u{1F4BE} Saved to ${r.updatedOutput}`)):console.log("\u{1F4A1} --updated-output $(mktemp /tmp/updated-XXXXXX.json)")}}$r().catch(r=>{console.error("\u274C Fatal error:",r),process.exit(1)});
+`);
+}
+__name(printHelp, "printHelp");
+async function cmdWarnings() {
+  const dataJson = readDataJson();
+  const apiUrl = process.env.TRIP2G_ENDPOINT || process.env.ENDPOINT || dataJson.apiUrl || "http://localhost:8081/_system/graphql";
+  const apiKey = process.env.TRIP2G_API_KEY || process.env.API_KEY || dataJson.apiKey || "";
+  if (!apiKey) {
+    console.error("\u274C TRIP2G_API_KEY or API_KEY required");
+    process.exit(1);
+  }
+  const sdk = createClient({ apiUrl, apiKey });
+  const data = await sdk.FetchAllWarnings();
+  const result = [];
+  for (const item of data.notePaths) {
+    const view = item.latestNoteView;
+    if (!view) continue;
+    for (const w of view.warnings ?? []) {
+      result.push({ path: item.path, level: w.level, message: w.message, url: view.url ?? "" });
+    }
+  }
+  console.log(JSON.stringify(result, null, 2));
+}
+__name(cmdWarnings, "cmdWarnings");
+async function main() {
+  if (process.argv[2] === "warnings") {
+    await cmdWarnings();
+    return;
+  }
+  const args = parseArgs();
+  if (!args.folder) {
+    console.error("\u274C Error: --folder is required");
+    printHelp();
+    process.exit(1);
+  }
+  if (!args.apiKey) {
+    console.error("\u274C Error: --api-key or API_KEY environment variable is required");
+    process.exit(1);
+  }
+  if (args.prefix && args.twoWaySync) {
+    console.error("\u274C Error: prefix is not supported with --two-way sync");
+    process.exit(1);
+  }
+  if (args.watch) {
+    const dataJson = readDataJson();
+    const { exitCode } = await runWatch({
+      folder: args.folder,
+      apiUrl: args.apiUrl,
+      apiKey: args.apiKey,
+      include: args.include,
+      exclude: args.exclude,
+      conflictResolution: args.conflictResolution,
+      meta: args.meta,
+      verbose: args.verbose,
+      dataInclude: dataJson.livePullIncludePatterns,
+      dataExclude: dataJson.livePullExcludePatterns
+    });
+    process.exit(exitCode);
+  }
+  if (args.dryRun) {
+    console.log(`[dry-run] folder=${args.folder}${args.prefix ? ` prefix=${args.prefix}` : ""}`);
+  }
+  const env = new NodeEnv({
+    folder: args.folder,
+    prefix: args.prefix,
+    apiUrl: args.apiUrl,
+    apiKey: args.apiKey,
+    twoWaySync: args.twoWaySync,
+    verbose: args.verbose,
+    conflictResolution: args.conflictResolution,
+    meta: args.meta,
+    stateFile: args.stateFile || void 0
+  });
+  console.log("\n\u{1F4CA} Classifying files...");
+  const plan = await classifySync(env);
+  const isExcluded = makeExcludeMatcher(args.exclude);
+  const filteredPlan = filterPlan(plan, {
+    twoWaySync: args.twoWaySync,
+    prune: args.prune,
+    isExcluded
+  });
+  if (args.exclude.length > 0) {
+    console.log(`\u{1F6AB} Excluding: ${args.exclude.join(", ")}`);
+  }
+  if (args.prune) {
+    const summary = summarizePrune(plan, filteredPlan);
+    console.log(`
+\u{1FA93} PRUNE: ${summary.paths.length} server notes not present locally will be hidden:`);
+    for (const p of summary.paths) {
+      console.log(`  ${p}`);
+    }
+    if (!args.force && pruneNeedsForce(summary)) {
+      console.error(
+        `
+\u274C Refusing to prune: 0 local notes under the synced prefix but ${summary.serverPresent} on the server.
+   This looks like a partial or reset local copy \u2014 pruning would wipe the server.
+   Re-run with --force if this is intentional.`
+      );
+      if (!args.dryRun) {
+        process.exit(1);
+      }
+    }
+  }
+  console.log("\n\u{1F4CB} Sync Plan:");
+  console.log("-".repeat(40));
+  console.log(`  Unchanged:      ${filteredPlan.unchanged}`);
+  console.log(`  To push:        ${filteredPlan.pushes.length}`);
+  console.log(`  Local only:     ${filteredPlan.localOnly.length}`);
+  console.log(`  To pull:        ${filteredPlan.pulls.length}`);
+  console.log(`  Remote only:    ${filteredPlan.remoteOnly.length}`);
+  console.log(`  Conflicts:      ${filteredPlan.conflicts.length}`);
+  console.log(`  Local deleted:  ${filteredPlan.localDeleted.length}`);
+  console.log(`  Server deleted: ${filteredPlan.serverDeleted.length}`);
+  console.log("-".repeat(40));
+  if (args.verbose) {
+    if (filteredPlan.pushes.length > 0) {
+      console.log("\n\u{1F4E4} Files to push:");
+      for (const f of filteredPlan.pushes) {
+        console.log(`  ${f.path}`);
+      }
+    }
+    if (filteredPlan.localOnly.length > 0) {
+      console.log("\n\u{1F195} New local files:");
+      for (const f of filteredPlan.localOnly) {
+        console.log(`  ${f.path}`);
+      }
+    }
+    if (filteredPlan.pulls.length > 0) {
+      console.log("\n\u{1F4E5} Files to pull:");
+      for (const f of filteredPlan.pulls) {
+        console.log(`  ${f.path}`);
+      }
+    }
+    if (filteredPlan.remoteOnly.length > 0) {
+      console.log("\n\u{1F310} New remote files:");
+      for (const f of filteredPlan.remoteOnly) {
+        console.log(`  ${f.path}`);
+      }
+    }
+    if (filteredPlan.localDeleted.length > 0) {
+      console.log("\n\u{1F5D1}\uFE0F To hide on server:");
+      for (const f of filteredPlan.localDeleted) {
+        console.log(`  ${f.path}`);
+      }
+    }
+  }
+  if (args.dryRun) {
+    console.log("\n\u23F8\uFE0F Dry run - no changes made");
+    return;
+  }
+  const totalActions = filteredPlan.pushes.length + filteredPlan.localOnly.length + filteredPlan.pulls.length + filteredPlan.remoteOnly.length + filteredPlan.conflicts.length + filteredPlan.localDeleted.length + filteredPlan.serverDeleted.length;
+  console.log("\n\u{1F680} Executing sync...");
+  const result = await executePlan(env, filteredPlan, { twoWaySync: args.twoWaySync });
+  if (totalActions === 0 && result.assetsUploaded === 0 && result.assetsDownloaded === 0) {
+    console.log("\n\u2705 Everything is up to date!");
+    return;
+  }
+  console.log("\n" + "=".repeat(60));
+  console.log("\u{1F4CA} SYNC RESULTS:");
+  console.log("=".repeat(60));
+  console.log(`  Pushed:             ${result.pushed}`);
+  console.log(`  Pulled:             ${result.pulled}`);
+  console.log(`  Conflicts resolved: ${result.conflictsResolved}`);
+  console.log(`  Assets uploaded:    ${result.assetsUploaded}`);
+  console.log(`  Assets downloaded:  ${result.assetsDownloaded}`);
+  if (result.errors.length > 0) {
+    console.log(`  Errors:             ${result.errors.length}`);
+    for (const err of result.errors) {
+      console.log(`    \u274C ${err}`);
+    }
+  }
+  if (result.warnings.length > 0) {
+    console.log(`  Warnings:           ${result.warnings.length}`);
+    for (const w of result.warnings) {
+      console.log(`    \u26A0\uFE0F  [${w.level}] ${w.path}: ${w.message}`);
+    }
+  }
+  console.log("=".repeat(60));
+  const updatedUrls = result.updatedUrls ?? [];
+  if (updatedUrls.length > 0) {
+    console.log("\n\u{1F4CE} Published:");
+    if (updatedUrls.length <= 20) {
+      for (const { path: path5, url } of updatedUrls) {
+        console.log(`  ${path5} \u2192 ${url}`);
+      }
+    }
+    if (args.updatedOutput) {
+      fs3.writeFileSync(args.updatedOutput, JSON.stringify(updatedUrls, null, 2));
+      console.log(`\u{1F4BE} Saved to ${args.updatedOutput}`);
+    } else {
+      console.log(`\u{1F4A1} --updated-output $(mktemp /tmp/updated-XXXXXX.json)`);
+    }
+  }
+}
+__name(main, "main");
+main().catch((err) => {
+  console.error("\u274C Fatal error:", err);
+  process.exit(1);
+});
 /*! Bundled license information:
 
 chokidar/esm/index.js:

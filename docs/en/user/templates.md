@@ -9,6 +9,8 @@ Templates control how your notes look — sidebar, header, footer, and layout.
 
 A template is an HTML file stored in `_layouts/`. It receives the note's content and frontmatter, then produces a complete page. Your markdown stays clean; the template decides how it's presented.
 
+> **See one in action:** [[instaframes/_index|Instagram frames]] is a ready-made template that turns a markdown file into downloadable carousel and reel images — a full example of a custom layout doing real work.
+
 ### How templates work
 
 **Step 1.** Create a file in `_layouts/`, for example `_layouts/my-page.html`:

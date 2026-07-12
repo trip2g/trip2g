@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{ note.Title() }} — Reel</title>
+  <link href="https://db.onlinewebfonts.com/c/881ac524e168dec5021dd85cee26f0d8?family=Comic+CAT" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: system-ui, sans-serif; background: #0a0a0a; color: #eee; overflow-x: hidden; }
+
+    .page { max-width: 420px; margin: 0 auto; padding: 0.75rem; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; padding: 0 0.25rem; }
+    .header-left { display: flex; align-items: center; gap: 0.5rem; }
+    .back-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: #888; text-decoration: none; border-radius: 4px; }
+    .back-btn:hover { color: #fff; }
+    .back-btn svg { width: 18px; height: 18px; }
+    .page-title { font-size: 0.8rem; font-weight: 600; color: #888; }
+    .mode-label { font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .mode-label.rec { background: rgba(220,40,40,0.25); color: #f66; }
+    .mode-label.render { background: rgba(40,140,220,0.25); color: #6af; }
+
+    /* === RECORD MODE === */
+    .record-view { position: relative; width: 100%; aspect-ratio: 9/16; border-radius: 10px; overflow: hidden; background: #000; }
+    .record-view video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    .record-view.rear video { transform: none; }
+
+    .teleprompter { position: absolute; top: 0; left: 0; right: 0; padding: 16px 24px 24px; background: linear-gradient(rgba(0,0,0,0.85) 60%, transparent); pointer-events: none; }
+    .prompt-counter { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; font-family: system-ui; }
+    .prompt-title { font-family: 'Comic CAT', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; text-transform: uppercase; line-height: 1.3; margin-bottom: 8px; }
+    .prompt-title .hl { background: #FEECD4; color: #111; padding: 1px 6px; display: inline-block; border-radius: 3px; }
+    .prompt-body { font-family: 'Comic CAT', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.5; max-height: 7em; overflow-y: auto; }
+
+    .rec-indicator { position: absolute; bottom: 90px; left: 16px; display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 600; color: #f44; opacity: 0; transition: opacity 0.2s; }
+    .rec-indicator.active { opacity: 1; }
+    .rec-dot { width: 10px; height: 10px; background: #f44; border-radius: 50%; animation: pulse 1s ease infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .rec-timer { position: absolute; bottom: 90px; right: 16px; font-size: 0.75rem; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; font-family: system-ui; opacity: 0; transition: opacity 0.2s; }
+    .rec-timer.active { opacity: 1; }
+
+    .record-controls { position: absolute; bottom: 16px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 24px; z-index: 5; }
+    .flip-btn { position: absolute; bottom: 90px; right: 50%; transform: translateX(50%); width: 36px; height: 36px; border: none; background: rgba(255,255,255,0.15); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; backdrop-filter: blur(8px); z-index: 5; }
+    .flip-btn:hover { background: rgba(255,255,255,0.25); }
+    .flip-btn svg { width: 18px; height: 18px; }
+    .nav-btn { width: 44px; height: 44px; border: none; background: rgba(255,255,255,0.15); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; backdrop-filter: blur(8px); }
+    .nav-btn:hover { background: rgba(255,255,255,0.25); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn svg { width: 18px; height: 18px; }
+    .rec-btn { width: 64px; height: 64px; border: 3px solid #fff; background: #f44; border-radius: 50%; cursor: pointer; transition: all 0.2s; position: relative; }
+    .rec-btn::after { content: ''; position: absolute; inset: 6px; background: #f44; border-radius: 50%; transition: all 0.2s; }
+    .rec-btn.active { border-color: #f44; }
+    .rec-btn.active::after { border-radius: 4px; inset: 14px; background: #fff; }
+
+    /* === RENDER MODE === */
+    .render-view { display: none; }
+    .render-view.active { display: block; }
+    .render-wrap { position: relative; width: 100%; aspect-ratio: 9/16; border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 0.5rem; }
+    .render-wrap canvas { width: 100%; height: 100%; display: block; }
+
+    .render-controls { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .ctrl-btn { height: 32px; border: none; background: rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; color: #ccc; font-size: 0.75rem; font-weight: 500; padding: 0 0.65rem; }
+    .ctrl-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .ctrl-btn:disabled { opacity: 0.4; cursor: wait; }
+    .ctrl-btn svg { width: 14px; height: 14px; }
+    .ctrl-btn.primary { background: rgba(40,140,220,0.25); color: #6af; }
+    .ctrl-btn.primary:hover { background: rgba(40,140,220,0.35); }
+    .ctrl-btn.danger { background: rgba(220,40,40,0.2); color: #f88; }
+    .timeline { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); cursor: pointer; }
+    .timeline::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #fff; border-radius: 50%; cursor: pointer; }
+    .time-label { font-size: 0.65rem; color: #555; min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .trim-section { margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .trim-label { font-size: 0.65rem; color: #666; margin-bottom: 0.35rem; }
+    .trim-row { display: flex; align-items: center; gap: 0.5rem; }
+    .trim-row input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); cursor: pointer; }
+    .trim-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; }
+    .trim-row .trim-in::-webkit-slider-thumb { background: #6d6; }
+    .trim-row .trim-out::-webkit-slider-thumb { background: #f88; }
+    .trim-times { display: flex; justify-content: space-between; font-size: 0.6rem; color: #555; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .loop-badge { font-size: 0.6rem; padding: 2px 5px; border-radius: 3px; background: rgba(140,80,220,0.25); color: #b8f; cursor: pointer; border: none; font-weight: 600; }
+    .loop-badge.active { background: rgba(140,80,220,0.5); }
+
+    .intro-section { margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .intro-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+    .intro-title { font-size: 0.7rem; color: #666; font-weight: 600; }
+    .copy-btn { font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); color: #aaa; border: none; cursor: pointer; }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .copy-btn.copied { background: rgba(40,180,80,0.25); color: #6d6; }
+    .intro-text { font-size: 0.75rem; color: #999; line-height: 1.5; max-height: 6em; overflow-y: auto; white-space: pre-wrap; }
+
+    .auphonic-section { margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .auphonic-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; }
+    .auphonic-title { font-size: 0.7rem; color: #666; font-weight: 600; }
+    .auphonic-key-row { display: flex; gap: 0.35rem; margin-bottom: 0.35rem; }
+    .auphonic-key-row input { flex: 1; height: 28px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); border-radius: 5px; color: #ccc; font-size: 0.7rem; padding: 0 0.5rem; font-family: monospace; }
+    .auphonic-key-row input::placeholder { color: #555; }
+    .enhance-btn { width: 100%; height: 32px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
+    .enhance-btn.ready { background: rgba(120,80,220,0.25); color: #b8f; }
+    .enhance-btn.ready:hover { background: rgba(120,80,220,0.35); }
+    .enhance-btn.processing { background: rgba(220,160,40,0.2); color: #da6; cursor: wait; }
+    .enhance-btn.done { background: rgba(40,180,80,0.2); color: #6d6; }
+    .enhance-btn:disabled { opacity: 0.4; cursor: default; }
+    .enhance-status { font-size: 0.6rem; color: #555; margin-top: 0.25rem; }
+
+    .sync-section { margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .sync-row { display: flex; gap: 0.35rem; align-items: center; }
+    .sync-code { font-family: monospace; font-size: 1.2rem; font-weight: 700; color: #fff; letter-spacing: 0.15em; min-width: 60px; text-align: center; }
+    .sync-input { width: 80px; height: 28px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); border-radius: 5px; color: #fff; font-size: 0.9rem; text-align: center; font-family: monospace; letter-spacing: 0.15em; }
+    .sync-input::placeholder { color: #555; }
+    .sync-status { font-size: 0.6rem; color: #555; margin-top: 0.2rem; }
+    .sync-status.active { color: #6d6; }
+    .sync-viewer { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+    .sync-viewer .prompt-title { font-size: 2.5rem; text-align: center; }
+    .sync-viewer .prompt-body { font-size: 1.3rem; text-align: center; max-width: 80vw; }
+    .sync-viewer .prompt-counter { font-size: 1rem; margin-bottom: 1rem; }
+    .sync-viewer .sync-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.1); border: none; color: #888; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+
+    .slides-data { display: none; }
+
+    .hidden { display: none !important; }
+    /* Pushed down from top:8px to leave room for the fixed sign-in corner
+       (below), which claims the very top of the right edge. */
+    .format-badge { position: fixed; top: 50px; right: 8px; font-size: 0.6rem; font-weight: 600; padding: 2px 6px; border-radius: 3px; opacity: 0.5; z-index: 99; letter-spacing: 0.03em; }
+    .format-badge.mp4 { background: rgba(40,180,80,0.25); color: #6d6; }
+    .format-badge.webm { background: rgba(220,160,40,0.25); color: #da6; }
+    .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
+  </style>
+
+  <!-- Theme bootstrap: set data-theme before any paint to avoid flash-of-wrong-theme
+       for the sign-in widget below. Reads $mol_lights from localStorage; falls back
+       to prefers-color-scheme. -->
+  <script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
+
+  <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
+       the user-space bundle scripts so the login widget below can boot. -->
+  {{ defaultTemplate.UserSpaceScripts() }}
+</head>
+<body>
+
+<!-- Standard trip2g user-space corner (sign-in / edit). Wrapped in a plain
+     positioning container: $mol styles the mol_view_root element itself, so
+     the fixed positioning must live on a parent it won't touch. -->
+<div class="topright"><div mol_view_root="$trip2g_user_space"></div></div>
+
+<!-- The reel's slides are rendered client-side from the note's markdown
+     (below), so they go stale after an in-editor save. The editor iframe
+     posts this message on close; reload to pick up the fresh content. -->
+<script>window.addEventListener('message', function (e) { if (e.data === 'trip2g_editor_close') location.reload() })</script>
+
+  <div class="format-badge" id="formatBadge"></div>
+  <div class="slides-data">
+    {{ range i, s := note.PartialRenderer().Sections(3) }}
+    <div class="slide-item">
+      <div class="slide-title">{{ s.TitleHTML | unsafe }}</div>
+      <div class="slide-text">{{ s.ContentHTML | unsafe }}</div>
+    </div>
+    {{ end }}
+  </div>
+
+  <div class="page">
+    <header class="header">
+      <div class="header-left">
+        <a href="/insta" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></a>
+        <span class="page-title">{{ note.Title() }}</span>
+      </div>
+      <span class="mode-label rec" id="modeLabel">Запись</span>
+    </header>
+
+    <!-- RECORD MODE -->
+    <div id="recordMode">
+      <div class="record-view" id="recordView">
+        <video id="cameraPreview" autoplay muted playsinline></video>
+        <div class="rec-indicator" id="recIndicator"><div class="rec-dot"></div> REC</div>
+        <div class="rec-timer" id="recTimer">0:00</div>
+        <div class="teleprompter">
+          <div class="prompt-counter" id="promptCounter">1 / 1</div>
+          <div class="prompt-title" id="promptTitle"></div>
+          <div class="prompt-body" id="promptBody"></div>
+        </div>
+        <button class="flip-btn" id="flipCamera" title="Переключить камеру"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg></button>
+        <div class="record-controls">
+          <button class="nav-btn" id="prevSlide" title="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="rec-btn" id="recBtn" title="Запись"></button>
+          <button class="nav-btn" id="nextSlide" title="Далее"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RENDER MODE -->
+    <div id="renderMode" class="render-view">
+      <div class="render-wrap">
+        <canvas id="renderCanvas" width="1080" height="1920"></canvas>
+      </div>
+      <div class="render-controls">
+        <button class="ctrl-btn" id="renderPlayBtn" title="Play">
+          <svg id="rPlayIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg id="rPauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <input type="range" class="timeline" id="renderTimeline" min="0" value="0" step="1">
+        <span class="time-label" id="renderTimeLabel">0:00 / 0:00</span>
+      </div>
+      <div class="render-controls">
+        <button class="ctrl-btn primary" id="exportBtn">Экспорт видео</button>
+        <button class="ctrl-btn danger" id="rerecordBtn">Перезаписать</button>
+      </div>
+      <div class="trim-section">
+        <div class="trim-label">Обрезка видео <button class="loop-badge" id="loopBtn" title="Зациклить">LOOP</button></div>
+        <div class="trim-row">
+          <span style="font-size:0.6rem;color:#6d6;min-width:55px" id="trimInLabel">0:00</span>
+          <input type="range" class="trim-in" id="trimIn" min="0" value="0" step="1">
+          <span style="font-size:0.6rem;color:#6d6;min-width:35px">нач.</span>
+        </div>
+        <div style="height:6px"></div>
+        <div class="trim-row">
+          <span style="font-size:0.6rem;color:#f88;min-width:55px" id="trimOutLabel">0:00</span>
+          <input type="range" class="trim-out" id="trimOut" min="0" value="0" step="1">
+          <span style="font-size:0.6rem;color:#f88;min-width:35px">кон.</span>
+        </div>
+      </div>
+      <div class="intro-section">
+        <div class="intro-header">
+          <span class="intro-title">Текст для ИИ</span>
+          <button class="copy-btn" id="copyIntro">Копировать</button>
+        </div>
+        <div class="intro-text" id="introText">{{ note.PartialRenderer().Introduce() }}</div>
+      </div>
+      <div class="auphonic-section">
+        <div class="auphonic-header">
+          <span class="auphonic-title">Улучшение звука</span>
+        </div>
+        <button class="enhance-btn ready" id="enhanceBtn" disabled>Улучшить звук</button>
+        <div style="display:flex;gap:0.35rem;margin-top:0.35rem">
+          <button class="ctrl-btn" id="playOrigAudio" style="flex:1" disabled>Оригинал</button>
+          <button class="ctrl-btn" id="playEnhancedAudio" style="flex:1" disabled>Улучшенный</button>
+        </div>
+        <div class="enhance-status" id="enhanceStatus"></div>
+      </div>
+    </div>
+
+    <!-- SYNC -->
+    <div class="sync-section">
+      <div class="auphonic-header" style="margin-bottom:0.35rem">
+        <span class="auphonic-title">Телепромптер на втором экране</span>
+      </div>
+      <div class="sync-row">
+        <button class="ctrl-btn" id="syncHostBtn">Создать комнату</button>
+        <span class="sync-code" id="syncCode"></span>
+      </div>
+      <div class="sync-row" style="margin-top:0.25rem">
+        <input class="sync-input" id="syncJoinInput" placeholder="Код" maxlength="4">
+        <button class="ctrl-btn" id="syncJoinBtn">Подключиться</button>
+      </div>
+      <div class="sync-status" id="syncStatus"></div>
+    </div>
+
+    <!-- SYNC VIEWER (fullscreen teleprompter) -->
+    <div class="sync-viewer" id="syncViewer" style="display:none">
+      <button class="sync-close" id="syncClose">&times;</button>
+      <div class="prompt-counter" id="syncCounter"></div>
+      <div class="prompt-title" id="syncTitle"></div>
+      <div class="prompt-body" id="syncBody"></div>
+    </div>
+
+    <!-- ALWAYS VISIBLE -->
+    <div class="auphonic-section" style="margin-top:0.5rem">
+      <div class="auphonic-header">
+        <span class="auphonic-title">Cleanvoice API Key</span>
+      </div>
+      <div class="auphonic-key-row">
+        <input type="password" id="cleanvoiceKey" placeholder="API key (cleanvoice.ai)">
+        <button class="copy-btn" id="saveCleanvoiceKey">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ===== SLIDES DATA =====
+    const slideElements = document.querySelectorAll('.slide-item');
+    const slides = Array.from(slideElements).map(el => ({
+      title: (el.querySelector('.slide-title')?.textContent || '').trim(),
+      text: (el.querySelector('.slide-text')?.textContent || '').trim(),
+    }));
+    if (!slides.length) return;
+
+    const W = 1080, H = 1920, FPS = 30;
+    const ACCENT = '#FEECD4';
+    const HANDLE = 'trip2g.com';
+    const BRAND = 'trip2g';
+    const noteTitle = document.querySelector('.page-title').textContent.trim();
+
+    // ===== FORMAT BADGE =====
+    const badge = document.getElementById('formatBadge');
+    const isMP4 = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2') || MediaRecorder.isTypeSupported('video/mp4');
+    badge.textContent = isMP4 ? 'MP4' : 'WEBM';
+    badge.classList.add(isMP4 ? 'mp4' : 'webm');
+
+    // ===== TELEPROMPTER =====
+    let promptIndex = 0;
+    const promptTitle = document.getElementById('promptTitle');
+    const promptBody = document.getElementById('promptBody');
+    const promptCounter = document.getElementById('promptCounter');
+
+    function renderHighlights(text) {
+      return text.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
+    }
+
+    function showSlide(i) {
+      promptIndex = Math.max(0, Math.min(slides.length - 1, i));
+      promptCounter.textContent = `${promptIndex + 1} / ${slides.length}`;
+      promptTitle.innerHTML = renderHighlights(slides[promptIndex].title);
+      promptBody.textContent = slides[promptIndex].text;
+      document.getElementById('prevSlide').disabled = promptIndex === 0;
+      document.getElementById('nextSlide').disabled = promptIndex === slides.length - 1;
+    }
+
+    document.getElementById('prevSlide').onclick = () => {
+      showSlide(promptIndex - 1);
+      if (isRecording) slideTimestamps.push({ index: promptIndex, time: (Date.now() - recStartTime) / 1000 });
+    };
+    document.getElementById('nextSlide').onclick = () => {
+      showSlide(promptIndex + 1);
+      if (isRecording) slideTimestamps.push({ index: promptIndex, time: (Date.now() - recStartTime) / 1000 });
+    };
+    showSlide(0);
+
+    // ===== CAMERA =====
+    const cameraPreview = document.getElementById('cameraPreview');
+    const recordView = document.getElementById('recordView');
+    let cameraStream = null;
+    let useFront = true;
+
+    async function startCamera() {
+      if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: useFront ? 'user' : 'environment' },
+          audio: true,
+        });
+        cameraPreview.srcObject = cameraStream;
+        recordView.classList.toggle('rear', !useFront);
+      } catch (e) {
+        alert('Не удалось получить доступ к камере: ' + e.message);
+      }
+    }
+    startCamera();
+
+    document.getElementById('flipCamera').onclick = () => {
+      if (isRecording) return;
+      useFront = !useFront;
+      startCamera();
+    };
+
+    // ===== RECORDING =====
+    let isRecording = false;
+    let recorder = null;
+    let audioRecorder = null;
+    let recStartTime = 0;
+    let recTimerInterval = null;
+    let slideTimestamps = []; // { index, time(sec) }
+    let recordedBlob = null;
+    let audioOnlyBlob = null;
+
+    const recBtn = document.getElementById('recBtn');
+    const recIndicator = document.getElementById('recIndicator');
+    const recTimer = document.getElementById('recTimer');
+
+    function formatSec(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    recBtn.onclick = () => {
+      isRecording ? stopRecording() : startRecording();
+    };
+
+    function startRecording() {
+      if (!cameraStream) return;
+
+      // Reset
+      showSlide(0);
+      slideTimestamps = [{ index: 0, time: 0 }];
+      isRecording = true;
+      recStartTime = Date.now();
+
+      // UI
+      recBtn.classList.add('active');
+      recIndicator.classList.add('active');
+      recTimer.classList.add('active');
+      recTimerInterval = setInterval(() => {
+        recTimer.textContent = formatSec((Date.now() - recStartTime) / 1000);
+      }, 200);
+
+      // MediaRecorder
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')
+        ? 'video/mp4;codecs=avc1,mp4a.40.2'
+        : MediaRecorder.isTypeSupported('video/mp4')
+          ? 'video/mp4'
+          : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : 'video/webm;codecs=vp8,opus';
+
+      recorder = new MediaRecorder(cameraStream, { mimeType, videoBitsPerSecond: 8_000_000 });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        recordedBlob = new Blob(chunks, { type: mimeType });
+        enterRenderMode();
+      };
+      recorder.start();
+
+      // Audio-only recording for Cleanvoice (much smaller file)
+      const audioStream = new MediaStream(cameraStream.getAudioTracks());
+      const audioMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+      audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMime, audioBitsPerSecond: 64000 });
+      const audioChunks = [];
+      audioRecorder.ondataavailable = e => { if (e.data.size) audioChunks.push(e.data); };
+      audioRecorder.onstop = () => { audioOnlyBlob = new Blob(audioChunks, { type: audioMime }); };
+      audioRecorder.start();
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      clearInterval(recTimerInterval);
+      recBtn.classList.remove('active');
+      recIndicator.classList.remove('active');
+      recTimer.classList.remove('active');
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+      if (audioRecorder && audioRecorder.state !== 'inactive') audioRecorder.stop();
+    }
+
+    // ===== RENDER MODE =====
+    const renderCanvas = document.getElementById('renderCanvas');
+    const rCtx = renderCanvas.getContext('2d');
+    const recordedVideo = document.createElement('video');
+    recordedVideo.playsInline = true;
+    recordedVideo.muted = false;
+
+    let renderPlaying = false;
+    let renderAnimId = null;
+    let trimIn = 0, trimOut = 0; // in frames
+    let loopEnabled = false;
+
+    function enterRenderMode() {
+      document.getElementById('recordMode').classList.add('hidden');
+      document.getElementById('renderMode').classList.add('active');
+      document.getElementById('modeLabel').textContent = 'Рендер';
+      document.getElementById('modeLabel').className = 'mode-label render';
+
+      const url = URL.createObjectURL(recordedBlob);
+      recordedVideo.src = url;
+      recordedVideo.onloadedmetadata = () => {
+        const totalFrames = Math.floor(recordedVideo.duration * FPS);
+        document.getElementById('renderTimeline').max = totalFrames;
+        document.getElementById('renderTimeLabel').textContent = `0:00 / ${formatSec(recordedVideo.duration)}`;
+        // Init trim
+        trimIn = 0;
+        trimOut = totalFrames;
+        const tIn = document.getElementById('trimIn');
+        const tOut = document.getElementById('trimOut');
+        tIn.max = totalFrames; tIn.value = 0;
+        tOut.max = totalFrames; tOut.value = totalFrames;
+        document.getElementById('trimInLabel').textContent = '0:00';
+        document.getElementById('trimOutLabel').textContent = formatSec(recordedVideo.duration);
+        recordedVideo.currentTime = 0;
+        recordedVideo.onseeked = () => drawRenderFrame();
+        // Cleanvoice
+        enhancedAudioBlob = null;
+        const eBtn = document.getElementById('enhanceBtn');
+        const cvKey = document.getElementById('cleanvoiceKey');
+        eBtn.disabled = !(cvKey.value.trim() || localStorage.getItem('cleanvoice_api_key'));
+        eBtn.className = 'enhance-btn ready';
+        eBtn.textContent = 'Улучшить звук';
+        document.getElementById('enhanceStatus').textContent = '';
+        document.getElementById('playOrigAudio').disabled = false;
+        document.getElementById('playEnhancedAudio').disabled = true;
+      };
+    }
+
+    function exitRenderMode() {
+      renderStopPlay();
+      document.getElementById('recordMode').classList.remove('hidden');
+      document.getElementById('renderMode').classList.remove('active');
+      document.getElementById('modeLabel').textContent = 'Запись';
+      document.getElementById('modeLabel').className = 'mode-label rec';
+      recordedBlob = null;
+      showSlide(0);
+    }
+
+    // ===== SUBTITLE DRAWING =====
+    function easeOutCubic(t) { return 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3); }
+
+    function parseSegments(text) {
+      return text.split(/(\[[^\]]+\])/g).filter(Boolean).map(p => {
+        const m = p.match(/^\[([^\]]+)\]$/);
+        return m ? { text: m[1], hl: true } : { text: p, hl: false };
+      });
+    }
+
+    function wrapSegments(ctx, segments, maxW) {
+      const lines = [[]];
+      let lw = 0;
+      const sp = ctx.measureText(' ').width;
+      for (const seg of segments) {
+        for (const word of seg.text.split(/\s+/).filter(Boolean)) {
+          const ww = ctx.measureText(word).width;
+          if (lw + ww > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; }
+          lines[lines.length - 1].push({ text: word, hl: seg.hl });
+          lw += ww + sp;
+        }
+      }
+      return lines;
+    }
+
+    function wrapPlain(ctx, text, maxW) {
+      const lines = [[]];
+      let lw = 0;
+      const sp = ctx.measureText(' ').width;
+      for (const word of text.split(/\s+/).filter(Boolean)) {
+        const ww = ctx.measureText(word).width;
+        if (lw + ww > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; }
+        lines[lines.length - 1].push(word);
+        lw += ww + sp;
+      }
+      return lines;
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y); c.lineTo(x + w - r, y);
+      c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r);
+      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h);
+      c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r);
+      c.quadraticCurveTo(x, y, x + r, y); c.closePath();
+    }
+
+    function getSlideAtTime(timeSec) {
+      let idx = 0;
+      for (let i = slideTimestamps.length - 1; i >= 0; i--) {
+        if (timeSec >= slideTimestamps[i].time) { idx = slideTimestamps[i].index; break; }
+      }
+      // Compute local time within this slide
+      let slideStart = 0;
+      for (const st of slideTimestamps) { if (st.index === idx) { slideStart = st.time; break; } }
+      return { slide: slides[idx], index: idx, localTime: timeSec - slideStart };
+    }
+
+    function drawSubtitles(c, timeSec) {
+      const { slide, index, localTime } = getSlideAtTime(timeSec);
+      const segments = parseSegments(slide.title);
+      const padX = 70;
+      const maxW = W - padX * 2;
+
+      // Fade in
+      const fadeT = easeOutCubic(localTime / 0.5);
+      const offY = (1 - fadeT) * 40;
+
+      // Bottom gradient for subtitle area
+      const grad = c.createLinearGradient(0, H * 0.55, 0, H);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(0.3, 'rgba(0,0,0,0.6)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+      c.fillStyle = grad;
+      c.fillRect(0, H * 0.55, W, H * 0.45);
+
+      // Title - bottom center
+      const titleFontSize = 64;
+      c.save();
+      c.font = `700 ${titleFontSize}px "Comic CAT", sans-serif`;
+      c.textBaseline = 'middle';
+      const titleLines = wrapSegments(c, segments, maxW);
+      const lh = titleFontSize * 1.35;
+
+      // Position title at ~72% from top
+      const titleCenterY = H * 0.72 + offY;
+      let ty = titleCenterY - (titleLines.length * lh) / 2 + lh / 2;
+
+      for (const line of titleLines) {
+        const sp = c.measureText(' ').width;
+        let lineW = 0;
+        const measured = line.map(w => { const ww = c.measureText(w.text).width; lineW += ww + sp; return { ...w, w: ww }; });
+        lineW -= sp;
+        let x = W / 2 - lineW / 2;
+        for (const word of measured) {
+          if (word.hl) {
+            const pad = 10;
+            c.fillStyle = `rgba(254,236,212,${fadeT})`;
+            roundRect(c, x - pad, ty - titleFontSize * 0.55, word.w + pad * 2, titleFontSize * 1.1, 6);
+            c.fill();
+            c.fillStyle = `rgba(17,17,17,${fadeT})`;
+          } else {
+            c.fillStyle = `rgba(255,255,255,${fadeT})`;
+          }
+          c.textAlign = 'left';
+          c.fillText(word.text, x, ty);
+          x += word.w + sp;
+        }
+        ty += lh;
+      }
+      c.restore();
+
+      // Body text below title
+      if (slide.text) {
+        const bodyFontSize = 32;
+        const bodyFadeT = easeOutCubic((localTime - 0.4) / 0.5);
+        const bodyOffY = (1 - bodyFadeT) * 20;
+        c.save();
+        c.font = `400 ${bodyFontSize}px "Comic CAT", sans-serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillStyle = `rgba(220,220,220,${bodyFadeT})`;
+
+        const bodyTop = ty + 20 + bodyOffY;
+        const blh = bodyFontSize * 1.5;
+        let by = bodyTop;
+        const paragraphs = slide.text.split(/\n\n+/);
+        for (let pi = 0; pi < paragraphs.length; pi++) {
+          const pLines = wrapPlain(c, paragraphs[pi], maxW);
+          for (const pl of pLines) {
+            if (by > H - 60) break; // don't overflow
+            c.fillText(pl.join(' '), W / 2, by);
+            by += blh;
+          }
+          if (pi < paragraphs.length - 1) by += blh * 0.3;
+        }
+        c.restore();
+      }
+
+      // Handle + counter at top
+      c.save();
+      c.font = '500 28px "Comic CAT", sans-serif';
+      c.textBaseline = 'top';
+      c.fillStyle = `rgba(255,255,255,${fadeT * 0.4})`;
+      c.textAlign = 'left';
+      c.fillText(HANDLE, 60, 60);
+      c.textAlign = 'right';
+      c.fillText(`${index + 1}/${slides.length}`, W - 60, 60);
+      c.restore();
+    }
+
+    function drawRenderFrame() {
+      const t = recordedVideo.currentTime;
+      // Draw video
+      if (recordedVideo.readyState >= 2) {
+        const vw = recordedVideo.videoWidth || W;
+        const vh = recordedVideo.videoHeight || H;
+        const scale = Math.max(W / vw, H / vh);
+        const sw = vw * scale, sh = vh * scale;
+        rCtx.drawImage(recordedVideo, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      } else {
+        rCtx.fillStyle = '#111';
+        rCtx.fillRect(0, 0, W, H);
+      }
+      // Draw subtitles
+      drawSubtitles(rCtx, t);
+      // Update timeline
+      const frame = Math.floor(t * FPS);
+      document.getElementById('renderTimeline').value = frame;
+      document.getElementById('renderTimeLabel').textContent = `${formatSec(t)} / ${formatSec(recordedVideo.duration || 0)}`;
+    }
+
+    // Render playback (trim + loop aware)
+    function renderPlayTick() {
+      if (!renderPlaying) return;
+      const curFrame = Math.floor(recordedVideo.currentTime * FPS);
+      if (curFrame >= trimOut || recordedVideo.ended) {
+        if (loopEnabled) {
+          recordedVideo.currentTime = trimIn / FPS;
+        } else {
+          renderStopPlay(); return;
+        }
+      }
+      drawRenderFrame();
+      renderAnimId = requestAnimationFrame(renderPlayTick);
+    }
+
+    function renderStartPlay() {
+      renderPlaying = true;
+      // Start from trimIn if current position is outside trim range
+      const curFrame = Math.floor(recordedVideo.currentTime * FPS);
+      if (curFrame < trimIn || curFrame >= trimOut) recordedVideo.currentTime = trimIn / FPS;
+      recordedVideo.play();
+      document.getElementById('rPlayIcon').style.display = 'none';
+      document.getElementById('rPauseIcon').style.display = 'block';
+      renderAnimId = requestAnimationFrame(renderPlayTick);
+    }
+
+    function renderStopPlay() {
+      renderPlaying = false;
+      recordedVideo.pause();
+      if (renderAnimId) cancelAnimationFrame(renderAnimId);
+      document.getElementById('rPlayIcon').style.display = 'block';
+      document.getElementById('rPauseIcon').style.display = 'none';
+    }
+
+    document.getElementById('renderPlayBtn').onclick = () => {
+      renderPlaying ? renderStopPlay() : renderStartPlay();
+    };
+
+    document.getElementById('renderTimeline').oninput = function() {
+      recordedVideo.currentTime = +this.value / FPS;
+      recordedVideo.onseeked = () => drawRenderFrame();
+    };
+
+    document.getElementById('rerecordBtn').onclick = exitRenderMode;
+
+    // ===== TRIM =====
+    document.getElementById('trimIn').oninput = function() {
+      trimIn = Math.min(+this.value, trimOut - 1);
+      this.value = trimIn;
+      document.getElementById('trimInLabel').textContent = formatSec(trimIn / FPS);
+    };
+    document.getElementById('trimIn').onchange = function() {
+      recordedVideo.currentTime = trimIn / FPS;
+      recordedVideo.onseeked = () => drawRenderFrame();
+    };
+    document.getElementById('trimOut').oninput = function() {
+      trimOut = Math.max(+this.value, trimIn + 1);
+      this.value = trimOut;
+      document.getElementById('trimOutLabel').textContent = formatSec(trimOut / FPS);
+    };
+    document.getElementById('trimOut').onchange = function() {
+      recordedVideo.currentTime = trimOut / FPS;
+      recordedVideo.onseeked = () => drawRenderFrame();
+    };
+
+    // ===== LOOP =====
+    document.getElementById('loopBtn').onclick = function() {
+      loopEnabled = !loopEnabled;
+      this.classList.toggle('active', loopEnabled);
+    };
+
+    // ===== COPY INTRO =====
+    document.getElementById('copyIntro').onclick = function() {
+      const text = document.getElementById('introText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        this.textContent = 'Скопировано';
+        this.classList.add('copied');
+        setTimeout(() => { this.textContent = 'Копировать'; this.classList.remove('copied'); }, 1500);
+      });
+    };
+
+    // ===== EXPORT =====
+    document.getElementById('exportBtn').onclick = async () => {
+      const btn = document.getElementById('exportBtn');
+      btn.disabled = true;
+      btn.textContent = 'Экспорт...';
+
+      renderStopPlay();
+      recordedVideo.currentTime = trimIn / FPS;
+      recordedVideo.muted = true;
+      await new Promise(r => { recordedVideo.onseeked = r; });
+
+      // Capture canvas stream + audio from original recording
+      const canvasStream = renderCanvas.captureStream(FPS);
+
+      // Try to get audio — use enhanced if available
+      const audioSrc = enhancedAudioBlob || recordedBlob;
+      const audioEl = document.createElement(enhancedAudioBlob ? 'audio' : 'video');
+      audioEl.src = URL.createObjectURL(audioSrc);
+      audioEl.muted = false;
+      await new Promise(r => { audioEl.onloadedmetadata = r; });
+
+      let audioStream;
+      try {
+        audioStream = audioEl.captureStream ? audioEl.captureStream() : audioEl.mozCaptureStream();
+        const audioTracks = audioStream.getAudioTracks();
+        audioTracks.forEach(t => canvasStream.addTrack(t));
+      } catch(e) {}
+
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')
+        ? 'video/mp4;codecs=avc1,mp4a.40.2'
+        : MediaRecorder.isTypeSupported('video/mp4')
+          ? 'video/mp4'
+          : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : 'video/webm';
+
+      const exportRec = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 10_000_000 });
+      const chunks = [];
+      exportRec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+
+      exportRec.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        const a = document.createElement('a');
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        a.download = `${noteTitle}.${ext}`;
+        a.href = URL.createObjectURL(blob);
+        a.click();
+        btn.disabled = false;
+        btn.textContent = 'Экспорт видео';
+        recordedVideo.muted = false;
+      };
+
+      exportRec.start();
+      audioEl.currentTime = trimIn / FPS;
+      recordedVideo.play();
+      audioEl.play();
+
+      function exportTick() {
+        const curFrame = Math.floor(recordedVideo.currentTime * FPS);
+        if (curFrame >= trimOut || recordedVideo.ended) {
+          exportRec.stop();
+          audioEl.pause();
+          return;
+        }
+        drawRenderFrame();
+        requestAnimationFrame(exportTick);
+      }
+      requestAnimationFrame(exportTick);
+    };
+
+    // ===== CLEANVOICE =====
+    const PROXY = 'https://auphonic-proxy.alexes-dev.workers.dev';
+    const enhanceBtn = document.getElementById('enhanceBtn');
+    const enhanceStatus = document.getElementById('enhanceStatus');
+    let enhancedAudioBlob = null;
+
+    const cleanvoiceKeyInput = document.getElementById('cleanvoiceKey');
+    const savedCvKey = localStorage.getItem('cleanvoice_api_key');
+    if (savedCvKey) { cleanvoiceKeyInput.value = savedCvKey; }
+
+    document.getElementById('saveCleanvoiceKey').onclick = function() {
+      const key = cleanvoiceKeyInput.value.trim();
+      if (key) {
+        localStorage.setItem('cleanvoice_api_key', key);
+        this.textContent = 'OK'; this.classList.add('copied');
+        setTimeout(() => { this.textContent = 'Save'; this.classList.remove('copied'); }, 1500);
+      } else { localStorage.removeItem('cleanvoice_api_key'); }
+    };
+
+    // Audio preview players
+    let previewAudio = null;
+    function stopPreview() {
+      if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+      document.getElementById('playOrigAudio').textContent = 'Оригинал';
+      document.getElementById('playEnhancedAudio').textContent = 'Улучшенный';
+    }
+
+    document.getElementById('playOrigAudio').onclick = function() {
+      if (previewAudio) { stopPreview(); return; }
+      previewAudio = new Audio(URL.createObjectURL(recordedBlob));
+      previewAudio.onended = stopPreview;
+      previewAudio.play();
+      this.textContent = 'Стоп';
+    };
+
+    document.getElementById('playEnhancedAudio').onclick = function() {
+      if (previewAudio) { stopPreview(); return; }
+      if (!enhancedAudioBlob) return;
+      previewAudio = new Audio(URL.createObjectURL(enhancedAudioBlob));
+      previewAudio.onended = stopPreview;
+      previewAudio.play();
+      this.textContent = 'Стоп';
+    };
+
+    enhanceBtn.onclick = async () => {
+      const apiKey = cleanvoiceKeyInput.value.trim() || localStorage.getItem('cleanvoice_api_key');
+      if (!apiKey || !recordedBlob) return;
+
+      enhanceBtn.disabled = true;
+      enhanceBtn.className = 'enhance-btn processing';
+      enhanceBtn.textContent = 'Загрузка...';
+      enhanceStatus.textContent = 'Загружаем аудио...';
+
+      try {
+        // 1. Upload audio-only track to proxy for temporary hosting
+        if (!audioOnlyBlob) throw new Error('Нет аудио-записи');
+        const uploadResp = await fetch(PROXY + '/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': audioOnlyBlob.type },
+          body: audioOnlyBlob,
+        });
+        if (!uploadResp.ok) throw new Error('Ошибка загрузки: ' + uploadResp.status);
+        const { url: fileUrl } = await uploadResp.json();
+        enhanceStatus.textContent = 'Запускаем обработку...';
+
+        // 2. Start Cleanvoice job via proxy
+        const startResp = await fetch(PROXY + '/cleanvoice/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            apiKey,
+            input: {
+              files: [fileUrl],
+              config: { normalize: true, studio_sound: true },
+            },
+          }),
+        });
+        if (!startResp.ok) throw new Error('Ошибка запуска: ' + startResp.status);
+        const { id: taskId } = await startResp.json();
+        enhanceStatus.textContent = 'Обработка...';
+        enhanceBtn.textContent = 'Обработка...';
+
+        // 3. Poll status
+        let result = null;
+        while (!result) {
+          await new Promise(r => setTimeout(r, 5000));
+          const statusResp = await fetch(`${PROXY}/cleanvoice/status/${taskId}?key=${encodeURIComponent(apiKey)}`);
+          const data = await statusResp.json();
+          if (data.status === 'SUCCESS') {
+            result = data.result;
+          } else if (data.status === 'FAILED') {
+            throw new Error('Ошибка обработки: ' + (data.error || 'unknown'));
+          } else {
+            enhanceStatus.textContent = `Обработка... ${data.progress || 0}%`;
+          }
+        }
+
+        // 4. Download enhanced audio via proxy (R2 blocks CORS)
+        const outputUrl = result?.download_url;
+        if (!outputUrl) throw new Error('Нет URL результата');
+        const audioResp = await fetch(`${PROXY}/proxy?url=${encodeURIComponent(outputUrl)}`);
+        if (!audioResp.ok) throw new Error('Ошибка скачивания: ' + audioResp.status);
+        enhancedAudioBlob = await audioResp.blob();
+
+        enhanceBtn.className = 'enhance-btn done';
+        enhanceBtn.textContent = 'Звук улучшен';
+        enhanceStatus.textContent = 'Готово. При экспорте будет использован улучшенный звук.';
+        document.getElementById('playEnhancedAudio').disabled = false;
+
+      } catch (e) {
+        enhanceBtn.className = 'enhance-btn ready';
+        enhanceBtn.textContent = 'Повторить';
+        enhanceBtn.disabled = false;
+        enhanceStatus.textContent = 'Ошибка: ' + e.message;
+      }
+    };
+
+    // ===== SYNC (bidirectional) =====
+    let syncRoom = null;
+    let syncIsHost = false;
+    let syncPollId = null;
+    let syncLastSlide = -1;
+    let syncIgnoreUntil = 0; // ignore polls briefly after own send
+
+    function renderHighlightsSync(text) {
+      return text.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
+    }
+
+    function syncSend(slideIdx) {
+      if (!syncRoom) return;
+      syncIgnoreUntil = Date.now() + 600; // ignore incoming for 600ms after own change
+      syncLastSlide = slideIdx;
+      fetch(`${PROXY}/sync/${syncRoom}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slide: slideIdx }),
+      }).catch(() => {});
+    }
+
+    function syncUpdateViewer(slideIdx) {
+      const s = slides[slideIdx] || slides[0];
+      document.getElementById('syncCounter').textContent = `${slideIdx + 1} / ${slides.length}`;
+      document.getElementById('syncTitle').innerHTML = renderHighlightsSync(s.title);
+      document.getElementById('syncBody').textContent = s.text;
+    }
+
+    function syncStartPolling() {
+      if (syncPollId) return;
+      syncPollId = setInterval(async () => {
+        if (Date.now() < syncIgnoreUntil) return; // skip right after own send
+        try {
+          const resp = await fetch(`${PROXY}/sync/${syncRoom}`);
+          const data = await resp.json();
+          if (data.slide !== syncLastSlide) {
+            syncLastSlide = data.slide;
+            // Update local teleprompter (host side)
+            if (syncIsHost && data.slide !== promptIndex) {
+              _origShowSlide(data.slide); // don't trigger syncSend back
+            }
+            // Update viewer overlay (viewer side)
+            if (!syncIsHost) {
+              syncUpdateViewer(data.slide);
+            }
+          }
+        } catch(e) {}
+      }, 300);
+    }
+
+    // Host: create room and broadcast slide changes
+    document.getElementById('syncHostBtn').onclick = () => {
+      syncRoom = String(Math.floor(1000 + Math.random() * 9000));
+      syncIsHost = true;
+      syncLastSlide = promptIndex;
+      document.getElementById('syncCode').textContent = syncRoom;
+      document.getElementById('syncStatus').textContent = 'Комната создана. Переключение слайдов синхронизировано в обе стороны.';
+      document.getElementById('syncStatus').className = 'sync-status active';
+      syncSend(promptIndex);
+      syncStartPolling();
+    };
+
+    // Patch showSlide to also sync
+    const _origShowSlide = showSlide;
+    showSlide = function(i) {
+      _origShowSlide(i);
+      syncSend(promptIndex);
+    };
+
+    // Viewer: join room and poll for changes
+    document.getElementById('syncJoinBtn').onclick = () => {
+      const code = document.getElementById('syncJoinInput').value.trim();
+      if (code.length !== 4) return;
+      syncRoom = code;
+      syncIsHost = false;
+      syncLastSlide = -1;
+      document.getElementById('syncViewer').style.display = 'flex';
+      document.getElementById('syncStatus').textContent = 'Подключено к ' + code;
+      document.getElementById('syncStatus').className = 'sync-status active';
+      syncStartPolling();
+    };
+
+    // Viewer nav: prev/next buttons in fullscreen
+    document.getElementById('syncViewer').addEventListener('click', e => {
+      const rect = document.getElementById('syncViewer').getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      // Ignore clicks on close button
+      if (e.target.closest('.sync-close')) return;
+      // Left third = prev, right third = next
+      const newSlide = x < rect.width / 3
+        ? Math.max(0, syncLastSlide - 1)
+        : Math.min(slides.length - 1, syncLastSlide + 1);
+      if (newSlide !== syncLastSlide) {
+        syncUpdateViewer(newSlide);
+        syncSend(newSlide);
+      }
+    });
+
+    // Viewer keyboard
+    document.getElementById('syncViewer').setAttribute('tabindex', '0');
+
+    document.getElementById('syncClose').onclick = () => {
+      document.getElementById('syncViewer').style.display = 'none';
+      if (syncPollId) { clearInterval(syncPollId); syncPollId = null; }
+      syncRoom = null;
+      syncLastSlide = -1;
+      document.getElementById('syncStatus').textContent = '';
+      document.getElementById('syncStatus').className = 'sync-status';
+    };
+
+    // Auto-join if ?sync=CODE in URL
+    const urlSync = new URLSearchParams(location.search).get('sync');
+    if (urlSync && urlSync.length === 4) {
+      document.getElementById('syncJoinInput').value = urlSync;
+      document.getElementById('syncJoinBtn').click();
+    }
+
+    // ===== KEYBOARD =====
+    document.onkeydown = e => {
+      // If sync viewer is open, nav controls the viewer
+      if (document.getElementById('syncViewer').style.display !== 'none' && !syncIsHost) {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          const ns = Math.min(slides.length - 1, syncLastSlide + 1);
+          if (ns !== syncLastSlide) { syncUpdateViewer(ns); syncSend(ns); }
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const ns = Math.max(0, syncLastSlide - 1);
+          if (ns !== syncLastSlide) { syncUpdateViewer(ns); syncSend(ns); }
+        }
+        if (e.key === 'Escape') document.getElementById('syncClose').click();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); document.getElementById('nextSlide').click(); }
+      if (e.key === 'ArrowLeft') document.getElementById('prevSlide').click();
+    };
+
+  })();
+  </script>
+</body>
+</html>

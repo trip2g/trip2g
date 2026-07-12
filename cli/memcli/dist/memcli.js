@@ -5,6 +5,7 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 var __commonJS = (cb, mod) => function __require() {
   try {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
@@ -29,9 +30,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../node_modules/graphql/version.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/version.js
 var require_version = __commonJS({
-  "../../node_modules/graphql/version.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/version.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -49,9 +50,9 @@ var require_version = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/devAssert.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/devAssert.js
 var require_devAssert = __commonJS({
-  "../../node_modules/graphql/jsutils/devAssert.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/devAssert.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -63,12 +64,13 @@ var require_devAssert = __commonJS({
         throw new Error(message);
       }
     }
+    __name(devAssert, "devAssert");
   }
 });
 
-// ../../node_modules/graphql/jsutils/isPromise.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isPromise.js
 var require_isPromise = __commonJS({
-  "../../node_modules/graphql/jsutils/isPromise.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isPromise.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -77,12 +79,13 @@ var require_isPromise = __commonJS({
     function isPromise(value) {
       return typeof (value === null || value === void 0 ? void 0 : value.then) === "function";
     }
+    __name(isPromise, "isPromise");
   }
 });
 
-// ../../node_modules/graphql/jsutils/isObjectLike.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isObjectLike.js
 var require_isObjectLike = __commonJS({
-  "../../node_modules/graphql/jsutils/isObjectLike.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isObjectLike.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -91,12 +94,13 @@ var require_isObjectLike = __commonJS({
     function isObjectLike(value) {
       return typeof value == "object" && value !== null;
     }
+    __name(isObjectLike, "isObjectLike");
   }
 });
 
-// ../../node_modules/graphql/jsutils/invariant.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/invariant.js
 var require_invariant = __commonJS({
-  "../../node_modules/graphql/jsutils/invariant.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/invariant.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -110,12 +114,13 @@ var require_invariant = __commonJS({
         );
       }
     }
+    __name(invariant, "invariant");
   }
 });
 
-// ../../node_modules/graphql/language/location.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/location.js
 var require_location = __commonJS({
-  "../../node_modules/graphql/language/location.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/location.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -139,12 +144,13 @@ var require_location = __commonJS({
         column: position + 1 - lastLineStart
       };
     }
+    __name(getLocation, "getLocation");
   }
 });
 
-// ../../node_modules/graphql/language/printLocation.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printLocation.js
 var require_printLocation = __commonJS({
-  "../../node_modules/graphql/language/printLocation.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -158,6 +164,7 @@ var require_printLocation = __commonJS({
         (0, _location.getLocation)(location.source, location.start)
       );
     }
+    __name(printLocation, "printLocation");
     function printSourceLocation(source, sourceLocation) {
       const firstLineColumnOffset = source.locationOffset.column - 1;
       const body = "".padStart(firstLineColumnOffset) + source.body;
@@ -192,17 +199,19 @@ var require_printLocation = __commonJS({
         [`${lineNum + 1} |`, lines[lineIndex + 1]]
       ]);
     }
+    __name(printSourceLocation, "printSourceLocation");
     function printPrefixedLines(lines) {
       const existingLines = lines.filter(([_, line]) => line !== void 0);
       const padLen = Math.max(...existingLines.map(([prefix]) => prefix.length));
       return existingLines.map(([prefix, line]) => prefix.padStart(padLen) + (line ? " " + line : "")).join("\n");
     }
+    __name(printPrefixedLines, "printPrefixedLines");
   }
 });
 
-// ../../node_modules/graphql/error/GraphQLError.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/GraphQLError.js
 var require_GraphQLError = __commonJS({
-  "../../node_modules/graphql/error/GraphQLError.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/GraphQLError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -227,7 +236,11 @@ var require_GraphQLError = __commonJS({
       }
       return firstArg;
     }
+    __name(toNormalizedOptions, "toNormalizedOptions");
     var GraphQLError = class _GraphQLError extends Error {
+      static {
+        __name(this, "GraphQLError");
+      }
       /**
        * An array of `{ line, column }` locations within the source GraphQL document
        * which correspond to this error.
@@ -363,18 +376,21 @@ var require_GraphQLError = __commonJS({
     function undefinedIfEmpty(array) {
       return array === void 0 || array.length === 0 ? void 0 : array;
     }
+    __name(undefinedIfEmpty, "undefinedIfEmpty");
     function printError(error) {
       return error.toString();
     }
+    __name(printError, "printError");
     function formatError(error) {
       return error.toJSON();
     }
+    __name(formatError, "formatError");
   }
 });
 
-// ../../node_modules/graphql/error/syntaxError.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/syntaxError.js
 var require_syntaxError = __commonJS({
-  "../../node_modules/graphql/error/syntaxError.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/syntaxError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -387,12 +403,13 @@ var require_syntaxError = __commonJS({
         positions: [position]
       });
     }
+    __name(syntaxError, "syntaxError");
   }
 });
 
-// ../../node_modules/graphql/language/ast.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/ast.js
 var require_ast = __commonJS({
-  "../../node_modules/graphql/language/ast.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/ast.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -400,6 +417,9 @@ var require_ast = __commonJS({
     exports.Token = exports.QueryDocumentKeys = exports.OperationTypeNode = exports.Location = void 0;
     exports.isNode = isNode;
     var Location = class {
+      static {
+        __name(this, "Location");
+      }
       /**
        * The character offset at which this Node begins.
        */
@@ -434,6 +454,9 @@ var require_ast = __commonJS({
     };
     exports.Location = Location;
     var Token = class {
+      static {
+        __name(this, "Token");
+      }
       /**
        * The kind of Token.
        */
@@ -564,6 +587,7 @@ var require_ast = __commonJS({
       const maybeKind = maybeNode === null || maybeNode === void 0 ? void 0 : maybeNode.kind;
       return typeof maybeKind === "string" && kindValues.has(maybeKind);
     }
+    __name(isNode, "isNode");
     var OperationTypeNode;
     exports.OperationTypeNode = OperationTypeNode;
     (function(OperationTypeNode2) {
@@ -574,9 +598,9 @@ var require_ast = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/directiveLocation.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/directiveLocation.js
 var require_directiveLocation = __commonJS({
-  "../../node_modules/graphql/language/directiveLocation.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/directiveLocation.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -608,9 +632,9 @@ var require_directiveLocation = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/kinds.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/kinds.js
 var require_kinds = __commonJS({
-  "../../node_modules/graphql/language/kinds.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/kinds.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -666,9 +690,9 @@ var require_kinds = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/characterClasses.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/characterClasses.js
 var require_characterClasses = __commonJS({
-  "../../node_modules/graphql/language/characterClasses.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/characterClasses.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -681,25 +705,30 @@ var require_characterClasses = __commonJS({
     function isWhiteSpace(code) {
       return code === 9 || code === 32;
     }
+    __name(isWhiteSpace, "isWhiteSpace");
     function isDigit(code) {
       return code >= 48 && code <= 57;
     }
+    __name(isDigit, "isDigit");
     function isLetter(code) {
       return code >= 97 && code <= 122 || // A-Z
       code >= 65 && code <= 90;
     }
+    __name(isLetter, "isLetter");
     function isNameStart(code) {
       return isLetter(code) || code === 95;
     }
+    __name(isNameStart, "isNameStart");
     function isNameContinue(code) {
       return isLetter(code) || isDigit(code) || code === 95;
     }
+    __name(isNameContinue, "isNameContinue");
   }
 });
 
-// ../../node_modules/graphql/language/blockString.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/blockString.js
 var require_blockString = __commonJS({
-  "../../node_modules/graphql/language/blockString.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/blockString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -731,6 +760,7 @@ var require_blockString = __commonJS({
         lastNonEmptyLine + 1
       );
     }
+    __name(dedentBlockStringLines, "dedentBlockStringLines");
     function leadingWhitespace(str) {
       let i = 0;
       while (i < str.length && (0, _characterClasses.isWhiteSpace)(str.charCodeAt(i))) {
@@ -738,6 +768,7 @@ var require_blockString = __commonJS({
       }
       return i;
     }
+    __name(leadingWhitespace, "leadingWhitespace");
     function isPrintableAsBlockString(value) {
       if (value === "") {
         return true;
@@ -792,6 +823,7 @@ var require_blockString = __commonJS({
       }
       return true;
     }
+    __name(isPrintableAsBlockString, "isPrintableAsBlockString");
     function printBlockString(value, options) {
       const escapedValue = value.replace(/"""/g, '\\"""');
       const lines = escapedValue.split(/\r\n|[\n\r]/g);
@@ -816,12 +848,13 @@ var require_blockString = __commonJS({
       }
       return '"""' + result + '"""';
     }
+    __name(printBlockString, "printBlockString");
   }
 });
 
-// ../../node_modules/graphql/language/tokenKind.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/tokenKind.js
 var require_tokenKind = __commonJS({
-  "../../node_modules/graphql/language/tokenKind.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/tokenKind.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -856,9 +889,9 @@ var require_tokenKind = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/lexer.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/lexer.js
 var require_lexer = __commonJS({
-  "../../node_modules/graphql/language/lexer.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/lexer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -871,6 +904,9 @@ var require_lexer = __commonJS({
     var _characterClasses = require_characterClasses();
     var _tokenKind = require_tokenKind();
     var Lexer = class {
+      static {
+        __name(this, "Lexer");
+      }
       /**
        * The previously focused non-ignored token.
        */
@@ -933,18 +969,23 @@ var require_lexer = __commonJS({
     function isPunctuatorTokenKind(kind) {
       return kind === _tokenKind.TokenKind.BANG || kind === _tokenKind.TokenKind.DOLLAR || kind === _tokenKind.TokenKind.AMP || kind === _tokenKind.TokenKind.PAREN_L || kind === _tokenKind.TokenKind.PAREN_R || kind === _tokenKind.TokenKind.SPREAD || kind === _tokenKind.TokenKind.COLON || kind === _tokenKind.TokenKind.EQUALS || kind === _tokenKind.TokenKind.AT || kind === _tokenKind.TokenKind.BRACKET_L || kind === _tokenKind.TokenKind.BRACKET_R || kind === _tokenKind.TokenKind.BRACE_L || kind === _tokenKind.TokenKind.PIPE || kind === _tokenKind.TokenKind.BRACE_R;
     }
+    __name(isPunctuatorTokenKind, "isPunctuatorTokenKind");
     function isUnicodeScalarValue(code) {
       return code >= 0 && code <= 55295 || code >= 57344 && code <= 1114111;
     }
+    __name(isUnicodeScalarValue, "isUnicodeScalarValue");
     function isSupplementaryCodePoint(body, location) {
       return isLeadingSurrogate(body.charCodeAt(location)) && isTrailingSurrogate(body.charCodeAt(location + 1));
     }
+    __name(isSupplementaryCodePoint, "isSupplementaryCodePoint");
     function isLeadingSurrogate(code) {
       return code >= 55296 && code <= 56319;
     }
+    __name(isLeadingSurrogate, "isLeadingSurrogate");
     function isTrailingSurrogate(code) {
       return code >= 56320 && code <= 57343;
     }
+    __name(isTrailingSurrogate, "isTrailingSurrogate");
     function printCodePointAt(lexer, location) {
       const code = lexer.source.body.codePointAt(location);
       if (code === void 0) {
@@ -955,11 +996,13 @@ var require_lexer = __commonJS({
       }
       return "U+" + code.toString(16).toUpperCase().padStart(4, "0");
     }
+    __name(printCodePointAt, "printCodePointAt");
     function createToken(lexer, kind, start, end, value) {
       const line = lexer.line;
       const col = 1 + start - lexer.lineStart;
       return new _ast.Token(kind, start, end, line, col, value);
     }
+    __name(createToken, "createToken");
     function readNextToken(lexer, start) {
       const body = lexer.source.body;
       const bodyLength = body.length;
@@ -1141,6 +1184,7 @@ var require_lexer = __commonJS({
       }
       return createToken(lexer, _tokenKind.TokenKind.EOF, bodyLength, bodyLength);
     }
+    __name(readNextToken, "readNextToken");
     function readComment(lexer, start) {
       const body = lexer.source.body;
       const bodyLength = body.length;
@@ -1166,6 +1210,7 @@ var require_lexer = __commonJS({
         body.slice(start + 1, position)
       );
     }
+    __name(readComment, "readComment");
     function readNumber(lexer, start, firstCode) {
       const body = lexer.source.body;
       let position = start;
@@ -1223,6 +1268,7 @@ var require_lexer = __commonJS({
         body.slice(start, position)
       );
     }
+    __name(readNumber, "readNumber");
     function readDigits(lexer, start, firstCode) {
       if (!(0, _characterClasses.isDigit)(firstCode)) {
         throw (0, _syntaxError.syntaxError)(
@@ -1241,6 +1287,7 @@ var require_lexer = __commonJS({
       }
       return position;
     }
+    __name(readDigits, "readDigits");
     function readString(lexer, start) {
       const body = lexer.source.body;
       const bodyLength = body.length;
@@ -1291,6 +1338,7 @@ var require_lexer = __commonJS({
         "Unterminated string."
       );
     }
+    __name(readString, "readString");
     function readEscapedUnicodeVariableWidth(lexer, position) {
       const body = lexer.source.body;
       let point = 0;
@@ -1320,6 +1368,7 @@ var require_lexer = __commonJS({
         )}".`
       );
     }
+    __name(readEscapedUnicodeVariableWidth, "readEscapedUnicodeVariableWidth");
     function readEscapedUnicodeFixedWidth(lexer, position) {
       const body = lexer.source.body;
       const code = read16BitHexCode(body, position + 2);
@@ -1346,12 +1395,15 @@ var require_lexer = __commonJS({
         `Invalid Unicode escape sequence: "${body.slice(position, position + 6)}".`
       );
     }
+    __name(readEscapedUnicodeFixedWidth, "readEscapedUnicodeFixedWidth");
     function read16BitHexCode(body, position) {
       return readHexDigit(body.charCodeAt(position)) << 12 | readHexDigit(body.charCodeAt(position + 1)) << 8 | readHexDigit(body.charCodeAt(position + 2)) << 4 | readHexDigit(body.charCodeAt(position + 3));
     }
+    __name(read16BitHexCode, "read16BitHexCode");
     function readHexDigit(code) {
       return code >= 48 && code <= 57 ? code - 48 : code >= 65 && code <= 70 ? code - 55 : code >= 97 && code <= 102 ? code - 87 : -1;
     }
+    __name(readHexDigit, "readHexDigit");
     function readEscapedCharacter(lexer, position) {
       const body = lexer.source.body;
       const code = body.charCodeAt(position + 1);
@@ -1406,6 +1458,7 @@ var require_lexer = __commonJS({
         )}".`
       );
     }
+    __name(readEscapedCharacter, "readEscapedCharacter");
     function readBlockString(lexer, start) {
       const body = lexer.source.body;
       const bodyLength = body.length;
@@ -1471,6 +1524,7 @@ var require_lexer = __commonJS({
         "Unterminated string."
       );
     }
+    __name(readBlockString, "readBlockString");
     function readName(lexer, start) {
       const body = lexer.source.body;
       const bodyLength = body.length;
@@ -1491,12 +1545,13 @@ var require_lexer = __commonJS({
         body.slice(start, position)
       );
     }
+    __name(readName, "readName");
   }
 });
 
-// ../../node_modules/graphql/jsutils/inspect.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/inspect.js
 var require_inspect = __commonJS({
-  "../../node_modules/graphql/jsutils/inspect.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/inspect.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1507,6 +1562,7 @@ var require_inspect = __commonJS({
     function inspect(value) {
       return formatValue(value, []);
     }
+    __name(inspect, "inspect");
     function formatValue(value, seenValues) {
       switch (typeof value) {
         case "string":
@@ -1519,6 +1575,7 @@ var require_inspect = __commonJS({
           return String(value);
       }
     }
+    __name(formatValue, "formatValue");
     function formatObjectValue(value, previouslySeenValues) {
       if (value === null) {
         return "null";
@@ -1537,9 +1594,11 @@ var require_inspect = __commonJS({
       }
       return formatObject(value, seenValues);
     }
+    __name(formatObjectValue, "formatObjectValue");
     function isJSONable(value) {
       return typeof value.toJSON === "function";
     }
+    __name(isJSONable, "isJSONable");
     function formatObject(object, seenValues) {
       const entries = Object.entries(object);
       if (entries.length === 0) {
@@ -1553,6 +1612,7 @@ var require_inspect = __commonJS({
       );
       return "{ " + properties.join(", ") + " }";
     }
+    __name(formatObject, "formatObject");
     function formatArray(array, seenValues) {
       if (array.length === 0) {
         return "[]";
@@ -1573,6 +1633,7 @@ var require_inspect = __commonJS({
       }
       return "[" + items.join(", ") + "]";
     }
+    __name(formatArray, "formatArray");
     function getObjectTag(object) {
       const tag = Object.prototype.toString.call(object).replace(/^\[object /, "").replace(/]$/, "");
       if (tag === "Object" && typeof object.constructor === "function") {
@@ -1583,12 +1644,13 @@ var require_inspect = __commonJS({
       }
       return tag;
     }
+    __name(getObjectTag, "getObjectTag");
   }
 });
 
-// ../../node_modules/graphql/jsutils/instanceOf.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/instanceOf.js
 var require_instanceOf = __commonJS({
-  "../../node_modules/graphql/jsutils/instanceOf.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/instanceOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1600,9 +1662,9 @@ var require_instanceOf = __commonJS({
     var instanceOf = (
       /* c8 ignore next 6 */
       // FIXME: https://github.com/graphql/graphql-js/issues/2317
-      isProduction ? function instanceOf2(value, constructor) {
+      isProduction ? /* @__PURE__ */ __name(function instanceOf2(value, constructor) {
         return value instanceof constructor;
-      } : function instanceOf2(value, constructor) {
+      }, "instanceOf") : /* @__PURE__ */ __name(function instanceOf2(value, constructor) {
         if (value instanceof constructor) {
           return true;
         }
@@ -1630,15 +1692,15 @@ spurious results.`);
           }
         }
         return false;
-      }
+      }, "instanceOf")
     );
     exports.instanceOf = instanceOf;
   }
 });
 
-// ../../node_modules/graphql/language/source.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/source.js
 var require_source = __commonJS({
-  "../../node_modules/graphql/language/source.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/source.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1649,6 +1711,9 @@ var require_source = __commonJS({
     var _inspect = require_inspect();
     var _instanceOf = require_instanceOf();
     var Source = class {
+      static {
+        __name(this, "Source");
+      }
       constructor(body, name = "GraphQL request", locationOffset = {
         line: 1,
         column: 1
@@ -1677,12 +1742,13 @@ var require_source = __commonJS({
     function isSource(source) {
       return (0, _instanceOf.instanceOf)(source, Source);
     }
+    __name(isSource, "isSource");
   }
 });
 
-// ../../node_modules/graphql/language/parser.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/parser.js
 var require_parser = __commonJS({
-  "../../node_modules/graphql/language/parser.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/parser.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -1708,6 +1774,7 @@ var require_parser = __commonJS({
       });
       return document;
     }
+    __name(parse, "parse");
     function parseValue(source, options) {
       const parser = new Parser(source, options);
       parser.expectToken(_tokenKind.TokenKind.SOF);
@@ -1715,6 +1782,7 @@ var require_parser = __commonJS({
       parser.expectToken(_tokenKind.TokenKind.EOF);
       return value;
     }
+    __name(parseValue, "parseValue");
     function parseConstValue(source, options) {
       const parser = new Parser(source, options);
       parser.expectToken(_tokenKind.TokenKind.SOF);
@@ -1722,6 +1790,7 @@ var require_parser = __commonJS({
       parser.expectToken(_tokenKind.TokenKind.EOF);
       return value;
     }
+    __name(parseConstValue, "parseConstValue");
     function parseType(source, options) {
       const parser = new Parser(source, options);
       parser.expectToken(_tokenKind.TokenKind.SOF);
@@ -1729,7 +1798,11 @@ var require_parser = __commonJS({
       parser.expectToken(_tokenKind.TokenKind.EOF);
       return type;
     }
+    __name(parseType, "parseType");
     var Parser = class {
+      static {
+        __name(this, "Parser");
+      }
       constructor(source, options = {}) {
         const sourceObj = (0, _source.isSource)(source) ? source : new _source.Source(source);
         this._lexer = new _lexer.Lexer(sourceObj);
@@ -2150,7 +2223,7 @@ var require_parser = __commonJS({
        *   - [ Value[?Const]+ ]
        */
       parseList(isConst) {
-        const item = () => this.parseValueLiteral(isConst);
+        const item = /* @__PURE__ */ __name(() => this.parseValueLiteral(isConst), "item");
         return this.node(this._lexer.token, {
           kind: _kinds.Kind.LIST,
           values: this.any(
@@ -2168,7 +2241,7 @@ var require_parser = __commonJS({
        * ```
        */
       parseObject(isConst) {
-        const item = () => this.parseObjectField(isConst);
+        const item = /* @__PURE__ */ __name(() => this.parseObjectField(isConst), "item");
         return this.node(this._lexer.token, {
           kind: _kinds.Kind.OBJECT,
           fields: this.any(
@@ -2991,15 +3064,17 @@ var require_parser = __commonJS({
       const value = token.value;
       return getTokenKindDesc(token.kind) + (value != null ? ` "${value}"` : "");
     }
+    __name(getTokenDesc, "getTokenDesc");
     function getTokenKindDesc(kind) {
       return (0, _lexer.isPunctuatorTokenKind)(kind) ? `"${kind}"` : kind;
     }
+    __name(getTokenKindDesc, "getTokenKindDesc");
   }
 });
 
-// ../../node_modules/graphql/jsutils/didYouMean.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/didYouMean.js
 var require_didYouMean = __commonJS({
-  "../../node_modules/graphql/jsutils/didYouMean.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/didYouMean.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3025,12 +3100,13 @@ var require_didYouMean = __commonJS({
       const lastItem = selected.pop();
       return message + selected.join(", ") + ", or " + lastItem + "?";
     }
+    __name(didYouMean, "didYouMean");
   }
 });
 
-// ../../node_modules/graphql/jsutils/identityFunc.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/identityFunc.js
 var require_identityFunc = __commonJS({
-  "../../node_modules/graphql/jsutils/identityFunc.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/identityFunc.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3039,12 +3115,13 @@ var require_identityFunc = __commonJS({
     function identityFunc(x) {
       return x;
     }
+    __name(identityFunc, "identityFunc");
   }
 });
 
-// ../../node_modules/graphql/jsutils/keyMap.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/keyMap.js
 var require_keyMap = __commonJS({
-  "../../node_modules/graphql/jsutils/keyMap.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/keyMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3057,12 +3134,13 @@ var require_keyMap = __commonJS({
       }
       return result;
     }
+    __name(keyMap, "keyMap");
   }
 });
 
-// ../../node_modules/graphql/jsutils/keyValMap.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/keyValMap.js
 var require_keyValMap = __commonJS({
-  "../../node_modules/graphql/jsutils/keyValMap.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/keyValMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3075,12 +3153,13 @@ var require_keyValMap = __commonJS({
       }
       return result;
     }
+    __name(keyValMap, "keyValMap");
   }
 });
 
-// ../../node_modules/graphql/jsutils/mapValue.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/mapValue.js
 var require_mapValue = __commonJS({
-  "../../node_modules/graphql/jsutils/mapValue.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/mapValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3093,12 +3172,13 @@ var require_mapValue = __commonJS({
       }
       return result;
     }
+    __name(mapValue, "mapValue");
   }
 });
 
-// ../../node_modules/graphql/jsutils/naturalCompare.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/naturalCompare.js
 var require_naturalCompare = __commonJS({
-  "../../node_modules/graphql/jsutils/naturalCompare.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/naturalCompare.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3142,17 +3222,19 @@ var require_naturalCompare = __commonJS({
       }
       return aStr.length - bStr.length;
     }
+    __name(naturalCompare, "naturalCompare");
     var DIGIT_0 = 48;
     var DIGIT_9 = 57;
     function isDigit(code) {
       return !isNaN(code) && DIGIT_0 <= code && code <= DIGIT_9;
     }
+    __name(isDigit, "isDigit");
   }
 });
 
-// ../../node_modules/graphql/jsutils/suggestionList.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/suggestionList.js
 var require_suggestionList = __commonJS({
-  "../../node_modules/graphql/jsutils/suggestionList.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/suggestionList.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3174,7 +3256,11 @@ var require_suggestionList = __commonJS({
         return distanceDiff !== 0 ? distanceDiff : (0, _naturalCompare.naturalCompare)(a, b);
       });
     }
+    __name(suggestionList, "suggestionList");
     var LexicalDistance = class {
+      static {
+        __name(this, "LexicalDistance");
+      }
       constructor(input) {
         this._input = input;
         this._inputLowerCase = input.toLowerCase();
@@ -3248,12 +3334,13 @@ var require_suggestionList = __commonJS({
       }
       return array;
     }
+    __name(stringToArray, "stringToArray");
   }
 });
 
-// ../../node_modules/graphql/jsutils/toObjMap.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/toObjMap.js
 var require_toObjMap = __commonJS({
-  "../../node_modules/graphql/jsutils/toObjMap.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/toObjMap.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3272,12 +3359,13 @@ var require_toObjMap = __commonJS({
       }
       return map;
     }
+    __name(toObjMap, "toObjMap");
   }
 });
 
-// ../../node_modules/graphql/language/printString.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printString.js
 var require_printString = __commonJS({
-  "../../node_modules/graphql/language/printString.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printString.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3286,10 +3374,12 @@ var require_printString = __commonJS({
     function printString(str) {
       return `"${str.replace(escapedRegExp, escapedReplacer)}"`;
     }
+    __name(printString, "printString");
     var escapedRegExp = /[\x00-\x1f\x22\x5c\x7f-\x9f]/g;
     function escapedReplacer(str) {
       return escapeSequences[str.charCodeAt(0)];
     }
+    __name(escapedReplacer, "escapedReplacer");
     var escapeSequences = [
       "\\u0000",
       "\\u0001",
@@ -3460,9 +3550,9 @@ var require_printString = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/visitor.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/visitor.js
 var require_visitor = __commonJS({
-  "../../node_modules/graphql/language/visitor.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/visitor.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3595,6 +3685,7 @@ var require_visitor = __commonJS({
       }
       return root;
     }
+    __name(visit, "visit");
     function visitInParallel(visitors) {
       const skipping = new Array(visitors.length).fill(null);
       const mergedVisitor = /* @__PURE__ */ Object.create(null);
@@ -3649,6 +3740,7 @@ var require_visitor = __commonJS({
       }
       return mergedVisitor;
     }
+    __name(visitInParallel, "visitInParallel");
     function getEnterLeaveForKind(visitor, kind) {
       const kindVisitor = visitor[kind];
       if (typeof kindVisitor === "object") {
@@ -3664,16 +3756,18 @@ var require_visitor = __commonJS({
         leave: visitor.leave
       };
     }
+    __name(getEnterLeaveForKind, "getEnterLeaveForKind");
     function getVisitFn(visitor, kind, isLeaving) {
       const { enter, leave } = getEnterLeaveForKind(visitor, kind);
       return isLeaving ? leave : enter;
     }
+    __name(getVisitFn, "getVisitFn");
   }
 });
 
-// ../../node_modules/graphql/language/printer.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printer.js
 var require_printer = __commonJS({
-  "../../node_modules/graphql/language/printer.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/printer.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3685,17 +3779,18 @@ var require_printer = __commonJS({
     function print2(ast) {
       return (0, _visitor.visit)(ast, printDocASTReducer);
     }
+    __name(print2, "print");
     var MAX_LINE_LENGTH = 80;
     var printDocASTReducer = {
       Name: {
-        leave: (node) => node.value
+        leave: /* @__PURE__ */ __name((node) => node.value, "leave")
       },
       Variable: {
-        leave: (node) => "$" + node.name
+        leave: /* @__PURE__ */ __name((node) => "$" + node.name, "leave")
       },
       // Document
       Document: {
-        leave: (node) => join(node.definitions, "\n\n")
+        leave: /* @__PURE__ */ __name((node) => join(node.definitions, "\n\n"), "leave")
       },
       OperationDefinition: {
         leave(node) {
@@ -3712,10 +3807,10 @@ var require_printer = __commonJS({
         }
       },
       VariableDefinition: {
-        leave: ({ variable, type, defaultValue, directives }) => variable + ": " + type + wrap(" = ", defaultValue) + wrap(" ", join(directives, " "))
+        leave: /* @__PURE__ */ __name(({ variable, type, defaultValue, directives }) => variable + ": " + type + wrap(" = ", defaultValue) + wrap(" ", join(directives, " ")), "leave")
       },
       SelectionSet: {
-        leave: ({ selections }) => block(selections)
+        leave: /* @__PURE__ */ __name(({ selections }) => block(selections), "leave")
       },
       Field: {
         leave({ alias, name, arguments: args, directives, selectionSet }) {
@@ -3728,14 +3823,14 @@ var require_printer = __commonJS({
         }
       },
       Argument: {
-        leave: ({ name, value }) => name + ": " + value
+        leave: /* @__PURE__ */ __name(({ name, value }) => name + ": " + value, "leave")
       },
       // Fragments
       FragmentSpread: {
-        leave: ({ name, directives }) => "..." + name + wrap(" ", join(directives, " "))
+        leave: /* @__PURE__ */ __name(({ name, directives }) => "..." + name + wrap(" ", join(directives, " ")), "leave")
       },
       InlineFragment: {
-        leave: ({ typeCondition, directives, selectionSet }) => join(
+        leave: /* @__PURE__ */ __name(({ typeCondition, directives, selectionSet }) => join(
           [
             "...",
             wrap("on ", typeCondition),
@@ -3743,68 +3838,68 @@ var require_printer = __commonJS({
             selectionSet
           ],
           " "
-        )
+        ), "leave")
       },
       FragmentDefinition: {
-        leave: ({ name, typeCondition, variableDefinitions, directives, selectionSet }) => (
+        leave: /* @__PURE__ */ __name(({ name, typeCondition, variableDefinitions, directives, selectionSet }) => (
           // or removed in the future.
           `fragment ${name}${wrap("(", join(variableDefinitions, ", "), ")")} on ${typeCondition} ${wrap("", join(directives, " "), " ")}` + selectionSet
-        )
+        ), "leave")
       },
       // Value
       IntValue: {
-        leave: ({ value }) => value
+        leave: /* @__PURE__ */ __name(({ value }) => value, "leave")
       },
       FloatValue: {
-        leave: ({ value }) => value
+        leave: /* @__PURE__ */ __name(({ value }) => value, "leave")
       },
       StringValue: {
-        leave: ({ value, block: isBlockString }) => isBlockString ? (0, _blockString.printBlockString)(value) : (0, _printString.printString)(value)
+        leave: /* @__PURE__ */ __name(({ value, block: isBlockString }) => isBlockString ? (0, _blockString.printBlockString)(value) : (0, _printString.printString)(value), "leave")
       },
       BooleanValue: {
-        leave: ({ value }) => value ? "true" : "false"
+        leave: /* @__PURE__ */ __name(({ value }) => value ? "true" : "false", "leave")
       },
       NullValue: {
-        leave: () => "null"
+        leave: /* @__PURE__ */ __name(() => "null", "leave")
       },
       EnumValue: {
-        leave: ({ value }) => value
+        leave: /* @__PURE__ */ __name(({ value }) => value, "leave")
       },
       ListValue: {
-        leave: ({ values }) => "[" + join(values, ", ") + "]"
+        leave: /* @__PURE__ */ __name(({ values }) => "[" + join(values, ", ") + "]", "leave")
       },
       ObjectValue: {
-        leave: ({ fields }) => "{" + join(fields, ", ") + "}"
+        leave: /* @__PURE__ */ __name(({ fields }) => "{" + join(fields, ", ") + "}", "leave")
       },
       ObjectField: {
-        leave: ({ name, value }) => name + ": " + value
+        leave: /* @__PURE__ */ __name(({ name, value }) => name + ": " + value, "leave")
       },
       // Directive
       Directive: {
-        leave: ({ name, arguments: args }) => "@" + name + wrap("(", join(args, ", "), ")")
+        leave: /* @__PURE__ */ __name(({ name, arguments: args }) => "@" + name + wrap("(", join(args, ", "), ")"), "leave")
       },
       // Type
       NamedType: {
-        leave: ({ name }) => name
+        leave: /* @__PURE__ */ __name(({ name }) => name, "leave")
       },
       ListType: {
-        leave: ({ type }) => "[" + type + "]"
+        leave: /* @__PURE__ */ __name(({ type }) => "[" + type + "]", "leave")
       },
       NonNullType: {
-        leave: ({ type }) => type + "!"
+        leave: /* @__PURE__ */ __name(({ type }) => type + "!", "leave")
       },
       // Type System Definitions
       SchemaDefinition: {
-        leave: ({ description, directives, operationTypes }) => wrap("", description, "\n") + join(["schema", join(directives, " "), block(operationTypes)], " ")
+        leave: /* @__PURE__ */ __name(({ description, directives, operationTypes }) => wrap("", description, "\n") + join(["schema", join(directives, " "), block(operationTypes)], " "), "leave")
       },
       OperationTypeDefinition: {
-        leave: ({ operation, type }) => operation + ": " + type
+        leave: /* @__PURE__ */ __name(({ operation, type }) => operation + ": " + type, "leave")
       },
       ScalarTypeDefinition: {
-        leave: ({ description, name, directives }) => wrap("", description, "\n") + join(["scalar", name, join(directives, " ")], " ")
+        leave: /* @__PURE__ */ __name(({ description, name, directives }) => wrap("", description, "\n") + join(["scalar", name, join(directives, " ")], " "), "leave")
       },
       ObjectTypeDefinition: {
-        leave: ({ description, name, interfaces, directives, fields }) => wrap("", description, "\n") + join(
+        leave: /* @__PURE__ */ __name(({ description, name, interfaces, directives, fields }) => wrap("", description, "\n") + join(
           [
             "type",
             name,
@@ -3813,19 +3908,19 @@ var require_printer = __commonJS({
             block(fields)
           ],
           " "
-        )
+        ), "leave")
       },
       FieldDefinition: {
-        leave: ({ description, name, arguments: args, type, directives }) => wrap("", description, "\n") + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + ": " + type + wrap(" ", join(directives, " "))
+        leave: /* @__PURE__ */ __name(({ description, name, arguments: args, type, directives }) => wrap("", description, "\n") + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + ": " + type + wrap(" ", join(directives, " ")), "leave")
       },
       InputValueDefinition: {
-        leave: ({ description, name, type, defaultValue, directives }) => wrap("", description, "\n") + join(
+        leave: /* @__PURE__ */ __name(({ description, name, type, defaultValue, directives }) => wrap("", description, "\n") + join(
           [name + ": " + type, wrap("= ", defaultValue), join(directives, " ")],
           " "
-        )
+        ), "leave")
       },
       InterfaceTypeDefinition: {
-        leave: ({ description, name, interfaces, directives, fields }) => wrap("", description, "\n") + join(
+        leave: /* @__PURE__ */ __name(({ description, name, interfaces, directives, fields }) => wrap("", description, "\n") + join(
           [
             "interface",
             name,
@@ -3834,37 +3929,37 @@ var require_printer = __commonJS({
             block(fields)
           ],
           " "
-        )
+        ), "leave")
       },
       UnionTypeDefinition: {
-        leave: ({ description, name, directives, types }) => wrap("", description, "\n") + join(
+        leave: /* @__PURE__ */ __name(({ description, name, directives, types }) => wrap("", description, "\n") + join(
           ["union", name, join(directives, " "), wrap("= ", join(types, " | "))],
           " "
-        )
+        ), "leave")
       },
       EnumTypeDefinition: {
-        leave: ({ description, name, directives, values }) => wrap("", description, "\n") + join(["enum", name, join(directives, " "), block(values)], " ")
+        leave: /* @__PURE__ */ __name(({ description, name, directives, values }) => wrap("", description, "\n") + join(["enum", name, join(directives, " "), block(values)], " "), "leave")
       },
       EnumValueDefinition: {
-        leave: ({ description, name, directives }) => wrap("", description, "\n") + join([name, join(directives, " ")], " ")
+        leave: /* @__PURE__ */ __name(({ description, name, directives }) => wrap("", description, "\n") + join([name, join(directives, " ")], " "), "leave")
       },
       InputObjectTypeDefinition: {
-        leave: ({ description, name, directives, fields }) => wrap("", description, "\n") + join(["input", name, join(directives, " "), block(fields)], " ")
+        leave: /* @__PURE__ */ __name(({ description, name, directives, fields }) => wrap("", description, "\n") + join(["input", name, join(directives, " "), block(fields)], " "), "leave")
       },
       DirectiveDefinition: {
-        leave: ({ description, name, arguments: args, repeatable, locations }) => wrap("", description, "\n") + "directive @" + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + (repeatable ? " repeatable" : "") + " on " + join(locations, " | ")
+        leave: /* @__PURE__ */ __name(({ description, name, arguments: args, repeatable, locations }) => wrap("", description, "\n") + "directive @" + name + (hasMultilineItems(args) ? wrap("(\n", indent(join(args, "\n")), "\n)") : wrap("(", join(args, ", "), ")")) + (repeatable ? " repeatable" : "") + " on " + join(locations, " | "), "leave")
       },
       SchemaExtension: {
-        leave: ({ directives, operationTypes }) => join(
+        leave: /* @__PURE__ */ __name(({ directives, operationTypes }) => join(
           ["extend schema", join(directives, " "), block(operationTypes)],
           " "
-        )
+        ), "leave")
       },
       ScalarTypeExtension: {
-        leave: ({ name, directives }) => join(["extend scalar", name, join(directives, " ")], " ")
+        leave: /* @__PURE__ */ __name(({ name, directives }) => join(["extend scalar", name, join(directives, " ")], " "), "leave")
       },
       ObjectTypeExtension: {
-        leave: ({ name, interfaces, directives, fields }) => join(
+        leave: /* @__PURE__ */ __name(({ name, interfaces, directives, fields }) => join(
           [
             "extend type",
             name,
@@ -3873,10 +3968,10 @@ var require_printer = __commonJS({
             block(fields)
           ],
           " "
-        )
+        ), "leave")
       },
       InterfaceTypeExtension: {
-        leave: ({ name, interfaces, directives, fields }) => join(
+        leave: /* @__PURE__ */ __name(({ name, interfaces, directives, fields }) => join(
           [
             "extend interface",
             name,
@@ -3885,10 +3980,10 @@ var require_printer = __commonJS({
             block(fields)
           ],
           " "
-        )
+        ), "leave")
       },
       UnionTypeExtension: {
-        leave: ({ name, directives, types }) => join(
+        leave: /* @__PURE__ */ __name(({ name, directives, types }) => join(
           [
             "extend union",
             name,
@@ -3896,38 +3991,43 @@ var require_printer = __commonJS({
             wrap("= ", join(types, " | "))
           ],
           " "
-        )
+        ), "leave")
       },
       EnumTypeExtension: {
-        leave: ({ name, directives, values }) => join(["extend enum", name, join(directives, " "), block(values)], " ")
+        leave: /* @__PURE__ */ __name(({ name, directives, values }) => join(["extend enum", name, join(directives, " "), block(values)], " "), "leave")
       },
       InputObjectTypeExtension: {
-        leave: ({ name, directives, fields }) => join(["extend input", name, join(directives, " "), block(fields)], " ")
+        leave: /* @__PURE__ */ __name(({ name, directives, fields }) => join(["extend input", name, join(directives, " "), block(fields)], " "), "leave")
       }
     };
     function join(maybeArray, separator = "") {
       var _maybeArray$filter$jo;
       return (_maybeArray$filter$jo = maybeArray === null || maybeArray === void 0 ? void 0 : maybeArray.filter((x) => x).join(separator)) !== null && _maybeArray$filter$jo !== void 0 ? _maybeArray$filter$jo : "";
     }
+    __name(join, "join");
     function block(array) {
       return wrap("{\n", indent(join(array, "\n")), "\n}");
     }
+    __name(block, "block");
     function wrap(start, maybeString, end = "") {
       return maybeString != null && maybeString !== "" ? start + maybeString + end : "";
     }
+    __name(wrap, "wrap");
     function indent(str) {
       return wrap("  ", str.replace(/\n/g, "\n  "));
     }
+    __name(indent, "indent");
     function hasMultilineItems(maybeArray) {
       var _maybeArray$some;
       return (_maybeArray$some = maybeArray === null || maybeArray === void 0 ? void 0 : maybeArray.some((str) => str.includes("\n"))) !== null && _maybeArray$some !== void 0 ? _maybeArray$some : false;
     }
+    __name(hasMultilineItems, "hasMultilineItems");
   }
 });
 
-// ../../node_modules/graphql/utilities/valueFromASTUntyped.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/valueFromASTUntyped.js
 var require_valueFromASTUntyped = __commonJS({
-  "../../node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/valueFromASTUntyped.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3961,12 +4061,13 @@ var require_valueFromASTUntyped = __commonJS({
           return variables === null || variables === void 0 ? void 0 : variables[valueNode.name.value];
       }
     }
+    __name(valueFromASTUntyped, "valueFromASTUntyped");
   }
 });
 
-// ../../node_modules/graphql/type/assertName.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/assertName.js
 var require_assertName = __commonJS({
-  "../../node_modules/graphql/type/assertName.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/assertName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -3998,6 +4099,7 @@ var require_assertName = __commonJS({
       }
       return name;
     }
+    __name(assertName, "assertName");
     function assertEnumValueName(name) {
       if (name === "true" || name === "false" || name === "null") {
         throw new _GraphQLError.GraphQLError(
@@ -4006,12 +4108,13 @@ var require_assertName = __commonJS({
       }
       return assertName(name);
     }
+    __name(assertEnumValueName, "assertEnumValueName");
   }
 });
 
-// ../../node_modules/graphql/type/definition.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/definition.js
 var require_definition = __commonJS({
-  "../../node_modules/graphql/type/definition.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/definition.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4078,6 +4181,7 @@ var require_definition = __commonJS({
     function isType(type) {
       return isScalarType(type) || isObjectType(type) || isInterfaceType(type) || isUnionType(type) || isEnumType(type) || isInputObjectType(type) || isListType(type) || isNonNullType(type);
     }
+    __name(isType, "isType");
     function assertType(type) {
       if (!isType(type)) {
         throw new Error(
@@ -4086,9 +4190,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertType, "assertType");
     function isScalarType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLScalarType);
     }
+    __name(isScalarType, "isScalarType");
     function assertScalarType(type) {
       if (!isScalarType(type)) {
         throw new Error(
@@ -4097,9 +4203,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertScalarType, "assertScalarType");
     function isObjectType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLObjectType);
     }
+    __name(isObjectType, "isObjectType");
     function assertObjectType(type) {
       if (!isObjectType(type)) {
         throw new Error(
@@ -4108,9 +4216,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertObjectType, "assertObjectType");
     function isInterfaceType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLInterfaceType);
     }
+    __name(isInterfaceType, "isInterfaceType");
     function assertInterfaceType(type) {
       if (!isInterfaceType(type)) {
         throw new Error(
@@ -4119,9 +4229,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertInterfaceType, "assertInterfaceType");
     function isUnionType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLUnionType);
     }
+    __name(isUnionType, "isUnionType");
     function assertUnionType(type) {
       if (!isUnionType(type)) {
         throw new Error(
@@ -4130,9 +4242,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertUnionType, "assertUnionType");
     function isEnumType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLEnumType);
     }
+    __name(isEnumType, "isEnumType");
     function assertEnumType(type) {
       if (!isEnumType(type)) {
         throw new Error(
@@ -4141,9 +4255,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertEnumType, "assertEnumType");
     function isInputObjectType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLInputObjectType);
     }
+    __name(isInputObjectType, "isInputObjectType");
     function assertInputObjectType(type) {
       if (!isInputObjectType(type)) {
         throw new Error(
@@ -4154,9 +4270,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertInputObjectType, "assertInputObjectType");
     function isListType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLList);
     }
+    __name(isListType, "isListType");
     function assertListType(type) {
       if (!isListType(type)) {
         throw new Error(
@@ -4165,9 +4283,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertListType, "assertListType");
     function isNonNullType(type) {
       return (0, _instanceOf.instanceOf)(type, GraphQLNonNull);
     }
+    __name(isNonNullType, "isNonNullType");
     function assertNonNullType(type) {
       if (!isNonNullType(type)) {
         throw new Error(
@@ -4176,9 +4296,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertNonNullType, "assertNonNullType");
     function isInputType(type) {
       return isScalarType(type) || isEnumType(type) || isInputObjectType(type) || isWrappingType(type) && isInputType(type.ofType);
     }
+    __name(isInputType, "isInputType");
     function assertInputType(type) {
       if (!isInputType(type)) {
         throw new Error(
@@ -4187,9 +4309,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertInputType, "assertInputType");
     function isOutputType(type) {
       return isScalarType(type) || isObjectType(type) || isInterfaceType(type) || isUnionType(type) || isEnumType(type) || isWrappingType(type) && isOutputType(type.ofType);
     }
+    __name(isOutputType, "isOutputType");
     function assertOutputType(type) {
       if (!isOutputType(type)) {
         throw new Error(
@@ -4198,9 +4322,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertOutputType, "assertOutputType");
     function isLeafType(type) {
       return isScalarType(type) || isEnumType(type);
     }
+    __name(isLeafType, "isLeafType");
     function assertLeafType(type) {
       if (!isLeafType(type)) {
         throw new Error(
@@ -4209,9 +4335,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertLeafType, "assertLeafType");
     function isCompositeType(type) {
       return isObjectType(type) || isInterfaceType(type) || isUnionType(type);
     }
+    __name(isCompositeType, "isCompositeType");
     function assertCompositeType(type) {
       if (!isCompositeType(type)) {
         throw new Error(
@@ -4220,9 +4348,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertCompositeType, "assertCompositeType");
     function isAbstractType(type) {
       return isInterfaceType(type) || isUnionType(type);
     }
+    __name(isAbstractType, "isAbstractType");
     function assertAbstractType(type) {
       if (!isAbstractType(type)) {
         throw new Error(
@@ -4231,7 +4361,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertAbstractType, "assertAbstractType");
     var GraphQLList = class {
+      static {
+        __name(this, "GraphQLList");
+      }
       constructor(ofType) {
         isType(ofType) || (0, _devAssert.devAssert)(
           false,
@@ -4251,6 +4385,9 @@ var require_definition = __commonJS({
     };
     exports.GraphQLList = GraphQLList;
     var GraphQLNonNull = class {
+      static {
+        __name(this, "GraphQLNonNull");
+      }
       constructor(ofType) {
         isNullableType(ofType) || (0, _devAssert.devAssert)(
           false,
@@ -4274,6 +4411,7 @@ var require_definition = __commonJS({
     function isWrappingType(type) {
       return isListType(type) || isNonNullType(type);
     }
+    __name(isWrappingType, "isWrappingType");
     function assertWrappingType(type) {
       if (!isWrappingType(type)) {
         throw new Error(
@@ -4282,9 +4420,11 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertWrappingType, "assertWrappingType");
     function isNullableType(type) {
       return isType(type) && !isNonNullType(type);
     }
+    __name(isNullableType, "isNullableType");
     function assertNullableType(type) {
       if (!isNullableType(type)) {
         throw new Error(
@@ -4293,14 +4433,17 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertNullableType, "assertNullableType");
     function getNullableType(type) {
       if (type) {
         return isNonNullType(type) ? type.ofType : type;
       }
     }
+    __name(getNullableType, "getNullableType");
     function isNamedType(type) {
       return isScalarType(type) || isObjectType(type) || isInterfaceType(type) || isUnionType(type) || isEnumType(type) || isInputObjectType(type);
     }
+    __name(isNamedType, "isNamedType");
     function assertNamedType(type) {
       if (!isNamedType(type)) {
         throw new Error(
@@ -4309,6 +4452,7 @@ var require_definition = __commonJS({
       }
       return type;
     }
+    __name(assertNamedType, "assertNamedType");
     function getNamedType(type) {
       if (type) {
         let unwrappedType = type;
@@ -4318,13 +4462,19 @@ var require_definition = __commonJS({
         return unwrappedType;
       }
     }
+    __name(getNamedType, "getNamedType");
     function resolveReadonlyArrayThunk(thunk) {
       return typeof thunk === "function" ? thunk() : thunk;
     }
+    __name(resolveReadonlyArrayThunk, "resolveReadonlyArrayThunk");
     function resolveObjMapThunk(thunk) {
       return typeof thunk === "function" ? thunk() : thunk;
     }
+    __name(resolveObjMapThunk, "resolveObjMapThunk");
     var GraphQLScalarType = class {
+      static {
+        __name(this, "GraphQLScalarType");
+      }
       constructor(config) {
         var _config$parseValue, _config$serialize, _config$parseLiteral, _config$extensionASTN;
         const parseValue = (_config$parseValue = config.parseValue) !== null && _config$parseValue !== void 0 ? _config$parseValue : _identityFunc.identityFunc;
@@ -4379,6 +4529,9 @@ var require_definition = __commonJS({
     };
     exports.GraphQLScalarType = GraphQLScalarType;
     var GraphQLObjectType = class {
+      static {
+        __name(this, "GraphQLObjectType");
+      }
       constructor(config) {
         var _config$extensionASTN2;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4440,6 +4593,7 @@ var require_definition = __commonJS({
       );
       return interfaces;
     }
+    __name(defineInterfaces, "defineInterfaces");
     function defineFieldMap(config) {
       const fieldMap = resolveObjMapThunk(config.fields);
       isPlainObj(fieldMap) || (0, _devAssert.devAssert)(
@@ -4474,6 +4628,7 @@ var require_definition = __commonJS({
         };
       });
     }
+    __name(defineFieldMap, "defineFieldMap");
     function defineArguments(config) {
       return Object.entries(config).map(([argName, argConfig]) => ({
         name: (0, _assertName.assertName)(argName),
@@ -4485,9 +4640,11 @@ var require_definition = __commonJS({
         astNode: argConfig.astNode
       }));
     }
+    __name(defineArguments, "defineArguments");
     function isPlainObj(obj) {
       return (0, _isObjectLike.isObjectLike)(obj) && !Array.isArray(obj);
     }
+    __name(isPlainObj, "isPlainObj");
     function fieldsToFieldsConfig(fields) {
       return (0, _mapValue.mapValue)(fields, (field) => ({
         description: field.description,
@@ -4500,6 +4657,7 @@ var require_definition = __commonJS({
         astNode: field.astNode
       }));
     }
+    __name(fieldsToFieldsConfig, "fieldsToFieldsConfig");
     function argsToArgsConfig(args) {
       return (0, _keyValMap.keyValMap)(
         args,
@@ -4514,10 +4672,15 @@ var require_definition = __commonJS({
         })
       );
     }
+    __name(argsToArgsConfig, "argsToArgsConfig");
     function isRequiredArgument(arg) {
       return isNonNullType(arg.type) && arg.defaultValue === void 0;
     }
+    __name(isRequiredArgument, "isRequiredArgument");
     var GraphQLInterfaceType = class {
+      static {
+        __name(this, "GraphQLInterfaceType");
+      }
       constructor(config) {
         var _config$extensionASTN3;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4569,6 +4732,9 @@ var require_definition = __commonJS({
     };
     exports.GraphQLInterfaceType = GraphQLInterfaceType;
     var GraphQLUnionType = class {
+      static {
+        __name(this, "GraphQLUnionType");
+      }
       constructor(config) {
         var _config$extensionASTN4;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4619,7 +4785,11 @@ var require_definition = __commonJS({
       );
       return types;
     }
+    __name(defineTypes, "defineTypes");
     var GraphQLEnumType = class {
+      static {
+        __name(this, "GraphQLEnumType");
+      }
       /* <T> */
       constructor(config) {
         var _config$extensionASTN5;
@@ -4740,6 +4910,7 @@ var require_definition = __commonJS({
       );
       return (0, _didYouMean.didYouMean)("the enum value", suggestedValues);
     }
+    __name(didYouMeanEnumValue, "didYouMeanEnumValue");
     function defineEnumValues(typeName, valueMap) {
       isPlainObj(valueMap) || (0, _devAssert.devAssert)(
         false,
@@ -4762,7 +4933,11 @@ var require_definition = __commonJS({
         };
       });
     }
+    __name(defineEnumValues, "defineEnumValues");
     var GraphQLInputObjectType = class {
+      static {
+        __name(this, "GraphQLInputObjectType");
+      }
       constructor(config) {
         var _config$extensionASTN6, _config$isOneOf;
         this.name = (0, _assertName.assertName)(config.name);
@@ -4831,15 +5006,17 @@ var require_definition = __commonJS({
         };
       });
     }
+    __name(defineInputFieldMap, "defineInputFieldMap");
     function isRequiredInputField(field) {
       return isNonNullType(field.type) && field.defaultValue === void 0;
     }
+    __name(isRequiredInputField, "isRequiredInputField");
   }
 });
 
-// ../../node_modules/graphql/utilities/typeComparators.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/typeComparators.js
 var require_typeComparators = __commonJS({
-  "../../node_modules/graphql/utilities/typeComparators.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/typeComparators.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -4860,6 +5037,7 @@ var require_typeComparators = __commonJS({
       }
       return false;
     }
+    __name(isEqualType, "isEqualType");
     function isTypeSubTypeOf(schema, maybeSubType, superType) {
       if (maybeSubType === superType) {
         return true;
@@ -4884,6 +5062,7 @@ var require_typeComparators = __commonJS({
       }
       return (0, _definition.isAbstractType)(superType) && ((0, _definition.isInterfaceType)(maybeSubType) || (0, _definition.isObjectType)(maybeSubType)) && schema.isSubType(superType, maybeSubType);
     }
+    __name(isTypeSubTypeOf, "isTypeSubTypeOf");
     function doTypesOverlap(schema, typeA, typeB) {
       if (typeA === typeB) {
         return true;
@@ -4899,12 +5078,13 @@ var require_typeComparators = __commonJS({
       }
       return false;
     }
+    __name(doTypesOverlap, "doTypesOverlap");
   }
 });
 
-// ../../node_modules/graphql/type/scalars.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/scalars.js
 var require_scalars = __commonJS({
-  "../../node_modules/graphql/type/scalars.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/scalars.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5166,6 +5346,7 @@ var require_scalars = __commonJS({
     function isSpecifiedScalarType(type) {
       return specifiedScalarTypes.some(({ name }) => type.name === name);
     }
+    __name(isSpecifiedScalarType, "isSpecifiedScalarType");
     function serializeObject(outputValue) {
       if ((0, _isObjectLike.isObjectLike)(outputValue)) {
         if (typeof outputValue.valueOf === "function") {
@@ -5180,12 +5361,13 @@ var require_scalars = __commonJS({
       }
       return outputValue;
     }
+    __name(serializeObject, "serializeObject");
   }
 });
 
-// ../../node_modules/graphql/type/directives.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/directives.js
 var require_directives = __commonJS({
-  "../../node_modules/graphql/type/directives.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/directives.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5207,6 +5389,7 @@ var require_directives = __commonJS({
     function isDirective(directive) {
       return (0, _instanceOf.instanceOf)(directive, GraphQLDirective);
     }
+    __name(isDirective, "isDirective");
     function assertDirective(directive) {
       if (!isDirective(directive)) {
         throw new Error(
@@ -5215,7 +5398,11 @@ var require_directives = __commonJS({
       }
       return directive;
     }
+    __name(assertDirective, "assertDirective");
     var GraphQLDirective = class {
+      static {
+        __name(this, "GraphQLDirective");
+      }
       constructor(config) {
         var _config$isRepeatable, _config$args;
         this.name = (0, _assertName.assertName)(config.name);
@@ -5339,12 +5526,13 @@ var require_directives = __commonJS({
     function isSpecifiedDirective(directive) {
       return specifiedDirectives.some(({ name }) => name === directive.name);
     }
+    __name(isSpecifiedDirective, "isSpecifiedDirective");
   }
 });
 
-// ../../node_modules/graphql/jsutils/isIterableObject.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isIterableObject.js
 var require_isIterableObject = __commonJS({
-  "../../node_modules/graphql/jsutils/isIterableObject.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isIterableObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5353,12 +5541,13 @@ var require_isIterableObject = __commonJS({
     function isIterableObject(maybeIterable) {
       return typeof maybeIterable === "object" && typeof (maybeIterable === null || maybeIterable === void 0 ? void 0 : maybeIterable[Symbol.iterator]) === "function";
     }
+    __name(isIterableObject, "isIterableObject");
   }
 });
 
-// ../../node_modules/graphql/utilities/astFromValue.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/astFromValue.js
 var require_astFromValue = __commonJS({
-  "../../node_modules/graphql/utilities/astFromValue.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/astFromValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5475,13 +5664,14 @@ var require_astFromValue = __commonJS({
         "Unexpected input type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(astFromValue, "astFromValue");
     var integerStringRegExp = /^-?(?:0|[1-9][0-9]*)$/;
   }
 });
 
-// ../../node_modules/graphql/type/introspection.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/introspection.js
 var require_introspection = __commonJS({
-  "../../node_modules/graphql/type/introspection.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/introspection.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -5498,10 +5688,10 @@ var require_introspection = __commonJS({
     var __Schema = new _definition.GraphQLObjectType({
       name: "__Schema",
       description: "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         description: {
           type: _scalars.GraphQLString,
-          resolve: (schema) => schema.description
+          resolve: /* @__PURE__ */ __name((schema) => schema.description, "resolve")
         },
         types: {
           description: "A list of all types supported by this server.",
@@ -5515,17 +5705,17 @@ var require_introspection = __commonJS({
         queryType: {
           description: "The type that query operations will be rooted at.",
           type: new _definition.GraphQLNonNull(__Type),
-          resolve: (schema) => schema.getQueryType()
+          resolve: /* @__PURE__ */ __name((schema) => schema.getQueryType(), "resolve")
         },
         mutationType: {
           description: "If this server supports mutation, the type that mutation operations will be rooted at.",
           type: __Type,
-          resolve: (schema) => schema.getMutationType()
+          resolve: /* @__PURE__ */ __name((schema) => schema.getMutationType(), "resolve")
         },
         subscriptionType: {
           description: "If this server support subscription, the type that subscription operations will be rooted at.",
           type: __Type,
-          resolve: (schema) => schema.getSubscriptionType()
+          resolve: /* @__PURE__ */ __name((schema) => schema.getSubscriptionType(), "resolve")
         },
         directives: {
           description: "A list of all directives supported by this server.",
@@ -5534,26 +5724,26 @@ var require_introspection = __commonJS({
               new _definition.GraphQLNonNull(__Directive)
             )
           ),
-          resolve: (schema) => schema.getDirectives()
+          resolve: /* @__PURE__ */ __name((schema) => schema.getDirectives(), "resolve")
         }
-      })
+      }), "fields")
     });
     exports.__Schema = __Schema;
     var __Directive = new _definition.GraphQLObjectType({
       name: "__Directive",
       description: "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         name: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLString),
-          resolve: (directive) => directive.name
+          resolve: /* @__PURE__ */ __name((directive) => directive.name, "resolve")
         },
         description: {
           type: _scalars.GraphQLString,
-          resolve: (directive) => directive.description
+          resolve: /* @__PURE__ */ __name((directive) => directive.description, "resolve")
         },
         isRepeatable: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
-          resolve: (directive) => directive.isRepeatable
+          resolve: /* @__PURE__ */ __name((directive) => directive.isRepeatable, "resolve")
         },
         locations: {
           type: new _definition.GraphQLNonNull(
@@ -5561,7 +5751,7 @@ var require_introspection = __commonJS({
               new _definition.GraphQLNonNull(__DirectiveLocation)
             )
           ),
-          resolve: (directive) => directive.locations
+          resolve: /* @__PURE__ */ __name((directive) => directive.locations, "resolve")
         },
         args: {
           type: new _definition.GraphQLNonNull(
@@ -5579,7 +5769,7 @@ var require_introspection = __commonJS({
             return includeDeprecated ? field.args : field.args.filter((arg) => arg.deprecationReason == null);
           }
         }
-      })
+      }), "fields")
     });
     exports.__Directive = __Directive;
     var __DirectiveLocation = new _definition.GraphQLEnumType({
@@ -5668,7 +5858,7 @@ var require_introspection = __commonJS({
     var __Type = new _definition.GraphQLObjectType({
       name: "__Type",
       description: "The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByURL`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         kind: {
           type: new _definition.GraphQLNonNull(__TypeKind),
           resolve(type) {
@@ -5704,18 +5894,18 @@ var require_introspection = __commonJS({
         },
         name: {
           type: _scalars.GraphQLString,
-          resolve: (type) => "name" in type ? type.name : void 0
+          resolve: /* @__PURE__ */ __name((type) => "name" in type ? type.name : void 0, "resolve")
         },
         description: {
           type: _scalars.GraphQLString,
-          resolve: (type) => (
+          resolve: /* @__PURE__ */ __name((type) => (
             /* c8 ignore next */
             "description" in type ? type.description : void 0
-          )
+          ), "resolve")
         },
         specifiedByURL: {
           type: _scalars.GraphQLString,
-          resolve: (obj) => "specifiedByURL" in obj ? obj.specifiedByURL : void 0
+          resolve: /* @__PURE__ */ __name((obj) => "specifiedByURL" in obj ? obj.specifiedByURL : void 0, "resolve")
         },
         fields: {
           type: new _definition.GraphQLList(
@@ -5786,30 +5976,30 @@ var require_introspection = __commonJS({
         },
         ofType: {
           type: __Type,
-          resolve: (type) => "ofType" in type ? type.ofType : void 0
+          resolve: /* @__PURE__ */ __name((type) => "ofType" in type ? type.ofType : void 0, "resolve")
         },
         isOneOf: {
           type: _scalars.GraphQLBoolean,
-          resolve: (type) => {
+          resolve: /* @__PURE__ */ __name((type) => {
             if ((0, _definition.isInputObjectType)(type)) {
               return type.isOneOf;
             }
-          }
+          }, "resolve")
         }
-      })
+      }), "fields")
     });
     exports.__Type = __Type;
     var __Field = new _definition.GraphQLObjectType({
       name: "__Field",
       description: "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         name: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLString),
-          resolve: (field) => field.name
+          resolve: /* @__PURE__ */ __name((field) => field.name, "resolve")
         },
         description: {
           type: _scalars.GraphQLString,
-          resolve: (field) => field.description
+          resolve: /* @__PURE__ */ __name((field) => field.description, "resolve")
         },
         args: {
           type: new _definition.GraphQLNonNull(
@@ -5829,34 +6019,34 @@ var require_introspection = __commonJS({
         },
         type: {
           type: new _definition.GraphQLNonNull(__Type),
-          resolve: (field) => field.type
+          resolve: /* @__PURE__ */ __name((field) => field.type, "resolve")
         },
         isDeprecated: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
-          resolve: (field) => field.deprecationReason != null
+          resolve: /* @__PURE__ */ __name((field) => field.deprecationReason != null, "resolve")
         },
         deprecationReason: {
           type: _scalars.GraphQLString,
-          resolve: (field) => field.deprecationReason
+          resolve: /* @__PURE__ */ __name((field) => field.deprecationReason, "resolve")
         }
-      })
+      }), "fields")
     });
     exports.__Field = __Field;
     var __InputValue = new _definition.GraphQLObjectType({
       name: "__InputValue",
       description: "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         name: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLString),
-          resolve: (inputValue) => inputValue.name
+          resolve: /* @__PURE__ */ __name((inputValue) => inputValue.name, "resolve")
         },
         description: {
           type: _scalars.GraphQLString,
-          resolve: (inputValue) => inputValue.description
+          resolve: /* @__PURE__ */ __name((inputValue) => inputValue.description, "resolve")
         },
         type: {
           type: new _definition.GraphQLNonNull(__Type),
-          resolve: (inputValue) => inputValue.type
+          resolve: /* @__PURE__ */ __name((inputValue) => inputValue.type, "resolve")
         },
         defaultValue: {
           type: _scalars.GraphQLString,
@@ -5869,36 +6059,36 @@ var require_introspection = __commonJS({
         },
         isDeprecated: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
-          resolve: (field) => field.deprecationReason != null
+          resolve: /* @__PURE__ */ __name((field) => field.deprecationReason != null, "resolve")
         },
         deprecationReason: {
           type: _scalars.GraphQLString,
-          resolve: (obj) => obj.deprecationReason
+          resolve: /* @__PURE__ */ __name((obj) => obj.deprecationReason, "resolve")
         }
-      })
+      }), "fields")
     });
     exports.__InputValue = __InputValue;
     var __EnumValue = new _definition.GraphQLObjectType({
       name: "__EnumValue",
       description: "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.",
-      fields: () => ({
+      fields: /* @__PURE__ */ __name(() => ({
         name: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLString),
-          resolve: (enumValue) => enumValue.name
+          resolve: /* @__PURE__ */ __name((enumValue) => enumValue.name, "resolve")
         },
         description: {
           type: _scalars.GraphQLString,
-          resolve: (enumValue) => enumValue.description
+          resolve: /* @__PURE__ */ __name((enumValue) => enumValue.description, "resolve")
         },
         isDeprecated: {
           type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
-          resolve: (enumValue) => enumValue.deprecationReason != null
+          resolve: /* @__PURE__ */ __name((enumValue) => enumValue.deprecationReason != null, "resolve")
         },
         deprecationReason: {
           type: _scalars.GraphQLString,
-          resolve: (enumValue) => enumValue.deprecationReason
+          resolve: /* @__PURE__ */ __name((enumValue) => enumValue.deprecationReason, "resolve")
         }
-      })
+      }), "fields")
     });
     exports.__EnumValue = __EnumValue;
     var TypeKind;
@@ -5957,7 +6147,7 @@ var require_introspection = __commonJS({
       type: new _definition.GraphQLNonNull(__Schema),
       description: "Access the current type schema of this server.",
       args: [],
-      resolve: (_source, _args, _context, { schema }) => schema,
+      resolve: /* @__PURE__ */ __name((_source, _args, _context, { schema }) => schema, "resolve"),
       deprecationReason: void 0,
       extensions: /* @__PURE__ */ Object.create(null),
       astNode: void 0
@@ -5978,7 +6168,7 @@ var require_introspection = __commonJS({
           astNode: void 0
         }
       ],
-      resolve: (_source, { name }, _context, { schema }) => schema.getType(name),
+      resolve: /* @__PURE__ */ __name((_source, { name }, _context, { schema }) => schema.getType(name), "resolve"),
       deprecationReason: void 0,
       extensions: /* @__PURE__ */ Object.create(null),
       astNode: void 0
@@ -5989,7 +6179,7 @@ var require_introspection = __commonJS({
       type: new _definition.GraphQLNonNull(_scalars.GraphQLString),
       description: "The name of the current Object type at runtime.",
       args: [],
-      resolve: (_source, _args, _context, { parentType }) => parentType.name,
+      resolve: /* @__PURE__ */ __name((_source, _args, _context, { parentType }) => parentType.name, "resolve"),
       deprecationReason: void 0,
       extensions: /* @__PURE__ */ Object.create(null),
       astNode: void 0
@@ -6009,12 +6199,13 @@ var require_introspection = __commonJS({
     function isIntrospectionType(type) {
       return introspectionTypes.some(({ name }) => type.name === name);
     }
+    __name(isIntrospectionType, "isIntrospectionType");
   }
 });
 
-// ../../node_modules/graphql/type/schema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/schema.js
 var require_schema = __commonJS({
-  "../../node_modules/graphql/type/schema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/schema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6034,6 +6225,7 @@ var require_schema = __commonJS({
     function isSchema(schema) {
       return (0, _instanceOf.instanceOf)(schema, GraphQLSchema);
     }
+    __name(isSchema, "isSchema");
     function assertSchema(schema) {
       if (!isSchema(schema)) {
         throw new Error(
@@ -6042,7 +6234,11 @@ var require_schema = __commonJS({
       }
       return schema;
     }
+    __name(assertSchema, "assertSchema");
     var GraphQLSchema = class {
+      static {
+        __name(this, "GraphQLSchema");
+      }
       // Used as a cache for validateSchema().
       constructor(config) {
         var _config$extensionASTN, _config$directives;
@@ -6244,12 +6440,13 @@ var require_schema = __commonJS({
       }
       return typeSet;
     }
+    __name(collectReferencedTypes, "collectReferencedTypes");
   }
 });
 
-// ../../node_modules/graphql/type/validate.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/validate.js
 var require_validate = __commonJS({
-  "../../node_modules/graphql/type/validate.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6277,13 +6474,18 @@ var require_validate = __commonJS({
       schema.__validationErrors = errors;
       return errors;
     }
+    __name(validateSchema, "validateSchema");
     function assertValidSchema(schema) {
       const errors = validateSchema(schema);
       if (errors.length !== 0) {
         throw new Error(errors.map((error) => error.message).join("\n\n"));
       }
     }
+    __name(assertValidSchema, "assertValidSchema");
     var SchemaValidationContext = class {
+      static {
+        __name(this, "SchemaValidationContext");
+      }
       constructor(schema) {
         this._errors = [];
         this.schema = schema;
@@ -6338,6 +6540,7 @@ var require_validate = __commonJS({
         );
       }
     }
+    __name(validateRootTypes, "validateRootTypes");
     function getOperationTypeNode(schema, operation) {
       var _flatMap$find;
       return (_flatMap$find = [schema.astNode, ...schema.extensionASTNodes].flatMap(
@@ -6351,6 +6554,7 @@ var require_validate = __commonJS({
         }
       ).find((operationNode) => operationNode.operation === operation)) === null || _flatMap$find === void 0 ? void 0 : _flatMap$find.type;
     }
+    __name(getOperationTypeNode, "getOperationTypeNode");
     function validateDirectives(context) {
       for (const directive of context.schema.getDirectives()) {
         if (!(0, _directives.isDirective)(directive)) {
@@ -6388,6 +6592,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateDirectives, "validateDirectives");
     function validateName(context, node) {
       if (node.name.startsWith("__")) {
         context.reportError(
@@ -6396,6 +6601,7 @@ var require_validate = __commonJS({
         );
       }
     }
+    __name(validateName, "validateName");
     function validateTypes(context) {
       const validateInputObjectCircularRefs = createInputObjectCircularRefsValidator(context);
       const typeMap = context.schema.getTypeMap();
@@ -6426,6 +6632,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateTypes, "validateTypes");
     function validateFields(context, type) {
       const fields = Object.values(type.getFields());
       if (fields.length === 0) {
@@ -6466,6 +6673,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateFields, "validateFields");
     function validateInterfaces(context, type) {
       const ifaceTypeNames = /* @__PURE__ */ Object.create(null);
       for (const iface of type.getInterfaces()) {
@@ -6497,6 +6705,7 @@ var require_validate = __commonJS({
         validateTypeImplementsInterface(context, type, iface);
       }
     }
+    __name(validateInterfaces, "validateInterfaces");
     function validateTypeImplementsInterface(context, type, iface) {
       const typeFieldMap = type.getFields();
       for (const ifaceField of Object.values(iface.getFields())) {
@@ -6556,6 +6765,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateTypeImplementsInterface, "validateTypeImplementsInterface");
     function validateTypeImplementsAncestors(context, type, iface) {
       const ifaceInterfaces = type.getInterfaces();
       for (const transitive of iface.getInterfaces()) {
@@ -6570,6 +6780,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateTypeImplementsAncestors, "validateTypeImplementsAncestors");
     function validateUnionMembers(context, union) {
       const memberTypes = union.getTypes();
       if (memberTypes.length === 0) {
@@ -6596,6 +6807,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateUnionMembers, "validateUnionMembers");
     function validateEnumValues(context, enumType) {
       const enumValues = enumType.getValues();
       if (enumValues.length === 0) {
@@ -6608,6 +6820,7 @@ var require_validate = __commonJS({
         validateName(context, enumValue);
       }
     }
+    __name(validateEnumValues, "validateEnumValues");
     function validateInputFields(context, inputObj) {
       const fields = Object.values(inputObj.getFields());
       if (fields.length === 0) {
@@ -6640,6 +6853,7 @@ var require_validate = __commonJS({
         }
       }
     }
+    __name(validateInputFields, "validateInputFields");
     function validateOneOfInputObjectField(type, field, context) {
       if ((0, _definition.isNonNullType)(field.type)) {
         var _field$astNode4;
@@ -6655,6 +6869,7 @@ var require_validate = __commonJS({
         );
       }
     }
+    __name(validateOneOfInputObjectField, "validateOneOfInputObjectField");
     function createInputObjectCircularRefsValidator(context) {
       const visitedTypes = /* @__PURE__ */ Object.create(null);
       const fieldPath = [];
@@ -6687,7 +6902,9 @@ var require_validate = __commonJS({
         }
         fieldPathIndexByTypeName[inputObj.name] = void 0;
       }
+      __name(detectCycleRecursive, "detectCycleRecursive");
     }
+    __name(createInputObjectCircularRefsValidator, "createInputObjectCircularRefsValidator");
     function getAllImplementsInterfaceNodes(type, iface) {
       const { astNode, extensionASTNodes } = type;
       const nodes = astNode != null ? [astNode, ...extensionASTNodes] : extensionASTNodes;
@@ -6699,6 +6916,7 @@ var require_validate = __commonJS({
         );
       }).filter((ifaceNode) => ifaceNode.name.value === iface.name);
     }
+    __name(getAllImplementsInterfaceNodes, "getAllImplementsInterfaceNodes");
     function getUnionMemberTypeNodes(union, typeName) {
       const { astNode, extensionASTNodes } = union;
       const nodes = astNode != null ? [astNode, ...extensionASTNodes] : extensionASTNodes;
@@ -6710,18 +6928,20 @@ var require_validate = __commonJS({
         );
       }).filter((typeNode) => typeNode.name.value === typeName);
     }
+    __name(getUnionMemberTypeNodes, "getUnionMemberTypeNodes");
     function getDeprecatedDirectiveNode(definitionNode) {
       var _definitionNode$direc;
       return definitionNode === null || definitionNode === void 0 ? void 0 : (_definitionNode$direc = definitionNode.directives) === null || _definitionNode$direc === void 0 ? void 0 : _definitionNode$direc.find(
         (node) => node.name.value === _directives.GraphQLDeprecatedDirective.name
       );
     }
+    __name(getDeprecatedDirectiveNode, "getDeprecatedDirectiveNode");
   }
 });
 
-// ../../node_modules/graphql/utilities/typeFromAST.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/typeFromAST.js
 var require_typeFromAST = __commonJS({
-  "../../node_modules/graphql/utilities/typeFromAST.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/typeFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6743,12 +6963,13 @@ var require_typeFromAST = __commonJS({
           return schema.getType(typeNode.name.value);
       }
     }
+    __name(typeFromAST, "typeFromAST");
   }
 });
 
-// ../../node_modules/graphql/utilities/TypeInfo.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/TypeInfo.js
 var require_TypeInfo = __commonJS({
-  "../../node_modules/graphql/utilities/TypeInfo.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/TypeInfo.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -6762,6 +6983,9 @@ var require_TypeInfo = __commonJS({
     var _introspection = require_introspection();
     var _typeFromAST = require_typeFromAST();
     var TypeInfo = class {
+      static {
+        __name(this, "TypeInfo");
+      }
       constructor(schema, initialType, getFieldDefFn) {
         this._schema = schema;
         this._typeStack = [];
@@ -6991,6 +7215,7 @@ var require_TypeInfo = __commonJS({
         return parentType.getFields()[name];
       }
     }
+    __name(getFieldDef, "getFieldDef");
     function visitWithTypeInfo(typeInfo, visitor) {
       return {
         enter(...args) {
@@ -7020,12 +7245,13 @@ var require_TypeInfo = __commonJS({
         }
       };
     }
+    __name(visitWithTypeInfo, "visitWithTypeInfo");
   }
 });
 
-// ../../node_modules/graphql/language/predicates.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/predicates.js
 var require_predicates = __commonJS({
-  "../../node_modules/graphql/language/predicates.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/predicates.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7044,39 +7270,49 @@ var require_predicates = __commonJS({
     function isDefinitionNode(node) {
       return isExecutableDefinitionNode(node) || isTypeSystemDefinitionNode(node) || isTypeSystemExtensionNode(node);
     }
+    __name(isDefinitionNode, "isDefinitionNode");
     function isExecutableDefinitionNode(node) {
       return node.kind === _kinds.Kind.OPERATION_DEFINITION || node.kind === _kinds.Kind.FRAGMENT_DEFINITION;
     }
+    __name(isExecutableDefinitionNode, "isExecutableDefinitionNode");
     function isSelectionNode(node) {
       return node.kind === _kinds.Kind.FIELD || node.kind === _kinds.Kind.FRAGMENT_SPREAD || node.kind === _kinds.Kind.INLINE_FRAGMENT;
     }
+    __name(isSelectionNode, "isSelectionNode");
     function isValueNode(node) {
       return node.kind === _kinds.Kind.VARIABLE || node.kind === _kinds.Kind.INT || node.kind === _kinds.Kind.FLOAT || node.kind === _kinds.Kind.STRING || node.kind === _kinds.Kind.BOOLEAN || node.kind === _kinds.Kind.NULL || node.kind === _kinds.Kind.ENUM || node.kind === _kinds.Kind.LIST || node.kind === _kinds.Kind.OBJECT;
     }
+    __name(isValueNode, "isValueNode");
     function isConstValueNode(node) {
       return isValueNode(node) && (node.kind === _kinds.Kind.LIST ? node.values.some(isConstValueNode) : node.kind === _kinds.Kind.OBJECT ? node.fields.some((field) => isConstValueNode(field.value)) : node.kind !== _kinds.Kind.VARIABLE);
     }
+    __name(isConstValueNode, "isConstValueNode");
     function isTypeNode(node) {
       return node.kind === _kinds.Kind.NAMED_TYPE || node.kind === _kinds.Kind.LIST_TYPE || node.kind === _kinds.Kind.NON_NULL_TYPE;
     }
+    __name(isTypeNode, "isTypeNode");
     function isTypeSystemDefinitionNode(node) {
       return node.kind === _kinds.Kind.SCHEMA_DEFINITION || isTypeDefinitionNode(node) || node.kind === _kinds.Kind.DIRECTIVE_DEFINITION;
     }
+    __name(isTypeSystemDefinitionNode, "isTypeSystemDefinitionNode");
     function isTypeDefinitionNode(node) {
       return node.kind === _kinds.Kind.SCALAR_TYPE_DEFINITION || node.kind === _kinds.Kind.OBJECT_TYPE_DEFINITION || node.kind === _kinds.Kind.INTERFACE_TYPE_DEFINITION || node.kind === _kinds.Kind.UNION_TYPE_DEFINITION || node.kind === _kinds.Kind.ENUM_TYPE_DEFINITION || node.kind === _kinds.Kind.INPUT_OBJECT_TYPE_DEFINITION;
     }
+    __name(isTypeDefinitionNode, "isTypeDefinitionNode");
     function isTypeSystemExtensionNode(node) {
       return node.kind === _kinds.Kind.SCHEMA_EXTENSION || isTypeExtensionNode(node);
     }
+    __name(isTypeSystemExtensionNode, "isTypeSystemExtensionNode");
     function isTypeExtensionNode(node) {
       return node.kind === _kinds.Kind.SCALAR_TYPE_EXTENSION || node.kind === _kinds.Kind.OBJECT_TYPE_EXTENSION || node.kind === _kinds.Kind.INTERFACE_TYPE_EXTENSION || node.kind === _kinds.Kind.UNION_TYPE_EXTENSION || node.kind === _kinds.Kind.ENUM_TYPE_EXTENSION || node.kind === _kinds.Kind.INPUT_OBJECT_TYPE_EXTENSION;
     }
+    __name(isTypeExtensionNode, "isTypeExtensionNode");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js
 var require_ExecutableDefinitionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ExecutableDefinitionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7105,12 +7341,13 @@ var require_ExecutableDefinitionsRule = __commonJS({
         }
       };
     }
+    __name(ExecutableDefinitionsRule, "ExecutableDefinitionsRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js
 var require_FieldsOnCorrectTypeRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7152,6 +7389,7 @@ var require_FieldsOnCorrectTypeRule = __commonJS({
         }
       };
     }
+    __name(FieldsOnCorrectTypeRule, "FieldsOnCorrectTypeRule");
     function getSuggestedTypeNames(schema, type, fieldName) {
       if (!(0, _definition.isAbstractType)(type)) {
         return [];
@@ -7187,6 +7425,7 @@ var require_FieldsOnCorrectTypeRule = __commonJS({
         return (0, _naturalCompare.naturalCompare)(typeA.name, typeB.name);
       }).map((x) => x.name);
     }
+    __name(getSuggestedTypeNames, "getSuggestedTypeNames");
     function getSuggestedFieldNames(type, fieldName) {
       if ((0, _definition.isObjectType)(type) || (0, _definition.isInterfaceType)(type)) {
         const possibleFieldNames = Object.keys(type.getFields());
@@ -7194,12 +7433,13 @@ var require_FieldsOnCorrectTypeRule = __commonJS({
       }
       return [];
     }
+    __name(getSuggestedFieldNames, "getSuggestedFieldNames");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js
 var require_FragmentsOnCompositeTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/FragmentsOnCompositeTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7250,12 +7490,13 @@ var require_FragmentsOnCompositeTypesRule = __commonJS({
         }
       };
     }
+    __name(FragmentsOnCompositeTypesRule, "FragmentsOnCompositeTypesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownArgumentNamesRule.js
 var require_KnownArgumentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7294,6 +7535,7 @@ var require_KnownArgumentNamesRule = __commonJS({
         }
       };
     }
+    __name(KnownArgumentNamesRule, "KnownArgumentNamesRule");
     function KnownArgumentNamesOnDirectivesRule(context) {
       const directiveArgs = /* @__PURE__ */ Object.create(null);
       const schema = context.getSchema();
@@ -7336,12 +7578,13 @@ var require_KnownArgumentNamesRule = __commonJS({
         }
       };
     }
+    __name(KnownArgumentNamesOnDirectivesRule, "KnownArgumentNamesOnDirectivesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownDirectivesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownDirectivesRule.js
 var require_KnownDirectivesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownDirectivesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7393,6 +7636,7 @@ var require_KnownDirectivesRule = __commonJS({
         }
       };
     }
+    __name(KnownDirectivesRule, "KnownDirectivesRule");
     function getDirectiveLocationForASTPath(ancestors) {
       const appliedTo = ancestors[ancestors.length - 1];
       "kind" in appliedTo || (0, _invariant.invariant)(false);
@@ -7448,6 +7692,7 @@ var require_KnownDirectivesRule = __commonJS({
           );
       }
     }
+    __name(getDirectiveLocationForASTPath, "getDirectiveLocationForASTPath");
     function getDirectiveLocationForOperation(operation) {
       switch (operation) {
         case _ast.OperationTypeNode.QUERY:
@@ -7458,12 +7703,13 @@ var require_KnownDirectivesRule = __commonJS({
           return _directiveLocation.DirectiveLocation.SUBSCRIPTION;
       }
     }
+    __name(getDirectiveLocationForOperation, "getDirectiveLocationForOperation");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownFragmentNamesRule.js
 var require_KnownFragmentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7488,12 +7734,13 @@ var require_KnownFragmentNamesRule = __commonJS({
         }
       };
     }
+    __name(KnownFragmentNamesRule, "KnownFragmentNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownTypeNamesRule.js
 var require_KnownTypeNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/KnownTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7544,6 +7791,7 @@ var require_KnownTypeNamesRule = __commonJS({
         }
       };
     }
+    __name(KnownTypeNamesRule, "KnownTypeNamesRule");
     var standardTypeNames = [
       ..._scalars.specifiedScalarTypes,
       ..._introspection.introspectionTypes
@@ -7551,12 +7799,13 @@ var require_KnownTypeNamesRule = __commonJS({
     function isSDLNode(value) {
       return "kind" in value && ((0, _predicates.isTypeSystemDefinitionNode)(value) || (0, _predicates.isTypeSystemExtensionNode)(value));
     }
+    __name(isSDLNode, "isSDLNode");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js
 var require_LoneAnonymousOperationRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/LoneAnonymousOperationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7586,12 +7835,13 @@ var require_LoneAnonymousOperationRule = __commonJS({
         }
       };
     }
+    __name(LoneAnonymousOperationRule, "LoneAnonymousOperationRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js
 var require_LoneSchemaDefinitionRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/LoneSchemaDefinitionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7630,12 +7880,13 @@ var require_LoneSchemaDefinitionRule = __commonJS({
         }
       };
     }
+    __name(LoneSchemaDefinitionRule, "LoneSchemaDefinitionRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js
 var require_MaxIntrospectionDepthRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/MaxIntrospectionDepthRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7678,6 +7929,7 @@ var require_MaxIntrospectionDepthRule = __commonJS({
         }
         return false;
       }
+      __name(checkDepth, "checkDepth");
       return {
         Field(node) {
           if (node.name.value === "__schema" || node.name.value === "__type") {
@@ -7696,12 +7948,13 @@ var require_MaxIntrospectionDepthRule = __commonJS({
         }
       };
     }
+    __name(MaxIntrospectionDepthRule, "MaxIntrospectionDepthRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoFragmentCyclesRule.js
 var require_NoFragmentCyclesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoFragmentCyclesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7713,7 +7966,7 @@ var require_NoFragmentCyclesRule = __commonJS({
       const spreadPath = [];
       const spreadPathIndexByName = /* @__PURE__ */ Object.create(null);
       return {
-        OperationDefinition: () => false,
+        OperationDefinition: /* @__PURE__ */ __name(() => false, "OperationDefinition"),
         FragmentDefinition(node) {
           detectCycleRecursive(node);
           return false;
@@ -7755,13 +8008,15 @@ var require_NoFragmentCyclesRule = __commonJS({
         }
         spreadPathIndexByName[fragmentName] = void 0;
       }
+      __name(detectCycleRecursive, "detectCycleRecursive");
     }
+    __name(NoFragmentCyclesRule, "NoFragmentCyclesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js
 var require_NoUndefinedVariablesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUndefinedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7797,12 +8052,13 @@ var require_NoUndefinedVariablesRule = __commonJS({
         }
       };
     }
+    __name(NoUndefinedVariablesRule, "NoUndefinedVariablesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js
 var require_NoUnusedFragmentsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUnusedFragmentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7848,12 +8104,13 @@ var require_NoUnusedFragmentsRule = __commonJS({
         }
       };
     }
+    __name(NoUnusedFragmentsRule, "NoUnusedFragmentsRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUnusedVariablesRule.js
 var require_NoUnusedVariablesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/NoUnusedVariablesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7893,12 +8150,13 @@ var require_NoUnusedVariablesRule = __commonJS({
         }
       };
     }
+    __name(NoUnusedVariablesRule, "NoUnusedVariablesRule");
   }
 });
 
-// ../../node_modules/graphql/utilities/sortValueNode.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/sortValueNode.js
 var require_sortValueNode = __commonJS({
-  "../../node_modules/graphql/utilities/sortValueNode.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/sortValueNode.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7922,6 +8180,7 @@ var require_sortValueNode = __commonJS({
           return valueNode;
       }
     }
+    __name(sortValueNode, "sortValueNode");
     function sortFields(fields) {
       return fields.map((fieldNode) => ({
         ...fieldNode,
@@ -7930,12 +8189,13 @@ var require_sortValueNode = __commonJS({
         (fieldA, fieldB) => (0, _naturalCompare.naturalCompare)(fieldA.name.value, fieldB.name.value)
       );
     }
+    __name(sortFields, "sortFields");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js
 var require_OverlappingFieldsCanBeMergedRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/OverlappingFieldsCanBeMergedRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -7956,6 +8216,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       }
       return reason;
     }
+    __name(reasonMessage, "reasonMessage");
     function OverlappingFieldsCanBeMergedRule(context) {
       const comparedFieldsAndFragmentPairs = new OrderedPairSet();
       const comparedFragmentPairs = new PairSet();
@@ -7984,6 +8245,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         }
       };
     }
+    __name(OverlappingFieldsCanBeMergedRule, "OverlappingFieldsCanBeMergedRule");
     function findConflictsWithinSelectionSet(context, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, parentType, selectionSet) {
       const conflicts = [];
       const [fieldMap, fragmentNames] = getFieldsAndFragmentNames(
@@ -8028,6 +8290,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       }
       return conflicts;
     }
+    __name(findConflictsWithinSelectionSet, "findConflictsWithinSelectionSet");
     function collectConflictsBetweenFieldsAndFragment(context, conflicts, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, areMutuallyExclusive, fieldMap, fragmentName) {
       if (comparedFieldsAndFragmentPairs.has(
         fieldMap,
@@ -8076,6 +8339,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         );
       }
     }
+    __name(collectConflictsBetweenFieldsAndFragment, "collectConflictsBetweenFieldsAndFragment");
     function collectConflictsBetweenFragments(context, conflicts, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, areMutuallyExclusive, fragmentName1, fragmentName2) {
       if (fragmentName1 === fragmentName2) {
         return;
@@ -8138,6 +8402,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         );
       }
     }
+    __name(collectConflictsBetweenFragments, "collectConflictsBetweenFragments");
     function findConflictsBetweenSubSelectionSets(context, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, areMutuallyExclusive, parentType1, selectionSet1, parentType2, selectionSet2) {
       const conflicts = [];
       const [fieldMap1, fragmentNames1] = getFieldsAndFragmentNames(
@@ -8202,6 +8467,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       }
       return conflicts;
     }
+    __name(findConflictsBetweenSubSelectionSets, "findConflictsBetweenSubSelectionSets");
     function collectConflictsWithin(context, conflicts, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, fieldMap) {
       for (const [responseName, fields] of Object.entries(fieldMap)) {
         if (fields.length > 1) {
@@ -8226,6 +8492,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         }
       }
     }
+    __name(collectConflictsWithin, "collectConflictsWithin");
     function collectConflictsBetween(context, conflicts, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, parentFieldsAreMutuallyExclusive, fieldMap1, fieldMap2) {
       for (const [responseName, fields1] of Object.entries(fieldMap1)) {
         const fields2 = fieldMap2[responseName];
@@ -8250,6 +8517,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         }
       }
     }
+    __name(collectConflictsBetween, "collectConflictsBetween");
     function findConflict(context, cachedFieldsAndFragmentNames, comparedFieldsAndFragmentPairs, comparedFragmentPairs, parentFieldsAreMutuallyExclusive, responseName, field1, field2) {
       const [parentType1, node1, def1] = field1;
       const [parentType2, node2, def2] = field2;
@@ -8303,6 +8571,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         return subfieldConflicts(conflicts, responseName, node1, node2);
       }
     }
+    __name(findConflict, "findConflict");
     function sameArguments(node1, node2) {
       const args1 = node1.arguments;
       const args2 = node2.arguments;
@@ -8325,9 +8594,11 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         return stringifyValue(value1) === stringifyValue(value2);
       });
     }
+    __name(sameArguments, "sameArguments");
     function stringifyValue(value) {
       return (0, _printer.print)((0, _sortValueNode.sortValueNode)(value));
     }
+    __name(stringifyValue, "stringifyValue");
     function doTypesConflict(type1, type2) {
       if ((0, _definition.isListType)(type1)) {
         return (0, _definition.isListType)(type2) ? doTypesConflict(type1.ofType, type2.ofType) : true;
@@ -8346,6 +8617,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       }
       return false;
     }
+    __name(doTypesConflict, "doTypesConflict");
     function getFieldsAndFragmentNames(context, cachedFieldsAndFragmentNames, parentType, selectionSet) {
       const cached = cachedFieldsAndFragmentNames.get(selectionSet);
       if (cached) {
@@ -8364,6 +8636,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       cachedFieldsAndFragmentNames.set(selectionSet, result);
       return result;
     }
+    __name(getFieldsAndFragmentNames, "getFieldsAndFragmentNames");
     function getReferencedFieldsAndFragmentNames(context, cachedFieldsAndFragmentNames, fragment) {
       const cached = cachedFieldsAndFragmentNames.get(fragment.selectionSet);
       if (cached) {
@@ -8380,6 +8653,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         fragment.selectionSet
       );
     }
+    __name(getReferencedFieldsAndFragmentNames, "getReferencedFieldsAndFragmentNames");
     function _collectFieldsAndFragmentNames(context, parentType, selectionSet, nodeAndDefs, fragmentNames) {
       for (const selection of selectionSet.selections) {
         switch (selection.kind) {
@@ -8414,6 +8688,7 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         }
       }
     }
+    __name(_collectFieldsAndFragmentNames, "_collectFieldsAndFragmentNames");
     function subfieldConflicts(conflicts, responseName, node1, node2) {
       if (conflicts.length > 0) {
         return [
@@ -8423,7 +8698,11 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
         ];
       }
     }
+    __name(subfieldConflicts, "subfieldConflicts");
     var OrderedPairSet = class {
+      static {
+        __name(this, "OrderedPairSet");
+      }
       constructor() {
         this._data = /* @__PURE__ */ new Map();
       }
@@ -8445,6 +8724,9 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
       }
     };
     var PairSet = class {
+      static {
+        __name(this, "PairSet");
+      }
       constructor() {
         this._orderedPairSet = new OrderedPairSet();
       }
@@ -8462,9 +8744,9 @@ var require_OverlappingFieldsCanBeMergedRule = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js
 var require_PossibleFragmentSpreadsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/PossibleFragmentSpreadsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8520,6 +8802,7 @@ var require_PossibleFragmentSpreadsRule = __commonJS({
         }
       };
     }
+    __name(PossibleFragmentSpreadsRule, "PossibleFragmentSpreadsRule");
     function getFragmentType(context, name) {
       const frag = context.getFragment(name);
       if (frag) {
@@ -8532,12 +8815,13 @@ var require_PossibleFragmentSpreadsRule = __commonJS({
         }
       }
     }
+    __name(getFragmentType, "getFragmentType");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js
 var require_PossibleTypeExtensionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/PossibleTypeExtensionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8608,7 +8892,9 @@ var require_PossibleTypeExtensionsRule = __commonJS({
           );
         }
       }
+      __name(checkExtension, "checkExtension");
     }
+    __name(PossibleTypeExtensionsRule, "PossibleTypeExtensionsRule");
     var defKindToExtKind = {
       [_kinds.Kind.SCALAR_TYPE_DEFINITION]: _kinds.Kind.SCALAR_TYPE_EXTENSION,
       [_kinds.Kind.OBJECT_TYPE_DEFINITION]: _kinds.Kind.OBJECT_TYPE_EXTENSION,
@@ -8641,6 +8927,7 @@ var require_PossibleTypeExtensionsRule = __commonJS({
         "Unexpected type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(typeToExtKind, "typeToExtKind");
     function extensionKindToTypeName(kind) {
       switch (kind) {
         case _kinds.Kind.SCALAR_TYPE_EXTENSION:
@@ -8664,12 +8951,13 @@ var require_PossibleTypeExtensionsRule = __commonJS({
           );
       }
     }
+    __name(extensionKindToTypeName, "extensionKindToTypeName");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js
 var require_ProvidedRequiredArgumentsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ProvidedRequiredArgumentsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8717,6 +9005,7 @@ var require_ProvidedRequiredArgumentsRule = __commonJS({
         }
       };
     }
+    __name(ProvidedRequiredArgumentsRule, "ProvidedRequiredArgumentsRule");
     function ProvidedRequiredArgumentsOnDirectivesRule(context) {
       var _schema$getDirectives;
       const requiredArgsMap = /* @__PURE__ */ Object.create(null);
@@ -8767,15 +9056,17 @@ var require_ProvidedRequiredArgumentsRule = __commonJS({
         }
       };
     }
+    __name(ProvidedRequiredArgumentsOnDirectivesRule, "ProvidedRequiredArgumentsOnDirectivesRule");
     function isRequiredArgumentNode(arg) {
       return arg.type.kind === _kinds.Kind.NON_NULL_TYPE && arg.defaultValue == null;
     }
+    __name(isRequiredArgumentNode, "isRequiredArgumentNode");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ScalarLeafsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ScalarLeafsRule.js
 var require_ScalarLeafsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ScalarLeafsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8830,12 +9121,13 @@ var require_ScalarLeafsRule = __commonJS({
         }
       };
     }
+    __name(ScalarLeafsRule, "ScalarLeafsRule");
   }
 });
 
-// ../../node_modules/graphql/jsutils/printPathArray.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/printPathArray.js
 var require_printPathArray = __commonJS({
-  "../../node_modules/graphql/jsutils/printPathArray.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/printPathArray.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8846,12 +9138,13 @@ var require_printPathArray = __commonJS({
         (key) => typeof key === "number" ? "[" + key.toString() + "]" : "." + key
       ).join("");
     }
+    __name(printPathArray, "printPathArray");
   }
 });
 
-// ../../node_modules/graphql/jsutils/Path.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/Path.js
 var require_Path = __commonJS({
-  "../../node_modules/graphql/jsutils/Path.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/Path.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8865,6 +9158,7 @@ var require_Path = __commonJS({
         typename
       };
     }
+    __name(addPath, "addPath");
     function pathToArray(path2) {
       const flattened = [];
       let curr = path2;
@@ -8874,12 +9168,13 @@ var require_Path = __commonJS({
       }
       return flattened.reverse();
     }
+    __name(pathToArray, "pathToArray");
   }
 });
 
-// ../../node_modules/graphql/utilities/coerceInputValue.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/coerceInputValue.js
 var require_coerceInputValue = __commonJS({
-  "../../node_modules/graphql/utilities/coerceInputValue.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/coerceInputValue.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -8898,6 +9193,7 @@ var require_coerceInputValue = __commonJS({
     function coerceInputValue(inputValue, type, onError = defaultOnError) {
       return coerceInputValueImpl(inputValue, type, onError, void 0);
     }
+    __name(coerceInputValue, "coerceInputValue");
     function defaultOnError(path2, invalidValue, error) {
       let errorPrefix = "Invalid value " + (0, _inspect.inspect)(invalidValue);
       if (path2.length > 0) {
@@ -8906,6 +9202,7 @@ var require_coerceInputValue = __commonJS({
       error.message = errorPrefix + ": " + error.message;
       throw error;
     }
+    __name(defaultOnError, "defaultOnError");
     function coerceInputValueImpl(inputValue, type, onError, path2) {
       if ((0, _definition.isNonNullType)(type)) {
         if (inputValue != null) {
@@ -9045,12 +9342,13 @@ var require_coerceInputValue = __commonJS({
         "Unexpected input type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(coerceInputValueImpl, "coerceInputValueImpl");
   }
 });
 
-// ../../node_modules/graphql/utilities/valueFromAST.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/valueFromAST.js
 var require_valueFromAST = __commonJS({
-  "../../node_modules/graphql/utilities/valueFromAST.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/valueFromAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9164,15 +9462,17 @@ var require_valueFromAST = __commonJS({
         "Unexpected input type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(valueFromAST, "valueFromAST");
     function isMissingVariable(valueNode, variables) {
       return valueNode.kind === _kinds.Kind.VARIABLE && (variables == null || variables[valueNode.name.value] === void 0);
     }
+    __name(isMissingVariable, "isMissingVariable");
   }
 });
 
-// ../../node_modules/graphql/execution/values.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/values.js
 var require_values = __commonJS({
-  "../../node_modules/graphql/execution/values.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/values.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9219,6 +9519,7 @@ var require_values = __commonJS({
         errors
       };
     }
+    __name(getVariableValues, "getVariableValues");
     function coerceVariableValues(schema, varDefNodes, inputs, onError) {
       const coercedValues = {};
       for (const varDefNode of varDefNodes) {
@@ -9289,6 +9590,7 @@ var require_values = __commonJS({
       }
       return coercedValues;
     }
+    __name(coerceVariableValues, "coerceVariableValues");
     function getArgumentValues(def, node, variableValues) {
       var _node$arguments;
       const coercedValues = {};
@@ -9366,6 +9668,7 @@ var require_values = __commonJS({
       }
       return coercedValues;
     }
+    __name(getArgumentValues, "getArgumentValues");
     function getDirectiveValues(directiveDef, node, variableValues) {
       var _node$directives;
       const directiveNode = (_node$directives = node.directives) === null || _node$directives === void 0 ? void 0 : _node$directives.find(
@@ -9375,15 +9678,17 @@ var require_values = __commonJS({
         return getArgumentValues(directiveDef, directiveNode, variableValues);
       }
     }
+    __name(getDirectiveValues, "getDirectiveValues");
     function hasOwnProperty(obj, prop) {
       return Object.prototype.hasOwnProperty.call(obj, prop);
     }
+    __name(hasOwnProperty, "hasOwnProperty");
   }
 });
 
-// ../../node_modules/graphql/execution/collectFields.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/collectFields.js
 var require_collectFields = __commonJS({
-  "../../node_modules/graphql/execution/collectFields.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/collectFields.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9408,6 +9713,7 @@ var require_collectFields = __commonJS({
       );
       return fields;
     }
+    __name(collectFields, "collectFields");
     function collectSubfields(schema, fragments, variableValues, returnType, fieldNodes) {
       const subFieldNodes = /* @__PURE__ */ new Map();
       const visitedFragmentNames = /* @__PURE__ */ new Set();
@@ -9426,6 +9732,7 @@ var require_collectFields = __commonJS({
       }
       return subFieldNodes;
     }
+    __name(collectSubfields, "collectSubfields");
     function collectFieldsImpl(schema, fragments, variableValues, runtimeType, selectionSet, fields, visitedFragmentNames) {
       for (const selection of selectionSet.selections) {
         switch (selection.kind) {
@@ -9481,6 +9788,7 @@ var require_collectFields = __commonJS({
         }
       }
     }
+    __name(collectFieldsImpl, "collectFieldsImpl");
     function shouldIncludeNode(variableValues, node) {
       const skip = (0, _values.getDirectiveValues)(
         _directives.GraphQLSkipDirective,
@@ -9500,6 +9808,7 @@ var require_collectFields = __commonJS({
       }
       return true;
     }
+    __name(shouldIncludeNode, "shouldIncludeNode");
     function doesFragmentConditionMatch(schema, fragment, type) {
       const typeConditionNode = fragment.typeCondition;
       if (!typeConditionNode) {
@@ -9517,15 +9826,17 @@ var require_collectFields = __commonJS({
       }
       return false;
     }
+    __name(doesFragmentConditionMatch, "doesFragmentConditionMatch");
     function getFieldEntryKey(node) {
       return node.alias ? node.alias.value : node.name.value;
     }
+    __name(getFieldEntryKey, "getFieldEntryKey");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js
 var require_SingleFieldSubscriptionsRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/SingleFieldSubscriptionsRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9589,12 +9900,13 @@ var require_SingleFieldSubscriptionsRule = __commonJS({
         }
       };
     }
+    __name(SingleFieldSubscriptionsRule, "SingleFieldSubscriptionsRule");
   }
 });
 
-// ../../node_modules/graphql/jsutils/groupBy.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/groupBy.js
 var require_groupBy = __commonJS({
-  "../../node_modules/graphql/jsutils/groupBy.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/groupBy.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9613,12 +9925,13 @@ var require_groupBy = __commonJS({
       }
       return result;
     }
+    __name(groupBy, "groupBy");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js
 var require_UniqueArgumentDefinitionNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueArgumentDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9650,6 +9963,7 @@ var require_UniqueArgumentDefinitionNamesRule = __commonJS({
         }
         return false;
       }
+      __name(checkArgUniquenessPerField, "checkArgUniquenessPerField");
       function checkArgUniqueness(parentName, argumentNodes) {
         const seenArgs = (0, _groupBy.groupBy)(
           argumentNodes,
@@ -9669,13 +9983,15 @@ var require_UniqueArgumentDefinitionNamesRule = __commonJS({
         }
         return false;
       }
+      __name(checkArgUniqueness, "checkArgUniqueness");
     }
+    __name(UniqueArgumentDefinitionNamesRule, "UniqueArgumentDefinitionNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js
 var require_UniqueArgumentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueArgumentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9708,13 +10024,15 @@ var require_UniqueArgumentNamesRule = __commonJS({
           }
         }
       }
+      __name(checkArgUniqueness, "checkArgUniqueness");
     }
+    __name(UniqueArgumentNamesRule, "UniqueArgumentNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js
 var require_UniqueDirectiveNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueDirectiveNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9754,12 +10072,13 @@ var require_UniqueDirectiveNamesRule = __commonJS({
         }
       };
     }
+    __name(UniqueDirectiveNamesRule, "UniqueDirectiveNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js
 var require_UniqueDirectivesPerLocationRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueDirectivesPerLocationRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9824,12 +10143,13 @@ var require_UniqueDirectivesPerLocationRule = __commonJS({
         }
       };
     }
+    __name(UniqueDirectivesPerLocationRule, "UniqueDirectivesPerLocationRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js
 var require_UniqueEnumValueNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueEnumValueNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9880,13 +10200,15 @@ var require_UniqueEnumValueNamesRule = __commonJS({
         }
         return false;
       }
+      __name(checkValueUniqueness, "checkValueUniqueness");
     }
+    __name(UniqueEnumValueNamesRule, "UniqueEnumValueNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js
 var require_UniqueFieldDefinitionNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueFieldDefinitionNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9940,19 +10262,22 @@ var require_UniqueFieldDefinitionNamesRule = __commonJS({
         }
         return false;
       }
+      __name(checkFieldUniqueness, "checkFieldUniqueness");
     }
+    __name(UniqueFieldDefinitionNamesRule, "UniqueFieldDefinitionNamesRule");
     function hasField(type, fieldName) {
       if ((0, _definition.isObjectType)(type) || (0, _definition.isInterfaceType)(type) || (0, _definition.isInputObjectType)(type)) {
         return type.getFields()[fieldName] != null;
       }
       return false;
     }
+    __name(hasField, "hasField");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js
 var require_UniqueFragmentNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueFragmentNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -9962,7 +10287,7 @@ var require_UniqueFragmentNamesRule = __commonJS({
     function UniqueFragmentNamesRule(context) {
       const knownFragmentNames = /* @__PURE__ */ Object.create(null);
       return {
-        OperationDefinition: () => false,
+        OperationDefinition: /* @__PURE__ */ __name(() => false, "OperationDefinition"),
         FragmentDefinition(node) {
           const fragmentName = node.name.value;
           if (knownFragmentNames[fragmentName]) {
@@ -9981,12 +10306,13 @@ var require_UniqueFragmentNamesRule = __commonJS({
         }
       };
     }
+    __name(UniqueFragmentNamesRule, "UniqueFragmentNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js
 var require_UniqueInputFieldNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueInputFieldNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10026,12 +10352,13 @@ var require_UniqueInputFieldNamesRule = __commonJS({
         }
       };
     }
+    __name(UniqueInputFieldNamesRule, "UniqueInputFieldNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueOperationNamesRule.js
 var require_UniqueOperationNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueOperationNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10062,15 +10389,16 @@ var require_UniqueOperationNamesRule = __commonJS({
           }
           return false;
         },
-        FragmentDefinition: () => false
+        FragmentDefinition: /* @__PURE__ */ __name(() => false, "FragmentDefinition")
       };
     }
+    __name(UniqueOperationNamesRule, "UniqueOperationNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueOperationTypesRule.js
 var require_UniqueOperationTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueOperationTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10119,13 +10447,15 @@ var require_UniqueOperationTypesRule = __commonJS({
         }
         return false;
       }
+      __name(checkOperationTypes, "checkOperationTypes");
     }
+    __name(UniqueOperationTypesRule, "UniqueOperationTypesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueTypeNamesRule.js
 var require_UniqueTypeNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueTypeNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10170,13 +10500,15 @@ var require_UniqueTypeNamesRule = __commonJS({
         }
         return false;
       }
+      __name(checkTypeName, "checkTypeName");
     }
+    __name(UniqueTypeNamesRule, "UniqueTypeNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueVariableNamesRule.js
 var require_UniqueVariableNamesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/UniqueVariableNamesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10208,12 +10540,13 @@ var require_UniqueVariableNamesRule = __commonJS({
         }
       };
     }
+    __name(UniqueVariableNamesRule, "UniqueVariableNamesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js
 var require_ValuesOfCorrectTypeRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/ValuesOfCorrectTypeRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10316,13 +10649,14 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
             );
           }
         },
-        EnumValue: (node) => isValidValueNode(context, node),
-        IntValue: (node) => isValidValueNode(context, node),
-        FloatValue: (node) => isValidValueNode(context, node),
-        StringValue: (node) => isValidValueNode(context, node),
-        BooleanValue: (node) => isValidValueNode(context, node)
+        EnumValue: /* @__PURE__ */ __name((node) => isValidValueNode(context, node), "EnumValue"),
+        IntValue: /* @__PURE__ */ __name((node) => isValidValueNode(context, node), "IntValue"),
+        FloatValue: /* @__PURE__ */ __name((node) => isValidValueNode(context, node), "FloatValue"),
+        StringValue: /* @__PURE__ */ __name((node) => isValidValueNode(context, node), "StringValue"),
+        BooleanValue: /* @__PURE__ */ __name((node) => isValidValueNode(context, node), "BooleanValue")
       };
     }
+    __name(ValuesOfCorrectTypeRule, "ValuesOfCorrectTypeRule");
     function isValidValueNode(context, node) {
       const locationType = context.getInputType();
       if (!locationType) {
@@ -10381,6 +10715,7 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
         }
       }
     }
+    __name(isValidValueNode, "isValidValueNode");
     function validateOneOfInputObject(context, node, type, fieldNodeMap, variableDefinitions) {
       var _fieldNodeMap$keys$;
       const keys = Object.keys(fieldNodeMap);
@@ -10426,12 +10761,13 @@ var require_ValuesOfCorrectTypeRule = __commonJS({
         }
       }
     }
+    __name(validateOneOfInputObject, "validateOneOfInputObject");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js
 var require_VariablesAreInputTypesRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/VariablesAreInputTypesRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10463,12 +10799,13 @@ var require_VariablesAreInputTypesRule = __commonJS({
         }
       };
     }
+    __name(VariablesAreInputTypesRule, "VariablesAreInputTypesRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js
 var require_VariablesInAllowedPositionRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/VariablesInAllowedPositionRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10522,6 +10859,7 @@ var require_VariablesInAllowedPositionRule = __commonJS({
         }
       };
     }
+    __name(VariablesInAllowedPositionRule, "VariablesInAllowedPositionRule");
     function allowedVariableUsage(schema, varType, varDefaultValue, locationType, locationDefaultValue) {
       if ((0, _definition.isNonNullType)(locationType) && !(0, _definition.isNonNullType)(varType)) {
         const hasNonNullVariableDefaultValue = varDefaultValue != null && varDefaultValue.kind !== _kinds.Kind.NULL;
@@ -10538,12 +10876,13 @@ var require_VariablesInAllowedPositionRule = __commonJS({
       }
       return (0, _typeComparators.isTypeSubTypeOf)(schema, varType, locationType);
     }
+    __name(allowedVariableUsage, "allowedVariableUsage");
   }
 });
 
-// ../../node_modules/graphql/validation/specifiedRules.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/specifiedRules.js
 var require_specifiedRules = __commonJS({
-  "../../node_modules/graphql/validation/specifiedRules.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/specifiedRules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10639,9 +10978,9 @@ var require_specifiedRules = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/ValidationContext.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/ValidationContext.js
 var require_ValidationContext = __commonJS({
-  "../../node_modules/graphql/validation/ValidationContext.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/ValidationContext.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10651,6 +10990,9 @@ var require_ValidationContext = __commonJS({
     var _visitor = require_visitor();
     var _TypeInfo = require_TypeInfo();
     var ASTValidationContext = class {
+      static {
+        __name(this, "ASTValidationContext");
+      }
       constructor(ast, onError) {
         this._ast = ast;
         this._fragments = void 0;
@@ -10728,6 +11070,9 @@ var require_ValidationContext = __commonJS({
     };
     exports.ASTValidationContext = ASTValidationContext;
     var SDLValidationContext = class extends ASTValidationContext {
+      static {
+        __name(this, "SDLValidationContext");
+      }
       constructor(ast, schema, onError) {
         super(ast, onError);
         this._schema = schema;
@@ -10741,6 +11086,9 @@ var require_ValidationContext = __commonJS({
     };
     exports.SDLValidationContext = SDLValidationContext;
     var ValidationContext = class extends ASTValidationContext {
+      static {
+        __name(this, "ValidationContext");
+      }
       constructor(schema, ast, typeInfo, onError) {
         super(ast, onError);
         this._schema = schema;
@@ -10762,7 +11110,7 @@ var require_ValidationContext = __commonJS({
           (0, _visitor.visit)(
             node,
             (0, _TypeInfo.visitWithTypeInfo)(typeInfo, {
-              VariableDefinition: () => false,
+              VariableDefinition: /* @__PURE__ */ __name(() => false, "VariableDefinition"),
               Variable(variable) {
                 newUsages.push({
                   node: variable,
@@ -10817,9 +11165,9 @@ var require_ValidationContext = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/validate.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/validate.js
 var require_validate2 = __commonJS({
-  "../../node_modules/graphql/validation/validate.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/validate.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10873,6 +11221,7 @@ var require_validate2 = __commonJS({
       }
       return errors;
     }
+    __name(validate, "validate");
     function validateSDL(documentAST, schemaToExtend, rules = _specifiedRules.specifiedSDLRules) {
       const errors = [];
       const context = new _ValidationContext.SDLValidationContext(
@@ -10886,24 +11235,27 @@ var require_validate2 = __commonJS({
       (0, _visitor.visit)(documentAST, (0, _visitor.visitInParallel)(visitors));
       return errors;
     }
+    __name(validateSDL, "validateSDL");
     function assertValidSDL(documentAST) {
       const errors = validateSDL(documentAST);
       if (errors.length !== 0) {
         throw new Error(errors.map((error) => error.message).join("\n\n"));
       }
     }
+    __name(assertValidSDL, "assertValidSDL");
     function assertValidSDLExtension(documentAST, schema) {
       const errors = validateSDL(documentAST, schema);
       if (errors.length !== 0) {
         throw new Error(errors.map((error) => error.message).join("\n\n"));
       }
     }
+    __name(assertValidSDLExtension, "assertValidSDLExtension");
   }
 });
 
-// ../../node_modules/graphql/jsutils/memoize3.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/memoize3.js
 var require_memoize3 = __commonJS({
-  "../../node_modules/graphql/jsutils/memoize3.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/memoize3.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10911,7 +11263,7 @@ var require_memoize3 = __commonJS({
     exports.memoize3 = memoize3;
     function memoize3(fn) {
       let cache0;
-      return function memoized(a1, a2, a3) {
+      return /* @__PURE__ */ __name(function memoized(a1, a2, a3) {
         if (cache0 === void 0) {
           cache0 = /* @__PURE__ */ new WeakMap();
         }
@@ -10931,14 +11283,15 @@ var require_memoize3 = __commonJS({
           cache2.set(a3, fnResult);
         }
         return fnResult;
-      };
+      }, "memoized");
     }
+    __name(memoize3, "memoize3");
   }
 });
 
-// ../../node_modules/graphql/jsutils/promiseForObject.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/promiseForObject.js
 var require_promiseForObject = __commonJS({
-  "../../node_modules/graphql/jsutils/promiseForObject.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/promiseForObject.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10953,12 +11306,13 @@ var require_promiseForObject = __commonJS({
         return resolvedObject;
       });
     }
+    __name(promiseForObject, "promiseForObject");
   }
 });
 
-// ../../node_modules/graphql/jsutils/promiseReduce.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/promiseReduce.js
 var require_promiseReduce = __commonJS({
-  "../../node_modules/graphql/jsutils/promiseReduce.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/promiseReduce.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10972,12 +11326,13 @@ var require_promiseReduce = __commonJS({
       }
       return accumulator;
     }
+    __name(promiseReduce, "promiseReduce");
   }
 });
 
-// ../../node_modules/graphql/jsutils/toError.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/toError.js
 var require_toError = __commonJS({
-  "../../node_modules/graphql/jsutils/toError.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/toError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -10987,7 +11342,11 @@ var require_toError = __commonJS({
     function toError(thrownValue) {
       return thrownValue instanceof Error ? thrownValue : new NonErrorThrown(thrownValue);
     }
+    __name(toError, "toError");
     var NonErrorThrown = class extends Error {
+      static {
+        __name(this, "NonErrorThrown");
+      }
       constructor(thrownValue) {
         super("Unexpected error value: " + (0, _inspect.inspect)(thrownValue));
         this.name = "NonErrorThrown";
@@ -10997,9 +11356,9 @@ var require_toError = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/locatedError.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/locatedError.js
 var require_locatedError = __commonJS({
-  "../../node_modules/graphql/error/locatedError.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/locatedError.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11021,15 +11380,17 @@ var require_locatedError = __commonJS({
         originalError
       });
     }
+    __name(locatedError, "locatedError");
     function isLocatedGraphQLError(error) {
       return Array.isArray(error.path);
     }
+    __name(isLocatedGraphQLError, "isLocatedGraphQLError");
   }
 });
 
-// ../../node_modules/graphql/execution/execute.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/execute.js
 var require_execute = __commonJS({
-  "../../node_modules/graphql/execution/execute.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/execute.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11100,6 +11461,7 @@ var require_execute = __commonJS({
         return buildResponse(null, exeContext.errors);
       }
     }
+    __name(execute, "execute");
     function executeSync(args) {
       const result = execute(args);
       if ((0, _isPromise.isPromise)(result)) {
@@ -11107,6 +11469,7 @@ var require_execute = __commonJS({
       }
       return result;
     }
+    __name(executeSync, "executeSync");
     function buildResponse(data, errors) {
       return errors.length === 0 ? {
         data
@@ -11115,6 +11478,7 @@ var require_execute = __commonJS({
         data
       };
     }
+    __name(buildResponse, "buildResponse");
     function assertValidExecutionArguments(schema, document, rawVariableValues) {
       document || (0, _devAssert.devAssert)(false, "Must provide document.");
       (0, _validate.assertValidSchema)(schema);
@@ -11123,6 +11487,7 @@ var require_execute = __commonJS({
         "Variables must be provided as an Object where each property is a variable value. Perhaps look to see if an unparsed JSON string was provided."
       );
     }
+    __name(assertValidExecutionArguments, "assertValidExecutionArguments");
     function buildExecutionContext(args) {
       var _definition$name, _operation$variableDe;
       const {
@@ -11195,6 +11560,7 @@ var require_execute = __commonJS({
         errors: []
       };
     }
+    __name(buildExecutionContext, "buildExecutionContext");
     function executeOperation(exeContext, operation, rootValue) {
       const rootType = exeContext.schema.getRootType(operation.operation);
       if (rootType == null) {
@@ -11228,6 +11594,7 @@ var require_execute = __commonJS({
           return executeFields(exeContext, rootType, rootValue, path2, rootFields);
       }
     }
+    __name(executeOperation, "executeOperation");
     function executeFieldsSerially(exeContext, parentType, sourceValue, path2, fields) {
       return (0, _promiseReduce.promiseReduce)(
         fields.entries(),
@@ -11255,6 +11622,7 @@ var require_execute = __commonJS({
         /* @__PURE__ */ Object.create(null)
       );
     }
+    __name(executeFieldsSerially, "executeFieldsSerially");
     function executeFields(exeContext, parentType, sourceValue, path2, fields) {
       const results = /* @__PURE__ */ Object.create(null);
       let containsPromise = false;
@@ -11288,6 +11656,7 @@ var require_execute = __commonJS({
       }
       return (0, _promiseForObject.promiseForObject)(results);
     }
+    __name(executeFields, "executeFields");
     function executeField(exeContext, parentType, source, fieldNodes, path2) {
       var _fieldDef$resolve;
       const fieldDef = getFieldDef(exeContext.schema, parentType, fieldNodes[0]);
@@ -11346,6 +11715,7 @@ var require_execute = __commonJS({
         return handleFieldError(error, returnType, exeContext);
       }
     }
+    __name(executeField, "executeField");
     function buildResolveInfo(exeContext, fieldDef, fieldNodes, parentType, path2) {
       return {
         fieldName: fieldDef.name,
@@ -11360,6 +11730,7 @@ var require_execute = __commonJS({
         variableValues: exeContext.variableValues
       };
     }
+    __name(buildResolveInfo, "buildResolveInfo");
     function handleFieldError(error, returnType, exeContext) {
       if ((0, _definition.isNonNullType)(returnType)) {
         throw error;
@@ -11367,6 +11738,7 @@ var require_execute = __commonJS({
       exeContext.errors.push(error);
       return null;
     }
+    __name(handleFieldError, "handleFieldError");
     function completeValue(exeContext, returnType, fieldNodes, info, path2, result) {
       if (result instanceof Error) {
         throw result;
@@ -11428,6 +11800,7 @@ var require_execute = __commonJS({
         "Cannot complete value of unexpected output type: " + (0, _inspect.inspect)(returnType)
       );
     }
+    __name(completeValue, "completeValue");
     function completeListValue(exeContext, returnType, fieldNodes, info, path2, result) {
       if (!(0, _isIterableObject.isIterableObject)(result)) {
         throw new _GraphQLError.GraphQLError(
@@ -11484,6 +11857,7 @@ var require_execute = __commonJS({
       });
       return containsPromise ? Promise.all(completedResults) : completedResults;
     }
+    __name(completeListValue, "completeListValue");
     function completeLeafValue(returnType, result) {
       const serializedResult = returnType.serialize(result);
       if (serializedResult == null) {
@@ -11495,6 +11869,7 @@ var require_execute = __commonJS({
       }
       return serializedResult;
     }
+    __name(completeLeafValue, "completeLeafValue");
     function completeAbstractValue(exeContext, returnType, fieldNodes, info, path2, result) {
       var _returnType$resolveTy;
       const resolveTypeFn = (_returnType$resolveTy = returnType.resolveType) !== null && _returnType$resolveTy !== void 0 ? _returnType$resolveTy : exeContext.typeResolver;
@@ -11535,6 +11910,7 @@ var require_execute = __commonJS({
         result
       );
     }
+    __name(completeAbstractValue, "completeAbstractValue");
     function ensureValidRuntimeType(runtimeTypeName, exeContext, returnType, fieldNodes, info, result) {
       if (runtimeTypeName == null) {
         throw new _GraphQLError.GraphQLError(
@@ -11579,6 +11955,7 @@ var require_execute = __commonJS({
       }
       return runtimeType;
     }
+    __name(ensureValidRuntimeType, "ensureValidRuntimeType");
     function completeObjectValue(exeContext, returnType, fieldNodes, info, path2, result) {
       const subFieldNodes = collectSubfields(exeContext, returnType, fieldNodes);
       if (returnType.isTypeOf) {
@@ -11603,6 +11980,7 @@ var require_execute = __commonJS({
       }
       return executeFields(exeContext, returnType, result, path2, subFieldNodes);
     }
+    __name(completeObjectValue, "completeObjectValue");
     function invalidReturnTypeError(returnType, result, fieldNodes) {
       return new _GraphQLError.GraphQLError(
         `Expected value of type "${returnType.name}" but got: ${(0, _inspect.inspect)(result)}.`,
@@ -11611,7 +11989,8 @@ var require_execute = __commonJS({
         }
       );
     }
-    var defaultTypeResolver = function(value, contextValue, info, abstractType) {
+    __name(invalidReturnTypeError, "invalidReturnTypeError");
+    var defaultTypeResolver = /* @__PURE__ */ __name(function(value, contextValue, info, abstractType) {
       if ((0, _isObjectLike.isObjectLike)(value) && typeof value.__typename === "string") {
         return value.__typename;
       }
@@ -11637,9 +12016,9 @@ var require_execute = __commonJS({
           }
         });
       }
-    };
+    }, "defaultTypeResolver");
     exports.defaultTypeResolver = defaultTypeResolver;
-    var defaultFieldResolver = function(source, args, contextValue, info) {
+    var defaultFieldResolver = /* @__PURE__ */ __name(function(source, args, contextValue, info) {
       if ((0, _isObjectLike.isObjectLike)(source) || typeof source === "function") {
         const property = source[info.fieldName];
         if (typeof property === "function") {
@@ -11647,7 +12026,7 @@ var require_execute = __commonJS({
         }
         return property;
       }
-    };
+    }, "defaultFieldResolver");
     exports.defaultFieldResolver = defaultFieldResolver;
     function getFieldDef(schema, parentType, fieldNode) {
       const fieldName = fieldNode.name.value;
@@ -11660,12 +12039,13 @@ var require_execute = __commonJS({
       }
       return parentType.getFields()[fieldName];
     }
+    __name(getFieldDef, "getFieldDef");
   }
 });
 
-// ../../node_modules/graphql/graphql.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/graphql.js
 var require_graphql = __commonJS({
-  "../../node_modules/graphql/graphql.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/graphql.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -11681,6 +12061,7 @@ var require_graphql = __commonJS({
     function graphql(args) {
       return new Promise((resolve) => resolve(graphqlImpl(args)));
     }
+    __name(graphql, "graphql");
     function graphqlSync(args) {
       const result = graphqlImpl(args);
       if ((0, _isPromise.isPromise)(result)) {
@@ -11688,6 +12069,7 @@ var require_graphql = __commonJS({
       }
       return result;
     }
+    __name(graphqlSync, "graphqlSync");
     function graphqlImpl(args) {
       arguments.length < 2 || (0, _devAssert.devAssert)(
         false,
@@ -11734,549 +12116,550 @@ var require_graphql = __commonJS({
         typeResolver
       });
     }
+    __name(graphqlImpl, "graphqlImpl");
   }
 });
 
-// ../../node_modules/graphql/type/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/index.js
 var require_type = __commonJS({
-  "../../node_modules/graphql/type/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/type/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "DEFAULT_DEPRECATION_REASON", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.DEFAULT_DEPRECATION_REASON;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GRAPHQL_MAX_INT", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GRAPHQL_MAX_INT;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GRAPHQL_MIN_INT", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GRAPHQL_MIN_INT;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLBoolean", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GraphQLBoolean;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLDeprecatedDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLDeprecatedDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLFloat", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GraphQLFloat;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLID", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GraphQLID;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLIncludeDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLIncludeDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInt", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GraphQLInt;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLList", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLList;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLNonNull", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLNonNull;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLOneOfDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLOneOfDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _schema.GraphQLSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSkipDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLSkipDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSpecifiedByDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.GraphQLSpecifiedByDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLString", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.GraphQLString;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.GraphQLUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "SchemaMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.SchemaMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.TypeKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.TypeMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeNameMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.TypeNameMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Directive", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__Directive;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__DirectiveLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__DirectiveLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__EnumValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__EnumValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Field", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__Field;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__InputValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__InputValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Schema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__Schema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Type", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__Type;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__TypeKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.__TypeKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertAbstractType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertAbstractType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertCompositeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertCompositeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.assertDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertEnumValueName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _assertName.assertEnumValueName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertInputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertLeafType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertLeafType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertListType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertListType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _assertName.assertName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNonNullType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertNonNullType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertOutputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertOutputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _schema.assertSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertValidSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _validate.assertValidSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertWrappingType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.assertWrappingType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.getNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.getNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "introspectionTypes", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.introspectionTypes;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isAbstractType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isAbstractType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isCompositeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isCompositeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.isDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isInputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isIntrospectionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspection.isIntrospectionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isLeafType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isLeafType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isListType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isListType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNonNullType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isNonNullType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isOutputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isOutputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isRequiredArgument", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isRequiredArgument;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isRequiredInputField", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isRequiredInputField;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _schema.isSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSpecifiedDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.isSpecifiedDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSpecifiedScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.isSpecifiedScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isWrappingType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.isWrappingType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "resolveObjMapThunk", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.resolveObjMapThunk;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "resolveReadonlyArrayThunk", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _definition.resolveReadonlyArrayThunk;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedDirectives", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directives.specifiedDirectives;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedScalarTypes", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _scalars.specifiedScalarTypes;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "validateSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _validate.validateSchema;
-      }
+      }, "get")
     });
     var _schema = require_schema();
     var _definition = require_definition();
@@ -12288,198 +12671,198 @@ var require_type = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/language/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/index.js
 var require_language = __commonJS({
-  "../../node_modules/graphql/language/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/language/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "BREAK", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _visitor.BREAK;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "DirectiveLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _directiveLocation.DirectiveLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Kind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _kinds.Kind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Lexer", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _lexer.Lexer;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Location", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ast.Location;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "OperationTypeNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ast.OperationTypeNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Source", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _source.Source;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Token", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ast.Token;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TokenKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _tokenKind.TokenKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getEnterLeaveForKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _visitor.getEnterLeaveForKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _location.getLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getVisitFn", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _visitor.getVisitFn;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isConstValueNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isConstValueNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isExecutableDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isExecutableDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSelectionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isSelectionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isTypeDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeExtensionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isTypeExtensionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isTypeNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSystemDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isTypeSystemDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSystemExtensionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isTypeSystemExtensionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isValueNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _predicates.isValueNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parse", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _parser.parse;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseConstValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _parser.parseConstValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _parser.parseType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _parser.parseValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "print", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printer.print;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printLocation.printLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printSourceLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printLocation.printSourceLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visit", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _visitor.visit;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visitInParallel", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _visitor.visitInParallel;
-      }
+      }, "get")
     });
     var _source = require_source();
     var _location = require_location();
@@ -12496,9 +12879,9 @@ var require_language = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/jsutils/isAsyncIterable.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isAsyncIterable.js
 var require_isAsyncIterable = __commonJS({
-  "../../node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/jsutils/isAsyncIterable.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12507,12 +12890,13 @@ var require_isAsyncIterable = __commonJS({
     function isAsyncIterable(maybeAsyncIterable) {
       return typeof (maybeAsyncIterable === null || maybeAsyncIterable === void 0 ? void 0 : maybeAsyncIterable[Symbol.asyncIterator]) === "function";
     }
+    __name(isAsyncIterable, "isAsyncIterable");
   }
 });
 
-// ../../node_modules/graphql/execution/mapAsyncIterator.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/mapAsyncIterator.js
 var require_mapAsyncIterator = __commonJS({
-  "../../node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/mapAsyncIterator.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12539,6 +12923,7 @@ var require_mapAsyncIterator = __commonJS({
           throw error;
         }
       }
+      __name(mapResult, "mapResult");
       return {
         async next() {
           return mapResult(await iterator.next());
@@ -12560,12 +12945,13 @@ var require_mapAsyncIterator = __commonJS({
         }
       };
     }
+    __name(mapAsyncIterator, "mapAsyncIterator");
   }
 });
 
-// ../../node_modules/graphql/execution/subscribe.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/subscribe.js
 var require_subscribe = __commonJS({
-  "../../node_modules/graphql/execution/subscribe.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/subscribe.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12591,12 +12977,13 @@ var require_subscribe = __commonJS({
       if (!(0, _isAsyncIterable.isAsyncIterable)(resultOrStream)) {
         return resultOrStream;
       }
-      const mapSourceToResponse = (payload) => (0, _execute.execute)({ ...args, rootValue: payload });
+      const mapSourceToResponse = /* @__PURE__ */ __name((payload) => (0, _execute.execute)({ ...args, rootValue: payload }), "mapSourceToResponse");
       return (0, _mapAsyncIterator.mapAsyncIterator)(
         resultOrStream,
         mapSourceToResponse
       );
     }
+    __name(subscribe, "subscribe");
     function toNormalizedArgs(args) {
       const firstArg = args[0];
       if (firstArg && "document" in firstArg) {
@@ -12613,6 +13000,7 @@ var require_subscribe = __commonJS({
         subscribeFieldResolver: args[6]
       };
     }
+    __name(toNormalizedArgs, "toNormalizedArgs");
     async function createSourceEventStream(...rawArgs) {
       const args = toNormalizedArgs(rawArgs);
       const { schema, document, variableValues } = args;
@@ -12640,6 +13028,7 @@ var require_subscribe = __commonJS({
         throw error;
       }
     }
+    __name(createSourceEventStream, "createSourceEventStream");
     async function executeSubscription(exeContext) {
       const { schema, fragments, operation, variableValues, rootValue } = exeContext;
       const rootType = schema.getSubscriptionType();
@@ -12699,75 +13088,76 @@ var require_subscribe = __commonJS({
         );
       }
     }
+    __name(executeSubscription, "executeSubscription");
   }
 });
 
-// ../../node_modules/graphql/execution/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/index.js
 var require_execution = __commonJS({
-  "../../node_modules/graphql/execution/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/execution/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "createSourceEventStream", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _subscribe.createSourceEventStream;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "defaultFieldResolver", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _execute.defaultFieldResolver;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "defaultTypeResolver", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _execute.defaultTypeResolver;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "execute", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _execute.execute;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "executeSync", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _execute.executeSync;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getArgumentValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _values.getArgumentValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getDirectiveValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _values.getDirectiveValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getVariableValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _values.getVariableValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "responsePathAsArray", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _Path.pathToArray;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "subscribe", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _subscribe.subscribe;
-      }
+      }, "get")
     });
     var _Path = require_Path();
     var _execute = require_execute();
@@ -12776,9 +13166,9 @@ var require_execution = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js
 var require_NoDeprecatedCustomRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/custom/NoDeprecatedCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12873,12 +13263,13 @@ var require_NoDeprecatedCustomRule = __commonJS({
         }
       };
     }
+    __name(NoDeprecatedCustomRule, "NoDeprecatedCustomRule");
   }
 });
 
-// ../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js
 var require_NoSchemaIntrospectionCustomRule = __commonJS({
-  "../../node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/rules/custom/NoSchemaIntrospectionCustomRule.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -12904,261 +13295,262 @@ var require_NoSchemaIntrospectionCustomRule = __commonJS({
         }
       };
     }
+    __name(NoSchemaIntrospectionCustomRule, "NoSchemaIntrospectionCustomRule");
   }
 });
 
-// ../../node_modules/graphql/validation/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/index.js
 var require_validation = __commonJS({
-  "../../node_modules/graphql/validation/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "ExecutableDefinitionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ExecutableDefinitionsRule.ExecutableDefinitionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "FieldsOnCorrectTypeRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _FieldsOnCorrectTypeRule.FieldsOnCorrectTypeRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "FragmentsOnCompositeTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _FragmentsOnCompositeTypesRule.FragmentsOnCompositeTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownArgumentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _KnownArgumentNamesRule.KnownArgumentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownDirectivesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _KnownDirectivesRule.KnownDirectivesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownFragmentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _KnownFragmentNamesRule.KnownFragmentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownTypeNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _KnownTypeNamesRule.KnownTypeNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "LoneAnonymousOperationRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _LoneAnonymousOperationRule.LoneAnonymousOperationRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "LoneSchemaDefinitionRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _LoneSchemaDefinitionRule.LoneSchemaDefinitionRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "MaxIntrospectionDepthRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _MaxIntrospectionDepthRule.MaxIntrospectionDepthRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoDeprecatedCustomRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoDeprecatedCustomRule.NoDeprecatedCustomRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoFragmentCyclesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoFragmentCyclesRule.NoFragmentCyclesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoSchemaIntrospectionCustomRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoSchemaIntrospectionCustomRule.NoSchemaIntrospectionCustomRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUndefinedVariablesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoUndefinedVariablesRule.NoUndefinedVariablesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUnusedFragmentsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoUnusedFragmentsRule.NoUnusedFragmentsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUnusedVariablesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _NoUnusedVariablesRule.NoUnusedVariablesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "OverlappingFieldsCanBeMergedRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _OverlappingFieldsCanBeMergedRule.OverlappingFieldsCanBeMergedRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "PossibleFragmentSpreadsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _PossibleFragmentSpreadsRule.PossibleFragmentSpreadsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "PossibleTypeExtensionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _PossibleTypeExtensionsRule.PossibleTypeExtensionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ProvidedRequiredArgumentsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ProvidedRequiredArgumentsRule.ProvidedRequiredArgumentsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ScalarLeafsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ScalarLeafsRule.ScalarLeafsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "SingleFieldSubscriptionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _SingleFieldSubscriptionsRule.SingleFieldSubscriptionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueArgumentDefinitionNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueArgumentDefinitionNamesRule.UniqueArgumentDefinitionNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueArgumentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueArgumentNamesRule.UniqueArgumentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueDirectiveNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueDirectiveNamesRule.UniqueDirectiveNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueDirectivesPerLocationRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueDirectivesPerLocationRule.UniqueDirectivesPerLocationRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueEnumValueNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueEnumValueNamesRule.UniqueEnumValueNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueFieldDefinitionNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueFieldDefinitionNamesRule.UniqueFieldDefinitionNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueFragmentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueFragmentNamesRule.UniqueFragmentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueInputFieldNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueInputFieldNamesRule.UniqueInputFieldNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueOperationNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueOperationNamesRule.UniqueOperationNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueOperationTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueOperationTypesRule.UniqueOperationTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueTypeNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueTypeNamesRule.UniqueTypeNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueVariableNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _UniqueVariableNamesRule.UniqueVariableNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ValidationContext", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ValidationContext.ValidationContext;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ValuesOfCorrectTypeRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _ValuesOfCorrectTypeRule.ValuesOfCorrectTypeRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "VariablesAreInputTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _VariablesAreInputTypesRule.VariablesAreInputTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "VariablesInAllowedPositionRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _VariablesInAllowedPositionRule.VariablesInAllowedPositionRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "recommendedRules", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _specifiedRules.recommendedRules;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedRules", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _specifiedRules.specifiedRules;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "validate", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _validate.validate;
-      }
+      }, "get")
     });
     var _validate = require_validate2();
     var _ValidationContext = require_ValidationContext();
@@ -13203,42 +13595,42 @@ var require_validation = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/error/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/index.js
 var require_error = __commonJS({
-  "../../node_modules/graphql/error/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/error/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "GraphQLError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _GraphQLError.GraphQLError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "formatError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _GraphQLError.formatError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "locatedError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _locatedError.locatedError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _GraphQLError.printError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "syntaxError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _syntaxError.syntaxError;
-      }
+      }, "get")
     });
     var _GraphQLError = require_GraphQLError();
     var _syntaxError = require_syntaxError();
@@ -13246,9 +13638,9 @@ var require_error = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/utilities/getIntrospectionQuery.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getIntrospectionQuery.js
 var require_getIntrospectionQuery = __commonJS({
-  "../../node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getIntrospectionQuery.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13271,6 +13663,7 @@ var require_getIntrospectionQuery = __commonJS({
       function inputDeprecation(str) {
         return optionsWithDefault.inputValueDeprecation ? str : "";
       }
+      __name(inputDeprecation, "inputDeprecation");
       const oneOf = optionsWithDefault.oneOf ? "isOneOf" : "";
       return `
     query IntrospectionQuery {
@@ -13380,12 +13773,13 @@ var require_getIntrospectionQuery = __commonJS({
     }
   `;
     }
+    __name(getIntrospectionQuery, "getIntrospectionQuery");
   }
 });
 
-// ../../node_modules/graphql/utilities/getOperationAST.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getOperationAST.js
 var require_getOperationAST = __commonJS({
-  "../../node_modules/graphql/utilities/getOperationAST.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getOperationAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13409,12 +13803,13 @@ var require_getOperationAST = __commonJS({
       }
       return operation;
     }
+    __name(getOperationAST, "getOperationAST");
   }
 });
 
-// ../../node_modules/graphql/utilities/getOperationRootType.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getOperationRootType.js
 var require_getOperationRootType = __commonJS({
-  "../../node_modules/graphql/utilities/getOperationRootType.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/getOperationRootType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13465,12 +13860,13 @@ var require_getOperationRootType = __commonJS({
         }
       );
     }
+    __name(getOperationRootType, "getOperationRootType");
   }
 });
 
-// ../../node_modules/graphql/utilities/introspectionFromSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/introspectionFromSchema.js
 var require_introspectionFromSchema = __commonJS({
-  "../../node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/introspectionFromSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13499,12 +13895,13 @@ var require_introspectionFromSchema = __commonJS({
       !result.errors && result.data || (0, _invariant.invariant)(false);
       return result.data;
     }
+    __name(introspectionFromSchema, "introspectionFromSchema");
   }
 });
 
-// ../../node_modules/graphql/utilities/buildClientSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/buildClientSchema.js
 var require_buildClientSchema = __commonJS({
-  "../../node_modules/graphql/utilities/buildClientSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/buildClientSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13573,6 +13970,7 @@ var require_buildClientSchema = __commonJS({
         }
         return getNamedType(typeRef);
       }
+      __name(getType, "getType");
       function getNamedType(typeRef) {
         const typeName = typeRef.name;
         if (!typeName) {
@@ -13588,12 +13986,15 @@ var require_buildClientSchema = __commonJS({
         }
         return type;
       }
+      __name(getNamedType, "getNamedType");
       function getObjectType(typeRef) {
         return (0, _definition.assertObjectType)(getNamedType(typeRef));
       }
+      __name(getObjectType, "getObjectType");
       function getInterfaceType(typeRef) {
         return (0, _definition.assertInterfaceType)(getNamedType(typeRef));
       }
+      __name(getInterfaceType, "getInterfaceType");
       function buildType(type) {
         if (type != null && type.name != null && type.kind != null) {
           switch (type.kind) {
@@ -13616,6 +14017,7 @@ var require_buildClientSchema = __commonJS({
           `Invalid or incomplete introspection result. Ensure that a full introspection query is used in order to build a client schema: ${typeStr}.`
         );
       }
+      __name(buildType, "buildType");
       function buildScalarDef(scalarIntrospection) {
         return new _definition.GraphQLScalarType({
           name: scalarIntrospection.name,
@@ -13623,6 +14025,7 @@ var require_buildClientSchema = __commonJS({
           specifiedByURL: scalarIntrospection.specifiedByURL
         });
       }
+      __name(buildScalarDef, "buildScalarDef");
       function buildImplementationsList(implementingIntrospection) {
         if (implementingIntrospection.interfaces === null && implementingIntrospection.kind === _introspection.TypeKind.INTERFACE) {
           return [];
@@ -13637,22 +14040,25 @@ var require_buildClientSchema = __commonJS({
         }
         return implementingIntrospection.interfaces.map(getInterfaceType);
       }
+      __name(buildImplementationsList, "buildImplementationsList");
       function buildObjectDef(objectIntrospection) {
         return new _definition.GraphQLObjectType({
           name: objectIntrospection.name,
           description: objectIntrospection.description,
-          interfaces: () => buildImplementationsList(objectIntrospection),
-          fields: () => buildFieldDefMap(objectIntrospection)
+          interfaces: /* @__PURE__ */ __name(() => buildImplementationsList(objectIntrospection), "interfaces"),
+          fields: /* @__PURE__ */ __name(() => buildFieldDefMap(objectIntrospection), "fields")
         });
       }
+      __name(buildObjectDef, "buildObjectDef");
       function buildInterfaceDef(interfaceIntrospection) {
         return new _definition.GraphQLInterfaceType({
           name: interfaceIntrospection.name,
           description: interfaceIntrospection.description,
-          interfaces: () => buildImplementationsList(interfaceIntrospection),
-          fields: () => buildFieldDefMap(interfaceIntrospection)
+          interfaces: /* @__PURE__ */ __name(() => buildImplementationsList(interfaceIntrospection), "interfaces"),
+          fields: /* @__PURE__ */ __name(() => buildFieldDefMap(interfaceIntrospection), "fields")
         });
       }
+      __name(buildInterfaceDef, "buildInterfaceDef");
       function buildUnionDef(unionIntrospection) {
         if (!unionIntrospection.possibleTypes) {
           const unionIntrospectionStr = (0, _inspect.inspect)(unionIntrospection);
@@ -13663,9 +14069,10 @@ var require_buildClientSchema = __commonJS({
         return new _definition.GraphQLUnionType({
           name: unionIntrospection.name,
           description: unionIntrospection.description,
-          types: () => unionIntrospection.possibleTypes.map(getObjectType)
+          types: /* @__PURE__ */ __name(() => unionIntrospection.possibleTypes.map(getObjectType), "types")
         });
       }
+      __name(buildUnionDef, "buildUnionDef");
       function buildEnumDef(enumIntrospection) {
         if (!enumIntrospection.enumValues) {
           const enumIntrospectionStr = (0, _inspect.inspect)(enumIntrospection);
@@ -13686,6 +14093,7 @@ var require_buildClientSchema = __commonJS({
           )
         });
       }
+      __name(buildEnumDef, "buildEnumDef");
       function buildInputObjectDef(inputObjectIntrospection) {
         if (!inputObjectIntrospection.inputFields) {
           const inputObjectIntrospectionStr = (0, _inspect.inspect)(
@@ -13698,10 +14106,11 @@ var require_buildClientSchema = __commonJS({
         return new _definition.GraphQLInputObjectType({
           name: inputObjectIntrospection.name,
           description: inputObjectIntrospection.description,
-          fields: () => buildInputValueDefMap(inputObjectIntrospection.inputFields),
+          fields: /* @__PURE__ */ __name(() => buildInputValueDefMap(inputObjectIntrospection.inputFields), "fields"),
           isOneOf: inputObjectIntrospection.isOneOf
         });
       }
+      __name(buildInputObjectDef, "buildInputObjectDef");
       function buildFieldDefMap(typeIntrospection) {
         if (!typeIntrospection.fields) {
           throw new Error(
@@ -13716,6 +14125,7 @@ var require_buildClientSchema = __commonJS({
           buildField
         );
       }
+      __name(buildFieldDefMap, "buildFieldDefMap");
       function buildField(fieldIntrospection) {
         const type = getType(fieldIntrospection.type);
         if (!(0, _definition.isOutputType)(type)) {
@@ -13737,6 +14147,7 @@ var require_buildClientSchema = __commonJS({
           args: buildInputValueDefMap(fieldIntrospection.args)
         };
       }
+      __name(buildField, "buildField");
       function buildInputValueDefMap(inputValueIntrospections) {
         return (0, _keyValMap.keyValMap)(
           inputValueIntrospections,
@@ -13744,6 +14155,7 @@ var require_buildClientSchema = __commonJS({
           buildInputValue
         );
       }
+      __name(buildInputValueDefMap, "buildInputValueDefMap");
       function buildInputValue(inputValueIntrospection) {
         const type = getType(inputValueIntrospection.type);
         if (!(0, _definition.isInputType)(type)) {
@@ -13763,6 +14175,7 @@ var require_buildClientSchema = __commonJS({
           deprecationReason: inputValueIntrospection.deprecationReason
         };
       }
+      __name(buildInputValue, "buildInputValue");
       function buildDirective(directiveIntrospection) {
         if (!directiveIntrospection.args) {
           const directiveIntrospectionStr = (0, _inspect.inspect)(
@@ -13788,13 +14201,15 @@ var require_buildClientSchema = __commonJS({
           args: buildInputValueDefMap(directiveIntrospection.args)
         });
       }
+      __name(buildDirective, "buildDirective");
     }
+    __name(buildClientSchema, "buildClientSchema");
   }
 });
 
-// ../../node_modules/graphql/utilities/extendSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/extendSchema.js
 var require_extendSchema = __commonJS({
-  "../../node_modules/graphql/utilities/extendSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/extendSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -13826,6 +14241,7 @@ var require_extendSchema = __commonJS({
       const extendedConfig = extendSchemaImpl(schemaConfig, documentAST, options);
       return schemaConfig === extendedConfig ? schema : new _schema.GraphQLSchema(extendedConfig);
     }
+    __name(extendSchema, "extendSchema");
     function extendSchemaImpl(schemaConfig, documentAST, options) {
       var _schemaDef, _schemaDef$descriptio, _schemaDef2, _options$assumeValid;
       const typeDefs = [];
@@ -13891,9 +14307,11 @@ var require_extendSchema = __commonJS({
         }
         return replaceNamedType(type);
       }
+      __name(replaceType, "replaceType");
       function replaceNamedType(type) {
         return typeMap[type.name];
       }
+      __name(replaceNamedType, "replaceNamedType");
       function replaceDirective(directive) {
         const config = directive.toConfig();
         return new _directives.GraphQLDirective({
@@ -13901,6 +14319,7 @@ var require_extendSchema = __commonJS({
           args: (0, _mapValue.mapValue)(config.args, extendArg)
         });
       }
+      __name(replaceDirective, "replaceDirective");
       function extendNamedType(type) {
         if ((0, _introspection.isIntrospectionType)(type) || (0, _scalars.isSpecifiedScalarType)(type)) {
           return type;
@@ -13928,22 +14347,24 @@ var require_extendSchema = __commonJS({
           "Unexpected type: " + (0, _inspect.inspect)(type)
         );
       }
+      __name(extendNamedType, "extendNamedType");
       function extendInputObjectType(type) {
         var _typeExtensionsMap$co;
         const config = type.toConfig();
         const extensions = (_typeExtensionsMap$co = typeExtensionsMap[config.name]) !== null && _typeExtensionsMap$co !== void 0 ? _typeExtensionsMap$co : [];
         return new _definition.GraphQLInputObjectType({
           ...config,
-          fields: () => ({
+          fields: /* @__PURE__ */ __name(() => ({
             ...(0, _mapValue.mapValue)(config.fields, (field) => ({
               ...field,
               type: replaceType(field.type)
             })),
             ...buildInputFieldMap(extensions)
-          }),
+          }), "fields"),
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendInputObjectType, "extendInputObjectType");
       function extendEnumType(type) {
         var _typeExtensionsMap$ty;
         const config = type.toConfig();
@@ -13954,6 +14375,7 @@ var require_extendSchema = __commonJS({
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendEnumType, "extendEnumType");
       function extendScalarType(type) {
         var _typeExtensionsMap$co2;
         const config = type.toConfig();
@@ -13969,53 +14391,57 @@ var require_extendSchema = __commonJS({
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendScalarType, "extendScalarType");
       function extendObjectType(type) {
         var _typeExtensionsMap$co3;
         const config = type.toConfig();
         const extensions = (_typeExtensionsMap$co3 = typeExtensionsMap[config.name]) !== null && _typeExtensionsMap$co3 !== void 0 ? _typeExtensionsMap$co3 : [];
         return new _definition.GraphQLObjectType({
           ...config,
-          interfaces: () => [
+          interfaces: /* @__PURE__ */ __name(() => [
             ...type.getInterfaces().map(replaceNamedType),
             ...buildInterfaces(extensions)
-          ],
-          fields: () => ({
+          ], "interfaces"),
+          fields: /* @__PURE__ */ __name(() => ({
             ...(0, _mapValue.mapValue)(config.fields, extendField),
             ...buildFieldMap(extensions)
-          }),
+          }), "fields"),
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendObjectType, "extendObjectType");
       function extendInterfaceType(type) {
         var _typeExtensionsMap$co4;
         const config = type.toConfig();
         const extensions = (_typeExtensionsMap$co4 = typeExtensionsMap[config.name]) !== null && _typeExtensionsMap$co4 !== void 0 ? _typeExtensionsMap$co4 : [];
         return new _definition.GraphQLInterfaceType({
           ...config,
-          interfaces: () => [
+          interfaces: /* @__PURE__ */ __name(() => [
             ...type.getInterfaces().map(replaceNamedType),
             ...buildInterfaces(extensions)
-          ],
-          fields: () => ({
+          ], "interfaces"),
+          fields: /* @__PURE__ */ __name(() => ({
             ...(0, _mapValue.mapValue)(config.fields, extendField),
             ...buildFieldMap(extensions)
-          }),
+          }), "fields"),
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendInterfaceType, "extendInterfaceType");
       function extendUnionType(type) {
         var _typeExtensionsMap$co5;
         const config = type.toConfig();
         const extensions = (_typeExtensionsMap$co5 = typeExtensionsMap[config.name]) !== null && _typeExtensionsMap$co5 !== void 0 ? _typeExtensionsMap$co5 : [];
         return new _definition.GraphQLUnionType({
           ...config,
-          types: () => [
+          types: /* @__PURE__ */ __name(() => [
             ...type.getTypes().map(replaceNamedType),
             ...buildUnionTypes(extensions)
-          ],
+          ], "types"),
           extensionASTNodes: config.extensionASTNodes.concat(extensions)
         });
       }
+      __name(extendUnionType, "extendUnionType");
       function extendField(field) {
         return {
           ...field,
@@ -14023,9 +14449,11 @@ var require_extendSchema = __commonJS({
           args: field.args && (0, _mapValue.mapValue)(field.args, extendArg)
         };
       }
+      __name(extendField, "extendField");
       function extendArg(arg) {
         return { ...arg, type: replaceType(arg.type) };
       }
+      __name(extendArg, "extendArg");
       function getOperationTypes(nodes) {
         const opTypes = {};
         for (const node of nodes) {
@@ -14040,6 +14468,7 @@ var require_extendSchema = __commonJS({
         }
         return opTypes;
       }
+      __name(getOperationTypes, "getOperationTypes");
       function getNamedType(node) {
         var _stdTypeMap$name2;
         const name = node.name.value;
@@ -14049,6 +14478,7 @@ var require_extendSchema = __commonJS({
         }
         return type;
       }
+      __name(getNamedType, "getNamedType");
       function getWrappedType(node) {
         if (node.kind === _kinds.Kind.LIST_TYPE) {
           return new _definition.GraphQLList(getWrappedType(node.type));
@@ -14058,6 +14488,7 @@ var require_extendSchema = __commonJS({
         }
         return getNamedType(node);
       }
+      __name(getWrappedType, "getWrappedType");
       function buildDirective(node) {
         var _node$description;
         return new _directives.GraphQLDirective({
@@ -14070,6 +14501,7 @@ var require_extendSchema = __commonJS({
           astNode: node
         });
       }
+      __name(buildDirective, "buildDirective");
       function buildFieldMap(nodes) {
         const fieldConfigMap = /* @__PURE__ */ Object.create(null);
         for (const node of nodes) {
@@ -14094,6 +14526,7 @@ var require_extendSchema = __commonJS({
         }
         return fieldConfigMap;
       }
+      __name(buildFieldMap, "buildFieldMap");
       function buildArgumentMap(args) {
         const argsNodes = (
           /* c8 ignore next */
@@ -14113,6 +14546,7 @@ var require_extendSchema = __commonJS({
         }
         return argConfigMap;
       }
+      __name(buildArgumentMap, "buildArgumentMap");
       function buildInputFieldMap(nodes) {
         const inputFieldMap = /* @__PURE__ */ Object.create(null);
         for (const node of nodes) {
@@ -14138,6 +14572,7 @@ var require_extendSchema = __commonJS({
         }
         return inputFieldMap;
       }
+      __name(buildInputFieldMap, "buildInputFieldMap");
       function buildEnumValueMap(nodes) {
         const enumValueMap = /* @__PURE__ */ Object.create(null);
         for (const node of nodes) {
@@ -14157,6 +14592,7 @@ var require_extendSchema = __commonJS({
         }
         return enumValueMap;
       }
+      __name(buildEnumValueMap, "buildEnumValueMap");
       function buildInterfaces(nodes) {
         return nodes.flatMap(
           // FIXME: https://github.com/graphql/graphql-js/issues/2203
@@ -14169,6 +14605,7 @@ var require_extendSchema = __commonJS({
           }
         );
       }
+      __name(buildInterfaces, "buildInterfaces");
       function buildUnionTypes(nodes) {
         return nodes.flatMap(
           // FIXME: https://github.com/graphql/graphql-js/issues/2203
@@ -14181,6 +14618,7 @@ var require_extendSchema = __commonJS({
           }
         );
       }
+      __name(buildUnionTypes, "buildUnionTypes");
       function buildType(astNode) {
         var _typeExtensionsMap$na;
         const name = astNode.name.value;
@@ -14192,8 +14630,8 @@ var require_extendSchema = __commonJS({
             return new _definition.GraphQLObjectType({
               name,
               description: (_astNode$description = astNode.description) === null || _astNode$description === void 0 ? void 0 : _astNode$description.value,
-              interfaces: () => buildInterfaces(allNodes),
-              fields: () => buildFieldMap(allNodes),
+              interfaces: /* @__PURE__ */ __name(() => buildInterfaces(allNodes), "interfaces"),
+              fields: /* @__PURE__ */ __name(() => buildFieldMap(allNodes), "fields"),
               astNode,
               extensionASTNodes
             });
@@ -14204,8 +14642,8 @@ var require_extendSchema = __commonJS({
             return new _definition.GraphQLInterfaceType({
               name,
               description: (_astNode$description2 = astNode.description) === null || _astNode$description2 === void 0 ? void 0 : _astNode$description2.value,
-              interfaces: () => buildInterfaces(allNodes),
-              fields: () => buildFieldMap(allNodes),
+              interfaces: /* @__PURE__ */ __name(() => buildInterfaces(allNodes), "interfaces"),
+              fields: /* @__PURE__ */ __name(() => buildFieldMap(allNodes), "fields"),
               astNode,
               extensionASTNodes
             });
@@ -14227,7 +14665,7 @@ var require_extendSchema = __commonJS({
             return new _definition.GraphQLUnionType({
               name,
               description: (_astNode$description4 = astNode.description) === null || _astNode$description4 === void 0 ? void 0 : _astNode$description4.value,
-              types: () => buildUnionTypes(allNodes),
+              types: /* @__PURE__ */ __name(() => buildUnionTypes(allNodes), "types"),
               astNode,
               extensionASTNodes
             });
@@ -14248,7 +14686,7 @@ var require_extendSchema = __commonJS({
             return new _definition.GraphQLInputObjectType({
               name,
               description: (_astNode$description6 = astNode.description) === null || _astNode$description6 === void 0 ? void 0 : _astNode$description6.value,
-              fields: () => buildInputFieldMap(allNodes),
+              fields: /* @__PURE__ */ __name(() => buildInputFieldMap(allNodes), "fields"),
               astNode,
               extensionASTNodes,
               isOneOf: isOneOf(astNode)
@@ -14256,7 +14694,9 @@ var require_extendSchema = __commonJS({
           }
         }
       }
+      __name(buildType, "buildType");
     }
+    __name(extendSchemaImpl, "extendSchemaImpl");
     var stdTypeMap = (0, _keyMap.keyMap)(
       [..._scalars.specifiedScalarTypes, ..._introspection.introspectionTypes],
       (type) => type.name
@@ -14268,6 +14708,7 @@ var require_extendSchema = __commonJS({
       );
       return deprecated === null || deprecated === void 0 ? void 0 : deprecated.reason;
     }
+    __name(getDeprecationReason, "getDeprecationReason");
     function getSpecifiedByURL(node) {
       const specifiedBy = (0, _values.getDirectiveValues)(
         _directives.GraphQLSpecifiedByDirective,
@@ -14275,17 +14716,19 @@ var require_extendSchema = __commonJS({
       );
       return specifiedBy === null || specifiedBy === void 0 ? void 0 : specifiedBy.url;
     }
+    __name(getSpecifiedByURL, "getSpecifiedByURL");
     function isOneOf(node) {
       return Boolean(
         (0, _values.getDirectiveValues)(_directives.GraphQLOneOfDirective, node)
       );
     }
+    __name(isOneOf, "isOneOf");
   }
 });
 
-// ../../node_modules/graphql/utilities/buildASTSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/buildASTSchema.js
 var require_buildASTSchema = __commonJS({
-  "../../node_modules/graphql/utilities/buildASTSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/buildASTSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14346,6 +14789,7 @@ var require_buildASTSchema = __commonJS({
       ];
       return new _schema.GraphQLSchema({ ...config, directives });
     }
+    __name(buildASTSchema, "buildASTSchema");
     function buildSchema(source, options) {
       const document = (0, _parser.parse)(source, {
         noLocation: options === null || options === void 0 ? void 0 : options.noLocation,
@@ -14356,12 +14800,13 @@ var require_buildASTSchema = __commonJS({
         assumeValid: options === null || options === void 0 ? void 0 : options.assumeValid
       });
     }
+    __name(buildSchema, "buildSchema");
   }
 });
 
-// ../../node_modules/graphql/utilities/lexicographicSortSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/lexicographicSortSchema.js
 var require_lexicographicSortSchema = __commonJS({
-  "../../node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/lexicographicSortSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14398,12 +14843,15 @@ var require_lexicographicSortSchema = __commonJS({
         }
         return replaceNamedType(type);
       }
+      __name(replaceType, "replaceType");
       function replaceNamedType(type) {
         return typeMap[type.name];
       }
+      __name(replaceNamedType, "replaceNamedType");
       function replaceMaybeType(maybeType) {
         return maybeType && replaceNamedType(maybeType);
       }
+      __name(replaceMaybeType, "replaceMaybeType");
       function sortDirective(directive) {
         const config = directive.toConfig();
         return new _directives.GraphQLDirective({
@@ -14412,9 +14860,11 @@ var require_lexicographicSortSchema = __commonJS({
           args: sortArgs(config.args)
         });
       }
+      __name(sortDirective, "sortDirective");
       function sortArgs(args) {
         return sortObjMap(args, (arg) => ({ ...arg, type: replaceType(arg.type) }));
       }
+      __name(sortArgs, "sortArgs");
       function sortFields(fieldsMap) {
         return sortObjMap(fieldsMap, (field) => ({
           ...field,
@@ -14422,15 +14872,18 @@ var require_lexicographicSortSchema = __commonJS({
           args: field.args && sortArgs(field.args)
         }));
       }
+      __name(sortFields, "sortFields");
       function sortInputFields(fieldsMap) {
         return sortObjMap(fieldsMap, (field) => ({
           ...field,
           type: replaceType(field.type)
         }));
       }
+      __name(sortInputFields, "sortInputFields");
       function sortTypes(array) {
         return sortByName(array).map(replaceNamedType);
       }
+      __name(sortTypes, "sortTypes");
       function sortNamedType(type) {
         if ((0, _definition.isScalarType)(type) || (0, _introspection.isIntrospectionType)(type)) {
           return type;
@@ -14439,23 +14892,23 @@ var require_lexicographicSortSchema = __commonJS({
           const config = type.toConfig();
           return new _definition.GraphQLObjectType({
             ...config,
-            interfaces: () => sortTypes(config.interfaces),
-            fields: () => sortFields(config.fields)
+            interfaces: /* @__PURE__ */ __name(() => sortTypes(config.interfaces), "interfaces"),
+            fields: /* @__PURE__ */ __name(() => sortFields(config.fields), "fields")
           });
         }
         if ((0, _definition.isInterfaceType)(type)) {
           const config = type.toConfig();
           return new _definition.GraphQLInterfaceType({
             ...config,
-            interfaces: () => sortTypes(config.interfaces),
-            fields: () => sortFields(config.fields)
+            interfaces: /* @__PURE__ */ __name(() => sortTypes(config.interfaces), "interfaces"),
+            fields: /* @__PURE__ */ __name(() => sortFields(config.fields), "fields")
           });
         }
         if ((0, _definition.isUnionType)(type)) {
           const config = type.toConfig();
           return new _definition.GraphQLUnionType({
             ...config,
-            types: () => sortTypes(config.types)
+            types: /* @__PURE__ */ __name(() => sortTypes(config.types), "types")
           });
         }
         if ((0, _definition.isEnumType)(type)) {
@@ -14469,7 +14922,7 @@ var require_lexicographicSortSchema = __commonJS({
           const config = type.toConfig();
           return new _definition.GraphQLInputObjectType({
             ...config,
-            fields: () => sortInputFields(config.fields)
+            fields: /* @__PURE__ */ __name(() => sortInputFields(config.fields), "fields")
           });
         }
         (0, _invariant.invariant)(
@@ -14477,7 +14930,9 @@ var require_lexicographicSortSchema = __commonJS({
           "Unexpected type: " + (0, _inspect.inspect)(type)
         );
       }
+      __name(sortNamedType, "sortNamedType");
     }
+    __name(lexicographicSortSchema, "lexicographicSortSchema");
     function sortObjMap(map, sortValueFn) {
       const sortedMap = /* @__PURE__ */ Object.create(null);
       for (const key of Object.keys(map).sort(_naturalCompare.naturalCompare)) {
@@ -14485,9 +14940,11 @@ var require_lexicographicSortSchema = __commonJS({
       }
       return sortedMap;
     }
+    __name(sortObjMap, "sortObjMap");
     function sortByName(array) {
       return sortBy(array, (obj) => obj.name);
     }
+    __name(sortByName, "sortByName");
     function sortBy(array, mapToKey) {
       return array.slice().sort((obj1, obj2) => {
         const key1 = mapToKey(obj1);
@@ -14495,12 +14952,13 @@ var require_lexicographicSortSchema = __commonJS({
         return (0, _naturalCompare.naturalCompare)(key1, key2);
       });
     }
+    __name(sortBy, "sortBy");
   }
 });
 
-// ../../node_modules/graphql/utilities/printSchema.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/printSchema.js
 var require_printSchema = __commonJS({
-  "../../node_modules/graphql/utilities/printSchema.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/printSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14525,6 +14983,7 @@ var require_printSchema = __commonJS({
         isDefinedType
       );
     }
+    __name(printSchema, "printSchema");
     function printIntrospectionSchema(schema) {
       return printFilteredSchema(
         schema,
@@ -14532,9 +14991,11 @@ var require_printSchema = __commonJS({
         _introspection.isIntrospectionType
       );
     }
+    __name(printIntrospectionSchema, "printIntrospectionSchema");
     function isDefinedType(type) {
       return !(0, _scalars.isSpecifiedScalarType)(type) && !(0, _introspection.isIntrospectionType)(type);
     }
+    __name(isDefinedType, "isDefinedType");
     function printFilteredSchema(schema, directiveFilter, typeFilter) {
       const directives = schema.getDirectives().filter(directiveFilter);
       const types = Object.values(schema.getTypeMap()).filter(typeFilter);
@@ -14544,6 +15005,7 @@ var require_printSchema = __commonJS({
         ...types.map((type) => printType(type))
       ].filter(Boolean).join("\n\n");
     }
+    __name(printFilteredSchema, "printFilteredSchema");
     function printSchemaDefinition(schema) {
       if (schema.description == null && isSchemaOfCommonNames(schema)) {
         return;
@@ -14565,6 +15027,7 @@ var require_printSchema = __commonJS({
 ${operationTypes.join("\n")}
 }`;
     }
+    __name(printSchemaDefinition, "printSchemaDefinition");
     function isSchemaOfCommonNames(schema) {
       const queryType = schema.getQueryType();
       if (queryType && queryType.name !== "Query") {
@@ -14580,6 +15043,7 @@ ${operationTypes.join("\n")}
       }
       return true;
     }
+    __name(isSchemaOfCommonNames, "isSchemaOfCommonNames");
     function printType(type) {
       if ((0, _definition.isScalarType)(type)) {
         return printScalar(type);
@@ -14604,45 +15068,55 @@ ${operationTypes.join("\n")}
         "Unexpected type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(printType, "printType");
     function printScalar(type) {
       return printDescription(type) + `scalar ${type.name}` + printSpecifiedByURL(type);
     }
+    __name(printScalar, "printScalar");
     function printImplementedInterfaces(type) {
       const interfaces = type.getInterfaces();
       return interfaces.length ? " implements " + interfaces.map((i) => i.name).join(" & ") : "";
     }
+    __name(printImplementedInterfaces, "printImplementedInterfaces");
     function printObject(type) {
       return printDescription(type) + `type ${type.name}` + printImplementedInterfaces(type) + printFields(type);
     }
+    __name(printObject, "printObject");
     function printInterface(type) {
       return printDescription(type) + `interface ${type.name}` + printImplementedInterfaces(type) + printFields(type);
     }
+    __name(printInterface, "printInterface");
     function printUnion(type) {
       const types = type.getTypes();
       const possibleTypes = types.length ? " = " + types.join(" | ") : "";
       return printDescription(type) + "union " + type.name + possibleTypes;
     }
+    __name(printUnion, "printUnion");
     function printEnum(type) {
       const values = type.getValues().map(
         (value, i) => printDescription(value, "  ", !i) + "  " + value.name + printDeprecated(value.deprecationReason)
       );
       return printDescription(type) + `enum ${type.name}` + printBlock(values);
     }
+    __name(printEnum, "printEnum");
     function printInputObject(type) {
       const fields = Object.values(type.getFields()).map(
         (f, i) => printDescription(f, "  ", !i) + "  " + printInputValue(f)
       );
       return printDescription(type) + `input ${type.name}` + (type.isOneOf ? " @oneOf" : "") + printBlock(fields);
     }
+    __name(printInputObject, "printInputObject");
     function printFields(type) {
       const fields = Object.values(type.getFields()).map(
         (f, i) => printDescription(f, "  ", !i) + "  " + f.name + printArgs(f.args, "  ") + ": " + String(f.type) + printDeprecated(f.deprecationReason)
       );
       return printBlock(fields);
     }
+    __name(printFields, "printFields");
     function printBlock(items) {
       return items.length !== 0 ? " {\n" + items.join("\n") + "\n}" : "";
     }
+    __name(printBlock, "printBlock");
     function printArgs(args, indentation = "") {
       if (args.length === 0) {
         return "";
@@ -14654,6 +15128,7 @@ ${operationTypes.join("\n")}
         (arg, i) => printDescription(arg, "  " + indentation, !i) + "  " + indentation + printInputValue(arg)
       ).join("\n") + "\n" + indentation + ")";
     }
+    __name(printArgs, "printArgs");
     function printInputValue(arg) {
       const defaultAST = (0, _astFromValue.astFromValue)(
         arg.defaultValue,
@@ -14665,9 +15140,11 @@ ${operationTypes.join("\n")}
       }
       return argDecl + printDeprecated(arg.deprecationReason);
     }
+    __name(printInputValue, "printInputValue");
     function printDirective(directive) {
       return printDescription(directive) + "directive @" + directive.name + printArgs(directive.args) + (directive.isRepeatable ? " repeatable" : "") + " on " + directive.locations.join(" | ");
     }
+    __name(printDirective, "printDirective");
     function printDeprecated(reason) {
       if (reason == null) {
         return "";
@@ -14681,6 +15158,7 @@ ${operationTypes.join("\n")}
       }
       return " @deprecated";
     }
+    __name(printDeprecated, "printDeprecated");
     function printSpecifiedByURL(scalar) {
       if (scalar.specifiedByURL == null) {
         return "";
@@ -14691,6 +15169,7 @@ ${operationTypes.join("\n")}
       });
       return ` @specifiedBy(url: ${astValue})`;
     }
+    __name(printSpecifiedByURL, "printSpecifiedByURL");
     function printDescription(def, indentation = "", firstInBlock = true) {
       const { description } = def;
       if (description == null) {
@@ -14704,12 +15183,13 @@ ${operationTypes.join("\n")}
       const prefix = indentation && !firstInBlock ? "\n" + indentation : indentation;
       return prefix + blockString.replace(/\n/g, "\n" + indentation) + "\n";
     }
+    __name(printDescription, "printDescription");
   }
 });
 
-// ../../node_modules/graphql/utilities/concatAST.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/concatAST.js
 var require_concatAST = __commonJS({
-  "../../node_modules/graphql/utilities/concatAST.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/concatAST.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14726,12 +15206,13 @@ var require_concatAST = __commonJS({
         definitions
       };
     }
+    __name(concatAST, "concatAST");
   }
 });
 
-// ../../node_modules/graphql/utilities/separateOperations.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/separateOperations.js
 var require_separateOperations = __commonJS({
-  "../../node_modules/graphql/utilities/separateOperations.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/separateOperations.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14771,6 +15252,7 @@ var require_separateOperations = __commonJS({
       }
       return separatedDocumentASTs;
     }
+    __name(separateOperations, "separateOperations");
     function collectTransitiveDependencies(collected, depGraph, fromName) {
       if (!collected.has(fromName)) {
         collected.add(fromName);
@@ -14782,6 +15264,7 @@ var require_separateOperations = __commonJS({
         }
       }
     }
+    __name(collectTransitiveDependencies, "collectTransitiveDependencies");
     function collectDependencies(selectionSet) {
       const dependencies = [];
       (0, _visitor.visit)(selectionSet, {
@@ -14791,12 +15274,13 @@ var require_separateOperations = __commonJS({
       });
       return dependencies;
     }
+    __name(collectDependencies, "collectDependencies");
   }
 });
 
-// ../../node_modules/graphql/utilities/stripIgnoredCharacters.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/stripIgnoredCharacters.js
 var require_stripIgnoredCharacters = __commonJS({
-  "../../node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/stripIgnoredCharacters.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14835,12 +15319,13 @@ var require_stripIgnoredCharacters = __commonJS({
       }
       return strippedBody;
     }
+    __name(stripIgnoredCharacters, "stripIgnoredCharacters");
   }
 });
 
-// ../../node_modules/graphql/utilities/assertValidName.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/assertValidName.js
 var require_assertValidName = __commonJS({
-  "../../node_modules/graphql/utilities/assertValidName.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/assertValidName.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14857,6 +15342,7 @@ var require_assertValidName = __commonJS({
       }
       return name;
     }
+    __name(assertValidName, "assertValidName");
     function isValidNameError(name) {
       typeof name === "string" || (0, _devAssert.devAssert)(false, "Expected name to be a string.");
       if (name.startsWith("__")) {
@@ -14870,12 +15356,13 @@ var require_assertValidName = __commonJS({
         return error;
       }
     }
+    __name(isValidNameError, "isValidNameError");
   }
 });
 
-// ../../node_modules/graphql/utilities/findBreakingChanges.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/findBreakingChanges.js
 var require_findBreakingChanges = __commonJS({
-  "../../node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/findBreakingChanges.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
@@ -14930,17 +15417,20 @@ var require_findBreakingChanges = __commonJS({
         (change) => change.type in BreakingChangeType
       );
     }
+    __name(findBreakingChanges, "findBreakingChanges");
     function findDangerousChanges(oldSchema, newSchema) {
       return findSchemaChanges(oldSchema, newSchema).filter(
         (change) => change.type in DangerousChangeType
       );
     }
+    __name(findDangerousChanges, "findDangerousChanges");
     function findSchemaChanges(oldSchema, newSchema) {
       return [
         ...findTypeChanges(oldSchema, newSchema),
         ...findDirectiveChanges(oldSchema, newSchema)
       ];
     }
+    __name(findSchemaChanges, "findSchemaChanges");
     function findDirectiveChanges(oldSchema, newSchema) {
       const schemaChanges = [];
       const directivesDiff = diff(
@@ -14986,6 +15476,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findDirectiveChanges, "findDirectiveChanges");
     function findTypeChanges(oldSchema, newSchema) {
       const schemaChanges = [];
       const typesDiff = diff(
@@ -15024,6 +15515,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findTypeChanges, "findTypeChanges");
     function findInputObjectTypeChanges(oldType, newType) {
       const schemaChanges = [];
       const fieldsDiff = diff(
@@ -15063,6 +15555,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findInputObjectTypeChanges, "findInputObjectTypeChanges");
     function findUnionTypeChanges(oldType, newType) {
       const schemaChanges = [];
       const possibleTypesDiff = diff(oldType.getTypes(), newType.getTypes());
@@ -15080,6 +15573,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findUnionTypeChanges, "findUnionTypeChanges");
     function findEnumTypeChanges(oldType, newType) {
       const schemaChanges = [];
       const valuesDiff = diff(oldType.getValues(), newType.getValues());
@@ -15097,6 +15591,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findEnumTypeChanges, "findEnumTypeChanges");
     function findImplementedInterfacesChanges(oldType, newType) {
       const schemaChanges = [];
       const interfacesDiff = diff(oldType.getInterfaces(), newType.getInterfaces());
@@ -15114,6 +15609,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findImplementedInterfacesChanges, "findImplementedInterfacesChanges");
     function findFieldChanges(oldType, newType) {
       const schemaChanges = [];
       const fieldsDiff = diff(
@@ -15141,6 +15637,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findFieldChanges, "findFieldChanges");
     function findArgChanges(oldType, oldField, newField) {
       const schemaChanges = [];
       const argsDiff = diff(oldField.args, newField.args);
@@ -15193,6 +15690,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return schemaChanges;
     }
+    __name(findArgChanges, "findArgChanges");
     function isChangeSafeForObjectOrInterfaceField(oldType, newType) {
       if ((0, _definition.isListType)(oldType)) {
         return (
@@ -15213,6 +15711,7 @@ var require_findBreakingChanges = __commonJS({
         (0, _definition.isNonNullType)(newType) && isChangeSafeForObjectOrInterfaceField(oldType, newType.ofType)
       );
     }
+    __name(isChangeSafeForObjectOrInterfaceField, "isChangeSafeForObjectOrInterfaceField");
     function isChangeSafeForInputObjectFieldOrFieldArg(oldType, newType) {
       if ((0, _definition.isListType)(oldType)) {
         return (0, _definition.isListType)(newType) && isChangeSafeForInputObjectFieldOrFieldArg(oldType.ofType, newType.ofType);
@@ -15230,6 +15729,7 @@ var require_findBreakingChanges = __commonJS({
       }
       return (0, _definition.isNamedType)(newType) && oldType.name === newType.name;
     }
+    __name(isChangeSafeForInputObjectFieldOrFieldArg, "isChangeSafeForInputObjectFieldOrFieldArg");
     function typeKindName(type) {
       if ((0, _definition.isScalarType)(type)) {
         return "a Scalar type";
@@ -15254,11 +15754,13 @@ var require_findBreakingChanges = __commonJS({
         "Unexpected type: " + (0, _inspect.inspect)(type)
       );
     }
+    __name(typeKindName, "typeKindName");
     function stringifyValue(value, type) {
       const ast = (0, _astFromValue.astFromValue)(value, type);
       ast != null || (0, _invariant.invariant)(false);
       return (0, _printer.print)((0, _sortValueNode.sortValueNode)(ast));
     }
+    __name(stringifyValue, "stringifyValue");
     function diff(oldArray, newArray) {
       const added = [];
       const removed = [];
@@ -15284,201 +15786,202 @@ var require_findBreakingChanges = __commonJS({
         removed
       };
     }
+    __name(diff, "diff");
   }
 });
 
-// ../../node_modules/graphql/utilities/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/index.js
 var require_utilities = __commonJS({
-  "../../node_modules/graphql/utilities/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/utilities/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "BreakingChangeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _findBreakingChanges.BreakingChangeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "DangerousChangeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _findBreakingChanges.DangerousChangeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeInfo", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _TypeInfo.TypeInfo;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertValidName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _assertValidName.assertValidName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "astFromValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _astFromValue.astFromValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildASTSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _buildASTSchema.buildASTSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildClientSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _buildClientSchema.buildClientSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _buildASTSchema.buildSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "coerceInputValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _coerceInputValue.coerceInputValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "concatAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _concatAST.concatAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "doTypesOverlap", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _typeComparators.doTypesOverlap;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "extendSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _extendSchema.extendSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "findBreakingChanges", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _findBreakingChanges.findBreakingChanges;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "findDangerousChanges", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _findBreakingChanges.findDangerousChanges;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getIntrospectionQuery", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _getIntrospectionQuery.getIntrospectionQuery;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getOperationAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _getOperationAST.getOperationAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getOperationRootType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _getOperationRootType.getOperationRootType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "introspectionFromSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _introspectionFromSchema.introspectionFromSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isEqualType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _typeComparators.isEqualType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSubTypeOf", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _typeComparators.isTypeSubTypeOf;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isValidNameError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _assertValidName.isValidNameError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "lexicographicSortSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _lexicographicSortSchema.lexicographicSortSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printIntrospectionSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printSchema.printIntrospectionSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printSchema.printSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _printSchema.printType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "separateOperations", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _separateOperations.separateOperations;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "stripIgnoredCharacters", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _stripIgnoredCharacters.stripIgnoredCharacters;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "typeFromAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _typeFromAST.typeFromAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "valueFromAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _valueFromAST.valueFromAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "valueFromASTUntyped", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _valueFromASTUntyped.valueFromASTUntyped;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visitWithTypeInfo", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _TypeInfo.visitWithTypeInfo;
-      }
+      }, "get")
     });
     var _getIntrospectionQuery = require_getIntrospectionQuery();
     var _getOperationAST = require_getOperationAST();
@@ -15504,1278 +16007,1278 @@ var require_utilities = __commonJS({
   }
 });
 
-// ../../node_modules/graphql/index.js
+// ../../../../home/alexes/projects2/trip2g/node_modules/graphql/index.js
 var require_graphql2 = __commonJS({
-  "../../node_modules/graphql/index.js"(exports) {
+  "../../../../home/alexes/projects2/trip2g/node_modules/graphql/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
     Object.defineProperty(exports, "BREAK", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.BREAK;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "BreakingChangeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.BreakingChangeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "DEFAULT_DEPRECATION_REASON", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.DEFAULT_DEPRECATION_REASON;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "DangerousChangeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.DangerousChangeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "DirectiveLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.DirectiveLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ExecutableDefinitionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.ExecutableDefinitionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "FieldsOnCorrectTypeRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.FieldsOnCorrectTypeRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "FragmentsOnCompositeTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.FragmentsOnCompositeTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GRAPHQL_MAX_INT", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GRAPHQL_MAX_INT;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GRAPHQL_MIN_INT", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GRAPHQL_MIN_INT;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLBoolean", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLBoolean;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLDeprecatedDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLDeprecatedDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index5.GraphQLError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLFloat", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLFloat;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLID", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLID;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLIncludeDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLIncludeDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInt", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLInt;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLList", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLList;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLNonNull", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLNonNull;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLOneOfDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLOneOfDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSkipDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLSkipDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLSpecifiedByDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLSpecifiedByDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLString", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLString;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "GraphQLUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.GraphQLUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Kind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.Kind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownArgumentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.KnownArgumentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownDirectivesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.KnownDirectivesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownFragmentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.KnownFragmentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "KnownTypeNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.KnownTypeNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Lexer", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.Lexer;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Location", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.Location;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "LoneAnonymousOperationRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.LoneAnonymousOperationRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "LoneSchemaDefinitionRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.LoneSchemaDefinitionRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "MaxIntrospectionDepthRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.MaxIntrospectionDepthRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoDeprecatedCustomRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoDeprecatedCustomRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoFragmentCyclesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoFragmentCyclesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoSchemaIntrospectionCustomRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoSchemaIntrospectionCustomRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUndefinedVariablesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoUndefinedVariablesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUnusedFragmentsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoUnusedFragmentsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "NoUnusedVariablesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.NoUnusedVariablesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "OperationTypeNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.OperationTypeNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "OverlappingFieldsCanBeMergedRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.OverlappingFieldsCanBeMergedRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "PossibleFragmentSpreadsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.PossibleFragmentSpreadsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "PossibleTypeExtensionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.PossibleTypeExtensionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ProvidedRequiredArgumentsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.ProvidedRequiredArgumentsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ScalarLeafsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.ScalarLeafsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "SchemaMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.SchemaMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "SingleFieldSubscriptionsRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.SingleFieldSubscriptionsRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Source", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.Source;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "Token", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.Token;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TokenKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.TokenKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeInfo", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.TypeInfo;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.TypeKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.TypeMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "TypeNameMetaFieldDef", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.TypeNameMetaFieldDef;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueArgumentDefinitionNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueArgumentDefinitionNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueArgumentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueArgumentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueDirectiveNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueDirectiveNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueDirectivesPerLocationRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueDirectivesPerLocationRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueEnumValueNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueEnumValueNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueFieldDefinitionNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueFieldDefinitionNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueFragmentNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueFragmentNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueInputFieldNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueInputFieldNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueOperationNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueOperationNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueOperationTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueOperationTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueTypeNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueTypeNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "UniqueVariableNamesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.UniqueVariableNamesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ValidationContext", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.ValidationContext;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "ValuesOfCorrectTypeRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.ValuesOfCorrectTypeRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "VariablesAreInputTypesRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.VariablesAreInputTypesRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "VariablesInAllowedPositionRule", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.VariablesInAllowedPositionRule;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Directive", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__Directive;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__DirectiveLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__DirectiveLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__EnumValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__EnumValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Field", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__Field;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__InputValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__InputValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Schema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__Schema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__Type", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__Type;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "__TypeKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.__TypeKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertAbstractType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertAbstractType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertCompositeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertCompositeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertEnumValueName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertEnumValueName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertInputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertLeafType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertLeafType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertListType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertListType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNonNullType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertNonNullType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertOutputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertOutputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertValidName", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.assertValidName;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertValidSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertValidSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "assertWrappingType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.assertWrappingType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "astFromValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.astFromValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildASTSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.buildASTSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildClientSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.buildClientSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "buildSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.buildSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "coerceInputValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.coerceInputValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "concatAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.concatAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "createSourceEventStream", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.createSourceEventStream;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "defaultFieldResolver", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.defaultFieldResolver;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "defaultTypeResolver", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.defaultTypeResolver;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "doTypesOverlap", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.doTypesOverlap;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "execute", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.execute;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "executeSync", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.executeSync;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "extendSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.extendSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "findBreakingChanges", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.findBreakingChanges;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "findDangerousChanges", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.findDangerousChanges;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "formatError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index5.formatError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getArgumentValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.getArgumentValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getDirectiveValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.getDirectiveValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getEnterLeaveForKind", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.getEnterLeaveForKind;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getIntrospectionQuery", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.getIntrospectionQuery;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.getLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.getNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.getNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getOperationAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.getOperationAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getOperationRootType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.getOperationRootType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getVariableValues", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.getVariableValues;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "getVisitFn", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.getVisitFn;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "graphql", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _graphql.graphql;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "graphqlSync", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _graphql.graphqlSync;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "introspectionFromSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.introspectionFromSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "introspectionTypes", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.introspectionTypes;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isAbstractType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isAbstractType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isCompositeType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isCompositeType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isConstValueNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isConstValueNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isEnumType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isEnumType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isEqualType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.isEqualType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isExecutableDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isExecutableDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInputObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isInputObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isInputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isInterfaceType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isInterfaceType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isIntrospectionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isIntrospectionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isLeafType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isLeafType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isListType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isListType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNamedType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isNamedType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNonNullType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isNonNullType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isNullableType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isNullableType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isObjectType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isObjectType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isOutputType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isOutputType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isRequiredArgument", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isRequiredArgument;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isRequiredInputField", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isRequiredInputField;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSelectionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isSelectionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSpecifiedDirective", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isSpecifiedDirective;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isSpecifiedScalarType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isSpecifiedScalarType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isTypeDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeExtensionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isTypeExtensionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isTypeNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSubTypeOf", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.isTypeSubTypeOf;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSystemDefinitionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isTypeSystemDefinitionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isTypeSystemExtensionNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isTypeSystemExtensionNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isUnionType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isUnionType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isValidNameError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.isValidNameError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isValueNode", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.isValueNode;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "isWrappingType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.isWrappingType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "lexicographicSortSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.lexicographicSortSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "locatedError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index5.locatedError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parse", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.parse;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseConstValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.parseConstValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.parseType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "parseValue", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.parseValue;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "print", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.print;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index5.printError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printIntrospectionSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.printIntrospectionSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.printLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.printSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printSourceLocation", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.printSourceLocation;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "printType", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.printType;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "recommendedRules", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.recommendedRules;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "resolveObjMapThunk", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.resolveObjMapThunk;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "resolveReadonlyArrayThunk", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.resolveReadonlyArrayThunk;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "responsePathAsArray", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.responsePathAsArray;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "separateOperations", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.separateOperations;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedDirectives", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.specifiedDirectives;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedRules", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.specifiedRules;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "specifiedScalarTypes", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.specifiedScalarTypes;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "stripIgnoredCharacters", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.stripIgnoredCharacters;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "subscribe", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index3.subscribe;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "syntaxError", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index5.syntaxError;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "typeFromAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.typeFromAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "validate", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index4.validate;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "validateSchema", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index.validateSchema;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "valueFromAST", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.valueFromAST;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "valueFromASTUntyped", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.valueFromASTUntyped;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "version", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _version.version;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "versionInfo", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _version.versionInfo;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visit", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.visit;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visitInParallel", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index2.visitInParallel;
-      }
+      }, "get")
     });
     Object.defineProperty(exports, "visitWithTypeInfo", {
       enumerable: true,
-      get: function() {
+      get: /* @__PURE__ */ __name(function() {
         return _index6.visitWithTypeInfo;
-      }
+      }, "get")
     });
     var _version = require_version();
     var _graphql = require_graphql();
@@ -16808,6 +17311,7 @@ function containerName(flags) {
   const safe = flags.name.replace(/[^a-zA-Z0-9_.-]/g, "-");
   return `${CONTAINER_NAME}-${safe}`;
 }
+__name(containerName, "containerName");
 var DEFAULT_PORT = 24081;
 var DEFAULT_IMAGE = "ghcr.io/trip2g/trip2g:latest";
 var DEFAULT_EMAIL = "memory@local";
@@ -16819,15 +17323,18 @@ var EMBED_READY_POLL_MS = 2e3;
 function networkName(name) {
   return `${name}-net`;
 }
+__name(networkName, "networkName");
 function embeddingContainerName(name) {
   return `${name}-embedding`;
 }
+__name(embeddingContainerName, "embeddingContainerName");
 var DEFAULT_HUB_URL = "https://trip2g.com/_system/mcp";
 var DEFAULT_STALE_DAYS = 60;
 function base64url(buf) {
   const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
   return b.toString("base64url");
 }
+__name(base64url, "base64url");
 function signHatJwt(secret, email) {
   const headerB64 = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = {
@@ -16840,13 +17347,16 @@ function signHatJwt(secret, email) {
   const sig = crypto.createHmac("sha256", secret).update(signingInput).digest();
   return `${signingInput}.${base64url(sig)}`;
 }
+__name(signHatJwt, "signHatJwt");
 function buildHatLoginUrl(publicUrl, jwt) {
   return `${publicUrl}/?hat=${encodeURIComponent(jwt)}`;
 }
+__name(buildHatLoginUrl, "buildHatLoginUrl");
 function hubSlug(hubUrl) {
   const host = new URL(hubUrl).hostname;
   return host.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
+__name(hubSlug, "hubSlug");
 function buildHubNote(hubUrl, id) {
   const host = new URL(hubUrl).hostname;
   const kbId = id ?? host;
@@ -16875,6 +17385,7 @@ mcp_federation_kb_id: ${kbId}
 To disable federation: delete this file or run \`memcli up\` with \`--no-hub\`.
 `.trimStart();
 }
+__name(buildHubNote, "buildHubNote");
 function buildIndexNote() {
   return `---
 type: index
@@ -16896,6 +17407,7 @@ an agent reads and searches as persistent long-term memory.
 - [[log]] \u2014 running synthesis and open questions.
 `.trimStart();
 }
+__name(buildIndexNote, "buildIndexNote");
 function buildLogNote() {
   return `---
 type: log
@@ -16914,6 +17426,7 @@ _(running summary \u2014 keep this current)_
 - _(none yet \u2014 add questions here as they surface)_
 `.trimStart();
 }
+__name(buildLogNote, "buildLogNote");
 function buildAgentsNote() {
   return `---
 mcp_method: instructions
@@ -16937,6 +17450,7 @@ or unresolved markers behind \u2014 an unresolved marker means the write is not 
 committed.
 `.trimStart();
 }
+__name(buildAgentsNote, "buildAgentsNote");
 function buildSchemaNote() {
   return `---
 mcp_method: schema
@@ -16960,6 +17474,7 @@ Every note MUST declare a \`type:\` field. Notes without one fail OKF validation
 (see \`memcli lint\` / \`memory_lint\`).
 `.trimStart();
 }
+__name(buildSchemaNote, "buildSchemaNote");
 function buildHomeNote() {
   return `---
 type: index
@@ -16976,6 +17491,7 @@ writes back as it works.
 - [[AGENTS|Agent instructions]]
 `.trimStart();
 }
+__name(buildHomeNote, "buildHomeNote");
 function buildHeaderNote() {
   return `---
 type: header
@@ -16986,6 +17502,7 @@ type: header
 - [[log|Log]]
 `.trimStart();
 }
+__name(buildHeaderNote, "buildHeaderNote");
 var KANBAN_SENTINEL = "<!-- memcli:kanban-template -->";
 var KANBAN_RELEASE_URL = "https://github.com/trip2g/kanban_template/releases/latest/download/kanban.html";
 function buildKanbanBoard() {
@@ -17009,6 +17526,7 @@ free: true
 - [ ] Install the kanban template
 `.trimStart();
 }
+__name(buildKanbanBoard, "buildKanbanBoard");
 async function installKanban(vault, kanbanBundle, noSeed, dryRun, fetchFn = fetch) {
   const layoutsDir = path.join(vault, "_layouts");
   const layoutFile = path.join(layoutsDir, "kanban.html");
@@ -17060,6 +17578,7 @@ async function installKanban(vault, kanbanBundle, noSeed, dryRun, fetchFn = fetc
     }
   }
 }
+__name(installKanban, "installKanban");
 function parseArgs(argv) {
   const SUBCOMMANDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "mcp", "hub", "lint", "open"]);
   const flags = {
@@ -17143,6 +17662,7 @@ function parseArgs(argv) {
   }
   return { cmd, flags, positional };
 }
+__name(parseArgs, "parseArgs");
 function shouldRunMcp(argv, isTty) {
   const KNOWN_CLI_CMDS = /* @__PURE__ */ new Set(["up", "down", "status", "logs", "key", "daily", "log", "hub", "lint", "open"]);
   const first = argv[0];
@@ -17152,6 +17672,7 @@ function shouldRunMcp(argv, isTty) {
   if (!isTty) return true;
   return false;
 }
+__name(shouldRunMcp, "shouldRunMcp");
 function buildToolList() {
   return [
     {
@@ -17277,6 +17798,7 @@ function buildToolList() {
     }
   ];
 }
+__name(buildToolList, "buildToolList");
 function buildServerEnv(opts) {
   const { port, iport, email, secret, encryptionKey } = opts;
   const env = {
@@ -17299,6 +17821,7 @@ function buildServerEnv(opts) {
   }
   return env;
 }
+__name(buildServerEnv, "buildServerEnv");
 function buildDockerRunArgs(opts) {
   const { port, iport, stateDir, image } = opts;
   const host = opts.host ?? "127.0.0.1";
@@ -17328,6 +17851,7 @@ function buildDockerRunArgs(opts) {
   args.push(image);
   return args;
 }
+__name(buildDockerRunArgs, "buildDockerRunArgs");
 function buildFeaturesJson(serverContainer, reranker) {
   const vectorSearch = {
     enabled: true,
@@ -17343,6 +17867,7 @@ function buildFeaturesJson(serverContainer, reranker) {
   }
   return JSON.stringify({ vector_search: vectorSearch });
 }
+__name(buildFeaturesJson, "buildFeaturesJson");
 function buildEmbedServerRunArgs(opts) {
   const args = [
     "-d",
@@ -17359,6 +17884,7 @@ function buildEmbedServerRunArgs(opts) {
   args.push(EMBED_SERVER_IMAGE);
   return args;
 }
+__name(buildEmbedServerRunArgs, "buildEmbedServerRunArgs");
 function buildDataJson(vault, publicUrl, apiKey) {
   return {
     syncDirs: [
@@ -17371,6 +17897,7 @@ function buildDataJson(vault, publicUrl, apiKey) {
     ]
   };
 }
+__name(buildDataJson, "buildDataJson");
 async function gqlRequest(endpoint, bearerToken, document, variables) {
   const res = await fetch(endpoint, {
     method: "POST",
@@ -17392,6 +17919,7 @@ async function gqlRequest(endpoint, bearerToken, document, variables) {
   }
   return body.data;
 }
+__name(gqlRequest, "gqlRequest");
 function readEnvFile(envFile) {
   if (!fs.existsSync(envFile)) return {};
   const lines = fs.readFileSync(envFile, "utf8").split("\n");
@@ -17403,11 +17931,13 @@ function readEnvFile(envFile) {
   }
   return out;
 }
+__name(readEnvFile, "readEnvFile");
 function writeEnvFile(envFile, data) {
   const content = Object.entries(data).map(([k, v]) => `${k}=${v}`).join("\n") + "\n";
   fs.writeFileSync(envFile, content, { mode: 384 });
   fs.chmodSync(envFile, 384);
 }
+__name(writeEnvFile, "writeEnvFile");
 async function waitReady(url, timeoutMs, pollMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -17420,6 +17950,7 @@ async function waitReady(url, timeoutMs, pollMs) {
   }
   throw new Error(`Timed out waiting for ${url} to return 200 after ${timeoutMs}ms`);
 }
+__name(waitReady, "waitReady");
 function isPortBusy(port, host = "127.0.0.1") {
   return new Promise((resolve) => {
     const srv = net.createServer();
@@ -17434,6 +17965,7 @@ function isPortBusy(port, host = "127.0.0.1") {
     srv.listen(port, host);
   });
 }
+__name(isPortBusy, "isPortBusy");
 async function hatAuth(publicUrl, secret, email) {
   const jwt = signHatJwt(secret, email);
   const hatRes = await fetch(`${publicUrl}/_system/hat`, {
@@ -17451,6 +17983,7 @@ async function hatAuth(publicUrl, secret, email) {
   }
   return match[1];
 }
+__name(hatAuth, "hatAuth");
 async function mintApiKey(publicUrl, secret, email) {
   const token = await hatAuth(publicUrl, secret, email);
   const gqlUrl = `${publicUrl}/_system/graphql`;
@@ -17469,6 +18002,7 @@ async function mintApiKey(publicUrl, secret, email) {
     apiKeyId: result.apiKey?.id ?? null
   };
 }
+__name(mintApiKey, "mintApiKey");
 function writeDataJson(vault, publicUrl, apiKey) {
   const pluginDir = path.join(vault, ".obsidian", "plugins", "trip2g");
   fs.mkdirSync(pluginDir, { recursive: true });
@@ -17476,6 +18010,7 @@ function writeDataJson(vault, publicUrl, apiKey) {
   fs.writeFileSync(dataFile, JSON.stringify(buildDataJson(vault, publicUrl, apiKey), null, 2));
   return dataFile;
 }
+__name(writeDataJson, "writeDataJson");
 function isPidAlive(pid, cmdlinePattern) {
   try {
     process.kill(pid, 0);
@@ -17489,6 +18024,7 @@ function isPidAlive(pid, cmdlinePattern) {
     return false;
   }
 }
+__name(isPidAlive, "isPidAlive");
 function isContainerRunning(name) {
   try {
     const out = spawnSync("docker", ["ps", "-q", "--filter", `name=^${name}$`], { encoding: "utf8" });
@@ -17497,6 +18033,7 @@ function isContainerRunning(name) {
     return false;
   }
 }
+__name(isContainerRunning, "isContainerRunning");
 function containerExists(name) {
   try {
     const out = spawnSync("docker", ["ps", "-aq", "--filter", `name=^${name}$`], { encoding: "utf8" });
@@ -17505,6 +18042,7 @@ function containerExists(name) {
     return false;
   }
 }
+__name(containerExists, "containerExists");
 function ensureNetwork(netName, dryRun) {
   if (dryRun) {
     console.log(`[dry-run] docker network create ${netName} (if absent)`);
@@ -17515,6 +18053,7 @@ function ensureNetwork(netName, dryRun) {
   spawnSync("docker", ["network", "create", netName], { encoding: "utf8" });
   console.log(`Created docker network ${netName}.`);
 }
+__name(ensureNetwork, "ensureNetwork");
 function ensureEmbedServerImage(dryRun) {
   const buildDir = path.join(repoRoot(), "retriever");
   if (dryRun) {
@@ -17530,6 +18069,7 @@ function ensureEmbedServerImage(dryRun) {
   }
   console.log(`Built ${EMBED_SERVER_IMAGE}.`);
 }
+__name(ensureEmbedServerImage, "ensureEmbedServerImage");
 function ensureEmbedServerSidecar(opts, dryRun) {
   const args = buildEmbedServerRunArgs(opts);
   if (dryRun) {
@@ -17554,10 +18094,12 @@ function ensureEmbedServerSidecar(opts, dryRun) {
     throw new Error(`docker run ${opts.name} failed: ${(run.stderr || run.stdout || "").trim()}`);
   }
 }
+__name(ensureEmbedServerSidecar, "ensureEmbedServerSidecar");
 function repoRoot() {
   const scriptDir = path.dirname(new URL(import.meta.url).pathname);
   return path.resolve(scriptDir, "..", "..", "..");
 }
+__name(repoRoot, "repoRoot");
 function _tzLabel() {
   const tz = process.env.TZ?.trim();
   if (tz) return tz;
@@ -17567,6 +18109,7 @@ function _tzLabel() {
     return "UTC";
   }
 }
+__name(_tzLabel, "_tzLabel");
 function _stampBlock(text, now) {
   const normalized = text.replace(/\\n/g, "\n");
   const lines = normalized.split("\n");
@@ -17574,9 +18117,11 @@ function _stampBlock(text, now) {
   lines[0] = `${hhmm} ${lines[0]}`;
   return lines.join("\n");
 }
+__name(_stampBlock, "_stampBlock");
 function _plainBlock(text) {
   return text.replace(/\\n/g, "\n");
 }
+__name(_plainBlock, "_plainBlock");
 function atomicWrite(filePath, content) {
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
@@ -17592,12 +18137,14 @@ function atomicWrite(filePath, content) {
     throw err;
   }
 }
+__name(atomicWrite, "atomicWrite");
 function tailLines(filePath, n) {
   if (n <= 0) return "";
   if (!fs.existsSync(filePath)) return "";
   const lines = fs.readFileSync(filePath, "utf8").split("\n");
   return lines.slice(-n).join("\n");
 }
+__name(tailLines, "tailLines");
 function buildDailyEntry(day, tz, stampedEntry) {
   const frontmatter = `---
 timezone: ${tz}
@@ -17613,6 +18160,7 @@ type: daily
 ${stampedEntry}
 `;
 }
+__name(buildDailyEntry, "buildDailyEntry");
 function ensureDailyIndex(vault, day) {
   const idx = path.join(vault, "daily", "_index.md");
   if (!fs.existsSync(idx)) {
@@ -17633,6 +18181,7 @@ function ensureDailyIndex(vault, day) {
   if (!inserted) out.push(`- [[${day}]]`);
   atomicWrite(idx, out.join("\n") + "\n");
 }
+__name(ensureDailyIndex, "ensureDailyIndex");
 function appendDaily(vault, text, now) {
   const localDay = [
     now.getFullYear(),
@@ -17654,6 +18203,7 @@ ${entry}
   ensureDailyIndex(vault, localDay);
   return note;
 }
+__name(appendDaily, "appendDaily");
 function appendLog(vault, file, text, now) {
   const localDay = [
     now.getFullYear(),
@@ -17684,6 +18234,7 @@ ${entry}
   }
   return note;
 }
+__name(appendLog, "appendLog");
 function captureLines(fn) {
   const lines = [];
   const origLog = console.log;
@@ -17701,6 +18252,7 @@ function captureLines(fn) {
   }
   return lines.join("\n");
 }
+__name(captureLines, "captureLines");
 async function captureAsync(fn) {
   const lines = [];
   const origLog = console.log;
@@ -17718,6 +18270,7 @@ async function captureAsync(fn) {
   }
   return lines.join("\n");
 }
+__name(captureAsync, "captureAsync");
 async function runUp(flags) {
   try {
     const text = await captureAsync(() => cmdUp(flags, flags.dryRun));
@@ -17726,6 +18279,7 @@ async function runUp(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runUp, "runUp");
 function runDown(flags) {
   try {
     const text = captureLines(() => cmdDown(flags.dryRun, flags.folder, containerName(flags)));
@@ -17734,6 +18288,7 @@ function runDown(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runDown, "runDown");
 function runStatus(flags) {
   try {
     const text = captureLines(() => cmdStatus(containerName(flags)));
@@ -17742,6 +18297,7 @@ function runStatus(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runStatus, "runStatus");
 function runLogs(flags) {
   try {
     const result = spawnSync("docker", ["logs", containerName(flags)], {
@@ -17754,6 +18310,7 @@ function runLogs(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runLogs, "runLogs");
 async function runKey(flags) {
   try {
     const text = await captureAsync(() => cmdKey(flags, flags.dryRun));
@@ -17762,6 +18319,7 @@ async function runKey(flags) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runKey, "runKey");
 function brokenLinkWarning(vault, note) {
   const root = path.resolve(vault);
   const files = walkMarkdown(root);
@@ -17779,6 +18337,7 @@ function brokenLinkWarning(vault, note) {
   return `
 \u26A0 broken links in ${rel}: ${links} \u2014 create the target note(s) or fix the link.`;
 }
+__name(brokenLinkWarning, "brokenLinkWarning");
 function runDaily(vault, text, context) {
   if (!text) {
     return { text: "Error: `daily` requires a text argument", isError: true };
@@ -17790,6 +18349,7 @@ function runDaily(vault, text, context) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runDaily, "runDaily");
 function runLog(vault, file, text, context) {
   if (!file || !text) {
     return { text: "Error: `log` requires <file> and <text> arguments", isError: true };
@@ -17801,6 +18361,7 @@ function runLog(vault, file, text, context) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runLog, "runLog");
 function runHub(hubUrl, folder, id, dryRun) {
   if (!hubUrl) {
     return { text: "Error: `hub` requires a <url> argument", isError: true };
@@ -17841,6 +18402,7 @@ function runHub(hubUrl, folder, id, dryRun) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runHub, "runHub");
 function walkMarkdown(dir) {
   const out = [];
   let entries;
@@ -17860,6 +18422,7 @@ function walkMarkdown(dir) {
   }
   return out;
 }
+__name(walkMarkdown, "walkMarkdown");
 function splitFrontmatter(content) {
   if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
     return { frontmatter: "", body: content };
@@ -17871,9 +18434,11 @@ function splitFrontmatter(content) {
   const afterFence = rest.slice(end).replace(/^---\s*$/m, "");
   return { frontmatter, body: afterFence };
 }
+__name(splitFrontmatter, "splitFrontmatter");
 function stripCode(body) {
   return body.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
 }
+__name(stripCode, "stripCode");
 function extractWikilinks(body) {
   const stripped = stripCode(body);
   const out = [];
@@ -17888,6 +18453,7 @@ function extractWikilinks(body) {
   }
   return out;
 }
+__name(extractWikilinks, "extractWikilinks");
 function buildResolutionSet(root, files) {
   const set = /* @__PURE__ */ new Set();
   for (const file of files) {
@@ -17898,6 +18464,7 @@ function buildResolutionSet(root, files) {
   }
   return set;
 }
+__name(buildResolutionSet, "buildResolutionSet");
 function findBrokenLinks(body, resolveSet) {
   const broken = [];
   for (const target of extractWikilinks(body)) {
@@ -17905,6 +18472,7 @@ function findBrokenLinks(body, resolveSet) {
   }
   return broken;
 }
+__name(findBrokenLinks, "findBrokenLinks");
 function lintVault(vault, staleDays) {
   const violations = [];
   const root = path.resolve(vault);
@@ -17975,6 +18543,7 @@ function lintVault(vault, staleDays) {
   }
   return { violations };
 }
+__name(lintVault, "lintVault");
 function formatLintReport(result) {
   const { violations } = result;
   const errors = violations.filter((v) => v.level === "error");
@@ -17992,6 +18561,7 @@ function formatLintReport(result) {
   lines.push(`lint: ${errors.length} error(s), ${warns.length} warning(s)`);
   return lines.join("\n");
 }
+__name(formatLintReport, "formatLintReport");
 function runLint(folder, staleDays) {
   try {
     const result = lintVault(path.resolve(folder), staleDays);
@@ -18001,6 +18571,7 @@ function runLint(folder, staleDays) {
     return { text: `Error: ${err.message}`, isError: true };
   }
 }
+__name(runLint, "runLint");
 function runOpen(flags) {
   const vault = path.resolve(flags.folder);
   const stateDir = path.join(vault, ".trip2g-memory");
@@ -18043,6 +18614,7 @@ function runOpen(flags) {
     isError: false
   };
 }
+__name(runOpen, "runOpen");
 function cmdDaily(vault, text, context) {
   const result = runDaily(vault, text, context);
   if (result.isError) {
@@ -18051,6 +18623,7 @@ function cmdDaily(vault, text, context) {
   }
   console.log(result.text);
 }
+__name(cmdDaily, "cmdDaily");
 function cmdLog(vault, file, text, context) {
   const result = runLog(vault, file, text, context);
   if (result.isError) {
@@ -18059,6 +18632,7 @@ function cmdLog(vault, file, text, context) {
   }
   console.log(result.text);
 }
+__name(cmdLog, "cmdLog");
 function cmdHub(hubUrl, folder, id, dryRun) {
   const result = runHub(hubUrl, folder, id, dryRun);
   if (result.isError) {
@@ -18067,6 +18641,7 @@ function cmdHub(hubUrl, folder, id, dryRun) {
   }
   console.log(result.text);
 }
+__name(cmdHub, "cmdHub");
 function cmdLint(folder, staleDays) {
   const result = runLint(folder, staleDays);
   if (result.isError) {
@@ -18075,6 +18650,7 @@ function cmdLint(folder, staleDays) {
   }
   console.log(result.text);
 }
+__name(cmdLint, "cmdLint");
 function cmdOpen(flags) {
   const result = runOpen(flags);
   if (result.isError) {
@@ -18083,6 +18659,7 @@ function cmdOpen(flags) {
   }
   console.log(result.text);
 }
+__name(cmdOpen, "cmdOpen");
 function printHelp() {
   console.log(`
 memcli \u2014 minimal self-hosted agent memory backed by trip2g
@@ -18151,6 +18728,7 @@ NOTES
   Pipe stdin or use the mcp subcommand to run as an MCP stdio JSON-RPC server.
 `.trim());
 }
+__name(printHelp, "printHelp");
 async function cmdUp(flags, dryRun) {
   const { folder, port, email, image } = flags;
   const name = containerName(flags);
@@ -18366,6 +18944,7 @@ async function cmdUp(flags, dryRun) {
   console.log("");
   console.log(`memory live \u2014 web: ${publicUrl}  read/write .md in ${vault}`);
 }
+__name(cmdUp, "cmdUp");
 function cmdDown(dryRun, folder, name) {
   if (dryRun) {
     console.log(`[dry-run] docker stop ${name}`);
@@ -18416,6 +18995,7 @@ function cmdDown(dryRun, folder, name) {
     }
   }
 }
+__name(cmdDown, "cmdDown");
 function cmdStatus(name) {
   console.log("=== Container ===");
   const out = spawnSync(
@@ -18434,6 +19014,7 @@ function cmdStatus(name) {
   );
   console.log(out.stdout || "(no output)");
 }
+__name(cmdStatus, "cmdStatus");
 function cmdLogs(name) {
   const result = spawnSync("docker", ["logs", name], {
     encoding: "utf8",
@@ -18441,6 +19022,7 @@ function cmdLogs(name) {
   });
   if (result.error) throw result.error;
 }
+__name(cmdLogs, "cmdLogs");
 async function cmdKey(flags, dryRun) {
   const { folder, port, email } = flags;
   if (!folder) {
@@ -18503,12 +19085,15 @@ async function cmdKey(flags, dryRun) {
     }
   }
 }
+__name(cmdKey, "cmdKey");
 function mcpSend(resp) {
   process.stdout.write(JSON.stringify(resp) + "\n");
 }
+__name(mcpSend, "mcpSend");
 function mcpError(id, code, message) {
   mcpSend({ jsonrpc: "2.0", id, error: { code, message } });
 }
+__name(mcpError, "mcpError");
 function defaultFlags() {
   return {
     dryRun: false,
@@ -18531,6 +19116,7 @@ function defaultFlags() {
     reranker: false
   };
 }
+__name(defaultFlags, "defaultFlags");
 async function dispatchMcpTool(name, args) {
   function flagsFrom(a) {
     const f = defaultFlags();
@@ -18549,6 +19135,7 @@ async function dispatchMcpTool(name, args) {
     if (typeof a.reranker === "boolean") f.reranker = a.reranker;
     return f;
   }
+  __name(flagsFrom, "flagsFrom");
   let result;
   switch (name) {
     case "memory_up":
@@ -18605,6 +19192,7 @@ async function dispatchMcpTool(name, args) {
     ...result.isError ? { isError: true } : {}
   };
 }
+__name(dispatchMcpTool, "dispatchMcpTool");
 async function startMcpServer() {
   const { createInterface } = await import("node:readline");
   const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
@@ -18655,6 +19243,7 @@ async function startMcpServer() {
     }
   }
 }
+__name(startMcpServer, "startMcpServer");
 var _mainUrl = import.meta.url;
 var _argv1Url = process.argv[1] ? (() => {
   try {
