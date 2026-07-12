@@ -48,6 +48,8 @@ func main() {
 		err = runExtract()
 	case "patch-db":
 		err = runPatchDB()
+	case "login":
+		err = runLogin()
 	case "verify":
 		err = runVerify()
 	case "cleanup":
@@ -82,6 +84,8 @@ Commands:
 
   patch-db  Update database with credentials from .tg_e2e_session
             (reverse of extract)
+
+  login     Interactive account login (phone + SMS code); saves session to telegram_accounts id=1
 
   verify    Check that database credentials are valid
             Returns exit code 0 if ready, 1 if not
