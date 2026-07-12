@@ -24,7 +24,7 @@ namespace $.$$ {
 
 		override db_label(): string {
 			const d = this.data().db
-			return `${super.db_label()}: ${d.current.toFixed(2)} MB / ${d.limit.toFixed(2)} MB`
+			return `${super.db_label()}: ${d.current.toFixed(2)} MiB / ${d.limit.toFixed(2)} MiB`
 		}
 
 		override db_portion(): number {
@@ -35,7 +35,7 @@ namespace $.$$ {
 
 		override assets_label(): string {
 			const d = this.data().assets
-			return `${super.assets_label()}: ${d.current.toFixed(2)} MB / ${d.limit.toFixed(2)} MB`
+			return `${super.assets_label()}: ${d.current.toFixed(2)} MiB / ${d.limit.toFixed(2)} MiB`
 		}
 
 		override assets_portion(): number {

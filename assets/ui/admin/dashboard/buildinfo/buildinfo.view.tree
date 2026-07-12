@@ -7,6 +7,6 @@ $trip2g_admin_dashboard_buildinfo $mol_view
 				padding \.5rem .75rem
 			sub / <= build_git_commit @ \Software Version
 		<= OnboardingLink $mol_link
-			uri \https://trip2g.com/docs/onbording
+			uri \https://trip2g.com/docs/onboarding-vault
 			external true
 			title @ \Onboarding Documentation
