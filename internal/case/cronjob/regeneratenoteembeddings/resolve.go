@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 )
 
@@ -30,6 +31,14 @@ type Result struct {
 }
 
 func Resolve(ctx context.Context, env Env) (*Result, error) {
+	result, err := resolve(ctx, env)
+	if result != nil {
+		metrics.EmbeddingMetricsFromContext(ctx).RecordRegen(result.EnqueuedCount, result.UpToDateCount, len(result.Errors))
+	}
+	return result, err
+}
+
+func resolve(ctx context.Context, env Env) (*Result, error) {
 	result := &Result{}
 
 	if !env.Features().VectorSearch.Enabled {
