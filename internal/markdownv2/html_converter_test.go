@@ -205,6 +205,13 @@ func TestHTMLList(t *testing.T) {
 3. third item`,
 		},
 		{
+			name: "ordered list starting from 3",
+			markdown: `3. third item
+4. fourth item`,
+			expected: `3. third item
+4. fourth item`,
+		},
+		{
 			name: "paragraph followed by unordered list",
 			markdown: `Unordered list:
 - First item

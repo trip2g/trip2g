@@ -384,8 +384,11 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					}
 
 					if list.IsOrdered() {
-						// For ordered lists, calculate item number based on child index
-						itemNum := 1
+						// For ordered lists, calculate item number based on start + child index
+						itemNum := list.Start
+						if itemNum == 0 {
+							itemNum = 1
+						}
 						for prev := node.PreviousSibling(); prev != nil; prev = prev.PreviousSibling() {
 							itemNum++
 						}
