@@ -205,6 +205,13 @@ func TestHTMLList(t *testing.T) {
 3. third item`,
 		},
 		{
+			name: "ordered list starting from 3",
+			markdown: `3. third item
+4. fourth item`,
+			expected: `3. third item
+4. fourth item`,
+		},
+		{
 			name: "paragraph followed by unordered list",
 			markdown: `Unordered list:
 - First item
@@ -275,6 +282,67 @@ title: "Test"
 	}
 }
 
+// Block-level elements inside a blockquote must stay inside it
+// (regression: they used to leak out of the <blockquote> tag).
+func TestHTMLBlockquoteNestedBlocks(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+	}{
+		{
+			name:     "multiple paragraphs in blockquote",
+			markdown: "> first para\n>\n> second para",
+			expected: "<blockquote>first para\n\nsecond para</blockquote>",
+		},
+		{
+			name:     "code block in blockquote",
+			markdown: "> quote with code\n> ```\n> x\n> ```",
+			expected: "<blockquote>quote with code\n<pre>x</pre></blockquote>",
+		},
+		{
+			name:     "list in blockquote",
+			markdown: "> a list:\n> - one\n> - two",
+			expected: "<blockquote>a list:\n- one\n- two</blockquote>",
+		},
+		{
+			name:     "nested blockquote stays inside outer",
+			markdown: "before\n\n> outer\n> > inner",
+			expected: "before\n\n<blockquote>outer<blockquote>inner</blockquote></blockquote>",
+		},
+		{
+			name:     "paragraph then blockquote keeps blank line separator",
+			markdown: "before\n\n> quoted",
+			expected: "before\n\n<blockquote>quoted</blockquote>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdOptions := mdloader.Options{
+				Sources: []mdloader.SourceFile{{
+					Content: []byte(`---
+free: true
+title: "Test"
+---
+` + tt.markdown),
+				}},
+				Log:     &logger.TestLogger{},
+				Version: "latest",
+			}
+
+			nvs, err := mdloader.Load(mdOptions)
+			require.NoError(t, err)
+
+			convertor := markdownv2.HTMLConverter{}
+			res := convertor.Process(nvs.List[0])
+
+			require.Empty(t, res.Warnings)
+			require.Equal(t, tt.expected, res.Content)
+		})
+	}
+}
+
 func TestHTMLWikilinks(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -308,6 +376,15 @@ func TestHTMLWikilinks(t *testing.T) {
 				}, nil
 			},
 			expected: `See <a href="https://example.com/notes/internal-note">Custom Text</a> here`,
+			warnings: 0,
+		},
+		{
+			name:     "resolver returns nil result (regression: used to panic)",
+			markdown: "See [[unknown]] here",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return nil, nil
+			},
+			expected: `See  here`,
 			warnings: 0,
 		},
 		{
@@ -504,19 +581,19 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			name:     "unsupported image source",
 			markdown: "![](https://example.com/image.png)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		{
 			name:     "ce.trip2g.com wrong extension",
 			markdown: "![](https://ce.trip2g.com/123.png)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		{
 			name:     "ce.trip2g.com non-numeric id",
 			markdown: "![](https://ce.trip2g.com/abc.webp)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		// Local asset tg_ce_*.webp format tests
 		{
@@ -547,13 +624,13 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			name:     "local asset tg_ce non-numeric id",
 			markdown: "![](assets/tg_ce_abc.webp)",
 			expected: ``,
-			warnings: 2,
+			warnings: 1,
 		},
 		{
 			name:     "local asset tg_ce wrong extension",
 			markdown: "![](assets/tg_ce_123.png)",
 			expected: ``,
-			warnings: 2,
+			warnings: 1,
 		},
 	}
 

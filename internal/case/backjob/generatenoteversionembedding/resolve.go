@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdchunk"
+	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 )
@@ -36,6 +37,18 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, params Params) error {
+	err := resolve(ctx, env, params)
+
+	jobResult := "succeeded"
+	if err != nil {
+		jobResult = "failed"
+	}
+	metrics.EmbeddingMetricsFromContext(ctx).RecordJob(jobResult)
+
+	return err
+}
+
+func resolve(ctx context.Context, env Env, params Params) error {
 	if !env.Features().VectorSearch.Enabled {
 		env.Logger().Debug("vector search disabled, skipping embedding generation")
 		return nil
@@ -81,7 +94,7 @@ func Resolve(ctx context.Context, env Env, params Params) error {
 	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+mdchunk.StripFrontmatter(string(noteView.Content)), budget)
 
 	// Generate embedding
-	result, err := env.OpenAI().CreateEmbedding(ctx, text)
+	result, err := env.OpenAI().CreateEmbedding(ctx, text, openai.KindWholeNote)
 	if err != nil {
 		return fmt.Errorf("failed to create embedding: %w", err)
 	}
@@ -208,12 +221,12 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 // max-client-batch-size). Results are reassembled in the original order.
 func createEmbeddingsBatched(ctx context.Context, env Env, texts []string, maxBatch int) ([]openai.EmbeddingResult, error) {
 	if maxBatch <= 0 || len(texts) <= maxBatch {
-		return env.OpenAI().CreateEmbeddings(ctx, texts)
+		return env.OpenAI().CreateEmbeddings(ctx, texts, openai.KindChunk)
 	}
 	results := make([]openai.EmbeddingResult, 0, len(texts))
 	for start := 0; start < len(texts); start += maxBatch {
 		end := min(start+maxBatch, len(texts))
-		window, err := env.OpenAI().CreateEmbeddings(ctx, texts[start:end])
+		window, err := env.OpenAI().CreateEmbeddings(ctx, texts[start:end], openai.KindChunk)
 		if err != nil {
 			return nil, err
 		}

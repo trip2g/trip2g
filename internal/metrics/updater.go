@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"trip2g/internal/db"
 )
 
 //go:generate go tool github.com/matryer/moq -out test.go -pkg metrics . Env
@@ -16,6 +18,7 @@ type Env interface {
 	CountNoteVersions(ctx context.Context) (int64, error)
 	SumNoteAssetsSizes(ctx context.Context) (int64, error)
 	CountNoteAssets(ctx context.Context) (int64, error)
+	ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
 }
 
 // Updater periodically updates Prometheus metrics.
@@ -26,40 +29,53 @@ type Updater struct {
 	noteVersions     prometheus.Gauge
 	noteAssetsSize   prometheus.Gauge
 	noteAssetsCount  prometheus.Gauge
+	queueDepth       *prometheus.GaugeVec
 	interval         time.Duration
 }
 
-// NewUpdater creates a metrics updater with Prometheus gauges.
-func NewUpdater(env Env, interval time.Duration) *Updater {
+// NewUpdater creates a metrics updater with Prometheus gauges, registered on reg.
+func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Updater {
 	allNotePaths := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "trip2g_note_paths_all",
 		Help: "Total number of note paths (including hidden)",
 	})
-	prometheus.MustRegister(allNotePaths)
+	reg.MustRegister(allNotePaths)
 
 	visibleNotePaths := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "trip2g_note_paths_visible",
 		Help: "Number of visible note paths (excluding hidden)",
 	})
-	prometheus.MustRegister(visibleNotePaths)
+	reg.MustRegister(visibleNotePaths)
 
 	noteVersions := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "trip2g_note_versions",
 		Help: "Total number of note versions",
 	})
-	prometheus.MustRegister(noteVersions)
+	reg.MustRegister(noteVersions)
 
 	noteAssetsSize := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "trip2g_note_assets_bytes",
 		Help: "Total size of note assets in bytes",
 	})
-	prometheus.MustRegister(noteAssetsSize)
+	reg.MustRegister(noteAssetsSize)
 
 	noteAssetsCount := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "trip2g_note_assets",
 		Help: "Number of note assets",
 	})
-	prometheus.MustRegister(noteAssetsCount)
+	reg.MustRegister(noteAssetsCount)
+
+	// state="pending" is never-received jobs; state="retrying" is jobs redelivered
+	// at least once (received > 1). goqite's per-queue MaxReceive lives only in
+	// process memory (appQueue), not the DB, so a job that finally exceeds it and
+	// becomes undeliverable still shows up here as "retrying" rather than a
+	// separate "dead" state — a sustained climb in either state is the signal
+	// worth alerting on.
+	queueDepth := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_job_queue_depth",
+		Help: "Number of goqite job-queue rows by queue and state (pending, retrying)",
+	}, []string{"queue", "state"})
+	reg.MustRegister(queueDepth)
 
 	return &Updater{
 		env:              env,
@@ -68,6 +84,7 @@ func NewUpdater(env Env, interval time.Duration) *Updater {
 		noteVersions:     noteVersions,
 		noteAssetsSize:   noteAssetsSize,
 		noteAssetsCount:  noteAssetsCount,
+		queueDepth:       queueDepth,
 		interval:         interval,
 	}
 }
@@ -122,5 +139,16 @@ func (u *Updater) updateMetrics(ctx context.Context) {
 	assetsCount, err := u.env.CountNoteAssets(ctx)
 	if err == nil {
 		u.noteAssetsCount.Set(float64(assetsCount))
+	}
+
+	// Job queue depth, per queue. Reset first so a queue that drains to zero
+	// (and drops out of the grouped query) doesn't leave a stale nonzero value.
+	stats, err := u.env.ListGoqiteAllQueueStats(ctx)
+	if err == nil {
+		u.queueDepth.Reset()
+		for _, s := range stats {
+			u.queueDepth.WithLabelValues(s.Queue, "pending").Set(float64(s.PendingCount))
+			u.queueDepth.WithLabelValues(s.Queue, "retrying").Set(float64(s.RetryCount))
+		}
 	}
 }
