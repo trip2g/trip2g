@@ -272,6 +272,11 @@ func main() {
 		return // runLint calls os.Exit, but return satisfies the compiler
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "login-link" {
+		runLoginLink() // exits non-zero on error; falls through to a clean 0 exit on success
+		return
+	}
+
 	if err := defaulttemplate.Init(); err != nil {
 		panic(fmt.Errorf("failed to init default template i18n: %w", err))
 	}

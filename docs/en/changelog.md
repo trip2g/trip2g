@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### First login on a fresh self-host box
+
+- **What.** `trip2g-server login-link` prints a one-time, 5-minute admin sign-in link — no SMTP setup and no log-digging required. `/_system/hat?token=` now also accepts GET, so the printed link is clickable straight from a terminal into a browser.
+- **Why.** Bootstrapping the very first admin login on a fresh self-host box previously required either SMTP or reading a sign-in code out of the server log.
+- **How.** Run `trip2g-server login-link` on the box (or `docker exec` into the container) and open the printed URL within 5 minutes.
+
 ### Search: one retrieval engine for site and MCP
 
 - **What.** The site (GraphQL) search and the MCP `search` tool now share one retrieval engine (text + vector + rank fusion) instead of two divergent copies. Two behavior changes for MCP clients: anonymous (and federation) clients now search **published (live)** notes, like anonymous site visitors — previously they searched the latest versions, including drafts of public notes; and vector search now skips stale embeddings after an embedding-model switch instead of ranking them arbitrarily. The unused server-rendered `/search` page is removed (the site search widget uses GraphQL and is unaffected).
