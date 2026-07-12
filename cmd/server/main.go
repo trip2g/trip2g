@@ -287,9 +287,15 @@ func main() {
 	applyLegacyEmailConfig(config, log)
 
 	if config.SMTPHost == "" {
-		log.Warn(
-			"no email transport configured: outgoing email (including sign-in codes) will be skipped; codes are logged instead — set SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY to enable delivery",
-		)
+		if config.LogSignInCodes {
+			log.Warn(
+				"no email transport configured: outgoing email will be skipped; sign-in codes will be printed to the server log (LOG_SIGN_IN_CODES is enabled — insecure, for bootstrap only)",
+			)
+		} else {
+			log.Warn(
+				"no email transport configured: outgoing email (including sign-in codes) will be skipped; to bootstrap a first login, set LOG_SIGN_IN_CODES=true to print sign-in codes to the server log (insecure, bootstrap-only), or configure SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY for real delivery",
+			)
+		}
 	}
 
 	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled

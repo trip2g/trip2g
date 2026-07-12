@@ -113,6 +113,10 @@ type Config struct {
 	SMTPPass     string
 	SMTPStartTLS bool
 
+	// LogSignInCodes, when true, logs sign-in codes at Warn level. Insecure,
+	// for bootstrapping a first login when SMTP is not configured.
+	LogSignInCodes bool
+
 	// Mail
 	MailFrom string
 
@@ -337,6 +341,7 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.SMTPUser, "smtp-user", "", "SMTP username")
 	flag.StringVar(&c.SMTPPass, "smtp-pass", "", "SMTP password")
 	flag.BoolVar(&c.SMTPStartTLS, "smtp-starttls", true, "Use STARTTLS")
+	flag.BoolVar(&c.LogSignInCodes, "log-sign-in-codes", false, "Log sign-in codes at Warn level (insecure, for bootstrap only when SMTP is unset)")
 
 	// Mail
 	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@example.com", "Email address to use as sender")

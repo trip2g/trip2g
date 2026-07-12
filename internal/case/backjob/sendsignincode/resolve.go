@@ -18,10 +18,16 @@ type Params struct {
 type Env interface {
 	Logger() logger.Logger
 	SendMail(ctx context.Context, data model.Mail) error
+	LogSignInCodes() bool
 }
 
 func Resolve(ctx context.Context, env Env, task Params) error {
 	env.Logger().Info("Sending sign-in code", "email", task.Email)
+
+	if env.LogSignInCodes() {
+		env.Logger().Warn("sign-in code (LOG_SIGN_IN_CODES enabled — insecure, for bootstrap only)",
+			"email", task.Email, "code", task.Code)
+	}
 
 	var buf bytes.Buffer
 	WritePlainView(&buf, task)
