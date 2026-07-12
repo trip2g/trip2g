@@ -66,6 +66,7 @@ description: A step-by-step guide to setting up trip2g
 A custom URL path that replaces the auto-generated URL derived from the filename.
 
 ```yaml
+slug: getting-started
 ```
 
 Result: `yoursite.com/getting-started` instead of `yoursite.com/My_Note_Title`

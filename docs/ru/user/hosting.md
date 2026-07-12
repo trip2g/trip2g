@@ -21,7 +21,7 @@ free: true
 
 ### Самостоятельная установка
 
-Минимальная инструкция с `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend и optional vector search:
+Минимальная инструкция с `docker-compose.yml`, `.env`, `ghcr.io/trip2g/trip2g:0.2`, MinIO, Resend и опциональным векторным поиском:
 
 - [[ru/user/selfhosted|Развернуть у себя на сервере]]
 - [[ru/user/fly|Развернуть на fly.io]] — одна машина, один диск, без лишних сервисов

@@ -186,3 +186,6 @@ route: landing.example/
 The patch leaves absolute routes untouched, so this is safer than `route: /` — a bare `/` would hijack the root of your main domain if the patch ever gets disabled. For other pages, leave `route` out (the note keeps its permalink on the new domain) or set a relative alias like `route: /about` to land at `landing.example/about`.
 
 ### Demo
+
+<!-- TODO: empty section — add the demo (embed/screenshot/link) or remove this heading -->
+
