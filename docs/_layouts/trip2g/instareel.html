@@ -309,7 +309,8 @@
     const promptCounter = document.getElementById('promptCounter');
 
     function renderHighlights(text) {
-      return text.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
+      const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return esc.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
     }
 
     function showSlide(i) {
@@ -943,7 +944,8 @@
     let syncIgnoreUntil = 0; // ignore polls briefly after own send
 
     function renderHighlightsSync(text) {
-      return text.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
+      const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return esc.replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>');
     }
 
     function syncSend(slideIdx) {
