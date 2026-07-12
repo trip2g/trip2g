@@ -89,7 +89,7 @@ The template handles appearance: where each block goes, what colors, what spacin
 
 A clean separation: the designer builds the template once, the author changes the text as many times as they want.
 
-More on how we built the homepage: How we built the homepage from markdown blocks
+More on how we built the homepage: How we built the homepage from markdown blocks<!-- TODO: ask author — this cross-reference has no link/URL (cf. the working link in "Markdown: the basics"). Add the target? -->
 
 ### Summary
 
