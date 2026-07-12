@@ -51,6 +51,6 @@ func runLoginLink() {
 	}
 
 	url := strings.TrimRight(config.PublicURL, "/") + "/_system/hat?token=" + token
-	fmt.Println(url)
-	fmt.Printf("Open this within 5 minutes to sign in as %s (one-time).\n", config.OwnerEmail)
+	fmt.Fprintln(os.Stdout, url)
+	fmt.Fprintf(os.Stdout, "Open this within 5 minutes to sign in as %s (one-time).\n", config.OwnerEmail)
 }
