@@ -6,7 +6,7 @@ await esbuild.build({
   entryPoints: ["src/cli.ts"],
   bundle: true,
   platform: "node",
-  target: "node18",
+  target: "node20",
   format: "esm",
   minify: false,
   keepNames: true,
