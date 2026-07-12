@@ -24,6 +24,7 @@ namespace $.$$ {
 
 		override db_label(): string {
 			const d = this.data().db
+			if (d.limit === 0) return `${super.db_label()}: ${d.current.toFixed(2)} MiB used (unlimited)`
 			return `${super.db_label()}: ${d.current.toFixed(2)} MiB / ${d.limit.toFixed(2)} MiB`
 		}
 
@@ -35,6 +36,7 @@ namespace $.$$ {
 
 		override assets_label(): string {
 			const d = this.data().assets
+			if (d.limit === 0) return `${super.assets_label()}: ${d.current.toFixed(2)} MiB used (unlimited)`
 			return `${super.assets_label()}: ${d.current.toFixed(2)} MiB / ${d.limit.toFixed(2)} MiB`
 		}
 
