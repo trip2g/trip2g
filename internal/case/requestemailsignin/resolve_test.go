@@ -29,6 +29,8 @@ func fullFlowEnv(siteKey string) *EnvMock {
 			return 0, nil
 		},
 		MaxActiveSignInCodesFunc: func() int64 { return 3 },
+		SMTPHostFunc:             func() string { return "smtp.example.com" },
+		LogSignInCodesFunc:       func() bool { return false },
 		CreateSignInCodeFunc: func(_ context.Context, _ int64) (string, error) {
 			return "ABC123", nil
 		},
@@ -160,4 +162,56 @@ func TestMaxActiveSignInCodes_AtLimitRejected(t *testing.T) {
 	require.True(t, ok, "count == limit must return ErrorPayload, got %T", result)
 	require.Equal(t, "too_many_sign_in_codes", errPayload.Message)
 	require.Empty(t, env.CreateSignInCodeCalls(), "must not create a code once the limit is reached")
+}
+
+// TestNoSMTP_LogSignInCodesDisabled_ReturnsError verifies that when no SMTP is
+// configured and code logging is disabled, no code can ever be delivered, so
+// Resolve returns an ErrorPayload without creating or queueing a code.
+func TestNoSMTP_LogSignInCodesDisabled_ReturnsError(t *testing.T) {
+	env := fullFlowEnv("")
+	env.SMTPHostFunc = func() string { return "" }
+	env.LogSignInCodesFunc = func() bool { return false }
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	errPayload, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", result)
+	require.Equal(
+		t,
+		"Email delivery isn't configured on this server, so no code can be sent. Sign in with Google or GitHub instead, or ask the site admin.",
+		errPayload.Message,
+	)
+	require.Empty(t, env.EnqueueRequestSignInEmailCalls(), "must not queue a code that can't be delivered")
+}
+
+// TestNoSMTP_LogSignInCodesEnabled_ProceedsNormally verifies that when SMTP is
+// not configured but code logging is enabled, the code is still logged
+// server-side, so Resolve proceeds to the normal success path.
+func TestNoSMTP_LogSignInCodesEnabled_ProceedsNormally(t *testing.T) {
+	env := fullFlowEnv("")
+	env.SMTPHostFunc = func() string { return "" }
+	env.LogSignInCodesFunc = func() bool { return true }
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.RequestEmailSignInCodePayload)
+	require.True(t, ok, "expected RequestEmailSignInCodePayload, got %T", result)
+	require.True(t, payload.Success)
+}
+
+// TestSMTPConfigured_ProceedsNormally verifies that when SMTP is configured,
+// the normal success path is unaffected regardless of LogSignInCodes.
+func TestSMTPConfigured_ProceedsNormally(t *testing.T) {
+	env := fullFlowEnv("")
+	env.SMTPHostFunc = func() string { return "smtp.example.com" }
+	env.LogSignInCodesFunc = func() bool { return false }
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.RequestEmailSignInCodePayload)
+	require.True(t, ok, "expected RequestEmailSignInCodePayload, got %T", result)
+	require.True(t, payload.Success)
 }
