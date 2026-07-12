@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"trip2g/internal/case/backjob/sendformsubmit"
 	"trip2g/internal/case/backjob/sendsignincode"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 )
@@ -83,6 +84,10 @@ func (a *app) LogSignInCodes() bool {
 	return a.config.LogSignInCodes
 }
 
+func (a *app) SMTPHost() string {
+	return a.config.SMTPHost
+}
+
 func (a *app) EnqueueSendFormSubmitEmail(ctx context.Context, submitID int64) error {
 	return a.SendFormSubmitEmailJob.EnqueueSendFormSubmit(ctx, submitID)
 }
@@ -137,3 +142,4 @@ func (a *app) GetFormSubmitForEmail(ctx context.Context, submitID int64) (*sendf
 
 var _ sendformsubmit.Env = (*app)(nil)
 var _ sendsignincode.Env = (*app)(nil)
+var _ requestemailsignin.Env = (*app)(nil)
