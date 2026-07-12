@@ -3,3 +3,9 @@ name: "CodeQL Config"
 paths-ignore:
   - "assets/milkdown/milkdown.js"
   - "assets/tiptap/tiptap.js"
+  # Generated CLI bundles: large esbuild output (readable, not minified) that
+  # otherwise trips CodeQL's "changes too large" heuristic and mis-attributes
+  # pre-existing alerts to any PR that rebuilds them.
+  - "cli/memcli/dist/**"
+  - "onboarding-vault/.obsidian/plugins/trip2g/memcli.js"
+  - "onboarding-vault/.obsidian/plugins/trip2g/trip2g-sync.mjs"
