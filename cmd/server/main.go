@@ -277,6 +277,11 @@ func main() {
 		return
 	}
 
+	if name, ok := unrecognizedSubcommand(os.Args); ok {
+		fmt.Fprintf(os.Stderr, "unknown subcommand: %s\n", name)
+		os.Exit(1)
+	}
+
 	if err := defaulttemplate.Init(); err != nil {
 		panic(fmt.Errorf("failed to init default template i18n: %w", err))
 	}
