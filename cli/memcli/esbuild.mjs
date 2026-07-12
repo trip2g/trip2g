@@ -8,6 +8,8 @@ await esbuild.build({
   platform: "node",
   target: "node18",
   format: "esm",
+  minify: false,
+  keepNames: true,
   logLevel: "info",
   banner: { js: "#!/usr/bin/env node" },
   outfile: "dist/memcli.js",
