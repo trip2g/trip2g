@@ -25,7 +25,7 @@ AI takes on that work. Thousands of readers get a consultation simultaneously. T
 
 The new normal: authors write notes with the help of AI; readers consume them through AI.
 
-An author dictates thoughts, AI structures them. An author sketches out theses, AI expands them. The author reviews and edits — but the heavy lifting is done by the machine.
+An author dictates thoughts, AI structures them. An author sketches out theses, AI expands them. The author reviews and edits — but the machine does the heavy lifting.
 
 A reader doesn't scroll pages — they ask a question. They get an answer tailored to what they asked, taking their context into account.
 

@@ -28,7 +28,7 @@ It's the right place to try trip2g, build a demo, or show someone how the platfo
 
 ### Want a production-grade hosted cloud?
 
-We'll build a full managed offering if there's demand. If you'd want that — tell us what you need: [trip2g.software@gmail.com](mailto:trip2g.software@gmail.com). We're genuinely gauging interest before building.
+We'll build a full managed offering if there's demand. If you'd want that — tell us what you need: [trip2g.software@gmail.com](mailto:trip2g.software@gmail.com). We're gauging interest before building.
 
 ### Prefer to run it yourself?
 

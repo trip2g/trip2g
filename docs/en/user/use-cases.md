@@ -21,7 +21,7 @@ A YouTube creator writes a detailed article and script for every video. The vide
 
 ### AI consultant
 
-A specialist describes their expertise in a knowledge base. An AI bot handles routine client questions using that base, providing instant answers around the clock. The specialist reviews conversations and fills gaps where the AI fell short. Multiple specialists can combine their knowledge into one base, giving the AI access to the full breadth of their collective expertise.
+A specialist describes their expertise in a knowledge base. An AI bot handles routine client questions using that base, providing instant answers around the clock. The specialist reviews conversations and fills gaps where the AI fell short. Multiple specialists can combine their knowledge into one base, so the AI draws on all of it.
 
 → See [[en/user/mcp|AI assistant (MCP)]]
 

@@ -43,7 +43,7 @@ A shorter path: if `search` already returned an exact `matches[].toc_path`, read
 
 ### Slim search
 
-Previously, `search` returned a full flat `toc` for every note. Results are now **slim**: structure unfolds on demand via `expand`. You don't pay tokens for the whole table of contents — you take exactly the level you need.
+`search` results are **slim**: they don't carry a full flat `toc`. Structure unfolds on demand via `expand`, so you don't pay tokens for the whole table of contents — you take exactly the level you need.
 
 ### expand vs. alternatives
 

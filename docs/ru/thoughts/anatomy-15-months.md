@@ -82,7 +82,7 @@ Telegram-тесты — отдельный opt-in режим (`ENABLE_TG=1`): и
 - `maragu/goqite` — очередь задач поверх SQLite. Одна внешняя зависимость меньше.
 
 **Транспорт**
-- `gotd/td` — реализация TDLib на чистом Go (без CGO). Обеспечивает публикацию через Telegram userbot.
+- `gotd/td` — реализация TDLib на чистом Go (без CGO). Публикует через Telegram userbot.
 - `valyala/fasthttp` — используется специально для GraphQL SSE subscriptions, где стриминг `net/http` имеет ограничения.
 
 **Утилиты**
