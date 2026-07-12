@@ -124,14 +124,11 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	res := ConverterResult{}
 	src := nv.Content
 
-	c.state = lineStart
 	c.skipClosingTag = make(map[ast.Node]bool)
 	c.isUnpublishedLink = make(map[ast.Node]bool)
 	c.unpublishedLinks = nil
 	c.bufStack = nil
 	c.pushBuffer() // Initialize with root buffer
-
-	var lines []string
 
 	_ = ast.Walk(nv.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		switch node := n.(type) {
@@ -140,33 +137,15 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.Paragraph:
 			if n.HasBlankPreviousLines() && entering {
-				lines = append(lines, "\n\n")
-			}
-
-			if !entering && len(c.bufStack) == 1 {
-				// End of paragraph in root buffer, add current line to lines slice
-				current := c.bufStack[0]
-				if current.Len() > 0 {
-					lines = append(lines, current.String())
-					current.Reset()
-				}
+				c.Write("\n\n")
 			}
 
 		case *ast.Text:
 			if entering {
 				text := string(node.Segment.Value(src))
-				escapedText := html.EscapeString(text)
-
-				c.Write(escapedText)
+				c.Write(html.EscapeString(text))
 				if node.SoftLineBreak() {
-					if len(c.bufStack) == 1 {
-						// In root buffer: add current line to lines and start new line
-						lines = append(lines, c.bufStack[0].String(), "\n")
-						c.bufStack[0].Reset()
-					} else {
-						// In nested buffer (blockquote): just add newline
-						c.Write("\n")
-					}
+					c.Write("\n")
 				}
 			}
 
@@ -214,17 +193,19 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.Blockquote:
 			if entering {
+				if n.HasBlankPreviousLines() {
+					c.Write("\n\n")
+				}
 				c.pushBuffer()
 			} else {
-				content := c.popBuffer()
+				content := strings.TrimSpace(c.popBuffer())
 
-				// Check if blockquote ends with spoiler (||)
-				isExpandable := strings.HasSuffix(content, "||")
-				if isExpandable {
+				// Blockquote ending with || means Telegram expandable quote
+				if strings.HasSuffix(content, "||") {
 					content = strings.TrimSuffix(content, "||")
-					lines = append(lines, fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, content))
+					c.Write(fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, content))
 				} else {
-					lines = append(lines, fmt.Sprintf(`<blockquote>%s</blockquote>`, content))
+					c.Write(fmt.Sprintf(`<blockquote>%s</blockquote>`, content))
 				}
 			}
 
@@ -306,22 +287,17 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.FencedCodeBlock:
 			if entering {
-				lines = append(lines, "\n")
+				c.Write("\n")
 
 				language := string(node.Language(src))
-				code := string(node.Lines().Value(src))
+				code := html.EscapeString(strings.TrimSuffix(string(node.Lines().Value(src)), "\n"))
 
-				var codeHTML string
 				if language != "" {
-					codeHTML = fmt.Sprintf(`<pre><code class="language-%s">%s</code></pre>`,
-						html.EscapeString(language),
-						html.EscapeString(strings.TrimSuffix(code, "\n")))
+					c.Write(fmt.Sprintf(`<pre><code class="language-%s">%s</code></pre>`,
+						html.EscapeString(language), code))
 				} else {
-					codeHTML = fmt.Sprintf("<pre>%s</pre>",
-						html.EscapeString(strings.TrimSuffix(code, "\n")))
+					c.Write(fmt.Sprintf("<pre>%s</pre>", code))
 				}
-
-				lines = append(lines, codeHTML)
 			}
 
 		case *wikilink.Node:
@@ -393,25 +369,17 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.List:
 			if entering && n.HasBlankPreviousLines() {
-				lines = append(lines, "\n")
+				c.Write("\n")
 			}
 
 		case *ast.ListItem:
 			if entering {
-				// Get the parent list
-				parent := node.Parent()
-				if list, ok := parent.(*ast.List); ok {
-					// Add newline before first list item if previous content exists
-					// This handles the case when list follows a paragraph without blank line
+				if list, ok := node.Parent().(*ast.List); ok {
+					// Start list on a new line when it follows a paragraph without blank line
 					if node.PreviousSibling() == nil {
-						// Flush buffer if not empty
-						if len(c.bufStack) == 1 && c.bufStack[0].Len() > 0 {
-							lines = append(lines, c.bufStack[0].String())
-							c.bufStack[0].Reset()
-						}
-						// Add newline if lines exist and last element is not already a newline
-						if len(lines) > 0 && lines[len(lines)-1] != "\n" && lines[len(lines)-1] != "\n\n" {
-							lines = append(lines, "\n")
+						cur := c.bufStack[len(c.bufStack)-1].String()
+						if cur != "" && !strings.HasSuffix(cur, "\n") {
+							c.Write("\n")
 						}
 					}
 
@@ -427,17 +395,8 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 						c.Write("- ")
 					}
 				}
-			} else if len(c.bufStack) == 1 {
-				// End of list item - flush to lines
-				current := c.bufStack[0]
-				if current.Len() > 0 {
-					lines = append(lines, current.String())
-					current.Reset()
-					// Add newline if not the last item
-					if node.NextSibling() != nil {
-						lines = append(lines, "\n")
-					}
-				}
+			} else if node.NextSibling() != nil {
+				c.Write("\n")
 			}
 
 		case *ast.TextBlock:
@@ -461,23 +420,17 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		return ast.WalkContinue, nil
 	})
 
-	// Add any remaining content in root buffer
-	if len(c.bufStack) > 0 && c.bufStack[0].Len() > 0 {
-		lines = append(lines, c.bufStack[0].String())
-	}
-
 	// Add unpublished links footer if any
 	if len(c.unpublishedLinks) > 0 {
-		lines = append(lines, "\n\n—————————\n🔜 Скоро выйдут:")
+		c.Write("\n\n—————————\n🔜 Скоро выйдут:")
 		for _, link := range c.unpublishedLinks {
-			// Format date: "5 ноября, 14:30"
 			publishStr := formatPublishDate(link.publishAt)
-			lines = append(lines, fmt.Sprintf("\n• <u>%s</u> — %s", html.EscapeString(link.label), publishStr))
+			c.Write(fmt.Sprintf("\n• <u>%s</u> — %s", html.EscapeString(link.label), publishStr))
 		}
-		lines = append(lines, "\n\n📬 Подпишитесь, чтобы не пропустить")
+		c.Write("\n\n📬 Подпишитесь, чтобы не пропустить")
 	}
 
-	content := strings.Join(lines, "")
+	content := c.bufStack[0].String()
 
 	// Remove excessive blank lines (more than 2 newlines in a row)
 	// This happens when media files are removed from paragraphs
