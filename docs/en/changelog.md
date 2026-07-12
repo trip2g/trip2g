@@ -8,7 +8,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## Unreleased
+## v0.9.0 (2026-07-12)
 
 ### First login on a fresh self-host box
 
@@ -21,6 +21,68 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.** The site (GraphQL) search and the MCP `search` tool now share one retrieval engine (text + vector + rank fusion) instead of two divergent copies. Two behavior changes for MCP clients: anonymous (and federation) clients now search **published (live)** notes, like anonymous site visitors — previously they searched the latest versions, including drafts of public notes; and vector search now skips stale embeddings after an embedding-model switch instead of ranking them arbitrarily. The unused server-rendered `/search` page is removed (the site search widget uses GraphQL and is unaffected).
 - **Why.** Retrieval fixes and tuning landed on one surface and silently missed the other; agents and visitors could see different rankings for the same query. On sites with draft previews enabled, anonymous MCP clients could read draft content of public notes.
 - **How.** Automatic. If an agent integration relied on anonymous MCP search seeing drafts, authenticate it with an API key — API-key clients still search the latest corpus.
+
+### First login on a fresh self-host box
+
+- **What.** Three changes make the first-login bootstrap work without an SMTP server. (1) Set `LOG_SIGN_IN_CODES=true` and the server prints sign-in codes to its log instead of sending email — paste the code from `journalctl` or `docker logs` to complete login. (2) When no email transport is configured and `LOG_SIGN_IN_CODES` is off, requesting a sign-in code now returns a clear error; previously it silently pretended to send an email that never arrived. (3) `SMTP_STARTTLS=false` is now honored: the server sends the code over plain SMTP to a local relay (Postfix, MailHog) without attempting opportunistic STARTTLS.
+- **Why.** First login on a fresh box — no domain, no email service — was a dead end: the server accepted the request but the code never appeared anywhere. Operators had to attach a real SMTP relay before they could even log in for the first time.
+- **How.** For quick self-hosted setup, add `LOG_SIGN_IN_CODES=true` to your environment, start the server, and request a sign-in code from the login page. Copy the code from the server log and complete sign-in. Remove the variable once you have configured a real email transport. See [[en/user/smtp]] for email provider options.
+
+### SMTP provider guide
+
+- **What.** A new bilingual documentation page, [[en/user/smtp]], covers how to pick a transactional-email provider for a self-hosted trip2g instance. It lists the envelope configuration (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, etc.), rates the main provider categories (dedicated transactional services, domain registrar mail, free tiers), and gives the verdict: don't run your own outbound MTA.
+- **Why.** Email deliverability for self-hosted instances is a frequent setup question. The available config keys were documented piecemeal; there was no single place explaining the tradeoffs.
+- **How.** Read [[en/user/smtp]] before configuring email on a new instance.
+
+### Instagram frames (instaframes)
+
+- **What.** The instaframes feature now has a bilingual user guide and a gallery landing page. Carousel pages also gain an **in-page edit widget**: a button that opens the slide deck for editing without leaving the published page. The deprecated reel/teleprompter layout is removed — the carousel layout is the only instaframes layout.
+- **Why.** The guide and gallery make the feature discoverable. The edit widget closes the feedback loop between publishing and editing: you see a slide, notice a typo, and fix it on the spot. The reel layout had no active users and duplicated the carousel's code path.
+- **How.** See [[en/user/instaframes]] for the full guide and gallery. The in-page edit widget appears automatically on carousel pages when you are logged in as the site owner.
+
+### Admin dashboard fixes
+
+- **What.** Two small corrections to the admin dashboard: the onboarding documentation link now points to the correct page (the previous link was a typo that 404'd), and the storage-usage figure is now labeled **MiB** to match the actual byte count displayed.
+- **Why.** The onboarding link was the first thing a new operator clicked; landing on a 404 was a poor first impression. The old "MB" label implied decimal megabytes but the code reported binary mebibytes.
+- **How.** Automatic on upgrade.
+
+### MCP / federation improvements
+
+- **What.** Four targeted improvements to the MCP endpoint and federation layer. (1) A new `federated_instructions` tool lets a connected client fetch the instruction text for any route, with a per-route cache to avoid redundant fetches. (2) Federation hop depth now uses **inclusive semantics**: a request with `max_depth=2` may traverse exactly 2 hops; previously it stopped one hop short. Requests that exceed the limit now return a clean rejection instead of an opaque error. (3) Hop-rewrite propagates the caller's `kb_id` frame into federated results and errors, so the caller can always tell which peer an answer came from. (4) Note-read tools (`note_html`, `note_text`) now steer by `path` or `match_id` and document that `note_id` is an internal integer not suitable for long-term references.
+- **Why.** The depth off-by-one meant that `max_depth=1` allowed zero federation hops — a configuration that appeared to work but never reached any peers. The hop-rewrite makes it possible to build attribution chains across federated vaults. Clear note-ID guidance prevents agents from caching internal IDs across syncs.
+- **How.** No configuration change needed. If you relied on the old depth semantics, decrement your `max_depth` value by one to preserve the previous behavior.
+
+### MCP graph-walk visualizer
+
+- **What.** A new interactive documentation page, [[en/search_visualizer]], lets you watch an AI model walk the federation graph in real time. It shows each tool call as a node, a mini-map of the federation topology, model chips to switch between providers mid-session, a step-spine axis timeline, and a trace-import panel to replay downloaded walk JSONs. The step budget is 50, enough for deep multi-hop descents.
+- **Why.** Federation graph traversal is opaque: it is hard to reason about why an agent took a particular path or where latency came from. The visualizer makes the walk inspectable.
+- **How.** Open [[en/search_visualizer]], pick a model and a starting knowledge base, and run a query. The walk unfolds node by node. Download the trace JSON to replay or share it.
+
+### memcli: local embedded vector search
+
+- **What.** `memcli` now bundles an arm64-native retriever sidecar that runs vector search locally, without sending text to an external service. The sidecar handles both embedding and (optionally) reranking.
+- **Why.** Vector search on a local memcli instance previously required a network call to an embeddings server. The bundled retriever makes local semantic search self-contained on Apple Silicon.
+- **How.** The sidecar starts automatically with `memcli up` on arm64 macOS. No extra configuration is required. Guide: [[en/user/memcli]].
+
+### Retriever: Metal/MPS support and UTF-8 snippet safety
+
+- **What.** The retriever sidecar now runs inference on Metal (Apple GPU) and MPS backends with fp16 precision and micro-batch stability fixes. Search result snippets are cut on rune boundaries so non-ASCII text (Cyrillic, CJK, emoji) is never truncated mid-codepoint.
+- **Why.** Inference on CPU was 3–10× slower than on the GPU. Truncated UTF-8 caused garbled snippet text in multilingual vaults.
+- **How.** Automatic. The retriever selects the best available device at startup. No configuration change is needed.
+
+### Ops metrics: embedding pipeline and job queue
+
+- **What.** Two new Prometheus metric groups are now exposed on the internal metrics endpoint. (1) Embedding-pipeline metrics track chunk count, latency, and error rate for each embedding pass. (2) Job-queue depth metrics report how many jobs are waiting in each named queue. Additionally, chunk embedding requests are now sub-batched to fit the retriever server's declared maximum batch size, preventing a re-embed storm when the batch limit is lower than the chunk count.
+- **Why.** Without queue-depth metrics, operators had no early warning of a backing-up embedding pipeline. The sub-batching fix prevented a crash loop where an oversized batch caused the embedder to reject the request, which triggered a full re-embed, which produced another oversized batch.
+- **How.** New metrics appear on the existing internal metrics endpoint with no configuration change. Update your dashboards to add queue-depth and embedding-latency panels.
+
+### Telegram: navigation browser limited to public live notes
+
+- **What.** The in-Telegram navigation browser now shows only **public, live** notes. Previously it could surface notes that were private or in draft state.
+- **Why.** A Telegram user clicking a navigation link should land on content that is actually accessible to them. Draft and private notes produced broken or access-denied pages.
+- **How.** Automatic. Draft and private notes no longer appear in the Telegram navigation browser.
+
+---
 
 ## v0.8.0 (2026-07-01)
 
