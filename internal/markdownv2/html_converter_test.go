@@ -504,19 +504,19 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			name:     "unsupported image source",
 			markdown: "![](https://example.com/image.png)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		{
 			name:     "ce.trip2g.com wrong extension",
 			markdown: "![](https://ce.trip2g.com/123.png)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		{
 			name:     "ce.trip2g.com non-numeric id",
 			markdown: "![](https://ce.trip2g.com/abc.webp)",
 			expected: ``,
-			warnings: 2, // Both Enclave and Image nodes are created
+			warnings: 1, // warned once per unsupported image (regression: was double-counted on exit visit)
 		},
 		// Local asset tg_ce_*.webp format tests
 		{
@@ -547,13 +547,13 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			name:     "local asset tg_ce non-numeric id",
 			markdown: "![](assets/tg_ce_abc.webp)",
 			expected: ``,
-			warnings: 2,
+			warnings: 1,
 		},
 		{
 			name:     "local asset tg_ce wrong extension",
 			markdown: "![](assets/tg_ce_123.png)",
 			expected: ``,
-			warnings: 2,
+			warnings: 1,
 		},
 	}
 

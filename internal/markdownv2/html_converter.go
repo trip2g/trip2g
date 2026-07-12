@@ -259,8 +259,12 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					return ast.WalkSkipChildren, nil
 				}
 			} else {
-				msg := fmt.Sprintf("unsupported image source: %s", dest)
-				res.Warnings = append(res.Warnings, msg)
+				// ast.Walk visits the node again with entering=false even after
+				// WalkSkipChildren, so warn only once.
+				if entering {
+					msg := fmt.Sprintf("unsupported image source: %s", dest)
+					res.Warnings = append(res.Warnings, msg)
+				}
 				return ast.WalkSkipChildren, nil
 			}
 
@@ -282,8 +286,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					return ast.WalkSkipChildren, nil
 				}
 			} else {
-				msg := fmt.Sprintf("unsupported image source: %s", dest)
-				res.Warnings = append(res.Warnings, msg)
+				if entering {
+					msg := fmt.Sprintf("unsupported image source: %s", dest)
+					res.Warnings = append(res.Warnings, msg)
+				}
 				return ast.WalkSkipChildren, nil
 			}
 
