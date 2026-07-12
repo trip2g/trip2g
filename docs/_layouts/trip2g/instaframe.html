@@ -1,0 +1,613 @@
+{{ import "blocks" }}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }} — Instaframes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700;1,900&display=swap" rel="stylesheet">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: 'Inter', sans-serif; background: #f5f5f5; }
+
+    .page { max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem 2rem; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .header-left { display: flex; align-items: center; gap: 0.5rem; }
+    .back-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: #666; text-decoration: none; border-radius: 4px; transition: all 0.15s; }
+    .back-btn:hover { color: #111; background: rgba(0,0,0,0.05); }
+    .back-btn svg { width: 18px; height: 18px; }
+    .title { font-size: 0.875rem; font-weight: 600; color: #111; }
+    .header-right { display: flex; gap: 0.375rem; }
+    .dl-btn { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; font-weight: 500; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: all 0.15s; color: #333; }
+    .dl-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .dl-btn:disabled { opacity: 0.5; cursor: wait; }
+    .dl-btn svg { width: 12px; height: 12px; }
+
+    .ctrl-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: all 0.15s; position: relative; }
+    .ctrl-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .ctrl-btn svg { width: 14px; height: 14px; }
+
+    .font-size-picker { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05); z-index: 100; width: 240px; padding: 0; overflow: hidden; }
+    .font-size-picker.active { display: block; }
+    .picker-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #eee; }
+    .picker-header svg { width: 18px; height: 18px; }
+    .picker-title { font-size: 0.9375rem; font-weight: 600; color: #111; }
+    .picker-close { background: none; border: none; cursor: pointer; padding: 4px; color: #666; }
+    .picker-close:hover { color: #111; }
+    .picker-body { padding: 12px; }
+    .font-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .font-slider-label { width: 70px; font-size: 0.75rem; font-weight: 500; color: #666; }
+    .font-slider-input { flex: 1; -webkit-appearance: none; height: 6px; border-radius: 3px; background: #e0e0e0; cursor: pointer; }
+    .font-slider-input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #111; border-radius: 50%; cursor: pointer; }
+    .font-slider-value { width: 28px; font-size: 0.75rem; color: #666; text-align: right; }
+    .font-auto-btn { width: 100%; padding: 8px; font-size: 0.8125rem; font-weight: 500; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+    .font-auto-btn:hover { background: #eee; }
+
+    .carousel-wrap { position: relative; margin-bottom: 1rem; }
+    .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 32px; height: 32px; border: none; background: rgba(255,255,255,0.9); border-radius: 50%; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; transition: transform 0.15s, background 0.15s; }
+    .nav-btn:hover { background: white; transform: translateY(-50%) scale(1.1); }
+    .nav-btn:active { transform: translateY(-50%) scale(0.95); }
+    .nav-prev { left: 12px; }
+    .nav-next { right: 12px; }
+    .nav-btn svg { width: 16px; height: 16px; }
+
+    /* === CARD (4:5) === */
+    .card {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      position: relative;
+      overflow: hidden;
+      border-radius: 4px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    }
+
+    .card-bg {
+      position: absolute;
+      inset: 0;
+      background-color: #ECEAE6;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .card-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(0,0,0,0.03) 100%);
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 32px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .brand-name {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: 16px;
+      color: #111;
+      letter-spacing: -0.02em;
+    }
+
+    .slide-num {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #999;
+    }
+
+    .card-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 16px 0;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #111;
+      margin: 0 0 0.75rem;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    .card-title mark {
+      background: #111;
+      color: #ECEAE6;
+      border: none;
+      padding: 4px 16px 8px;
+      margin: 2px;
+      display: inline-block;
+      line-height: 1;
+      border-radius: 10px;
+    }
+
+    .card-text {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 400;
+      font-size: 18px;
+      color: #222;
+      line-height: 1.5;
+      max-width: 85%;
+    }
+
+    .card-text p { margin: 0; }
+    .card-text p + p { margin-top: 0.75em; }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .author-block { font-family: 'Inter', sans-serif; }
+    .author-name { font-size: 16px; font-weight: 800; color: #111; }
+
+    .social-icons { display: flex; gap: 12px; align-items: center; }
+    .social-icons svg { width: 24px; height: 24px; fill: #111; }
+
+    .dots { display: flex; justify-content: center; gap: 6px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; border: none; padding: 0; cursor: pointer; transition: background 0.15s, transform 0.15s; }
+    .dot:hover { background: #999; }
+    .dot.active { background: #111; transform: scale(1.3); }
+
+    .page-footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.875rem; color: #666; }
+    .page-footer p { margin: 0.5em 0; }
+    .page-footer a { color: #333; }
+    .page-footer ul { padding-left: 1.25em; margin: 0.5em 0; }
+    .page-footer li { padding: 0.25em 0; }
+
+    .slides-data { display: none; }
+
+    .ios-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
+    .ios-modal.active { display: flex; }
+    .ios-modal-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; }
+    .ios-modal img { max-width: 100%; max-height: 70vh; border-radius: 4px; }
+    .ios-modal-hint { color: white; font-size: 0.875rem; text-align: center; margin-top: 1rem; opacity: 0.8; }
+    .ios-modal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .ios-modal-btn { padding: 0.75rem 1.5rem; background: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+    .ios-modal-counter { color: white; font-size: 0.875rem; margin-bottom: 0.5rem; }
+
+    @media (max-width: 520px) {
+      .page { padding: 1rem; }
+      .nav-prev { left: 8px; }
+      .nav-next { right: 8px; }
+      .nav-btn { width: 28px; height: 28px; }
+      .nav-btn svg { width: 14px; height: 14px; }
+      .card-title { font-size: 1.8rem; }
+      .card-text { font-size: 1.05rem; }
+      .card-content { padding: 20px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="markdownSource" style="display:none">{{ note.ContentString() }}</div>
+  <div id="noteTitle" style="display:none">{{ note.Title() }}</div>
+  <div id="noteCategory" style="display:none">{{ note.M().GetString("category", "") }}</div>
+  <div class="slides-data">
+    {{ range i, s := note.PartialRenderer().Sections(3) }}
+    <div class="slide-item">
+      <div class="slide-title">{{ s.TitleHTML | unsafe }}</div>
+      <div class="slide-text">{{ s.ContentHTML | unsafe }}</div>
+    </div>
+    {{ end }}
+  </div>
+
+  <div class="page">
+    <header class="header">
+      <div class="header-left">
+        <a href="/" class="back-btn" title="Назад">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <span class="title">{{ note.Title() }}</span>
+      </div>
+      <div class="header-right" style="position: relative;">
+        <button id="fontSizeBtn" class="ctrl-btn" title="Размер шрифта">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+        </button>
+        <div class="font-size-picker" id="fontSizePicker">
+          <div class="picker-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+            <span class="picker-title">Размер</span>
+            <button class="picker-close" id="fontSizePickerClose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="picker-body">
+            <div class="font-slider-row">
+              <span class="font-slider-label">Заголовок</span>
+              <input type="range" min="16" max="56" value="32" class="font-slider-input" id="titleSizeSlider">
+              <span class="font-slider-value" id="titleSizeValue">32</span>
+            </div>
+            <div class="font-slider-row">
+              <span class="font-slider-label">Текст</span>
+              <input type="range" min="12" max="36" value="18" class="font-slider-input" id="textSizeSlider">
+              <span class="font-slider-value" id="textSizeValue">18</span>
+            </div>
+            <button class="font-auto-btn" id="fontAutoBtn">Авто</button>
+          </div>
+        </div>
+        <button id="downloadCurrent" class="dl-btn" title="Скачать этот слайд">
+          <span id="currentSlide">1</span>/<span id="totalSlides">1</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button id="downloadAll" class="dl-btn" title="Скачать все слайды">
+          <span id="totalSlides2">1</span>/<span id="totalSlides3">1</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button id="downloadTxt" class="dl-btn" title="Скачать текст">
+          TXT
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="carousel-wrap">
+      <button id="prevBtn" class="nav-btn nav-prev" title="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+
+      <div class="card" id="cardCanvas">
+        <div class="card-bg"></div>
+        <div class="card-content">
+          <div class="card-header">
+            <div class="brand-name" id="brandName"></div>
+            <span class="slide-num" id="slideNum">1/1</span>
+          </div>
+          <div class="card-body">
+            <h2 class="card-title" id="cardTitle"></h2>
+            <div class="card-text" id="cardText"></div>
+          </div>
+          <div class="card-footer">
+            <div class="author-block">
+              <div class="author-name">@trip2gcom</div>
+            </div>
+            <div class="social-icons">
+              <svg viewBox="0 0 24 24"><path d="M5 2h14a1 1 0 0 1 1 1v19.143a.5.5 0 0 1-.766.424L12 18.03l-7.234 4.536A.5.5 0 0 1 4 22.143V3a1 1 0 0 1 1-1z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.61 1.19 4.98 3.12 6.61L4 22l4.93-2.21C10.24 20.22 11.09 20.4 12 20.4c5.52 0 10-4.03 10-9 0-5.52-4.48-9.4-10-9.4z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="nextBtn" class="nav-btn nav-next" title="Вперёд">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="dots" id="dotsContainer"></div>
+
+    {{ footer := nvs.ByPath("/instaframes/_footer.md") }}
+    {{ if footer }}
+    <div class="page-footer">
+      {{ footer.HTMLString() | unsafe }}
+    </div>
+    {{ end }}
+  </div>
+
+  <div class="ios-modal" id="iosModal">
+    <button class="ios-modal-close" id="iosModalClose">&times;</button>
+    <div class="ios-modal-counter" id="iosModalCounter"></div>
+    <img id="iosModalImg" src="" alt="Слайд">
+    <div class="ios-modal-hint">Зажми картинку чтобы сохранить</div>
+    <div class="ios-modal-actions">
+      <button class="ios-modal-btn" id="iosModalShare">Поделиться</button>
+      <button class="ios-modal-btn" id="iosModalNext" style="display:none">Следующий &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const slideElements = document.querySelectorAll('.slide-item');
+    const slides = Array.from(slideElements).map(el => ({
+      title: el.querySelector('.slide-title').innerHTML,
+      text: el.querySelector('.slide-text').innerHTML
+    }));
+
+    if (!slides.length) return;
+
+    const total = slides.length;
+    let current = 0;
+    const noteTitle = document.getElementById('noteTitle').textContent.trim();
+    const category = document.getElementById('noteCategory').textContent.trim();
+
+    const cardTitle = document.getElementById('cardTitle');
+    const cardText = document.getElementById('cardText');
+    const slideNum = document.getElementById('slideNum');
+    const brandName = document.getElementById('brandName');
+    const currentSlideEl = document.getElementById('currentSlide');
+    const totalSlidesEl = document.getElementById('totalSlides');
+    const totalSlides2 = document.getElementById('totalSlides2');
+    const totalSlides3 = document.getElementById('totalSlides3');
+    const dotsContainer = document.getElementById('dotsContainer');
+
+    totalSlidesEl.textContent = total;
+    totalSlides2.textContent = total;
+    totalSlides3.textContent = total;
+    brandName.textContent = category;
+
+    const parseTitle = html => html.replace(/\[([^\]]+)\]/g, '<mark>$1</mark>');
+    const stripTags = html => { const t = document.createElement('div'); t.innerHTML = html; return t.textContent || ''; };
+
+    let globalTitleSize = 32;
+    let globalTextSize = 18;
+
+    function calcGlobalSizes() {
+      const cardBody = document.querySelector('.card-body');
+
+      // flex-start for measurement: center causes top-overflow invisible to scrollHeight
+      cardBody.style.justifyContent = 'flex-start';
+      const availableHeight = cardBody.clientHeight;
+
+      let titleSize = 56;
+      let textSize = 36;
+      const minTitle = 16;
+      const minText = 12;
+      const ratio = 36 / 56;
+
+      slides.forEach(slide => {
+        cardTitle.innerHTML = parseTitle(slide.title);
+        cardText.innerHTML = slide.text;
+
+        let ts = 56;
+        let txs = 36;
+        cardTitle.style.fontSize = ts + 'px';
+        cardText.style.fontSize = txs + 'px';
+
+        while (ts > minTitle) {
+          if (cardBody.scrollHeight <= availableHeight) break;
+          ts--;
+          txs = Math.max(minText, Math.round(ts * ratio));
+          cardTitle.style.fontSize = ts + 'px';
+          cardText.style.fontSize = txs + 'px';
+        }
+
+        titleSize = Math.min(titleSize, ts);
+        textSize = Math.min(textSize, txs);
+      });
+
+      cardBody.style.justifyContent = '';
+
+      globalTitleSize = titleSize;
+      globalTextSize = textSize;
+
+      document.getElementById('titleSizeSlider').value = globalTitleSize;
+      document.getElementById('titleSizeValue').textContent = globalTitleSize;
+      document.getElementById('textSizeSlider').value = globalTextSize;
+      document.getElementById('textSizeValue').textContent = globalTextSize;
+    }
+
+    function renderSlide(i) {
+      cardTitle.innerHTML = parseTitle(slides[i].title);
+      cardText.innerHTML = slides[i].text;
+      slideNum.textContent = (i + 1) + '/' + total;
+      currentSlideEl.textContent = i + 1;
+      document.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('active', j === i));
+
+      cardTitle.style.fontSize = globalTitleSize + 'px';
+      cardText.style.fontSize = globalTextSize + 'px';
+    }
+
+    dotsContainer.innerHTML = slides.map((_, i) =>
+      '<button class="dot' + (i === 0 ? ' active' : '') + '" data-i="' + i + '"></button>'
+    ).join('');
+    dotsContainer.querySelectorAll('.dot').forEach(d => d.onclick = () => { current = +d.dataset.i; renderSlide(current); });
+
+    document.getElementById('prevBtn').onclick = () => { current = (current - 1 + total) % total; renderSlide(current); };
+    document.getElementById('nextBtn').onclick = () => { current = (current + 1) % total; renderSlide(current); };
+    document.onkeydown = e => {
+      if (e.key === 'ArrowLeft') { current = (current - 1 + total) % total; renderSlide(current); }
+      if (e.key === 'ArrowRight') { current = (current + 1) % total; renderSlide(current); }
+    };
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const modal = document.getElementById('iosModal');
+    const modalImg = document.getElementById('iosModalImg');
+    const modalCounter = document.getElementById('iosModalCounter');
+    const modalNextBtn = document.getElementById('iosModalNext');
+    const modalShareBtn = document.getElementById('iosModalShare');
+    const modalCloseBtn = document.getElementById('iosModalClose');
+
+    let downloadQueue = [];
+    let downloadQueueIndex = 0;
+    let currentBlob = null;
+
+    function closeModal() {
+      modal.classList.remove('active');
+      downloadQueue = [];
+      downloadQueueIndex = 0;
+      modalNextBtn.style.display = 'none';
+    }
+
+    modalCloseBtn.onclick = closeModal;
+    modal.onclick = e => { if (e.target === modal) closeModal(); };
+
+    async function dataUrlToBlob(dataUrl) {
+      const res = await fetch(dataUrl);
+      return res.blob();
+    }
+
+    async function shareImage(blob, name) {
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], name, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); return true; }
+          catch (e) { if (e.name !== 'AbortError') console.error(e); }
+        }
+      }
+      return false;
+    }
+
+    modalShareBtn.onclick = async () => {
+      if (currentBlob) {
+        const name = downloadQueue.length > 0 ? downloadQueue[downloadQueueIndex - 1]?.name || 'slide.png' : 'slide.png';
+        await shareImage(currentBlob, name);
+      }
+    };
+
+    modalNextBtn.onclick = async () => {
+      if (downloadQueueIndex < downloadQueue.length) await processNextInQueue();
+    };
+
+    async function processNextInQueue() {
+      if (downloadQueueIndex >= downloadQueue.length) { closeModal(); return; }
+      const item = downloadQueue[downloadQueueIndex];
+      downloadQueueIndex++;
+      modalCounter.textContent = downloadQueueIndex + ' из ' + downloadQueue.length;
+      modalNextBtn.style.display = downloadQueueIndex < downloadQueue.length ? 'inline-block' : 'none';
+      const old = current;
+      renderSlide(item.index);
+      await new Promise(r => setTimeout(r, 100));
+      const cardEl = document.getElementById('cardCanvas');
+      const scl = 1080 / cardEl.getBoundingClientRect().width;
+      const canvas = await html2canvas(cardEl, { scale: scl, backgroundColor: null, useCORS: true });
+      const dataUrl = canvas.toDataURL('image/png');
+      currentBlob = await dataUrlToBlob(dataUrl);
+      modalImg.src = dataUrl;
+      modal.classList.add('active');
+      if (item.index !== old) renderSlide(old);
+    }
+
+    async function download(i, name) {
+      const old = current;
+      renderSlide(i);
+      await new Promise(r => setTimeout(r, 100));
+      const cardEl = document.getElementById('cardCanvas');
+      const scl = 1080 / cardEl.getBoundingClientRect().width;
+      const canvas = await html2canvas(cardEl, { scale: scl, backgroundColor: null, useCORS: true });
+      const dataUrl = canvas.toDataURL('image/png');
+      if (isIOS) {
+        currentBlob = await dataUrlToBlob(dataUrl);
+        modalImg.src = dataUrl;
+        modalCounter.textContent = '';
+        modalNextBtn.style.display = 'none';
+        modal.classList.add('active');
+      } else {
+        const a = document.createElement('a');
+        a.download = name;
+        a.href = dataUrl;
+        a.click();
+      }
+      if (i !== old) renderSlide(old);
+    }
+
+    document.getElementById('downloadCurrent').onclick = () => {
+      download(current, noteTitle + '_' + String(current + 1).padStart(2, '0') + '.png');
+    };
+
+    document.getElementById('downloadAll').onclick = async () => {
+      const btn = document.getElementById('downloadAll');
+      btn.disabled = true;
+      if (isIOS) {
+        const files = [];
+        const old = current;
+        for (let i = 0; i < total; i++) {
+          btn.textContent = (i + 1) + '/' + total + '…';
+          renderSlide(i);
+          await new Promise(r => setTimeout(r, 100));
+          const cardEl2 = document.getElementById('cardCanvas');
+          const scl2 = 1080 / cardEl2.getBoundingClientRect().width;
+          const canvas = await html2canvas(cardEl2, { scale: scl2, backgroundColor: null, useCORS: true });
+          const dataUrl = canvas.toDataURL('image/png');
+          const blob = await dataUrlToBlob(dataUrl);
+          files.push(new File([blob], noteTitle + '_' + String(i + 1).padStart(2, '0') + '.png', { type: 'image/png' }));
+        }
+        renderSlide(old);
+        btn.disabled = false;
+        btn.innerHTML = total + '/' + total + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
+          try { await navigator.share({ files: files }); }
+          catch (e) { if (e.name !== 'AbortError') console.error(e); }
+        } else {
+          downloadQueue = slides.map(function(s, i) { return { index: i, name: noteTitle + '_' + String(i + 1).padStart(2, '0') + '.png' }; });
+          downloadQueueIndex = 0;
+          await processNextInQueue();
+        }
+      } else {
+        for (let i = 0; i < total; i++) {
+          btn.textContent = (i + 1) + '/' + total;
+          await download(i, noteTitle + '_' + String(i + 1).padStart(2, '0') + '.png');
+          await new Promise(r => setTimeout(r, 300));
+        }
+        btn.disabled = false;
+        btn.innerHTML = total + '/' + total + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      }
+    };
+
+    calcGlobalSizes();
+    renderSlide(0);
+
+    // Font Size Picker
+    const fontSizePicker = document.getElementById('fontSizePicker');
+    const fontSizeBtn = document.getElementById('fontSizeBtn');
+
+    fontSizeBtn.onclick = (e) => {
+      e.stopPropagation();
+      fontSizePicker.classList.toggle('active');
+    };
+    document.getElementById('fontSizePickerClose').onclick = () => fontSizePicker.classList.remove('active');
+
+    document.getElementById('titleSizeSlider').oninput = function() {
+      globalTitleSize = +this.value;
+      document.getElementById('titleSizeValue').textContent = globalTitleSize;
+      renderSlide(current);
+    };
+
+    document.getElementById('textSizeSlider').oninput = function() {
+      globalTextSize = +this.value;
+      document.getElementById('textSizeValue').textContent = globalTextSize;
+      renderSlide(current);
+    };
+
+    document.getElementById('fontAutoBtn').onclick = () => {
+      calcGlobalSizes();
+      renderSlide(current);
+    };
+
+    document.addEventListener('click', (e) => {
+      if (!fontSizePicker.contains(e.target) && e.target !== fontSizeBtn) {
+        fontSizePicker.classList.remove('active');
+      }
+    });
+
+    // Download TXT
+    document.getElementById('downloadTxt').onclick = () => {
+      const markdown = document.getElementById('markdownSource').textContent;
+      const blob = new Blob([markdown], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = noteTitle + '.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+  })();
+  </script>
+</body>
+</html>
