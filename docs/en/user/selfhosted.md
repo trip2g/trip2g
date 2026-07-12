@@ -110,7 +110,7 @@ What each setting does:
 - `OWNER_EMAIL` — the owner account email.
 - `JWT_SECRET` — signs user session tokens. Rotating it invalidates existing sessions.
 - `DATA_ENCRYPTION_KEY` — 32-character key for encrypting sensitive stored data. Generate with `openssl rand -hex 16` (produces exactly 32 hex chars).
-- `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` — email credentials. The example uses Resend's SMTP gateway (`smtp.resend.com`, user `resend`, password = API key). Without a working SMTP config the server runs fine, but sign-in codes appear only in the logs — useful for initial testing.
+- `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` — email credentials. The example uses Resend's SMTP gateway (`smtp.resend.com`, user `resend`, password = API key). Without a working SMTP config the server runs fine, but sign-in emails are skipped — see below for a bootstrap workaround.
 - `MAIL_FROM` — sender address. Must belong to a domain verified in your email provider.
 
 **ACME requirements**: the domain's A/AAAA record must point at this server, and ports `80` and `443` must be open before you start the service. For a quick test without owning a domain, a wildcard DNS like `<ip>.nip.io` works.
@@ -168,7 +168,7 @@ Expect `HTTP/2 200` with a valid Let's Encrypt certificate.
 
 After that, open `https://docs.example.com`, sign in with `OWNER_EMAIL`, and continue with [[en/user/getting-started|Getting started]].
 
-**If email is not configured yet**: sign-in codes appear in `journalctl -u trip2g`. Copy the code from there to log in.
+**If email is not configured yet**: no sign-in email can be sent, so you can't get the code — set `LOG_SIGN_IN_CODES=true` in `/etc/trip2g.env`, restart (`systemctl restart trip2g`), trigger a sign-in, then read the code from `journalctl -u trip2g`. This prints codes in plain text, so unset the flag (or configure SMTP) once you're in.
 
 ---
 

@@ -37,8 +37,9 @@ func (l *signInCodeCaptureLogger) Warn(msg string, keysAndValues ...interface{})
 }
 
 type signInCodeTestEnv struct {
-	log  *signInCodeCaptureLogger
-	mail []model.Mail
+	log            *signInCodeCaptureLogger
+	mail           []model.Mail
+	logSignInCodes bool
 }
 
 func (e *signInCodeTestEnv) Logger() logger.Logger {
@@ -48,6 +49,10 @@ func (e *signInCodeTestEnv) Logger() logger.Logger {
 func (e *signInCodeTestEnv) SendMail(_ context.Context, mail model.Mail) error {
 	e.mail = append(e.mail, mail)
 	return nil
+}
+
+func (e *signInCodeTestEnv) LogSignInCodes() bool {
+	return e.logSignInCodes
 }
 
 func TestResolveDoesNotLogSignInCode(t *testing.T) {
@@ -64,4 +69,18 @@ func TestResolveDoesNotLogSignInCode(t *testing.T) {
 	require.Contains(t, string(env.mail[0].Plain), code, "the code must still be delivered by email")
 	require.NotContains(t, strings.Join(env.log.lines, "\n"), code,
 		"one-time sign-in codes are credentials and must not be written to application logs")
+}
+
+func TestResolveLogsSignInCodeWhenEnabled(t *testing.T) {
+	const code = "otp-secret-927451"
+	env := &signInCodeTestEnv{log: &signInCodeCaptureLogger{}, logSignInCodes: true}
+
+	err := Resolve(context.Background(), env, Params{
+		Email: "reader@example.com",
+		Code:  code,
+	})
+
+	require.NoError(t, err)
+	require.Contains(t, strings.Join(env.log.lines, "\n"), code,
+		"when LOG_SIGN_IN_CODES is enabled, the code must be printed to the log for bootstrap")
 }
