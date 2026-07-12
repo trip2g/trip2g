@@ -48,6 +48,41 @@ func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	return nil, nil
 }
 
+// GetEndpoint makes the HAT exchange clickable from a plain browser link (e.g.
+// the trip2g-server login-link CLI output). Same Resolve, GET on the query
+// string instead of POST form data, redirects to /admin instead of /.
+type GetEndpoint struct{}
+
+func (e *GetEndpoint) Path() string {
+	return "/_system/hat"
+}
+
+func (e *GetEndpoint) Method() string {
+	return http.MethodGet
+}
+
+func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
+	// The token ends up in access logs and browser history via the query
+	// string; accepted tradeoff for a 5-minute one-time bootstrap link.
+	token := string(req.Req.QueryArgs().Peek("token"))
+	if token == "" {
+		req.Req.SetStatusCode(http.StatusBadRequest)
+		req.Req.SetBodyString("missing token")
+		return nil, nil
+	}
+
+	err := Resolve(req.Req, req.Env.(Env), token)
+	if err != nil {
+		req.Req.SetStatusCode(http.StatusUnauthorized)
+		req.Req.SetBodyString(fmt.Sprintf("authentication failed: %v", err))
+		return nil, nil
+	}
+
+	req.Req.SetStatusCode(http.StatusFound)
+	req.Req.Response.Header.Set("Location", "/admin")
+	return nil, nil
+}
+
 func Resolve(ctx context.Context, env Env, token string) error {
 	// Parse and validate JWT token.
 	hotAuthToken, err := env.ParseHotAuthToken(ctx, token)

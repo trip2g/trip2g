@@ -10,17 +10,17 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## v0.9.0 (2026-07-12)
 
+### First login on a fresh self-host box
+
+- **What.** Bringing up the first admin login on a brand-new box no longer needs an email server. The recommended path: `trip2g-server login-link` prints a one-time, 5-minute sign-in link you open straight from the terminal — `/_system/hat` now accepts the token over GET, so the link is clickable into a browser. Prefer the email-code flow without a mail server? Set `LOG_SIGN_IN_CODES=true` and the server writes sign-in codes to its log (read them from `journalctl` or `docker logs`). Two related fixes back this up: requesting a code with no email transport now returns a clear error instead of silently pretending to send one, and `SMTP_STARTTLS=false` is honored so a local plaintext relay (Postfix, MailHog) works.
+- **Why.** First login on a fresh box — no domain, no email service — used to be a dead end: the server accepted the request but the code never appeared anywhere, and even a local relay failed on an unwanted STARTTLS upgrade. Now one command gives you a working login link, with a log-based fallback and honest errors.
+- **How.** Run `trip2g-server login-link` on the box (or `docker exec` into the container) and open the printed URL within 5 minutes; re-run it anytime for a fresh link. Fallback: set `LOG_SIGN_IN_CODES=true`, request a code from the login page, and copy it from the log. Remove these bootstrap options once you set up OAuth or a real email transport — see [[en/user/smtp]].
+
 ### Search: one retrieval engine for site and MCP
 
 - **What.** The site (GraphQL) search and the MCP `search` tool now share one retrieval engine (text + vector + rank fusion) instead of two divergent copies. Two behavior changes for MCP clients: anonymous (and federation) clients now search **published (live)** notes, like anonymous site visitors — previously they searched the latest versions, including drafts of public notes; and vector search now skips stale embeddings after an embedding-model switch instead of ranking them arbitrarily. The unused server-rendered `/search` page is removed (the site search widget uses GraphQL and is unaffected).
 - **Why.** Retrieval fixes and tuning landed on one surface and silently missed the other; agents and visitors could see different rankings for the same query. On sites with draft previews enabled, anonymous MCP clients could read draft content of public notes.
 - **How.** Automatic. If an agent integration relied on anonymous MCP search seeing drafts, authenticate it with an API key — API-key clients still search the latest corpus.
-
-### First login on a fresh self-host box
-
-- **What.** Three changes make the first-login bootstrap work without an SMTP server. (1) Set `LOG_SIGN_IN_CODES=true` and the server prints sign-in codes to its log instead of sending email — paste the code from `journalctl` or `docker logs` to complete login. (2) When no email transport is configured and `LOG_SIGN_IN_CODES` is off, requesting a sign-in code now returns a clear error; previously it silently pretended to send an email that never arrived. (3) `SMTP_STARTTLS=false` is now honored: the server sends the code over plain SMTP to a local relay (Postfix, MailHog) without attempting opportunistic STARTTLS.
-- **Why.** First login on a fresh box — no domain, no email service — was a dead end: the server accepted the request but the code never appeared anywhere. Operators had to attach a real SMTP relay before they could even log in for the first time.
-- **How.** For quick self-hosted setup, add `LOG_SIGN_IN_CODES=true` to your environment, start the server, and request a sign-in code from the login page. Copy the code from the server log and complete sign-in. Remove the variable once you have configured a real email transport. See [[en/user/smtp]] for email provider options.
 
 ### SMTP provider guide
 
