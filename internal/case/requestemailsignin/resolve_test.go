@@ -177,7 +177,11 @@ func TestNoSMTP_LogSignInCodesDisabled_ReturnsError(t *testing.T) {
 
 	errPayload, ok := result.(*model.ErrorPayload)
 	require.True(t, ok, "expected ErrorPayload, got %T", result)
-	require.Equal(t, "Email delivery isn't configured on this server, so no code can be sent. Sign in with Google or GitHub instead, or ask the site admin.", errPayload.Message)
+	require.Equal(
+		t,
+		"Email delivery isn't configured on this server, so no code can be sent. Sign in with Google or GitHub instead, or ask the site admin.",
+		errPayload.Message,
+	)
 	require.Empty(t, env.EnqueueRequestSignInEmailCalls(), "must not queue a code that can't be delivered")
 }
 
