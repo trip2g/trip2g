@@ -24,15 +24,21 @@ lang_redirect: "[[en/user/selfhosted]]"
 
 ### Получите бинарник
 
-Три способа — в порядке предпочтения:
+**Быстрее всего — установщик одной командой** (тянет последний релиз, пишет конфиг, ставит systemd-юнит, поднимает HTTPS, печатает одноразовую ссылку для входа):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/trip2g/trip2g/main/scripts/simple-install.sh | sh
+```
+
+Или вручную. Три способа — в порядке предпочтения:
 
 **(а) Скачать с GitHub Releases** (рекомендуется):
 
 ```bash
 # Замените <version> на актуальный тег с https://github.com/trip2g/trip2g/releases
 curl -L https://github.com/trip2g/trip2g/releases/download/<version>/trip2g_<version>_linux_amd64.tar.gz \
-  | tar xz trip2g
-sudo mv trip2g /usr/local/bin/trip2g
+  | tar xz trip2g-server
+sudo mv trip2g-server /usr/local/bin/trip2g
 sudo chmod +x /usr/local/bin/trip2g
 ```
 

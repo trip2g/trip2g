@@ -24,15 +24,21 @@ The `trip2g-server` binary embeds all frontend assets. The only host dependencie
 
 ### Get the binary
 
-Three options, in order of preference:
+**Fastest — one-line installer** (fetches the latest release, writes the config, installs a systemd unit, sets up HTTPS, prints a one-time sign-in link):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/trip2g/trip2g/main/scripts/simple-install.sh | sh
+```
+
+Or do it by hand. Three options, in order of preference:
 
 **(a) Download from GitHub Releases** (recommended):
 
 ```bash
 # Replace <version> with the latest tag from https://github.com/trip2g/trip2g/releases
 curl -L https://github.com/trip2g/trip2g/releases/download/<version>/trip2g_<version>_linux_amd64.tar.gz \
-  | tar xz trip2g
-sudo mv trip2g /usr/local/bin/trip2g
+  | tar xz trip2g-server
+sudo mv trip2g-server /usr/local/bin/trip2g
 sudo chmod +x /usr/local/bin/trip2g
 ```
 
