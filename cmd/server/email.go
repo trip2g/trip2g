@@ -70,13 +70,44 @@ func (a *app) SendMail(_ context.Context, data model.Mail) error {
 		return wc.Close()
 	}
 
-	// No TLS (e.g. MailHog on port 1025).
-	err := smtp.SendMail(addr, auth, a.config.MailFrom, []string{data.To}, []byte(body))
+	// Plaintext SMTP: sends an explicit conversation and never issues STARTTLS,
+	// even if the server advertises it (smtp.SendMail does opportunistic
+	// STARTTLS regardless of this flag, which breaks e.g. a local Postfix relay
+	// presenting a self-signed cert for its own hostname).
+	c, err := smtp.Dial(addr)
 	if err != nil {
-		return fmt.Errorf("smtp send: %w", err)
+		return fmt.Errorf("smtp dial: %w", err)
+	}
+	defer c.Close()
+
+	if auth != nil {
+		err = c.Auth(auth)
+		if err != nil {
+			return fmt.Errorf("smtp auth: %w", err)
+		}
 	}
 
-	return nil
+	err = c.Mail(a.config.MailFrom)
+	if err != nil {
+		return fmt.Errorf("smtp mail from: %w", err)
+	}
+
+	err = c.Rcpt(data.To)
+	if err != nil {
+		return fmt.Errorf("smtp rcpt: %w", err)
+	}
+
+	wc, err := c.Data()
+	if err != nil {
+		return fmt.Errorf("smtp data: %w", err)
+	}
+
+	_, err = fmt.Fprint(wc, body)
+	if err != nil {
+		return fmt.Errorf("smtp write: %w", err)
+	}
+
+	return wc.Close()
 }
 
 func (a *app) LogSignInCodes() bool {
