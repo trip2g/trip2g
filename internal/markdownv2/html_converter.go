@@ -347,6 +347,11 @@ func (c *HTMLConverter) renderWikilink(node *wikilink.Node, entering bool, res *
 		c.skipClosingTag[node] = true
 		return ast.WalkSkipChildren
 	}
+	if link == nil {
+		// Resolver returned nothing - drop the link like the no-URL/no-Label case
+		c.skipClosingTag[node] = true
+		return ast.WalkSkipChildren
+	}
 
 	switch {
 	case link.URL != "":

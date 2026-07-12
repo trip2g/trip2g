@@ -379,6 +379,15 @@ func TestHTMLWikilinks(t *testing.T) {
 			warnings: 0,
 		},
 		{
+			name:     "resolver returns nil result (regression: used to panic)",
+			markdown: "See [[unknown]] here",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return nil, nil
+			},
+			expected: `See  here`,
+			warnings: 0,
+		},
+		{
 			name:     "wikilink with resolver error",
 			markdown: "See [[missing-note]] here",
 			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
