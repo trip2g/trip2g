@@ -120,12 +120,39 @@
     .slides-data { display: none; }
 
     .hidden { display: none !important; }
-    .format-badge { position: fixed; top: 8px; right: 8px; font-size: 0.6rem; font-weight: 600; padding: 2px 6px; border-radius: 3px; opacity: 0.5; z-index: 99; letter-spacing: 0.03em; }
+    /* Pushed down from top:8px to leave room for the fixed sign-in corner
+       (below), which claims the very top of the right edge. */
+    .format-badge { position: fixed; top: 50px; right: 8px; font-size: 0.6rem; font-weight: 600; padding: 2px 6px; border-radius: 3px; opacity: 0.5; z-index: 99; letter-spacing: 0.03em; }
     .format-badge.mp4 { background: rgba(40,180,80,0.25); color: #6d6; }
     .format-badge.webm { background: rgba(220,160,40,0.25); color: #da6; }
+    .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
   </style>
+
+  <!-- Theme bootstrap: set data-theme before any paint to avoid flash-of-wrong-theme
+       for the sign-in widget below. Reads $mol_lights from localStorage; falls back
+       to prefers-color-scheme. -->
+  <script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
+
+  <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
+       the user-space bundle scripts so the login widget below can boot. -->
+  {{ defaultTemplate.UserSpaceScripts() }}
 </head>
 <body>
+
+<!-- Standard trip2g user-space corner (sign-in / edit). Wrapped in a plain
+     positioning container: $mol styles the mol_view_root element itself, so
+     the fixed positioning must live on a parent it won't touch. -->
+<div class="topright"><div mol_view_root="$trip2g_user_space"></div></div>
+
+<!-- The reel's slides are rendered client-side from the note's markdown
+     (below), so they go stale after an in-editor save. The editor iframe
+     posts this message on close; reload to pick up the fresh content. -->
+<script>window.addEventListener('message', function (e) { if (e.data === 'trip2g_editor_close') location.reload() })</script>
+
   <div class="format-badge" id="formatBadge"></div>
   <div class="slides-data">
     {{ range i, s := note.PartialRenderer().Sections(3) }}

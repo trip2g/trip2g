@@ -21,7 +21,10 @@
     .back-btn:hover { color: #111; background: rgba(0,0,0,0.05); }
     .back-btn svg { width: 18px; height: 18px; }
     .title { font-size: 0.875rem; font-weight: 600; color: #111; }
-    .header-right { display: flex; gap: 0.375rem; }
+    /* margin-right reserves room for the fixed sign-in corner (below) so it
+       doesn't sit on top of the download/font-size buttons. */
+    .header-right { display: flex; gap: 0.375rem; margin-right: 44px; }
+    .topright { position: fixed; top: 10px; right: 14px; z-index: 50; }
     .dl-btn { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; font-weight: 500; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: all 0.15s; color: #333; }
     .dl-btn:hover { background: #f5f5f5; border-color: #bbb; }
     .dl-btn:disabled { opacity: 0.5; cursor: wait; }
@@ -204,8 +207,32 @@
       .card-content { padding: 20px 24px; }
     }
   </style>
+
+  <!-- Theme bootstrap: set data-theme before any paint to avoid flash-of-wrong-theme
+       for the sign-in widget below. Reads $mol_lights from localStorage; falls back
+       to prefers-color-scheme. -->
+  <script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
+
+  <!-- Standard trip2g sign-in / search chrome: emits window.__trip2g_settings and
+       the user-space bundle scripts so the login widget below can boot. -->
+  {{ defaultTemplate.UserSpaceScripts() }}
 </head>
 <body>
+
+<!-- Standard trip2g user-space corner (sign-in / edit). Wrapped in a plain
+     positioning container: $mol styles the mol_view_root element itself, so
+     the fixed positioning must live on a parent it won't touch. -->
+<div class="topright"><div mol_view_root="$trip2g_user_space"></div></div>
+
+<!-- The carousel is rendered client-side from the note's markdown (below), so
+     it goes stale after an in-editor save. The editor iframe posts this
+     message on close; reload to pick up the fresh content. -->
+<script>window.addEventListener('message', function (e) { if (e.data === 'trip2g_editor_close') location.reload() })</script>
+
   <div id="markdownSource" style="display:none">{{ note.ContentString() }}</div>
   <div id="noteTitle" style="display:none">{{ note.Title() }}</div>
   <div id="noteCategory" style="display:none">{{ note.M().GetString("category", "") }}</div>
