@@ -188,9 +188,9 @@ else
 Pass TRIP2G_BINARY_URL=<url> or pre-place a binary at $BIN and re-run."
   ASSET="trip2g_${TAG}_linux_${GOARCH}.tar.gz"
   URL="https://github.com/$REPO/releases/download/$TAG/$ASSET"
-  say "Release $TAG → $ASSET"
+  say "Downloading $ASSET"
   TMPD=$(mktemp -d)
-  curl -fsSL -o "$TMPD/$ASSET" "$URL" \
+  curl -fL --progress-bar -o "$TMPD/$ASSET" "$URL" \
     || die "download failed: $URL
 Pass TRIP2G_BINARY_URL=<url> or pre-place a binary at $BIN and re-run."
   # checksum: the release ships <asset>.sha256 — verify when possible
