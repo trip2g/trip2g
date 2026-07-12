@@ -163,7 +163,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 			texts[i] = passagePrefix + mdchunk.TruncateToTokens(pe.chunk.Content, budget)
 		}
 
-		results, embErr := env.OpenAI().CreateEmbeddings(ctx, texts)
+		results, embErr := createEmbeddingsBatched(ctx, env, texts, vsConfig.ResolvedEmbedBatchSize())
 		if embErr != nil {
 			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
 		}
@@ -201,6 +201,25 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	}
 
 	return nil
+}
+
+// createEmbeddingsBatched embeds texts in windows of at most maxBatch, since
+// the embedding server rejects a request above its own batch limit (e.g. TEI's
+// max-client-batch-size). Results are reassembled in the original order.
+func createEmbeddingsBatched(ctx context.Context, env Env, texts []string, maxBatch int) ([]openai.EmbeddingResult, error) {
+	if maxBatch <= 0 || len(texts) <= maxBatch {
+		return env.OpenAI().CreateEmbeddings(ctx, texts)
+	}
+	results := make([]openai.EmbeddingResult, 0, len(texts))
+	for start := 0; start < len(texts); start += maxBatch {
+		end := min(start+maxBatch, len(texts))
+		window, err := env.OpenAI().CreateEmbeddings(ctx, texts[start:end])
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, window...)
+	}
+	return results, nil
 }
 
 // NoteContentHash returns the content hash stored with a note's whole-note

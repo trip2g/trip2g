@@ -184,6 +184,12 @@ type VectorSearchConfig struct {
 	QueryPfx   string `json:"query_prefix"`
 	PassagePfx string `json:"passage_prefix"`
 
+	// EmbedBatchSize caps how many texts go into a single CreateEmbeddings
+	// request. The embedding server enforces its own hard limit (TEI's
+	// max-client-batch-size defaults to 8); a batch above it gets rejected
+	// outright, and the caller must sub-batch to stay under it.
+	EmbedBatchSize int `json:"embed_batch_size"`
+
 	Reranker RerankerConfig `json:"reranker"` // optional second-stage cross-encoder reranker (blend mode)
 }
 
@@ -219,6 +225,19 @@ func (c VectorSearchConfig) ResolvedMaxInputTokens() int {
 		return c.MaxTokens
 	}
 	return c.Model.defaultMaxInputTokens()
+}
+
+// defaultEmbedBatchSize is TEI's default max-client-batch-size. It is not
+// model-specific — it's a limit of the serving backend, not the model.
+const defaultEmbedBatchSize = 8
+
+// ResolvedEmbedBatchSize returns the max texts per CreateEmbeddings request:
+// explicit override if set, otherwise defaultEmbedBatchSize.
+func (c VectorSearchConfig) ResolvedEmbedBatchSize() int {
+	if c.EmbedBatchSize > 0 {
+		return c.EmbedBatchSize
+	}
+	return defaultEmbedBatchSize
 }
 
 // ResolvedQueryPrefix returns the query prefix string: explicit override if

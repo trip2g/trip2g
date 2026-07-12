@@ -433,3 +433,234 @@ func TestResolve(t *testing.T) {
 		}
 	})
 }
+
+// TestResolveChunkBatching is split from TestResolve to keep gocognit under the limit.
+func TestResolveChunkBatching(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("sub-batches chunk embeddings to the server's max batch size", func(t *testing.T) {
+		// A note with more changed chunks than the server's max batch must be
+		// split into multiple CreateEmbeddings requests, each within the limit,
+		// with results reassembled onto the right chunk index. Otherwise the
+		// server rejects the oversized batch, the note never finishes embedding,
+		// and it gets re-enqueued forever (the production incident this fixes).
+		var requestSizes []int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				Input []string `json:"input"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			requestSizes = append(requestSizes, len(req.Input))
+			data := make([]map[string]any, len(req.Input))
+			for i, in := range req.Input {
+				// Vector value encodes which input text produced it, so the test can
+				// verify each chunk lands on its own vector after reassembly.
+				data[i] = map[string]any{"object": "embedding", "index": i, "embedding": []float32{float32(len(in))}}
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"object": "list",
+				"data":   data,
+				"usage":  map[string]any{"total_tokens": len(req.Input)},
+			})
+		}))
+		defer srv.Close()
+
+		// 16 short paragraphs so mdchunk splits into >8 chunks, each a distinct
+		// length so the returned vector (encoding input length) is distinguishable.
+		var paras []string
+		for i := 1; i <= 16; i++ {
+			// Each paragraph is a distinct length (so the mock vector, which
+			// encodes input length, is distinguishable per chunk) and big enough
+			// on its own to exceed chunkTargetTokens, forcing one chunk per paragraph.
+			paras = append(paras, strings.Repeat("word ", 500+i))
+		}
+		content := []byte(strings.Join(paras, "\n\n"))
+		noteView := &model.NoteView{
+			VersionID: 1,
+			Title:     "Test Note",
+			Content:   content,
+			Permalink: "/test-note",
+		}
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall, EmbedBatchSize: 8}
+		chunks := mdchunk.Split(noteView.Title, content)
+		require.Greater(t, len(chunks), 8, "test setup: note must split into more chunks than the batch size")
+
+		var upserted []db.UpsertNoteVersionChunkParams
+		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			LatestNoteViewsFunc: func() *model.NoteViews {
+				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
+			},
+			GetNoteVersionEmbeddingFunc: func(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error) {
+				return db.NoteVersionEmbedding{}, sql.ErrNoRows
+			},
+			GetNoteVersionChunksFunc: func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+				return nil, nil
+			},
+			OpenAIFunc: func() *openai.Client {
+				return openai.New("test-key", "text-embedding-3-small", srv.URL+"/v1")
+			},
+			UpsertNoteVersionEmbeddingFunc: func(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error {
+				return nil
+			},
+			UpsertNoteVersionChunkFunc: func(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error {
+				upserted = append(upserted, arg)
+				return nil
+			},
+			DeleteNoteVersionChunksBeyondFunc: func(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error {
+				return nil
+			},
+		}
+
+		err := generatenoteversionembedding.Resolve(ctx, env, generatenoteversionembedding.Params{VersionID: 1})
+		require.NoError(t, err)
+
+		// requestSizes[0] is the whole-note embedding (1 text); the rest are the
+		// chunk sub-batches.
+		require.Greater(t, len(requestSizes), 1)
+		for _, size := range requestSizes[1:] {
+			require.LessOrEqual(t, size, 8, "each chunk sub-batch must stay within the configured max batch size")
+		}
+
+		require.Len(t, upserted, len(chunks), "every chunk must be embedded and upserted")
+		budget := cfg.ResolvedMaxInputTokens() * 9 / 10
+		for _, u := range upserted {
+			want := mdchunk.TruncateToTokens(chunks[u.ChunkIndex].Content, budget)
+			wantVector := model.Float32SliceToBytes([]float32{float32(len(want))})
+			require.Equal(t, wantVector, u.Embedding, "chunk %d must carry the vector for its own text, not another chunk's", u.ChunkIndex)
+		}
+	})
+
+	t.Run("stays a single request when chunk count is within the max batch size", func(t *testing.T) {
+		// No regression: a note within the batch limit must still embed in one
+		// CreateEmbeddings call for the chunk phase.
+		var requestSizes []int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				Input []string `json:"input"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			requestSizes = append(requestSizes, len(req.Input))
+			data := make([]map[string]any, len(req.Input))
+			for i := range req.Input {
+				data[i] = map[string]any{"object": "embedding", "index": i, "embedding": []float32{0.1, 0.2, 0.3}}
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"object": "list",
+				"data":   data,
+				"usage":  map[string]any{"total_tokens": len(req.Input)},
+			})
+		}))
+		defer srv.Close()
+
+		content := []byte("A short note with just one paragraph of content.")
+		noteView := &model.NoteView{
+			VersionID: 1,
+			Title:     "Test Note",
+			Content:   content,
+			Permalink: "/test-note",
+		}
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall, EmbedBatchSize: 8}
+		chunks := mdchunk.Split(noteView.Title, content)
+		require.LessOrEqual(t, len(chunks), 8, "test setup: note must fit within the batch size")
+
+		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			LatestNoteViewsFunc: func() *model.NoteViews {
+				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
+			},
+			GetNoteVersionEmbeddingFunc: func(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error) {
+				return db.NoteVersionEmbedding{}, sql.ErrNoRows
+			},
+			GetNoteVersionChunksFunc: func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+				return nil, nil
+			},
+			OpenAIFunc: func() *openai.Client {
+				return openai.New("test-key", "text-embedding-3-small", srv.URL+"/v1")
+			},
+			UpsertNoteVersionEmbeddingFunc: func(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error {
+				return nil
+			},
+			UpsertNoteVersionChunkFunc: func(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error {
+				return nil
+			},
+			DeleteNoteVersionChunksBeyondFunc: func(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error {
+				return nil
+			},
+		}
+
+		err := generatenoteversionembedding.Resolve(ctx, env, generatenoteversionembedding.Params{VersionID: 1})
+		require.NoError(t, err)
+		require.Len(t, requestSizes, 2, "whole-note request + a single chunk-phase request, no sub-batching needed")
+	})
+
+	t.Run("honors a configured max batch size smaller than the default", func(t *testing.T) {
+		var requestSizes []int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				Input []string `json:"input"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			requestSizes = append(requestSizes, len(req.Input))
+			data := make([]map[string]any, len(req.Input))
+			for i := range req.Input {
+				data[i] = map[string]any{"object": "embedding", "index": i, "embedding": []float32{0.1, 0.2, 0.3}}
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"object": "list",
+				"data":   data,
+				"usage":  map[string]any{"total_tokens": len(req.Input)},
+			})
+		}))
+		defer srv.Close()
+
+		var paras []string
+		for i := 1; i <= 6; i++ {
+			paras = append(paras, strings.Repeat("word ", 500+i))
+		}
+		content := []byte(strings.Join(paras, "\n\n"))
+		noteView := &model.NoteView{
+			VersionID: 1,
+			Title:     "Test Note",
+			Content:   content,
+			Permalink: "/test-note",
+		}
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall, EmbedBatchSize: 4}
+		chunks := mdchunk.Split(noteView.Title, content)
+		require.Greater(t, len(chunks), 4, "test setup: note must exceed the configured batch size")
+
+		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			LatestNoteViewsFunc: func() *model.NoteViews {
+				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
+			},
+			GetNoteVersionEmbeddingFunc: func(ctx context.Context, versionID int64) (db.NoteVersionEmbedding, error) {
+				return db.NoteVersionEmbedding{}, sql.ErrNoRows
+			},
+			GetNoteVersionChunksFunc: func(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error) {
+				return nil, nil
+			},
+			OpenAIFunc: func() *openai.Client {
+				return openai.New("test-key", "text-embedding-3-small", srv.URL+"/v1")
+			},
+			UpsertNoteVersionEmbeddingFunc: func(ctx context.Context, arg db.UpsertNoteVersionEmbeddingParams) error {
+				return nil
+			},
+			UpsertNoteVersionChunkFunc: func(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error {
+				return nil
+			},
+			DeleteNoteVersionChunksBeyondFunc: func(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error {
+				return nil
+			},
+		}
+
+		err := generatenoteversionembedding.Resolve(ctx, env, generatenoteversionembedding.Params{VersionID: 1})
+		require.NoError(t, err)
+		for _, size := range requestSizes[1:] {
+			require.LessOrEqual(t, size, 4, "chunk sub-batches must respect the configured (smaller) max batch size")
+		}
+	})
+}
