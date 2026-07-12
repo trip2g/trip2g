@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"trip2g/internal/mdchunk"
+	"trip2g/internal/openai"
 )
 
 // debugEmbeddingEnabled gates /debug/embedding registration: vector search
@@ -90,7 +91,7 @@ func (a *app) handleDebugEmbedding(w http.ResponseWriter, r *http.Request) {
 			texts[i] = passagePrefix + c.Content
 		}
 		embedStart := time.Now()
-		embeddings, err := a.openaiClient.CreateEmbeddings(r.Context(), texts)
+		embeddings, err := a.openaiClient.CreateEmbeddings(r.Context(), texts, openai.KindDebug)
 		embedMs = time.Since(embedStart).Milliseconds()
 		if err != nil {
 			embedErrStr = err.Error()

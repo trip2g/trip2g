@@ -196,7 +196,8 @@ type appState struct {
 
 	notFoundTracker *notfoundtracker.Tracker
 
-	mcpMetrics *metrics.MCPMetrics
+	mcpMetrics       *metrics.MCPMetrics
+	embeddingMetrics *metrics.EmbeddingMetrics
 
 	redirectManager *redirectmanager.Manager
 
@@ -345,7 +346,8 @@ func main() {
 
 			oidcKeys: oidcauth.NewKeyCache(),
 
-			mcpMetrics: metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
+			mcpMetrics:       metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
+			embeddingMetrics: metrics.NewEmbeddingMetrics(prometheus.DefaultRegisterer),
 
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
@@ -397,6 +399,12 @@ func main() {
 	a.constructPatreon()
 	a.constructBoosty()
 
+	// Carry embedding metrics on the root context so job/cron code (no HTTP
+	// request to thread metrics through) can record embedding pipeline
+	// observations. Must happen before queues and the cron scheduler are built
+	// from ctx below, so every derived context inherits the value.
+	ctx = metrics.ContextWithEmbeddingMetrics(ctx, a.embeddingMetrics)
+
 	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
 		Limit:        10,
 		PollInterval: a.config.GlobalQueuePollInterval,
@@ -414,6 +422,7 @@ func main() {
 			a.config.Features.VectorSearch.ResolvedModelName(),
 			a.config.Features.VectorSearch.BaseURL,
 		)
+		a.openaiClient.SetMetrics(a.embeddingMetrics)
 	}
 
 	// Start the internal health server early so /livez answers 200 throughout

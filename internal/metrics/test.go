@@ -6,6 +6,7 @@ package metrics
 import (
 	"context"
 	"sync"
+	"trip2g/internal/db"
 )
 
 // Ensure, that EnvMock does implement Env.
@@ -30,6 +31,9 @@ var _ Env = &EnvMock{}
 //			CountVisibleNotePathsFunc: func(ctx context.Context) (int64, error) {
 //				panic("mock out the CountVisibleNotePaths method")
 //			},
+//			ListGoqiteAllQueueStatsFunc: func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error) {
+//				panic("mock out the ListGoqiteAllQueueStats method")
+//			},
 //			SumNoteAssetsSizesFunc: func(ctx context.Context) (int64, error) {
 //				panic("mock out the SumNoteAssetsSizes method")
 //			},
@@ -51,6 +55,9 @@ type EnvMock struct {
 
 	// CountVisibleNotePathsFunc mocks the CountVisibleNotePaths method.
 	CountVisibleNotePathsFunc func(ctx context.Context) (int64, error)
+
+	// ListGoqiteAllQueueStatsFunc mocks the ListGoqiteAllQueueStats method.
+	ListGoqiteAllQueueStatsFunc func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
 
 	// SumNoteAssetsSizesFunc mocks the SumNoteAssetsSizes method.
 	SumNoteAssetsSizesFunc func(ctx context.Context) (int64, error)
@@ -77,17 +84,23 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// ListGoqiteAllQueueStats holds details about calls to the ListGoqiteAllQueueStats method.
+		ListGoqiteAllQueueStats []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// SumNoteAssetsSizes holds details about calls to the SumNoteAssetsSizes method.
 		SumNoteAssetsSizes []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
 	}
-	lockCountAllNotePaths     sync.RWMutex
-	lockCountNoteAssets       sync.RWMutex
-	lockCountNoteVersions     sync.RWMutex
-	lockCountVisibleNotePaths sync.RWMutex
-	lockSumNoteAssetsSizes    sync.RWMutex
+	lockCountAllNotePaths       sync.RWMutex
+	lockCountNoteAssets         sync.RWMutex
+	lockCountNoteVersions       sync.RWMutex
+	lockCountVisibleNotePaths   sync.RWMutex
+	lockListGoqiteAllQueueStats sync.RWMutex
+	lockSumNoteAssetsSizes      sync.RWMutex
 }
 
 // CountAllNotePaths calls CountAllNotePathsFunc.
@@ -215,6 +228,38 @@ func (mock *EnvMock) CountVisibleNotePathsCalls() []struct {
 	mock.lockCountVisibleNotePaths.RLock()
 	calls = mock.calls.CountVisibleNotePaths
 	mock.lockCountVisibleNotePaths.RUnlock()
+	return calls
+}
+
+// ListGoqiteAllQueueStats calls ListGoqiteAllQueueStatsFunc.
+func (mock *EnvMock) ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error) {
+	if mock.ListGoqiteAllQueueStatsFunc == nil {
+		panic("EnvMock.ListGoqiteAllQueueStatsFunc: method is nil but Env.ListGoqiteAllQueueStats was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListGoqiteAllQueueStats.Lock()
+	mock.calls.ListGoqiteAllQueueStats = append(mock.calls.ListGoqiteAllQueueStats, callInfo)
+	mock.lockListGoqiteAllQueueStats.Unlock()
+	return mock.ListGoqiteAllQueueStatsFunc(ctx)
+}
+
+// ListGoqiteAllQueueStatsCalls gets all the calls that were made to ListGoqiteAllQueueStats.
+// Check the length with:
+//
+//	len(mockedEnv.ListGoqiteAllQueueStatsCalls())
+func (mock *EnvMock) ListGoqiteAllQueueStatsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListGoqiteAllQueueStats.RLock()
+	calls = mock.calls.ListGoqiteAllQueueStats
+	mock.lockListGoqiteAllQueueStats.RUnlock()
 	return calls
 }
 

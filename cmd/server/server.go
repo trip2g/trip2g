@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/metrics"
 	"trip2g/internal/router"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 	"golang.org/x/crypto/acme"
@@ -329,7 +330,7 @@ func (a *app) startInternalServer() {
 	debugHandler := fasthttpadaptor.NewFastHTTPHandler(debugMux)
 
 	// Start metrics updater
-	metricsUpdater := metrics.NewUpdater(a, a.config.Metrics.UpdateInterval)
+	metricsUpdater := metrics.NewUpdater(a, a.config.Metrics.UpdateInterval, prometheus.DefaultRegisterer)
 	go func() {
 		err := metricsUpdater.Run(a.ctx)
 		if err != nil && !errors.Is(err, context.Canceled) {

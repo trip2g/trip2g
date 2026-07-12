@@ -95,7 +95,7 @@ func Retrieve(
 
 func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest bool) ([]appmodel.SearchResult, map[string]string, error) {
 	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query)
+	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query, openai.KindQuery)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}
