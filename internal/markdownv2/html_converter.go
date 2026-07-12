@@ -34,15 +34,16 @@ func extractImageAltText(node *ast.Image, src []byte) string {
 	return sb.String()
 }
 
-// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL or local tg_ce_*.webp path.
-// Returns empty string if path doesn't match any pattern.
+// extractCustomEmojiID extracts emoji ID from tg://emoji URL, ce.trip2g.com URL,
+// or local tg_ce_*.webp path. Returns empty string if path doesn't match any pattern.
 func extractCustomEmojiID(path string) string {
-	// Try ce.trip2g.com URL pattern
+	if id, ok := strings.CutPrefix(path, "tg://emoji?id="); ok {
+		return id
+	}
 	matches := ceEmojiURLPattern.FindStringSubmatch(path)
 	if len(matches) == 2 {
 		return matches[1]
 	}
-	// Try local tg_ce_*.webp pattern
 	matches = localCustomEmojiPattern.FindStringSubmatch(path)
 	if len(matches) == 2 {
 		return matches[1]
@@ -85,7 +86,6 @@ type unpublishedLink struct {
 type NodeHandlerFunc func(c *HTMLConverter, n ast.Node, src []byte, entering bool) (ast.WalkStatus, bool)
 
 type HTMLConverter struct {
-	CommonConverter
 	bufStack           []*strings.Builder
 	linkResolver       LinkResolver
 	skipClosingTag     map[ast.Node]bool
@@ -105,6 +105,15 @@ func (c *HTMLConverter) Write(s string) {
 	}
 }
 
+// writePair writes the opening tag on entering and the closing tag on exit.
+func (c *HTMLConverter) writePair(entering bool, open, closing string) {
+	if entering {
+		c.Write(open)
+	} else {
+		c.Write(closing)
+	}
+}
+
 func (c *HTMLConverter) pushBuffer() {
 	c.bufStack = append(c.bufStack, &strings.Builder{})
 }
@@ -119,359 +128,31 @@ func (c *HTMLConverter) popBuffer() string {
 	return result
 }
 
-//nolint:nestif,gocognit,gocyclo,cyclop,funlen // ast traversal always looks like this
+// currentBuffer returns the accumulated content of the buffer being written to.
+func (c *HTMLConverter) currentBuffer() string {
+	if len(c.bufStack) == 0 {
+		return ""
+	}
+	return c.bufStack[len(c.bufStack)-1].String()
+}
+
 func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
-	res := ConverterResult{}
+	res := &ConverterResult{}
 	src := nv.Content
 
-	c.state = lineStart
 	c.skipClosingTag = make(map[ast.Node]bool)
 	c.isUnpublishedLink = make(map[ast.Node]bool)
 	c.unpublishedLinks = nil
 	c.bufStack = nil
 	c.pushBuffer() // Initialize with root buffer
 
-	var lines []string
-
 	_ = ast.Walk(nv.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		switch node := n.(type) {
-		case *ast.Document:
-			// Nothing to do
-
-		case *ast.Paragraph:
-			if n.HasBlankPreviousLines() && entering {
-				lines = append(lines, "\n\n")
-			}
-
-			if !entering && len(c.bufStack) == 1 {
-				// End of paragraph in root buffer, add current line to lines slice
-				current := c.bufStack[0]
-				if current.Len() > 0 {
-					lines = append(lines, current.String())
-					current.Reset()
-				}
-			}
-
-		case *ast.Text:
-			if entering {
-				text := string(node.Segment.Value(src))
-				escapedText := html.EscapeString(text)
-
-				c.Write(escapedText)
-				if node.SoftLineBreak() {
-					if len(c.bufStack) == 1 {
-						// In root buffer: add current line to lines and start new line
-						lines = append(lines, c.bufStack[0].String(), "\n")
-						c.bufStack[0].Reset()
-					} else {
-						// In nested buffer (blockquote): just add newline
-						c.Write("\n")
-					}
-				}
-			}
-
-		case *ast.Emphasis:
-			var tag string
-			if node.Level == 1 {
-				if entering {
-					tag = "<i>"
-				} else {
-					tag = "</i>"
-				}
-			} else {
-				if entering {
-					tag = "<b>"
-				} else {
-					tag = "</b>"
-				}
-			}
-			c.Write(tag)
-
-		case *extast.Strikethrough:
-			var tag string
-			if entering {
-				tag = "<s>"
-			} else {
-				tag = "</s>"
-			}
-			c.Write(tag)
-
-		case *ast.CodeSpan:
-			var tag string
-			if entering {
-				tag = "<code>"
-			} else {
-				tag = "</code>"
-			}
-			c.Write(tag)
-
-		case *highlight.HighlightAST:
-			if entering {
-				c.Write(`<span class="tg-spoiler">`)
-			} else {
-				c.Write("</span>")
-			}
-
-		case *ast.Blockquote:
-			if entering {
-				c.pushBuffer()
-			} else {
-				content := c.popBuffer()
-
-				// Check if blockquote ends with spoiler (||)
-				isExpandable := strings.HasSuffix(content, "||")
-				if isExpandable {
-					content = strings.TrimSuffix(content, "||")
-					lines = append(lines, fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, content))
-				} else {
-					lines = append(lines, fmt.Sprintf(`<blockquote>%s</blockquote>`, content))
-				}
-			}
-
-		case *ast.Link:
-			if entering {
-				c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(string(node.Destination))))
-			} else {
-				c.Write("</a>")
-			}
-
-		case *ast.AutoLink:
-			if entering {
-				url := string(node.URL(src))
-				c.Write(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(url), html.EscapeString(url)))
-			}
-
-		case *enclavecore.Enclave:
-			dest := string(node.Destination)
-			var emojiID string
-
-			if strings.HasPrefix(dest, "tg://emoji?id=") {
-				emojiID = strings.TrimPrefix(dest, "tg://emoji?id=")
-			} else if id := extractCustomEmojiID(dest); id != "" {
-				emojiID = id
-			}
-
-			if emojiID != "" {
-				if entering {
-					alt := stripSizeSuffix(node.Alt)
-					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
-						html.EscapeString(emojiID), html.EscapeString(alt)))
-					return ast.WalkSkipChildren, nil
-				}
-			} else {
-				msg := fmt.Sprintf("unsupported image source: %s", dest)
-				res.Warnings = append(res.Warnings, msg)
-				return ast.WalkSkipChildren, nil
-			}
-
-		case *ast.Image:
-			dest := string(node.Destination)
-			var emojiID string
-
-			if strings.HasPrefix(dest, "tg://emoji?id=") {
-				emojiID = strings.TrimPrefix(dest, "tg://emoji?id=")
-			} else if id := extractCustomEmojiID(dest); id != "" {
-				emojiID = id
-			}
-
-			if emojiID != "" {
-				if entering {
-					alt := stripSizeSuffix(extractImageAltText(node, src))
-					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
-						html.EscapeString(emojiID), html.EscapeString(alt)))
-					return ast.WalkSkipChildren, nil
-				}
-			} else {
-				msg := fmt.Sprintf("unsupported image source: %s", dest)
-				res.Warnings = append(res.Warnings, msg)
-				return ast.WalkSkipChildren, nil
-			}
-
-		case *ast.RawHTML:
-			if entering {
-				tag := string(node.Segments.Value(src))
-				if tag == "<u>" || tag == "</u>" {
-					c.Write(tag)
-				} else {
-					msg := fmt.Sprintf("raw html tag is not supported: %s", tag)
-					res.Warnings = append(res.Warnings, msg)
-				}
-			}
-
-		case *ast.FencedCodeBlock:
-			if entering {
-				lines = append(lines, "\n")
-
-				language := string(node.Language(src))
-				code := string(node.Lines().Value(src))
-
-				var codeHTML string
-				if language != "" {
-					codeHTML = fmt.Sprintf(`<pre><code class="language-%s">%s</code></pre>`,
-						html.EscapeString(language),
-						html.EscapeString(strings.TrimSuffix(code, "\n")))
-				} else {
-					codeHTML = fmt.Sprintf("<pre>%s</pre>",
-						html.EscapeString(strings.TrimSuffix(code, "\n")))
-				}
-
-				lines = append(lines, codeHTML)
-			}
-
-		case *wikilink.Node:
-			if c.linkResolver != nil && !node.Embed {
-				if entering {
-					dest := string(node.Target)
-					link, err := c.linkResolver(dest)
-					if err != nil {
-						res.Warnings = append(res.Warnings, err.Error())
-						c.skipClosingTag[n] = true
-						return ast.WalkSkipChildren, nil
-					}
-
-					// Handle different link types
-					switch {
-					case link.URL != "":
-						// Regular link with URL
-						c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
-
-						// If Label is provided, use it instead of node children
-						if link.Label != "" {
-							c.Write(html.EscapeString(link.Label))
-							c.Write("</a>")
-							c.skipClosingTag[n] = true
-							return ast.WalkSkipChildren, nil
-						}
-					case link.Label != "":
-						// Unpublished link with label (with or without PublishAt)
-						label := link.Label
-
-						// If has PublishAt, add to footer list
-						if link.PublishAt != nil {
-							c.unpublishedLinks = append(c.unpublishedLinks, unpublishedLink{
-								label:     label,
-								publishAt: *link.PublishAt,
-							})
-						}
-
-						// Mark this node as unpublished link
-						c.isUnpublishedLink[n] = true
-
-						// Write underlined text with label instead of link
-						c.Write(fmt.Sprintf("<u>%s</u>", html.EscapeString(label)))
-
-						// Skip children since we already wrote the label
-						c.skipClosingTag[n] = true
-						return ast.WalkSkipChildren, nil
-					default:
-						// No URL and no Label - skip
-						c.skipClosingTag[n] = true
-						return ast.WalkSkipChildren, nil
-					}
-				} else {
-					if !c.skipClosingTag[n] {
-						// Check if this was an unpublished link (underlined text)
-						if c.isUnpublishedLink[n] {
-							c.Write("</u>")
-						} else {
-							c.Write("</a>")
-						}
-					}
-					delete(c.skipClosingTag, n)
-					delete(c.isUnpublishedLink, n)
-				}
-			} else {
-				// No link resolver or embed - skip this node
-				return ast.WalkSkipChildren, nil
-			}
-
-		case *ast.List:
-			if entering && n.HasBlankPreviousLines() {
-				lines = append(lines, "\n")
-			}
-
-		case *ast.ListItem:
-			if entering {
-				// Get the parent list
-				parent := node.Parent()
-				if list, ok := parent.(*ast.List); ok {
-					// Add newline before first list item if previous content exists
-					// This handles the case when list follows a paragraph without blank line
-					if node.PreviousSibling() == nil {
-						// Flush buffer if not empty
-						if len(c.bufStack) == 1 && c.bufStack[0].Len() > 0 {
-							lines = append(lines, c.bufStack[0].String())
-							c.bufStack[0].Reset()
-						}
-						// Add newline if lines exist and last element is not already a newline
-						if len(lines) > 0 && lines[len(lines)-1] != "\n" && lines[len(lines)-1] != "\n\n" {
-							lines = append(lines, "\n")
-						}
-					}
-
-					if list.IsOrdered() {
-						// For ordered lists, calculate item number based on child index
-						itemNum := 1
-						for prev := node.PreviousSibling(); prev != nil; prev = prev.PreviousSibling() {
-							itemNum++
-						}
-						c.Write(fmt.Sprintf("%d. ", itemNum))
-					} else {
-						// For unordered lists, use dash
-						c.Write("- ")
-					}
-				}
-			} else if len(c.bufStack) == 1 {
-				// End of list item - flush to lines
-				current := c.bufStack[0]
-				if current.Len() > 0 {
-					lines = append(lines, current.String())
-					current.Reset()
-					// Add newline if not the last item
-					if node.NextSibling() != nil {
-						lines = append(lines, "\n")
-					}
-				}
-			}
-
-		case *ast.TextBlock:
-			// TextBlock is a container for text within list items - just pass through
-
-		default:
-			if c.UnknownNodeHandler != nil {
-				status, handled := c.UnknownNodeHandler(c, n, src, entering)
-				if handled {
-					return status, nil
-				}
-			}
-			if entering {
-				msg := fmt.Sprintf("unexpected markdown node: %s", n.Kind())
-				res.Warnings = append(res.Warnings, msg)
-			}
-
-			return ast.WalkSkipChildren, nil
-		}
-
-		return ast.WalkContinue, nil
+		return c.renderNode(n, src, entering, res), nil
 	})
 
-	// Add any remaining content in root buffer
-	if len(c.bufStack) > 0 && c.bufStack[0].Len() > 0 {
-		lines = append(lines, c.bufStack[0].String())
-	}
+	c.writeUnpublishedFooter()
 
-	// Add unpublished links footer if any
-	if len(c.unpublishedLinks) > 0 {
-		lines = append(lines, "\n\n—————————\n🔜 Скоро выйдут:")
-		for _, link := range c.unpublishedLinks {
-			// Format date: "5 ноября, 14:30"
-			publishStr := formatPublishDate(link.publishAt)
-			lines = append(lines, fmt.Sprintf("\n• <u>%s</u> — %s", html.EscapeString(link.label), publishStr))
-		}
-		lines = append(lines, "\n\n📬 Подпишитесь, чтобы не пропустить")
-	}
-
-	content := strings.Join(lines, "")
+	content := c.bufStack[0].String()
 
 	// Remove excessive blank lines (more than 2 newlines in a row)
 	// This happens when media files are removed from paragraphs
@@ -480,11 +161,272 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	}
 
 	// Trim leading/trailing whitespace (e.g., when cover image is removed)
-	content = strings.TrimSpace(content)
+	res.Content = strings.TrimSpace(content)
 
-	res.Content = content
+	return *res
+}
 
-	return res
+//nolint:gocyclo,cyclop,gocognit // flat per-node dispatch
+func (c *HTMLConverter) renderNode(n ast.Node, src []byte, entering bool, res *ConverterResult) ast.WalkStatus {
+	switch node := n.(type) {
+	case *ast.Document:
+		// Nothing to do
+
+	case *ast.Paragraph:
+		if entering && n.HasBlankPreviousLines() {
+			c.Write("\n\n")
+		}
+
+	case *ast.Text:
+		if entering {
+			c.Write(html.EscapeString(string(node.Segment.Value(src))))
+			if node.SoftLineBreak() {
+				c.Write("\n")
+			}
+		}
+
+	case *ast.Emphasis:
+		if node.Level == 1 {
+			c.writePair(entering, "<i>", "</i>")
+		} else {
+			c.writePair(entering, "<b>", "</b>")
+		}
+
+	case *extast.Strikethrough:
+		c.writePair(entering, "<s>", "</s>")
+
+	case *ast.CodeSpan:
+		c.writePair(entering, "<code>", "</code>")
+
+	case *highlight.HighlightAST:
+		c.writePair(entering, `<span class="tg-spoiler">`, "</span>")
+
+	case *ast.Blockquote:
+		c.renderBlockquote(n, entering)
+
+	case *ast.Link:
+		if entering {
+			c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(string(node.Destination))))
+		} else {
+			c.Write("</a>")
+		}
+
+	case *ast.AutoLink:
+		if entering {
+			url := string(node.URL(src))
+			c.Write(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(url), html.EscapeString(url)))
+		}
+
+	case *enclavecore.Enclave:
+		return c.renderCustomEmoji(string(node.Destination), node.Alt, entering, res)
+
+	case *ast.Image:
+		return c.renderCustomEmoji(string(node.Destination), extractImageAltText(node, src), entering, res)
+
+	case *ast.RawHTML:
+		if entering {
+			tag := string(node.Segments.Value(src))
+			if tag == "<u>" || tag == "</u>" {
+				c.Write(tag)
+			} else {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("raw html tag is not supported: %s", tag))
+			}
+		}
+
+	case *ast.FencedCodeBlock:
+		if entering {
+			c.renderFencedCodeBlock(node, src)
+		}
+
+	case *wikilink.Node:
+		return c.renderWikilink(node, entering, res)
+
+	case *ast.List:
+		if entering && n.HasBlankPreviousLines() {
+			c.Write("\n")
+		}
+
+	case *ast.ListItem:
+		c.renderListItem(node, entering)
+
+	case *ast.TextBlock:
+		// TextBlock is a container for text within list items - just pass through
+
+	default:
+		if c.UnknownNodeHandler != nil {
+			status, handled := c.UnknownNodeHandler(c, n, src, entering)
+			if handled {
+				return status
+			}
+		}
+		if entering {
+			res.Warnings = append(res.Warnings, fmt.Sprintf("unexpected markdown node: %s", n.Kind()))
+		}
+
+		return ast.WalkSkipChildren
+	}
+
+	return ast.WalkContinue
+}
+
+// renderBlockquote collects the quote content in its own buffer and wraps it
+// into <blockquote> in the parent buffer on exit.
+func (c *HTMLConverter) renderBlockquote(n ast.Node, entering bool) {
+	if entering {
+		if n.HasBlankPreviousLines() {
+			c.Write("\n\n")
+		}
+		c.pushBuffer()
+		return
+	}
+
+	content := strings.TrimSpace(c.popBuffer())
+
+	// Blockquote ending with || means Telegram expandable quote
+	if inner, ok := strings.CutSuffix(content, "||"); ok {
+		c.Write(fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, inner))
+	} else {
+		c.Write(fmt.Sprintf(`<blockquote>%s</blockquote>`, content))
+	}
+}
+
+// renderCustomEmoji renders a Telegram custom emoji, or warns on an unsupported
+// image source. Warns only on entering: ast.Walk visits the node again with
+// entering=false even after WalkSkipChildren.
+func (c *HTMLConverter) renderCustomEmoji(dest, alt string, entering bool, res *ConverterResult) ast.WalkStatus {
+	emojiID := extractCustomEmojiID(dest)
+	if !entering {
+		return ast.WalkSkipChildren
+	}
+
+	if emojiID == "" {
+		res.Warnings = append(res.Warnings, fmt.Sprintf("unsupported image source: %s", dest))
+		return ast.WalkSkipChildren
+	}
+
+	c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
+		html.EscapeString(emojiID), html.EscapeString(stripSizeSuffix(alt))))
+	return ast.WalkSkipChildren
+}
+
+func (c *HTMLConverter) renderFencedCodeBlock(node *ast.FencedCodeBlock, src []byte) {
+	c.Write("\n")
+
+	language := string(node.Language(src))
+	code := html.EscapeString(strings.TrimSuffix(string(node.Lines().Value(src)), "\n"))
+
+	if language != "" {
+		c.Write(fmt.Sprintf(`<pre><code class="language-%s">%s</code></pre>`,
+			html.EscapeString(language), code))
+	} else {
+		c.Write(fmt.Sprintf("<pre>%s</pre>", code))
+	}
+}
+
+func (c *HTMLConverter) renderWikilink(node *wikilink.Node, entering bool, res *ConverterResult) ast.WalkStatus {
+	if c.linkResolver == nil || node.Embed {
+		return ast.WalkSkipChildren
+	}
+
+	if !entering {
+		if !c.skipClosingTag[node] {
+			if c.isUnpublishedLink[node] {
+				c.Write("</u>")
+			} else {
+				c.Write("</a>")
+			}
+		}
+		delete(c.skipClosingTag, node)
+		delete(c.isUnpublishedLink, node)
+		return ast.WalkContinue
+	}
+
+	link, err := c.linkResolver(string(node.Target))
+	if err != nil {
+		res.Warnings = append(res.Warnings, err.Error())
+		c.skipClosingTag[node] = true
+		return ast.WalkSkipChildren
+	}
+	if link == nil {
+		// Resolver returned nothing - drop the link like the no-URL/no-Label case
+		c.skipClosingTag[node] = true
+		return ast.WalkSkipChildren
+	}
+
+	switch {
+	case link.URL != "":
+		c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
+
+		// If Label is provided, use it instead of node children
+		if link.Label != "" {
+			c.Write(html.EscapeString(link.Label))
+			c.Write("</a>")
+			c.skipClosingTag[node] = true
+			return ast.WalkSkipChildren
+		}
+		return ast.WalkContinue
+
+	case link.Label != "":
+		// Unpublished link: render as underlined label, list in the footer if it has a date
+		if link.PublishAt != nil {
+			c.unpublishedLinks = append(c.unpublishedLinks, unpublishedLink{
+				label:     link.Label,
+				publishAt: *link.PublishAt,
+			})
+		}
+
+		c.isUnpublishedLink[node] = true
+		c.Write(fmt.Sprintf("<u>%s</u>", html.EscapeString(link.Label)))
+		c.skipClosingTag[node] = true
+		return ast.WalkSkipChildren
+
+	default:
+		// No URL and no Label - skip
+		c.skipClosingTag[node] = true
+		return ast.WalkSkipChildren
+	}
+}
+
+func (c *HTMLConverter) renderListItem(node *ast.ListItem, entering bool) {
+	if !entering {
+		if node.NextSibling() != nil {
+			c.Write("\n")
+		}
+		return
+	}
+
+	list, ok := node.Parent().(*ast.List)
+	if !ok {
+		return
+	}
+
+	// Start list on a new line when it follows a paragraph without blank line
+	if node.PreviousSibling() == nil {
+		if cur := c.currentBuffer(); cur != "" && !strings.HasSuffix(cur, "\n") {
+			c.Write("\n")
+		}
+	}
+
+	if list.IsOrdered() {
+		itemNum := max(list.Start, 1)
+		for prev := node.PreviousSibling(); prev != nil; prev = prev.PreviousSibling() {
+			itemNum++
+		}
+		c.Write(fmt.Sprintf("%d. ", itemNum))
+	} else {
+		c.Write("- ")
+	}
+}
+
+func (c *HTMLConverter) writeUnpublishedFooter() {
+	if len(c.unpublishedLinks) == 0 {
+		return
+	}
+	c.Write("\n\n—————————\n🔜 Скоро выйдут:")
+	for _, link := range c.unpublishedLinks {
+		c.Write(fmt.Sprintf("\n• <u>%s</u> — %s", html.EscapeString(link.label), formatPublishDate(link.publishAt)))
+	}
+	c.Write("\n\n📬 Подпишитесь, чтобы не пропустить")
 }
 
 func formatPublishDate(t time.Time) string {
