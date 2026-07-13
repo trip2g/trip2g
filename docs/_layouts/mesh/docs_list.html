@@ -26,11 +26,8 @@
 {{ end }}
 
 {{ block @lid() }}
-{{ yield section_header(lhs="tree docs/", rhs="start here · updated 2026-04-30") }}
-<div class="files" id="docs-list"></div>
-{{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="tree docs/", rhs="начни здесь · обновлено 2026-04-30") }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}{{ yield section_header(lhs="tree docs/", rhs="начни здесь · обновлено 2026-04-30") }}
+{{ else }}{{ yield section_header(lhs="tree docs/", rhs="start here · updated 2026-04-30") }}{{ end }}
 <div class="files" id="docs-list"></div>
 {{ end }}
