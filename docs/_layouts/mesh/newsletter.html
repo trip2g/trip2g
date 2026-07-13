@@ -72,43 +72,27 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did" id="newsletter">
   <div>
-    <h2 class="@did__title">Changelog &amp; <em>field notes</em></h2>
-    <p class="@did__p">
-      One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.
-    </p>
-  </div>
-  <form class="@did__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.@did__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
-    <input class="@did__input" type="email" placeholder="you@somewhere" aria-label="email" required>
-    <button class="@did__submit" type="submit">subscribe →</button>
-  </form>
-  <div class="@did__meta">
-    <span><b>~1×/month</b></span>
-    <span>unsubscribe in one click</span>
-    <span>archive at <b>trip2g.com/notes</b></span>
-  </div>
-  <div class="@did__joke">
-    We don't need your email.<br>
-    <span class="@did__joke-hint">Here's everything you actually need:</span><br><br>
-    <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
-    <a href="/simple" class="@did__joke-link">→ /simple</a>
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did" id="newsletter">
-  <div>
+    {{ if lang == "ru" }}
     <h2 class="@did__title">Changelog и <em>заметки</em></h2>
     <p class="@did__p">
       Одно письмо когда выходит релиз. Заметки о том как работают сети общих знаний на практике — что мы узнали строя это. Без маркетинга.
     </p>
+    {{ else }}
+    <h2 class="@did__title">Changelog &amp; <em>field notes</em></h2>
+    <p class="@did__p">
+      One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.
+    </p>
+    {{ end }}
   </div>
   <form class="@did__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.@did__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
     <input class="@did__input" type="email" placeholder="you@somewhere" aria-label="email" required>
-    <button class="@did__submit" type="submit">подписаться →</button>
+    {{ if lang == "ru" }}<button class="@did__submit" type="submit">подписаться →</button>
+    {{ else }}<button class="@did__submit" type="submit">subscribe →</button>{{ end }}
   </form>
+  {{ if lang == "ru" }}
   <div class="@did__meta">
     <span><b>~1×/месяц</b></span>
     <span>отписка в один клик</span>
@@ -120,5 +104,18 @@
     <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
     <a href="/ru/simple" class="@did__joke-link">→ /simple</a>
   </div>
+  {{ else }}
+  <div class="@did__meta">
+    <span><b>~1×/month</b></span>
+    <span>unsubscribe in one click</span>
+    <span>archive at <b>trip2g.com/notes</b></span>
+  </div>
+  <div class="@did__joke">
+    We don't need your email.<br>
+    <span class="@did__joke-hint">Here's everything you actually need:</span><br><br>
+    <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
+    <a href="/simple" class="@did__joke-link">→ /simple</a>
+  </div>
+  {{ end }}
 </section>
 {{ end }}
