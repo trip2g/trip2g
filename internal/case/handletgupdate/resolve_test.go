@@ -111,8 +111,11 @@ func TestResolve(t *testing.T) {
 					return "member", nil
 				}
 
-				// ListActiveTgChatSubgraphNamesByChatID for content menu
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
+				// Content menu resolves accessible subgraphs by system user id
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
+					return db.User{ID: 42}, nil
+				}
+				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -182,7 +185,10 @@ func TestResolve(t *testing.T) {
 						},
 					}
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
+					return db.User{ID: 42}, nil
+				}
+				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
 					return []string{}, nil
 				}
 			},

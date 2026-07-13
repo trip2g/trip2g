@@ -334,14 +334,26 @@ func (req *request) verifyOngoingGroupAccess(ctx context.Context, userID int64, 
 }
 
 func (req *request) sendContentMenu(ctx context.Context) error {
-	subgraphs, err := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, req.update.Message.Chat.ID)
-	if err != nil {
-		return fmt.Errorf("failed to list active subgraphs: %w", err)
+	// The menu is shown in a private chat, so resolve the accessible content by
+	// system user id (via the linked Telegram id) rather than the chat id.
+	userID := req.update.Message.From.ID
+
+	var subgraphs []string
+	user, err := req.env.UserByTgUserID(ctx, &userID)
+	switch {
+	case err == nil:
+		subgraphs, err = req.env.ListActiveUserSubgraphs(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("failed to list active subgraphs: %w", err)
+		}
+	case db.IsNoFound(err):
+		// No linked system account -> no accessible content.
+	default:
+		return fmt.Errorf("failed to resolve user by telegram id: %w", err)
 	}
 
 	// Re-verify group membership for enhanced security
 	// This provides additional protection against users who left groups
-	userID := req.update.Message.From.ID
 	validSubgraphs := make([]string, 0, len(subgraphs))
 
 	for _, subgraphName := range subgraphs {

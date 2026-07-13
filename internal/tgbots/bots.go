@@ -21,6 +21,17 @@ import (
 
 type HandlerFunc func(ctx context.Context, io *HandlerIO, update tgbotapi.Update) error
 
+// allowedUpdateTypes is the update whitelist requested from Telegram. Telegram
+// omits chat_member updates unless they are explicitly requested, so the list
+// must be set for both long-polling and webhooks. It must enumerate every type
+// the handler processes, because a non-empty list is the complete whitelist.
+var allowedUpdateTypes = []string{
+	tgbotapi.UpdateTypeMessage,
+	tgbotapi.UpdateTypeCallbackQuery,
+	tgbotapi.UpdateTypeMyChatMember,
+	tgbotapi.UpdateTypeChatMember,
+}
+
 type Config struct {
 	WebhookPathPrefix string
 }
@@ -187,6 +198,7 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 
 		updateConfig := tgbotapi.NewUpdate(0)
 		updateConfig.Timeout = 60
+		updateConfig.AllowedUpdates = allowedUpdateTypes
 
 		updates := bot.GetUpdatesChan(updateConfig)
 
@@ -302,10 +314,16 @@ func (io *TgBots) registerWebhook(id int64, handlerIO *HandlerIO) {
 	fullWebhookURL := *io.webhookURL
 	fullWebhookURL.Path = webhookPath
 
-	_, webhookErr := handlerIO.bot.MakeRequest("setWebhook", tgbotapi.Params{
+	params := tgbotapi.Params{
 		"url":          fullWebhookURL.String(),
 		"secret_token": handlerIO.webhookSecret,
-	})
+	}
+	if allowedErr := params.AddInterface("allowed_updates", allowedUpdateTypes); allowedErr != nil {
+		io.logger.Error("failed to encode allowed_updates", "id", id, "error", allowedErr)
+		return
+	}
+
+	_, webhookErr := handlerIO.bot.MakeRequest("setWebhook", params)
 	if webhookErr != nil {
 		io.logger.Error("failed to set webhook", "id", id, "error", webhookErr)
 		return

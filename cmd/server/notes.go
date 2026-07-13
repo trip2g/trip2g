@@ -17,14 +17,11 @@ import (
 	"trip2g/internal/noteloader"
 )
 
-func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
+func (a *app) MaterializeGitMirror(ctx context.Context) error {
 	if a.gitAPI == nil {
-		return nil, nil
+		return nil
 	}
-	if err := a.gitAPI.Materialize(ctx); err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return a.gitAPI.Materialize(ctx)
 }
 
 func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {
