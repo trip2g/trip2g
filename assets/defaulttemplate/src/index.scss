@@ -437,7 +437,6 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
-  border-left: var(--pico-border-width) solid var(--pico-muted-border-color);
 }
 
 .widget__item {
@@ -448,8 +447,7 @@ body {
 
 .widget__link {
   display: block;
-  margin-left: calc(var(--pico-border-width) * -1);
-  padding: 0 0 0 calc(var(--pico-nav-element-spacing-horizontal) * 1.5);
+  padding: 0 0 0 calc(var(--pico-nav-element-spacing-horizontal) * 0.5);
   border-left: var(--pico-border-width) solid transparent;
   text-decoration: none;
   font-weight: 400;
@@ -469,20 +467,17 @@ body {
   }
 }
 
-// TOC nav — same border-left pattern as widget__list
 .widget__toc {
-  border-left: var(--pico-border-width) solid var(--pico-muted-border-color);
   display: flex;
   flex-direction: column;
 }
 
 .toc__link {
   display: block;
-  margin-left: calc(var(--pico-border-width) * -1);
   padding: calc(var(--pico-nav-element-spacing-vertical) * 0.25)
            0
            calc(var(--pico-nav-element-spacing-vertical) * 0.25)
-           calc(var(--pico-nav-element-spacing-horizontal) * 1.5);
+           calc(var(--pico-nav-element-spacing-horizontal) * 0.5);
   border-left: var(--pico-border-width) solid transparent;
   text-decoration: none;
   font-size: 1rem;
@@ -501,7 +496,7 @@ body {
 }
 
 .toc__item--level3 .toc__link {
-  padding-inline-start: calc(var(--pico-nav-element-spacing-horizontal) * 2.5);
+  padding-inline-start: calc(var(--pico-nav-element-spacing-horizontal) * 1.5);
 }
 
 // --- Note content ---
