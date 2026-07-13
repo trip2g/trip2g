@@ -308,6 +308,10 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 
 	cfg.Prepare()
 
+	// Apply MinIO env fallbacks before validation/init so the endpoint is never
+	// left at the localhost default when a real MINIO_ENDPOINT is configured.
+	cfg.applyStorageEnvFallback()
+
 	// Validate configuration
 	err = cfg.validate()
 	if err != nil {
@@ -633,6 +637,45 @@ func (c *Config) Prepare() {
 
 	// Parse and validate features (panics on error)
 	c.Features = features.Parse(c.FeaturesJSON)
+}
+
+// applyStorageEnvFallback accepts the canonical S3 secret-key env var name
+// (MINIO_SECRET_ACCESS_KEY) as a fallback for MINIO_SECRET_KEY, which is the
+// only name the flag/envflag binding (-minio-secret-key) understands.
+// MINIO_ENDPOINT/MINIO_BUCKET/MINIO_ACCESS_KEY_ID are already applied correctly
+// by envflag before this runs, so they are deliberately not duplicated here:
+// re-deriving "was this explicitly set" from value-equality-to-default would
+// wrongly clobber a flag/env intentionally set to a value matching the
+// built-in default (e.g. -minio-secret-key=password). Instead this checks
+// whether -minio-secret-key was actually set (by CLI arg or by envflag calling
+// flag.Set for MINIO_SECRET_KEY/TRIP2G_MINIO_SECRET_KEY) via flag.Visit, so an
+// explicit value — even one equal to the default — always wins.
+func (c *Config) applyStorageEnvFallback() {
+	if c.StorageBackend != StorageBackendMinIO {
+		return
+	}
+
+	if flagWasSet("minio-secret-key") {
+		return
+	}
+
+	if v := os.Getenv("MINIO_SECRET_ACCESS_KEY"); v != "" {
+		c.Storage.SecretKey = v
+	}
+}
+
+// flagWasSet reports whether the named flag was explicitly set, either on the
+// command line or by envflag's flag.Set call while processing environment
+// variables (flag.Visit only visits flags that have been set, unlike
+// VisitAll).
+func flagWasSet(name string) bool {
+	set := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			set = true
+		}
+	})
+	return set
 }
 
 // CronScheduleOverride returns a cron schedule override for the named job from
