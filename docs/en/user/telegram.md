@@ -186,4 +186,5 @@ Notes containing unsupported elements will not publish. A warning appears in the
 ### Related
 
 - [[en/user/publishing]] — property types and how to use `telegram_publish_at` and `telegram_publish_tags` correctly
+- [[en/user/telegram-access]] — link a group to a subgraph: members read gated notes, subscribers join the group
 - [[en/user/monetization]] — gate content by Telegram group membership or third-party subscriptions

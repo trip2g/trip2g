@@ -45,7 +45,7 @@ You can gate content by membership in a Telegram group instead of (or in additio
 3. The bot checks whether a visitor is a member of that group
 4. Members get access to the gated content automatically
 
-This lets you monetize through a paid Telegram group without a third-party payment platform.
+This lets you monetize through a paid Telegram group without a third-party payment platform. The full setup — both access directions, the bot's `/content` and `/chats` commands — is in [[en/user/telegram-access]].
 
 ### Paywall preview
 
