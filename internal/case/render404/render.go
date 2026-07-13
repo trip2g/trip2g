@@ -1,7 +1,6 @@
 package render404
 
 import (
-	"context"
 	"net/http"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/renderlayout"
@@ -18,6 +17,8 @@ type Params struct {
 }
 
 type Env interface {
+	renderlayout.Env
+
 	TrackNotFound(path string, ip string)
 }
 
@@ -38,22 +39,17 @@ func Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	var jsURLs, cssURLs []string
-	var localeHashes map[string]string
+	jsURLs := env.UserJSURLs()
+	cssURLs := env.UserCSSURLs()
+	localeHashes := env.UserLocaleHashes()
 	devMode := "false"
+	if env.IsDevMode() {
+		devMode = "true"
+	}
 	injections := map[string][]db.HtmlInjection{}
-
-	if rlEnv, rlOk := req.Env.(renderlayout.Env); rlOk {
-		jsURLs = rlEnv.UserJSURLs()
-		cssURLs = rlEnv.UserCSSURLs()
-		localeHashes = rlEnv.UserLocaleHashes()
-		if rlEnv.IsDevMode() {
-			devMode = "true"
-		}
-		if active, injErr := rlEnv.ActiveHTMLInjections(context.Background()); injErr == nil {
-			for _, inj := range active {
-				injections[inj.Placement] = append(injections[inj.Placement], inj)
-			}
+	if active, injErr := env.ActiveHTMLInjections(ctx); injErr == nil {
+		for _, inj := range active {
+			injections[inj.Placement] = append(injections[inj.Placement], inj)
 		}
 	}
 

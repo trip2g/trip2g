@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"trip2g/internal/case/renderlayout"
 	"trip2g/internal/defaulttemplate"
 	"trip2g/internal/langdetect"
 	"trip2g/internal/model"
@@ -211,19 +210,10 @@ func buildUserSpaceHelper(
 	env Env,
 	resp *Response,
 ) *userSpaceHelper {
-	var (
-		jsURLs       []string
-		cssURLs      []string
-		localeHashes map[string]string
-		devMode      bool
-	)
-
-	if rlEnv, ok := env.(renderlayout.Env); ok {
-		jsURLs = rlEnv.UserJSURLs()
-		cssURLs = rlEnv.UserCSSURLs()
-		localeHashes = rlEnv.UserLocaleHashes()
-		devMode = rlEnv.IsDevMode()
-	}
+	jsURLs := env.UserJSURLs()
+	cssURLs := env.UserCSSURLs()
+	localeHashes := env.UserLocaleHashes()
+	devMode := env.IsDevMode()
 
 	uiLang := langdetect.DetectPreferred(
 		string(ctx.Request.Header.Cookie(langCookieName)),

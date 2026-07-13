@@ -588,24 +588,19 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 	// render the version author for normal notes (gated on admin in the template).
 	injectLastEditedByResolver(env, resp)
 
-	// Fetch JS/CSS URLs and dev mode from the renderlayout.Env interface.
-	rlEnv, ok := req.Env.(renderlayout.Env)
-
 	jsURLs := layoutParams.JSURLs
 	cssURLs := layoutParams.CSSURLs
 	inlineCSS := ""
 	devMode := "false"
 
-	if ok {
-		if len(jsURLs) == 0 {
-			jsURLs = rlEnv.UserJSURLs()
-		}
-		if len(cssURLs) == 0 {
-			inlineCSS = rlEnv.UserInlineCSS()
-		}
-		if rlEnv.IsDevMode() {
-			devMode = "true"
-		}
+	if len(jsURLs) == 0 {
+		jsURLs = env.UserJSURLs()
+	}
+	if len(cssURLs) == 0 {
+		inlineCSS = env.UserInlineCSS()
+	}
+	if env.IsDevMode() {
+		devMode = "true"
 	}
 
 	// toc.js handles both TOC scrollspy and sidebar active-link highlighting;
@@ -629,15 +624,13 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 
 	// Build HTML injections map.
 	injections := map[string][]db.HtmlInjection{}
-	if ok {
-		active, err := rlEnv.ActiveHTMLInjections(context.Background())
-		if err == nil {
-			for _, inj := range active {
-				injections[inj.Placement] = append(injections[inj.Placement], inj)
-			}
-		} else {
-			env.Logger().Error("failed to get active HTML injections", "error", err)
+	active, err := env.ActiveHTMLInjections(req.Req)
+	if err == nil {
+		for _, inj := range active {
+			injections[inj.Placement] = append(injections[inj.Placement], inj)
 		}
+	} else {
+		env.Logger().Error("failed to get active HTML injections", "error", err)
 	}
 
 	// Convert hreflang slice.
@@ -650,16 +643,11 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 	}
 
 	dtCtx := &defaulttemplate.Ctx{
-		Note:   resp.NoteView,
-		Notes:  templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
-		Title:  layoutParams.Title,
-		JSURLs: jsURLs,
-		LocaleHashes: func() map[string]string {
-			if ok {
-				return rlEnv.UserLocaleHashes()
-			}
-			return nil
-		}(),
+		Note:            resp.NoteView,
+		Notes:           templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
+		Title:           layoutParams.Title,
+		JSURLs:          jsURLs,
+		LocaleHashes:    env.UserLocaleHashes(),
 		CSSURLs:         cssURLs,
 		InlineCSS:       inlineCSS,
 		DevMode:         devMode,

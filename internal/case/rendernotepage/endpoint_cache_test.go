@@ -92,6 +92,11 @@ func cacheTestEnv(views *model.NoteViews, layouts *model.Layouts) (*EnvMock, *pa
 		NoteVersionEditorFunc: func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error) {
 			return nil, nil
 		},
+		UserJSURLsFunc:       func() []string { return nil },
+		UserCSSURLsFunc:      func() []string { return nil },
+		UserInlineCSSFunc:    func() string { return "" },
+		UserLocaleHashesFunc: func() map[string]string { return nil },
+		IsDevModeFunc:        func() bool { return false },
 		// Authenticated-viewer path (handleUserToken) — only exercised by the
 		// authenticated-bypass test; harmless stubs otherwise.
 		ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {

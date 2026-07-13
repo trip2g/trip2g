@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/case/renderlayout"
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
@@ -21,6 +22,8 @@ import (
 )
 
 type Env interface {
+	renderlayout.Env
+
 	Layouts() *model.Layouts
 
 	Features() features.Features
@@ -54,7 +57,6 @@ type Env interface {
 		ctx context.Context,
 		arg db.GetTelegramPostLinksByNoteVersionIDParams,
 	) ([]db.GetTelegramPostLinksByNoteVersionIDRow, error)
-	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 	// AssetURL returns the cache-busting URL for an embedded asset path, used to
 	// build conditional per-note widget script tags (chart.js, mermaid.js).
 	AssetURL(path string) string
