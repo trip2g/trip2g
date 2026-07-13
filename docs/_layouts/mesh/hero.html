@@ -45,22 +45,9 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did">
-  <div class="@did__eyebrow">obsidian vault → live website · mcp under the hood</div>
-  <div class="@did__copy">
-    {{ yield mesh_section(path="_index_hero.md") }}
-  </div>
-  <div class="@did__cta-row">
-    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="mesh-hero__cta")}}
-    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="mesh-hero__cta")}}
-    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
-    {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
+  {{ if lang == "ru" }}
   <div class="@did__eyebrow">хранилище obsidian → живой сайт · mcp под капотом</div>
   <div class="@did__copy">
     {{ yield mesh_section(path="ru/_index_hero.md") }}
@@ -71,5 +58,17 @@
     {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
     {{yield mesh_button(label="документация", href="/ru/user", modifier="mesh-hero__cta")}}
   </div>
+  {{ else }}
+  <div class="@did__eyebrow">obsidian vault → live website · mcp under the hood</div>
+  <div class="@did__copy">
+    {{ yield mesh_section(path="_index_hero.md") }}
+  </div>
+  <div class="@did__cta-row">
+    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="mesh-hero__cta")}}
+    {{yield mesh_button(label="docs", href="/en/user", modifier="mesh-hero__cta")}}
+  </div>
+  {{ end }}
 </section>
 {{ end }}
