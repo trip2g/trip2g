@@ -105,7 +105,7 @@ func TestResolve(t *testing.T) { //nolint:gocognit // test complexity is accepta
 			}
 
 			if !tt.wantErr && result != nil {
-				res := result.(updatetelegrampublishposts.Result)
+				res := result
 				successCount := 0
 				failedCount := 0
 				for _, chat := range res.Chats {

@@ -5,7 +5,13 @@ import (
 )
 
 // Job implements the cronjobs.Job interface.
-type Job struct{}
+type Job struct {
+	env Env
+}
+
+func New(env Env) *Job {
+	return &Job{env: env}
+}
 
 func (j *Job) Name() string {
 	return "cleanup_webhook_delivery_logs"
@@ -22,6 +28,6 @@ func (j *Job) ExecuteAfterStart() bool {
 	return false
 }
 
-func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	return Resolve(ctx, env.(Env)) //nolint:errcheck // checked in cmd/server/cronjobs.go.
+func (j *Job) Execute(ctx context.Context) (any, error) {
+	return Resolve(ctx, j.env)
 }

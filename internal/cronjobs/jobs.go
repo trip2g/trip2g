@@ -31,7 +31,7 @@ type Job interface {
 	Name() string
 	Schedule() string
 	ExecuteAfterStart() bool
-	Execute(ctx context.Context, env interface{}) (interface{}, error)
+	Execute(ctx context.Context) (interface{}, error)
 }
 
 type Env interface {
@@ -272,7 +272,7 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 		}
 		return nil, fmt.Errorf("context done before execute for job %d: %w", jobID, ctxErr)
 	}
-	report, jobErr := job.job.Execute(cj.ctx, cj.env)
+	report, jobErr := job.job.Execute(cj.ctx)
 	cj.execMu.Unlock()
 
 	// Update execution status

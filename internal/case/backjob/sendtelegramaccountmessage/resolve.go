@@ -13,7 +13,7 @@ import (
 	"trip2g/internal/tgtd"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegramaccountmessage_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg sendtelegramaccountmessage_test . Env
 
 type Env interface {
 	InsertTelegramPublishSentAccountMessage(ctx context.Context, arg db.InsertTelegramPublishSentAccountMessageParams) error

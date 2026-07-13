@@ -59,7 +59,7 @@ type noopJob struct{ name string }
 func (j *noopJob) Name() string                                                  { return j.name }
 func (j *noopJob) Schedule() string                                              { return "0 0 * * * *" }
 func (j *noopJob) ExecuteAfterStart() bool                                       { return false }
-func (j *noopJob) Execute(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil }
+func (j *noopJob) Execute(_ context.Context) (interface{}, error)                { return nil, nil }
 
 // newTestCronJobs creates a CronJobs with pre-populated jobs map, bypassing New().
 func newTestCronJobs(env Env, jobIDs []int64) *CronJobs {
@@ -133,7 +133,7 @@ type gateJob struct {
 func (j *gateJob) Name() string            { return j.name }
 func (j *gateJob) Schedule() string        { return "0 0 * * * *" }
 func (j *gateJob) ExecuteAfterStart() bool { return false }
-func (j *gateJob) Execute(_ context.Context, _ interface{}) (interface{}, error) {
+func (j *gateJob) Execute(_ context.Context) (interface{}, error) {
 	j.execCount.Add(1)
 	return nil, nil
 }
@@ -269,7 +269,7 @@ type countingJob struct {
 func (j *countingJob) Name() string            { return j.name }
 func (j *countingJob) Schedule() string        { return "0 0 * * * *" }
 func (j *countingJob) ExecuteAfterStart() bool { return j.afterStart }
-func (j *countingJob) Execute(_ context.Context, _ interface{}) (interface{}, error) {
+func (j *countingJob) Execute(_ context.Context) (interface{}, error) {
 	j.execCount++
 	return nil, nil
 }

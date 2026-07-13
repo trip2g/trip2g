@@ -5,7 +5,13 @@ import (
 	"trip2g/internal/simplebackup"
 )
 
-type Job struct{}
+type Job struct {
+	env Env
+}
+
+func New(env Env) *Job {
+	return &Job{env: env}
+}
 
 func (j *Job) Name() string {
 	return "simple_backup"
@@ -19,18 +25,15 @@ func (j *Job) ExecuteAfterStart() bool {
 	return false
 }
 
-// Env interface that allows accessing the backup manager.
+// Env interface that allows accessing the backup manager. The job delegates to
+// internal/simplebackup.Manager; the logic stays in Execute rather than a
+// resolve.go — a thin wrapper would add ceremony without testable behavior.
 type Env interface {
 	BackupManager() *simplebackup.Manager
 }
 
-func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	e, ok := env.(Env)
-	if !ok {
-		return nil, nil // Config not enabled or invalid env
-	}
-
-	mgr := e.BackupManager()
+func (j *Job) Execute(ctx context.Context) (any, error) {
+	mgr := j.env.BackupManager()
 	if mgr == nil {
 		return nil, nil // Backup disabled
 	}

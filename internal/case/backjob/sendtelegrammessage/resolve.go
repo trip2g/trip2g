@@ -20,7 +20,7 @@ import (
 
 const parseMode = "HTML"
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrammessage_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg sendtelegrammessage_test . Env
 
 type Env interface {
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
@@ -34,34 +34,44 @@ type Env interface {
 	Logger() logger.Logger
 }
 
-func Resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
-	// 10 minutes timeout for large file uploads (videos can be 300MB+)
-	jobTimeout := 10 * time.Minute
+// maxAttempts bounds the total telegram rate-limit retries (initial try + retries).
+const maxAttempts = 3
 
-	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+func Resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
+	// 10 minutes timeout for large file uploads (videos can be 300MB+).
+	// Derive from the parent ctx so app shutdown cancels the job.
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	err := Resolve1(jobCtx, env, params)
-	if err != nil {
-		shouldRetry, delay := telegram.HandleRateLimit(err)
-		if shouldRetry {
-			env.Logger().Info("telegram rate limit hit, retrying after delay",
-				"delay", delay,
-				"job", JobID,
-			)
-			time.Sleep(delay)
-			err = Resolve(ctx, env, params)
+	var err error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err = resolve(ctx, env, params)
+		if err == nil {
+			return nil
 		}
 
-		if err != nil {
+		shouldRetry, delay := telegram.HandleRateLimit(err)
+		if !shouldRetry || attempt == maxAttempts {
 			return err
+		}
+
+		env.Logger().Info("telegram rate limit hit, retrying after delay",
+			"delay", delay,
+			"attempt", attempt,
+			"job", JobID,
+		)
+
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 
-	return nil
+	return err
 }
 
-func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
+func resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
 	// Check if message already exists before sending to avoid duplicate messages
 	exists, err := env.CheckTelegramPublishSentMessageExists(ctx, db.CheckTelegramPublishSentMessageExistsParams{
 		NotePathID: params.NotePathID,
