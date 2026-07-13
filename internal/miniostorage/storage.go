@@ -75,24 +75,15 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 		return nil, fmt.Errorf("failed to create minio client: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, config.InitTimeout)
-	defer cancel()
-
-	bucketExists, err := minioClient.BucketExists(ctx, config.Bucket)
+	// Bucket check/create talks to MinIO over the network. At boot MinIO (or the
+	// route to it) can be transiently unreachable — a co-located alloc with extra
+	// sidecars boots slower than MinIO's readiness. Retry with backoff instead of
+	// panicking on the first failure, so the instance doesn't die (and trigger a
+	// deployment auto-revert) before MinIO is ready. Fail loudly only once the
+	// retry window is exhausted.
+	err = ensureBucketWithRetry(ctx, minioClient, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check if bucket exists: %w", err)
-	}
-
-	if !bucketExists {
-		bucketOptions := minio.MakeBucketOptions{
-			Region:        config.Region,
-			ObjectLocking: true,
-		}
-
-		err = minioClient.MakeBucket(ctx, config.Bucket, bucketOptions)
-		if err != nil && minio.ToErrorResponse(err).Code != "BucketAlreadyOwnedByYou" {
-			return nil, fmt.Errorf("failed to create bucket: %w", err)
-		}
+		return nil, err
 	}
 
 	config.Prefix = strings.Trim(config.Prefix, "/")
@@ -107,6 +98,74 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 	}
 
 	return &s, nil
+}
+
+// MinIO init retry policy. The total window covers a MinIO/network that is not
+// yet ready when a slow-booting alloc starts, without hanging boot forever.
+const (
+	initRetryMaxElapsed     = 45 * time.Second
+	initRetryInitialBackoff = 500 * time.Millisecond
+	initRetryMaxBackoff     = 5 * time.Second
+)
+
+// ensureBucketWithRetry checks the bucket exists (creating it if needed),
+// retrying transient failures with capped exponential backoff until the retry
+// window elapses. The final error is returned so callers fail loudly rather than
+// silently proceeding with a broken storage backend.
+func ensureBucketWithRetry(ctx context.Context, client *minio.Client, config Config) error {
+	deadline := time.Now().Add(initRetryMaxElapsed)
+	backoff := initRetryInitialBackoff
+
+	var lastErr error
+	for {
+		lastErr = ensureBucket(ctx, client, config)
+		if lastErr == nil {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return fmt.Errorf("minio storage not ready after %s: %w", initRetryMaxElapsed, lastErr)
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context canceled while waiting for minio storage: %w", ctx.Err())
+		case <-time.After(backoff):
+		}
+
+		backoff *= 2
+		if backoff > initRetryMaxBackoff {
+			backoff = initRetryMaxBackoff
+		}
+	}
+}
+
+// ensureBucket performs a single check/create attempt against MinIO, bounded by
+// the configured init timeout.
+func ensureBucket(ctx context.Context, client *minio.Client, config Config) error {
+	ctx, cancel := context.WithTimeout(ctx, config.InitTimeout)
+	defer cancel()
+
+	bucketExists, err := client.BucketExists(ctx, config.Bucket)
+	if err != nil {
+		return fmt.Errorf("failed to check if bucket exists: %w", err)
+	}
+
+	if bucketExists {
+		return nil
+	}
+
+	bucketOptions := minio.MakeBucketOptions{
+		Region:        config.Region,
+		ObjectLocking: true,
+	}
+
+	err = client.MakeBucket(ctx, config.Bucket, bucketOptions)
+	if err != nil && minio.ToErrorResponse(err).Code != "BucketAlreadyOwnedByYou" {
+		return fmt.Errorf("failed to create bucket: %w", err)
+	}
+
+	return nil
 }
 
 // ctx creates a safe context for MinIO operations.

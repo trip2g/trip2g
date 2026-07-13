@@ -308,6 +308,10 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 
 	cfg.Prepare()
 
+	// Apply MinIO env fallbacks before validation/init so the endpoint is never
+	// left at the localhost default when a real MINIO_ENDPOINT is configured.
+	cfg.applyStorageEnvFallback()
+
 	// Validate configuration
 	err = cfg.validate()
 	if err != nil {
@@ -633,6 +637,38 @@ func (c *Config) Prepare() {
 
 	// Parse and validate features (panics on error)
 	c.Features = features.Parse(c.FeaturesJSON)
+}
+
+// applyStorageEnvFallback fills MinIO storage settings from environment variables
+// when they were left at their defaults. The primary path is the flag/envflag
+// binding (MINIO_ENDPOINT -> -minio-endpoint etc.); this is a defense-in-depth
+// layer that also accepts the canonical S3 secret-key name
+// (MINIO_SECRET_ACCESS_KEY), which the flag binding does not cover. It only
+// overrides values still equal to their defaults, so an explicitly set flag/env
+// always wins.
+func (c *Config) applyStorageEnvFallback() {
+	if c.StorageBackend != StorageBackendMinIO {
+		return
+	}
+
+	if v := os.Getenv("MINIO_ENDPOINT"); v != "" && c.Storage.Endpoint == DefaultMinIOEndpoint {
+		c.Storage.Endpoint = v
+	}
+	if v := os.Getenv("MINIO_BUCKET"); v != "" && c.Storage.Bucket == DefaultMinIOBucket {
+		c.Storage.Bucket = v
+	}
+	if v := os.Getenv("MINIO_ACCESS_KEY_ID"); v != "" && c.Storage.AccessKey == DefaultMinIOAccessKey {
+		c.Storage.AccessKey = v
+	}
+	if c.Storage.SecretKey == DefaultMinIOSecretKey {
+		secret := os.Getenv("MINIO_SECRET_KEY")
+		if secret == "" {
+			secret = os.Getenv("MINIO_SECRET_ACCESS_KEY")
+		}
+		if secret != "" {
+			c.Storage.SecretKey = secret
+		}
+	}
 }
 
 // CronScheduleOverride returns a cron schedule override for the named job from
