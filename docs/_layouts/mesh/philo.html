@@ -42,19 +42,9 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did">
-  <div class="@did__eyebrow">philosophy</div>
-  <p class="@did__text">
-    A second brain isn't one person's vault — it's the shared knowledge of people who think about
-    the same things. trip2g doesn't own that knowledge; it gives every person and every community
-    a way to connect their bases and stay in control.
-    <a href="/en/thoughts" class="@did__link">read full →</a>
-  </p>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
+  {{ if lang == "ru" }}
   <div class="@did__eyebrow">философия</div>
   <p class="@did__text">
     Второй мозг — это не личный vault. Это общие знания людей которые думают об одном.
@@ -62,5 +52,14 @@
     способ объединить свои базы и оставаться под контролем.
     <a href="/ru/thoughts" class="@did__link">читать полностью →</a>
   </p>
+  {{ else }}
+  <div class="@did__eyebrow">philosophy</div>
+  <p class="@did__text">
+    A second brain isn't one person's vault — it's the shared knowledge of people who think about
+    the same things. trip2g doesn't own that knowledge; it gives every person and every community
+    a way to connect their bases and stay in control.
+    <a href="/en/thoughts" class="@did__link">read full →</a>
+  </p>
+  {{ end }}
 </section>
 {{ end }}
