@@ -29,9 +29,11 @@ Access checks run in this order:
 3. A subgraph marked **Require sign-in** (in the admin) opens its notes to any signed-in user, no subscription needed.
 4. Everyone else needs an **active access grant** to at least one of the note's subgraphs. No grant — the visitor sees a paywall or a sign-in wall.
 
+**What "active access" means.** It's a non-expired, non-revoked access record tying a user to a subgraph. It appears one of two ways: the person **paid** for it (see [[en/user/monetization|Monetization]]), or you **granted it by hand** in the admin (no payment, one person at a time). "Active" = not yet expired and not revoked.
+
 So a note in a subgraph is closed by default. You open it per reader (a grant), per audience (an offer or a Telegram group), or entirely (`free: true`).
 
-**One gotcha worth knowing.** A note with *no* subgraph is visible to every signed-in user who holds at least one grant. If you mix audiences, tag everything — or install a frontmatter patch that drops untagged notes into a subgraph nobody is granted. The patch recipe is in [[en/user/user_management]].
+**One gotcha worth knowing.** A note with *no* subgraph is visible to every signed-in user who holds at least one grant. If you mix audiences, tag everything — or install a frontmatter patch that drops untagged notes into a subgraph nobody is granted. The patch recipe is in [Make the whole vault private by default](#make-the-whole-vault-private-by-default) below.
 
 ### Why use them
 
@@ -55,14 +57,14 @@ So a note in a subgraph is closed by default. You open it per reader (a grant), 
 |-------|-------|
 | Sell it | Admin → Monetization → Offers: an offer lists the subgraphs it unlocks; a purchase grants them |
 | Grant a person directly | Admin → Users, or the `createUserSubgraphAccess` mutation ([[en/user/user_management]]) |
-| Telegram group members | Bind a group to a subgraph in the bot settings — members get access automatically |
+| Telegram group members | Bind a group to a subgraph in the bot settings — members get access automatically ([[en/user/telegram-access]]) |
 | A federated peer | Scope their inbound secret to the subgraph ([[en/user/federation]]) |
 
 ### Tag a whole folder
 
 Editing frontmatter note by note gets old once you have a `course/` folder with forty lessons. A frontmatter patch tags the whole folder in one shot. Create a note anywhere in the vault:
 
-```markdown
+````markdown
 ---
 type: frontmatter-patch
 include: ["course/**"]
@@ -71,9 +73,83 @@ include: ["course/**"]
 ```jsonnet
 { subgraph: "course" }
 ```
-```
+````
 
 Every note under `course/` gets `subgraph: course` at load time — you never touch the individual files, and new lessons dropped into the folder are tagged automatically. See [[en/user/frontmatter-patches|frontmatter patches]] for the full syntax (glob patterns, exclude, priority, multiple rules per file).
+
+### Files and folders starting with `_` are hidden
+
+Any file or folder whose name starts with `_` is treated as a system file: hidden from magazine listings, site search, RSS, and similar-notes suggestions. The note's URL still works — it is hidden from discovery, not from access.
+
+The rule applies to any path component, not just the filename:
+
+| Path | Hidden? |
+|------|---------|
+| `_sidebar.md` | Yes — filename starts with `_` |
+| `_layouts/base.html` | Yes — folder starts with `_` |
+| `docs/_internal/note.md` | Yes — subfolder `_internal` starts with `_` |
+| `docs/note.md` | No |
+| `prefix_word/note.md` | No — `_` is not at the start of a path component |
+
+Use this for patch files (like the examples below) and any note that serves an internal purpose but should not show up in navigation or search.
+
+**Hidden, but still embeddable.** A hidden note is kept out of listings, not out of your other notes. You can still pull its content into a visible note by embedding it explicitly:
+
+```
+![[_my_hidden_note]]
+```
+
+The embedded note renders inline on the host page. That makes `_` notes handy as reusable partials — a shared header, a snippet, a boilerplate block you embed in many places but never publish on its own. One caveat: embedding *shows* the content, so "hidden" is about discovery, not access. To restrict who can read something, use a subgraph, not an underscore.
+
+### Make the whole vault private by default
+
+A note with no `subgraph` set is visible to every signed-in user who holds at least one active access on your site (paid via [[en/user/monetization|monetization]] or hand-granted in the admin). On a mixed-audience site that leaks content across sections. A frontmatter patch closes the gap: it assigns every untagged note to a reserved subgraph that no reader is ever granted.
+
+In the admin, open **Notes & Content → Frontmatter Patches** and create a rule with these values:
+
+| Field | Value |
+|-------|-------|
+| Description | `Private by default` |
+| Include patterns | `**` |
+| Priority | `0` |
+| Jsonnet | (see below) |
+
+```jsonnet
+if std.objectHas(meta, "subgraph") || std.objectHas(meta, "subgraphs")
+then {}
+else { subgraph: "private" }
+```
+
+The jsonnet logic: if the note already declares a subgraph, return `{}` (no-op); otherwise assign `subgraph: "private"`. Then create a `private` subgraph in Admin → Notes & Content → Subgraphs and grant no one access to it. Result:
+
+- Notes with an explicit `subgraph:` follow their own access rule — the conditional leaves them untouched.
+- Notes with `free: true` are public regardless — `free` always takes priority (see [What a subgraph is](#what-a-subgraph-is)).
+- Every other note is invisible until you tag it and grant someone access.
+
+This is the recommended starting point for a site where content should be private unless explicitly published.
+
+### Make every note free for a public site
+
+The symmetric case: a fully public site where every note should be readable without sign-in. One frontmatter patch sets `free: true` vault-wide.
+
+In the admin, open **Notes & Content → Frontmatter Patches** and create a rule:
+
+| Field | Value |
+|-------|-------|
+| Description | `Public site — all notes free` |
+| Include patterns | `**` |
+| Priority | `0` |
+| Jsonnet | `{ free: true }` |
+
+Every note becomes publicly accessible, including to anonymous visitors. `free` is independent of subgraph access control — it opens the note before subgraph grants are checked. How the two axes interact is described in [What a subgraph is](#what-a-subgraph-is).
+
+If some notes should stay gated despite this rule, use the conditional form instead — it skips any note that already declares `free:` in its own frontmatter:
+
+```jsonnet
+if std.objectHas(meta, "free") then {} else { free: true }
+```
+
+Rules chain by priority (lower number = evaluated first). A section-specific rule at a higher priority number can override this vault-wide default for any subset of paths.
 
 ### Grant a user access by hand (no payment)
 
