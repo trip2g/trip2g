@@ -40,7 +40,8 @@ drop a line into Telegram — "make me a page like this" — and that's it:
 hermes reads it and lays it out, trip2g puts it on your domain. They split
 the work between themselves.
 
-![[tg_publish.webp]]
+<!-- TODO: swap to tg_publish_en.webp when the English screenshot is ready -->
+![[tg_publish_ru.webp]]
 *One line to the bot in Telegram, and a page appears on your domain.*
 
 And you don't have to type. Send the agent a voice message — "make me a page
