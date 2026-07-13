@@ -96,17 +96,17 @@
   <a class="@did__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
-    <a href="#" class="@did__nav-link mesh-bar__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('mesh-bar__overlay--open'); return false;">⌘K</a>
+    <a href="#" class="@did__nav-link @did__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('@did__overlay--open'); return false;">⌘K</a>
     <a href="/en/user" class="@did__nav-link">Docs</a>
     <a href="/en/user/use_cases" class="@did__nav-link">Use cases</a>
     <a href="/en/thoughts" class="@did__nav-link">Philosophy</a>
-    <a href="/" class="@did__nav-link mesh-bar__nav-link--key">EN</a>
+    <a href="/" class="@did__nav-link @did__nav-link--key">EN</a>
     <a href="/ru" class="@did__nav-link">RU</a>
     <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
     <a href="/en/user/getting_started" class="@did__nav-link">start →</a>
   </nav>
 </header>
-<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('mesh-bar__overlay--open')">
+<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('@did__overlay--open')">
   <div class="@did__dialog">
     <div class="@did__dialog-eyebrow">// YOUR AGENT IS WAITING</div>
     <div class="@did__dialog-title">Add this to your agent.</div>
@@ -118,8 +118,8 @@
       </div>
       <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
     </div>
-    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="mesh-bar__cta")}}
-    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('mesh-bar__overlay--open')">[ esc ]</div>
+    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="@did__cta")}}
+    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('@did__overlay--open')">[ esc ]</div>
   </div>
 </div>
 {{ end }}
@@ -131,17 +131,17 @@
   <a class="@did__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
-    <a href="#" class="@did__nav-link mesh-bar__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('mesh-bar__overlay--open'); return false;">⌘K</a>
+    <a href="#" class="@did__nav-link @did__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('@did__overlay--open'); return false;">⌘K</a>
     <a href="/ru/user" class="@did__nav-link">Документация</a>
     <a href="/ru/user/use_cases" class="@did__nav-link">Сценарии</a>
     <a href="/ru/thoughts" class="@did__nav-link">Философия</a>
     <a href="/" class="@did__nav-link">EN</a>
-    <a href="/ru" class="@did__nav-link mesh-bar__nav-link--key">RU</a>
+    <a href="/ru" class="@did__nav-link @did__nav-link--key">RU</a>
     <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
     <a href="/ru/user/nachalo_rabotyi" class="@did__nav-link">начать →</a>
   </nav>
 </header>
-<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('mesh-bar__overlay--open')">
+<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('@did__overlay--open')">
   <div class="@did__dialog">
     <div class="@did__dialog-eyebrow">// ВАШ АГЕНТ ЖДЁТ</div>
     <div class="@did__dialog-title">Добавь это своему агенту.</div>
@@ -153,8 +153,8 @@
       </div>
       <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
     </div>
-    {{yield mesh_button(label="для AI-агентов →", href="/ru/simple", modifier="mesh-bar__cta")}}
-    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('mesh-bar__overlay--open')">[ esc ]</div>
+    {{yield mesh_button(label="для AI-агентов →", href="/ru/simple", modifier="@did__cta")}}
+    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('@did__overlay--open')">[ esc ]</div>
   </div>
 </div>
 {{ end }}
