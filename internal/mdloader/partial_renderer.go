@@ -6,6 +6,7 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	extast "github.com/yuin/goldmark/extension/ast"
 )
 
 type PartialRenderer struct {
@@ -250,15 +251,41 @@ func (pr *PartialRenderer) Introduce() model.NoteViewSection {
 	if firstHeadingIndex == -1 {
 		return model.NoteViewSection{
 			TitleHTML:   "",
-			ContentHTML: pr.renderNodeRange(allNodes, 0, len(allNodes)),
+			ContentHTML: pr.renderExcerptRange(allNodes, 0, len(allNodes)),
 		}
 	}
 
 	// Return content before the first heading
 	return model.NoteViewSection{
 		TitleHTML:   "",
-		ContentHTML: pr.renderNodeRange(allNodes, 0, firstHeadingIndex),
+		ContentHTML: pr.renderExcerptRange(allNodes, 0, firstHeadingIndex),
 	}
+}
+
+// renderExcerptRange renders nodes [start,end) like renderNodeRange, but drops
+// tables. A leading table would blow out the fixed-size magazine card, so the
+// excerpt keeps the surrounding prose and skips the table. Authors control the
+// cut point with a `---` after a short intro.
+func (pr *PartialRenderer) renderExcerptRange(allNodes []ast.Node, start, end int) string {
+	if start < 0 || start >= len(allNodes) || end <= start {
+		return ""
+	}
+
+	var buf bytes.Buffer
+
+	pr.withCurrentPage(func() {
+		for i := start; i < end && i < len(allNodes); i++ {
+			node := allNodes[i]
+			if _, ok := node.(*extast.Table); ok {
+				continue // skip wide tables in the excerpt
+			}
+			if err := pr.md.Renderer().Render(&buf, pr.content, node); err != nil {
+				continue // Skip nodes that can't be rendered.
+			}
+		}
+	})
+
+	return buf.String()
 }
 
 // extractLinkText builds the text content of a link node.

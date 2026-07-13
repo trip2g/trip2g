@@ -225,3 +225,28 @@ func TestPartialRendererImageAssetReplace(t *testing.T) {
 	require.NotContains(t, sections[0].ContentHTML, "./assets/photo.jpg")
 	require.NotContains(t, slides[0].ContentHTML, "./assets/slide1.png")
 }
+
+func introduceHTML(t *testing.T, body string) string {
+	t.Helper()
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{Path: "index.md", Content: []byte(body)}},
+		Log:     &logger.TestLogger{},
+	})
+	require.NoError(t, err)
+	require.Len(t, pages.List, 1)
+	return pages.List[0].PartialRenderer.Introduce().ContentHTML
+}
+
+func TestIntroduceCutsAtThematicBreak(t *testing.T) {
+	html := introduceHTML(t, "Short intro.\n\n---\n\n## Body\n\nrest\n")
+	require.Contains(t, html, "Short intro.")
+	require.NotContains(t, html, "rest")
+}
+
+func TestIntroduceSkipsLeadingTable(t *testing.T) {
+	body := "Results first.\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n---\n\n## Story\n\ntail\n"
+	html := introduceHTML(t, body)
+	require.Contains(t, html, "Results first.")
+	require.NotContains(t, html, "<table")
+	require.NotContains(t, html, "tail")
+}
