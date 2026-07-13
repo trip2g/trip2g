@@ -16,8 +16,8 @@ A built-in `trip2g sync --watch <dir> --url <instance> --api-key <key>` that wat
 `pushNotes` carries text only (`{path, content}`); markdown-only Go parity is quick, but full parity duplicates a working, mature CLI for low ROI.
 
 **2. git is already a bidirectional sync transport.** trip2g's git integration goes both ways:
-- **DB → git** (mirror): `internal/gitapi/materialize.go` rebuilds refs from the DB.
-- **git → DB** (ingest): `internal/gitapi/apply.go` `ApplyGitChanges` → `PushNotes`; driven by the `applygitchanges` cron; a **receive-pack** (`git push`) path exists.
+- **DB → git** (mirror): `internal/gitapi/materialize.go` rebuilds refs from the DB; the `materialize_git_mirror` cron re-runs this periodically.
+- **git → DB** (ingest): happens **synchronously during `git push`** — receive-pack (`handleGitReceivePack` → `applyReceived` → `internal/gitapi/apply.go` `applyDiff`) calls `PushNotes`/`HideNotePaths`. There is no ingest cron.
 
 `docs/dev/graphql.md` lists the sync sources as *"API, **git push**, editor"*; `docs/dev/refactor.md`: *"Push в git → webhook → обновление БД."* So **`git push` to the trip2g remote IS sync** — and it brings versioning, offline, branching, and merge for free. A fsnotify watcher offers none of that.
 
@@ -28,11 +28,11 @@ A built-in `trip2g sync --watch <dir> --url <instance> --api-key <key>` that wat
 | Need | Use |
 |------|-----|
 | FS → instance sync (incl. assets, deletes, live editing) | the existing **`obsidian-sync` CLI** (JS, from the Obsidian plugin) |
-| Headless / CI / bulk / versioned sync | `git push` to the trip2g git remote (ingested via `ApplyGitChanges`) |
+| Headless / CI / bulk / versioned sync | `git push` to the trip2g git remote (ingested synchronously via receive-pack → `applyDiff` → `PushNotes`) |
 | A one-liner convenience | just `git add && git commit && git push` — not worth a subcommand |
 
 ## Notes / related
 
 - Known perf caveat of the git/push path: each push currently triggers a full note reload under a global write mutex (see `docs/dev/obsidian_sync_2026-06-21.md`). That's a perf item to improve on the existing path — **not** a reason to build a parallel Go sync.
 - Accepted companion feature: **`trip2g lint <dir>`** (DB-free doc linter) — see `docs/dev/trip2g_lint.md`. Both were analysed together as a "trip2g local FS CLI"; `lint` is built, `sync` is not.
-- Code: `internal/gitapi/{materialize,apply}.go`, `internal/case/cronjob/applygitchanges/`, `docs/dev/obsidian_sync.md`.
+- Code: `internal/gitapi/{materialize,apply}.go`, `internal/case/cronjob/materializegitmirror/` (DB→git mirror refresh only), `docs/dev/obsidian_sync.md`.

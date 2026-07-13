@@ -1,4 +1,4 @@
-package applygitchanges
+package materializegitmirror
 
 import (
 	"context"
@@ -8,7 +8,7 @@ type Job struct {
 }
 
 func (j *Job) Name() string {
-	return "apply_git_changes"
+	return "materialize_git_mirror"
 }
 
 func (j *Job) Schedule() string {
