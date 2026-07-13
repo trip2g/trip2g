@@ -68,9 +68,17 @@ type JobStruct struct {
     enqueue jobs.EnqueueFunc
 }
 
-func New(env jobs.Env) *JobStruct {
+type JobEnv interface {
+    jobs.Env
+    Env
+}
+
+func New(env JobEnv) *JobStruct {
     return &JobStruct{
-        enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+        enqueue: jobs.Register(env, QueueID, JobID, Priority,
+            func(ctx context.Context, params Params) error {
+                return Resolve(ctx, env, params)
+            }),
     }
 }
 

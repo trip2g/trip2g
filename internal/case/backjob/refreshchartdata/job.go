@@ -22,7 +22,10 @@ type JobEnv interface {
 
 func New(env JobEnv) *Job {
 	return &Job{
-		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+		enqueue: jobs.Register(env, QueueID, JobID, Priority,
+			func(ctx context.Context, p Params) error {
+				return Resolve(ctx, env, p)
+			}),
 	}
 }
 
