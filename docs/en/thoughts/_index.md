@@ -2,6 +2,7 @@
 title: "Philosophy"
 free: true
 home_position: 7
+lang_redirect: "[[ru/thoughts/_index]]"
 ---
 
 Why publish knowledge as a graph rather than a book. How AI changes the rules. Why subscription over one-time sales.

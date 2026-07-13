@@ -16,6 +16,7 @@ title: "Navigation"
 - [[en/user/publishing|Publishing notes]]
 - [[en/user/editor|In-browser editor]]
 - [[en/user/two-way-sync|Two-way sync]]
+- [[en/user/git|Git access]]
 - [[en/user/live-editing|Live editing]]
 - [[en/user/releases|Releases]]
 - [[en/changelog|Changelog]]
@@ -32,6 +33,7 @@ title: "Navigation"
 - [[en/user/telegram|Telegram publishing]]
 - [[en/user/telegram-import|Import from Telegram]]
 - [[en/user/telegram-emoji|Custom emoji]]
+- [[en/user/telegram-access|Telegram group access]]
 - [[en/user/monetization|Monetization]]
 - [[en/user/mcp|AI assistant (MCP)]]
 - [[en/user/federation|MCP Federation]]
@@ -43,9 +45,12 @@ title: "Navigation"
 ### Customization
 
 - [[en/user/default-template|Default template]]
+- [[en/user/themes|Theming the default template]]
+- [[en/user/theme-editor|Theme editor (live)]]
 - [[en/user/templates|Custom templates]]
 - [[en/user/jet-debugging|Debugging Jet templates]]
 - [[en/user/yield_blocks|yield_blocks: per-page CSS/JS]]
+- [[en/user/embedded-notes|Embedded notes]]
 - [[en/user/bem|BEM naming in templates]]
 - [[en/user/One HTML Page|One HTML page]]
 

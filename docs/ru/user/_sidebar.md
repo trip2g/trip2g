@@ -15,6 +15,7 @@ title: "Навигация"
 - [[ru/user/wikilink-resolution|Разрешение вики-ссылок]]
 - [[ru/user/editor|Редактор в браузере]]
 - [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
+- [[ru/user/git|Доступ по Git]]
 - [[ru/user/live-editing|Живое редактирование]]
 
 ### Примеры использования
@@ -32,6 +33,7 @@ title: "Навигация"
 - [[ru/user/Импорт из Telegram|Импорт из Telegram]]
 - [[ru/user/Кастомные эмодзи|Кастомные эмодзи]]
 - [[ru/user/telegram_limits|Ограничения]]
+- [[ru/user/telegram-access|Доступ через группу]]
 
 ### Монетизация
 
@@ -40,9 +42,12 @@ title: "Навигация"
 ### Шаблоны
 
 - [[ru/user/default-template|Дефолтный шаблон]]
+- [[ru/user/themes|Темы для дефолтного шаблона]]
+- [[ru/user/theme-editor|Редактор тем (вживую)]]
 - [[ru/user/templates|Основы]]
 - [[ru/user/jet-debugging|Отладка шаблонов]]
 - [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]]
+- [[ru/user/embedded-notes|Встраивание заметок]]
 - [[ru/user/bem|BEM-именование в шаблонах]]
 - [[ru/user/templates-advanced|API и запросы]]
 - [[ru/user/templates-best-practices|Лучшие практики]]
