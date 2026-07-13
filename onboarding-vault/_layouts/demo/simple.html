@@ -1,0 +1,17 @@
+{{ import "_blocks" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    .demo-card { border: 1px solid #eee; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+    .demo-card h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  {{ yield demo_card(title=note.Title(), body="Rendered through a reusable Jet block, defined once in _blocks.html and imported here.") }}
+  <div class="content">{{ note.HTMLString() | unsafe }}</div>
+</body>
+</html>
