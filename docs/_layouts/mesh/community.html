@@ -76,7 +76,9 @@
 }
 {{ end }}
 
-{{ block @lid_ru() }}
+{{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}
 <section class="@did">
   <div class="@did__text">
     <div class="@did__eyebrow">// ЗАКРЫТОЕ СООБЩЕСТВО</div>
@@ -110,4 +112,5 @@
   setInterval(updateTimer, 1000);
 })();
 </script>
+{{ end }}
 {{ end }}
