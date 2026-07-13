@@ -6,6 +6,7 @@ package hidenotes
 import (
 	"context"
 	"sync"
+	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	internalmodel "trip2g/internal/model"
@@ -22,6 +23,9 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
+//			HandleNoteWebhooksFunc: func(ctx context.Context, changes []handlenotewebhooks.NoteChange, depth int) error {
+//				panic("mock out the HandleNoteWebhooks method")
+//			},
 //			HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
 //				panic("mock out the HideNotePath method")
 //			},
@@ -44,6 +48,9 @@ var _ Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// HandleNoteWebhooksFunc mocks the HandleNoteWebhooks method.
+	HandleNoteWebhooksFunc func(ctx context.Context, changes []handlenotewebhooks.NoteChange, depth int) error
+
 	// HideNotePathFunc mocks the HideNotePath method.
 	HideNotePathFunc func(ctx context.Context, params db.HideNotePathParams) error
 
@@ -61,6 +68,15 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// HandleNoteWebhooks holds details about calls to the HandleNoteWebhooks method.
+		HandleNoteWebhooks []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Changes is the changes argument value.
+			Changes []handlenotewebhooks.NoteChange
+			// Depth is the depth argument value.
+			Depth int
+		}
 		// HideNotePath holds details about calls to the HideNotePath method.
 		HideNotePath []struct {
 			// Ctx is the ctx argument value.
@@ -87,11 +103,52 @@ type EnvMock struct {
 			Batch notebus.Batch
 		}
 	}
+	lockHandleNoteWebhooks sync.RWMutex
 	lockHideNotePath       sync.RWMutex
 	lockLatestNoteViews    sync.RWMutex
 	lockLogger             sync.RWMutex
 	lockPrepareLatestNotes sync.RWMutex
 	lockPublishNoteChanges sync.RWMutex
+}
+
+// HandleNoteWebhooks calls HandleNoteWebhooksFunc.
+func (mock *EnvMock) HandleNoteWebhooks(ctx context.Context, changes []handlenotewebhooks.NoteChange, depth int) error {
+	if mock.HandleNoteWebhooksFunc == nil {
+		panic("EnvMock.HandleNoteWebhooksFunc: method is nil but Env.HandleNoteWebhooks was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Changes []handlenotewebhooks.NoteChange
+		Depth   int
+	}{
+		Ctx:     ctx,
+		Changes: changes,
+		Depth:   depth,
+	}
+	mock.lockHandleNoteWebhooks.Lock()
+	mock.calls.HandleNoteWebhooks = append(mock.calls.HandleNoteWebhooks, callInfo)
+	mock.lockHandleNoteWebhooks.Unlock()
+	return mock.HandleNoteWebhooksFunc(ctx, changes, depth)
+}
+
+// HandleNoteWebhooksCalls gets all the calls that were made to HandleNoteWebhooks.
+// Check the length with:
+//
+//	len(mockedEnv.HandleNoteWebhooksCalls())
+func (mock *EnvMock) HandleNoteWebhooksCalls() []struct {
+	Ctx     context.Context
+	Changes []handlenotewebhooks.NoteChange
+	Depth   int
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Changes []handlenotewebhooks.NoteChange
+		Depth   int
+	}
+	mock.lockHandleNoteWebhooks.RLock()
+	calls = mock.calls.HandleNoteWebhooks
+	mock.lockHandleNoteWebhooks.RUnlock()
+	return calls
 }
 
 // HideNotePath calls HideNotePathFunc.

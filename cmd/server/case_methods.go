@@ -4,12 +4,17 @@ import (
 	"context"
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/gettelegramchatname"
+	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/case/sendtelegramaccountpublishpost"
 	"trip2g/internal/case/sendtelegrampublishpost"
 	"trip2g/internal/case/updatetelegramaccountpublishpost"
 	"trip2g/internal/case/updatetelegrampublishpost"
 	"trip2g/internal/model"
 )
+
+func (a *app) HandleNoteWebhooks(ctx context.Context, changes []handlenotewebhooks.NoteChange, depth int) error {
+	return handlenotewebhooks.Resolve(ctx, a, changes, depth)
+}
 
 func (a *app) UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error {
 	return updatetelegrampublishpost.Resolve(ctx, a, notePathID)

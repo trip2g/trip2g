@@ -18,6 +18,7 @@ type Env interface {
 	PrepareLatestNotes(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
 	Logger() logger.Logger
 	PublishNoteChanges(batch notebus.Batch)
+	HandleNoteWebhooks(ctx context.Context, changes []handlenotewebhooks.NoteChange, depth int) error
 }
 
 type Input = model.HideNotesInput
@@ -99,13 +100,7 @@ func triggerWebhooks(ctx context.Context, env Env, changes []handlenotewebhooks.
 		return
 	}
 
-	webhookEnv, ok := req.Env.(handlenotewebhooks.Env)
-	if !ok {
-		env.Logger().Error("failed to cast env to handlenotewebhooks.Env for hide webhooks")
-		return
-	}
-
-	webhookErr := handlenotewebhooks.Resolve(ctx, webhookEnv, changes, req.WebhookDepth)
+	webhookErr := env.HandleNoteWebhooks(ctx, changes, req.WebhookDepth)
 	if webhookErr != nil {
 		env.Logger().Error("failed to handle note webhooks for hide", "error", webhookErr)
 	}

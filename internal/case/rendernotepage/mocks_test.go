@@ -55,6 +55,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 //				panic("mock out the InsertUserNoteView method")
 //			},
+//			IsDevModeFunc: func() bool {
+//				panic("mock out the IsDevMode method")
+//			},
 //			LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 //				panic("mock out the LastUserNoteView method")
 //			},
@@ -97,6 +100,18 @@ var _ rendernotepage.Env = &EnvMock{}
 //			UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
 //				panic("mock out the UpsertUserNoteDailyView method")
 //			},
+//			UserCSSURLsFunc: func() []string {
+//				panic("mock out the UserCSSURLs method")
+//			},
+//			UserInlineCSSFunc: func() string {
+//				panic("mock out the UserInlineCSS method")
+//			},
+//			UserJSURLsFunc: func() []string {
+//				panic("mock out the UserJSURLs method")
+//			},
+//			UserLocaleHashesFunc: func() map[string]string {
+//				panic("mock out the UserLocaleHashes method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires rendernotepage.Env
@@ -133,6 +148,9 @@ type EnvMock struct {
 
 	// InsertUserNoteViewFunc mocks the InsertUserNoteView method.
 	InsertUserNoteViewFunc func(ctx context.Context, params db.InsertUserNoteViewParams) error
+
+	// IsDevModeFunc mocks the IsDevMode method.
+	IsDevModeFunc func() bool
 
 	// LastUserNoteViewFunc mocks the LastUserNoteView method.
 	LastUserNoteViewFunc func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
@@ -175,6 +193,18 @@ type EnvMock struct {
 
 	// UpsertUserNoteDailyViewFunc mocks the UpsertUserNoteDailyView method.
 	UpsertUserNoteDailyViewFunc func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
+
+	// UserCSSURLsFunc mocks the UserCSSURLs method.
+	UserCSSURLsFunc func() []string
+
+	// UserInlineCSSFunc mocks the UserInlineCSS method.
+	UserInlineCSSFunc func() string
+
+	// UserJSURLsFunc mocks the UserJSURLs method.
+	UserJSURLsFunc func() []string
+
+	// UserLocaleHashesFunc mocks the UserLocaleHashes method.
+	UserLocaleHashesFunc func() map[string]string
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -233,6 +263,9 @@ type EnvMock struct {
 			Ctx context.Context
 			// Params is the params argument value.
 			Params db.InsertUserNoteViewParams
+		}
+		// IsDevMode holds details about calls to the IsDevMode method.
+		IsDevMode []struct {
 		}
 		// LastUserNoteView holds details about calls to the LastUserNoteView method.
 		LastUserNoteView []struct {
@@ -306,6 +339,18 @@ type EnvMock struct {
 			// Params is the params argument value.
 			Params db.UpsertUserNoteDailyViewParams
 		}
+		// UserCSSURLs holds details about calls to the UserCSSURLs method.
+		UserCSSURLs []struct {
+		}
+		// UserInlineCSS holds details about calls to the UserInlineCSS method.
+		UserInlineCSS []struct {
+		}
+		// UserJSURLs holds details about calls to the UserJSURLs method.
+		UserJSURLs []struct {
+		}
+		// UserLocaleHashes holds details about calls to the UserLocaleHashes method.
+		UserLocaleHashes []struct {
+		}
 	}
 	lockActiveHTMLInjections                sync.RWMutex
 	lockAssetURL                            sync.RWMutex
@@ -317,6 +362,7 @@ type EnvMock struct {
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
 	lockIncreaseUserNoteViewCount           sync.RWMutex
 	lockInsertUserNoteView                  sync.RWMutex
+	lockIsDevMode                           sync.RWMutex
 	lockLastUserNoteView                    sync.RWMutex
 	lockLatestNoteChunks                    sync.RWMutex
 	lockLatestNoteViews                     sync.RWMutex
@@ -331,6 +377,10 @@ type EnvMock struct {
 	lockSiteTitleTemplate                   sync.RWMutex
 	lockStoreCachedPage                     sync.RWMutex
 	lockUpsertUserNoteDailyView             sync.RWMutex
+	lockUserCSSURLs                         sync.RWMutex
+	lockUserInlineCSS                       sync.RWMutex
+	lockUserJSURLs                          sync.RWMutex
+	lockUserLocaleHashes                    sync.RWMutex
 }
 
 // ActiveHTMLInjections calls ActiveHTMLInjectionsFunc.
@@ -660,6 +710,33 @@ func (mock *EnvMock) InsertUserNoteViewCalls() []struct {
 	mock.lockInsertUserNoteView.RLock()
 	calls = mock.calls.InsertUserNoteView
 	mock.lockInsertUserNoteView.RUnlock()
+	return calls
+}
+
+// IsDevMode calls IsDevModeFunc.
+func (mock *EnvMock) IsDevMode() bool {
+	if mock.IsDevModeFunc == nil {
+		panic("EnvMock.IsDevModeFunc: method is nil but Env.IsDevMode was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockIsDevMode.Lock()
+	mock.calls.IsDevMode = append(mock.calls.IsDevMode, callInfo)
+	mock.lockIsDevMode.Unlock()
+	return mock.IsDevModeFunc()
+}
+
+// IsDevModeCalls gets all the calls that were made to IsDevMode.
+// Check the length with:
+//
+//	len(mockedEnv.IsDevModeCalls())
+func (mock *EnvMock) IsDevModeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockIsDevMode.RLock()
+	calls = mock.calls.IsDevMode
+	mock.lockIsDevMode.RUnlock()
 	return calls
 }
 
@@ -1105,5 +1182,113 @@ func (mock *EnvMock) UpsertUserNoteDailyViewCalls() []struct {
 	mock.lockUpsertUserNoteDailyView.RLock()
 	calls = mock.calls.UpsertUserNoteDailyView
 	mock.lockUpsertUserNoteDailyView.RUnlock()
+	return calls
+}
+
+// UserCSSURLs calls UserCSSURLsFunc.
+func (mock *EnvMock) UserCSSURLs() []string {
+	if mock.UserCSSURLsFunc == nil {
+		panic("EnvMock.UserCSSURLsFunc: method is nil but Env.UserCSSURLs was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockUserCSSURLs.Lock()
+	mock.calls.UserCSSURLs = append(mock.calls.UserCSSURLs, callInfo)
+	mock.lockUserCSSURLs.Unlock()
+	return mock.UserCSSURLsFunc()
+}
+
+// UserCSSURLsCalls gets all the calls that were made to UserCSSURLs.
+// Check the length with:
+//
+//	len(mockedEnv.UserCSSURLsCalls())
+func (mock *EnvMock) UserCSSURLsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUserCSSURLs.RLock()
+	calls = mock.calls.UserCSSURLs
+	mock.lockUserCSSURLs.RUnlock()
+	return calls
+}
+
+// UserInlineCSS calls UserInlineCSSFunc.
+func (mock *EnvMock) UserInlineCSS() string {
+	if mock.UserInlineCSSFunc == nil {
+		panic("EnvMock.UserInlineCSSFunc: method is nil but Env.UserInlineCSS was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockUserInlineCSS.Lock()
+	mock.calls.UserInlineCSS = append(mock.calls.UserInlineCSS, callInfo)
+	mock.lockUserInlineCSS.Unlock()
+	return mock.UserInlineCSSFunc()
+}
+
+// UserInlineCSSCalls gets all the calls that were made to UserInlineCSS.
+// Check the length with:
+//
+//	len(mockedEnv.UserInlineCSSCalls())
+func (mock *EnvMock) UserInlineCSSCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUserInlineCSS.RLock()
+	calls = mock.calls.UserInlineCSS
+	mock.lockUserInlineCSS.RUnlock()
+	return calls
+}
+
+// UserJSURLs calls UserJSURLsFunc.
+func (mock *EnvMock) UserJSURLs() []string {
+	if mock.UserJSURLsFunc == nil {
+		panic("EnvMock.UserJSURLsFunc: method is nil but Env.UserJSURLs was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockUserJSURLs.Lock()
+	mock.calls.UserJSURLs = append(mock.calls.UserJSURLs, callInfo)
+	mock.lockUserJSURLs.Unlock()
+	return mock.UserJSURLsFunc()
+}
+
+// UserJSURLsCalls gets all the calls that were made to UserJSURLs.
+// Check the length with:
+//
+//	len(mockedEnv.UserJSURLsCalls())
+func (mock *EnvMock) UserJSURLsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUserJSURLs.RLock()
+	calls = mock.calls.UserJSURLs
+	mock.lockUserJSURLs.RUnlock()
+	return calls
+}
+
+// UserLocaleHashes calls UserLocaleHashesFunc.
+func (mock *EnvMock) UserLocaleHashes() map[string]string {
+	if mock.UserLocaleHashesFunc == nil {
+		panic("EnvMock.UserLocaleHashesFunc: method is nil but Env.UserLocaleHashes was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockUserLocaleHashes.Lock()
+	mock.calls.UserLocaleHashes = append(mock.calls.UserLocaleHashes, callInfo)
+	mock.lockUserLocaleHashes.Unlock()
+	return mock.UserLocaleHashesFunc()
+}
+
+// UserLocaleHashesCalls gets all the calls that were made to UserLocaleHashes.
+// Check the length with:
+//
+//	len(mockedEnv.UserLocaleHashesCalls())
+func (mock *EnvMock) UserLocaleHashesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockUserLocaleHashes.RLock()
+	calls = mock.calls.UserLocaleHashes
+	mock.lockUserLocaleHashes.RUnlock()
 	return calls
 }

@@ -21,13 +21,26 @@ type httpErrorBody struct {
 	Error string `json:"error"`
 }
 
+// endpointEnv composes this endpoint's own Env with checkapikey.Env, needed
+// only for the API-key auth fallback below. Kept local to the endpoint (not
+// added to Env) because Resolve's auth is the caller's responsibility.
+type endpointEnv interface {
+	Env
+	checkapikey.Env
+}
+
 func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
+
+	env, ok := req.Env.(endpointEnv)
+	if !ok {
+		return nil, appreq.ErrInvalidEnv
+	}
 
 	// Auth: admin session OR API key.
 	token, _ := req.UserToken()
 	if !token.IsAdmin() {
-		_, err := checkapikey.Resolve(ctx, req.Env.(checkapikey.Env), "render_preview")
+		_, err := checkapikey.Resolve(ctx, env, "render_preview")
 		if err != nil {
 			return writeErr(ctx, http.StatusUnauthorized, "unauthorized: "+err.Error())
 		}
@@ -40,7 +53,7 @@ func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return writeErr(ctx, http.StatusBadRequest, "invalid JSON: "+err.Error())
 	}
 
-	resp, err := Resolve(ctx, req.Env.(Env), input)
+	resp, err := Resolve(ctx, env, input)
 	if err != nil {
 		return writeErr(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -57,7 +70,12 @@ type GetEndpoint struct{}
 func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
 	args := ctx.QueryArgs()
-	buf := req.Env.(Env).PreviewBuffer()
+
+	env, ok := req.Env.(endpointEnv)
+	if !ok {
+		return nil, appreq.ErrInvalidEnv
+	}
+	buf := env.PreviewBuffer()
 
 	// ?longpolling&since=N — no auth, returns {action, version} after ≤30 s.
 	if args.Has("longpolling") {
@@ -90,7 +108,7 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Default and ?live — require admin auth or API key.
 	token, _ := req.UserToken()
 	if !token.IsAdmin() {
-		_, err := checkapikey.Resolve(ctx, req.Env.(checkapikey.Env), "render_preview")
+		_, err := checkapikey.Resolve(ctx, env, "render_preview")
 		if err != nil {
 			ctx.SetStatusCode(http.StatusUnauthorized)
 			ctx.SetBodyString("unauthorized")
