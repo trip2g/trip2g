@@ -1,5 +1,5 @@
 ---
-layout: mesh/ru_index
+layout: mesh/index
 lang: ru
 title: "Опубликуйте хранилище Obsidian как сайт — trip2g"
 description: "Опубликуйте хранилище Obsidian как сайт за минуту. Платный доступ, свои шаблоны и MCP-эндпоинт для агентов."

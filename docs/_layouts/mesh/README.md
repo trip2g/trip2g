@@ -55,20 +55,23 @@ That's it. Only `_blocks.html` needs an explicit import — it contains `index_l
 
 ## Components
 
-All components live in this directory. Each file defines a `@lid` (EN) and `@lid_ru` (RU) block plus a shared `_style_@lid` CSS block. Import the file and yield the block by its expanded name.
+All components live in this directory. Each file defines one `@lid` block (HTML, branching on
+`note.M().GetString("lang", "en")` for EN/RU copy) plus a shared `_style_@lid` CSS block. Import
+the file and yield the block by its expanded name.
 
-| File | Block (EN) | Block (RU) | Description |
-|------|-----------|-----------|-------------|
-| `bar.html` | `mesh_bar` | `mesh_bar_ru` | Top navigation bar with ⌘K MCP hint modal |
-| `hero.html` | `mesh_hero` | `mesh_hero_ru` | Type-led hero: copy from the `_index_hero` note + CTA row |
-| `capabilities.html` | `mesh_capabilities` | `mesh_capabilities_ru` | 6-card capability grid, each card links to its docs guide |
-| `network.html` | `mesh_network` | `mesh_network_ru` | Federation payoff ("Join the network") + animated graph and trace frames |
-| `privacy.html` | `mesh_privacy` | `mesh_privacy_ru` | Data privacy section with SVG diagram |
-| `philo.html` | `mesh_philo` | `mesh_philo_ru` | Philosophy blurb |
-| `matrix.html` | `mesh_matrix` | `mesh_matrix_ru` | Red/blue pill matrix section |
-| `try_now.html` | `mesh_try_now` | `mesh_try_now_ru` | Try-now section with prompt box and steps |
-| `newsletter.html` | `mesh_newsletter` | `mesh_newsletter_ru` | Newsletter signup |
-| `foot.html` | `mesh_foot` | `mesh_foot_ru` | Footer with CTA and coda |
+| File | Block | Description |
+|------|-------|-------------|
+| `bar.html` | `mesh_bar` | Top navigation bar with ⌘K MCP hint modal |
+| `hero.html` | `mesh_hero` | Type-led hero: copy from the `_index_hero` note + CTA row |
+| `capabilities.html` | `mesh_capabilities` | 6-card capability grid, each card links to its docs guide |
+| `network.html` | `mesh_network` | Federation payoff ("Join the network") + animated graph and trace frames |
+| `privacy.html` | `mesh_privacy` | Data privacy section with SVG diagram |
+| `philo.html` | `mesh_philo` | Philosophy blurb |
+| `matrix.html` | `mesh_matrix` | Red/blue pill matrix section |
+| `try_now.html` | `mesh_try_now` | Try-now section with prompt box and steps |
+| `newsletter.html` | `mesh_newsletter` | Newsletter signup |
+| `foot.html` | `mesh_foot` | Footer with CTA and coda |
+| `community.html` | `mesh_community` | RU-only closed-community upsell (folded, currently unused — not yielded by `index.html`) |
 
 ## Shared blocks (`_blocks.html`)
 
@@ -118,16 +121,15 @@ When writing a new component file, use these placeholders — they are expanded 
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did">
-  <h2 class="@did__title">Title</h2>
-  <p class="@did__body">Body text.</p>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
+  {{ if lang == "ru" }}
   <h2 class="@did__title">Заголовок</h2>
   <p class="@did__body">Текст.</p>
+  {{ else }}
+  <h2 class="@did__title">Title</h2>
+  <p class="@did__body">Body text.</p>
+  {{ end }}
 </section>
 {{ end }}
 ```
@@ -188,14 +190,15 @@ Each component file (`bar.html`, `hero.html`, etc.) is a self-contained BEM bloc
   .@did__nav-link--key { ... }
 {{ end }}
 
-{{ block @lid() }}           ← EN HTML
+{{ block @lid() }}           ← HTML, branches on page language
+  {{ lang := note.M().GetString("lang", "en") }}
   <header class="@did">
+    {{ if lang == "ru" }}
     <nav class="@did__nav">...</nav>
+    {{ else }}
+    <nav class="@did__nav">...</nav>
+    {{ end }}
   </header>
-{{ end }}
-
-{{ block @lid_ru() }}        ← RU HTML (same structure, Russian text)
-  ...
 {{ end }}
 ```
 
@@ -334,7 +337,7 @@ No build step. No config. Reload the vault and the page is live.
 
 ### Key principles
 
-1. **One file = one component.** CSS, HTML (EN), HTML (RU) all in one `.html` file.
+1. **One file = one component.** CSS + HTML for all languages in one `.html` file, branching on `note.M().GetString("lang", "en")`.
 2. **`@lid` for block names, `@did` for CSS classes.** Preprocessor variables — no manual renaming when copying components.
 3. **`yield_blocks` collects CSS automatically.** Place `<style>{{ yield_blocks("_style_") }}</style>` once at end of body. Only CSS for used components is emitted.
 4. **Modifier = BEM mixin.** Pass `modifier="parent-block__child"` to inject a component into a parent's layout context without breaking its own BEM scope.

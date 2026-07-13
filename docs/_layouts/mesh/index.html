@@ -1,13 +1,22 @@
 {{ import "_blocks" }}
 
 {{ yield index_layout() content }}
+    {{ lang := note.M().GetString("lang", "en") }}
     {{ yield mesh_bar() }}
     {{ yield mesh_hero() }}
     {{ yield mesh_how() }}
     {{ yield mesh_capabilities() }}
+    {{ if lang == "ru" }}
+    {{ yield section_header(lhs="ваши данные остаются вашими", rhs="ваш hub · ваши данные · ваш выбор") }}
+    {{ else }}
     {{ yield section_header(lhs="your data stays yours", rhs="your hub · your data · your call") }}
+    {{ end }}
     {{ yield mesh_privacy() }}
+    {{ if lang == "ru" }}
+    {{ yield section_header(lhs="дальше — сеть", rhs="federation · по желанию · доверие на уровне базы") }}
+    {{ else }}
     {{ yield section_header(lhs="beyond one site", rhs="federation · optional · per-base trust") }}
+    {{ end }}
     {{ yield mesh_network() }}
     {{ yield mesh_cases() }}
     {{ yield mesh_roadmap() }}
