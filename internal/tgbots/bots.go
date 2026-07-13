@@ -25,7 +25,7 @@ type HandlerFunc func(ctx context.Context, io *HandlerIO, update tgbotapi.Update
 // omits chat_member updates unless they are explicitly requested, so the list
 // must be set for both long-polling and webhooks. It must enumerate every type
 // the handler processes, because a non-empty list is the complete whitelist.
-var allowedUpdateTypes = []string{
+var allowedUpdateTypes = []string{ //nolint:gochecknoglobals // static update whitelist
 	tgbotapi.UpdateTypeMessage,
 	tgbotapi.UpdateTypeCallbackQuery,
 	tgbotapi.UpdateTypeMyChatMember,
