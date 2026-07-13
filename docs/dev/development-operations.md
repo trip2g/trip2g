@@ -401,7 +401,7 @@ settings, err := queries.GetUserSettings(ctx, userID)
 
 **DO NOT EDIT:**
 - `internal/db/queries.sql.go` - From `make sqlc`
-- `internal/graph/generated.go` - From `make gqlgen`
+- `internal/graph/generated/generated.go` - From `make gqlgen`
 - `internal/graph/model/*.go` - From `make gqlgen`
 - `internal/router/endpoints_gen.go` - From `go generate ./internal/router/...`
 - `assets/ui/**/-view.tree/*.d.ts` - From $mol framework
@@ -615,7 +615,7 @@ kill -9 <PID>
 **Code Generation Errors:**
 ```bash
 # Clean generated files
-rm -rf internal/graph/generated.go
+rm -rf internal/graph/generated/generated.go
 rm -rf internal/db/queries.sql.go
 
 # Regenerate
