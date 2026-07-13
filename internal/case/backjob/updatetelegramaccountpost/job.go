@@ -21,7 +21,10 @@ type UpdateTelegramAccountPostEnv interface {
 
 func New(env UpdateTelegramAccountPostEnv) *UpdateTelegramAccountPostJob {
 	return &UpdateTelegramAccountPostJob{
-		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+		enqueue: jobs.Register(env, QueueID, JobID, Priority,
+			func(ctx context.Context, notePathID int64) error {
+				return Resolve(ctx, env, notePathID)
+			}),
 	}
 }
 

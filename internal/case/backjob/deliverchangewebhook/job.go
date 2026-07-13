@@ -22,7 +22,10 @@ type DeliverChangeWebhookEnv interface {
 
 func New(env DeliverChangeWebhookEnv) *DeliverChangeWebhookJob {
 	return &DeliverChangeWebhookJob{
-		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+		enqueue: jobs.Register(env, QueueID, JobID, Priority,
+			func(ctx context.Context, params handlenotewebhooks.DeliverChangeWebhookParams) error {
+				return Resolve(ctx, env, params)
+			}),
 	}
 }
 

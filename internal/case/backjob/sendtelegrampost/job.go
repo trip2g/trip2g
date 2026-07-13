@@ -21,7 +21,10 @@ type SendTelegramPostEnv interface {
 
 func New(env SendTelegramPostEnv) *SendTelegramPostJob {
 	return &SendTelegramPostJob{
-		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+		enqueue: jobs.Register(env, QueueID, JobID, Priority,
+			func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
+				return Resolve(ctx, env, params)
+			}),
 	}
 }
 

@@ -29,7 +29,10 @@ type DeliverCronWebhookEnv interface {
 
 func New(env DeliverCronWebhookEnv) *DeliverCronWebhookJob {
 	return &DeliverCronWebhookJob{
-		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+		enqueue: jobs.Register(env, QueueID, JobID, Priority,
+			func(ctx context.Context, params DeliverCronParams) error {
+				return Resolve(ctx, env, params)
+			}),
 	}
 }
 
