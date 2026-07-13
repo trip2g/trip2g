@@ -38,11 +38,12 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}
+{{ yield section_header(lhs="что умеет один хаб", rhs="6 возможностей · подробности в документации") }}
+<div class="@did">{{ yield mesh_section(path="ru/_index_capabilities.md") }}</div>
+{{ else }}
 {{ yield section_header(lhs="what one hub does", rhs="6 capabilities · full guides in docs") }}
 <div class="@did">{{ yield mesh_section(path="_index_capabilities.md") }}</div>
 {{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="что умеет один хаб", rhs="6 возможностей · подробности в документации") }}
-<div class="@did">{{ yield mesh_section(path="ru/_index_capabilities.md") }}</div>
 {{ end }}
