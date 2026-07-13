@@ -34,51 +34,9 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <footer class="@did">
-  <div>
-    <h4 class="@did__heading">// trip2g</h4>
-    <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
-    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="mesh-foot__cta")}}
-  </div>
-  <div>
-    <h4 class="@did__heading">Philosophy</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/three_zones">/three_zones</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/why_not_book">/why_not_book</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/universality_tax">/universality_tax</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/paths_not_taken">/paths_not_taken</a></li>
-    </ul>
-  </div>
-  <div>
-    <h4 class="@did__heading">Docs</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/en/agent">/personal-agent</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/getting_started">/getting-started</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/federation">/federation</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/telegram">/telegram</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/webhooks">/webhooks</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/changelog">/changelog</a></li>
-    </ul>
-  </div>
-  <div>
-    <h4 class="@did__heading">Contact</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
-      <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
-    </ul>
-  </div>
-</footer>
-<div class="@did__coda">
-  <span>© trip2g.com · 2025–2026 · MIT</span>
-  <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-<footer class="@did">
+  {{ if lang == "ru" }}
   <div>
     <h4 class="@did__heading">// trip2g</h4>
     <p class="@did__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
@@ -114,6 +72,43 @@
       <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
     </ul>
   </div>
+  {{ else }}
+  <div>
+    <h4 class="@did__heading">// trip2g</h4>
+    <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
+    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="mesh-foot__cta")}}
+  </div>
+  <div>
+    <h4 class="@did__heading">Philosophy</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/three_zones">/three_zones</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/why_not_book">/why_not_book</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/universality_tax">/universality_tax</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/thoughts/paths_not_taken">/paths_not_taken</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4 class="@did__heading">Docs</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="/en/agent">/personal-agent</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/getting_started">/getting-started</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/federation">/federation</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/telegram">/telegram</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/user/webhooks">/webhooks</a></li>
+      <li class="@did__item"><a class="@did__link" href="/en/changelog">/changelog</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4 class="@did__heading">Contact</h4>
+    <ul class="@did__list">
+      <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
+      <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
+      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+    </ul>
+  </div>
+  {{ end }}
 </footer>
 <div class="@did__coda">
   <span>© trip2g.com · 2025–2026 · MIT</span>
