@@ -61,6 +61,77 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}
+{{ yield section_header(lhs="для кого это", rhs="4 паттерна · один протокол") }}
+<div class="cases">
+
+  <article class="case">
+    <div class="case-topo">
+      <div class="case-topo-label">topology · solo</div>
+      <img src="{{ asset("topo-solo.svg") }}" alt="" width="200" height="130" loading="lazy">
+    </div>
+    <div class="case-body">
+      <div class="case-tag">[01] solo</div>
+      <h3 class="case-h">Один человек, много баз</h3>
+      <dl class="case-rows">
+        <dt>Роль</dt><dd>Исследователь или учащийся — знания разбросаны по Obsidian, книгам, курсам, сохранённым статьям.</dd>
+        <dt>Настройка</dt><dd>Один хаб. Каждая книга, курс, проект — отдельная база. Добавь когда начинаешь, поставь на паузу когда заканчиваешь.</dd>
+        <dt>Результат</dt><dd>Один вопрос агенту — ответы из всего что вы когда-либо читали, с источниками.</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="case">
+    <div class="case-topo">
+      <div class="case-topo-label">topology · friends</div>
+      <img src="{{ asset("topo-friends.svg") }}" alt="" width="200" height="130" loading="lazy">
+    </div>
+    <div class="case-body">
+      <div class="case-tag">[02] friends</div>
+      <h3 class="case-h">Приватная сеть, 3–5 участников</h3>
+      <dl class="case-rows">
+        <dt>Роль</dt><dd>Небольшой доверенный круг — совместные читатели, напарники по учёбе, командная работа.</dd>
+        <dt>Настройка</dt><dd>Каждый запускает свой хаб. Все хабы связаны друг с другом. Доступ настраивается на уровне базы.</dd>
+        <dt>Результат</dt><dd>Один вопрос агенту — ответ из объединённых знаний всей группы, без SaaS посередине.</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="case">
+    <div class="case-topo">
+      <div class="case-topo-label">topology · company</div>
+      <img src="{{ asset("topo-company.svg") }}" alt="" width="200" height="130" loading="lazy">
+    </div>
+    <div class="case-body">
+      <div class="case-tag">[03] company internal</div>
+      <h3 class="case-h">Звезда: компания + сотрудники</h3>
+      <dl class="case-rows">
+        <dt>Роль</dt><dd>Организация с общими документами и личными рабочими заметками сотрудников. Роли, области доступа, хранение.</dd>
+        <dt>Настройка</dt><dd>Один центральный hub хранит канонические данные. Каждый сотрудник запускает (или арендует) личный hub, связанный с центром.</dd>
+        <dt>Результат</dt><dd>Онбординг, история проектов, неформальные знания — всё доступно для запросов, но доступ к каждому vault остаётся гранулярным.</dd>
+      </dl>
+    </div>
+  </article>
+
+  <article class="case">
+    <div class="case-topo">
+      <div class="case-topo-label">topology · b2b</div>
+      <img src="{{ asset("topo-b2b.svg") }}" alt="" width="200" height="130" loading="lazy">
+    </div>
+    <div class="case-body">
+      <div class="case-tag">[04] b2b mesh</div>
+      <h3 class="case-h">Две компании, один мост</h3>
+      <dl class="case-rows">
+        <dt>Роль</dt><dd>Партнёрские организации, которым нужно обменяться частью данных — исследования, цепочки поставок, совместные проекты.</dd>
+        <dt>Настройка</dt><dd>Каждая компания сохраняет свою звезду. Два центральных hub'а связаны через ограниченный, аудируемый доступ.</dd>
+        <dt>Результат</dt><dd>Общие знания без слияния систем, экспорта данных и входа в сторонний сервис.</dd>
+      </dl>
+    </div>
+  </article>
+
+</div>
+{{ else }}
 {{ yield section_header(lhs="who is this for", rhs="4 patterns · same protocol") }}
 <div class="cases">
 
@@ -130,74 +201,4 @@
 
 </div>
 {{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="для кого это", rhs="4 паттерна · один протокол") }}
-<div class="cases">
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · solo</div>
-      <img src="{{ asset("topo-solo.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[01] solo</div>
-      <h3 class="case-h">Один человек, много баз</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Исследователь или учащийся — знания разбросаны по Obsidian, книгам, курсам, сохранённым статьям.</dd>
-        <dt>Настройка</dt><dd>Один хаб. Каждая книга, курс, проект — отдельная база. Добавь когда начинаешь, поставь на паузу когда заканчиваешь.</dd>
-        <dt>Результат</dt><dd>Один вопрос агенту — ответы из всего что вы когда-либо читали, с источниками.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · friends</div>
-      <img src="{{ asset("topo-friends.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[02] friends</div>
-      <h3 class="case-h">Приватная сеть, 3–5 участников</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Небольшой доверенный круг — совместные читатели, напарники по учёбе, командная работа.</dd>
-        <dt>Настройка</dt><dd>Каждый запускает свой хаб. Все хабы связаны друг с другом. Доступ настраивается на уровне базы.</dd>
-        <dt>Результат</dt><dd>Один вопрос агенту — ответ из объединённых знаний всей группы, без SaaS посередине.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · company</div>
-      <img src="{{ asset("topo-company.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[03] company internal</div>
-      <h3 class="case-h">Звезда: компания + сотрудники</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Организация с общими документами и личными рабочими заметками сотрудников. Роли, области доступа, хранение.</dd>
-        <dt>Настройка</dt><dd>Один центральный hub хранит канонические данные. Каждый сотрудник запускает (или арендует) личный hub, связанный с центром.</dd>
-        <dt>Результат</dt><dd>Онбординг, история проектов, неформальные знания — всё доступно для запросов, но доступ к каждому vault остаётся гранулярным.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · b2b</div>
-      <img src="{{ asset("topo-b2b.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[04] b2b mesh</div>
-      <h3 class="case-h">Две компании, один мост</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Партнёрские организации, которым нужно обменяться частью данных — исследования, цепочки поставок, совместные проекты.</dd>
-        <dt>Настройка</dt><dd>Каждая компания сохраняет свою звезду. Два центральных hub'а связаны через ограниченный, аудируемый доступ.</dd>
-        <dt>Результат</dt><dd>Общие знания без слияния систем, экспорта данных и входа в сторонний сервис.</dd>
-      </dl>
-    </div>
-  </article>
-
-</div>
 {{ end }}
