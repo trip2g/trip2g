@@ -414,14 +414,23 @@ body {
   margin-bottom: calc(var(--pico-spacing) * 1.5);
 }
 
+// Inline backlinks/similar blocks under the article body: separate them from
+// the content with a top hairline instead of running them straight into the text.
+.layout__main .widget {
+  margin-top: calc(var(--pico-spacing) * 2);
+  padding-top: calc(var(--pico-spacing) * 1.25);
+  border-top: var(--pico-border-width) solid var(--pico-muted-border-color);
+}
+
 .widget__title {
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--pico-muted-color);
-  margin: calc(var(--pico-spacing) * 1.25) 0 0.2rem 0;
+  margin: calc(var(--pico-spacing) * 1.25) 0 0.35rem 0;
   .widget:first-child & { margin-top: 0; }
+  .layout__main .widget & { margin-top: 0; }
 }
 
 .widget__list {
@@ -432,6 +441,7 @@ body {
 }
 
 .widget__item {
+  list-style: none;
   margin: 0;
   padding: calc(var(--pico-nav-element-spacing-vertical) * 0.25) 0;
 }
