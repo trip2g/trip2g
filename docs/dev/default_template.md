@@ -202,6 +202,29 @@ Each magazine card displays an image from `note.FirstImageURL()`:
 
 The featured card shows images at 280px height; grid cards at 200px.
 
+### Card Excerpt
+
+Each card shows a short preview built by `PartialRenderer.Introduce()` — the note body **up to the first heading or the first thematic break (`---`)**, whichever comes first.
+
+To control the preview, put a `---` right after a short intro:
+
+```markdown
+---
+title: "My Post"
+---
+
+One or two sentences that make a good card preview.
+
+---
+
+## The rest of the article
+Everything below the `---` stays off the card.
+```
+
+Notes:
+- The excerpt **drops tables** — a leading table would blow out the fixed-size card, so `Introduce()` skips `*extast.Table` nodes and keeps the surrounding prose. Still, prefer a `---` cut after a short intro rather than relying on this fallback.
+- Frontmatter must be well-formed YAML between two `---` fences. If the YAML fails to parse (for example an **unquoted `title:` that contains a colon**, like `title: Env pattern: one spine`), goldmark-meta leaves the whole block in the body and it renders as visible text. Quote such values: `title: "Env pattern: one spine"`. A body thematic break (`---`) never collides with this because only a `---` on line 1 opens frontmatter.
+
 ## Footer
 
 The site footer is rendered from a note specified in frontmatter via `footer: [[Footer]]`.
