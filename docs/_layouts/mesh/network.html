@@ -88,35 +88,16 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">then, the payoff</div>
-    <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
-  </div>
-  <div class="@did__right">
-    <div class="@did__frame mesh-network__frame--graph mesh-network__graph">
-      <div class="@did__frame-head">
-        <span>fig.01 · mesh.trace · query.route</span>
-        <span class="@did__live">LIVE</span>
-      </div>
-      <div id="mesh-svg-mount"></div>
-    </div>
-    <div class="@did__frame mesh-network__frame--trace">
-      <div class="@did__frame-head">
-        <span>stdout · /var/log/mesh.trace</span>
-        <span style="color: var(--muted)">tail -f</span>
-      </div>
-      <div class="@did__trace-stream" id="trace-stream"></div>
-    </div>
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
-  <div class="@did__left">
+    {{ if lang == "ru" }}
     <div class="@did__eyebrow">а дальше</div>
     <div class="@did__text">{{ yield mesh_section(path="ru/_index_payoff.md") }}</div>
+    {{ else }}
+    <div class="@did__eyebrow">then, the payoff</div>
+    <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
+    {{ end }}
   </div>
   <div class="@did__right">
     <div class="@did__frame mesh-network__frame--graph mesh-network__graph">
