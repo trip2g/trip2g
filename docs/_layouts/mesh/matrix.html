@@ -32,6 +32,7 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <div class="@did">
   <div class="@did__cell mesh-matrix__cell--red">
     <pre class="@did__ascii mesh-matrix__ascii--red">
@@ -39,34 +40,15 @@
   ██╔══██╗██╔════╝██╔══██╗
   ██████╔╝█████╗  ██║  ██║
   ██╔══██╗██╔══╝  ██║  ██║</pre>
-    <div class="@did__title">Take the red pill.</div>
-    <div class="@did__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
-    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="mesh-matrix__cta")}}
-  </div>
-  <div class="@did__cell mesh-matrix__cell--blue">
-    <pre class="@did__ascii mesh-matrix__ascii--blue">
-  ██████╗ ██╗     ██╗   ██╗███████╗
-  ██╔══██╗██║     ██║   ██║██╔════╝
-  ██████╔╝██║     ██║   ██║█████╗
-  ██╔══██╗██║     ██║   ██║██╔══╝</pre>
-    <div class="@did__title">Take the blue pill.</div>
-    <div class="@did__desc">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
-    <span class="@did__nocta">close tab</span>
-  </div>
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-<div class="@did">
-  <div class="@did__cell mesh-matrix__cell--red">
-    <pre class="@did__ascii mesh-matrix__ascii--red">
-  ██████╗ ███████╗██████╗
-  ██╔══██╗██╔════╝██╔══██╗
-  ██████╔╝█████╗  ██║  ██║
-  ██╔══██╗██╔══╝  ██║  ██║</pre>
+    {{ if lang == "ru" }}
     <div class="@did__title">Возьми красную таблетку.</div>
     <div class="@did__desc">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
     {{yield mesh_button(label="mcp:add →", href="/ru/simple", modifier="mesh-matrix__cta")}}
+    {{ else }}
+    <div class="@did__title">Take the red pill.</div>
+    <div class="@did__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
+    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="mesh-matrix__cta")}}
+    {{ end }}
   </div>
   <div class="@did__cell mesh-matrix__cell--blue">
     <pre class="@did__ascii mesh-matrix__ascii--blue">
@@ -74,9 +56,15 @@
   ██╔══██╗██║     ██║   ██║██╔════╝
   ██████╔╝██║     ██║   ██║█████╗
   ██╔══██╗██║     ██║   ██║██╔══╝</pre>
+    {{ if lang == "ru" }}
     <div class="@did__title">Возьми синюю таблетку.</div>
     <div class="@did__desc">Закрой вкладку. Вернись читать лендинги. История заканчивается. Ты просыпаешься и веришь во что хочешь.</div>
     <span class="@did__nocta">закрыть вкладку</span>
+    {{ else }}
+    <div class="@did__title">Take the blue pill.</div>
+    <div class="@did__desc">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
+    <span class="@did__nocta">close tab</span>
+    {{ end }}
   </div>
 </div>
 {{ end }}
