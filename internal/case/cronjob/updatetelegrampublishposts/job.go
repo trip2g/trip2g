@@ -2,28 +2,29 @@ package updatetelegrampublishposts
 
 import (
 	"context"
+	"trip2g/internal/cronjobs"
 )
 
-type Job struct {
+type job struct {
 	env Env
 }
 
-func New(env Env) *Job {
-	return &Job{env: env}
+func New(env Env) cronjobs.Job {
+	return &job{env: env}
 }
 
-func (j *Job) Name() string {
+func (j *job) Name() string {
 	return "update_telegram_publish_posts"
 }
 
-func (j *Job) Schedule() string {
+func (j *job) Schedule() string {
 	return "0 0 0 * * *" // daily at midnight
 }
 
-func (j *Job) ExecuteAfterStart() bool {
+func (j *job) ExecuteAfterStart() bool {
 	return false
 }
 
-func (j *Job) Execute(ctx context.Context) (any, error) {
+func (j *job) Execute(ctx context.Context) (any, error) {
 	return Resolve(ctx, j.env)
 }
