@@ -45,32 +45,9 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
 <section class="@did">
-  <div class="@did__text">
-    <h2 class="@did__title">Data lives where<br>you put it.</h2>
-    <p class="@did__p">
-      trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
-      pixel, no shadow copy of your notes on someone else's box.
-    </p>
-    <p class="@did__p">
-      Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
-    </p>
-    <ul class="@did__list">
-      <li class="@did__item"><span class="@did__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
-      <li class="@did__item"><span class="@did__item-key">access</span><span>per-base toggle · pause anytime</span></li>
-      <li class="@did__item"><span class="@did__item-key">peers</span><span>opt-in only · revocable trust</span></li>
-      <li class="@did__item"><span class="@did__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
-      <li class="@did__item"><span class="@did__item-key">code</span><span>MIT · audit, fork, run</span></li>
-    </ul>
-  </div>
-  <div class="@did__diag" aria-hidden="true">
-    <img src="{{ asset("privacy-perimeter.svg") }}" alt="" width="360" height="280" loading="lazy">
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
+  {{ if lang == "ru" }}
   <div class="@did__text">
     <h2 class="@did__title">Данные хранятся там,<br>где вы решите.</h2>
     <p class="@did__p">
@@ -88,6 +65,25 @@
       <li class="@did__item"><span class="@did__item-key">код</span><span>MIT · аудит, форк, запуск</span></li>
     </ul>
   </div>
+  {{ else }}
+  <div class="@did__text">
+    <h2 class="@did__title">Data lives where<br>you put it.</h2>
+    <p class="@did__p">
+      trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
+      pixel, no shadow copy of your notes on someone else's box.
+    </p>
+    <p class="@did__p">
+      Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
+    </p>
+    <ul class="@did__list">
+      <li class="@did__item"><span class="@did__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
+      <li class="@did__item"><span class="@did__item-key">access</span><span>per-base toggle · pause anytime</span></li>
+      <li class="@did__item"><span class="@did__item-key">peers</span><span>opt-in only · revocable trust</span></li>
+      <li class="@did__item"><span class="@did__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
+      <li class="@did__item"><span class="@did__item-key">code</span><span>MIT · audit, fork, run</span></li>
+    </ul>
+  </div>
+  {{ end }}
   <div class="@did__diag" aria-hidden="true">
     <img src="{{ asset("privacy-perimeter.svg") }}" alt="" width="360" height="280" loading="lazy">
   </div>
