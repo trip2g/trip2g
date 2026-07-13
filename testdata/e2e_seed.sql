@@ -508,7 +508,7 @@ CREATE TABLE cron_jobs (
   expression text not null,
   last_exec_at datetime
 );
-INSERT INTO cron_jobs VALUES(1,'apply_git_changes',1,'0 0 0 * * *',NULL);
+INSERT INTO cron_jobs VALUES(1,'materialize_git_mirror',1,'0 0 0 * * *',NULL);
 INSERT INTO cron_jobs VALUES(2,'remove_expired_tg_chat_members',1,'0 0 * * * *',NULL);
 INSERT INTO cron_jobs VALUES(3,'clear_cronjob_execution_history',1,'0 0 0 * * *',NULL);
 INSERT INTO cron_jobs VALUES(4,'send_scheduled_telegram_publishposts',1,'0 * * * * *','2025-12-18 07:42:00');
