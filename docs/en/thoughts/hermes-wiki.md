@@ -35,12 +35,23 @@ design I want" — and a minute later you get a link to a finished landing
 page on your own domain. Notes and website live in the same place; backing
 it up means copying one file.
 
+Here's the part that matters: you can just tell your site what to do now. You
+drop a line into Telegram — "make me a page like this" — and that's it:
+hermes reads it and lays it out, trip2g puts it on your domain. They split
+the work between themselves.
+
+![[tg_publish.webp]]
+*One line to the bot in Telegram, and a page appears on your domain.*
+
 And you don't have to type. Send the agent a voice message — "make me a page
 about a space café, dark theme" — and it transcribes the clip on the server
 itself (a local Whisper, nothing leaves the box) and builds the page from
 what you said. Talking your website into existence turns out to be the most
 natural interface it has: you speak a sentence into Telegram on the way
 somewhere, and a page shows up on your domain.
+
+![[hermes-wiki-kosmicheskoe-kafe.webp]]
+*The finished page on your own domain.*
 
 I call it a site-agent. Not an assistant in someone else's cloud that
 changes its pricing tomorrow, but a tenant on your machine. Its memory is a
