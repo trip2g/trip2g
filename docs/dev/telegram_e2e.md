@@ -291,3 +291,44 @@ The driver is independently smoke-testable without the bot:
 "$TG_E2E_PYTHON" internal/case/handletgupdate/testdata/tg_e2e/tg_driver.py whoami
 ```
 
+### Proven live
+
+This test has been run to green against a real Telegram account and a real
+(isolated, branch-built) instance:
+
+```
+=== RUN   TestE2ELiveTgSubgraphAccess
+    e2e_live_client_test.go:71: connected real Telegram account id=7828312136
+    e2e_live_client_test.go:75: join: Joined chat via invite hash.
+    e2e_live_client_test.go:78: content menu granted access to subgraph "premium"
+    e2e_live_client_test.go:82: leave: Left basic group trip2g e2e live test 1783931218 (ID: -5576940310).
+    e2e_live_client_test.go:83: content menu empty after leaving group (access revoked)
+--- PASS: TestE2ELiveTgSubgraphAccess (69.42s)
+PASS
+```
+
+Setup notes from that run (see PR #208 description for the full account):
+
+- Build and run this branch's own binary as an **isolated** instance (separate
+  `--listen-addr`, separate copy of the `.sqlite3` file) rather than reusing a
+  shared dev stand running older code — otherwise the test proves nothing about
+  the fix.
+- Leave `--public-url` **empty** on that isolated instance. A non-empty
+  `https://...` `PublicURL` switches `internal/tgbots` into webhook mode
+  (`bots.go`: `strings.HasPrefix(publicURL, "https")`), which stops the
+  long-poll loop the bot needs for this test. An empty `PublicURL` also makes
+  `GenerateTgAuthURL` fall back to `https://example.com` for the inline auth
+  button, which is syntactically valid for Telegram without needing a
+  reachable public host.
+- Give the "latest" noteloader a few seconds after boot to finish indexing
+  before sending `/content` — `sendContentMenu` reads `LatestNoteViews()`,
+  which is nil until the initial index pass completes (visible as
+  `latest noteloader: notes indexed ... total=N` in the server log). Hitting
+  it before that log line is an unrelated nil-pointer crash, not a bug in this
+  PR.
+- If reusing a DB copy that already has fixture rows (e.g. from a previous
+  manual setup), check `user_subgraph_accesses` for a **direct** grant — it
+  bypasses the TG-membership path entirely and will make `/content` show
+  content regardless of group join/leave, masking the very thing this test
+  proves.
+
