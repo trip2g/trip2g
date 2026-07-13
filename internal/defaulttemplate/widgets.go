@@ -41,7 +41,10 @@ type WidgetRef struct {
 }
 
 // parseContentRef parses a content string into a ContentRef.
-// Recognized values: "selfcontent", "magazine", "[[Title]]", "path.md", false.
+// Recognized values: "selfcontent", "magazine", "toc", "inlinks"/"backlinks",
+// "outlinks", "similar", "[[Title]]", "path.md", false.
+// The widget keywords mirror parseWidgetRef so a content: list can render the
+// same blocks (backlinks, similar, TOC, ...) inline under the note body.
 func parseContentRef(raw interface{}) ContentRef {
 	s, ok := raw.(string)
 	if !ok {
@@ -60,6 +63,14 @@ func parseContentRef(raw interface{}) ContentRef {
 		return ContentRef{Kind: ContentRefSelfContent}
 	case "magazine":
 		return ContentRef{Kind: ContentRefMagazine}
+	case "toc":
+		return ContentRef{Kind: ContentRefTOC}
+	case "inlinks", "backlinks":
+		return ContentRef{Kind: ContentRefInLinks}
+	case "outlinks":
+		return ContentRef{Kind: ContentRefOutLinks}
+	case "similar":
+		return ContentRef{Kind: ContentRefSimilar}
 	case "false", "none":
 		return ContentRef{Kind: ContentRefNone}
 	}
