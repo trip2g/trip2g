@@ -240,21 +240,18 @@ var _ wtf.DialService = (*DialService)(nil)
 
 Интерфейс объявляет **провайдер** (root-пакет), не потребитель. `DialService` большой — все операции с сущностью в одном интерфейсе. Моки написаны вручную. Нет центрального `app`, который передаёт себя как env.
 
-### swaggest/usecase — фреймворк с рефлексией
+### swaggest/usecase — фреймворк вокруг interactor'а
 
-[swaggest/usecase](https://github.com/swaggest/usecase) использует один универсальный контракт через `interface{}`:
+[swaggest/usecase](https://github.com/swaggest/usecase) строится вокруг одной универсальной точки входа. Старое API (`NewIOI`) работало через `interface{}` с рантайм-кастами; современное `NewInteractor` — красивый дженерик, вход и выход типизированы:
 
 ```go
-u := usecase.NewIOI(new(myInput), new(myOutput),
-    func(ctx context.Context, input, output interface{}) error {
-        in := input.(*myInput)   // type assertion в рантайме
-        out := output.(*myOutput)
-        out.Value1 = in.Param1 * 2
-        return nil
-    })
+u := usecase.NewInteractor(func(ctx context.Context, input myInput, output *myOutput) error {
+    output.Value1 = input.Param1 * 2
+    return nil
+})
 ```
 
-Никаких `Env`-интерфейсов — зависимости захватываются через замыкания. Input/output — `interface{}` с рефлексией. Это фреймворк для генерации API-документации, а не архитектурный паттерн управления зависимостями.
+По нашему же правилу это честный дженерик: он делает реальную работу, убирая касты. Разница в другом: типизированы вход и выход, но не зависимости — их interactor захватывает замыканием из внешнего скоупа, без объявленного контракта вроде `Env`. Впрочем, подходы ортогональны: внутрь interactor'а можно положить свой `Resolve(ctx, env, input)` — swaggest возьмёт на себя транспорт и генерацию API-документации, Env-паттерн — зависимости.
 
 ### Сравнение
 
@@ -266,7 +263,7 @@ u := usecase.NewIOI(new(myInput), new(myOutput),
 | Моки | ручные | не нужны | codegen (`moq`) |
 | Точка входа | метод на struct | `Interact(ctx, in, out)` | `Resolve(ctx, env, input)` |
 | `app` как hub | нет аналога | нет аналога | `app` передаёт себя как env |
-| Type safety | явная проверка | рантайм (рефлексия) | duck typing в точках вызова + конструкторы как доказательства |
+| Type safety | явная проверка | generics (новое API) | duck typing в точках вызова + конструкторы как доказательства |
 
 Самое уникальное в trip2g-подходе: `app` передаёт себя — `hidenotes.Resolve(ctx, a, input)`. Один объект одновременно — адаптер для всех портов, и компилятор проверяет это для 60+ use cases.
 

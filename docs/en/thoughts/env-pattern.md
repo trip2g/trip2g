@@ -241,21 +241,18 @@ var _ wtf.DialService = (*DialService)(nil)
 
 The interface is declared by the **provider** (the root package), not the consumer. `DialService` is big: all operations on an entity in one interface. Mocks are handwritten. There is no central `app` passing itself as env.
 
-### swaggest/usecase: a framework with reflection
+### swaggest/usecase: a framework around an interactor
 
-[swaggest/usecase](https://github.com/swaggest/usecase) uses one universal contract through `interface{}`:
+[swaggest/usecase](https://github.com/swaggest/usecase) is built around one universal entry point. The old API (`NewIOI`) worked through `interface{}` with runtime casts; the modern `NewInteractor` is a genuinely nice generic, with typed input and output:
 
 ```go
-u := usecase.NewIOI(new(myInput), new(myOutput),
-    func(ctx context.Context, input, output interface{}) error {
-        in := input.(*myInput)   // runtime type assertion
-        out := output.(*myOutput)
-        out.Value1 = in.Param1 * 2
-        return nil
-    })
+u := usecase.NewInteractor(func(ctx context.Context, input myInput, output *myOutput) error {
+    output.Value1 = input.Param1 * 2
+    return nil
+})
 ```
 
-No `Env` interfaces; dependencies are captured in closures. Input/output are `interface{}` with reflection. It is a framework for generating API documentation, not an architectural pattern for managing dependencies.
+By our own rule this is an honest generic: it does real work by removing the casts. The difference lies elsewhere: input and output are typed, but the dependencies are not. The interactor captures them in a closure from the surrounding scope, with no declared contract like `Env`. The two approaches are orthogonal, though: you can put your own `Resolve(ctx, env, input)` inside the interactor, letting swaggest handle transport and API documentation while the Env pattern handles dependencies.
 
 ### Comparison
 
@@ -267,7 +264,7 @@ No `Env` interfaces; dependencies are captured in closures. Input/output are `in
 | Mocks | handwritten | not needed | codegen (`moq`) |
 | Entry point | method on struct | `Interact(ctx, in, out)` | `Resolve(ctx, env, input)` |
 | `app` as hub | no analog | no analog | `app` passes itself as env |
-| Type safety | explicit check | runtime (reflection) | duck typing at call sites + constructors as proofs |
+| Type safety | explicit check | generics (new API) | duck typing at call sites + constructors as proofs |
 
 The most distinctive part of the trip2g approach: `app` passes itself, as in `hidenotes.Resolve(ctx, a, input)`. One object is the adapter for every port at once, and the compiler verifies it for 60+ use cases.
 
