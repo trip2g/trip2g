@@ -1,16 +1,43 @@
+---
+subgraph: private
+---
+
 # Agent context
 
 Publishing platform: Obsidian vault → website. Sync via Obsidian plugin, CLI, or Git.
+
+## Quick start (for an agent)
+
+- **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — every note becomes a page; `_index.md` is the homepage.
+- **Edit content:** notes are plain Markdown files in this folder; edit them, then sync.
+- **Manage the site:** call admin GraphQL / search via the `my-trip2g-instance` MCP server (`.mcp.json`).
 
 ## How publishing works
 
 - **Every note becomes a page** on the site, at a URL derived from its path.
 - **Hidden notes:** any path component starting with `_` (e.g. `_index.md`, `_layouts/`, `drafts/_wip.md`) is a system/hidden note — excluded from listings and search, but still reachable directly when you have access.
-- **Subgraphs + access control:** group notes into subgraphs and gate each one — **public**, **subscription-only**, or admin-only. Set `subgraphs:` in frontmatter; `free: true` makes a note public.
+- **Access is closed by default:** a new note is gated behind the paywall (subscriber-only) — on a fresh site with no subscribers, only you (owner/admin) see it. To open it up, either add `free: true` to its frontmatter, or put it in a subgraph and set that subgraph's access to **public** (vs. subscription-only or admin-only) via `subgraphs:` in frontmatter.
+- **Templating engine:** pages are fully customizable via Jet-based layouts under `_layouts/` — see [Custom layouts](#custom-layouts).
 - **Rich content:** **Mermaid** diagrams, **datachart** (charts from CSV), and an **RSS** feed are rendered automatically.
 - **Admin via MCP:** manage the whole site (notes, subgraphs, keys, settings) by calling admin GraphQL through `my-trip2g-instance` — see [Enable admin GraphQL](#enable-admin-graphql).
 
-Look up any of these on `trip2g-docs-public-hub` (`search` for "subgraphs", "mermaid", "datachart", "rss", "routes").
+Look up any of these on `trip2g-docs-public-hub` (`search` for "subgraphs", "mermaid", "datachart", "rss", "routes") — see [Platform docs](#platform-docs), already wired in and usable right now, no setup needed.
+
+## Custom layouts
+
+Pages render through Jet templates under `_layouts/`; a note opts in via `layout: <path>` frontmatter (path relative to `_layouts/`, no extension). Layouts build on reusable **Jet blocks** — define them once with `{{ block name(args) }}...{{ end }}` (conventionally in a `_blocks.html`), then `{{ import "_blocks" }}` and `{{ yield name(args) }}` them from any layout.
+
+Working example: `_layouts/demo/simple.html` imports a block from `_layouts/demo/_blocks.html` and yields it; `simple_layout.md` uses it via `layout: demo/simple` — copy this pattern to build your own. Full API and JSON-layout format: search `trip2g-docs-public-hub` for **Layouts API** and **JSON Layouts**.
+
+**Ready-made: Kanban board.** [github.com/trip2g/kanban_template](https://github.com/trip2g/kanban_template) renders any obsidian-kanban note as a live draggable board that saves edits back into the note. Install into the vault, then add `layout: kanban` to a kanban note's frontmatter:
+
+```bash
+mkdir -p _layouts
+curl -L -o _layouts/kanban.html \
+  https://github.com/trip2g/kanban_template/releases/latest/download/kanban.html
+```
+
+Details: search `trip2g-docs-public-hub` for **Kanban board template**.
 
 ## MCP servers
 
@@ -54,9 +81,20 @@ Your hub can fan out to other trip2g/MCP bases through one endpoint. Extra tools
 
 Register a peer by adding a note with `mcp_federation_kb_url` in its frontmatter (body = when to use that base). When local `search` surfaces such a KB-note, it returns a `kind: "federation_kb"` marker telling you which `kb_id` to query. Full guide: search `trip2g-docs-public-hub` for **MCP Federation**.
 
+### One graph per owner — federate the rest
+
+trip2g's editing model assumes **one editor per vault**. Two or more writers on the same graph step on each other quickly — sync conflicts, clashing note structures, unclear ownership. Don't scale a vault by adding editors; scale by adding vaults: each knowledge base has a single owner responsible for their slice of the graph, and the bases link up through federation (`mcp_federation_kb_url` notes + `federated_search`).
+
+This also works across a local and a server instance at once. A practical split for an agent:
+
+- **Local trip2g** = your private RAG store. Fast `search` over your own notes, cheap section reads via `note_html` + `toc_path`.
+- **Server trip2g** = the shared graph. Reach it from the local instance through `federated_search` / `federated_note_html` — no direct write access needed to read someone else's slice.
+
+Write only to the graph you own; read everything else through federation.
+
 ### Platform docs
 
-Use `trip2g-docs-public-hub` to look up how the platform works (publishing, templates, GraphQL, monetization, self-hosting). Run `search(query)` against it the same way, then fetch sections with the fuzzy-pointer workflow above.
+`trip2g-docs-public-hub` is already wired into `.mcp.json` and usable right now, no setup — use it to look up how anything works (publishing, templates, subgraphs, GraphQL, monetization, self-hosting). Run `search(query)` against it the same way, then fetch sections with the fuzzy-pointer workflow above.
 
 ## Sync
 
@@ -79,7 +117,29 @@ Three ways to sync, same notes:
   # Password: <git-token>
   ```
 
-  See `trip2g-docs-public-hub` (`search` for "git sync") for the full workflow.
+  See [Git round-trip](#git-round-trip-for-agents) below.
+
+### Git round-trip (for agents)
+
+The whole site is a git repo — clone, edit markdown, commit, push; the server applies your commits to the live site:
+
+```bash
+git clone {{publicUrl}}/_system/git site   # user / <git-token>
+# non-interactive: insert user:<git-token>@ after https:// in the URL
+cd site
+# ... edit .md files ...
+git add -A && git commit -m "agent: update notes"
+git push   # live once the push succeeds
+```
+
+Rules of the road:
+
+- **The database is canonical; git is a mirror** rebuilt from it on every clone/pull/push. Plugin and editor changes show up as `server sync` snapshot commits — don't treat git history as the site's edit history.
+- **Single branch `master`, fast-forward only.** A rejected push means the site changed under you: `git pull --rebase && git push`.
+- **Only `.md` / `.html` changes apply.** Pushed binary assets are ignored — upload images via the sync CLI instead. Deleting a note file in git hides that note on the site.
+- If applying a push fails server-side, the push is rolled back — the mirror never diverges from the site.
+
+Full guide: search `trip2g-docs-public-hub` for **Git Access**.
 
 ## Enable admin GraphQL
 
