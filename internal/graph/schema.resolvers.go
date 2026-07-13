@@ -15,7 +15,6 @@ import (
 	"math"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
@@ -126,14 +125,16 @@ import (
 	"trip2g/internal/case/createusertoken"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
+	"trip2g/internal/case/getpublicnote"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/listnotepaths"
 	"trip2g/internal/case/listunreleasedchanges"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
-	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/resolvewikilinks"
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -143,13 +144,13 @@ import (
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/case/uploadnoteasset"
+	"trip2g/internal/case/vieweroffers"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/generated"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
-	"trip2g/internal/webhookutil"
 )
 
 // ID is the resolver for the id field.
@@ -2593,52 +2594,7 @@ func (r *formSubmitResolver) Fields(ctx context.Context, obj *db.FormSubmit) ([]
 
 // Value is the resolver for the value field.
 func (r *layoutBlockParamResolver) Value(ctx context.Context, obj *appmodel.LayoutBlockParam) (model.LayoutBlockParamValue, error) {
-	switch obj.Type {
-	case "string":
-		var defaultVal *string
-		if obj.Default != "" {
-			// Remove quotes from string default (e.g., `"hello"` -> `hello`)
-			s := obj.Default
-			if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-				s = s[1 : len(s)-1]
-			}
-			defaultVal = &s
-		}
-		return &model.StringParamValue{DefaultValue: defaultVal}, nil
-
-	case "int":
-		var defaultVal *int32
-		if obj.Default != "" {
-			v, err := strconv.ParseInt(obj.Default, 10, 32)
-			if err == nil {
-				i32 := int32(v)
-				defaultVal = &i32
-			}
-		}
-		return &model.IntParamValue{DefaultValue: defaultVal}, nil
-
-	case "float":
-		var defaultVal *float64
-		if obj.Default != "" {
-			v, err := strconv.ParseFloat(obj.Default, 64)
-			if err == nil {
-				defaultVal = &v
-			}
-		}
-		return &model.FloatParamValue{DefaultValue: defaultVal}, nil
-
-	case "bool":
-		var defaultVal *bool
-		if obj.Default != "" {
-			v := obj.Default == "true"
-			defaultVal = &v
-		}
-		return &model.BoolParamValue{DefaultValue: defaultVal}, nil
-
-	default:
-		// Unknown type - return nil (no value info)
-		return nil, nil
-	}
+	return layoutBlockParamValue(obj)
 }
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
@@ -3138,68 +3094,7 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		return nil, err
 	}
 
-	var path string
-
-	if input.Path != nil {
-		path = *input.Path
-	}
-
-	// fsPath is the filesystem path (e.g. "boards/task.md") used to match
-	// read_patterns. It is distinct from `path` which is the URL path used
-	// by rendernotepage.Resolve. The two share one namespace so the same glob
-	// patterns cover both reads and writes.
-	var fsPath string
-
-	if input.PathID != nil {
-		latestViews := r.env(ctx).LatestNoteViews()
-
-		for _, view := range latestViews.List {
-			if view.PathID == *input.PathID {
-				path = view.Permalink
-				fsPath = view.Path
-				break
-			}
-		}
-	}
-
-	// When the caller supplies input.Path (a URL), resolve the filesystem path
-	// for the read-pattern check. resolveFsPathFromPermalink looks up the note
-	// in NoteViews.Map (keyed by Permalink) and returns NoteView.Path (the
-	// filesystem path), ensuring scope globs match the same namespace as writes.
-	if fsPath == "" && path != "" {
-		fsPath = resolveFsPathFromPermalink(r.env(ctx).LatestNoteViews(), path)
-	}
-
-	// Enforce read_patterns using the filesystem path so scope globs (e.g.
-	// "boards/**") match the same namespace as write_patterns.
-	// Fail-closed: a scoped token with empty read_patterns denies all reads.
-	if appreq.Scoped(ctx) {
-		rp := appreq.WebhookReadPatterns(ctx)
-		checkPath := fsPath
-		if checkPath == "" {
-			checkPath = path // fallback: URL path if filesystem path unknown
-		}
-		if len(rp) == 0 || !webhookutil.MatchesAny(checkPath, rp) {
-			return nil, nil
-		}
-	}
-
-	request := rendernotepage.Request{
-		Path:      path,
-		Referrer:  input.Referer,
-		UserToken: userToken,
-	}
-
-	response, err := rendernotepage.Resolve(ctx, r.env(ctx), request)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.Note == nil {
-		return nil, nil
-	}
-
-	return model.ConvertNoteToPublic(response.Note), nil
+	return getpublicnote.Resolve(ctx, r.env(ctx), input, userToken)
 }
 
 // Search is the resolver for the search field.
@@ -3219,45 +3114,7 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 		return nil, err
 	}
 
-	if filter != nil && len(filter.Paths) > 0 {
-		paths, fetchErr := r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
-		if fetchErr != nil {
-			return nil, fetchErr
-		}
-		return filterNotePathsByScope(ctx, paths), nil
-	}
-
-	if filter != nil && filter.Search != nil {
-		conn, searchErr := r.Search(ctx, model.SearchInput{Query: *filter.Search})
-		if searchErr != nil {
-			return nil, searchErr
-		}
-
-		// Search already filters by read_patterns (sitesearch.Resolve enforces
-		// scope); convertSearchResultsToNotePath only wraps the results.
-		return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
-	}
-
-	if filter != nil && filter.Like != nil {
-		pattern := *filter.Like
-
-		// Prevent potential DoS attacks with excessive wildcards
-		if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
-			return nil, errors.New("too many wildcard characters in pattern")
-		}
-
-		paths, fetchErr := r.env(ctx).ListNotePathsLike(ctx, pattern)
-		if fetchErr != nil {
-			return nil, fetchErr
-		}
-		return filterNotePathsByScope(ctx, paths), nil
-	}
-
-	paths, fetchErr := r.env(ctx).AllVisibleNotePaths(ctx)
-	if fetchErr != nil {
-		return nil, fetchErr
-	}
-	return filterNotePathsByScope(ctx, paths), nil
+	return listnotepaths.Resolve(ctx, r.env(ctx), filter)
 }
 
 // ResolveWikilinks is the resolver for the resolveWikilinks field.
@@ -3267,34 +3124,7 @@ func (r *queryResolver) ResolveWikilinks(ctx context.Context, filter model.Resol
 		return nil, err
 	}
 
-	nvs := r.env(ctx).LatestNoteViews()
-	var source *appmodel.NoteView
-	if nvs != nil {
-		source = nvs.GetByPathID(filter.NotePathID)
-	}
-
-	results := make([]model.WikilinkResolution, len(filter.Links))
-	for i, link := range filter.Links {
-		res := model.WikilinkResolution{Link: link}
-		if nvs != nil { //nolint:nestif // wikilink resolution requires nil-guard, target resolution, and read-pattern enforcement
-			if target := nvs.ResolveWikilinkTarget(source, link); target != nil {
-				// Enforce read_patterns: a scoped token must not learn the
-				// existence or path of notes outside its scope.
-				if wikilinkTargetAllowed(ctx, target.Path) {
-					res.Path = &target.Path
-					var url string
-					if target.Slug != "" {
-						url = target.PermalinkOriginal
-					} else {
-						url = target.Permalink
-					}
-					res.URL = &url
-				}
-			}
-		}
-		results[i] = res
-	}
-	return results, nil
+	return resolvewikilinks.Resolve(ctx, r.env(ctx), filter)
 }
 
 // UnreleasedChanges is the resolver for the unreleasedChanges field.
@@ -3626,61 +3456,7 @@ func (r *viewerResolver) User(ctx context.Context, obj *appmodel.Viewer) (*db.Us
 
 // Offers is the resolver for the offers field.
 func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filter model.ViewerOffersFilter) (model.ViewerOffers, error) {
-	if filter.PageID == nil {
-		return nil, nil
-	}
-
-	showDraftVersions := false
-	if entry, err := r.env(ctx).GetLatestConfigBool(ctx, "show_draft_versions"); err == nil {
-		showDraftVersions = entry.Value
-	}
-
-	var note *appmodel.NoteView
-
-	if showDraftVersions {
-		note = r.env(ctx).LatestNoteViews().GetByPathID(*filter.PageID)
-	} else {
-		note = r.env(ctx).LiveNoteViews().GetByPathID(*filter.PageID)
-	}
-
-	if note == nil {
-		return nil, nil
-	}
-
-	subgraphNames := note.SubgraphNames
-	if len(subgraphNames) == 0 {
-		subgraphs := r.env(ctx).LiveNoteViews().Subgraphs
-
-		for name := range subgraphs {
-			subgraphNames = append(subgraphNames, name)
-		}
-	}
-
-	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphNames)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(offers) > 0 {
-		return &model.ActiveOffers{Nodes: offers}, nil
-	}
-
-	wl := model.SubgraphWaitList{
-		EmailAllowed: true,
-	}
-
-	bots, err := r.env(ctx).ListEnabledTgBots(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(bots) > 0 {
-		botURL := fmt.Sprintf("https://t.me/%s?start=wl_%d", bots[0].Name, note.PathID)
-
-		wl.TgBotURL = &botURL
-	}
-
-	return &wl, nil
+	return vieweroffers.Resolve(ctx, r.env(ctx), filter)
 }
 
 // ActivePurchases is the resolver for the activePurchases field.
