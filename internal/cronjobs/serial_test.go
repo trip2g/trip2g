@@ -21,7 +21,7 @@ type sleepJob struct {
 func (j *sleepJob) Name() string            { return j.name }
 func (j *sleepJob) Schedule() string        { return "0 0 * * * *" }
 func (j *sleepJob) ExecuteAfterStart() bool { return false }
-func (j *sleepJob) Execute(_ context.Context, _ interface{}) (interface{}, error) {
+func (j *sleepJob) Execute(_ context.Context) (interface{}, error) {
 	entry := time.Now()
 	j.mu.Lock()
 	j.entries = append(j.entries, entry)

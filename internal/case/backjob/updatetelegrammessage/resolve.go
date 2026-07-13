@@ -15,7 +15,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg updatetelegrammessage_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg updatetelegrammessage_test . Env
 
 type Env interface {
 	Logger() logger.Logger
@@ -26,34 +26,44 @@ type Env interface {
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
 
-func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
-	// 5 minutes timeout - updates mostly edit captions, but can replace photos
-	jobTimeout := 5 * time.Minute
+// maxAttempts bounds the total telegram rate-limit retries (initial try + retries).
+const maxAttempts = 3
 
-	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
+	// 5 minutes timeout - updates mostly edit captions, but can replace photos.
+	// Derive from the parent ctx so app shutdown cancels the job.
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	err := Resolve1(jobCtx, env, params)
-	if err != nil {
-		shouldRetry, delay := telegram.HandleRateLimit(err)
-		if shouldRetry {
-			env.Logger().Info("telegram rate limit hit, retrying after delay",
-				"delay", delay,
-				"job", JobID,
-			)
-			time.Sleep(delay)
-			err = Resolve(ctx, env, params)
+	var err error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err = resolve(ctx, env, params)
+		if err == nil {
+			return nil
 		}
 
-		if err != nil {
+		shouldRetry, delay := telegram.HandleRateLimit(err)
+		if !shouldRetry || attempt == maxAttempts {
 			return err
+		}
+
+		env.Logger().Info("telegram rate limit hit, retrying after delay",
+			"delay", delay,
+			"attempt", attempt,
+			"job", JobID,
+		)
+
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 
-	return nil
+	return err
 }
 
-func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
+func resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegrammessage:")
 	post := params.Post
 

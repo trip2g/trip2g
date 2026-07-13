@@ -6,7 +6,7 @@ import (
 	"trip2g/internal/logger"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg updatetelegrampublishposts_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg updatetelegrampublishposts_test . Env
 
 type Env interface {
 	Logger() logger.Logger
@@ -33,7 +33,7 @@ type Result struct {
 	Accounts []ResultAccount `json:"accounts"`
 }
 
-func Resolve(ctx context.Context, env Env) (any, error) {
+func Resolve(ctx context.Context, env Env) (*Result, error) {
 	logger := logger.WithPrefix(env.Logger(), "updatetelegrampublishposts:")
 
 	res := Result{}
@@ -81,5 +81,5 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	}
 
 	logger.Info("completed enqueueing updates", "total_chats", len(chatIDs), "total_accounts", len(accountIDs))
-	return res, nil
+	return &res, nil
 }

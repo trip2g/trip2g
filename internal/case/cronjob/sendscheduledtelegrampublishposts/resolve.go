@@ -34,7 +34,7 @@ type Result struct {
 	AccountPosts []ResultPost `json:"account_posts"`
 }
 
-func Resolve(ctx context.Context, env Env) (any, error) {
+func Resolve(ctx context.Context, env Env) (*Result, error) {
 	res := Result{}
 
 	botPosts, err := enqueueBotJobs(ctx, env)
@@ -49,7 +49,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	}
 	res.AccountPosts = accountPosts
 
-	return res, nil
+	return &res, nil
 }
 
 type jobConfig struct {

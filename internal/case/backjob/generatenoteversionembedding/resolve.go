@@ -1,6 +1,6 @@
 package generatenoteversionembedding
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg generatenoteversionembedding_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg generatenoteversionembedding_test . Env
 
 import (
 	"bytes"

@@ -20,55 +20,33 @@ import (
 )
 
 func getCronJobConfigs(app *app) []cronjobs.Job {
-	// Compile-time interface checks
-	var (
-		_ simplebackup.Env   = app
-		_ vacuumdatabase.Env = app
-
-		_ materializegitmirror.Env         = app
-		_ removeexpiredtgchatmembers.Env   = app
-		_ clearcronjobexecutionhistory.Env = app
-
-		_ sendscheduledtelegrampublishposts.Env = app
-		_ updatetelegrampublishposts.Env        = app
-		_ refreshtelegramaccounts.Env           = app
-		_ refreshtelegramchatusernames.Env      = app
-
-		_ regeneratenoteembeddings.Env = app
-
-		_ executecronwebhooks.Env = app
-
-		_ cleanupwebhookdeliverylogs.Env   = app
-		_ cleanupwebhookdeliveries.Env     = app
-		_ cleanupapikeylogs.Env            = app
-		_ expirestalewebhookdeliveries.Env = app
-	)
-
+	// Each New(app, ...) captures the typed env at wiring time — the constructor
+	// call is the compile-time proof that *app implements the job's Env.
 	jobs := []cronjobs.Job{
-		&materializegitmirror.Job{},
-		&removeexpiredtgchatmembers.Job{},
-		&clearcronjobexecutionhistory.Job{},
-		&sendscheduledtelegrampublishposts.Job{Cron: app.config.CronTelegramPublishSchedule},
-		&updatetelegrampublishposts.Job{},
-		&refreshtelegramaccounts.Job{},
-		&refreshtelegramchatusernames.Job{},
-		&regeneratenoteembeddings.Job{},
-		&executecronwebhooks.Job{Cron: app.config.CronExecuteWebhooksSchedule},
-		&cleanupwebhookdeliverylogs.Job{},
-		&cleanupwebhookdeliveries.Job{},
-		&cleanupapikeylogs.Job{Config: app.config.APIKeyLogs},
-		&expirestalewebhookdeliveries.Job{},
+		materializegitmirror.New(app),
+		removeexpiredtgchatmembers.New(app),
+		clearcronjobexecutionhistory.New(app),
+		sendscheduledtelegrampublishposts.New(app, app.config.CronTelegramPublishSchedule),
+		updatetelegrampublishposts.New(app),
+		refreshtelegramaccounts.New(app),
+		refreshtelegramchatusernames.New(app),
+		regeneratenoteembeddings.New(app),
+		executecronwebhooks.New(app, app.config.CronExecuteWebhooksSchedule),
+		cleanupwebhookdeliverylogs.New(app),
+		cleanupwebhookdeliveries.New(app),
+		cleanupapikeylogs.New(app, app.config.APIKeyLogs),
+		expirestalewebhookdeliveries.New(app),
 	}
 
 	// VACUUM/ANALYZE maintenance is opt-in (heavy full-DB rewrite; incompatible
 	// with Litestream, which owns WAL checkpointing).
 	if app.config.VacuumCron {
-		jobs = append(jobs, &vacuumdatabase.Job{})
+		jobs = append(jobs, vacuumdatabase.New(app))
 	}
 
 	// Conditionally add simple backup job if enabled
 	if app.simpleBackup != nil {
-		jobs = append(jobs, &simplebackup.Job{})
+		jobs = append(jobs, simplebackup.New(app))
 	}
 
 	return jobs

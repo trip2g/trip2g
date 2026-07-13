@@ -8,7 +8,7 @@ import (
 	"trip2g/internal/logger"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg updateallchattelegrampublishposts_test . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg updateallchattelegrampublishposts_test . Env
 
 type Params struct {
 	ChatID int64

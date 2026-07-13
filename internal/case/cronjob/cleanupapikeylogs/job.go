@@ -6,7 +6,12 @@ import (
 
 // Job implements the cronjobs.Job interface.
 type Job struct {
-	Config Config
+	env    Env
+	config Config
+}
+
+func New(env Env, config Config) *Job {
+	return &Job{env: env, config: config}
 }
 
 func (j *Job) Name() string {
@@ -22,6 +27,6 @@ func (j *Job) ExecuteAfterStart() bool {
 	return false
 }
 
-func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	return Resolve(ctx, env.(Env), j.Config) //nolint:errcheck // checked in cmd/server/cronjobs.go.
+func (j *Job) Execute(ctx context.Context) (any, error) {
+	return Resolve(ctx, j.env, j.config)
 }

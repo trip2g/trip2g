@@ -13,6 +13,104 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// rateLimitErr carries the "Too Many Requests" marker telegram.HandleRateLimit
+// looks for; "retry after 0" keeps the retry delay at the 1s floor for tests.
+var rateLimitErr = errors.New("Too Many Requests: retry after 0")
+
+func updateRetryParams() model.TelegramUpdatePostParams {
+	return model.TelegramUpdatePostParams{
+		TelegramSendPostParams: model.TelegramSendPostParams{
+			NotePathID:     123,
+			DBChatID:       456,
+			TelegramChatID: 789,
+			Post: model.TelegramPost{
+				Content: "Updated message",
+				Media:   []string{},
+			},
+		},
+		MessageID: 111,
+	}
+}
+
+func updateRetryEnv(sendFn func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error) *EnvMock {
+	return &EnvMock{
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			return "old_hash", nil
+		},
+		SendTelegramRequestFunc: sendFn,
+		UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
+			return nil
+		},
+	}
+}
+
+func TestResolve_RateLimit_RetriedThenSucceeds(t *testing.T) {
+	calls := 0
+	env := updateRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+		calls++
+		if calls == 1 {
+			return rateLimitErr
+		}
+		return nil
+	})
+
+	err := updatetelegrammessage.Resolve(context.Background(), env, updateRetryParams())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 send attempts (1 retry), got %d", calls)
+	}
+}
+
+func TestResolve_RateLimit_RetriesExhausted(t *testing.T) {
+	env := updateRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+		return rateLimitErr
+	})
+
+	err := updatetelegrammessage.Resolve(context.Background(), env, updateRetryParams())
+	if err == nil {
+		t.Fatal("expected error after retries exhausted, got nil")
+	}
+	if got := len(env.SendTelegramRequestCalls()); got != 3 {
+		t.Errorf("expected 3 send attempts (max), got %d", got)
+	}
+}
+
+func TestResolve_RateLimit_CtxCancelledDuringWait(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	env := updateRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+		cancel() // cancel before the retry wait
+		return rateLimitErr
+	})
+
+	err := updatetelegrammessage.Resolve(ctx, env, updateRetryParams())
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if got := len(env.SendTelegramRequestCalls()); got != 1 {
+		t.Errorf("expected 1 send attempt before ctx cancel, got %d", got)
+	}
+}
+
+func TestResolve_NonRateLimit_NoRetry(t *testing.T) {
+	env := updateRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+		return errors.New("some other telegram error")
+	})
+
+	err := updatetelegrammessage.Resolve(context.Background(), env, updateRetryParams())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got := len(env.SendTelegramRequestCalls()); got != 1 {
+		t.Errorf("expected 1 send attempt (no retry), got %d", got)
+	}
+}
+
 func TestResolve_Success_TextMessage(t *testing.T) {
 	ctx := context.Background()
 
