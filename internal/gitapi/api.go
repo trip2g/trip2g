@@ -25,6 +25,15 @@ import (
 
 var ErrNoAuth = errors.New("no auth provided")
 
+// gitScope is the capability a request needs from a token.
+type gitScope int
+
+const (
+	scopeNone gitScope = iota
+	scopePull
+	scopePush
+)
+
 type NoteSource struct {
 	Path    string
 	Content []byte
@@ -245,7 +254,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 
-	err := api.checkAuth(ctx)
+	token, err := api.checkAuth(ctx)
 	if err != nil {
 		api.logger.Warn("auth failed", "error", err)
 
@@ -262,11 +271,25 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 
-	hdr, ok := handlers[path[len(api.config.BasePath):]]
+	relPath := path[len(api.config.BasePath):]
+
+	hdr, ok := handlers[relPath]
 	if !ok {
 		api.logger.Warn("unsupported path", "path", path)
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		return true
+	}
+
+	// Enforce the token's scope: git-upload-pack (fetch/clone) requires can_pull,
+	// git-receive-pack (push) requires can_push. info/refs is gated on its
+	// ?service= so a scoped token can't advertise the other capability's refs.
+	if scope := requiredScope(relPath, string(ctx.QueryArgs().Peek("service"))); scope != scopeNone {
+		if !tokenHasScope(token, scope) {
+			api.logger.Warn("token scope denied", "path", path, "scope", scope)
+			ctx.SetStatusCode(fasthttp.StatusForbidden)
+			_, _ = ctx.WriteString("token lacks required git scope")
+			return true
+		}
 	}
 
 	api.mu.Lock()
@@ -299,7 +322,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 	return true
 }
 
-func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
+func (api *API) checkAuth(ctx *fasthttp.RequestCtx) (db.GitToken, error) {
 	auth := strings.TrimSpace(string(ctx.Request.Header.Peek("Authorization")))
 	if auth == "" {
 		for k, v := range ctx.Request.Header.All() {
@@ -307,29 +330,29 @@ func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
 		}
 
 		api.logger.Debug("no auth header")
-		return ErrNoAuth
+		return db.GitToken{}, ErrNoAuth
 	}
 
 	const prefix = "Basic "
 	if len(auth) <= len(prefix) || auth[:len(prefix)] != prefix {
 		api.logger.Debug("invalid auth header", "auth", auth)
-		return ErrNoAuth
+		return db.GitToken{}, ErrNoAuth
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
 	if err != nil {
-		return fmt.Errorf("failed to decode auth: %w", err)
+		return db.GitToken{}, fmt.Errorf("failed to decode auth: %w", err)
 	}
 
 	parts := strings.SplitN(string(decoded), ":", 2)
 	if len(parts) != 2 {
 		api.logger.Debug("invalid auth format", "decoded", string(decoded))
-		return ErrNoAuth
+		return db.GitToken{}, ErrNoAuth
 	}
 
 	if parts[0] != "user" {
 		api.logger.Debug("invalid username", "username", parts[0])
-		return ErrNoAuth
+		return db.GitToken{}, ErrNoAuth
 	}
 
 	token := parts[1]
@@ -339,15 +362,48 @@ func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
 	tokenHash := hex.EncodeToString(hash[:])
 
 	// Verify token exists in database
-	_, err = api.env.GitTokenByValueSha256(api.ctx, tokenHash)
+	gitToken, err := api.env.GitTokenByValueSha256(api.ctx, tokenHash)
 	if err != nil {
 		api.logger.Debug("invalid token", "error", err)
-		return ErrNoAuth
+		return db.GitToken{}, ErrNoAuth
 	}
 
 	api.logger.Info("auth success")
 
-	return nil
+	return gitToken, nil
+}
+
+// requiredScope maps a git endpoint (relative path + info/refs service) to the
+// capability a token must hold. scopeNone means the request is not a scoped git
+// operation and no scope check applies.
+func requiredScope(relPath, service string) gitScope {
+	switch relPath {
+	case "/git-upload-pack":
+		return scopePull
+	case "/git-receive-pack":
+		return scopePush
+	case "/info/refs":
+		switch service {
+		case "git-upload-pack":
+			return scopePull
+		case "git-receive-pack":
+			return scopePush
+		}
+	}
+	return scopeNone
+}
+
+// tokenHasScope reports whether the token carries the requested capability. A nil
+// column means the scope was never granted, so no scope = no access.
+func tokenHasScope(token db.GitToken, scope gitScope) bool {
+	switch scope {
+	case scopePull:
+		return token.CanPull != nil && *token.CanPull
+	case scopePush:
+		return token.CanPush != nil && *token.CanPush
+	default:
+		return false
+	}
 }
 
 func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
