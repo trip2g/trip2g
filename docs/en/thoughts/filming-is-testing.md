@@ -43,7 +43,7 @@ The recording itself is automated. Walking the same path by hand stops teaching 
 - Click animations are baked into the code, so the viewer sees the cursor move and press. A recording where things happen without visible cause reads as editing, not as a demo.
 - Today the whole rig is driven by Claude Code, locally, on my machine, and we are packaging Hermes, the open agent we run ourselves, with the same skills. None of it is tied to one model: whoever can read the script and press the buttons can hold the camera.
 
-Not step by step. But the idea is clear.
+Not step by step. But the idea is clear. How this rig later got its own remote machine and a job queue is a story of its own: [[en/thoughts/render-box|The render box]].
 
 ### How the agent does it
 
