@@ -25,6 +25,13 @@ import (
 
 var ErrNoAuth = errors.New("no auth provided")
 
+// Git smart-HTTP service / binary names, shared by the pack dispatch and the
+// info/refs service gate.
+const (
+	gitUploadPackService  = "git-upload-pack"
+	gitReceivePackService = "git-receive-pack"
+)
+
 // gitScope is the capability a request needs from a token.
 type gitScope int
 
@@ -104,8 +111,8 @@ func DefaultConfig() Config {
 func New(ctx context.Context, config Config, env Env) (*API, error) {
 	requiredBins := []string{
 		"git",
-		"git-upload-pack",
-		"git-receive-pack",
+		gitUploadPackService,
+		gitReceivePackService,
 		"tar",
 	}
 
@@ -384,9 +391,9 @@ func requiredScope(relPath, service string) gitScope {
 		return scopePush
 	case "/info/refs":
 		switch service {
-		case "git-upload-pack":
+		case gitUploadPackService:
 			return scopePull
-		case "git-receive-pack":
+		case gitReceivePackService:
 			return scopePush
 		}
 	}
@@ -397,6 +404,8 @@ func requiredScope(relPath, service string) gitScope {
 // column means the scope was never granted, so no scope = no access.
 func tokenHasScope(token db.GitToken, scope gitScope) bool {
 	switch scope {
+	case scopeNone:
+		return false
 	case scopePull:
 		return token.CanPull != nil && *token.CanPull
 	case scopePush:
@@ -409,7 +418,7 @@ func tokenHasScope(token db.GitToken, scope gitScope) bool {
 func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 	service := string(ctx.QueryArgs().Peek("service"))
 
-	if service != "git-upload-pack" && service != "git-receive-pack" {
+	if service != gitUploadPackService && service != gitReceivePackService {
 		return fmt.Errorf("unsupported service: %s", service)
 	}
 
@@ -423,10 +432,10 @@ func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 		api.config.RepoPath,
 	}
 
-	if service == "git-upload-pack" {
-		cmd = exec.Command("git-upload-pack", args...)
+	if service == gitUploadPackService {
+		cmd = exec.Command(gitUploadPackService, args...)
 	} else {
-		cmd = exec.Command("git-receive-pack", args...)
+		cmd = exec.Command(gitReceivePackService, args...)
 	}
 
 	cmd.Stderr = os.Stderr
@@ -447,7 +456,7 @@ func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 }
 
 func (api *API) handleGitUploadPack(ctx *fasthttp.RequestCtx) error {
-	cmd := exec.Command("git-upload-pack", "--stateless-rpc", api.config.RepoPath)
+	cmd := exec.Command(gitUploadPackService, "--stateless-rpc", api.config.RepoPath)
 	cmd.Stdin = bytes.NewReader(ctx.PostBody())
 	cmd.Stdout = ctx
 
@@ -476,7 +485,7 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 		oldRev = strings.TrimSpace(mustGit(api, "rev-parse", api.config.MasterBranch))
 	}
 
-	cmd := exec.Command("git-receive-pack", "--stateless-rpc", api.config.RepoPath)
+	cmd := exec.Command(gitReceivePackService, "--stateless-rpc", api.config.RepoPath)
 	cmd.Stdin = bytes.NewReader(ctx.PostBody())
 	cmd.Stdout = ctx
 	cmd.Stderr = os.Stderr
