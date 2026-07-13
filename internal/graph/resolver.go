@@ -110,13 +110,16 @@ import (
 	"trip2g/internal/case/createusertoken"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
+	"trip2g/internal/case/getpublicnote"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/listnotepaths"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/resolvewikilinks"
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -125,6 +128,7 @@ import (
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
+	"trip2g/internal/case/vieweroffers"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -270,6 +274,10 @@ type Env interface {
 	rendernotepage.Env
 	uploadnoteasset.Env
 	checkapikey.Env
+	getpublicnote.Env
+	vieweroffers.Env
+	listnotepaths.Env
+	resolvewikilinks.Env
 
 	banuser.Env
 	checkhealth.Env
