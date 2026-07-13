@@ -1,6 +1,7 @@
 package appconfig
 
 import (
+	"flag"
 	"strings"
 	"testing"
 )
@@ -16,42 +17,36 @@ func TestDefaultInternalListenAddrIsLoopback(t *testing.T) {
 	}
 }
 
-// applyStorageEnvFallback must fill the endpoint from MINIO_ENDPOINT when it was
-// left at the localhost default, so a co-located box instance never silently
-// starts against localhost:9000 and panics.
-func TestApplyStorageEnvFallbackEndpoint(t *testing.T) {
-	t.Setenv("MINIO_ENDPOINT", "172.26.64.1:9000")
-
+// applyStorageEnvFallback must accept the canonical S3 secret-key env name
+// (MINIO_SECRET_ACCESS_KEY) when -minio-secret-key was never explicitly set, and
+// must never clobber an explicitly set -minio-secret-key — even one whose value
+// happens to equal the built-in default — so precedence stays flag/env > default.
+// Subtests share one Config/defineFlags() call: flag.StringVar binds to
+// flag.CommandLine (a process global), so defining the same flag twice panics.
+func TestApplyStorageEnvFallbackSecretKey(t *testing.T) {
 	c := DefaultConfig()
-	c.applyStorageEnvFallback()
+	c.defineFlags()
 
-	if c.Storage.Endpoint != "172.26.64.1:9000" {
-		t.Fatalf("endpoint fallback not applied: got %q", c.Storage.Endpoint)
-	}
-}
+	t.Run("applies canonical env when flag was never set", func(t *testing.T) {
+		t.Setenv("MINIO_SECRET_ACCESS_KEY", "s3cr3t")
 
-// The canonical S3 secret-key env name (MINIO_SECRET_ACCESS_KEY) is not covered
-// by the flag binding; the fallback must still apply it.
-func TestApplyStorageEnvFallbackCanonicalSecret(t *testing.T) {
-	t.Setenv("MINIO_SECRET_ACCESS_KEY", "s3cr3t")
+		c.applyStorageEnvFallback()
 
-	c := DefaultConfig()
-	c.applyStorageEnvFallback()
+		if c.Storage.SecretKey != "s3cr3t" {
+			t.Fatalf("canonical secret fallback not applied: got %q", c.Storage.SecretKey)
+		}
+	})
 
-	if c.Storage.SecretKey != "s3cr3t" {
-		t.Fatalf("canonical secret fallback not applied: got %q", c.Storage.SecretKey)
-	}
-}
+	t.Run("does not clobber an explicitly set flag equal to the default", func(t *testing.T) {
+		if err := flag.CommandLine.Set("minio-secret-key", DefaultMinIOSecretKey); err != nil {
+			t.Fatalf("failed to set minio-secret-key flag: %v", err)
+		}
+		t.Setenv("MINIO_SECRET_ACCESS_KEY", "should-not-apply")
 
-// An explicitly configured (non-default) endpoint must win over the env fallback.
-func TestApplyStorageEnvFallbackDoesNotClobberExplicit(t *testing.T) {
-	t.Setenv("MINIO_ENDPOINT", "172.26.64.1:9000")
+		c.applyStorageEnvFallback()
 
-	c := DefaultConfig()
-	c.Storage.Endpoint = "minio.internal:9000"
-	c.applyStorageEnvFallback()
-
-	if c.Storage.Endpoint != "minio.internal:9000" {
-		t.Fatalf("explicit endpoint clobbered by fallback: got %q", c.Storage.Endpoint)
-	}
+		if c.Storage.SecretKey != DefaultMinIOSecretKey {
+			t.Fatalf("explicitly set flag was clobbered by fallback: got %q", c.Storage.SecretKey)
+		}
+	})
 }

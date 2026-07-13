@@ -3,6 +3,7 @@ package miniostorage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -108,10 +109,29 @@ const (
 	initRetryMaxBackoff     = 5 * time.Second
 )
 
+// errNonTransientStorage wraps a bucket check/create error that a retry cannot
+// fix (bad credentials, malformed bucket name, ...), so ensureBucketWithRetry
+// can fail fast on it instead of spending the whole retry window on a
+// deterministic misconfiguration.
+var errNonTransientStorage = errors.New("non-transient minio storage error")
+
+// isNonTransientMinioCode reports whether the MinIO/S3 error code indicates
+// misconfiguration (bad credentials, bad bucket name) rather than a
+// transiently-unreachable server, so retrying it cannot help.
+func isNonTransientMinioCode(code string) bool {
+	switch code {
+	case "AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "InvalidBucketName":
+		return true
+	default:
+		return false
+	}
+}
+
 // ensureBucketWithRetry checks the bucket exists (creating it if needed),
 // retrying transient failures with capped exponential backoff until the retry
-// window elapses. The final error is returned so callers fail loudly rather than
-// silently proceeding with a broken storage backend.
+// window elapses. Non-transient errors (bad credentials, bad bucket name) fail
+// immediately instead of being retried. The final error is returned so callers
+// fail loudly rather than silently proceeding with a broken storage backend.
 func ensureBucketWithRetry(ctx context.Context, client *minio.Client, config Config) error {
 	deadline := time.Now().Add(initRetryMaxElapsed)
 	backoff := initRetryInitialBackoff
@@ -121,6 +141,10 @@ func ensureBucketWithRetry(ctx context.Context, client *minio.Client, config Con
 		lastErr = ensureBucket(ctx, client, config)
 		if lastErr == nil {
 			return nil
+		}
+
+		if errors.Is(lastErr, errNonTransientStorage) {
+			return lastErr
 		}
 
 		if time.Now().After(deadline) {
@@ -148,6 +172,9 @@ func ensureBucket(ctx context.Context, client *minio.Client, config Config) erro
 
 	bucketExists, err := client.BucketExists(ctx, config.Bucket)
 	if err != nil {
+		if isNonTransientMinioCode(minio.ToErrorResponse(err).Code) {
+			return fmt.Errorf("%w: failed to check if bucket exists: %w", errNonTransientStorage, err)
+		}
 		return fmt.Errorf("failed to check if bucket exists: %w", err)
 	}
 
@@ -162,6 +189,9 @@ func ensureBucket(ctx context.Context, client *minio.Client, config Config) erro
 
 	err = client.MakeBucket(ctx, config.Bucket, bucketOptions)
 	if err != nil && minio.ToErrorResponse(err).Code != "BucketAlreadyOwnedByYou" {
+		if isNonTransientMinioCode(minio.ToErrorResponse(err).Code) {
+			return fmt.Errorf("%w: failed to create bucket: %w", errNonTransientStorage, err)
+		}
 		return fmt.Errorf("failed to create bucket: %w", err)
 	}
 

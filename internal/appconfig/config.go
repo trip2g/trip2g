@@ -639,36 +639,43 @@ func (c *Config) Prepare() {
 	c.Features = features.Parse(c.FeaturesJSON)
 }
 
-// applyStorageEnvFallback fills MinIO storage settings from environment variables
-// when they were left at their defaults. The primary path is the flag/envflag
-// binding (MINIO_ENDPOINT -> -minio-endpoint etc.); this is a defense-in-depth
-// layer that also accepts the canonical S3 secret-key name
-// (MINIO_SECRET_ACCESS_KEY), which the flag binding does not cover. It only
-// overrides values still equal to their defaults, so an explicitly set flag/env
-// always wins.
+// applyStorageEnvFallback accepts the canonical S3 secret-key env var name
+// (MINIO_SECRET_ACCESS_KEY) as a fallback for MINIO_SECRET_KEY, which is the
+// only name the flag/envflag binding (-minio-secret-key) understands.
+// MINIO_ENDPOINT/MINIO_BUCKET/MINIO_ACCESS_KEY_ID are already applied correctly
+// by envflag before this runs, so they are deliberately not duplicated here:
+// re-deriving "was this explicitly set" from value-equality-to-default would
+// wrongly clobber a flag/env intentionally set to a value matching the
+// built-in default (e.g. -minio-secret-key=password). Instead this checks
+// whether -minio-secret-key was actually set (by CLI arg or by envflag calling
+// flag.Set for MINIO_SECRET_KEY/TRIP2G_MINIO_SECRET_KEY) via flag.Visit, so an
+// explicit value — even one equal to the default — always wins.
 func (c *Config) applyStorageEnvFallback() {
 	if c.StorageBackend != StorageBackendMinIO {
 		return
 	}
 
-	if v := os.Getenv("MINIO_ENDPOINT"); v != "" && c.Storage.Endpoint == DefaultMinIOEndpoint {
-		c.Storage.Endpoint = v
+	if flagWasSet("minio-secret-key") {
+		return
 	}
-	if v := os.Getenv("MINIO_BUCKET"); v != "" && c.Storage.Bucket == DefaultMinIOBucket {
-		c.Storage.Bucket = v
+
+	if v := os.Getenv("MINIO_SECRET_ACCESS_KEY"); v != "" {
+		c.Storage.SecretKey = v
 	}
-	if v := os.Getenv("MINIO_ACCESS_KEY_ID"); v != "" && c.Storage.AccessKey == DefaultMinIOAccessKey {
-		c.Storage.AccessKey = v
-	}
-	if c.Storage.SecretKey == DefaultMinIOSecretKey {
-		secret := os.Getenv("MINIO_SECRET_KEY")
-		if secret == "" {
-			secret = os.Getenv("MINIO_SECRET_ACCESS_KEY")
+}
+
+// flagWasSet reports whether the named flag was explicitly set, either on the
+// command line or by envflag's flag.Set call while processing environment
+// variables (flag.Visit only visits flags that have been set, unlike
+// VisitAll).
+func flagWasSet(name string) bool {
+	set := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			set = true
 		}
-		if secret != "" {
-			c.Storage.SecretKey = secret
-		}
-	}
+	})
+	return set
 }
 
 // CronScheduleOverride returns a cron schedule override for the named job from
