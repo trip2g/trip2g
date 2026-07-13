@@ -1,0 +1,755 @@
+<!-- theme-editor: trip2g default-template theme editor (custom layout).
+     Built from src/ by build.mjs — do not edit dist/ by hand. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.Title() }}</title>
+
+  <!-- Set <html data-theme> from $mol_lights before first paint (same bootstrap
+       the default template uses). This gives the editor chrome its correct
+       light/dark palette immediately; $trip2g_theme (mounted via the user-space
+       widget) keeps data-theme in sync live when the toggle is used. -->
+  <script>try{var d=localStorage.getItem('$mol_lights')!=='true',r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.setAttribute('data-theme',d?'dark':'light');r.setAttribute('data-te-theme',d?'dark':'light')}catch(e){}</script>
+
+  <!-- Standard trip2g sign-in / search chrome. Emits window.__trip2g_settings
+       and loads the user-space bundle so the sign-in widget below can boot.
+       The editor's GraphQL calls to /_system/graphql reuse the session cookie
+       this widget establishes (credentials: 'include'). -->
+  {{ defaultTemplate.UserSpaceScripts() }}
+
+  <style>
+/* trip2g theme editor — self-contained styles. No external deps.
+   The editor chrome follows `data-te-theme` on <html>, which the editor sets to
+   the mode it is currently showing/editing (previewMode). BOTH theme toggles feed
+   this: the $mol_lights corner toggle (via the data-theme MutationObserver) and
+   the top-right preview Light/Dark switch both call setPreviewMode(), which writes
+   data-te-theme. So the chrome flips for either toggle. The bootstrap script seeds
+   data-te-theme from $mol_lights before first paint; a prefers-color-scheme
+   fallback covers the pre-JS window. We deliberately do NOT key off the site's own
+   data-theme, so the standalone preview switch (which doesn't change the site
+   theme) still repaints the chrome. */
+:root {
+  --te-danger: #b91c1c;
+  --te-radius: 8px;
+  --te-sidebar-w: 400px;
+
+  /* light palette (default) */
+  --te-bg: #ffffff;
+  --te-panel: #f6f7f9;
+  --te-border: #e3e6ea;
+  --te-text: #1c2530;
+  --te-muted: #6b7280;
+  --te-accent: #2b6cb0;
+  --te-accent-fg: #ffffff;
+}
+/* explicit light (forced light beats a prefers-dark OS) */
+:root[data-te-theme="light"] {
+  --te-bg: #ffffff;
+  --te-panel: #f6f7f9;
+  --te-border: #e3e6ea;
+  --te-text: #1c2530;
+  --te-muted: #6b7280;
+  --te-accent: #2b6cb0;
+  --te-accent-fg: #ffffff;
+}
+/* dark palette */
+:root[data-te-theme="dark"] {
+  --te-bg: #12151a;
+  --te-panel: #1a1f27;
+  --te-border: #2a313b;
+  --te-text: #e6e9ee;
+  --te-muted: #97a1ad;
+  --te-accent: #4b93d6;
+  --te-accent-fg: #0b0e12;
+}
+/* fallback: OS dark preference before data-te-theme is set (don't darken a
+   page that has explicitly opted into light) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-te-theme="light"]) {
+    --te-bg: #12151a;
+    --te-panel: #1a1f27;
+    --te-border: #2a313b;
+    --te-text: #e6e9ee;
+    --te-muted: #97a1ad;
+    --te-accent: #4b93d6;
+    --te-accent-fg: #0b0e12;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+/* The user-space $mol bundle ships a global rule `body, :where([mol_theme]) {
+   background-color: var(--mol_theme_back); color: var(--mol_theme_text) }` that
+   loads after this stylesheet and would win at equal specificity, pinning the
+   page backdrop to $mol's dark color. Bump specificity (html body) so the editor
+   backdrop follows OUR theme too. */
+html body {
+  background: var(--te-bg);
+  color: var(--te-text);
+}
+
+.te-app { display: flex; height: 100vh; overflow: hidden; }
+
+/* Sidebar (controls) */
+.te-sidebar {
+  width: var(--te-sidebar-w);
+  min-width: var(--te-sidebar-w);
+  border-right: 1px solid var(--te-border);
+  background: var(--te-panel);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.te-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--te-border);
+}
+.te-head h1 { font-size: 15px; margin: 0 0 2px; }
+.te-head p { margin: 0; font-size: 12px; color: var(--te-muted); }
+
+.te-tabs { display: flex; gap: 4px; padding: 8px 10px 0; }
+.te-tab {
+  flex: 1;
+  padding: 7px 8px;
+  border: 1px solid var(--te-border);
+  border-bottom: none;
+  background: transparent;
+  color: var(--te-muted);
+  border-radius: var(--te-radius) var(--te-radius) 0 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.te-tab[aria-selected="true"] { background: var(--te-bg); color: var(--te-text); }
+
+.te-scroll { flex: 1; overflow-y: auto; padding: 12px 14px; }
+
+.te-group { margin-bottom: 18px; }
+.te-group > h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--te-muted);
+  margin: 0 0 8px;
+}
+
+.te-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.te-row label { flex: 0 0 128px; font-size: 12px; color: var(--te-text); }
+.te-row .te-control { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+input[type="text"], input[type="number"], select {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid var(--te-border);
+  border-radius: 6px;
+  background: var(--te-bg);
+  color: var(--te-text);
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+input[type="color"] {
+  width: 30px; height: 28px; padding: 0;
+  border: 1px solid var(--te-border);
+  border-radius: 6px;
+  background: var(--te-bg);
+  cursor: pointer;
+}
+input[type="range"] { flex: 1; }
+.te-range-val { flex: 0 0 62px; font-family: ui-monospace, monospace; font-size: 11px; color: var(--te-muted); text-align: right; }
+
+.te-clear {
+  border: none; background: transparent; color: var(--te-muted);
+  cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px;
+}
+.te-clear:hover { color: var(--te-danger); }
+.te-row.te-set label { font-weight: 600; }
+.te-row.te-set label::before { content: "● "; color: var(--te-accent); font-size: 9px; }
+
+/* Pinned sidebar footer: status, Reset, Save, then the sign-in widget. */
+.te-footer {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--te-border);
+  background: var(--te-panel);
+}
+.te-btn {
+  width: 100%; padding: 9px 10px; border-radius: 7px; cursor: pointer;
+  font-size: 13px; font-weight: 600; border: 1px solid var(--te-border);
+  background: var(--te-bg); color: var(--te-text);
+}
+.te-btn--primary { background: var(--te-accent); color: var(--te-accent-fg); border-color: var(--te-accent); }
+.te-btn--primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.te-status { font-size: 12px; min-height: 16px; }
+.te-status--ok { color: #15803d; }
+.te-status--err { color: var(--te-danger); }
+
+/* Preview pane */
+.te-preview { flex: 1; display: flex; flex-direction: column; background: var(--te-bg); position: relative; }
+.te-preview-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--te-border);
+  font-size: 12px; color: var(--te-muted);
+}
+.te-preview-bar input.te-url {
+  flex: 1; min-width: 0; font-family: ui-monospace, monospace; font-size: 12px;
+  padding: 5px 8px; border: 1px solid var(--te-border); border-radius: 6px;
+  background: var(--te-panel); color: var(--te-text);
+}
+.te-presets { display: inline-flex; gap: 4px; }
+.te-preset {
+  border: 1px solid var(--te-border); background: var(--te-bg); color: var(--te-text);
+  padding: 5px 9px; cursor: pointer; font-size: 12px; font-weight: 600; border-radius: 6px;
+}
+.te-preset:hover { border-color: var(--te-accent); color: var(--te-accent); }
+.te-modeswitch { display: inline-flex; border: 1px solid var(--te-border); border-radius: 6px; overflow: hidden; }
+.te-modeswitch button {
+  border: none; background: var(--te-bg); color: var(--te-muted);
+  padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+.te-modeswitch button[aria-pressed="true"] { background: var(--te-accent); color: var(--te-accent-fg); }
+#te-frame { flex: 1; width: 100%; border: none; background: #fff; }
+
+/* Sign-in widget wrapper: give the standard user-space mount room to render
+   (it was cramped when floated in the corner). Sits at the bottom of the footer,
+   directly under Save. min-height reserves vertical space so it isn't clipped. */
+.te-corner {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--te-border);
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .te-app { flex-direction: column; height: auto; }
+  .te-sidebar { width: 100%; min-width: 0; height: auto; }
+  .te-preview { min-height: 60vh; }
+}
+  </style>
+</head>
+<body>
+
+<!-- Expose admin status to the editor. Jet renders true/false verbatim.
+     The Save button is gated on this AND the server re-checks admin auth. -->
+<script>window.__theme_editor_is_admin = {{ currentUser.IsAdmin() }};</script>
+
+<div class="te-app">
+  <aside class="te-sidebar">
+    <div class="te-head">
+      <h1>Theme editor</h1>
+      <p>Override Pico <code>--pico-*</code> variables. Saves to the Head HTML injection.</p>
+    </div>
+    <div class="te-tabs">
+      <button class="te-tab" data-tab="shared" aria-selected="true">Type &amp; shape</button>
+      <button class="te-tab" data-tab="light" aria-selected="false">Light</button>
+      <button class="te-tab" data-tab="dark" aria-selected="false">Dark</button>
+    </div>
+    <div class="te-scroll">
+      <div id="te-controls"></div>
+    </div>
+
+    <!-- Pinned sidebar footer: status, Reset, full-width Save (admin-gated),
+         then the standard user-space sign-in widget with room to render.
+         The scroll area above takes flex:1 so this footer always stays at the
+         bottom and Save + sign-in are reachable without scrolling. -->
+    <div class="te-footer">
+      <div id="te-status" class="te-status"></div>
+      <button id="te-reset" class="te-btn te-btn--ghost" type="button" title="Clear all overrides">Reset</button>
+      <button id="te-save" class="te-btn te-btn--primary" type="button">Save theme</button>
+      <!-- Sign-in: the standard user-space mount. $mol styles the root element
+           itself, so the sizing/spacing lives on this wrapper it won't touch. -->
+      <div class="te-corner"><div mol_view_root="$trip2g_user_space"></div></div>
+    </div>
+  </aside>
+
+  <section class="te-preview">
+    <div class="te-preview-bar">
+      <div class="te-presets">
+        <button class="te-preset" data-path="/en/user/themes" type="button" title="Preview a plain default-template docs page">Docs</button>
+        <button class="te-preset" data-path="/" type="button" title="Preview the site home page">Home</button>
+      </div>
+      <input id="te-url" class="te-url" type="text" value="/en/user/themes"
+             spellcheck="false" autocomplete="off"
+             title="Same-origin path to preview (press Enter)" aria-label="Preview path">
+      <div class="te-modeswitch">
+        <button data-mode="light" aria-pressed="true">Light</button>
+        <button data-mode="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <iframe id="te-frame" src="/en/user/themes" title="Live preview"></iframe>
+  </section>
+</div>
+
+<script>
+/* trip2g theme editor — plain JS, no framework, CSP-safe (no eval, no remote fetch except same-origin GraphQL). */
+(function () {
+  "use strict";
+
+  // Stable marker: the Head HTML-injection this editor owns. We upsert this one
+  // injection (find by description) instead of stacking duplicates on each save.
+  var MARKER = "theme-editor";
+  var GQL_ENDPOINT = "/_system/graphql";
+  var STYLE_ID = "__theme_editor_preview__";
+
+  // ---- Variable catalogue -------------------------------------------------
+  // Color variables are edited per-mode (light + dark). Shared variables live
+  // on :root and apply to both modes.
+  var COLOR_VARS = [
+    { v: "--pico-primary", label: "Primary / accent" },
+    { v: "--pico-primary-hover", label: "Primary hover" },
+    { v: "--pico-background-color", label: "Page background" },
+    { v: "--pico-color", label: "Body text" },
+    { v: "--pico-contrast", label: "Contrast text" },
+    { v: "--pico-muted-color", label: "Muted text" },
+    { v: "--pico-muted-border-color", label: "Borders" },
+    { v: "--pico-card-background-color", label: "Card background" },
+    { v: "--pico-card-sectioning-background-color", label: "Card header bg" },
+    { v: "--pico-h1-color", label: "H1 color" },
+    { v: "--pico-h2-color", label: "H2 color" },
+    { v: "--pico-h3-color", label: "H3 color" },
+    { v: "--pico-code-background-color", label: "Code background" },
+    { v: "--pico-code-color", label: "Code text" },
+    { v: "--pico-mark-background-color", label: "Highlight bg" },
+    { v: "--pico-blockquote-border-color", label: "Blockquote bar" }
+  ];
+
+  var FONT_STACKS = {
+    "System default": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+    "Inter": "\"Inter\", system-ui, sans-serif",
+    "Georgia (serif)": "Georgia, \"Times New Roman\", serif",
+    "Helvetica / Arial": "Helvetica, Arial, sans-serif",
+    "Rounded": "\"Nunito\", ui-rounded, system-ui, sans-serif"
+  };
+  var MONO_STACKS = {
+    "System mono": "ui-monospace, \"SF Mono\", \"Cascadia Code\", monospace",
+    "JetBrains Mono": "\"JetBrains Mono\", ui-monospace, monospace",
+    "Courier": "\"Courier New\", Courier, monospace"
+  };
+
+  // Shared (root) variables: type & shape + trip2g-specific layout width.
+  var SHARED_VARS = [
+    { v: "--pico-font-family-sans-serif", label: "Font (sans)", type: "select", options: FONT_STACKS },
+    { v: "--pico-font-family-monospace", label: "Font (mono)", type: "select", options: MONO_STACKS },
+    { v: "--pico-font-size", label: "Base font size", type: "range", min: 12, max: 22, step: 0.5, unit: "px" },
+    { v: "--pico-line-height", label: "Line height", type: "range", min: 1.2, max: 2, step: 0.05, unit: "" },
+    { v: "--pico-font-weight", label: "Base weight", type: "range", min: 300, max: 700, step: 100, unit: "" },
+    { v: "--pico-border-radius", label: "Corner radius", type: "range", min: 0, max: 2, step: 0.05, unit: "rem" },
+    { v: "--pico-spacing", label: "Spacing unit", type: "range", min: 0.5, max: 2, step: 0.05, unit: "rem" },
+    { v: "--pico-typography-spacing-vertical", label: "Paragraph gap", type: "range", min: 0.5, max: 2.5, step: 0.05, unit: "rem" },
+    { v: "--site-max-width", label: "Site max width", type: "range", min: 700, max: 2000, step: 20, unit: "px" }
+  ];
+
+  // ---- State --------------------------------------------------------------
+  // theme.shared / theme.light / theme.dark : { "--pico-x": "value" }.
+  var theme = { shared: {}, light: {}, dark: {} };
+  var activeTab = "shared";     // shared | light | dark
+  var previewMode = "light";    // which data-theme the iframe shows
+  var existingId = null;        // id of our injection, if it already exists
+  var isAdmin = !!window.__theme_editor_is_admin;
+
+  // ---- DOM helpers --------------------------------------------------------
+  function el(tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (k === "class") n.className = attrs[k];
+      else if (k === "text") n.textContent = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function (c) { n.appendChild(c); });
+    return n;
+  }
+
+  function currentMap() {
+    if (activeTab === "shared") return theme.shared;
+    return activeTab === "light" ? theme.light : theme.dark;
+  }
+
+  // ---- CSS generation -----------------------------------------------------
+  function block(selector, map) {
+    var keys = Object.keys(map).filter(function (k) { return map[k] !== "" && map[k] != null; });
+    if (!keys.length) return "";
+    var body = keys.map(function (k) { return "  " + k + ": " + map[k] + ";"; }).join("\n");
+    return selector + " {\n" + body + "\n}\n";
+  }
+
+  function buildCSS() {
+    return block(":root", theme.shared)
+      + block(":root[data-theme=\"light\"]", theme.light)
+      + block(":root[data-theme=\"dark\"]", theme.dark);
+  }
+
+  function buildInjectionContent() {
+    var css = buildCSS();
+    return "<style>\n/* Generated by trip2g theme editor. Edit via the theme-editor layout, not by hand. */\n"
+      + css + "</style>";
+  }
+
+  // ---- Live preview -------------------------------------------------------
+  var frame = document.getElementById("te-frame");
+
+  function applyPreview() {
+    var doc;
+    try { doc = frame.contentDocument; } catch (e) { return; } // cross-origin guard
+    if (!doc || !doc.head) return;
+    var style = doc.getElementById(STYLE_ID);
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = STYLE_ID;
+      doc.head.appendChild(style);
+    }
+    style.textContent = buildCSS();
+    doc.documentElement.setAttribute("data-theme", previewMode);
+  }
+
+  frame.addEventListener("load", applyPreview);
+
+  // Navigate the preview iframe to a same-origin path. External URLs are
+  // rejected: we resolve the input against the site origin and keep only the
+  // path+query+hash, so the iframe can never point off-origin (CSP-safe and
+  // keeps applyPreview's same-origin DOM access working).
+  function navigatePreview(raw) {
+    var input = (raw == null ? "" : String(raw)).trim();
+    if (!input) input = "/";
+    var url;
+    try { url = new URL(input, window.location.origin); }
+    catch (e) { status("Invalid path: " + input, "err"); return; }
+    if (url.origin !== window.location.origin) {
+      status("Preview is same-origin only — dropping host " + url.host, "err");
+    }
+    var path = url.pathname + url.search + url.hash;
+    var urlField = document.getElementById("te-url");
+    if (urlField) urlField.value = path;
+    if (frame.getAttribute("src") !== path) frame.setAttribute("src", path);
+    else applyPreview(); // same path: force re-apply (no load event fires)
+  }
+
+  // ---- CSS parsing (load existing injection back into the editor) ---------
+  function parseInjection(content) {
+    theme = { shared: {}, light: {}, dark: {} };
+    if (!content) return;
+    var css = content.replace(/<\/?style[^>]*>/gi, "");
+    var re = /([^{}]+)\{([^{}]*)\}/g, m;
+    while ((m = re.exec(css))) {
+      var sel = m[1].trim();
+      var target = null;
+      if (/\[data-theme=["']?light["']?\]/.test(sel)) target = theme.light;
+      else if (/\[data-theme=["']?dark["']?\]/.test(sel)) target = theme.dark;
+      else if (/^:root$/.test(sel)) target = theme.shared;
+      if (!target) continue;
+      m[2].split(";").forEach(function (decl) {
+        var i = decl.indexOf(":");
+        if (i < 0) return;
+        var prop = decl.slice(0, i).trim();
+        var val = decl.slice(i + 1).trim();
+        if (prop.charAt(0) === "-" && val) target[prop] = val;
+      });
+    }
+  }
+
+  // ---- Length helpers (for range sliders) ---------------------------------
+  function splitLen(val) { // "0.75rem" -> {num:0.75, unit:"rem"}
+    var m = /^(-?[0-9.]+)\s*([a-z%]*)$/.exec((val || "").trim());
+    return m ? { num: parseFloat(m[1]), unit: m[2] } : null;
+  }
+
+  // ---- Rendering the controls --------------------------------------------
+  function colorToHex(val) {
+    // returns #rrggbb for the native color picker, or null if not a plain hex
+    var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((val || "").trim());
+    if (!m) return null;
+    var h = m[1];
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return "#" + h;
+  }
+
+  function renderColorRow(def, map) {
+    var isSet = map[def.v] != null && map[def.v] !== "";
+    var hex = colorToHex(map[def.v]) || "#888888";
+
+    var picker = el("input", { type: "color", value: hex, title: "Pick color" });
+    var text = el("input", { type: "text", value: isSet ? map[def.v] : "", placeholder: "default" });
+    var clear = el("button", { class: "te-clear", type: "button", title: "Clear override", text: "×" });
+
+    var row = el("div", { class: "te-row" + (isSet ? " te-set" : "") }, [
+      el("label", { text: def.label, title: def.v }),
+      el("div", { class: "te-control" }, [picker, text, clear])
+    ]);
+
+    picker.addEventListener("input", function () { text.value = picker.value; commit(text.value); });
+    text.addEventListener("input", function () {
+      var h = colorToHex(text.value); if (h) picker.value = h;
+      commit(text.value);
+    });
+    clear.addEventListener("click", function () { text.value = ""; commit(""); });
+
+    function commit(v) {
+      if (v === "" || v == null) delete map[def.v]; else map[def.v] = v;
+      row.classList.toggle("te-set", map[def.v] != null);
+      applyPreview();
+    }
+    return row;
+  }
+
+  function renderSelectRow(def, map) {
+    var isSet = map[def.v] != null && map[def.v] !== "";
+    var sel = el("select");
+    sel.appendChild(el("option", { value: "", text: "default" }));
+    for (var name in def.options) {
+      var o = el("option", { value: def.options[name], text: name });
+      if (isSet && def.options[name] === map[def.v]) o.selected = true;
+      sel.appendChild(o);
+    }
+    var clear = el("button", { class: "te-clear", type: "button", title: "Clear override", text: "×" });
+    var row = el("div", { class: "te-row" + (isSet ? " te-set" : "") }, [
+      el("label", { text: def.label, title: def.v }),
+      el("div", { class: "te-control" }, [sel, clear])
+    ]);
+    sel.addEventListener("change", function () { commit(sel.value); });
+    clear.addEventListener("click", function () { sel.value = ""; commit(""); });
+    function commit(v) {
+      if (v === "" || v == null) delete map[def.v]; else map[def.v] = v;
+      row.classList.toggle("te-set", map[def.v] != null);
+      applyPreview();
+    }
+    return row;
+  }
+
+  function renderRangeRow(def, map) {
+    var parsed = splitLen(map[def.v]);
+    var isSet = parsed != null;
+    var num = isSet ? parsed.num : ((def.min + def.max) / 2);
+
+    var range = el("input", { type: "range", min: def.min, max: def.max, step: def.step, value: num });
+    if (!isSet) range.style.opacity = ".55";
+    var valLabel = el("span", { class: "te-range-val", text: isSet ? (num + def.unit) : "default" });
+    var clear = el("button", { class: "te-clear", type: "button", title: "Clear override", text: "×" });
+
+    var row = el("div", { class: "te-row" + (isSet ? " te-set" : "") }, [
+      el("label", { text: def.label, title: def.v }),
+      el("div", { class: "te-control" }, [range, valLabel, clear])
+    ]);
+    range.addEventListener("input", function () {
+      var v = parseFloat(range.value) + def.unit;
+      map[def.v] = v; range.style.opacity = "1";
+      valLabel.textContent = v; row.classList.add("te-set"); applyPreview();
+    });
+    clear.addEventListener("click", function () {
+      delete map[def.v]; range.style.opacity = ".55";
+      valLabel.textContent = "default"; row.classList.remove("te-set"); applyPreview();
+    });
+    return row;
+  }
+
+  function renderControls() {
+    var host = document.getElementById("te-controls");
+    host.innerHTML = "";
+    var map = currentMap();
+
+    if (activeTab === "shared") {
+      var g = el("div", { class: "te-group" }, [el("h2", { text: "Type & shape (both modes)" })]);
+      SHARED_VARS.forEach(function (def) {
+        g.appendChild(def.type === "select" ? renderSelectRow(def, map) : renderRangeRow(def, map));
+      });
+      host.appendChild(g);
+    } else {
+      var g2 = el("div", { class: "te-group" }, [
+        el("h2", { text: (activeTab === "light" ? "Light" : "Dark") + " mode colors" })
+      ]);
+      COLOR_VARS.forEach(function (def) { g2.appendChild(renderColorRow(def, map)); });
+      host.appendChild(g2);
+    }
+  }
+
+  // ---- Tabs & preview switch ----------------------------------------------
+  // The site's live theme is the source of truth: $mol_lights sets
+  // <html data-theme="light|dark">. currentSiteTheme() reads it, falling back to
+  // the OS preference when it isn't set yet.
+  function currentSiteTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+
+  function renderTabUI() {
+    Array.prototype.forEach.call(document.querySelectorAll(".te-tab"), function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.tab === activeTab));
+    });
+  }
+  function renderModeUI() {
+    Array.prototype.forEach.call(document.querySelectorAll(".te-modeswitch button"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.mode === previewMode));
+    });
+  }
+
+  function selectTab(tab) {
+    activeTab = tab;
+    renderTabUI();
+    renderControls();
+    // Editing a color tab implies previewing that mode (no tab re-sync, avoids a loop).
+    if (tab === "light" || tab === "dark") setPreviewMode(tab, { syncTab: false });
+  }
+
+  // setPreviewMode(mode, {syncTab}) — flips the preview to a mode. When syncTab
+  // is set and a color tab is active, it also switches the active color tab to
+  // match, so you always edit the colors for the mode you're looking at. Driven
+  // both by the preview Light/Dark switch and by the site-theme observer.
+  function setPreviewMode(mode, opts) {
+    if (mode !== "light" && mode !== "dark") return;
+    previewMode = mode;
+    // Drive the editor chrome from the mode being shown. Both toggles reach here
+    // (the preview switch directly; the $mol_lights corner toggle via the
+    // data-theme observer), so the chrome flips for either one.
+    document.documentElement.setAttribute("data-te-theme", mode);
+    renderModeUI();
+    applyPreview();
+    if (opts && opts.syncTab && (activeTab === "light" || activeTab === "dark") && activeTab !== mode) {
+      activeTab = mode;
+      renderTabUI();
+      renderControls();
+    }
+  }
+
+  // Watch the site theme ($mol_lights → <html data-theme>) and follow it: flip
+  // the preview and switch the active color tab to match.
+  function watchSiteTheme() {
+    var obs = new MutationObserver(function () {
+      setPreviewMode(currentSiteTheme(), { syncTab: true });
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  }
+
+  // ---- GraphQL ------------------------------------------------------------
+  function gql(query, variables) {
+    return fetch(GQL_ENDPOINT, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: query, variables: variables || {} })
+    }).then(function (r) { return r.json(); }).then(function (json) {
+      if (json.errors) throw new Error(json.errors.map(function (e) { return e.message; }).join("; "));
+      return json.data;
+    });
+  }
+
+  var Q_LIST =
+    "query { admin { allHtmlInjections { nodes { id description placement content position } } } }";
+  var M_CREATE =
+    "mutation($input: CreateHtmlInjectionInput!){ admin { createHtmlInjection(input:$input){ __typename " +
+    "... on CreateHtmlInjectionPayload { htmlInjection { id } } ... on ErrorPayload { message } } } }";
+  var M_UPDATE =
+    "mutation($input: UpdateHtmlInjectionInput!){ admin { updateHtmlInjection(input:$input){ __typename " +
+    "... on UpdateHtmlInjectionPayload { htmlInjection { id } } ... on ErrorPayload { message } } } }";
+
+  function status(msg, kind) {
+    var s = document.getElementById("te-status");
+    s.textContent = msg || "";
+    s.className = "te-status" + (kind ? " te-status--" + kind : "");
+  }
+
+  function loadExisting() {
+    if (!isAdmin) { status("Sign in as admin to save. Preview still works.", null); return; }
+    status("Loading current theme…", null);
+    gql(Q_LIST).then(function (data) {
+      var nodes = (data.admin.allHtmlInjections.nodes) || [];
+      var mine = nodes.filter(function (n) { return n.description === MARKER; })[0];
+      if (mine) {
+        existingId = mine.id;
+        parseInjection(mine.content);
+        renderControls();
+        applyPreview();
+        status("Loaded saved theme (injection #" + mine.id + ").", "ok");
+      } else {
+        status("No saved theme yet — start editing.", null);
+      }
+    }).catch(function (e) { status("Load failed: " + e.message, "err"); });
+  }
+
+  function save() {
+    if (!isAdmin) { status("Not signed in as admin — cannot save.", "err"); return; }
+    var content = buildInjectionContent();
+    var btn = document.getElementById("te-save");
+    btn.disabled = true;
+    status("Saving…", null);
+
+    var p;
+    if (existingId != null) {
+      p = gql(M_UPDATE, { input: {
+        id: existingId, description: MARKER, position: 0, placement: "head", content: content
+      } }).then(function (d) {
+        var r = d.admin.updateHtmlInjection;
+        if (r.message) throw new Error(r.message);
+        return r.htmlInjection.id;
+      });
+    } else {
+      p = gql(M_CREATE, { input: {
+        description: MARKER, position: 0, placement: "head", content: content
+      } }).then(function (d) {
+        var r = d.admin.createHtmlInjection;
+        if (r.message) throw new Error(r.message);
+        return r.htmlInjection.id;
+      });
+    }
+    p.then(function (id) {
+      existingId = id;
+      status("Saved. Reload any page to see it site-wide (injection #" + id + ").", "ok");
+    }).catch(function (e) {
+      status("Save failed: " + e.message, "err");
+    }).then(function () { btn.disabled = false; });
+  }
+
+  function resetAll() {
+    theme = { shared: {}, light: {}, dark: {} };
+    renderControls();
+    applyPreview();
+    status("Cleared all overrides. Save to remove the theme site-wide.", null);
+  }
+
+  // ---- Boot ---------------------------------------------------------------
+  function boot() {
+    document.querySelectorAll(".te-tab").forEach(function (b) {
+      b.addEventListener("click", function () { selectTab(b.dataset.tab); });
+    });
+    document.querySelectorAll(".te-modeswitch button").forEach(function (b) {
+      b.addEventListener("click", function () { setPreviewMode(b.dataset.mode, { syncTab: true }); });
+    });
+    document.getElementById("te-save").addEventListener("click", save);
+    document.getElementById("te-reset").addEventListener("click", resetAll);
+
+    var urlField = document.getElementById("te-url");
+    urlField.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); navigatePreview(urlField.value); }
+    });
+    urlField.addEventListener("change", function () { navigatePreview(urlField.value); });
+    document.querySelectorAll(".te-preset").forEach(function (b) {
+      b.addEventListener("click", function () { navigatePreview(b.dataset.path); });
+    });
+
+    var saveBtn = document.getElementById("te-save");
+    if (!isAdmin) { saveBtn.disabled = true; saveBtn.title = "Sign in as admin to save"; }
+
+    // Initialize to the site's current theme: land on the matching color tab and
+    // preview that mode. Then follow the site theme live via $mol_lights.
+    var initMode = currentSiteTheme();
+    setPreviewMode(initMode, { syncTab: false });
+    selectTab(initMode);
+    watchSiteTheme();
+    loadExisting();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+
+</body>
+</html>
