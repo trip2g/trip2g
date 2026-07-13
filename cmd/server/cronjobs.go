@@ -1,7 +1,6 @@
 package main
 
 import (
-	"trip2g/internal/case/cronjob/applygitchanges"
 	"trip2g/internal/case/cronjob/cleanupapikeylogs"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
@@ -14,6 +13,7 @@ import (
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/cronjob/sendscheduledtelegrampublishposts"
 	"trip2g/internal/case/cronjob/simplebackup"
+	"trip2g/internal/case/cronjob/materializegitmirror"
 	"trip2g/internal/case/cronjob/updatetelegrampublishposts"
 	"trip2g/internal/case/cronjob/vacuumdatabase"
 	"trip2g/internal/cronjobs"
@@ -25,7 +25,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		_ simplebackup.Env   = app
 		_ vacuumdatabase.Env = app
 
-		_ applygitchanges.Env              = app
+		_ materializegitmirror.Env         = app
 		_ removeexpiredtgchatmembers.Env   = app
 		_ clearcronjobexecutionhistory.Env = app
 
@@ -45,7 +45,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 	)
 
 	jobs := []cronjobs.Job{
-		&applygitchanges.Job{},
+		&materializegitmirror.Job{},
 		&removeexpiredtgchatmembers.Job{},
 		&clearcronjobexecutionhistory.Job{},
 		&sendscheduledtelegrampublishposts.Job{Cron: app.config.CronTelegramPublishSchedule},

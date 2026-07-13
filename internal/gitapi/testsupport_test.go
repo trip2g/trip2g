@@ -25,6 +25,10 @@ func newTestAPI(t *testing.T, env Env) *API {
 	}
 	cfg := Config{BasePath: "/_system/git", RepoPath: repo, MasterBranch: "master"}
 	api := &API{config: cfg, env: env, logger: &logger.DummyLogger{}, ctx: context.Background()}
+	api.handlers = map[string]map[string]handler{
+		"GET":  {"/info/refs": api.handleInfoRefs},
+		"POST": {"/git-upload-pack": api.handleGitUploadPack, "/git-receive-pack": api.handleGitReceivePack},
+	}
 	if err := api.ensureBareRepo(); err != nil {
 		t.Fatal(err)
 	}
@@ -54,6 +58,9 @@ type fakeEnv struct {
 	pushed   []string // paths passed to PushNotes
 	dbHashes map[string]string
 	pushErr  bool
+
+	gitToken    db.GitToken
+	gitTokenErr error
 }
 
 func (f *fakeEnv) Logger() logger.Logger { return &logger.DummyLogger{} }
@@ -94,7 +101,7 @@ func (f *fakeEnv) GetPrivateObject(context.Context, string) (io.ReadCloser, erro
 }
 func (f *fakeEnv) PrivateObjectExists(context.Context, string) (bool, error) { return false, nil }
 func (f *fakeEnv) GitTokenByValueSha256(context.Context, string) (db.GitToken, error) {
-	return db.GitToken{}, nil
+	return f.gitToken, f.gitTokenErr
 }
 
 func dbAsset(absPath string) db.NoteAsset {

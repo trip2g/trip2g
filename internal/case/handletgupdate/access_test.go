@@ -69,7 +69,12 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
+					require.Equal(t, int64(7828312136), *tgUserID)
+					return db.User{ID: 42}, nil
+				}
+				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
+					require.Equal(t, int64(42), userID)
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -269,6 +274,80 @@ func TestHandleGroupAccess(t *testing.T) {
 				require.Len(t, env.InsertTgChatMemberCalls(), 1)
 			}
 			require.Len(t, env.SendCalls(), 1)
+		})
+	}
+}
+
+func TestSendContentMenu(t *testing.T) {
+	const tgUserID = int64(7828312136)
+
+	tests := []struct {
+		name         string
+		setup        func(*EnvMock)
+		wantMenuText string
+	}{
+		{
+			name: "resolves accessible content by system user id",
+			setup: func(env *EnvMock) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, id *int64) (db.User, error) {
+					require.Equal(t, tgUserID, *id)
+					return db.User{ID: 42}, nil
+				}
+				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
+					require.Equal(t, int64(42), userID)
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{Subgraphs: map[string]*model.NoteSubgraph{"test-subgraph": {}}}
+				}
+				env.BotIDFunc = func() int64 { return 1 }
+				env.GenerateTgAuthURLFunc = func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+					return "https://example.com/auth", nil
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) { return tgbotapi.Message{}, nil }
+			},
+			wantMenuText: "Доступные материалы",
+		},
+		{
+			name: "no linked account shows nothing found",
+			setup: func(env *EnvMock) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, id *int64) (db.User, error) {
+					return db.User{}, sql.ErrNoRows
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{Subgraphs: map[string]*model.NoteSubgraph{}}
+				}
+				env.BotIDFunc = func() int64 { return 1 }
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) { return tgbotapi.Message{}, nil }
+			},
+			wantMenuText: "Ничего не найдено",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{}
+			tt.setup(env)
+
+			req := &request{
+				update: tgbotapi.Update{
+					Message: &tgbotapi.Message{
+						From: &tgbotapi.User{ID: tgUserID},
+						Chat: &tgbotapi.Chat{ID: tgUserID, Type: "private"},
+					},
+				},
+				env: env,
+			}
+
+			err := req.sendContentMenu(context.Background())
+			require.NoError(t, err)
+
+			require.Empty(t, env.ListActiveTgChatSubgraphNamesByChatIDCalls())
+			require.Len(t, env.SendCalls(), 1)
+
+			msg, ok := env.SendCalls()[0].Msg.(tgbotapi.MessageConfig)
+			require.True(t, ok)
+			require.Contains(t, msg.Text, tt.wantMenuText)
 		})
 	}
 }
