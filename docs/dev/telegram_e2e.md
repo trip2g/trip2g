@@ -203,3 +203,91 @@ delete from telegram_publish_sent_messages;
 delete from telegram_publish_sent_account_messages;
 update telegram_publish_notes set published_at = null, published_version_id = null, error_count = 0, last_error = null;
 ```
+
+## Live TG↔subgraph access e2e
+
+A separate, real end-to-end test drives an actual authenticated Telegram **user
+account** against a running trip2g bot and asserts the TG↔subgraph access flow
+and the two fixes in PR #208 (chat_member updates in `AllowedUpdates`;
+`sendContentMenu` id-space) from the client side.
+
+- Test: `internal/case/handletgupdate/e2e_live_client_test.go`
+  (`TestE2ELiveTgSubgraphAccess`).
+- Client driver: `internal/case/handletgupdate/testdata/tg_e2e/tg_driver.py`.
+
+Unlike the publishing `tge2e` tool above, this test does **not** touch the DB. It
+shells out to the Python driver, which reuses the
+[telegram-mcp](https://github.com/chigwell/telegram-mcp) server's own tool
+functions (`send_message`, `get_messages`, `list_inline_buttons`,
+`join_chat_by_link`, `leave_chat`). The account authenticates
+**non-interactively** from telegram-mcp's pre-generated Telethon
+`TELEGRAM_SESSION_STRING` — a Python-only session string that a Go MTProto client
+cannot reuse, hence the Python driver.
+
+### What it exercises end-to-end
+
+Real client → real Telegram → trip2g bot (long-polling) → back:
+
+1. **Connectivity** — the driver connects the real account and returns its id.
+2. **Bug 1 (chat_member → access)** — the account joins the dedicated throwaway
+   test group via its invite link. Telegram fires a real `chat_member` update
+   that the bot now receives (the `AllowedUpdates` fix); the bot inserts the
+   membership and grants access to the linked subgraph.
+3. **Bug 2 (content menu id-space)** — the account DMs the bot `/content`. The bot
+   replies with the accessible subgraph as an **inline button** instead of
+   "Ничего не найдено" (`sendContentMenu` now resolves content by system user id).
+   The driver reads the reply's buttons via `list_inline_buttons`.
+4. **Revocation** — the account leaves the group; `/content` again returns
+   "Ничего не найдено".
+
+Direction A (subgraph access → group access) is covered at the DB contract level
+by `TestE2ETgSubgraphBidirectionalAccess`; client-side observation of it requires
+the bot to hold invite rights and offer a group link, which is environment-specific.
+
+### Prerequisites (manual setup — not provisioned automatically)
+
+1. **telegram-mcp checkout** with a valid `.env`
+   (`TELEGRAM_API_ID`/`TELEGRAM_API_HASH`/`TELEGRAM_SESSION_STRING`) and its deps
+   installed (`uv sync` / `poetry install`). Default location
+   `~/projects/telegram-mcp`; override with `TG_E2E_MCP_DIR`. Point
+   `TG_E2E_PYTHON` at that env's interpreter (e.g. `.venv/bin/python`).
+2. **A running trip2g instance** with a configured Telegram **bot** (token added in
+   admin → Telegram Bots). The bot long-polls, so no public webhook is needed.
+3. **A dedicated throwaway test group** the bot is a member/admin of, **linked to a
+   subgraph** (`tg_bot_chat_subgraph_invites` + `tg_bot_chat_subgraph_accesses`,
+   configured via the admin UI). Use a throwaway group — the test joins and leaves
+   it and messages the bot; keep it away from real chats.
+4. The Telegram account behind the session string must have a **linked trip2g
+   system user** (`users.tg_user_id`) so `sendContentMenu` can resolve its content.
+
+### Gate / env vars
+
+The test **skips** unless all four required vars are set, so `go test ./...` and CI
+skip it cleanly:
+
+| Var | Req | Meaning |
+|-----|-----|---------|
+| `TG_E2E_BOT` | yes | `@username` or numeric id of the trip2g bot to DM |
+| `TG_E2E_GROUP_INVITE` | yes | invite link (`t.me/+hash`) of the throwaway group linked to the subgraph |
+| `TG_E2E_GROUP_ID` | yes | numeric telegram id of that group (used to leave it) |
+| `TG_E2E_SUBGRAPH` | yes | subgraph name expected as an inline-button label |
+| `TG_E2E_PYTHON` | no | interpreter with telegram-mcp deps (default `python3`) |
+| `TG_E2E_MCP_DIR` | no | telegram-mcp checkout dir (default `~/projects/telegram-mcp`) |
+
+### Run
+
+```bash
+TG_E2E_BOT=@my_test_bot \
+TG_E2E_GROUP_INVITE='https://t.me/+abcdEFGH' \
+TG_E2E_GROUP_ID=-1002529281698 \
+TG_E2E_SUBGRAPH=e2e-subgraph \
+TG_E2E_PYTHON="$HOME/projects/telegram-mcp/.venv/bin/python" \
+go test ./internal/case/handletgupdate/ -run TestE2ELiveTgSubgraphAccess -v
+```
+
+The driver is independently smoke-testable without the bot:
+
+```bash
+"$TG_E2E_PYTHON" internal/case/handletgupdate/testdata/tg_e2e/tg_driver.py whoami
+```
+
