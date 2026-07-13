@@ -8,6 +8,38 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## v0.10.0 (2026-07-13)
+
+### Theming the default template + a live theme editor
+
+- **What.** Two new pages document how to re-skin the default template. [[en/user/themes]] explains that the whole look comes from Pico CSS `--pico-*` variables — override them in a `<style>` block pasted into admin **HTML Injection** and the site re-themes at once, no rebuild or fork. [[en/user/theme-editor]] renders a live editor right on the site: drag the variables, watch the preview, and (signed in as admin) click **Save** to write the theme into your site's HTML injection. The editor is a custom Jet layout (`layout: theme_editor`), installable on any site from [trip2g/theme_editor_template](https://github.com/trip2g/theme_editor_template).
+- **Why.** Changing the look used to mean reading the stylesheet and guessing which variable to touch. The editor makes theming a drag-and-save loop, and doubles as a worked example of a custom template that talks to the admin API (same pattern as the kanban board).
+- **How.** Read [[en/user/themes]] for the variable list and where to paste. To try the editor, open [[en/user/theme-editor]]; to install it on your own site, `curl` the layout from the template repo and add a note with `layout: theme_editor`.
+
+### Embedded notes with a custom CSS class
+
+- **What.** New page [[en/user/embedded-notes]] documents `![[note-name]]` — the target note's content renders inline, wrapped in `<div class="embedded-note">`. Add `embed_class: my-class` to the embedded note's frontmatter and the wrapper also gets `embedded-note__my-class`, a hook you can style from the admin. Any note becomes a reusable, styled block: a callout, a promo card, a shared footer.
+- **Why.** Reusable partials (a signup banner, a shared header) had no documented pattern. Combined with `_`-hidden notes, one edit updates the block everywhere it's embedded.
+- **How.** See [[en/user/embedded-notes]]. Keep the block in a `_hidden` note, add `embed_class:` for styling, and embed it with `![[_block]]` wherever you need it.
+
+### Telegram group ↔ subgraph access (two-way)
+
+- **What.** New page [[en/user/telegram-access]] documents linking a Telegram group to a [[en/user/subgraphs|subgraph]] so access flows both ways: group members can read the subgraph's notes on your site, and readers with subgraph access can be invited into the group. Each direction is a separate switch, and both are live — leave the group and the notes close; let access lapse and a background job removes you from the group. Backing this, membership now tracks Telegram `chat_member` updates so joins and leaves register immediately, and the bot's `/content` menu points at the right subgraphs.
+- **Why.** Gating content by paid-group membership was possible but underdocumented, and membership changes weren't always reflected. This makes a Telegram group a first-class access source, on equal footing with a paid offer or a hand grant.
+- **How.** Add your bot as a group admin, link the group to a subgraph in Admin → **TG bots** (one section per direction), tag the notes with `subgraph:`, and members use `/content` to open the gated notes. Full walkthrough in [[en/user/telegram-access]].
+
+### Git access to your site
+
+- **What.** New page [[en/user/git]] documents that every trip2g site is a git repository: `git clone https://your-site.com/_system/git`, edit markdown with any tool or agent, commit, and push — the server applies your commits to the live site. Auth is HTTP Basic (`user` + a git token created in Admin → **Integrations → Git tokens**), and token scopes now enforce pull vs. push separately, so a read-only token can clone but not write.
+- **Why.** Batch edits, CI jobs, and coding agents need standard git tooling, not a bespoke plugin. Scoped tokens make it safe to hand a read-only clone URL to an automation.
+- **How.** Create a git token in the admin, `git clone` the `_system/git` URL, and push to the `master` branch (the only branch the server accepts). For day-to-day writing in Obsidian, the sync plugin is still the better fit. See [[en/user/git]].
+
+### Subgraph recipes: private-by-default, all-free, and `_`-hidden notes
+
+- **What.** [[en/user/subgraphs]] gains three practical recipes. A **private-by-default** frontmatter patch assigns every untagged note to a reserved subgraph nobody is granted, so nothing leaks unless you publish it explicitly. A symmetric **all-free** patch sets `free: true` vault-wide for a fully public site. And a clarified section documents that any file or folder whose name starts with `_` is hidden from listings, search, and RSS (but still reachable and embeddable).
+- **Why.** "Which notes are visible to whom" is the most common subgraph question. These give copy-paste starting points for the two ends of the spectrum — private-first and public-first.
+- **How.** In Admin → **Notes & Content → Frontmatter Patches**, create a rule with the jsonnet shown in [[en/user/subgraphs]] (private-by-default or all-free), and create the reserved `private` subgraph with no grants.
+
 ## v0.9.0 (2026-07-12)
 
 ### First login on a fresh self-host box
