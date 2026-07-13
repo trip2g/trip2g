@@ -2,31 +2,32 @@ package cleanupapikeylogs
 
 import (
 	"context"
+	"trip2g/internal/cronjobs"
 )
 
 // Job implements the cronjobs.Job interface.
-type Job struct {
+type job struct {
 	env    Env
 	config Config
 }
 
-func New(env Env, config Config) *Job {
-	return &Job{env: env, config: config}
+func New(env Env, config Config) cronjobs.Job {
+	return &job{env: env, config: config}
 }
 
-func (j *Job) Name() string {
+func (j *job) Name() string {
 	return "cleanup_api_key_logs"
 }
 
 // Schedule runs daily at 1:00 AM.
-func (j *Job) Schedule() string {
+func (j *job) Schedule() string {
 	return "0 0 1 * * *"
 }
 
-func (j *Job) ExecuteAfterStart() bool {
+func (j *job) ExecuteAfterStart() bool {
 	return false
 }
 
-func (j *Job) Execute(ctx context.Context) (any, error) {
+func (j *job) Execute(ctx context.Context) (any, error) {
 	return Resolve(ctx, j.env, j.config)
 }

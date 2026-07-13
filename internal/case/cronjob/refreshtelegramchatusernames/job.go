@@ -1,6 +1,9 @@
 package refreshtelegramchatusernames
 
-import "context"
+import (
+	"context"
+	"trip2g/internal/cronjobs"
+)
 
 const refreshBatchSize = 100
 
@@ -10,27 +13,27 @@ type Env interface {
 
 // Job delegates to a single app method; the logic stays in Execute rather than a
 // resolve.go — a thin wrapper would add ceremony without testable behavior.
-type Job struct {
+type job struct {
 	env Env
 }
 
-func New(env Env) *Job {
-	return &Job{env: env}
+func New(env Env) cronjobs.Job {
+	return &job{env: env}
 }
 
-func (j *Job) Name() string {
+func (j *job) Name() string {
 	return "refresh_telegram_chat_usernames"
 }
 
-func (j *Job) Schedule() string {
+func (j *job) Schedule() string {
 	return "0 0 */6 * * *" // every 6 hours
 }
 
-func (j *Job) ExecuteAfterStart() bool {
+func (j *job) ExecuteAfterStart() bool {
 	return false
 }
 
-func (j *Job) Execute(ctx context.Context) (any, error) {
+func (j *job) Execute(ctx context.Context) (any, error) {
 	n, err := j.env.RefreshStaleTelegramChatUsernames(ctx, refreshBatchSize)
 	if err != nil {
 		return nil, err
