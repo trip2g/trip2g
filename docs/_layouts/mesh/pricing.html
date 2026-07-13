@@ -35,6 +35,35 @@
 {{ end }}
 
 {{ block @lid() }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}
+{{ yield section_header(lhs="цены — их почти нет", rhs="open source · свой сервер или sandbox") }}
+<div class="pricing">
+  {{ yield pricing_card(tag="FREE · OSS", title="Свой сервер", price="$ 0", period="/навсегда", cta_href="/ru/user/selfhosted", cta_text="установить →") content }}
+    <ul class="price-list">
+      <li>Open source — MIT</li>
+      <li>Установка одной командой на своём сервере</li>
+      <li>Неограниченные vault'ы, peer'ы, хранилище</li>
+      <li>Полная federation, MCP, webhooks</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text="попробовать →") content }}
+    <ul class="price-list">
+      <li>Один инстанс на аккаунт</li>
+      <li>Попробуйте federation без настройки</li>
+      <li>Все возможности, лимит 100&nbsp;MB</li>
+      <li>Поддомен на simplecloud.2pub.me</li>
+    </ul>
+  {{ end }}
+  {{ yield pricing_card(tag="CUSTOM", title="Нужно больше?", price="поговорим", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="написать →") content }}
+    <ul class="price-list">
+      <li>Больше хранилища, выделенный хост</li>
+      <li>Настройка team mesh &amp; миграция</li>
+      <li>SLA — только если действительно нужен</li>
+    </ul>
+  {{ end }}
+</div>
+{{ else }}
 {{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
 <div class="pricing">
   {{ yield pricing_card(tag="FREE · OSS", title="Self-hosted", price="$ 0", period="/forever", cta_href="/en/user/selfhosted", cta_text="install →") content }}
@@ -62,32 +91,4 @@
   {{ end }}
 </div>
 {{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="цены — их почти нет", rhs="open source · свой сервер или sandbox") }}
-<div class="pricing">
-  {{ yield pricing_card(tag="FREE · OSS", title="Свой сервер", price="$ 0", period="/навсегда", cta_href="/ru/user/selfhosted", cta_text="установить →") content }}
-    <ul class="price-list">
-      <li>Open source — MIT</li>
-      <li>Установка одной командой на своём сервере</li>
-      <li>Неограниченные vault'ы, peer'ы, хранилище</li>
-      <li>Полная federation, MCP, webhooks</li>
-    </ul>
-  {{ end }}
-  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text="попробовать →") content }}
-    <ul class="price-list">
-      <li>Один инстанс на аккаунт</li>
-      <li>Попробуйте federation без настройки</li>
-      <li>Все возможности, лимит 100&nbsp;MB</li>
-      <li>Поддомен на simplecloud.2pub.me</li>
-    </ul>
-  {{ end }}
-  {{ yield pricing_card(tag="CUSTOM", title="Нужно больше?", price="поговорим", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="написать →") content }}
-    <ul class="price-list">
-      <li>Больше хранилища, выделенный хост</li>
-      <li>Настройка team mesh &amp; миграция</li>
-      <li>SLA — только если действительно нужен</li>
-    </ul>
-  {{ end }}
-</div>
 {{ end }}
