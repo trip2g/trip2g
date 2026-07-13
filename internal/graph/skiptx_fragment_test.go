@@ -7,6 +7,8 @@ package graph
 import (
 	"testing"
 
+	"trip2g/internal/graph/generated"
+
 	"github.com/stretchr/testify/require"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -18,7 +20,7 @@ import (
 func loadTestOperation(t *testing.T, query string) *ast.OperationDefinition {
 	t.Helper()
 
-	schema := NewExecutableSchema(Config{Resolvers: &Resolver{}})
+	schema := generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})
 	doc, errList := gqlparser.LoadQueryWithRules(schema.Schema(), query, rules.NewDefaultRules())
 	require.Empty(t, errList)
 	require.Len(t, doc.Operations, 1)
@@ -27,7 +29,7 @@ func loadTestOperation(t *testing.T, query string) *ast.OperationDefinition {
 }
 
 func realSkipTxMap() map[string]struct{} {
-	return buildSkipTxMap(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
+	return buildSkipTxMap(generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}}))
 }
 
 func TestShouldSkipTx_FragmentSpread(t *testing.T) {

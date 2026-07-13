@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/graph/generated"
 	"trip2g/internal/logger"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -64,7 +65,7 @@ func NewHandler(env Env) *handler.Server {
 
 	resolver := Resolver{DefaultEnv: env}
 
-	config := Config{
+	config := generated.Config{
 		Resolvers: &resolver,
 	}
 
@@ -72,7 +73,7 @@ func NewHandler(env Env) *handler.Server {
 		return next(ctx)
 	}
 
-	schema := NewExecutableSchema(config)
+	schema := generated.NewExecutableSchema(config)
 
 	srv := handler.New(schema)
 
@@ -282,13 +283,13 @@ func staticallyExcluded(directives ast.DirectiveList) bool {
 // NewExecutor builds an executable schema for env and returns a low-level
 // executor suitable for programmatic GraphQL dispatch (no HTTP transport).
 func NewExecutor(env Env) *executor.Executor {
-	config := Config{
+	config := generated.Config{
 		Resolvers: &Resolver{DefaultEnv: env},
 	}
 	config.Directives.SkipTx = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 		return next(ctx)
 	}
-	schema := NewExecutableSchema(config)
+	schema := generated.NewExecutableSchema(config)
 	exec := executor.New(schema)
 	exec.Use(extension.Introspection{})
 

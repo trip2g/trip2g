@@ -145,6 +145,7 @@ import (
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/db"
+	"trip2g/internal/graph/generated"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
@@ -3731,535 +3732,555 @@ func (r *viewerResolver) TgBots(ctx context.Context, obj *appmodel.Viewer) ([]db
 	return r.env(ctx).AllTgBots(ctx)
 }
 
-// Admin returns AdminResolver implementation.
-func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
+// Admin returns generated.AdminResolver implementation.
+func (r *Resolver) Admin() generated.AdminResolver { return &adminResolver{r} }
 
-// AdminAdminsConnection returns AdminAdminsConnectionResolver implementation.
-func (r *Resolver) AdminAdminsConnection() AdminAdminsConnectionResolver {
+// AdminAdminsConnection returns generated.AdminAdminsConnectionResolver implementation.
+func (r *Resolver) AdminAdminsConnection() generated.AdminAdminsConnectionResolver {
 	return &adminAdminsConnectionResolver{r}
 }
 
-// AdminApiKey returns AdminApiKeyResolver implementation.
-func (r *Resolver) AdminApiKey() AdminApiKeyResolver { return &adminApiKeyResolver{r} }
+// AdminApiKey returns generated.AdminApiKeyResolver implementation.
+func (r *Resolver) AdminApiKey() generated.AdminApiKeyResolver { return &adminApiKeyResolver{r} }
 
-// AdminApiKeyLogsConnection returns AdminApiKeyLogsConnectionResolver implementation.
-func (r *Resolver) AdminApiKeyLogsConnection() AdminApiKeyLogsConnectionResolver {
+// AdminApiKeyLogsConnection returns generated.AdminApiKeyLogsConnectionResolver implementation.
+func (r *Resolver) AdminApiKeyLogsConnection() generated.AdminApiKeyLogsConnectionResolver {
 	return &adminApiKeyLogsConnectionResolver{r}
 }
 
-// AdminApiKeysConnection returns AdminApiKeysConnectionResolver implementation.
-func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
+// AdminApiKeysConnection returns generated.AdminApiKeysConnectionResolver implementation.
+func (r *Resolver) AdminApiKeysConnection() generated.AdminApiKeysConnectionResolver {
 	return &adminApiKeysConnectionResolver{r}
 }
 
-// AdminAuditLog returns AdminAuditLogResolver implementation.
-func (r *Resolver) AdminAuditLog() AdminAuditLogResolver { return &adminAuditLogResolver{r} }
+// AdminAuditLog returns generated.AdminAuditLogResolver implementation.
+func (r *Resolver) AdminAuditLog() generated.AdminAuditLogResolver { return &adminAuditLogResolver{r} }
 
-// AdminAuditLogsConnection returns AdminAuditLogsConnectionResolver implementation.
-func (r *Resolver) AdminAuditLogsConnection() AdminAuditLogsConnectionResolver {
+// AdminAuditLogsConnection returns generated.AdminAuditLogsConnectionResolver implementation.
+func (r *Resolver) AdminAuditLogsConnection() generated.AdminAuditLogsConnectionResolver {
 	return &adminAuditLogsConnectionResolver{r}
 }
 
-// AdminBackgroundQueue returns AdminBackgroundQueueResolver implementation.
-func (r *Resolver) AdminBackgroundQueue() AdminBackgroundQueueResolver {
+// AdminBackgroundQueue returns generated.AdminBackgroundQueueResolver implementation.
+func (r *Resolver) AdminBackgroundQueue() generated.AdminBackgroundQueueResolver {
 	return &adminBackgroundQueueResolver{r}
 }
 
-// AdminBackgroundQueuesConnection returns AdminBackgroundQueuesConnectionResolver implementation.
-func (r *Resolver) AdminBackgroundQueuesConnection() AdminBackgroundQueuesConnectionResolver {
+// AdminBackgroundQueuesConnection returns generated.AdminBackgroundQueuesConnectionResolver implementation.
+func (r *Resolver) AdminBackgroundQueuesConnection() generated.AdminBackgroundQueuesConnectionResolver {
 	return &adminBackgroundQueuesConnectionResolver{r}
 }
 
-// AdminBoostyCredentials returns AdminBoostyCredentialsResolver implementation.
-func (r *Resolver) AdminBoostyCredentials() AdminBoostyCredentialsResolver {
+// AdminBoostyCredentials returns generated.AdminBoostyCredentialsResolver implementation.
+func (r *Resolver) AdminBoostyCredentials() generated.AdminBoostyCredentialsResolver {
 	return &adminBoostyCredentialsResolver{r}
 }
 
-// AdminBoostyCredentialsConnection returns AdminBoostyCredentialsConnectionResolver implementation.
-func (r *Resolver) AdminBoostyCredentialsConnection() AdminBoostyCredentialsConnectionResolver {
+// AdminBoostyCredentialsConnection returns generated.AdminBoostyCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminBoostyCredentialsConnection() generated.AdminBoostyCredentialsConnectionResolver {
 	return &adminBoostyCredentialsConnectionResolver{r}
 }
 
-// AdminBoostyMember returns AdminBoostyMemberResolver implementation.
-func (r *Resolver) AdminBoostyMember() AdminBoostyMemberResolver {
+// AdminBoostyMember returns generated.AdminBoostyMemberResolver implementation.
+func (r *Resolver) AdminBoostyMember() generated.AdminBoostyMemberResolver {
 	return &adminBoostyMemberResolver{r}
 }
 
-// AdminBoostyMembersConnection returns AdminBoostyMembersConnectionResolver implementation.
-func (r *Resolver) AdminBoostyMembersConnection() AdminBoostyMembersConnectionResolver {
+// AdminBoostyMembersConnection returns generated.AdminBoostyMembersConnectionResolver implementation.
+func (r *Resolver) AdminBoostyMembersConnection() generated.AdminBoostyMembersConnectionResolver {
 	return &adminBoostyMembersConnectionResolver{r}
 }
 
-// AdminBoostyTier returns AdminBoostyTierResolver implementation.
-func (r *Resolver) AdminBoostyTier() AdminBoostyTierResolver { return &adminBoostyTierResolver{r} }
+// AdminBoostyTier returns generated.AdminBoostyTierResolver implementation.
+func (r *Resolver) AdminBoostyTier() generated.AdminBoostyTierResolver {
+	return &adminBoostyTierResolver{r}
+}
 
-// AdminBoostyTiersConnection returns AdminBoostyTiersConnectionResolver implementation.
-func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolver {
+// AdminBoostyTiersConnection returns generated.AdminBoostyTiersConnectionResolver implementation.
+func (r *Resolver) AdminBoostyTiersConnection() generated.AdminBoostyTiersConnectionResolver {
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
-// AdminChangeWebhook returns AdminChangeWebhookResolver implementation.
-func (r *Resolver) AdminChangeWebhook() AdminChangeWebhookResolver {
+// AdminChangeWebhook returns generated.AdminChangeWebhookResolver implementation.
+func (r *Resolver) AdminChangeWebhook() generated.AdminChangeWebhookResolver {
 	return &adminChangeWebhookResolver{r}
 }
 
-// AdminChangeWebhookDeliveriesConnection returns AdminChangeWebhookDeliveriesConnectionResolver implementation.
-func (r *Resolver) AdminChangeWebhookDeliveriesConnection() AdminChangeWebhookDeliveriesConnectionResolver {
+// AdminChangeWebhookDeliveriesConnection returns generated.AdminChangeWebhookDeliveriesConnectionResolver implementation.
+func (r *Resolver) AdminChangeWebhookDeliveriesConnection() generated.AdminChangeWebhookDeliveriesConnectionResolver {
 	return &adminChangeWebhookDeliveriesConnectionResolver{r}
 }
 
-// AdminChangeWebhooksConnection returns AdminChangeWebhooksConnectionResolver implementation.
-func (r *Resolver) AdminChangeWebhooksConnection() AdminChangeWebhooksConnectionResolver {
+// AdminChangeWebhooksConnection returns generated.AdminChangeWebhooksConnectionResolver implementation.
+func (r *Resolver) AdminChangeWebhooksConnection() generated.AdminChangeWebhooksConnectionResolver {
 	return &adminChangeWebhooksConnectionResolver{r}
 }
 
-// AdminConfigBoolEntry returns AdminConfigBoolEntryResolver implementation.
-func (r *Resolver) AdminConfigBoolEntry() AdminConfigBoolEntryResolver {
+// AdminConfigBoolEntry returns generated.AdminConfigBoolEntryResolver implementation.
+func (r *Resolver) AdminConfigBoolEntry() generated.AdminConfigBoolEntryResolver {
 	return &adminConfigBoolEntryResolver{r}
 }
 
-// AdminConfigBoolValue returns AdminConfigBoolValueResolver implementation.
-func (r *Resolver) AdminConfigBoolValue() AdminConfigBoolValueResolver {
+// AdminConfigBoolValue returns generated.AdminConfigBoolValueResolver implementation.
+func (r *Resolver) AdminConfigBoolValue() generated.AdminConfigBoolValueResolver {
 	return &adminConfigBoolValueResolver{r}
 }
 
-// AdminConfigIntEntry returns AdminConfigIntEntryResolver implementation.
-func (r *Resolver) AdminConfigIntEntry() AdminConfigIntEntryResolver {
+// AdminConfigIntEntry returns generated.AdminConfigIntEntryResolver implementation.
+func (r *Resolver) AdminConfigIntEntry() generated.AdminConfigIntEntryResolver {
 	return &adminConfigIntEntryResolver{r}
 }
 
-// AdminConfigIntValue returns AdminConfigIntValueResolver implementation.
-func (r *Resolver) AdminConfigIntValue() AdminConfigIntValueResolver {
+// AdminConfigIntValue returns generated.AdminConfigIntValueResolver implementation.
+func (r *Resolver) AdminConfigIntValue() generated.AdminConfigIntValueResolver {
 	return &adminConfigIntValueResolver{r}
 }
 
-// AdminConfigStringEntry returns AdminConfigStringEntryResolver implementation.
-func (r *Resolver) AdminConfigStringEntry() AdminConfigStringEntryResolver {
+// AdminConfigStringEntry returns generated.AdminConfigStringEntryResolver implementation.
+func (r *Resolver) AdminConfigStringEntry() generated.AdminConfigStringEntryResolver {
 	return &adminConfigStringEntryResolver{r}
 }
 
-// AdminConfigStringValue returns AdminConfigStringValueResolver implementation.
-func (r *Resolver) AdminConfigStringValue() AdminConfigStringValueResolver {
+// AdminConfigStringValue returns generated.AdminConfigStringValueResolver implementation.
+func (r *Resolver) AdminConfigStringValue() generated.AdminConfigStringValueResolver {
 	return &adminConfigStringValueResolver{r}
 }
 
-// AdminCronJob returns AdminCronJobResolver implementation.
-func (r *Resolver) AdminCronJob() AdminCronJobResolver { return &adminCronJobResolver{r} }
+// AdminCronJob returns generated.AdminCronJobResolver implementation.
+func (r *Resolver) AdminCronJob() generated.AdminCronJobResolver { return &adminCronJobResolver{r} }
 
-// AdminCronJobExecution returns AdminCronJobExecutionResolver implementation.
-func (r *Resolver) AdminCronJobExecution() AdminCronJobExecutionResolver {
+// AdminCronJobExecution returns generated.AdminCronJobExecutionResolver implementation.
+func (r *Resolver) AdminCronJobExecution() generated.AdminCronJobExecutionResolver {
 	return &adminCronJobExecutionResolver{r}
 }
 
-// AdminCronJobsConnection returns AdminCronJobsConnectionResolver implementation.
-func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
+// AdminCronJobsConnection returns generated.AdminCronJobsConnectionResolver implementation.
+func (r *Resolver) AdminCronJobsConnection() generated.AdminCronJobsConnectionResolver {
 	return &adminCronJobsConnectionResolver{r}
 }
 
-// AdminCronWebhook returns AdminCronWebhookResolver implementation.
-func (r *Resolver) AdminCronWebhook() AdminCronWebhookResolver { return &adminCronWebhookResolver{r} }
+// AdminCronWebhook returns generated.AdminCronWebhookResolver implementation.
+func (r *Resolver) AdminCronWebhook() generated.AdminCronWebhookResolver {
+	return &adminCronWebhookResolver{r}
+}
 
-// AdminCronWebhookDeliveriesConnection returns AdminCronWebhookDeliveriesConnectionResolver implementation.
-func (r *Resolver) AdminCronWebhookDeliveriesConnection() AdminCronWebhookDeliveriesConnectionResolver {
+// AdminCronWebhookDeliveriesConnection returns generated.AdminCronWebhookDeliveriesConnectionResolver implementation.
+func (r *Resolver) AdminCronWebhookDeliveriesConnection() generated.AdminCronWebhookDeliveriesConnectionResolver {
 	return &adminCronWebhookDeliveriesConnectionResolver{r}
 }
 
-// AdminCronWebhooksConnection returns AdminCronWebhooksConnectionResolver implementation.
-func (r *Resolver) AdminCronWebhooksConnection() AdminCronWebhooksConnectionResolver {
+// AdminCronWebhooksConnection returns generated.AdminCronWebhooksConnectionResolver implementation.
+func (r *Resolver) AdminCronWebhooksConnection() generated.AdminCronWebhooksConnectionResolver {
 	return &adminCronWebhooksConnectionResolver{r}
 }
 
-// AdminFormNote returns AdminFormNoteResolver implementation.
-func (r *Resolver) AdminFormNote() AdminFormNoteResolver { return &adminFormNoteResolver{r} }
+// AdminFormNote returns generated.AdminFormNoteResolver implementation.
+func (r *Resolver) AdminFormNote() generated.AdminFormNoteResolver { return &adminFormNoteResolver{r} }
 
-// AdminFormSubmitsConnection returns AdminFormSubmitsConnectionResolver implementation.
-func (r *Resolver) AdminFormSubmitsConnection() AdminFormSubmitsConnectionResolver {
+// AdminFormSubmitsConnection returns generated.AdminFormSubmitsConnectionResolver implementation.
+func (r *Resolver) AdminFormSubmitsConnection() generated.AdminFormSubmitsConnectionResolver {
 	return &adminFormSubmitsConnectionResolver{r}
 }
 
-// AdminFrontmatterPatch returns AdminFrontmatterPatchResolver implementation.
-func (r *Resolver) AdminFrontmatterPatch() AdminFrontmatterPatchResolver {
+// AdminFrontmatterPatch returns generated.AdminFrontmatterPatchResolver implementation.
+func (r *Resolver) AdminFrontmatterPatch() generated.AdminFrontmatterPatchResolver {
 	return &adminFrontmatterPatchResolver{r}
 }
 
-// AdminFrontmatterPatchesConnection returns AdminFrontmatterPatchesConnectionResolver implementation.
-func (r *Resolver) AdminFrontmatterPatchesConnection() AdminFrontmatterPatchesConnectionResolver {
+// AdminFrontmatterPatchesConnection returns generated.AdminFrontmatterPatchesConnectionResolver implementation.
+func (r *Resolver) AdminFrontmatterPatchesConnection() generated.AdminFrontmatterPatchesConnectionResolver {
 	return &adminFrontmatterPatchesConnectionResolver{r}
 }
 
-// AdminGitHubOAuthCredentials returns AdminGitHubOAuthCredentialsResolver implementation.
-func (r *Resolver) AdminGitHubOAuthCredentials() AdminGitHubOAuthCredentialsResolver {
+// AdminGitHubOAuthCredentials returns generated.AdminGitHubOAuthCredentialsResolver implementation.
+func (r *Resolver) AdminGitHubOAuthCredentials() generated.AdminGitHubOAuthCredentialsResolver {
 	return &adminGitHubOAuthCredentialsResolver{r}
 }
 
-// AdminGitHubOAuthCredentialsConnection returns AdminGitHubOAuthCredentialsConnectionResolver implementation.
-func (r *Resolver) AdminGitHubOAuthCredentialsConnection() AdminGitHubOAuthCredentialsConnectionResolver {
+// AdminGitHubOAuthCredentialsConnection returns generated.AdminGitHubOAuthCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminGitHubOAuthCredentialsConnection() generated.AdminGitHubOAuthCredentialsConnectionResolver {
 	return &adminGitHubOAuthCredentialsConnectionResolver{r}
 }
 
-// AdminGitToken returns AdminGitTokenResolver implementation.
-func (r *Resolver) AdminGitToken() AdminGitTokenResolver { return &adminGitTokenResolver{r} }
+// AdminGitToken returns generated.AdminGitTokenResolver implementation.
+func (r *Resolver) AdminGitToken() generated.AdminGitTokenResolver { return &adminGitTokenResolver{r} }
 
-// AdminGitTokensConnection returns AdminGitTokensConnectionResolver implementation.
-func (r *Resolver) AdminGitTokensConnection() AdminGitTokensConnectionResolver {
+// AdminGitTokensConnection returns generated.AdminGitTokensConnectionResolver implementation.
+func (r *Resolver) AdminGitTokensConnection() generated.AdminGitTokensConnectionResolver {
 	return &adminGitTokensConnectionResolver{r}
 }
 
-// AdminGoogleOAuthCredentials returns AdminGoogleOAuthCredentialsResolver implementation.
-func (r *Resolver) AdminGoogleOAuthCredentials() AdminGoogleOAuthCredentialsResolver {
+// AdminGoogleOAuthCredentials returns generated.AdminGoogleOAuthCredentialsResolver implementation.
+func (r *Resolver) AdminGoogleOAuthCredentials() generated.AdminGoogleOAuthCredentialsResolver {
 	return &adminGoogleOAuthCredentialsResolver{r}
 }
 
-// AdminGoogleOAuthCredentialsConnection returns AdminGoogleOAuthCredentialsConnectionResolver implementation.
-func (r *Resolver) AdminGoogleOAuthCredentialsConnection() AdminGoogleOAuthCredentialsConnectionResolver {
+// AdminGoogleOAuthCredentialsConnection returns generated.AdminGoogleOAuthCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminGoogleOAuthCredentialsConnection() generated.AdminGoogleOAuthCredentialsConnectionResolver {
 	return &adminGoogleOAuthCredentialsConnectionResolver{r}
 }
 
-// AdminHtmlInjection returns AdminHtmlInjectionResolver implementation.
-func (r *Resolver) AdminHtmlInjection() AdminHtmlInjectionResolver {
+// AdminHtmlInjection returns generated.AdminHtmlInjectionResolver implementation.
+func (r *Resolver) AdminHtmlInjection() generated.AdminHtmlInjectionResolver {
 	return &adminHtmlInjectionResolver{r}
 }
 
-// AdminHtmlInjectionsConnection returns AdminHtmlInjectionsConnectionResolver implementation.
-func (r *Resolver) AdminHtmlInjectionsConnection() AdminHtmlInjectionsConnectionResolver {
+// AdminHtmlInjectionsConnection returns generated.AdminHtmlInjectionsConnectionResolver implementation.
+func (r *Resolver) AdminHtmlInjectionsConnection() generated.AdminHtmlInjectionsConnectionResolver {
 	return &adminHtmlInjectionsConnectionResolver{r}
 }
 
-// AdminLatestNoteAssetsConnection returns AdminLatestNoteAssetsConnectionResolver implementation.
-func (r *Resolver) AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver {
+// AdminLatestNoteAssetsConnection returns generated.AdminLatestNoteAssetsConnectionResolver implementation.
+func (r *Resolver) AdminLatestNoteAssetsConnection() generated.AdminLatestNoteAssetsConnectionResolver {
 	return &adminLatestNoteAssetsConnectionResolver{r}
 }
 
-// AdminLatestNoteViewsConnection returns AdminLatestNoteViewsConnectionResolver implementation.
-func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver {
+// AdminLatestNoteViewsConnection returns generated.AdminLatestNoteViewsConnectionResolver implementation.
+func (r *Resolver) AdminLatestNoteViewsConnection() generated.AdminLatestNoteViewsConnectionResolver {
 	return &adminLatestNoteViewsConnectionResolver{r}
 }
 
-// AdminMutation returns AdminMutationResolver implementation.
-func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
+// AdminMutation returns generated.AdminMutationResolver implementation.
+func (r *Resolver) AdminMutation() generated.AdminMutationResolver { return &adminMutationResolver{r} }
 
-// AdminNotFoundIgnoredPattern returns AdminNotFoundIgnoredPatternResolver implementation.
-func (r *Resolver) AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver {
+// AdminNotFoundIgnoredPattern returns generated.AdminNotFoundIgnoredPatternResolver implementation.
+func (r *Resolver) AdminNotFoundIgnoredPattern() generated.AdminNotFoundIgnoredPatternResolver {
 	return &adminNotFoundIgnoredPatternResolver{r}
 }
 
-// AdminNotFoundIgnoredPatternsConnection returns AdminNotFoundIgnoredPatternsConnectionResolver implementation.
-func (r *Resolver) AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnoredPatternsConnectionResolver {
+// AdminNotFoundIgnoredPatternsConnection returns generated.AdminNotFoundIgnoredPatternsConnectionResolver implementation.
+func (r *Resolver) AdminNotFoundIgnoredPatternsConnection() generated.AdminNotFoundIgnoredPatternsConnectionResolver {
 	return &adminNotFoundIgnoredPatternsConnectionResolver{r}
 }
 
-// AdminNotFoundPathsConnection returns AdminNotFoundPathsConnectionResolver implementation.
-func (r *Resolver) AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver {
+// AdminNotFoundPathsConnection returns generated.AdminNotFoundPathsConnectionResolver implementation.
+func (r *Resolver) AdminNotFoundPathsConnection() generated.AdminNotFoundPathsConnectionResolver {
 	return &adminNotFoundPathsConnectionResolver{r}
 }
 
-// AdminNoteAsset returns AdminNoteAssetResolver implementation.
-func (r *Resolver) AdminNoteAsset() AdminNoteAssetResolver { return &adminNoteAssetResolver{r} }
+// AdminNoteAsset returns generated.AdminNoteAssetResolver implementation.
+func (r *Resolver) AdminNoteAsset() generated.AdminNoteAssetResolver {
+	return &adminNoteAssetResolver{r}
+}
 
-// AdminNoteVersionHistoryConnection returns AdminNoteVersionHistoryConnectionResolver implementation.
-func (r *Resolver) AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryConnectionResolver {
+// AdminNoteVersionHistoryConnection returns generated.AdminNoteVersionHistoryConnectionResolver implementation.
+func (r *Resolver) AdminNoteVersionHistoryConnection() generated.AdminNoteVersionHistoryConnectionResolver {
 	return &adminNoteVersionHistoryConnectionResolver{r}
 }
 
-// AdminOIDCCredentials returns AdminOIDCCredentialsResolver implementation.
-func (r *Resolver) AdminOIDCCredentials() AdminOIDCCredentialsResolver {
+// AdminOIDCCredentials returns generated.AdminOIDCCredentialsResolver implementation.
+func (r *Resolver) AdminOIDCCredentials() generated.AdminOIDCCredentialsResolver {
 	return &adminOIDCCredentialsResolver{r}
 }
 
-// AdminOIDCCredentialsConnection returns AdminOIDCCredentialsConnectionResolver implementation.
-func (r *Resolver) AdminOIDCCredentialsConnection() AdminOIDCCredentialsConnectionResolver {
+// AdminOIDCCredentialsConnection returns generated.AdminOIDCCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminOIDCCredentialsConnection() generated.AdminOIDCCredentialsConnectionResolver {
 	return &adminOIDCCredentialsConnectionResolver{r}
 }
 
-// AdminOffer returns AdminOfferResolver implementation.
-func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
+// AdminOffer returns generated.AdminOfferResolver implementation.
+func (r *Resolver) AdminOffer() generated.AdminOfferResolver { return &adminOfferResolver{r} }
 
-// AdminOffersConnection returns AdminOffersConnectionResolver implementation.
-func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
+// AdminOffersConnection returns generated.AdminOffersConnectionResolver implementation.
+func (r *Resolver) AdminOffersConnection() generated.AdminOffersConnectionResolver {
 	return &adminOffersConnectionResolver{r}
 }
 
-// AdminPatreonCredentials returns AdminPatreonCredentialsResolver implementation.
-func (r *Resolver) AdminPatreonCredentials() AdminPatreonCredentialsResolver {
+// AdminPatreonCredentials returns generated.AdminPatreonCredentialsResolver implementation.
+func (r *Resolver) AdminPatreonCredentials() generated.AdminPatreonCredentialsResolver {
 	return &adminPatreonCredentialsResolver{r}
 }
 
-// AdminPatreonCredentialsConnection returns AdminPatreonCredentialsConnectionResolver implementation.
-func (r *Resolver) AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver {
+// AdminPatreonCredentialsConnection returns generated.AdminPatreonCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminPatreonCredentialsConnection() generated.AdminPatreonCredentialsConnectionResolver {
 	return &adminPatreonCredentialsConnectionResolver{r}
 }
 
-// AdminPatreonMember returns AdminPatreonMemberResolver implementation.
-func (r *Resolver) AdminPatreonMember() AdminPatreonMemberResolver {
+// AdminPatreonMember returns generated.AdminPatreonMemberResolver implementation.
+func (r *Resolver) AdminPatreonMember() generated.AdminPatreonMemberResolver {
 	return &adminPatreonMemberResolver{r}
 }
 
-// AdminPatreonTier returns AdminPatreonTierResolver implementation.
-func (r *Resolver) AdminPatreonTier() AdminPatreonTierResolver { return &adminPatreonTierResolver{r} }
+// AdminPatreonTier returns generated.AdminPatreonTierResolver implementation.
+func (r *Resolver) AdminPatreonTier() generated.AdminPatreonTierResolver {
+	return &adminPatreonTierResolver{r}
+}
 
-// AdminPurchase returns AdminPurchaseResolver implementation.
-func (r *Resolver) AdminPurchase() AdminPurchaseResolver { return &adminPurchaseResolver{r} }
+// AdminPurchase returns generated.AdminPurchaseResolver implementation.
+func (r *Resolver) AdminPurchase() generated.AdminPurchaseResolver { return &adminPurchaseResolver{r} }
 
-// AdminPurchasesConnection returns AdminPurchasesConnectionResolver implementation.
-func (r *Resolver) AdminPurchasesConnection() AdminPurchasesConnectionResolver {
+// AdminPurchasesConnection returns generated.AdminPurchasesConnectionResolver implementation.
+func (r *Resolver) AdminPurchasesConnection() generated.AdminPurchasesConnectionResolver {
 	return &adminPurchasesConnectionResolver{r}
 }
 
-// AdminQuery returns AdminQueryResolver implementation.
-func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
+// AdminQuery returns generated.AdminQueryResolver implementation.
+func (r *Resolver) AdminQuery() generated.AdminQueryResolver { return &adminQueryResolver{r} }
 
-// AdminRedirect returns AdminRedirectResolver implementation.
-func (r *Resolver) AdminRedirect() AdminRedirectResolver { return &adminRedirectResolver{r} }
+// AdminRedirect returns generated.AdminRedirectResolver implementation.
+func (r *Resolver) AdminRedirect() generated.AdminRedirectResolver { return &adminRedirectResolver{r} }
 
-// AdminRedirectsConnection returns AdminRedirectsConnectionResolver implementation.
-func (r *Resolver) AdminRedirectsConnection() AdminRedirectsConnectionResolver {
+// AdminRedirectsConnection returns generated.AdminRedirectsConnectionResolver implementation.
+func (r *Resolver) AdminRedirectsConnection() generated.AdminRedirectsConnectionResolver {
 	return &adminRedirectsConnectionResolver{r}
 }
 
-// AdminRelease returns AdminReleaseResolver implementation.
-func (r *Resolver) AdminRelease() AdminReleaseResolver { return &adminReleaseResolver{r} }
+// AdminRelease returns generated.AdminReleaseResolver implementation.
+func (r *Resolver) AdminRelease() generated.AdminReleaseResolver { return &adminReleaseResolver{r} }
 
-// AdminReleasesConnection returns AdminReleasesConnectionResolver implementation.
-func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
+// AdminReleasesConnection returns generated.AdminReleasesConnectionResolver implementation.
+func (r *Resolver) AdminReleasesConnection() generated.AdminReleasesConnectionResolver {
 	return &adminReleasesConnectionResolver{r}
 }
 
-// AdminStorageEntry returns AdminStorageEntryResolver implementation.
-func (r *Resolver) AdminStorageEntry() AdminStorageEntryResolver {
+// AdminStorageEntry returns generated.AdminStorageEntryResolver implementation.
+func (r *Resolver) AdminStorageEntry() generated.AdminStorageEntryResolver {
 	return &adminStorageEntryResolver{r}
 }
 
-// AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
-func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
+// AdminSubgraphsConnection returns generated.AdminSubgraphsConnectionResolver implementation.
+func (r *Resolver) AdminSubgraphsConnection() generated.AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
-// AdminTelegramAccount returns AdminTelegramAccountResolver implementation.
-func (r *Resolver) AdminTelegramAccount() AdminTelegramAccountResolver {
+// AdminTelegramAccount returns generated.AdminTelegramAccountResolver implementation.
+func (r *Resolver) AdminTelegramAccount() generated.AdminTelegramAccountResolver {
 	return &adminTelegramAccountResolver{r}
 }
 
-// AdminTelegramAccountDialog returns AdminTelegramAccountDialogResolver implementation.
-func (r *Resolver) AdminTelegramAccountDialog() AdminTelegramAccountDialogResolver {
+// AdminTelegramAccountDialog returns generated.AdminTelegramAccountDialogResolver implementation.
+func (r *Resolver) AdminTelegramAccountDialog() generated.AdminTelegramAccountDialogResolver {
 	return &adminTelegramAccountDialogResolver{r}
 }
 
-// AdminTelegramAccountsConnection returns AdminTelegramAccountsConnectionResolver implementation.
-func (r *Resolver) AdminTelegramAccountsConnection() AdminTelegramAccountsConnectionResolver {
+// AdminTelegramAccountsConnection returns generated.AdminTelegramAccountsConnectionResolver implementation.
+func (r *Resolver) AdminTelegramAccountsConnection() generated.AdminTelegramAccountsConnectionResolver {
 	return &adminTelegramAccountsConnectionResolver{r}
 }
 
-// AdminTelegramPublishNote returns AdminTelegramPublishNoteResolver implementation.
-func (r *Resolver) AdminTelegramPublishNote() AdminTelegramPublishNoteResolver {
+// AdminTelegramPublishNote returns generated.AdminTelegramPublishNoteResolver implementation.
+func (r *Resolver) AdminTelegramPublishNote() generated.AdminTelegramPublishNoteResolver {
 	return &adminTelegramPublishNoteResolver{r}
 }
 
-// AdminTelegramPublishNotesConnection returns AdminTelegramPublishNotesConnectionResolver implementation.
-func (r *Resolver) AdminTelegramPublishNotesConnection() AdminTelegramPublishNotesConnectionResolver {
+// AdminTelegramPublishNotesConnection returns generated.AdminTelegramPublishNotesConnectionResolver implementation.
+func (r *Resolver) AdminTelegramPublishNotesConnection() generated.AdminTelegramPublishNotesConnectionResolver {
 	return &adminTelegramPublishNotesConnectionResolver{r}
 }
 
-// AdminTelegramPublishTagsConnection returns AdminTelegramPublishTagsConnectionResolver implementation.
-func (r *Resolver) AdminTelegramPublishTagsConnection() AdminTelegramPublishTagsConnectionResolver {
+// AdminTelegramPublishTagsConnection returns generated.AdminTelegramPublishTagsConnectionResolver implementation.
+func (r *Resolver) AdminTelegramPublishTagsConnection() generated.AdminTelegramPublishTagsConnectionResolver {
 	return &adminTelegramPublishTagsConnectionResolver{r}
 }
 
-// AdminTgBot returns AdminTgBotResolver implementation.
-func (r *Resolver) AdminTgBot() AdminTgBotResolver { return &adminTgBotResolver{r} }
+// AdminTgBot returns generated.AdminTgBotResolver implementation.
+func (r *Resolver) AdminTgBot() generated.AdminTgBotResolver { return &adminTgBotResolver{r} }
 
-// AdminTgBotChat returns AdminTgBotChatResolver implementation.
-func (r *Resolver) AdminTgBotChat() AdminTgBotChatResolver { return &adminTgBotChatResolver{r} }
+// AdminTgBotChat returns generated.AdminTgBotChatResolver implementation.
+func (r *Resolver) AdminTgBotChat() generated.AdminTgBotChatResolver {
+	return &adminTgBotChatResolver{r}
+}
 
-// AdminTgBotChatSubgraphInvite returns AdminTgBotChatSubgraphInviteResolver implementation.
-func (r *Resolver) AdminTgBotChatSubgraphInvite() AdminTgBotChatSubgraphInviteResolver {
+// AdminTgBotChatSubgraphInvite returns generated.AdminTgBotChatSubgraphInviteResolver implementation.
+func (r *Resolver) AdminTgBotChatSubgraphInvite() generated.AdminTgBotChatSubgraphInviteResolver {
 	return &adminTgBotChatSubgraphInviteResolver{r}
 }
 
-// AdminTgBotChatsConnection returns AdminTgBotChatsConnectionResolver implementation.
-func (r *Resolver) AdminTgBotChatsConnection() AdminTgBotChatsConnectionResolver {
+// AdminTgBotChatsConnection returns generated.AdminTgBotChatsConnectionResolver implementation.
+func (r *Resolver) AdminTgBotChatsConnection() generated.AdminTgBotChatsConnectionResolver {
 	return &adminTgBotChatsConnectionResolver{r}
 }
 
-// AdminTgBotsConnection returns AdminTgBotsConnectionResolver implementation.
-func (r *Resolver) AdminTgBotsConnection() AdminTgBotsConnectionResolver {
+// AdminTgBotsConnection returns generated.AdminTgBotsConnectionResolver implementation.
+func (r *Resolver) AdminTgBotsConnection() generated.AdminTgBotsConnectionResolver {
 	return &adminTgBotsConnectionResolver{r}
 }
 
-// AdminTgChatMember returns AdminTgChatMemberResolver implementation.
-func (r *Resolver) AdminTgChatMember() AdminTgChatMemberResolver {
+// AdminTgChatMember returns generated.AdminTgChatMemberResolver implementation.
+func (r *Resolver) AdminTgChatMember() generated.AdminTgChatMemberResolver {
 	return &adminTgChatMemberResolver{r}
 }
 
-// AdminTgChatMembersConnection returns AdminTgChatMembersConnectionResolver implementation.
-func (r *Resolver) AdminTgChatMembersConnection() AdminTgChatMembersConnectionResolver {
+// AdminTgChatMembersConnection returns generated.AdminTgChatMembersConnectionResolver implementation.
+func (r *Resolver) AdminTgChatMembersConnection() generated.AdminTgChatMembersConnectionResolver {
 	return &adminTgChatMembersConnectionResolver{r}
 }
 
-// AdminTgChatSubgraphAccess returns AdminTgChatSubgraphAccessResolver implementation.
-func (r *Resolver) AdminTgChatSubgraphAccess() AdminTgChatSubgraphAccessResolver {
+// AdminTgChatSubgraphAccess returns generated.AdminTgChatSubgraphAccessResolver implementation.
+func (r *Resolver) AdminTgChatSubgraphAccess() generated.AdminTgChatSubgraphAccessResolver {
 	return &adminTgChatSubgraphAccessResolver{r}
 }
 
-// AdminTgChatSubgraphAccessesConnection returns AdminTgChatSubgraphAccessesConnectionResolver implementation.
-func (r *Resolver) AdminTgChatSubgraphAccessesConnection() AdminTgChatSubgraphAccessesConnectionResolver {
+// AdminTgChatSubgraphAccessesConnection returns generated.AdminTgChatSubgraphAccessesConnectionResolver implementation.
+func (r *Resolver) AdminTgChatSubgraphAccessesConnection() generated.AdminTgChatSubgraphAccessesConnectionResolver {
 	return &adminTgChatSubgraphAccessesConnectionResolver{r}
 }
 
-// AdminUser returns AdminUserResolver implementation.
-func (r *Resolver) AdminUser() AdminUserResolver { return &adminUserResolver{r} }
+// AdminUser returns generated.AdminUserResolver implementation.
+func (r *Resolver) AdminUser() generated.AdminUserResolver { return &adminUserResolver{r} }
 
-// AdminUserBansConnection returns AdminUserBansConnectionResolver implementation.
-func (r *Resolver) AdminUserBansConnection() AdminUserBansConnectionResolver {
+// AdminUserBansConnection returns generated.AdminUserBansConnectionResolver implementation.
+func (r *Resolver) AdminUserBansConnection() generated.AdminUserBansConnectionResolver {
 	return &adminUserBansConnectionResolver{r}
 }
 
-// AdminUserSubgraphAccess returns AdminUserSubgraphAccessResolver implementation.
-func (r *Resolver) AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver {
+// AdminUserSubgraphAccess returns generated.AdminUserSubgraphAccessResolver implementation.
+func (r *Resolver) AdminUserSubgraphAccess() generated.AdminUserSubgraphAccessResolver {
 	return &adminUserSubgraphAccessResolver{r}
 }
 
-// AdminUserSubgraphAccessesConnection returns AdminUserSubgraphAccessesConnectionResolver implementation.
-func (r *Resolver) AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver {
+// AdminUserSubgraphAccessesConnection returns generated.AdminUserSubgraphAccessesConnectionResolver implementation.
+func (r *Resolver) AdminUserSubgraphAccessesConnection() generated.AdminUserSubgraphAccessesConnectionResolver {
 	return &adminUserSubgraphAccessesConnectionResolver{r}
 }
 
-// AdminUsersConnection returns AdminUsersConnectionResolver implementation.
-func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
+// AdminUsersConnection returns generated.AdminUsersConnectionResolver implementation.
+func (r *Resolver) AdminUsersConnection() generated.AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
 }
 
-// AdminWaitListEmailRequestsConnection returns AdminWaitListEmailRequestsConnectionResolver implementation.
-func (r *Resolver) AdminWaitListEmailRequestsConnection() AdminWaitListEmailRequestsConnectionResolver {
+// AdminWaitListEmailRequestsConnection returns generated.AdminWaitListEmailRequestsConnectionResolver implementation.
+func (r *Resolver) AdminWaitListEmailRequestsConnection() generated.AdminWaitListEmailRequestsConnectionResolver {
 	return &adminWaitListEmailRequestsConnectionResolver{r}
 }
 
-// AdminWaitListTgBotRequestsConnection returns AdminWaitListTgBotRequestsConnectionResolver implementation.
-func (r *Resolver) AdminWaitListTgBotRequestsConnection() AdminWaitListTgBotRequestsConnectionResolver {
+// AdminWaitListTgBotRequestsConnection returns generated.AdminWaitListTgBotRequestsConnectionResolver implementation.
+func (r *Resolver) AdminWaitListTgBotRequestsConnection() generated.AdminWaitListTgBotRequestsConnectionResolver {
 	return &adminWaitListTgBotRequestsConnectionResolver{r}
 }
 
-// BanUserPayload returns BanUserPayloadResolver implementation.
-func (r *Resolver) BanUserPayload() BanUserPayloadResolver { return &banUserPayloadResolver{r} }
+// BanUserPayload returns generated.BanUserPayloadResolver implementation.
+func (r *Resolver) BanUserPayload() generated.BanUserPayloadResolver {
+	return &banUserPayloadResolver{r}
+}
 
-// DeleteBoostyCredentialsPayload returns DeleteBoostyCredentialsPayloadResolver implementation.
-func (r *Resolver) DeleteBoostyCredentialsPayload() DeleteBoostyCredentialsPayloadResolver {
+// DeleteBoostyCredentialsPayload returns generated.DeleteBoostyCredentialsPayloadResolver implementation.
+func (r *Resolver) DeleteBoostyCredentialsPayload() generated.DeleteBoostyCredentialsPayloadResolver {
 	return &deleteBoostyCredentialsPayloadResolver{r}
 }
 
-// DeletePatreonCredentialsPayload returns DeletePatreonCredentialsPayloadResolver implementation.
-func (r *Resolver) DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver {
+// DeletePatreonCredentialsPayload returns generated.DeletePatreonCredentialsPayloadResolver implementation.
+func (r *Resolver) DeletePatreonCredentialsPayload() generated.DeletePatreonCredentialsPayloadResolver {
 	return &deletePatreonCredentialsPayloadResolver{r}
 }
 
-// ErrorPayload returns ErrorPayloadResolver implementation.
-func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
+// ErrorPayload returns generated.ErrorPayloadResolver implementation.
+func (r *Resolver) ErrorPayload() generated.ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
-// FormSubmit returns FormSubmitResolver implementation.
-func (r *Resolver) FormSubmit() FormSubmitResolver { return &formSubmitResolver{r} }
+// FormSubmit returns generated.FormSubmitResolver implementation.
+func (r *Resolver) FormSubmit() generated.FormSubmitResolver { return &formSubmitResolver{r} }
 
-// LayoutBlockParam returns LayoutBlockParamResolver implementation.
-func (r *Resolver) LayoutBlockParam() LayoutBlockParamResolver { return &layoutBlockParamResolver{r} }
+// LayoutBlockParam returns generated.LayoutBlockParamResolver implementation.
+func (r *Resolver) LayoutBlockParam() generated.LayoutBlockParamResolver {
+	return &layoutBlockParamResolver{r}
+}
 
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
-// NotePath returns NotePathResolver implementation.
-func (r *Resolver) NotePath() NotePathResolver { return &notePathResolver{r} }
+// NotePath returns generated.NotePathResolver implementation.
+func (r *Resolver) NotePath() generated.NotePathResolver { return &notePathResolver{r} }
 
-// NoteUpsertEvent returns NoteUpsertEventResolver implementation.
-func (r *Resolver) NoteUpsertEvent() NoteUpsertEventResolver { return &noteUpsertEventResolver{r} }
+// NoteUpsertEvent returns generated.NoteUpsertEventResolver implementation.
+func (r *Resolver) NoteUpsertEvent() generated.NoteUpsertEventResolver {
+	return &noteUpsertEventResolver{r}
+}
 
-// NoteView returns NoteViewResolver implementation.
-func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
+// NoteView returns generated.NoteViewResolver implementation.
+func (r *Resolver) NoteView() generated.NoteViewResolver { return &noteViewResolver{r} }
 
-// NoteWarning returns NoteWarningResolver implementation.
-func (r *Resolver) NoteWarning() NoteWarningResolver { return &noteWarningResolver{r} }
+// NoteWarning returns generated.NoteWarningResolver implementation.
+func (r *Resolver) NoteWarning() generated.NoteWarningResolver { return &noteWarningResolver{r} }
 
-// Offer returns OfferResolver implementation.
-func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
+// Offer returns generated.OfferResolver implementation.
+func (r *Resolver) Offer() generated.OfferResolver { return &offerResolver{r} }
 
-// PublicNote returns PublicNoteResolver implementation.
-func (r *Resolver) PublicNote() PublicNoteResolver { return &publicNoteResolver{r} }
+// PublicNote returns generated.PublicNoteResolver implementation.
+func (r *Resolver) PublicNote() generated.PublicNoteResolver { return &publicNoteResolver{r} }
 
-// Purchase returns PurchaseResolver implementation.
-func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
+// Purchase returns generated.PurchaseResolver implementation.
+func (r *Resolver) Purchase() generated.PurchaseResolver { return &purchaseResolver{r} }
 
-// Query returns QueryResolver implementation.
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+// Query returns generated.QueryResolver implementation.
+func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-// RefreshBoostyDataPayload returns RefreshBoostyDataPayloadResolver implementation.
-func (r *Resolver) RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver {
+// RefreshBoostyDataPayload returns generated.RefreshBoostyDataPayloadResolver implementation.
+func (r *Resolver) RefreshBoostyDataPayload() generated.RefreshBoostyDataPayloadResolver {
 	return &refreshBoostyDataPayloadResolver{r}
 }
 
-// RefreshPatreonDataPayload returns RefreshPatreonDataPayloadResolver implementation.
-func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver {
+// RefreshPatreonDataPayload returns generated.RefreshPatreonDataPayloadResolver implementation.
+func (r *Resolver) RefreshPatreonDataPayload() generated.RefreshPatreonDataPayloadResolver {
 	return &refreshPatreonDataPayloadResolver{r}
 }
 
-// SearchResult returns SearchResultResolver implementation.
-func (r *Resolver) SearchResult() SearchResultResolver { return &searchResultResolver{r} }
+// SearchResult returns generated.SearchResultResolver implementation.
+func (r *Resolver) SearchResult() generated.SearchResultResolver { return &searchResultResolver{r} }
 
-// SetTgChatPublishInstantTagsPayload returns SetTgChatPublishInstantTagsPayloadResolver implementation.
-func (r *Resolver) SetTgChatPublishInstantTagsPayload() SetTgChatPublishInstantTagsPayloadResolver {
+// SetTgChatPublishInstantTagsPayload returns generated.SetTgChatPublishInstantTagsPayloadResolver implementation.
+func (r *Resolver) SetTgChatPublishInstantTagsPayload() generated.SetTgChatPublishInstantTagsPayloadResolver {
 	return &setTgChatPublishInstantTagsPayloadResolver{r}
 }
 
-// SetTgChatPublishTagsPayload returns SetTgChatPublishTagsPayloadResolver implementation.
-func (r *Resolver) SetTgChatPublishTagsPayload() SetTgChatPublishTagsPayloadResolver {
+// SetTgChatPublishTagsPayload returns generated.SetTgChatPublishTagsPayloadResolver implementation.
+func (r *Resolver) SetTgChatPublishTagsPayload() generated.SetTgChatPublishTagsPayloadResolver {
 	return &setTgChatPublishTagsPayloadResolver{r}
 }
 
-// SetTgChatSubgraphInvitesPayload returns SetTgChatSubgraphInvitesPayloadResolver implementation.
-func (r *Resolver) SetTgChatSubgraphInvitesPayload() SetTgChatSubgraphInvitesPayloadResolver {
+// SetTgChatSubgraphInvitesPayload returns generated.SetTgChatSubgraphInvitesPayloadResolver implementation.
+func (r *Resolver) SetTgChatSubgraphInvitesPayload() generated.SetTgChatSubgraphInvitesPayloadResolver {
 	return &setTgChatSubgraphInvitesPayloadResolver{r}
 }
 
-// SetTgChatSubgraphsPayload returns SetTgChatSubgraphsPayloadResolver implementation.
-func (r *Resolver) SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver {
+// SetTgChatSubgraphsPayload returns generated.SetTgChatSubgraphsPayloadResolver implementation.
+func (r *Resolver) SetTgChatSubgraphsPayload() generated.SetTgChatSubgraphsPayloadResolver {
 	return &setTgChatSubgraphsPayloadResolver{r}
 }
 
-// Subgraph returns SubgraphResolver implementation.
-func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
+// Subgraph returns generated.SubgraphResolver implementation.
+func (r *Resolver) Subgraph() generated.SubgraphResolver { return &subgraphResolver{r} }
 
-// Subscription returns SubscriptionResolver implementation.
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
 
-// ToggleFavoriteNotePayload returns ToggleFavoriteNotePayloadResolver implementation.
-func (r *Resolver) ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver {
+// ToggleFavoriteNotePayload returns generated.ToggleFavoriteNotePayloadResolver implementation.
+func (r *Resolver) ToggleFavoriteNotePayload() generated.ToggleFavoriteNotePayloadResolver {
 	return &toggleFavoriteNotePayloadResolver{r}
 }
 
-// UnbanUserPayload returns UnbanUserPayloadResolver implementation.
-func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
+// UnbanUserPayload returns generated.UnbanUserPayloadResolver implementation.
+func (r *Resolver) UnbanUserPayload() generated.UnbanUserPayloadResolver {
+	return &unbanUserPayloadResolver{r}
+}
 
-// UnreleasedChange returns UnreleasedChangeResolver implementation.
-func (r *Resolver) UnreleasedChange() UnreleasedChangeResolver { return &unreleasedChangeResolver{r} }
+// UnreleasedChange returns generated.UnreleasedChangeResolver implementation.
+func (r *Resolver) UnreleasedChange() generated.UnreleasedChangeResolver {
+	return &unreleasedChangeResolver{r}
+}
 
-// UnreleasedChangesConnection returns UnreleasedChangesConnectionResolver implementation.
-func (r *Resolver) UnreleasedChangesConnection() UnreleasedChangesConnectionResolver {
+// UnreleasedChangesConnection returns generated.UnreleasedChangesConnectionResolver implementation.
+func (r *Resolver) UnreleasedChangesConnection() generated.UnreleasedChangesConnectionResolver {
 	return &unreleasedChangesConnectionResolver{r}
 }
 
-// UpdateNoteGraphPositionsPayload returns UpdateNoteGraphPositionsPayloadResolver implementation.
-func (r *Resolver) UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver {
+// UpdateNoteGraphPositionsPayload returns generated.UpdateNoteGraphPositionsPayloadResolver implementation.
+func (r *Resolver) UpdateNoteGraphPositionsPayload() generated.UpdateNoteGraphPositionsPayloadResolver {
 	return &updateNoteGraphPositionsPayloadResolver{r}
 }
 
-// User returns UserResolver implementation.
-func (r *Resolver) User() UserResolver { return &userResolver{r} }
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-// UserBan returns UserBanResolver implementation.
-func (r *Resolver) UserBan() UserBanResolver { return &userBanResolver{r} }
+// UserBan returns generated.UserBanResolver implementation.
+func (r *Resolver) UserBan() generated.UserBanResolver { return &userBanResolver{r} }
 
-// UserSubgraphAccess returns UserSubgraphAccessResolver implementation.
-func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
+// UserSubgraphAccess returns generated.UserSubgraphAccessResolver implementation.
+func (r *Resolver) UserSubgraphAccess() generated.UserSubgraphAccessResolver {
 	return &userSubgraphAccessResolver{r}
 }
 
-// Viewer returns ViewerResolver implementation.
-func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
+// Viewer returns generated.ViewerResolver implementation.
+func (r *Resolver) Viewer() generated.ViewerResolver { return &viewerResolver{r} }
 
 type adminResolver struct{ *Resolver }
 type adminAdminsConnectionResolver struct{ *Resolver }
