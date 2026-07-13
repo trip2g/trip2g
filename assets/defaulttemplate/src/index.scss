@@ -447,21 +447,19 @@ body {
 
 .widget__link {
   display: block;
-  padding: 0 0 0 calc(var(--pico-nav-element-spacing-horizontal) * 0.5);
-  border-left: var(--pico-border-width) solid transparent;
+  padding: 0;
   text-decoration: none;
   font-weight: 400;
   font-size: 1rem;
   color: var(--pico-color);
-  transition: border-color var(--pico-transition), color var(--pico-transition);
+  transition: color var(--pico-transition);
 
   &:hover {
-    border-color: var(--pico-secondary-underline);
-    text-decoration: none;
+    color: var(--pico-primary);
+    text-decoration: underline;
   }
 
   &.active, &[aria-current] {
-    border-color: var(--pico-primary);
     color: var(--pico-primary-hover);
     font-weight: 600;
   }
