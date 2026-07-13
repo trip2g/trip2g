@@ -50,21 +50,21 @@
 {{ end }}
 
 {{ block @lid() }}
-{{ yield section_header(lhs="from zero to live site", rhs="3 steps · about a minute") }}
+{{ lang := note.M().GetString("lang", "en") }}
+{{ if lang == "ru" }}{{ yield section_header(lhs="от нуля до живого сайта", rhs="3 шага · около минуты") }}
+{{ else }}{{ yield section_header(lhs="from zero to live site", rhs="3 steps · about a minute") }}{{ end }}
 <div class="how-diag" aria-hidden="true">
+  {{ if lang == "ru" }}
+  <div><img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  {{ else }}
   <div><img src="{{ asset("./step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
+  {{ end }}
   <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
   <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
 </div>
+{{ if lang == "ru" }}
+<div class="how">{{ yield mesh_section(path="ru/_index_getting_started.md") }}</div>
+{{ else }}
 <div class="how">{{ yield mesh_section(path="_index_getting_started.md") }}</div>
 {{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="от нуля до живого сайта", rhs="3 шага · около минуты") }}
-<div class="how-diag" aria-hidden="true">
-  <div><img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-  <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-  <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-</div>
-<div class="how">{{ yield mesh_section(path="ru/_index_getting_started.md") }}</div>
 {{ end }}
