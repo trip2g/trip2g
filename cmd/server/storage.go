@@ -18,11 +18,10 @@ import (
 // MinIO. The app embeds this interface; its methods promote onto *app.
 type Storage interface {
 	NoteAssetPath(asset db.NoteAsset) string
-	OnURLExpiring(callback func())
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
-	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
 	GetAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadCloser, error)
+	StreamAssetObject(ctx context.Context, asset db.NoteAsset, offset, length int64) (io.ReadCloser, error)
 	PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error
 	PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error
 	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
@@ -43,9 +42,8 @@ var (
 func newStorage(ctx context.Context, config *appconfig.Config) (Storage, error) {
 	if config.StorageBackend == appconfig.StorageBackendLocal {
 		return localstorage.New(localstorage.Config{
-			Dir:       config.StorageLocalDir,
-			PublicURL: config.PublicURL,
-			Prefix:    config.Storage.Prefix,
+			Dir:    config.StorageLocalDir,
+			Prefix: config.Storage.Prefix,
 		})
 	}
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"trip2g/internal/assetindex"
 	"trip2g/internal/db"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/logger"
@@ -32,9 +33,6 @@ func (emptyNoteLoaderEnv) RawNoteChunks(context.Context) ([]noteloader.RawNoteCh
 func (emptyNoteLoaderEnv) NoteAssetExists(context.Context, db.NoteAsset) (bool, error) {
 	return false, nil
 }
-func (emptyNoteLoaderEnv) NoteAssetURL(context.Context, db.NoteAsset) (model.PresignedURL, error) {
-	return model.PresignedURL{}, nil
-}
 func (emptyNoteLoaderEnv) NoteAssetPath(db.NoteAsset) string { return "" }
 func (emptyNoteLoaderEnv) PublicURL() string                 { return "https://example.com" }
 func (emptyNoteLoaderEnv) Logger() logger.Logger             { return &logger.DummyLogger{} }
@@ -56,6 +54,7 @@ func appWithEmptyLoaders() *app {
 	a := &app{appState: &appState{pageCache: pagecache.New()}}
 	a.latestNoteLoader = noteloader.New("latest", emptyNoteLoaderEnv{}, mdloader.Config{})
 	a.liveNoteLoader = noteloader.New("live", emptyNoteLoaderEnv{}, mdloader.Config{})
+	a.AssetIndex = assetindex.New(a)
 	return a
 }
 

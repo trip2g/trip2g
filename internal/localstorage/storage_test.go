@@ -17,8 +17,7 @@ func newTestStorage(t *testing.T) *LocalStorage {
 	t.Helper()
 
 	s, err := New(Config{
-		Dir:       t.TempDir(),
-		PublicURL: "https://example.com/",
+		Dir: t.TempDir(),
 	})
 	require.NoError(t, err)
 
@@ -53,11 +52,20 @@ func TestAssetRoundTrip(t *testing.T) {
 	require.NoError(t, rc.Close())
 	require.Equal(t, content, got)
 
-	// URL: stable, non-expiring, points at the /_assets/ route.
-	url, err := s.NoteAssetURL(ctx, asset)
+	// Stream: full and windowed reads.
+	rc, err = s.StreamAssetObject(ctx, asset, 0, int64(len(content)))
 	require.NoError(t, err)
-	require.Equal(t, "https://example.com/_assets/na/42/photo.png", url.Value)
-	require.True(t, url.ExpiresAt.IsZero())
+	got, err = io.ReadAll(rc)
+	require.NoError(t, err)
+	require.NoError(t, rc.Close())
+	require.Equal(t, content, got)
+
+	rc, err = s.StreamAssetObject(ctx, asset, 1, 3)
+	require.NoError(t, err)
+	got, err = io.ReadAll(rc)
+	require.NoError(t, err)
+	require.NoError(t, rc.Close())
+	require.Equal(t, []byte("ell"), got)
 
 	// Delete.
 	require.NoError(t, s.DeleteAssetObject(ctx, asset))
@@ -135,9 +143,8 @@ func TestPathTraversalIsContained(t *testing.T) {
 
 func TestPrefixIsApplied(t *testing.T) {
 	s, err := New(Config{
-		Dir:       t.TempDir(),
-		PublicURL: "https://example.com",
-		Prefix:    "tenant1",
+		Dir:    t.TempDir(),
+		Prefix: "tenant1",
 	})
 	require.NoError(t, err)
 	ctx := context.Background()

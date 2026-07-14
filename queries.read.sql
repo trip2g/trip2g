@@ -320,6 +320,10 @@ select * from note_assets
    and sha256_hash = ?
  limit 1;
 
+-- name: NoteAssetsBySha256Hash :many
+select * from note_assets
+ where sha256_hash = ?;
+
 -- name: NoteVersionByID :one
 select p.value as path, path_id, v.id as version_id, v.version, content, v.created_at
   from note_versions v

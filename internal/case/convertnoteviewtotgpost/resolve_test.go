@@ -666,6 +666,53 @@ hello
 	require.Contains(t, assetsErr.MissingAssets, "test.jpg")
 }
 
+// TestMediaURLsAreAbsolute pins the fix for Telegram media links: note assets
+// are now served via a site-relative /_system/assets/... URL (see
+// model.NoteAssetURLPath), but Telegram (tgbotapi.FileURL and the
+// http.NewRequestWithContext streaming fallback in sendtelegrammessage) fetch
+// media from outside trip2g's origin, so a bare relative URL would 404/error
+// there. getAllMediaURLs must absolutize against the site's PublicURL.
+func TestMediaURLsAreAbsolute(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path: "test.md",
+			Content: []byte(`---
+free: true
+title: "Note with Image"
+---
+hello
+
+![image](test.jpg)`),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+	require.Len(t, nvs.List, 1)
+
+	note := nvs.List[0]
+	note.Assets = map[string]struct{}{"test.jpg": {}}
+	note.AssetReplaces = map[string]*model.NoteAssetReplace{
+		"test.jpg": {ID: 1, Hash: "abc123", FileName: "test.jpg", URL: model.NoteAssetURLPath("abc123", "test.jpg")},
+	}
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{NoteView: note, ChatID: 123, Instant: false}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+	require.Len(t, post.Media, 1)
+	require.Equal(t, "https://example.com/_system/assets/abc123/test.jpg", post.Media[0])
+}
+
 type testEnvWithTracking struct {
 	testEnv
 	onListCalled func()

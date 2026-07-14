@@ -93,7 +93,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	} else {
 		// Asset already exists in the DB. Self-heal: the underlying object may be
 		// missing (e.g. bucket wipe/reseed) even though the row survived, which
-		// would otherwise serve a permanently 404ing presigned URL. Re-upload it
+		// would otherwise serve a permanently 404ing asset URL. Re-upload it
 		// from the client's bytes before linking if it's gone.
 		objExists, existsErr := env.NoteAssetExists(ctx, existingAsset)
 		if existsErr != nil {

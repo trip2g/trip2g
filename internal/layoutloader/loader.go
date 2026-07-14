@@ -514,9 +514,9 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 		preambleApplied = true
 	}
 
-	// WithSafeWriter(nil) disables HTML auto-escaping. Layouts contain trusted,
-	// pre-rendered content (not user input), so escaping breaks presigned URLs
-	// in CSS url() — & becomes &amp;, which corrupts AWS signature params.
+	// WithSafeWriter(nil) disables HTML auto-escaping. Layouts are trusted,
+	// admin-authored templates that embed pre-rendered note HTML and raw
+	// markup; auto-escaping would mangle that output.
 	views := jet.NewSet(jl, jet.DevelopmentMode(jl.devMode), jet.WithSafeWriter(nil))
 
 	sourceDir := filepath.Dir(source.Path)

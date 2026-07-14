@@ -14,6 +14,7 @@ import (
 	_ "time/tzdata" // embed IANA tz DB so time.LoadLocation works on any base image
 
 	"trip2g/internal/appconfig"
+	"trip2g/internal/assetindex"
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
@@ -217,11 +218,12 @@ type appState struct {
 
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
-	// localAssetsFS serves note assets from the local-storage dir via the
-	// /_assets/ route. nil unless the local storage backend is active.
-	localAssetsFS *fasthttp.FS
 	// assetsMu guards assetHashes rebuilds.
 	assetsMu sync.Mutex
+
+	// AssetIndex maps asset sha256 -> owning notes / publicness for the
+	// /_system/assets/ route; invalidated on note reloads.
+	*assetindex.AssetIndex
 
 	*configregistry.SiteConfigBuilder
 
@@ -495,7 +497,7 @@ func main() {
 	a.setupAssets()
 	a.setTokenValidator()
 	a.personalTokenResolver = personaltoken.NewResolver(a)
-	a.setFileStorageExpiringCallback()
+	a.AssetIndex = assetindex.New(a)
 
 	// WRITER SLOT — acquire before starting any writer subsystem. This is an
 	// honest-but-minimal probe (BEGIN IMMEDIATE; COMMIT) that the SQLite write
@@ -596,6 +598,16 @@ func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
 	a.ClearPageCache()
 
 	return a.liveNoteLoader.NoteViews(), nil
+}
+
+// AssetIndexGeneration reports whether either note loader has published a new
+// snapshot since the asset index was last built, so serveasset never trusts a
+// publicness decision computed before a free<->paid flip. Combines both
+// loaders (rather than mirroring LiveNoteViews' ShowDraftVersions branch) so
+// a change on either side always invalidates — over-invalidating is safe,
+// under-invalidating is the leak this exists to prevent.
+func (a *app) AssetIndexGeneration() uint64 {
+	return a.latestNoteLoader.Generation()<<32 | a.liveNoteLoader.Generation()
 }
 
 // CachedPage returns the pre-gzipped bytes cached for key, if any. Part of the

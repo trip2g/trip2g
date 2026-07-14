@@ -1375,11 +1375,7 @@ func (r *adminNotFoundPathsConnectionResolver) Nodes(ctx context.Context, obj *m
 
 // URL is the resolver for the url field.
 func (r *adminNoteAssetResolver) URL(ctx context.Context, obj *db.NoteAsset) (string, error) {
-	presignedURL, err := r.env(ctx).NoteAssetURL(ctx, *obj)
-	if err != nil {
-		return "", err
-	}
-	return presignedURL.Value, nil
+	return appmodel.NoteAssetURLPath(obj.Sha256Hash, obj.FileName), nil
 }
 
 // Nodes is the resolver for the nodes field.

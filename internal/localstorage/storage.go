@@ -5,11 +5,8 @@
 //
 // Layout under the configured base dir:
 //
-//	<dir>/assets/<NoteAssetPath>   — note assets (served read-only via /_assets/)
+//	<dir>/assets/<NoteAssetPath>   — note assets (served via /_system/assets/)
 //	<dir>/private/<objectID>       — private objects (backups, git tarballs)
-//
-// Asset URLs are stable and non-expiring: they point at trip2g's own /_assets/
-// route (see cmd/server) using the configured public base URL.
 package localstorage
 
 import (
@@ -32,10 +29,6 @@ type Config struct {
 	// <Dir>/assets and private objects under <Dir>/private.
 	Dir string
 
-	// PublicURL is trip2g's public base URL (e.g. https://example.com). Asset
-	// URLs are built as <PublicURL>/_assets/<NoteAssetPath>.
-	PublicURL string
-
 	// Prefix is an optional object key prefix, mirroring miniostorage.Config.Prefix.
 	// It keeps keys compatible across backends (assets and private objects share
 	// the same prefix as the MinIO backend would use).
@@ -50,9 +43,8 @@ const (
 // LocalStorage is a filesystem-backed implementation of the storage surface
 // used by trip2g (the same 12 public methods as miniostorage.FileStorage).
 type LocalStorage struct {
-	dir       string
-	publicURL string
-	prefix    string
+	dir    string
+	prefix string
 }
 
 // New creates a LocalStorage rooted at config.Dir, creating the base
@@ -68,9 +60,8 @@ func New(config Config) (*LocalStorage, error) {
 	}
 
 	s := &LocalStorage{
-		dir:       config.Dir,
-		publicURL: strings.TrimRight(config.PublicURL, "/"),
-		prefix:    prefix,
+		dir:    config.Dir,
+		prefix: prefix,
 	}
 
 	for _, sub := range []string{assetsSubdir, privateSubdir} {
@@ -107,10 +98,6 @@ func safeRel(key string) string {
 	return strings.TrimPrefix(cleaned, string(filepath.Separator))
 }
 
-// OnURLExpiring is a no-op for local storage: local asset URLs are stable and
-// never expire, so there is nothing to refresh.
-func (s *LocalStorage) OnURLExpiring(_ func()) {}
-
 // NoteAssetExists reports whether an asset file is present and non-empty.
 func (s *LocalStorage) NoteAssetExists(_ context.Context, asset db.NoteAsset) (bool, error) {
 	info, err := os.Stat(s.assetFile(s.NoteAssetPath(asset)))
@@ -121,13 +108,6 @@ func (s *LocalStorage) NoteAssetExists(_ context.Context, asset db.NoteAsset) (b
 		return false, fmt.Errorf("failed to stat asset: %w", err)
 	}
 	return info.Size() > 0, nil
-}
-
-// NoteAssetURL returns a stable, non-expiring URL served by trip2g's /_assets/
-// route. ExpiresAt is left zero (never expires).
-func (s *LocalStorage) NoteAssetURL(_ context.Context, asset db.NoteAsset) (model.PresignedURL, error) {
-	value := s.publicURL + "/_assets/" + s.NoteAssetPath(asset)
-	return model.PresignedURL{Value: value}, nil
 }
 
 // DeleteAssetObject removes an asset file. Missing files are not an error.
@@ -147,6 +127,33 @@ func (s *LocalStorage) GetAssetObject(_ context.Context, asset db.NoteAsset) (io
 	}
 	return f, nil
 }
+
+// StreamAssetObject streams length bytes of an asset starting at offset,
+// directly from disk.
+func (s *LocalStorage) StreamAssetObject(_ context.Context, asset db.NoteAsset, offset, length int64) (io.ReadCloser, error) {
+	f, err := os.Open(s.assetFile(s.NoteAssetPath(asset)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open asset: %w", err)
+	}
+
+	if offset > 0 {
+		if _, err = f.Seek(offset, io.SeekStart); err != nil {
+			_ = f.Close()
+			return nil, fmt.Errorf("failed to seek asset: %w", err)
+		}
+	}
+
+	return &limitedReadCloser{Reader: io.LimitReader(f, length), closer: f}, nil
+}
+
+// limitedReadCloser bounds reads to a byte window while closing the
+// underlying file when done.
+type limitedReadCloser struct {
+	io.Reader
+	closer io.Closer
+}
+
+func (l *limitedReadCloser) Close() error { return l.closer.Close() }
 
 // PutAssetObject writes an asset atomically (temp file + rename).
 func (s *LocalStorage) PutAssetObject(_ context.Context, reader io.Reader, asset db.NoteAsset) error {

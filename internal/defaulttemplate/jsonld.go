@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 )
 
@@ -78,15 +79,18 @@ func (ctx *Ctx) JSONLDPageURL() string {
 	return ctx.OGTags["og:url"]
 }
 
-// JSONLDImage returns the explicit og_image, else the first body image, else "".
+// JSONLDImage returns the explicit og_image, else the first body image, else
+// "" — always absolutized against PublicURL. Asset URLs are site-relative
+// (see model.NoteAssetURLPath), but schema.org's image/logo properties are
+// consumed by external crawlers and must be absolute, like og:image.
 func (ctx *Ctx) JSONLDImage() string {
 	if ctx.Note == nil {
 		return ""
 	}
 	if img := ctx.Note.OGImageURL(); img != "" {
-		return img
+		return model.AbsoluteURL(ctx.PublicURL, img)
 	}
-	return ctx.Note.FirstImageURL()
+	return model.AbsoluteURL(ctx.PublicURL, ctx.Note.FirstImageURL())
 }
 
 // JSONLDPublished returns datePublished in RFC3339, or "" if unset.
@@ -140,7 +144,7 @@ func (ctx *Ctx) JSONLDLogo() string {
 	if note == nil {
 		return ""
 	}
-	return note.FirstImageURL()
+	return model.AbsoluteURL(ctx.PublicURL, note.FirstImageURL())
 }
 
 // JSONLDBreadcrumb builds the breadcrumb trail (Home → …segments) from the

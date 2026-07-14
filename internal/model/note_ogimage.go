@@ -4,7 +4,7 @@ import "strings"
 
 // OGImageURL resolves an explicit social-preview image from frontmatter.
 // It reads the "og_image" key (falling back to "cover"), which holds a vault
-// [[link]] or a plain asset path, and resolves it to a presigned asset URL via
+// [[link]] or a plain asset path, and resolves it to its stable asset URL via
 // AssetReplaces — mirroring the chart frontmatter-asset resolution
 // (mdloader.chartRenderer.resolveFrontmatterSrc). Returns "" when no key is set
 // or the asset cannot be resolved.
