@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -349,6 +350,44 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 	})
 }
 
+// injectEnvPassthrough augments a code-role delivery bag with the role's
+// declared env_passthrough vars, read from THIS fleet's own environment, under
+// an "env" key. Post-cutover an executor:code role runs in codellm, whose child
+// env is scrubbed to PATH+FLEET_INPUT — so env_passthrough can no longer hand
+// fleet's vars to the code through the process env; they must ride the delivery
+// bag ($FLEET_INPUT) instead. The code reads them from bag["env"][NAME].
+//
+// This is the minimal path that keeps env_passthrough roles working under the
+// cutover (and unblocks the krisp-ingest e2e). It is NOT the productized answer:
+// the bag rides the HTTP request, so a real secret would cross the very boundary
+// codellm hardens. The productized path is codellm's requires_secrets manifest
+// (secret held in codellm's own config, injected per-skill) — see the
+// "Env passthrough is dropped" section of docs/dev/codellm_extraction.md.
+func injectEnvPassthrough(bag []byte, names []string) []byte {
+	if len(names) == 0 {
+		return bag
+	}
+	env := make(map[string]string, len(names))
+	for _, n := range names {
+		if v, ok := os.LookupEnv(n); ok {
+			env[n] = v
+		}
+	}
+	if len(env) == 0 {
+		return bag
+	}
+	m := map[string]any{}
+	if len(bag) > 0 {
+		_ = json.Unmarshal(bag, &m)
+	}
+	m["env"] = env
+	out, err := json.Marshal(m)
+	if err != nil {
+		return bag
+	}
+	return out
+}
+
 // buildCronInputBag marshals the cron render context into the JSON bag delivered
 // to code programs via $FLEET_INPUT. Exposes now as an RFC3339 string.
 func buildCronInputBag(rc renderCtx) []byte {
@@ -394,7 +433,7 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 			Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
 			MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
 			MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
-			InputBag:      p.InputBag,
+			InputBag:      injectEnvPassthrough(p.InputBag, p.Role.EnvPassthrough),
 			HardFailApply: true,
 			LLM:           f.llm,
 			KB:            kb,

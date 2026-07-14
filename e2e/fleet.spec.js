@@ -93,6 +93,7 @@ test.describe.serial('Fleet LLM pipeline (dockerized)', () => {
   // LLM call and finish on the second, so no read_note/search is exercised.
   const roleSeed = [
     '---',
+    'fleet_id: e2e',
     'model: mock',
     'tools: [write_note]',
     'read_patterns: ["transcripts/**"]',

@@ -1,5 +1,6 @@
 ---
 description: "Krisp meetings → transcript notes (cron ingest, deterministic)"
+fleet_id: e2ec
 mode: cron
 cron_schedule: "* * * * *"
 executor: code
@@ -12,8 +13,18 @@ import os
 import json
 import urllib.request
 
-base_url = os.environ['KRISP_BASE_URL'].rstrip('/')
-token = os.environ['KRISP_TOKEN']
+# Post-cutover this runs in codellm, whose child env is scrubbed to
+# PATH+FLEET_INPUT. The KRISP_* credentials declared in env_passthrough are
+# delivered via the $FLEET_INPUT bag under "env" (see injectEnvPassthrough in
+# internal/fleet/handler.go), not the process env.
+bag = {}
+fleet_input = os.environ.get('FLEET_INPUT')
+if fleet_input and os.path.exists(fleet_input):
+    bag = json.loads(open(fleet_input).read() or '{}')
+env = bag.get('env', {})
+
+base_url = env['KRISP_BASE_URL'].rstrip('/')
+token = env['KRISP_TOKEN']
 
 
 def api_post(path, payload):

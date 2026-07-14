@@ -81,6 +81,11 @@ services:
       - DB_FILE=/data/test.sqlite3
       - DEV=true # sign in code 111111
       - MAX_ACTIVE_SIGNIN_CODES=999
+      # No SMTP is configured in the test stack, so requestEmailSignInCode would
+      # 4xx ("Email delivery isn't configured") since #200. Log codes instead (the
+      # documented bootstrap path when SMTP is unset) so the graphqlSignIn e2e
+      # helper's requestEmailSignInCode step succeeds.
+      - LOG_SIGN_IN_CODES=true
       - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -155,6 +160,7 @@ services:
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
       - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # log codes; no SMTP in the test stack (see app service)
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -211,6 +217,7 @@ services:
       - LEADER_ADDR=app:20082      # >>> read-only replica mode ON <<<
       - DEV=true
       - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # log codes; no SMTP in the test stack (see app service)
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -265,6 +272,7 @@ services:
       - DB_FILE=/data/peer.sqlite3
       - DEV=true
       - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # log codes; no SMTP in the test stack (see app service)
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -327,6 +335,7 @@ services:
       - DB_FILE=/data/peer2.sqlite3
       - DEV=true
       - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # log codes; no SMTP in the test stack (see app service)
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -389,6 +398,7 @@ services:
       - DB_FILE=/data/peer3.sqlite3
       - DEV=true
       - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # log codes; no SMTP in the test stack (see app service)
       - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
@@ -495,10 +505,89 @@ services:
       - TRIP2G_FLEET_TOKEN_CEILING=100000
       - TRIP2G_FLEET_STEP_CEILING=25
       - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
-      - TRIP2G_FLEET_ALLOWED_PROGRAMS=python
-      # Krisp ingest role fetches from krisp-mock: opt in to network inside the sandbox.
-      - TRIP2G_FLEET_SANDBOX_NETWORK=true
-      # Krisp mock credentials forwarded to code executor via env_passthrough in the role.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  # codellm: standalone OpenAI-compatible code-execution service (cmd/codellm).
+  # It "pretends to be an LLM": receives markdown-with-fenced-code, executes the
+  # block, returns the writes as tool_calls. fleet-code (below) points its LLM
+  # client here so executor:code roles run OUT of the fleet process (P3b cutover;
+  # see docs/dev/codellm_extraction.md). Auth is codellm's OpenAI-standard api_key
+  # (Authorization: Bearer), shared with fleet-code as TRIP2G_FLEET_LLM_API_KEY.
+  #
+  # Sandbox: the krisp-ingest python must reach krisp-mock, but codellm's native
+  # sandbox denies egress; CODELLM_SANDBOX=off gives the block network (per-skill
+  # egress policy is not built — see the README of the krisp_codellm_demo). The
+  # child env is still scrubbed to PATH+FLEET_INPUT, so KRISP_* reach the python
+  # via the delivery bag, not the container env.
+  codellm:
+    build:
+      context: .
+      dockerfile: Dockerfile.codellm
+    container_name: trip2g-test-codellm
+    ports:
+      - "29093:8082"
+    environment:
+      - CODELLM_ADDR=0.0.0.0:8082
+      - CODELLM_ALLOWED_PROGRAMS=python
+      - CODELLM_SANDBOX=off
+      - CODELLM_API_KEY=e2e-codellm-shared-key-0123456789abcdef
+      # Required config (delegated-admin browser gate); unused by the server-to-server
+      # api_key lane that fleet-code takes, but must be non-empty (fail-closed).
+      - CODELLM_TRIP2G_URL=http://app:20081
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Second fleet, dedicated to executor:code roles, pointed at codellm. Per the
+  # per-provider-fleet model (docs/dev/codellm_extraction.md P3): one fleet serves
+  # one LLM endpoint, and codellm is "just a fleet whose --llm-base-url points at
+  # the codellm service". Its FLEET_ID (e2ec) partitions role discovery — it only
+  # processes roles tagged `fleet_id: e2ec` (the krisp ingest role), while the
+  # llm-mock `fleet` (e2e) owns the transcript-agent LLM role.
+  #
+  # KRISP_TOKEN/KRISP_BASE_URL live here (not on codellm): fleet injects the
+  # role's declared env_passthrough vars into the $FLEET_INPUT delivery bag
+  # (injectEnvPassthrough), since codellm scrubs the code child's env.
+  fleet-code:
+    build:
+      context: .
+      dockerfile: Dockerfile.fleet
+    container_name: trip2g-test-fleet-code
+    depends_on:
+      app:
+        condition: service_healthy
+      codellm:
+        condition: service_healthy
+      krisp-mock:
+        condition: service_healthy
+    ports:
+      - "29094:9090"
+    environment:
+      - TRIP2G_FLEET_FLEET_ID=e2ec
+      - TRIP2G_FLEET_LISTEN=:9090
+      - TRIP2G_FLEET_CALLBACK_URL=http://fleet-code:9090
+      - TRIP2G_FLEET_TRIP2G_URL=http://app:20081
+      - TRIP2G_FLEET_JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
+      - TRIP2G_FLEET_ADMIN_EMAIL=fleet@local
+      - TRIP2G_FLEET_FLEET_SECRET=e2ec-fleet-secret
+      - TRIP2G_FLEET_LLM_BASE_URL=http://codellm:8082/v1
+      - TRIP2G_FLEET_LLM_API_KEY=e2e-codellm-shared-key-0123456789abcdef
+      - TRIP2G_FLEET_DEFAULT_MODEL=codellm
+      - TRIP2G_FLEET_AGENTS_FOLDER=roles/
+      - TRIP2G_FLEET_POLL_SECONDS=3
+      - TRIP2G_FLEET_TOKEN_CEILING=100000
+      - TRIP2G_FLEET_STEP_CEILING=25
+      - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
+      # Injected into the $FLEET_INPUT bag for the krisp role's declared
+      # env_passthrough (KRISP_TOKEN, KRISP_BASE_URL); the code runs in codellm.
       - KRISP_TOKEN=test-krisp-token
       - KRISP_BASE_URL=http://krisp-mock:9092
     healthcheck:

@@ -264,8 +264,8 @@ trap cleanup EXIT INT TERM
 
 # Clean up any existing test containers (keep embedding running to avoid slow model reload)
 echo "🧹 Cleaning up existing test containers..."
-docker compose -f docker-compose.test.yml stop app app-replica app-replica2 app-peer app-peer2 app-peer3 minio fleet llm-mock krisp-mock test-data 2>/dev/null || true
-docker compose -f docker-compose.test.yml rm -f app app-replica app-replica2 app-peer app-peer2 app-peer3 fleet llm-mock krisp-mock test-data 2>/dev/null || true
+docker compose -f docker-compose.test.yml stop app app-replica app-replica2 app-peer app-peer2 app-peer3 minio fleet fleet-code codellm llm-mock krisp-mock test-data 2>/dev/null || true
+docker compose -f docker-compose.test.yml rm -f app app-replica app-replica2 app-peer app-peer2 app-peer3 fleet fleet-code codellm llm-mock krisp-mock test-data 2>/dev/null || true
 # MinIO needs no explicit volume drop: docker-compose.test.yml mounts its /data as
 # tmpfs, so every container (re)create starts with an empty backup store — no stale
 # backup can be restored over the freshly-seeded DB (keeps the onboarding spec valid).
@@ -329,7 +329,7 @@ fi
 # Start services (embedding is kept alive between runs; start it without recreate if not running)
 echo "🚀 Starting services..."
 docker compose -f docker-compose.test.yml up -d --no-recreate embedding 2>/dev/null || true
-docker compose -f docker-compose.test.yml up -d --build --force-recreate app app-replica app-replica2 app-peer app-peer2 app-peer3 minio llm-mock krisp-mock fleet
+docker compose -f docker-compose.test.yml up -d --build --force-recreate app app-replica app-replica2 app-peer app-peer2 app-peer3 minio llm-mock krisp-mock codellm fleet fleet-code
 
 # Wait for services
 ./scripts/waitfor localhost:20081 || {
@@ -376,6 +376,14 @@ docker compose -f docker-compose.test.yml up -d --build --force-recreate app app
 }
 ./scripts/waitfor localhost:29090 -t 60 || {
   echo -e "${RED}✗ fleet failed to start${NC}"
+  exit 1
+}
+./scripts/waitfor localhost:29093 -t 60 || {
+  echo -e "${RED}✗ codellm failed to start${NC}"
+  exit 1
+}
+./scripts/waitfor localhost:29094 -t 60 || {
+  echo -e "${RED}✗ fleet-code failed to start${NC}"
   exit 1
 }
 
