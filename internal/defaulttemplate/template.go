@@ -457,8 +457,8 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 	forms := make(map[string]*formspec.FormSpec)
 
 	if formsRaw, ok := rawMeta["forms"]; ok {
-		formsMap, isMap := formsRaw.(map[string]interface{})
-		if !isMap {
+		formsMap := formspec.FormsMapFromRaw(formsRaw)
+		if formsMap == nil {
 			return nil
 		}
 		for key, fRaw := range formsMap {

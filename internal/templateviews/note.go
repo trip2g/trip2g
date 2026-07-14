@@ -403,8 +403,8 @@ func (n *Note) FormSpecJSON() string {
 	forms := make(map[string]*formspec.FormSpec)
 
 	if formsRaw, ok := rawMeta["forms"]; ok {
-		formsMap, isMap := formsRaw.(map[string]interface{})
-		if !isMap {
+		formsMap := formspec.FormsMapFromRaw(formsRaw)
+		if formsMap == nil {
 			return ""
 		}
 		for key, fRaw := range formsMap {

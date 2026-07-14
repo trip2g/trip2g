@@ -45,6 +45,27 @@ type FormSpec struct {
 	Fields     []FormField `yaml:"fields"      json:"fields"`
 }
 
+// FormsMapFromRaw normalizes a frontmatter `forms:` value into a string-keyed
+// map. goldmark-meta decodes YAML with yaml.v2, so nested maps arrive as
+// map[interface{}]interface{}; a plain map[string]interface{} assertion misses
+// every real frontmatter. Returns nil when the value is not a map.
+func FormsMapFromRaw(raw interface{}) map[string]interface{} {
+	switch m := raw.(type) {
+	case map[string]interface{}:
+		return m
+	case map[interface{}]interface{}:
+		out := make(map[string]interface{}, len(m))
+		for k, v := range m {
+			if ks, ok := k.(string); ok {
+				out[ks] = v
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
 // ParseFromRawMeta extracts FormSpec from a note's RawMeta.
 // Returns nil, nil if no form key is present.
 func ParseFromRawMeta(rawMeta map[string]interface{}) (*FormSpec, error) {

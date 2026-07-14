@@ -314,8 +314,8 @@ func resolveFormSpec(note *model.NoteView, notes *model.NoteViews, formID string
 		rawMeta = ref.RawMeta
 	}
 	if formsRaw, ok := rawMeta["forms"]; ok {
-		formsMap, isMap := formsRaw.(map[string]interface{})
-		if !isMap {
+		formsMap := formspec.FormsMapFromRaw(formsRaw)
+		if formsMap == nil {
 			return nil, nil
 		}
 		formRaw, hasForm := formsMap[formID]

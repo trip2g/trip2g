@@ -98,4 +98,25 @@ func TestNote_FormSpecJSON(t *testing.T) {
 		require.Contains(t, got, `"note_version_id":7`)
 		require.Contains(t, got, `"contact":`)
 	})
+
+	// goldmark-meta parses YAML with yaml.v2, so a real `forms:` map arrives as
+	// map[interface{}]interface{}. FormSpecJSON must normalize it, not drop it.
+	t.Run("forms map from yaml.v2 interface keys", func(t *testing.T) {
+		nv := &model.NoteView{
+			VersionID: 9,
+			RawMeta: map[string]interface{}{
+				"forms": map[interface{}]interface{}{
+					"newsletter": map[interface{}]interface{}{
+						"fields": []interface{}{
+							map[interface{}]interface{}{"name": "email", "type": "email", "required": true},
+						},
+					},
+				},
+			},
+		}
+		got := NewNote(nv).FormSpecJSON()
+		require.Contains(t, got, `"note_version_id":9`)
+		require.Contains(t, got, `"newsletter":`)
+		require.Contains(t, got, `"name":"email"`)
+	})
 }
