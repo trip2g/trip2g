@@ -1,7 +1,6 @@
 package fleet
 
 import (
-	"context"
 	"net/http"
 	"sync"
 
@@ -18,13 +17,9 @@ type Fleet struct {
 
 	mu       sync.RWMutex
 	registry map[string]Role // urlKey(notePath) -> Role
-
-	// codeRunner is the code-role executor. Defaults to agentruntime.RunCode.
-	// Tests may inject a stub for deterministic testing without subprocess runs.
-	codeRunner func(context.Context, agentruntime.CodeInput) (*agentruntime.Result, error)
 }
 
-// NewFleet builds a Fleet with an empty registry and the default code runner.
+// NewFleet builds a Fleet with an empty registry.
 // hc is the HTTP client used for per-delivery scoped KB requests; nil uses
 // http.DefaultClient.
 func NewFleet(cfg Config, hc *http.Client, llm agentruntime.LLM) *Fleet {
@@ -32,11 +27,10 @@ func NewFleet(cfg Config, hc *http.Client, llm agentruntime.LLM) *Fleet {
 		hc = http.DefaultClient
 	}
 	return &Fleet{
-		cfg:        cfg,
-		hc:         hc,
-		llm:        llm,
-		registry:   map[string]Role{},
-		codeRunner: agentruntime.RunCode,
+		cfg:      cfg,
+		hc:       hc,
+		llm:      llm,
+		registry: map[string]Role{},
 	}
 }
 

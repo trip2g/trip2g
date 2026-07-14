@@ -483,3 +483,140 @@ func TestRun_PassesRemainingBudgetToBudgetedLLM(t *testing.T) {
 	require.Equal(t, StatusCompleted, res.Status)
 	require.Equal(t, []int{1000, 850}, llm.budgets)
 }
+
+// TestRun_InputBagRidesAsFleetInputMessage asserts InputBag is delivered as a
+// system message named "fleet_input" (the codellm $FLEET_INPUT seam), inserted
+// between the system prompt and the "Begin." user turn, and never scanned as a
+// role instruction.
+func TestRun_InputBagRidesAsFleetInputMessage(t *testing.T) {
+	kb := newMemKB(nil)
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "ok"})}, PromptTokens: 1, CompletionTokens: 1},
+		},
+	}
+	bag := []byte(`{"changed_files":[{"path":"a.md"}],"depth":1}`)
+	res, err := Run(context.Background(), Input{
+		Instruction: "```bash\necho hi\n```",
+		Model:       "m", MaxTokens: 1000, MaxSteps: 5,
+		InputBag: bag,
+		LLM:      llm, KB: kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+
+	// The first batch the LLM saw: [system prompt, fleet_input, user "Begin."].
+	require.GreaterOrEqual(t, len(llm.seen), 3)
+	require.Equal(t, RoleSystem, llm.seen[0].Role)
+	require.Empty(t, llm.seen[0].Name)
+	require.Equal(t, RoleSystem, llm.seen[1].Role)
+	require.Equal(t, "fleet_input", llm.seen[1].Name)
+	require.Equal(t, string(bag), llm.seen[1].Content)
+	require.Equal(t, RoleUser, llm.seen[2].Role)
+	require.Equal(t, "Begin.", llm.seen[2].Content)
+}
+
+// TestRun_NoInputBagOmitsFleetInputMessage asserts that without an InputBag no
+// fleet_input message is injected (real-LLM roles are unchanged).
+func TestRun_NoInputBagOmitsFleetInputMessage(t *testing.T) {
+	kb := newMemKB(nil)
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "ok"})}, PromptTokens: 1, CompletionTokens: 1},
+		},
+	}
+	_, err := Run(context.Background(), Input{
+		Instruction: "hi", Model: "m", MaxTokens: 1000, MaxSteps: 5, LLM: llm, KB: kb,
+	})
+	require.NoError(t, err)
+	for _, m := range llm.seen {
+		require.NotEqual(t, "fleet_input", m.Name, "no fleet_input message without InputBag")
+	}
+}
+
+// TestRun_CodeStyleSingleTurnAppliesToolCalls asserts the codellm shape: one
+// completion returns write_note + patch_note + finish, they are applied through
+// ScopedKB in a SINGLE loop turn (always-finish invariant → Steps == 1) even
+// though MaxSteps allows more.
+func TestRun_CodeStyleSingleTurnAppliesToolCalls(t *testing.T) {
+	kb := newMemKB(map[string]string{"boards/b.md": "@status:todo"})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{
+				toolCall("1", toolWriteNote, map[string]any{"path": "boards/new.md", "content": "hello"}),
+				toolCall("2", toolPatchNote, map[string]any{"path": "boards/b.md", "find": "@status:todo", "replace": "@status:done"}),
+				toolCall("3", toolFinish, map[string]any{"answer": "done"}),
+			}, PromptTokens: 0, CompletionTokens: 0},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "```python\n...\n```",
+		WritePatterns: []string{"boards/**"},
+		Model:         "codellm", MaxTokens: 1000, MaxSteps: 25,
+		InputBag:      []byte(`{"depth":1}`),
+		HardFailApply: true,
+		LLM:           llm, KB: kb,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Equal(t, 1, res.Steps, "always-finish stops the loop in one turn")
+	require.Len(t, res.Changes, 2)
+	require.Equal(t, "hello", kb.docs["boards/new.md"])
+	require.Equal(t, "@status:done", kb.docs["boards/b.md"])
+	require.Equal(t, "done", res.Answer)
+}
+
+// TestRun_HardFailApply_BadPatchFailsRun asserts the executor:code/codellm
+// semantics: a patch whose find is absent is a genuine apply error, and with
+// HardFailApply set the whole run fails (all-or-nothing, matching RunCode).
+func TestRun_HardFailApply_BadPatchFailsRun(t *testing.T) {
+	kb := newMemKB(map[string]string{"boards/b.md": "content without the token"})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{
+				toolCall("1", toolPatchNote, map[string]any{"path": "boards/b.md", "find": "MISSING", "replace": "x"}),
+				toolCall("2", toolFinish, map[string]any{"answer": "done"}),
+			}, PromptTokens: 0, CompletionTokens: 0},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "```python\n...\n```",
+		WritePatterns: []string{"boards/**"},
+		Model:         "codellm", MaxTokens: 1000, MaxSteps: 25,
+		HardFailApply: true,
+		LLM:           llm, KB: kb,
+	})
+	require.Error(t, err, "a failed apply must fail the run when HardFailApply is set")
+	require.Nil(t, res)
+	require.Contains(t, err.Error(), "apply patch_note")
+}
+
+// TestRun_SoftApply_RealLLMSelfCorrects asserts the DEFAULT (real-LLM) path is
+// UNCHANGED: the same bad-find patch is a soft, self-correctable tool result —
+// the model sees the error, retries with a valid find, and the run completes.
+func TestRun_SoftApply_RealLLMSelfCorrects(t *testing.T) {
+	kb := newMemKB(map[string]string{"boards/b.md": "@status:todo"})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolPatchNote, map[string]any{
+				"path": "boards/b.md", "find": "MISSING", "replace": "x",
+			})}, PromptTokens: 5, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("2", toolPatchNote, map[string]any{
+				"path": "boards/b.md", "find": "@status:todo", "replace": "@status:done",
+			})}, PromptTokens: 5, CompletionTokens: 5},
+			{ToolCalls: []ToolCall{toolCall("3", toolFinish, map[string]any{"answer": "recovered"})}, PromptTokens: 5, CompletionTokens: 5},
+		},
+	}
+	res, err := Run(context.Background(), Input{
+		Instruction:   "fix it",
+		WritePatterns: []string{"boards/**"},
+		Model:         "gpt-4o", MaxTokens: 1000, MaxSteps: 25,
+		// HardFailApply defaults false for real-LLM roles.
+		LLM: llm, KB: kb,
+	})
+	require.NoError(t, err, "real-LLM roles keep soft, self-correctable apply errors")
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Equal(t, "@status:done", kb.docs["boards/b.md"])
+	require.Len(t, res.Changes, 1, "only the successful retry is recorded")
+	require.Equal(t, "recovered", res.Answer)
+}

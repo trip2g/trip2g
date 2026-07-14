@@ -28,6 +28,11 @@ const (
 	toolExec      = "exec"
 )
 
+// fleetInputMessageName is the reserved message name that carries the delivery
+// bag (Input.InputBag) as a system message. codellm reads it as $FLEET_INPUT and
+// does NOT scan it for fenced code; it must match codellm's fleetInputMessageName.
+const fleetInputMessageName = "fleet_input"
+
 // toolInvoker is the extension-point function type for the tool registry seam.
 // Built-in tools (search, read_note, write_note, patch_note, finish) are
 // handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
@@ -63,6 +68,20 @@ type Input struct {
 	MaxTokens int
 	// MaxSteps bounds tool-loop iterations as a secondary guard. Must be > 0.
 	MaxSteps int
+
+	// InputBag, when non-empty, is delivered as a system message named
+	// "fleet_input" carrying the JSON delivery bag. codellm treats that message
+	// as $FLEET_INPUT (it does not scan it for fenced code); a real LLM sees a
+	// harmless labeled JSON context block. Used by the executor:code→codellm path.
+	InputBag []byte
+
+	// HardFailApply makes a genuine write/patch APPLY failure (a bad or non-unique
+	// patch find, a KB write error — NOT an out-of-scope denial) fail the whole
+	// run instead of feeding the error back to the model as a soft, self-
+	// correctable tool result. Set for executor:code/codellm runs to preserve
+	// RunCode's all-or-nothing semantics; left false for real-LLM roles so they
+	// keep their self-correction loop.
+	HardFailApply bool
 
 	LLM LLM
 	KB  KB
@@ -138,8 +157,17 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 				formatPatterns(in.WritePatterns),
 			),
 		},
-		{Role: RoleUser, Content: "Begin."},
 	}
+	// Delivery bag rides as a labeled system message (fleet_input). codellm
+	// consumes it as $FLEET_INPUT; a real LLM sees a harmless JSON context block.
+	if len(in.InputBag) > 0 {
+		messages = append(messages, Message{
+			Role:    RoleSystem,
+			Name:    fleetInputMessageName,
+			Content: string(in.InputBag),
+		})
+	}
+	messages = append(messages, Message{Role: RoleUser, Content: "Begin."})
 
 	res := &Result{Status: StatusMaxSteps}
 
@@ -189,7 +217,14 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 				})
 				continue
 			}
-			output := execTool(ctx, scoped, res, call, invokers)
+			output, applyFailed := execTool(ctx, scoped, res, call, invokers)
+			// Apply-error hard-fail (executor:code/codellm path): a genuine write/
+			// patch apply failure (bad/non-unique find, KB write error) fails the
+			// whole run, preserving RunCode's all-or-nothing semantics. Real-LLM
+			// roles (HardFailApply=false) keep the soft, self-correctable tool result.
+			if applyFailed && in.HardFailApply {
+				return nil, fmt.Errorf("agentruntime: apply %s: %s", call.Name, output)
+			}
 			messages = append(messages, Message{
 				Role:       RoleTool,
 				ToolCallID: call.ID,
@@ -212,13 +247,17 @@ func chatWithBudget(ctx context.Context, llm LLM, model string, messages []Messa
 }
 
 // execTool runs one tool call against the scoped KB and returns the textual
-// result to feed back to the model. Scope denials are recorded and surfaced to
-// the model (so it learns), never silently swallowed.
+// result to feed back to the model, plus applyFailed=true ONLY when a write/patch
+// could not be APPLIED (bad/non-unique find, KB write error). That flag is what
+// the HardFailApply path (executor:code/codellm) fails on; scope denials, invalid
+// arguments, and read/search errors keep applyFailed=false so they stay soft/
+// self-correctable in every path. Scope denials are recorded and surfaced to the
+// model (so it learns), never silently swallowed.
 // Extension tools registered in invokers are dispatched before the built-in
 // switch, forming the tool registry seam for exec and future MCP plug-ins.
-func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall, invokers map[string]toolInvoker) string {
+func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall, invokers map[string]toolInvoker) (string, bool) {
 	if fn, ok := invokers[call.Name]; ok {
-		return fn(ctx, scoped, res, call)
+		return fn(ctx, scoped, res, call), false
 	}
 	switch call.Name {
 	case toolSearch:
@@ -226,37 +265,37 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 			Query string `json:"query"`
 		}
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
-			return "error: invalid arguments: " + err.Error()
+			return "error: invalid arguments: " + err.Error(), false
 		}
 		docs, err := scoped.Search(ctx, args.Query)
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), false
 		}
 		if len(docs) == 0 {
-			return "no in-scope documents matched."
+			return "no in-scope documents matched.", false
 		}
 		var b strings.Builder
 		for _, d := range docs {
 			fmt.Fprintf(&b, "- %s\n", d.Path)
 		}
-		return b.String()
+		return b.String(), false
 
 	case toolReadNote:
 		var args struct {
 			Path string `json:"path"`
 		}
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
-			return "error: invalid arguments: " + err.Error()
+			return "error: invalid arguments: " + err.Error(), false
 		}
 		content, err := scoped.Read(ctx, args.Path)
 		if errors.Is(err, ErrReadDenied) {
 			res.Denials = append(res.Denials, "read "+args.Path)
-			return "error: " + ErrReadDenied.Error()
+			return "error: " + ErrReadDenied.Error(), false
 		}
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), false
 		}
-		return content
+		return content, false
 
 	case toolWriteNote:
 		var args struct {
@@ -264,22 +303,22 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 			Content string `json:"content"`
 		}
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
-			return "error: invalid arguments: " + err.Error()
+			return "error: invalid arguments: " + err.Error(), false
 		}
 		err := scoped.Write(ctx, args.Path, args.Content)
 		if errors.Is(err, ErrWriteDenied) {
 			res.Denials = append(res.Denials, "write "+args.Path)
-			return "error: " + ErrWriteDenied.Error()
+			return "error: " + ErrWriteDenied.Error(), false
 		}
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), true
 		}
 		res.Changes = append(res.Changes, webhookutil.AgentChange{
 			Path:    args.Path,
 			Content: args.Content,
 			Kind:    webhookutil.AgentChangeKindWrite,
 		})
-		return "ok: wrote " + args.Path
+		return "ok: wrote " + args.Path, false
 
 	case toolPatchNote:
 		var args struct {
@@ -288,15 +327,15 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 			Replace string `json:"replace"`
 		}
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
-			return "error: invalid arguments: " + err.Error()
+			return "error: invalid arguments: " + err.Error(), false
 		}
 		err := scoped.Patch(ctx, args.Path, args.Find, args.Replace)
 		if errors.Is(err, ErrWriteDenied) {
 			res.Denials = append(res.Denials, "patch "+args.Path)
-			return "error: " + ErrWriteDenied.Error()
+			return "error: " + ErrWriteDenied.Error(), false
 		}
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), true
 		}
 		res.Changes = append(res.Changes, webhookutil.AgentChange{
 			Path:    args.Path,
@@ -304,10 +343,10 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 			Replace: args.Replace,
 			Kind:    webhookutil.AgentChangeKindPatch,
 		})
-		return "ok: patched " + args.Path
+		return "ok: patched " + args.Path, false
 
 	default:
-		return "error: unknown tool " + call.Name
+		return "error: unknown tool " + call.Name, false
 	}
 }
 
