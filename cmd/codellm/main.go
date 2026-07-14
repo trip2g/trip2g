@@ -36,7 +36,7 @@ func main() {
 	// else 401, monolith-unreachable → fail-closed. BrowserAuth composes it with
 	// the fleet-lane TokenCheck seam (nil here — mTLS/shared-token is a deploy
 	// concern), so the fleet server-to-server /v1 lane stays a separate regime.
-	admin, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: cfg.MonolithURL})
+	admin, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: cfg.Trip2gBaseURL})
 	if err != nil {
 		log.Fatalf("codellm: delegated admin: %v", err)
 	}
