@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
+	"trip2g/internal/fleet/fleetgql"
 	"trip2g/internal/fleet/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/zerologger"
@@ -49,6 +50,7 @@ type cliFlags struct {
 	targetPath       string // optional note in the vault to use as change_file context
 	interpretersPath string // non-empty → override embedded interpreters.json
 	graphAddr        string // non-empty → serve the dependency-graph debug UI/JSON; loopback-only
+	graphqlAddr      string // non-empty → serve the fleet GraphQL read API (roles + roleGraph)
 }
 
 func run() error {
@@ -109,6 +111,25 @@ func run() error {
 			}
 		}()
 		defer func() { _ = graphSrv.Close() }()
+	}
+
+	// --graphql-addr: the fleet's own GraphQL read API (roles + roleGraph).
+	// Reuses fleet.ParseRole via the same Discovery. Auth is a no-op seam
+	// (pass nil) until the shared delegated-admin middleware lands; the design
+	// puts this behind Caddy /_fleet/* with per-request cookie delegation.
+	var graphqlSrv *http.Server
+	if cli.graphqlAddr != "" {
+		gqlHandler := fleetgql.NewHTTPHandler(discovery, nil)
+		mux := http.NewServeMux()
+		mux.Handle("/graphql", gqlHandler)
+		graphqlSrv = &http.Server{Addr: cli.graphqlAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+		go func() {
+			lg.Info("fleet GraphQL API listening", "addr", cli.graphqlAddr)
+			if gerr := graphqlSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
+				lg.Error("graphql server failed", "err", gerr)
+			}
+		}()
+		defer func() { _ = graphqlSrv.Close() }()
 	}
 
 	// First sync before serving so the registry is populated.
@@ -504,6 +525,11 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	fs.StringVar(&cli.graphAddr, "graph-addr", "",
 		"loopback-only debug listen address serving the fleet dependency graph "+
 			"(GET / = UI, GET /graph.json = JSON), e.g. 127.0.0.1:9092; empty = disabled")
+	fs.StringVar(&cli.graphqlAddr, "graphql-addr", "",
+		"listen address serving the fleet GraphQL read API (POST /graphql: roles + roleGraph), "+
+			"e.g. 127.0.0.1:9093; empty = disabled. Intended behind Caddy /_fleet/* with the "+
+			"delegated-admin check; auth is a no-op seam until that middleware is wired, so do "+
+			"NOT expose a non-loopback bind publicly yet")
 
 	// One-shot offline harness flags.
 	fs.StringVar(&cli.oncePath, "once", "",

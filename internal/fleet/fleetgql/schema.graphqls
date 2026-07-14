@@ -1,0 +1,45 @@
+# fleet's own GraphQL read API (separate from the monolith's): the parsed roles
+# and the derived agent-interaction graph. See docs/dev/fleet_graphql.md.
+
+type Role {
+  name: String!
+  path: String! # role note path under agents-folder
+  executor: String! # "llm" | "code"
+  model: String
+  triggerOn: [String!]! # create | update | remove
+  triggerInclude: [String!]!
+  triggerExclude: [String!]!
+  readPatterns: [String!]!
+  writePatterns: [String!]!
+}
+
+type GraphNode {
+  role: String! # note path (matches GraphEdge.from/to)
+  inboxGlob: [String!]! # trigger_include minus trigger_exclude
+  outboxGlob: [String!]! # write_patterns
+  orphan: Boolean! # no inbound OR no outbound TRIGGER edge
+}
+
+enum EdgeKind {
+  TRIGGER # A writes a note that wakes B
+  DATAFLOW # A produces data B reads but isn't woken by
+}
+
+type GraphEdge {
+  from: String!
+  to: String!
+  kind: EdgeKind!
+  exact: Boolean! # false when the glob overlap was approximated
+  cutByDepth: Boolean! # edge the webhook max_depth guard would sever (always false in v1)
+}
+
+type RoleGraph {
+  nodes: [GraphNode!]!
+  edges: [GraphEdge!]!
+  cycles: [[String!]!]! # SCCs over TRIGGER edges (runaway-loop feedback)
+}
+
+type Query {
+  roles: [Role!]!
+  roleGraph: RoleGraph!
+}
