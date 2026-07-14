@@ -109,3 +109,18 @@ func TestParseFromRawMeta_turnstile_explicit_false(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, spec.Turnstile)
 }
+
+func TestFormsMapFromRaw(t *testing.T) {
+	t.Run("string-keyed map passes through", func(t *testing.T) {
+		got := formspec.FormsMapFromRaw(map[string]interface{}{"a": 1})
+		require.Equal(t, map[string]interface{}{"a": 1}, got)
+	})
+	t.Run("yaml.v2 interface-keyed map is normalized", func(t *testing.T) {
+		got := formspec.FormsMapFromRaw(map[interface{}]interface{}{"newsletter": 2})
+		require.Equal(t, map[string]interface{}{"newsletter": 2}, got)
+	})
+	t.Run("non-map returns nil", func(t *testing.T) {
+		require.Nil(t, formspec.FormsMapFromRaw("nope"))
+		require.Nil(t, formspec.FormsMapFromRaw(nil))
+	})
+}

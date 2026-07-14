@@ -76,7 +76,7 @@ translatable strings as parameters with **English defaults**; `index.html` yield
 | `cases.html` | `mesh_cases` | 4 topology use-case cards |
 | `roadmap.html` | `mesh_roadmap` | Shipped / in-progress / planned columns |
 | `try_now.html` | `mesh_try_now` | Try-now section with prompt box and steps |
-| `newsletter.html` | `mesh_newsletter` | Newsletter signup |
+| `newsletter.html` | `mesh_newsletter` | Newsletter signup — real form wired to the `newsletter` form on `_index.md` via `submitForm` (embeds `<script id="form-spec">` from `note.FormSpecJSON()`, Turnstile-aware) |
 | `docs_list.html` | `mesh_docs_list` | JS-populated `tree docs/` list |
 | `pricing.html` | `mesh_pricing` | 3 pricing cards |
 | `community.html` | `mesh_community` | Closed-community CTA (Russian only; no English twin — see Localization) |
