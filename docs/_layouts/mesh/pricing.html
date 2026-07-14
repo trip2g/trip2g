@@ -34,59 +34,30 @@
 }
 {{ end }}
 
-{{ block @lid() }}
-{{ yield section_header(lhs="pricing — there isn't really any", rhs="open source · self-host or sandbox") }}
+{{ block @lid(lang="en", s_lhs="pricing — there isn't really any", s_rhs="open source · self-host or sandbox", c1_title="Self-hosted", c1_period="/forever", c1_cta="install →", c1_l1="Open source — MIT · <a href=\"https://github.com/trip2g/trip2g\" target=\"_blank\" rel=\"noopener\">★ github</a>", c1_l2="One-line install on your own box", c1_l3="Unlimited vaults, peers, storage", c1_l4="Full federation, MCP, webhooks", c2_title="Sandbox instance", c2_cta="try free →", c2_l1="One instance per account", c2_l2="Try federation without setup", c2_l3="All features, capped at 100&nbsp;MB", c2_l4="Your own subdomain on *.2pub.me", c3_title="Need more?", c3_price="let's talk", c3_cta="contact →", c3_l1="Larger storage, dedicated host", c3_l2="Team mesh setup &amp; migration", c3_l3="SLAs only if you really need them") }}
+{{ yield section_header(lhs=s_lhs, rhs=s_rhs) }}
 <div class="pricing">
-  {{ yield pricing_card(tag="FREE · OSS", title="Self-hosted", price="$ 0", period="/forever", cta_href="/en/user/selfhosted", cta_text="install →") content }}
+  {{ yield pricing_card(tag="FREE · OSS", title=c1_title, price="$ 0", period=c1_period, cta_href="/"+lang+"/user/selfhosted", cta_text=c1_cta) content }}
     <ul class="price-list">
-      <li>Open source — MIT · <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">★ github</a></li>
-      <li>One-line install on your own box</li>
-      <li>Unlimited vaults, peers, storage</li>
-      <li>Full federation, MCP, webhooks</li>
+      <li>{{ c1_l1 }}</li>
+      <li>{{ c1_l2 }}</li>
+      <li>{{ c1_l3 }}</li>
+      <li>{{ c1_l4 }}</li>
     </ul>
   {{ end }}
-  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox instance", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text="try free →") content }}
+  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title=c2_title, price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text=c2_cta) content }}
     <ul class="price-list">
-      <li>One instance per account</li>
-      <li>Try federation without setup</li>
-      <li>All features, capped at 100&nbsp;MB</li>
-      <li>Your own subdomain on *.2pub.me</li>
+      <li>{{ c2_l1 }}</li>
+      <li>{{ c2_l2 }}</li>
+      <li>{{ c2_l3 }}</li>
+      <li>{{ c2_l4 }}</li>
     </ul>
   {{ end }}
-  {{ yield pricing_card(tag="CUSTOM", title="Need more?", price="let's talk", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="contact →") content }}
+  {{ yield pricing_card(tag="CUSTOM", title=c3_title, price=c3_price, period="", cta_href="mailto:alexes.dev@gmail.com", cta_text=c3_cta) content }}
     <ul class="price-list">
-      <li>Larger storage, dedicated host</li>
-      <li>Team mesh setup &amp; migration</li>
-      <li>SLAs only if you really need them</li>
-    </ul>
-  {{ end }}
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="цены — их почти нет", rhs="open source · свой сервер или sandbox") }}
-<div class="pricing">
-  {{ yield pricing_card(tag="FREE · OSS", title="Свой сервер", price="$ 0", period="/навсегда", cta_href="/ru/user/selfhosted", cta_text="установить →") content }}
-    <ul class="price-list">
-      <li>Open source — MIT</li>
-      <li>Установка одной командой на своём сервере</li>
-      <li>Неограниченные vault'ы, peer'ы, хранилище</li>
-      <li>Полная federation, MCP, webhooks</li>
-    </ul>
-  {{ end }}
-  {{ yield pricing_card(cls="price-mid", tag="FREE · HOSTED", title="Sandbox", price="$ 0", period="· 100 MB", cta_href="https://simplecloud.2pub.me", cta_text="попробовать →") content }}
-    <ul class="price-list">
-      <li>Один инстанс на аккаунт</li>
-      <li>Попробуйте federation без настройки</li>
-      <li>Все возможности, лимит 100&nbsp;MB</li>
-      <li>Поддомен на simplecloud.2pub.me</li>
-    </ul>
-  {{ end }}
-  {{ yield pricing_card(tag="CUSTOM", title="Нужно больше?", price="поговорим", period="", cta_href="mailto:alexes.dev@gmail.com", cta_text="написать →") content }}
-    <ul class="price-list">
-      <li>Больше хранилища, выделенный хост</li>
-      <li>Настройка team mesh &amp; миграция</li>
-      <li>SLA — только если действительно нужен</li>
+      <li>{{ c3_l1 }}</li>
+      <li>{{ c3_l2 }}</li>
+      <li>{{ c3_l3 }}</li>
     </ul>
   {{ end }}
 </div>

@@ -31,7 +31,7 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(red_title="Take the red pill.", red_desc="Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.", mcp_href="/simple", blue_title="Take the blue pill.", blue_desc="Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.", nocta="close tab") }}
 <div class="@did">
   <div class="@did__cell @did__cell--red">
     <pre class="@did__ascii @did__ascii--red">
@@ -39,9 +39,9 @@
   ██╔══██╗██╔════╝██╔══██╗
   ██████╔╝█████╗  ██║  ██║
   ██╔══██╗██╔══╝  ██║  ██║</pre>
-    <div class="@did__title">Take the red pill.</div>
-    <div class="@did__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
-    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="@did__cta")}}
+    <div class="@did__title">{{ red_title }}</div>
+    <div class="@did__desc">{{ red_desc }}</div>
+    {{yield mesh_button(label="mcp:add →", href=mcp_href, modifier="@did__cta")}}
   </div>
   <div class="@did__cell @did__cell--blue">
     <pre class="@did__ascii @did__ascii--blue">
@@ -49,34 +49,9 @@
   ██╔══██╗██║     ██║   ██║██╔════╝
   ██████╔╝██║     ██║   ██║█████╗
   ██╔══██╗██║     ██║   ██║██╔══╝</pre>
-    <div class="@did__title">Take the blue pill.</div>
-    <div class="@did__desc">Close this tab. Go back to reading landing pages. The story ends. You wake up and believe whatever you want to believe.</div>
-    <span class="@did__nocta">close tab</span>
-  </div>
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-<div class="@did">
-  <div class="@did__cell @did__cell--red">
-    <pre class="@did__ascii @did__ascii--red">
-  ██████╗ ███████╗██████╗
-  ██╔══██╗██╔════╝██╔══██╗
-  ██████╔╝█████╗  ██║  ██║
-  ██╔══██╗██╔══╝  ██║  ██║</pre>
-    <div class="@did__title">Возьми красную таблетку.</div>
-    <div class="@did__desc">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
-    {{yield mesh_button(label="mcp:add →", href="/ru/simple", modifier="@did__cta")}}
-  </div>
-  <div class="@did__cell @did__cell--blue">
-    <pre class="@did__ascii @did__ascii--blue">
-  ██████╗ ██╗     ██╗   ██╗███████╗
-  ██╔══██╗██║     ██║   ██║██╔════╝
-  ██████╔╝██║     ██║   ██║█████╗
-  ██╔══██╗██║     ██║   ██║██╔══╝</pre>
-    <div class="@did__title">Возьми синюю таблетку.</div>
-    <div class="@did__desc">Закрой вкладку. Вернись читать лендинги. История заканчивается. Ты просыпаешься и веришь во что хочешь.</div>
-    <span class="@did__nocta">закрыть вкладку</span>
+    <div class="@did__title">{{ blue_title }}</div>
+    <div class="@did__desc">{{ blue_desc }}</div>
+    <span class="@did__nocta">{{ nocta }}</span>
   </div>
 </div>
 {{ end }}

@@ -54,41 +54,21 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(lang="en", eyebrow="obsidian vault → live website · mcp under the hood", note="_index_hero.md", start_label="start →", start_href="/en/user/getting_started", agents_label="for AI agents →", agents_href="/simple", docs_label="docs") }}
 <section class="@did">
-  <div class="@did__eyebrow">obsidian vault → live website · mcp under the hood</div>
+  <div class="@did__eyebrow">{{ eyebrow }}</div>
   <div class="@did__copy">
-    {{ yield mesh_section(path="_index_hero.md") }}
+    {{ yield mesh_section(path=note) }}
   </div>
   <div class="@did__cta-row">
-    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="@did__cta")}}
-    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="@did__cta")}}
+    {{yield mesh_button(label=start_label, href=start_href, variant="primary", modifier="@did__cta")}}
+    {{yield mesh_button(label=agents_label, href=agents_href, modifier="@did__cta")}}
     {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="@did__cta")}}
-    {{yield mesh_button(label="docs", href="/en/user", modifier="@did__cta")}}
+    {{yield mesh_button(label=docs_label, href="/"+lang+"/user", modifier="@did__cta")}}
   </div>
   <div class="@did__video">
-    <video controls preload="none" playsinline poster="{{ asset("demo-en-poster.jpg") }}">
-      <source src="{{ asset("demo-en.mp4") }}" type="video/mp4">
-    </video>
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
-  <div class="@did__eyebrow">хранилище obsidian → живой сайт · mcp под капотом</div>
-  <div class="@did__copy">
-    {{ yield mesh_section(path="ru/_index_hero.md") }}
-  </div>
-  <div class="@did__cta-row">
-    {{yield mesh_button(label="начать →", href="/ru/user/nachalo_rabotyi", variant="primary", modifier="@did__cta")}}
-    {{yield mesh_button(label="для AI-агентов →", href="/ru/simple", modifier="@did__cta")}}
-    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="@did__cta")}}
-    {{yield mesh_button(label="документация", href="/ru/user", modifier="@did__cta")}}
-  </div>
-  <div class="@did__video">
-    <video controls preload="none" playsinline poster="{{ asset("demo-ru-poster.jpg") }}">
-      <source src="{{ asset("demo-ru.mp4") }}" type="video/mp4">
+    <video controls preload="none" playsinline poster="{{ asset("demo-"+lang+"-poster.jpg") }}">
+      <source src="{{ asset("demo-"+lang+".mp4") }}" type="video/mp4">
     </video>
   </div>
 </section>

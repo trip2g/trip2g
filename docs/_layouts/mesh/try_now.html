@@ -102,36 +102,34 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(lang="en", hdr_lhs="for AI agent users · 5 minutes · no install", hdr_rhs="connect mcp → ask your agent → skip the landing", title="Skip the landing.<br>Ask your <em>agent</em>.", sub="Don't read this page. Paste the MCP address into Claude Code, Codex, Cursor, or any MCP-aware agent — it'll connect to a live demo knowledge network and answer anything about trip2g. Faster than reading.", p_comment1="# Connect this knowledge network:", p_comment2="# Now ask anything, e.g.:", p_q1="what is trip2g and how does the knowledge network work?", p_q2="how do I connect my Obsidian vault?", p_q3="what's the privacy model? where does data live?", p_q4="show me a minimal config to share bases with a friend", p_q5="compare trip2g to a centralized RAG service", p_comment3="# When you're ready:", p_comment4="# your own hub, 100MB free", s1_title="Get an MCP-aware agent", s1_p="If you don't have one yet — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>, <kbd>Cursor</kbd>, or any MCP client works. Five minutes to install.", s1_other="other clients", s2_title="Paste the address → ask anything", s2_p="Your agent connects to our public demo network over MCP and answers from real knowledge bases. No signup, no API key.", s3_title="Spin up your own hub", s3_p="Convinced? Get a free 100MB sandbox on our cloud, no docker, no terminal, and sync your Obsidian vault. Self-host later when you outgrow it.", s3_selfhost="self-host guide", s4_title="Need more? Talk to us", s4_p="Federating a team or two companies, on-prem? Join the community or book a 30-min consultation — we'll walk through your topology.", s4_community="community ↗", s4_book="book consult ↗", btn_label="connect your agent →", btn_href="/simple") }}
 <header class="@did__header" id="try">
-  <span class="@did__header-lhs">for AI agent users · 5 minutes · no install</span>
-  <span class="@did__header-rhs">connect mcp → ask your agent → skip the landing</span>
+  <span class="@did__header-lhs">{{ hdr_lhs }}</span>
+  <span class="@did__header-rhs">{{ hdr_rhs }}</span>
 </header>
 <section class="@did">
   <div class="@did__left">
-    <h2 class="@did__title">Skip the landing.<br>Ask your <em>agent</em>.</h2>
+    <h2 class="@did__title">{{ title }}</h2>
     <p class="@did__sub">
-      Don't read this page. Paste the MCP address into Claude Code, Codex, Cursor, or any
-      MCP-aware agent — it'll connect to a live demo knowledge network and answer anything
-      about trip2g. Faster than reading.
+      {{ sub }}
     </p>
     <div class="@did__prompt">
       <div class="@did__prompt-head">
         <span><b>// agent prompt</b> · paste as-is</span>
         <button type="button" class="@did__copy-btn" id="try-copy">copy</button>
       </div>
-<pre class="@did__prompt-pre" id="try-prompt-text"><span class="@did__token--comment"># Connect this knowledge network:</span>
+<pre class="@did__prompt-pre" id="try-prompt-text"><span class="@did__token--comment">{{ p_comment1 }}</span>
 mcp:add <span class="@did__token--accent">https://trip2g.com/_system/mcp</span>
 
-<span class="@did__token--comment"># Now ask anything, e.g.:</span>
-- what is trip2g and how does the knowledge network work?
-- how do I connect my Obsidian vault?
-- what's the privacy model? where does data live?
-- show me a minimal config to share bases with a friend
-- compare trip2g to a centralized RAG service
+<span class="@did__token--comment">{{ p_comment2 }}</span>
+- {{ p_q1 }}
+- {{ p_q2 }}
+- {{ p_q3 }}
+- {{ p_q4 }}
+- {{ p_q5 }}
 
-<span class="@did__token--comment"># When you're ready:</span>
-mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <span class="@did__token--comment"># your own hub, 100MB free</span></pre>
+<span class="@did__token--comment">{{ p_comment3 }}</span>
+mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <span class="@did__token--comment">{{ p_comment4 }}</span></pre>
     </div>
   </div>
 
@@ -140,15 +138,14 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       <li class="@did__step">
         <div class="@did__step-num">step 01</div>
         <div>
-          <h4 class="@did__step-title">Get an MCP-aware agent</h4>
+          <h4 class="@did__step-title">{{ s1_title }}</h4>
           <p class="@did__step-p">
-            If you don't have one yet — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
-            <kbd>Cursor</kbd>, or any MCP client works. Five minutes to install.
+            {{ s1_p }}
           </p>
           <div class="@did__step-links">
             <a class="@did__chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
             <a class="@did__chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
-            <a class="@did__chip" href="/en/user/mcp">other clients</a>
+            <a class="@did__chip" href="/{{ lang }}/user/mcp">{{ s1_other }}</a>
           </div>
         </div>
       </li>
@@ -156,10 +153,9 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       <li class="@did__step">
         <div class="@did__step-num">step 02</div>
         <div>
-          <h4 class="@did__step-title">Paste the address → ask anything</h4>
+          <h4 class="@did__step-title">{{ s2_title }}</h4>
           <p class="@did__step-p">
-            Your agent connects to our public demo network over MCP and answers from real
-            knowledge bases. No signup, no API key.
+            {{ s2_p }}
           </p>
         </div>
       </li>
@@ -167,14 +163,13 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       <li class="@did__step">
         <div class="@did__step-num">step 03</div>
         <div>
-          <h4 class="@did__step-title">Spin up your own hub</h4>
+          <h4 class="@did__step-title">{{ s3_title }}</h4>
           <p class="@did__step-p">
-            Convinced? Get a free 100MB sandbox on our cloud, no docker, no terminal,
-            and sync your Obsidian vault. Self-host later when you outgrow it.
+            {{ s3_p }}
           </p>
           <div class="@did__step-links">
             <a class="@did__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
-            <a class="@did__chip" href="/en/user/selfhosted">self-host guide</a>
+            <a class="@did__chip" href="/{{ lang }}/user/selfhosted">{{ s3_selfhost }}</a>
           </div>
         </div>
       </li>
@@ -182,118 +177,20 @@ mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <spa
       <li class="@did__step">
         <div class="@did__step-num">step 04</div>
         <div>
-          <h4 class="@did__step-title">Need more? Talk to us</h4>
+          <h4 class="@did__step-title">{{ s4_title }}</h4>
           <p class="@did__step-p">
-            Federating a team or two companies, on-prem? Join the community
-            or book a 30-min consultation — we'll walk through your topology.
+            {{ s4_p }}
           </p>
           <div class="@did__step-links">
-            <a class="@did__chip" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">community ↗</a>
-            <a class="@did__chip" href="mailto:alexes.dev@gmail.com">book consult ↗</a>
+            <a class="@did__chip" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">{{ s4_community }}</a>
+            <a class="@did__chip" href="mailto:alexes.dev@gmail.com">{{ s4_book }}</a>
             <a class="@did__chip" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
           </div>
         </div>
       </li>
     </ol>
     <div class="@did__footer">
-      {{yield mesh_button(label="connect your agent →", href="/simple", modifier="mesh-try-now__cta")}}
-    </div>
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<header class="@did__header" id="try">
-  <span class="@did__header-lhs">для пользователей AI-агентов · 5 минут · без установки</span>
-  <span class="@did__header-rhs">подключить mcp → спросить агента → пропустить лендинг</span>
-</header>
-<section class="@did">
-  <div class="@did__left">
-    <h2 class="@did__title">Пропусти лендинг.<br>Спроси <em>агента</em>.</h2>
-    <p class="@did__sub">
-      Не читай эту страницу. Вставь адрес MCP в Claude Code, Codex, Cursor или любой MCP-клиент — он подключится к живой демо-сети знаний и ответит на любой вопрос о trip2g. Быстрее чем читать.
-    </p>
-    <div class="@did__prompt">
-      <div class="@did__prompt-head">
-        <span><b>// agent prompt</b> · paste as-is</span>
-        <button type="button" class="@did__copy-btn" id="try-copy">copy</button>
-      </div>
-<pre class="@did__prompt-pre" id="try-prompt-text"><span class="@did__token--comment"># Подключи эту сеть знаний:</span>
-mcp:add <span class="@did__token--accent">https://trip2g.com/_system/mcp</span>
-
-<span class="@did__token--comment"># Теперь спроси что угодно, например:</span>
-- что такое trip2g и как работает сеть знаний?
-- как подключить свой Obsidian vault?
-- какая модель приватности? где хранятся данные?
-- покажи минимальный конфиг чтобы поделиться базами с другом
-- сравни trip2g с централизованным RAG сервисом
-
-<span class="@did__token--comment"># Когда будешь готов:</span>
-mcp:add <span class="@did__token--accent">https://mcp.trip2g.com/me</span>  <span class="@did__token--comment"># свой хаб, 100MB бесплатно</span></pre>
-    </div>
-  </div>
-
-  <div class="@did__right">
-    <ol class="@did__steps">
-      <li class="@did__step">
-        <div class="@did__step-num">step 01</div>
-        <div>
-          <h4 class="@did__step-title">Возьмите MCP-агента</h4>
-          <p class="@did__step-p">
-            Если ещё нет — <kbd>Claude Code</kbd>, <kbd>Codex</kbd>,
-            <kbd>Cursor</kbd> или любой MCP-клиент. Пять минут на установку.
-          </p>
-          <div class="@did__step-links">
-            <a class="@did__chip" href="https://docs.anthropic.com/claude/docs/claude-code" target="_blank" rel="noopener">claude code ↗</a>
-            <a class="@did__chip" href="https://github.com/openai/codex" target="_blank" rel="noopener">codex ↗</a>
-            <a class="@did__chip" href="/ru/user/mcp">другие клиенты</a>
-          </div>
-        </div>
-      </li>
-
-      <li class="@did__step">
-        <div class="@did__step-num">step 02</div>
-        <div>
-          <h4 class="@did__step-title">Вставьте адрес → спросите что угодно</h4>
-          <p class="@did__step-p">
-            Агент подключается к нашей публичной демо-сети по MCP и отвечает из реальных баз знаний. Без регистрации, без API-ключа.
-          </p>
-        </div>
-      </li>
-
-      <li class="@did__step">
-        <div class="@did__step-num">step 03</div>
-        <div>
-          <h4 class="@did__step-title">Запустите свой хаб</h4>
-          <p class="@did__step-p">
-            Убедились? Получите бесплатный sandbox на 100MB в нашем облаке — без docker, без
-            терминала — и синхронизируйте свой Obsidian vault. Перейдите на self-host, когда вырастете.
-          </p>
-          <div class="@did__step-links">
-            <a class="@did__chip mesh-try__chip--accent" href="https://simplecloud.2pub.me">simplecloud.2pub.me →</a>
-            <a class="@did__chip" href="/ru/user/selfhosted">руководство по self-host</a>
-          </div>
-        </div>
-      </li>
-
-      <li class="@did__step">
-        <div class="@did__step-num">step 04</div>
-        <div>
-          <h4 class="@did__step-title">Нужно больше? Напишите нам</h4>
-          <p class="@did__step-p">
-            Федерация команды или двух компаний, on-prem? Вступайте в сообщество
-            или запишитесь на 30-минутную консультацию — разберём вашу топологию.
-          </p>
-          <div class="@did__step-links">
-            <a class="@did__chip" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">сообщество ↗</a>
-            <a class="@did__chip" href="mailto:alexes.dev@gmail.com">записаться ↗</a>
-            <a class="@did__chip" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github ↗</a>
-          </div>
-        </div>
-      </li>
-    </ol>
-    <div class="@did__footer">
-      {{yield mesh_button(label="подключить агента →", href="/ru/simple", modifier="mesh-try-now__cta")}}
+      {{yield mesh_button(label=btn_label, href=btn_href, modifier="mesh-try-now__cta")}}
     </div>
   </div>
 </section>

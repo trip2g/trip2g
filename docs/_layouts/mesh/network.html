@@ -87,36 +87,11 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(eyebrow="then, the payoff", note="_index_payoff.md") }}
 <section class="@did">
   <div class="@did__left">
-    <div class="@did__eyebrow">then, the payoff</div>
-    <div class="@did__text">{{ yield mesh_section(path="_index_payoff.md") }}</div>
-  </div>
-  <div class="@did__right">
-    <div class="@did__frame @did__frame--graph @did__graph">
-      <div class="@did__frame-head">
-        <span>fig.01 · mesh.trace · query.route</span>
-        <span class="@did__live">LIVE</span>
-      </div>
-      <div id="mesh-svg-mount"></div>
-    </div>
-    <div class="@did__frame @did__frame--trace">
-      <div class="@did__frame-head">
-        <span>stdout · /var/log/mesh.trace</span>
-        <span style="color: var(--muted)">tail -f</span>
-      </div>
-      <div class="@did__trace-stream" id="trace-stream"></div>
-    </div>
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
-  <div class="@did__left">
-    <div class="@did__eyebrow">а дальше</div>
-    <div class="@did__text">{{ yield mesh_section(path="ru/_index_payoff.md") }}</div>
+    <div class="@did__eyebrow">{{ eyebrow }}</div>
+    <div class="@did__text">{{ yield mesh_section(path=note) }}</div>
   </div>
   <div class="@did__right">
     <div class="@did__frame @did__frame--graph @did__graph">

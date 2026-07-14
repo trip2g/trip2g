@@ -89,71 +89,36 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(lang="en", pill_status="demo network · 10 bases online", docs_label="Docs", usecases_label="Use cases", philosophy_label="Philosophy", start_label="start →", start_href="/en/user/getting_started", dialog_eyebrow="// YOUR AGENT IS WAITING", dialog_title="Add this to your agent.", dialog_sub="Then ask it anything about trip2g — faster than reading this page.", snippet_label="// agent prompt", copy_label="copy", copy_done="copied ✓", agents_label="for AI agents →", agents_href="/simple") }}
 <header class="@did">
   <div class="@did__prompt">$ <b>trip2g</b></div>
-  <div class="@did__pill"><span class="@did__pill-dot"></span>demo network · 10 bases online</div>
+  <div class="@did__pill"><span class="@did__pill-dot"></span>{{ pill_status }}</div>
   <a class="@did__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
     <a href="#" class="@did__nav-link @did__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('@did__overlay--open'); return false;">⌘K</a>
-    <a href="/en/user" class="@did__nav-link">Docs</a>
-    <a href="/en/user/use_cases" class="@did__nav-link">Use cases</a>
-    <a href="/en/thoughts" class="@did__nav-link">Philosophy</a>
-    <a href="/" class="@did__nav-link @did__nav-link--key">EN</a>
-    <a href="/ru" class="@did__nav-link">RU</a>
+    <a href="/{{ lang }}/user" class="@did__nav-link">{{ docs_label }}</a>
+    <a href="/{{ lang }}/user/use_cases" class="@did__nav-link">{{ usecases_label }}</a>
+    <a href="/{{ lang }}/thoughts" class="@did__nav-link">{{ philosophy_label }}</a>
+    <a href="/" class="@did__nav-link{{ if lang == "en" }} @did__nav-link--key{{ end }}">EN</a>
+    <a href="/ru" class="@did__nav-link{{ if lang == "ru" }} @did__nav-link--key{{ end }}">RU</a>
     <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
-    <a href="/en/user/getting_started" class="@did__nav-link">start →</a>
+    <a href="{{ start_href }}" class="@did__nav-link">{{ start_label }}</a>
   </nav>
 </header>
 <div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('@did__overlay--open')">
   <div class="@did__dialog">
-    <div class="@did__dialog-eyebrow">// YOUR AGENT IS WAITING</div>
-    <div class="@did__dialog-title">Add this to your agent.</div>
-    <div class="@did__dialog-sub">Then ask it anything about trip2g — faster than reading this page.</div>
+    <div class="@did__dialog-eyebrow">{{ dialog_eyebrow }}</div>
+    <div class="@did__dialog-title">{{ dialog_title }}</div>
+    <div class="@did__dialog-sub">{{ dialog_sub }}</div>
     <div class="@did__snippet">
       <div class="@did__snippet-head">
-        <span>// agent prompt</span>
-        <button class="@did__snippet-copy" onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='copied ✓'; setTimeout(()=>this.textContent='copy',1800)">copy</button>
+        <span>{{ snippet_label }}</span>
+        <button class="@did__snippet-copy" onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='{{ copy_done }}'; setTimeout(()=>this.textContent='{{ copy_label }}',1800)">{{ copy_label }}</button>
       </div>
       <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
     </div>
-    {{yield mesh_button(label="for AI agents →", href="/simple", modifier="@did__cta")}}
-    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('@did__overlay--open')">[ esc ]</div>
-  </div>
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-<header class="@did">
-  <div class="@did__prompt">$ <b>trip2g</b></div>
-  <div class="@did__pill"><span class="@did__pill-dot"></span>демо-сеть · 10 баз онлайн</div>
-  <a class="@did__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
-  <div class="@did__spacer"></div>
-  <nav class="@did__nav">
-    <a href="#" class="@did__nav-link @did__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('@did__overlay--open'); return false;">⌘K</a>
-    <a href="/ru/user" class="@did__nav-link">Документация</a>
-    <a href="/ru/user/use_cases" class="@did__nav-link">Сценарии</a>
-    <a href="/ru/thoughts" class="@did__nav-link">Философия</a>
-    <a href="/" class="@did__nav-link">EN</a>
-    <a href="/ru" class="@did__nav-link @did__nav-link--key">RU</a>
-    <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
-    <a href="/ru/user/nachalo_rabotyi" class="@did__nav-link">начать →</a>
-  </nav>
-</header>
-<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('@did__overlay--open')">
-  <div class="@did__dialog">
-    <div class="@did__dialog-eyebrow">// ВАШ АГЕНТ ЖДЁТ</div>
-    <div class="@did__dialog-title">Добавь это своему агенту.</div>
-    <div class="@did__dialog-sub">Затем спроси что угодно — быстрее чем читать эту страницу.</div>
-    <div class="@did__snippet">
-      <div class="@did__snippet-head">
-        <span>// команда для агента</span>
-        <button class="@did__snippet-copy" onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='скопировано ✓'; setTimeout(()=>this.textContent='скопировать',1800)">скопировать</button>
-      </div>
-      <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
-    </div>
-    {{yield mesh_button(label="для AI-агентов →", href="/ru/simple", modifier="@did__cta")}}
+    {{yield mesh_button(label=agents_label, href=agents_href, modifier="@did__cta")}}
     <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('@did__overlay--open')">[ esc ]</div>
   </div>
 </div>
