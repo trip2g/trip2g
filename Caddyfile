@@ -1,5 +1,4 @@
 # Generate certs: mkcert -install && mkcert localhost 127.0.0.1
-
 {
 	auto_https disable_redirects
 }
@@ -16,6 +15,23 @@ http://localhost:9081 {
 
 	handle /graphql {
 		reverse_proxy http://localhost:8081
+	}
+
+	# Same-origin, dumb pass-through to the fleet service (own GraphQL: roles +
+	# roleGraph). Forwards the session cookie; NO auth here — auth is the
+	# delegated viewer{role} middleware (internal/delegatedadmin) inside fleet.
+	# Upstream is a placeholder; the real private addr comes from deploy config.
+	handle /_fleet/* {
+		reverse_proxy http://localhost:8092
+	}
+
+	# Same-origin, dumb pass-through to the codellm service (browser-facing
+	# /v1/* + /graphql for markdown structure). Forwards the session cookie; NO
+	# auth here — codellm gates with the same delegated middleware. The fleet↔
+	# codellm server-to-server /v1 lane is separate and does NOT go through Caddy.
+	# Upstream is a placeholder; the real private addr comes from deploy config.
+	handle /_codellm/* {
+		reverse_proxy http://localhost:8093
 	}
 
 	handle /assets/* {
