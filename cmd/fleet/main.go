@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	fleetappconfig "trip2g/cmd/fleet/appconfig"
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/fleet"
@@ -43,14 +44,15 @@ func main() {
 
 // cliFlags holds the parsed command-line state for a single invocation.
 type cliFlags struct {
-	cfg              fleet.Config
+	cfg    fleet.Config
+	appCfg *fleetappconfig.Config // discovery scope, run/reconcile addrs, default model, offered tools, GraphQL/codellm addrs
+
 	dryRun           bool
 	oncePath         string // non-empty → one-shot mode; daemon must NOT start
 	vaultDir         string // KB root for --once (default ".")
 	targetPath       string // optional note in the vault to use as change_file context
 	interpretersPath string // non-empty → override embedded interpreters.json
 	graphAddr        string // non-empty → serve the dependency-graph debug UI/JSON; loopback-only
-	graphqlAddr      string // non-empty → serve the fleet GraphQL read API (roles + roleGraph)
 }
 
 func run() error {
@@ -73,6 +75,9 @@ func run() error {
 	err = validateConfig(cli.cfg)
 	if err != nil {
 		return err
+	}
+	if err := cli.appCfg.Validate(); err != nil {
+		return fmt.Errorf("fleet: invalid config: %w", err)
 	}
 
 	lg := zerologger.New(cli.cfg.LogLevel, false)
@@ -118,13 +123,13 @@ func run() error {
 	// (pass nil) until the shared delegated-admin middleware lands; the design
 	// puts this behind Caddy /_fleet/* with per-request cookie delegation.
 	var graphqlSrv *http.Server
-	if cli.graphqlAddr != "" {
+	if cli.appCfg.GraphQLAddr != "" {
 		gqlHandler := fleetgql.NewHTTPHandler(discovery, nil)
 		mux := http.NewServeMux()
 		mux.Handle("/graphql", gqlHandler)
-		graphqlSrv = &http.Server{Addr: cli.graphqlAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+		graphqlSrv = &http.Server{Addr: cli.appCfg.GraphQLAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 		go func() {
-			lg.Info("fleet GraphQL API listening", "addr", cli.graphqlAddr)
+			lg.Info("fleet GraphQL API listening", "addr", cli.appCfg.GraphQLAddr)
 			if gerr := graphqlSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
 				lg.Error("graphql server failed", "err", gerr)
 			}
@@ -461,24 +466,24 @@ func effectiveGrace(seconds int) time.Duration {
 // TRIP2G_ namespace when both run in the same environment.
 func parseFlags(ctx context.Context) (cliFlags, error) {
 	var cli cliFlags
-	var offered string
 	var allowedPrograms string
 	var poll int
 	var graceSeconds int
 
 	fs := flag.NewFlagSet("fleet", flag.ContinueOnError)
 
+	// Discovery scope, run/reconcile addrs, default model, offered tools, and
+	// the GraphQL/codellm listen addrs: defined by cmd/fleet/appconfig on this
+	// same shared FlagSet, so they parse in the one Parse call below alongside
+	// the rest of fleet's flags.
+	cli.appCfg = fleetappconfig.DefaultConfig()
+	cli.appCfg.DefineFlags(fs)
+
 	// Daemon flags.
 	fs.BoolVar(&cli.dryRun, "dry-run", false,
 		"discover roles, print + flag their resolved config, then exit without registering webhooks")
 	fs.StringVar(&cli.cfg.FleetID, "fleet-id", "fleet1",
 		"reconcile marker id")
-	fs.StringVar(&cli.cfg.ListenAddr, "listen", ":9090",
-		"HTTP listen address")
-	fs.StringVar(&cli.cfg.CallbackURL, "callback-url", "",
-		"trip2g-reachable base URL of this fleet (required for daemon mode)")
-	fs.StringVar(&cli.cfg.Trip2gBaseURL, "trip2g-url", "http://localhost:8081",
-		"trip2g base URL")
 	fs.StringVar(&cli.cfg.AdminAPIKey, "admin-api-key", "",
 		"DEPRECATED/unused: legacy full-admin X-Api-Key")
 	fs.StringVar(&cli.cfg.JWTSecret, "jwt-secret", "",
@@ -491,16 +496,10 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"OpenAI-compatible base URL")
 	fs.StringVar(&cli.cfg.LLMAPIKey, "llm-api-key", "",
 		"LLM API key (falls back to OPENAI_API_KEY)")
-	fs.StringVar(&cli.cfg.DefaultModel, "default-model", "gpt-4o-mini",
-		"default model when a role omits model")
 	fs.IntVar(&cli.cfg.TokenCeiling, "token-ceiling", 100000,
 		"non-overridable per-run token cap")
 	fs.IntVar(&cli.cfg.StepCeiling, "step-ceiling", 25,
 		"non-overridable per-run step cap")
-	fs.StringVar(&cli.cfg.AgentsFolder, "agents-folder", "roles/",
-		"role-note folder (LIKE prefix)")
-	fs.StringVar(&offered, "offered-tools", "search,read_note,patch_note,write_note",
-		"comma-separated allowed tools")
 	fs.StringVar(&allowedPrograms, "allowed-programs", "",
 		"comma-separated programs allowed for code execution (empty = disabled; e.g. python,bash)")
 	fs.IntVar(&cli.cfg.MaxStdoutBytes, "max-stdout-bytes", 1<<20,
@@ -525,11 +524,6 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	fs.StringVar(&cli.graphAddr, "graph-addr", "",
 		"loopback-only debug listen address serving the fleet dependency graph "+
 			"(GET / = UI, GET /graph.json = JSON), e.g. 127.0.0.1:9092; empty = disabled")
-	fs.StringVar(&cli.graphqlAddr, "graphql-addr", "",
-		"listen address serving the fleet GraphQL read API (POST /graphql: roles + roleGraph), "+
-			"e.g. 127.0.0.1:9093; empty = disabled. Intended behind Caddy /_fleet/* with the "+
-			"delegated-admin check; auth is a no-op seam until that middleware is wired, so do "+
-			"NOT expose a non-loopback bind publicly yet")
 
 	// One-shot offline harness flags.
 	fs.StringVar(&cli.oncePath, "once", "",
@@ -562,8 +556,14 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		cli.cfg.LLMAPIKey = os.Getenv("OPENAI_API_KEY")
 	}
 
-	cli.cfg.OfferedTools = splitCSV(offered)
-	cli.cfg.AllowedPrograms = splitCSV(allowedPrograms)
+	cli.appCfg.Prepare()
+	cli.cfg.ListenAddr = cli.appCfg.ListenAddr
+	cli.cfg.CallbackURL = cli.appCfg.CallbackURL
+	cli.cfg.Trip2gBaseURL = cli.appCfg.Trip2gBaseURL
+	cli.cfg.DefaultModel = cli.appCfg.DefaultModel
+	cli.cfg.AgentsFolder = cli.appCfg.AgentsFolder
+	cli.cfg.OfferedTools = cli.appCfg.OfferedTools
+	cli.cfg.AllowedPrograms = fleetappconfig.SplitCSV(allowedPrograms)
 	cli.cfg.PollInterval = time.Duration(poll) * time.Second
 	cli.cfg.ShutdownGrace = effectiveGrace(graceSeconds)
 	return cli, nil
@@ -625,14 +625,4 @@ func reportRoles(roles []fleet.Role, offered []string, defaultModel string) stri
 		b.WriteByte('\n')
 	}
 	return b.String()
-}
-
-func splitCSV(s string) []string {
-	var out []string
-	for _, p := range strings.Split(s, ",") {
-		if v := strings.TrimSpace(p); v != "" {
-			out = append(out, v)
-		}
-	}
-	return out
 }
