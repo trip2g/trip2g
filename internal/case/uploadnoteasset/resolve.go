@@ -95,12 +95,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		// missing (e.g. bucket wipe/reseed) even though the row survived, which
 		// would otherwise serve a permanently 404ing presigned URL. Re-upload it
 		// from the client's bytes before linking if it's gone.
-		exists, existsErr := env.NoteAssetExists(ctx, existingAsset)
+		objExists, existsErr := env.NoteAssetExists(ctx, existingAsset)
 		if existsErr != nil {
 			return nil, fmt.Errorf("failed to check if asset object exists: %w", existsErr)
 		}
 
-		if !exists {
+		if !objExists {
 			if uploadErr := env.PutAssetObject(ctx, input.File.File, existingAsset); uploadErr != nil {
 				return nil, fmt.Errorf("failed to re-upload missing asset object: %w", uploadErr)
 			}
