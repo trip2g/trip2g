@@ -29,6 +29,7 @@ type Env interface {
 	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
+	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
@@ -271,6 +272,10 @@ func TestResolve(t *testing.T) {
 							Size:         int64(len(testContent)),
 						}, nil
 					},
+					NoteAssetExistsFunc: func(ctx context.Context, asset db.NoteAsset) (bool, error) {
+						// Object is still present in storage - no heal needed
+						return true, nil
+					},
 					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
 						return nil
 					},
@@ -287,8 +292,72 @@ func TestResolve(t *testing.T) {
 
 				// CreateNoteAsset should NOT be called (asset already exists)
 				require.Empty(t, env.CreateNoteAssetCalls())
-				// PutAssetObject should NOT be called (no upload needed)
+				// PutAssetObject should NOT be called (object still present, no heal needed)
 				require.Empty(t, env.PutAssetObjectCalls())
+				// UpsertNoteVersionAsset SHOULD be called to link existing asset
+				require.Len(t, env.UpsertNoteVersionAssetCalls(), 1)
+				// PrepareLatestNotes should be called to update views
+				require.Len(t, env.PrepareLatestNotesCalls(), 1)
+			},
+		},
+		{
+			name: "success - asset row exists but object missing from storage (self-heal)",
+			input: model.UploadNoteAssetInput{
+				NoteID:       456,
+				Path:         "images/test.png",
+				AbsolutePath: "/absolute/path/test.png",
+				Sha256Hash:   testHash,
+				File: graphql.Upload{
+					File:     bytes.NewReader(testContent),
+					Filename: "test.png",
+					Size:     int64(len(testContent)),
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.TestLogger{}
+					},
+					NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
+						return map[string]struct{}{
+							"images/test.png": {},
+						}, nil
+					},
+					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
+						// DB row exists, but the underlying object was lost (e.g. bucket wipe)
+						return db.NoteAsset{
+							ID:           99,
+							AbsolutePath: arg.AbsolutePath,
+							FileName:     "test.png",
+							Sha256Hash:   arg.Sha256Hash,
+							Size:         int64(len(testContent)),
+						}, nil
+					},
+					NoteAssetExistsFunc: func(ctx context.Context, asset db.NoteAsset) (bool, error) {
+						return false, nil
+					},
+					PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
+						_, err := io.ReadAll(reader)
+						return err
+					},
+					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
+						return nil
+					},
+					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
+						return &appmodel.NoteViews{}, nil
+					},
+				}
+			},
+			wantErr: false,
+			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
+				require.IsType(t, &model.UploadNoteAssetPayload{}, payload)
+				p := payload.(*model.UploadNoteAssetPayload)
+				require.True(t, p.UploadSkipped)
+
+				// CreateNoteAsset should NOT be called (DB row already exists)
+				require.Empty(t, env.CreateNoteAssetCalls())
+				// PutAssetObject SHOULD be called to re-upload the missing object
+				require.Len(t, env.PutAssetObjectCalls(), 1)
 				// UpsertNoteVersionAsset SHOULD be called to link existing asset
 				require.Len(t, env.UpsertNoteVersionAssetCalls(), 1)
 				// PrepareLatestNotes should be called to update views

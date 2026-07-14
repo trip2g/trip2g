@@ -24,6 +24,7 @@ type Env interface {
 	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
+	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
@@ -90,7 +91,22 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return nil, uploadErr
 		}
 	} else {
-		// Asset already exists, just link it to this note version
+		// Asset already exists in the DB. Self-heal: the underlying object may be
+		// missing (e.g. bucket wipe/reseed) even though the row survived, which
+		// would otherwise serve a permanently 404ing presigned URL. Re-upload it
+		// from the client's bytes before linking if it's gone.
+		objExists, existsErr := env.NoteAssetExists(ctx, existingAsset)
+		if existsErr != nil {
+			return nil, fmt.Errorf("failed to check if asset object exists: %w", existsErr)
+		}
+
+		if !objExists {
+			if uploadErr := env.PutAssetObject(ctx, input.File.File, existingAsset); uploadErr != nil {
+				return nil, fmt.Errorf("failed to re-upload missing asset object: %w", uploadErr)
+			}
+		}
+
+		// Link it to this note version
 		err = env.UpsertNoteVersionAsset(ctx, db.UpsertNoteVersionAssetParams{
 			AssetID:   existingAsset.ID,
 			VersionID: input.NoteID,

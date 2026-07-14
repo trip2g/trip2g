@@ -41,6 +41,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
 //				panic("mock out the NoteAssetByPathAndHash method")
 //			},
+//			NoteAssetExistsFunc: func(ctx context.Context, asset db.NoteAsset) (bool, error) {
+//				panic("mock out the NoteAssetExists method")
+//			},
 //			NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
 //				panic("mock out the NoteVersionAssetPaths method")
 //			},
@@ -77,6 +80,9 @@ type EnvMock struct {
 
 	// NoteAssetByPathAndHashFunc mocks the NoteAssetByPathAndHash method.
 	NoteAssetByPathAndHashFunc func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
+
+	// NoteAssetExistsFunc mocks the NoteAssetExists method.
+	NoteAssetExistsFunc func(ctx context.Context, asset db.NoteAsset) (bool, error)
 
 	// NoteVersionAssetPathsFunc mocks the NoteVersionAssetPaths method.
 	NoteVersionAssetPathsFunc func(ctx context.Context, id int64) (map[string]struct{}, error)
@@ -130,6 +136,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.NoteAssetByPathAndHashParams
 		}
+		// NoteAssetExists holds details about calls to the NoteAssetExists method.
+		NoteAssetExists []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Asset is the asset argument value.
+			Asset db.NoteAsset
+		}
 		// NoteVersionAssetPaths holds details about calls to the NoteVersionAssetPaths method.
 		NoteVersionAssetPaths []struct {
 			// Ctx is the ctx argument value.
@@ -167,6 +180,7 @@ type EnvMock struct {
 	lockDeleteNoteAsset        sync.RWMutex
 	lockLogger                 sync.RWMutex
 	lockNoteAssetByPathAndHash sync.RWMutex
+	lockNoteAssetExists        sync.RWMutex
 	lockNoteVersionAssetPaths  sync.RWMutex
 	lockPrepareLatestNotes     sync.RWMutex
 	lockPutAssetObject         sync.RWMutex
@@ -377,6 +391,42 @@ func (mock *EnvMock) NoteAssetByPathAndHashCalls() []struct {
 	mock.lockNoteAssetByPathAndHash.RLock()
 	calls = mock.calls.NoteAssetByPathAndHash
 	mock.lockNoteAssetByPathAndHash.RUnlock()
+	return calls
+}
+
+// NoteAssetExists calls NoteAssetExistsFunc.
+func (mock *EnvMock) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error) {
+	if mock.NoteAssetExistsFunc == nil {
+		panic("EnvMock.NoteAssetExistsFunc: method is nil but Env.NoteAssetExists was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Asset db.NoteAsset
+	}{
+		Ctx:   ctx,
+		Asset: asset,
+	}
+	mock.lockNoteAssetExists.Lock()
+	mock.calls.NoteAssetExists = append(mock.calls.NoteAssetExists, callInfo)
+	mock.lockNoteAssetExists.Unlock()
+	return mock.NoteAssetExistsFunc(ctx, asset)
+}
+
+// NoteAssetExistsCalls gets all the calls that were made to NoteAssetExists.
+// Check the length with:
+//
+//	len(mockedEnv.NoteAssetExistsCalls())
+func (mock *EnvMock) NoteAssetExistsCalls() []struct {
+	Ctx   context.Context
+	Asset db.NoteAsset
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Asset db.NoteAsset
+	}
+	mock.lockNoteAssetExists.RLock()
+	calls = mock.calls.NoteAssetExists
+	mock.lockNoteAssetExists.RUnlock()
 	return calls
 }
 
