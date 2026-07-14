@@ -1,0 +1,36 @@
+# codellm's own GraphQL surface — markdown STRUCTURE only (editor/debugger
+# support), never execution. Execution stays the OpenAI REST path
+# (/v1/chat/completions + x_fleet_debug). See docs/dev/fleet_graphql.md.
+#
+# parseMarkdown splits a body into ordered code/prose blocks, reusing codellm's
+# OWN ExtractFencedBlocks so block boundaries match execution exactly (a JS
+# reimplementation would drift from what actually runs). assembleMarkdown is the
+# round-trip inverse: assembleMarkdown(parseMarkdown(md)) reproduces md.
+
+enum BlockKind {
+  CODE # a fenced code block; language carries the fence info string
+  PROSE # everything between/around fences, preserved verbatim
+}
+
+type MdBlock {
+  index: Int!
+  kind: BlockKind!
+  language: String # fence info string for CODE (may be ""); null for PROSE
+  content: String! # CODE: the code between fences; PROSE: the raw text
+}
+
+input MdBlockInput {
+  kind: BlockKind!
+  language: String
+  content: String!
+}
+
+type Query {
+  # Split md into ordered code/prose blocks (codellm's own fence boundaries).
+  parseMarkdown(md: String!): [MdBlock!]!
+}
+
+type Mutation {
+  # Round-trip the ordered blocks back into a single markdown string.
+  assembleMarkdown(blocks: [MdBlockInput!]!): String!
+}

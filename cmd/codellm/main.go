@@ -14,6 +14,7 @@ import (
 
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/codellm"
+	"trip2g/internal/delegatedadmin"
 
 	"trip2g/cmd/codellm/appconfig"
 )
@@ -30,15 +31,27 @@ func main() {
 		log.Fatalf("codellm: config: %v", err)
 	}
 
+	// Delegated-admin gate for the browser-facing endpoints: each request's
+	// session cookie is forwarded to the monolith's viewer{role}; admin → serve,
+	// else 401, monolith-unreachable → fail-closed. BrowserAuth composes it with
+	// the fleet-lane TokenCheck seam (nil here — mTLS/shared-token is a deploy
+	// concern), so the fleet server-to-server /v1 lane stays a separate regime.
+	admin, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: cfg.Trip2gBaseURL})
+	if err != nil {
+		log.Fatalf("codellm: delegated admin: %v", err)
+	}
+
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,
 		Sandbox:         agentruntime.SandboxPolicy{Mode: cfg.Sandbox},
 		MaxStdoutBytes:  cfg.MaxStdoutBytes,
 		Timeout:         cfg.Timeout,
-		// Auth/TokenCheck seams intentionally left nil (no-op) in Phase 1 — a
-		// separate PR builds the shared delegated-admin auth helper and the
-		// channel token/mTLS check (cfg.ChannelToken is the placeholder for it).
+		// TokenCheck left nil: the fleet↔codellm locked channel (mTLS/shared
+		// token, cfg.ChannelToken is its placeholder) is a deploy concern, not
+		// built here. With it nil, every browser-facing request must pass the
+		// delegated-admin gate (the secure default).
 	}
+	srvCfg.Auth = codellm.BrowserAuth(admin.Wrap, srvCfg.TokenCheck)
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,
