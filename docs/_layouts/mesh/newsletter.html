@@ -41,6 +41,7 @@
   padding: 0 22px; cursor: pointer;
 }
 .@did__submit:hover { background: var(--fg); }
+.@did__submit:disabled { opacity: 0.5; cursor: progress; }
 .@did__meta {
   grid-column: 1 / -1;
   display: flex; gap: 24px;
@@ -51,7 +52,14 @@
   margin-top: 4px;
 }
 .@did__meta b { color: var(--fg); font-weight: 600; }
-.@did__joke {
+.@did__error {
+  grid-column: 2 / -1;
+  font-family: var(--mono); font-size: 12px;
+  color: var(--error, #ff6b6b);
+  min-height: 1.2em;
+}
+.@did__turnstile { grid-column: 2 / -1; display: none; }
+.@did__done {
   display: none;
   grid-column: 1 / -1;
   padding: 18px;
@@ -59,19 +67,16 @@
   font-family: var(--mono); font-size: 13px;
   color: var(--fg);
 }
-.@did__joke--shown { display: block; }
-.@did__joke-hint { color: var(--muted); }
-.@did__joke-code { color: var(--accent); }
-.@did__joke-link {
-  color: var(--accent); text-decoration: none;
-  letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px;
-}
+.@did__done--shown { display: block; }
+.@did__done-title { color: var(--accent); font-weight: 600; }
+.@did__done-text { color: var(--muted); }
 @media (max-width: 900px) {
   .@did { grid-template-columns: 1fr; padding: 32px 20px; gap: 24px; }
+  .@did__error, .@did__turnstile { grid-column: 1 / -1; }
 }
 {{ end }}
 
-{{ block @lid(title="Changelog &amp; <em>field notes</em>", intro="One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.", submit_label="subscribe →", meta1="<b>~1×/month</b>", meta2="unsubscribe in one click", meta3="archive at <b>trip2g.com/notes</b>", joke_lead="We don't need your email.", joke_hint="Here's everything you actually need:", simple_href="/simple") }}
+{{ block @lid(title="Changelog &amp; <em>field notes</em>", intro="One email when something ships. Notes on how shared knowledge networks work in practice — what we learned building this. No marketing.", submit_label="subscribe →", sending_label="sending…", meta1="<b>~1×/month</b>", meta2="unsubscribe in one click", meta3="archive at <b>trip2g.com/notes</b>", done_title="You're on the list.", done_text="One email when something ships. Unsubscribe in one click.", err_label="Something went wrong — please try again.") }}
 <section class="@did" id="newsletter">
   <div>
     <h2 class="@did__title">{{ title }}</h2>
@@ -79,8 +84,8 @@
       {{ intro }}
     </p>
   </div>
-  <form class="@did__form" onsubmit="event.preventDefault(); this.closest('section').querySelector('.@did__joke').classList.add('mesh-news__joke--shown'); this.style.display='none';">
-    <input class="@did__input" type="email" placeholder="you@somewhere" aria-label="email" required>
+  <form class="@did__form">
+    <input class="@did__input" type="email" name="email" placeholder="you@somewhere" aria-label="email" required>
     <button class="@did__submit" type="submit">{{ submit_label }}</button>
   </form>
   <div class="@did__meta">
@@ -88,11 +93,99 @@
     <span>{{ meta2 }}</span>
     <span>{{ meta3 }}</span>
   </div>
-  <div class="@did__joke">
-    {{ joke_lead }}<br>
-    <span class="@did__joke-hint">{{ joke_hint }}</span><br><br>
-    <code class="@did__joke-code">mcp:add https://trip2g.com/_system/mcp</code><br><br>
-    <a href="{{ simple_href }}" class="@did__joke-link">→ /simple</a>
+  <div class="@did__turnstile"></div>
+  <div class="@did__error" aria-live="polite"></div>
+  <div class="@did__done" aria-live="polite">
+    <span class="@did__done-title">{{ done_title }}</span><br>
+    <span class="@did__done-text">{{ done_text }}</span>
   </div>
 </section>
+<script id="form-spec" type="application/json">{{ note.FormSpecJSON() | unsafe }}</script>
+<script>
+(function () {
+  var root = document.getElementById('newsletter');
+  if (!root) return;
+  var form = root.querySelector('.@did__form');
+  var input = root.querySelector('.@did__input');
+  var btn = root.querySelector('.@did__submit');
+  var errEl = root.querySelector('.@did__error');
+  var doneEl = root.querySelector('.@did__done');
+  var tsEl = root.querySelector('.@did__turnstile');
+  var specEl = document.getElementById('form-spec');
+  if (!form || !specEl) return;
+
+  var spec;
+  try { spec = JSON.parse(specEl.textContent); } catch (e) { return; }
+  var formId = 'newsletter';
+  var def = (spec.forms || {})[formId];
+  if (!def) return;
+
+  var submitLabel = btn.textContent;
+  var sendingLabel = '{{ sending_label }}';
+  var errLabel = '{{ err_label }}';
+  var tsWidget = null;
+
+  function fail() { errEl.textContent = errLabel; btn.disabled = false; btn.textContent = submitLabel; }
+
+  function send(token) {
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = sendingLabel;
+    var query = 'mutation Submit($input: SubmitFormInput!) {' +
+      ' submitForm(input: $input) { __typename' +
+      ' ... on SubmitFormPayload { submitId }' +
+      ' ... on TurnstileRequiredPayload { siteKey }' +
+      ' ... on FormSubmitDeniedPayload { reason }' +
+      ' ... on ErrorPayload { message } } }';
+    fetch('/_system/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: query,
+        variables: { input: {
+          noteVersionId: spec.note_version_id,
+          formId: formId,
+          turnstileToken: token || null,
+          fields: [{ name: 'email', stringValue: input.value }]
+        } }
+      })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      var p = j && j.data && j.data.submitForm;
+      if (!p) { fail(); return; }
+      if (p.__typename === 'SubmitFormPayload') {
+        form.style.display = 'none';
+        doneEl.classList.add('@did__done--shown');
+        return;
+      }
+      if (p.__typename === 'TurnstileRequiredPayload') { renderTurnstile(p.siteKey); return; }
+      fail();
+    }).catch(fail);
+  }
+
+  function renderTurnstile(siteKey) {
+    btn.disabled = false;
+    btn.textContent = submitLabel;
+    tsEl.style.display = 'block';
+    function doRender() {
+      if (!(window.turnstile && tsEl)) return;
+      if (tsWidget !== null) { window.turnstile.reset(tsWidget); return; }
+      tsWidget = window.turnstile.render(tsEl, {
+        sitekey: siteKey,
+        callback: function (token) { send(token); }
+      });
+    }
+    if (window.turnstile) { doRender(); return; }
+    var existing = document.getElementById('cf-turnstile-api');
+    if (existing) { existing.addEventListener('load', doRender); return; }
+    var s = document.createElement('script');
+    s.id = 'cf-turnstile-api';
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true; s.defer = true;
+    s.onload = doRender;
+    document.head.appendChild(s);
+  }
+
+  form.addEventListener('submit', function (e) { e.preventDefault(); send(null); });
+})();
+</script>
 {{ end }}
