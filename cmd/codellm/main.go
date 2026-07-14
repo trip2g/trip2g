@@ -25,7 +25,7 @@ func main() {
 	// absent. Phase 2 completes the sandbox story (move + tests).
 	agentruntime.MaybeRunSandboxChild()
 
-	addr := flag.String("addr", ":8082", "listen address for the OpenAI-compatible API")
+	addr := flag.String("addr", "127.0.0.1:8082", "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam — binding to all interfaces is an explicit operator opt-in")
 	allowedPrograms := flag.String("allowed-programs", "python,bash,node", "comma-separated interpreter allowlist; empty disables code execution")
 	sandboxMode := flag.String("sandbox", string(agentruntime.SandboxNative), "sandbox mode: native | besteffort | off")
 	timeout := flag.Duration("timeout", 300*time.Second, "per-completion code-run timeout; 0 = request-context bound")

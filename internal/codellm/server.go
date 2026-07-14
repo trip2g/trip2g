@@ -40,13 +40,14 @@ const modelID = "codellm"
 // only knobs are the code-execution policy and the auth seam.
 type Config struct {
 	// AllowedPrograms is the interpreter allowlist (python, bash, node, ...).
-	// Empty disables code execution (every request then fails 422). Phase 2
-	// moves the full --allowed-programs/--sandbox/... flag set here.
+	// Empty disables code execution (every request then fails 422).
 	AllowedPrograms []string
 
 	// Sandbox is the OS-level isolation policy for each executed block. The zero
-	// value is the safe default (native, enforcing). Phase 2 wires
-	// MaybeRunSandboxChild() so native mode is fully operational.
+	// value is the safe default (native, enforcing). main.go calls
+	// agentruntime.MaybeRunSandboxChild() first and defaults --sandbox to
+	// native, so native mode is already operational in Phase 1; Phase 2 moves
+	// the sandbox/interpreters/debug-surface source out of agentruntime.
 	Sandbox agentruntime.SandboxPolicy
 
 	// MaxStdoutBytes caps each block's captured stdout; 0 → 1 MiB default.
