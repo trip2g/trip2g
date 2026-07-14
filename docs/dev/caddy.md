@@ -8,6 +8,8 @@ Two purposes in development:
 
 2. **HTTPS for third-party integrations** — `https://localhost:7081` provides TLS for features that require secure context (Cloudflare Turnstile captcha, OAuth callbacks, etc.). All traffic goes directly to the Go server.
 
+3. **Same-origin service proxies** — `/_fleet/*` and `/_codellm/*` reverse-proxy to the fleet and codellm services on their private ports, forwarding the session cookie. Caddy does NO auth on these routes; each service gates itself with the delegated admin middleware (`internal/delegatedadmin`), which forwards the caller's cookie to the monolith's `viewer{role}` and allows only admins (fail-closed). The upstream addresses in the Caddyfile are placeholders — the real private addrs come from deploy config. See `fleet_graphql.md`.
+
 ## Setup
 
 ```bash
