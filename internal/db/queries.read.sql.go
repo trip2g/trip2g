@@ -6681,6 +6681,41 @@ func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPat
 	return i, err
 }
 
+const noteAssetsBySha256Hash = `-- name: NoteAssetsBySha256Hash :many
+select id, absolute_path, file_name, sha256_hash, created_at, size from note_assets
+ where sha256_hash = ?
+`
+
+func (q *Queries) NoteAssetsBySha256Hash(ctx context.Context, sha256Hash string) ([]NoteAsset, error) {
+	rows, err := q.db.QueryContext(ctx, noteAssetsBySha256Hash, sha256Hash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteAsset
+	for rows.Next() {
+		var i NoteAsset
+		if err := rows.Scan(
+			&i.ID,
+			&i.AbsolutePath,
+			&i.FileName,
+			&i.Sha256Hash,
+			&i.CreatedAt,
+			&i.Size,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const noteAssetsByVersionID = `-- name: NoteAssetsByVersionID :many
 with target_version as (
   select v.id as version_id, p.id as path_id, v.version
