@@ -539,6 +539,12 @@ services:
       # Required config (delegated-admin browser gate); unused by the server-to-server
       # api_key lane that fleet-code takes, but must be non-empty (fail-closed).
       - CODELLM_TRIP2G_URL=http://app:20081
+      # Secret VALUES live HERE (codellm's own env), never on fleet. A request
+      # names KRISP_TOKEN/KRISP_BASE_URL; codellm exposes them to the code child
+      # only because they are on this expose-allowlist.
+      - CODELLM_EXPOSE_ENV=KRISP_TOKEN,KRISP_BASE_URL
+      - KRISP_TOKEN=test-krisp-token
+      - KRISP_BASE_URL=http://krisp-mock:9092
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/healthz || exit 1"]
       interval: 5s
@@ -553,9 +559,9 @@ services:
   # processes roles tagged `fleet_id: e2ec` (the krisp ingest role), while the
   # llm-mock `fleet` (e2e) owns the transcript-agent LLM role.
   #
-  # KRISP_TOKEN/KRISP_BASE_URL live here (not on codellm): fleet injects the
-  # role's declared env_passthrough vars into the $FLEET_INPUT delivery bag
-  # (injectEnvPassthrough), since codellm scrubs the code child's env.
+  # This fleet holds NO secret values. The krisp role's env_passthrough NAMES
+  # ride the request as a fleet_env message; codellm (which holds KRISP_TOKEN/
+  # KRISP_BASE_URL in its own env) exposes them to the code child.
   fleet-code:
     build:
       context: .
@@ -580,19 +586,15 @@ services:
       - TRIP2G_FLEET_FLEET_SECRET=e2ec-fleet-secret
       - TRIP2G_FLEET_LLM_BASE_URL=http://codellm:8082/v1
       - TRIP2G_FLEET_LLM_API_KEY=e2e-codellm-shared-key-0123456789abcdef
-      # This fleet's LLM endpoint IS codellm, so it may deliver the code role's
-      # env_passthrough vars via the $FLEET_INPUT bag (gates injectEnvPassthrough).
-      - TRIP2G_FLEET_LLM_EXECUTES_CODE=true
       - TRIP2G_FLEET_DEFAULT_MODEL=codellm
       - TRIP2G_FLEET_AGENTS_FOLDER=roles/
       - TRIP2G_FLEET_POLL_SECONDS=3
       - TRIP2G_FLEET_TOKEN_CEILING=100000
       - TRIP2G_FLEET_STEP_CEILING=25
       - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
-      # Injected into the $FLEET_INPUT bag for the krisp role's declared
-      # env_passthrough (KRISP_TOKEN, KRISP_BASE_URL); the code runs in codellm.
-      - KRISP_TOKEN=test-krisp-token
-      - KRISP_BASE_URL=http://krisp-mock:9092
+      # NOTE: KRISP_TOKEN/KRISP_BASE_URL are NOT here — fleet never holds secret
+      # values. The role's env_passthrough names ride the request as fleet_env;
+      # codellm holds the values and exposes them (see the codellm service).
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
       interval: 5s

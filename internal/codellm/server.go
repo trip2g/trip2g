@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -33,6 +34,19 @@ import (
 // bag (the JSON exposed to executed code as $FLEET_INPUT). It rides as a system
 // message per the wire protocol; its content is NOT scanned for fenced blocks.
 const fleetInputMessageName = "fleet_input"
+
+// fleetEnvMessageName is the reserved message name carrying the code role's
+// declared env var NAMES (JSON: {"passthrough":[...],"prefix":[...]}). codellm
+// intersects them with its own expose-allowlist and forwards the surviving vars
+// from ITS OWN env to the code child. Names ride the wire; values never do. Its
+// content is NOT scanned for fenced blocks.
+const fleetEnvMessageName = "fleet_env"
+
+// fleetEnvNames is the JSON payload of the fleet_env message.
+type fleetEnvNames struct {
+	Passthrough []string `json:"passthrough,omitempty"`
+	Prefix      []string `json:"prefix,omitempty"`
+}
 
 // modelID is the synthetic model advertised by GET /v1/models. codellm echoes
 // whatever model the request asks for, so this is only for client compatibility.
@@ -53,6 +67,15 @@ type Config struct {
 
 	// MaxStdoutBytes caps each block's captured stdout; 0 → 1 MiB default.
 	MaxStdoutBytes int
+
+	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES
+	// (exact) and name prefixes that codellm MAY expose from its OWN environment
+	// to executed code. A request's fleet_env names are INTERSECTED with these —
+	// a request can never reach beyond the allowlist. Both empty (the default)
+	// means codellm exposes nothing: the secret-scrubbed PATH+FLEET_INPUT child
+	// env, as before.
+	ExposeEnv       []string
+	ExposeEnvPrefix []string
 
 	// Timeout bounds a single completion's code run; 0 → bounded by the request
 	// context only.
@@ -168,7 +191,12 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(raw, &ext)
 
-	body, bag := extractBodyAndBag(req.Messages)
+	body, bag, envReq := extractBodyAndBag(req.Messages)
+
+	// The request names env vars it wants; codellm exposes only those on its
+	// operator allowlist, sourcing the VALUES from its OWN env (buildChildEnv).
+	// Shared by the normal and x_fleet_debug paths (both use `in`).
+	passthrough, prefix := s.exposedEnv(envReq)
 
 	in := coderun.CodeInput{
 		Body:            body,
@@ -177,8 +205,10 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		MaxStdoutBytes:  s.cfg.MaxStdoutBytes,
 		Timeout:         s.cfg.Timeout,
 		Input:           bag,
-		// No EnvPassthrough/EnvPrefix: env passthrough is dropped by design —
-		// no parent env crosses the HTTP boundary.
+		// Env values are supplied from codellm's OWN environment for the
+		// allowlist-intersected names only; the request carried names, not values.
+		EnvPassthrough: passthrough,
+		EnvPrefix:      prefix,
 	}
 
 	if ext.XFleetDebug {
@@ -246,21 +276,64 @@ func toDebugBlocks(blocks []coderun.BlockDebug) []fleetDebugBlock {
 }
 
 // extractBodyAndBag concatenates the message contents that may contain fenced
-// code (everything except the reserved fleet_input message) into the body to
-// scan, and returns the fleet_input message content as the delivery bag. The
-// system-prompt wrapper has no fences, so only the role body's blocks are found.
-func extractBodyAndBag(messages []goopenai.ChatCompletionMessage) (string, []byte) {
+// code (everything except the reserved fleet_input / fleet_env messages) into
+// the body to scan, and returns the fleet_input content as the delivery bag plus
+// the fleet_env content as the requested env NAMES. The system-prompt wrapper
+// has no fences, so only the role body's blocks are found.
+func extractBodyAndBag(messages []goopenai.ChatCompletionMessage) (string, []byte, fleetEnvNames) {
 	var sb strings.Builder
 	var bag []byte
+	var env fleetEnvNames
 	for _, m := range messages {
-		if m.Name == fleetInputMessageName {
+		switch m.Name {
+		case fleetInputMessageName:
 			bag = []byte(m.Content)
+			continue
+		case fleetEnvMessageName:
+			// Malformed fleet_env is non-fatal: no names → nothing exposed.
+			_ = json.Unmarshal([]byte(m.Content), &env)
 			continue
 		}
 		sb.WriteString(m.Content)
 		sb.WriteString("\n")
 	}
-	return sb.String(), bag
+	return sb.String(), bag, env
+}
+
+// exposedEnv intersects a request's declared env NAMES (from fleet_env) with
+// codellm's operator allowlist (ExposeEnv exact / ExposeEnvPrefix prefixes).
+// Only allowlisted entries survive — a request can never reach an env var the
+// operator did not permit. buildChildEnv then supplies the VALUES from codellm's
+// own environment. The surviving NAMES are logged (never values).
+func (s *Server) exposedEnv(req fleetEnvNames) ([]string, []string) {
+	allowName := make(map[string]struct{}, len(s.cfg.ExposeEnv))
+	for _, n := range s.cfg.ExposeEnv {
+		allowName[n] = struct{}{}
+	}
+	var passthrough []string
+	for _, n := range req.Passthrough {
+		if _, ok := allowName[n]; ok {
+			passthrough = append(passthrough, n)
+		}
+	}
+
+	allowPrefix := make(map[string]struct{}, len(s.cfg.ExposeEnvPrefix))
+	for _, p := range s.cfg.ExposeEnvPrefix {
+		allowPrefix[p] = struct{}{}
+	}
+	var prefix []string
+	for _, p := range req.Prefix {
+		if _, ok := allowPrefix[p]; ok {
+			prefix = append(prefix, p)
+		}
+	}
+
+	if len(passthrough) > 0 || len(prefix) > 0 {
+		//nolint:sloglint // codellm has no logger instance; global slog is intentional here
+		slog.Info("codellm: exposing allowlisted env to code child (names only)",
+			"passthrough", passthrough, "prefix", prefix)
+	}
+	return passthrough, prefix
 }
 
 // buildResponse maps the parsed {changes, answer} onto an OpenAI tool_calls

@@ -21,7 +21,6 @@ type Config struct {
 	FleetSecret            string        // per-role HMAC secret seed
 	LLMBaseURL             string        // OpenAI-compatible base URL (fleet-local, NOT a trip2g secret)
 	LLMAPIKey              string        // fleet-local LLM credential
-	LLMExecutesCode        bool          // this fleet's LLM endpoint IS codellm (executes executor:code roles); gates env_passthrough → delivery-bag injection. MUST stay off for a real-LLM endpoint (else secrets ship in the request body to a third party)
 	DefaultModel           string        // fallback when a role omits model
 	TokenCeiling           int           // non-overridable per-run token cap
 	StepCeiling            int           // non-overridable per-run step cap

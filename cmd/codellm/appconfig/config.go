@@ -58,6 +58,15 @@ type Config struct {
 	// SSE proxy). Required and non-empty so the browser gate is always wired
 	// (fail-closed). Named to match fleet's appconfig.Trip2gBaseURL.
 	Trip2gBaseURL string
+
+	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES
+	// (exact) and name prefixes codellm MAY expose from its OWN environment to
+	// executed code. A request's fleet_env names are intersected with these, so a
+	// request can never reach an env var the operator did not allow. Both empty
+	// (the default) = expose nothing. Holding the secret VALUES here (deploy-time
+	// env / mounted secret) is the point: fleet ships only names.
+	ExposeEnv       []string
+	ExposeEnvPrefix []string
 }
 
 // Defaults.
@@ -137,6 +146,12 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_TRIP2G_URL"); v != "" {
 		c.Trip2gBaseURL = v
 	}
+	if v := os.Getenv("CODELLM_EXPOSE_ENV"); v != "" {
+		c.ExposeEnv = splitCSV(v)
+	}
+	if v := os.Getenv("CODELLM_EXPOSE_ENV_PREFIX"); v != "" {
+		c.ExposeEnvPrefix = splitCSV(v)
+	}
 }
 
 // defineAndParseFlags registers flags seeded from the env-resolved config (so
@@ -147,6 +162,8 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	allowedPrograms := strings.Join(c.AllowedPrograms, ",")
 	sandbox := string(c.Sandbox)
+	exposeEnv := strings.Join(c.ExposeEnv, ",")
+	exposeEnvPrefix := strings.Join(c.ExposeEnvPrefix, ",")
 
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam")
 	fs.StringVar(&allowedPrograms, "allowed-programs", allowedPrograms, "comma-separated interpreter allowlist; empty disables code execution")
@@ -155,6 +172,11 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
 	fs.StringVar(&c.APIKey, "api-key", c.APIKey, "codellm's OpenAI-standard api_key (Bearer); empty disables key auth")
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL, "base URL of the trip2g instance that answers viewer{role}")
+	fs.StringVar(&exposeEnv, "expose-env", exposeEnv,
+		"comma-separated allowlist of env var NAMES codellm may expose from its own env to code "+
+			"(a request can never exceed this); empty = expose nothing")
+	fs.StringVar(&exposeEnvPrefix, "expose-env-prefix", exposeEnvPrefix,
+		"comma-separated allowlist of env var name PREFIXES codellm may expose from its own env to code")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -162,6 +184,8 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	c.AllowedPrograms = splitCSV(allowedPrograms)
 	c.Sandbox = coderun.SandboxMode(sandbox)
+	c.ExposeEnv = splitCSV(exposeEnv)
+	c.ExposeEnvPrefix = splitCSV(exposeEnvPrefix)
 	return nil
 }
 

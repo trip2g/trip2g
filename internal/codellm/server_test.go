@@ -207,15 +207,19 @@ func TestChatCompletions_NoFencedBlock422(t *testing.T) {
 }
 
 func TestExtractBodyAndBag(t *testing.T) {
-	body, bag := extractBodyAndBag([]goopenai.ChatCompletionMessage{
+	body, bag, env := extractBodyAndBag([]goopenai.ChatCompletionMessage{
 		{Role: "system", Content: "role body ```code```"},
 		{Role: "system", Name: fleetInputMessageName, Content: `{"changed_files":[]}`},
+		{Role: "system", Name: fleetEnvMessageName, Content: `{"passthrough":["KRISP_TOKEN"],"prefix":["KRISP_"]}`},
 		{Role: "user", Content: "Begin."},
 	})
 	require.Contains(t, body, "role body")
 	require.Contains(t, body, "Begin.")
 	require.NotContains(t, body, "changed_files", "fleet_input must not be scanned for code")
+	require.NotContains(t, body, "passthrough", "fleet_env must not be scanned for code")
 	require.JSONEq(t, `{"changed_files":[]}`, string(bag))
+	require.Equal(t, []string{"KRISP_TOKEN"}, env.Passthrough)
+	require.Equal(t, []string{"KRISP_"}, env.Prefix)
 }
 
 func TestModelsAndHealthz(t *testing.T) {
@@ -245,4 +249,75 @@ func TestAuthSeam(t *testing.T) {
 	})
 	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{bashBody(`echo '{"changes":[],"answer":""}'`)})
 	require.Equal(t, http.StatusForbidden, rec.Code)
+}
+
+// fleetEnvMsg builds a fleet_env system message naming the env vars a request
+// wants exposed (names only).
+func fleetEnvMsg(passthrough, prefix []string) goopenai.ChatCompletionMessage {
+	b, _ := json.Marshal(fleetEnvNames{Passthrough: passthrough, Prefix: prefix})
+	return goopenai.ChatCompletionMessage{Role: "system", Name: fleetEnvMessageName, Content: string(b)}
+}
+
+// TestExposedEnv asserts the allowlist intersection: a request can never reach an
+// env var the operator did not allowlist, and an empty allowlist exposes nothing.
+func TestExposedEnv(t *testing.T) {
+	srv := New(Config{ExposeEnv: []string{"KRISP_TOKEN", "KRISP_BASE_URL"}, ExposeEnvPrefix: []string{"OK_"}})
+
+	// Allowlisted exact names survive; a non-allowlisted name is dropped.
+	pt, pf := srv.exposedEnv(fleetEnvNames{Passthrough: []string{"KRISP_TOKEN", "SECRET_ADMIN"}})
+	require.Equal(t, []string{"KRISP_TOKEN"}, pt)
+	require.Empty(t, pf)
+
+	// Prefixes: only an allowlisted prefix survives.
+	_, pf = srv.exposedEnv(fleetEnvNames{Prefix: []string{"OK_", "EVIL_"}})
+	require.Equal(t, []string{"OK_"}, pf)
+
+	// Empty allowlist → nothing exposed, whatever the request names.
+	empty := New(Config{})
+	pt, pf = empty.exposedEnv(fleetEnvNames{Passthrough: []string{"KRISP_TOKEN"}, Prefix: []string{"OK_"}})
+	require.Empty(t, pt)
+	require.Empty(t, pf)
+}
+
+// TestChatCompletions_ExposesAllowlistedEnvToChild is the end-to-end proof: an
+// allowlisted name reaches the code child with its VALUE sourced from codellm's
+// OWN env (buildChildEnv), even though the request carried only the name.
+func TestChatCompletions_ExposesAllowlistedEnvToChild(t *testing.T) {
+	t.Setenv("MY_SECRET", "s3cr3t")
+	srv := New(Config{
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
+		ExposeEnv:       []string{"MY_SECRET"},
+	})
+	script := `printf '{"changes":[],"answer":"%s"}' "$MY_SECRET"`
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{
+		bashBody(script),
+		fleetEnvMsg([]string{"MY_SECRET"}, nil),
+		{Role: goopenai.ChatMessageRoleUser, Content: "Begin."},
+	})
+	resp := decodeResp(t, rec)
+	require.Equal(t, "s3cr3t", finishArgs(t, resp.Choices[0].Message.ToolCalls),
+		"allowlisted var value must reach the child from codellm's env")
+}
+
+// TestChatCompletions_NonAllowlistedEnvNotExposed proves the guard: a var present
+// in codellm's env but NOT on the expose-allowlist never reaches the child, even
+// when the request names it.
+func TestChatCompletions_NonAllowlistedEnvNotExposed(t *testing.T) {
+	t.Setenv("MY_SECRET", "s3cr3t")
+	srv := New(Config{
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
+		// MY_SECRET deliberately NOT allowlisted.
+		ExposeEnv: []string{"SOMETHING_ELSE"},
+	})
+	script := `printf '{"changes":[],"answer":"[%s]"}' "$MY_SECRET"`
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{
+		bashBody(script),
+		fleetEnvMsg([]string{"MY_SECRET"}, nil),
+		{Role: goopenai.ChatMessageRoleUser, Content: "Begin."},
+	})
+	resp := decodeResp(t, rec)
+	require.Equal(t, "[]", finishArgs(t, resp.Choices[0].Message.ToolCalls),
+		"non-allowlisted var must be absent from the child env")
 }

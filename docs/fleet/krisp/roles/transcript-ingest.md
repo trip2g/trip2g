@@ -13,18 +13,11 @@ import os
 import json
 import urllib.request
 
-# Post-cutover this runs in codellm, whose child env is scrubbed to
-# PATH+FLEET_INPUT. The KRISP_* credentials declared in env_passthrough are
-# delivered via the $FLEET_INPUT bag under "env" (see injectEnvPassthrough in
-# internal/fleet/handler.go), not the process env.
-bag = {}
-fleet_input = os.environ.get('FLEET_INPUT')
-if fleet_input and os.path.exists(fleet_input):
-    bag = json.loads(open(fleet_input).read() or '{}')
-env = bag.get('env', {})
-
-base_url = env['KRISP_BASE_URL'].rstrip('/')
-token = env['KRISP_TOKEN']
+# Runs in codellm. The KRISP_* vars named in env_passthrough ride the request as
+# NAMES only; codellm exposes them to this child from ITS OWN env (intersected
+# with codellm's expose-allowlist), so they arrive as ordinary env variables.
+base_url = os.environ['KRISP_BASE_URL'].rstrip('/')
+token = os.environ['KRISP_TOKEN']
 
 
 def api_post(path, payload):

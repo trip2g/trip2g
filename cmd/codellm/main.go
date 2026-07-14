@@ -47,6 +47,10 @@ func main() {
 		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
 		MaxStdoutBytes:  cfg.MaxStdoutBytes,
 		Timeout:         cfg.Timeout,
+		// Secret VALUES live here (codellm's own env); a request supplies only
+		// NAMES, intersected with this allowlist before exposure to the child.
+		ExposeEnv:       cfg.ExposeEnv,
+		ExposeEnvPrefix: cfg.ExposeEnvPrefix,
 		// codellm's own OpenAI-standard api_key (Authorization: Bearer <api_key>),
 		// constant-time compared. An empty CODELLM_API_KEY disables key auth
 		// (fail-safe), leaving the browser delegated-admin gate as the only way in.
