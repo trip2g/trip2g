@@ -49,22 +49,12 @@
 }
 {{ end }}
 
-{{ block @lid() }}
-{{ yield section_header(lhs="from zero to live site", rhs="3 steps · about a minute") }}
-<div class="how-diag" aria-hidden="true">
-  <div><img src="{{ asset("./step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-  <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-  <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
-</div>
-<div class="how">{{ yield mesh_section(path="_index_getting_started.md") }}</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="от нуля до живого сайта", rhs="3 шага · около минуты") }}
+{{ block @lid(s_lhs="from zero to live site", s_rhs="3 steps · about a minute", note="_index_getting_started.md") }}
+{{ yield section_header(lhs=s_lhs, rhs=s_rhs) }}
 <div class="how-diag" aria-hidden="true">
   <div><img src="{{ asset("step-install.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
   <div><img src="{{ asset("step-connect.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
   <div><img src="{{ asset("step-federate.svg") }}" alt="" width="200" height="100" loading="lazy"></div>
 </div>
-<div class="how">{{ yield mesh_section(path="ru/_index_getting_started.md") }}</div>
+<div class="how">{{ yield mesh_section(path=note) }}</div>
 {{ end }}

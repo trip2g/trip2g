@@ -33,81 +33,37 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(lang="en", about="Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.", start_label="start →", start_href="/en/user/getting_started", philosophy_label="Philosophy", docs_label="Docs", contact_label="Contact") }}
 <footer class="@did">
   <div>
     <h4 class="@did__heading">// trip2g</h4>
-    <p class="@did__about">Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.</p>
-    {{yield mesh_button(label="start →", href="/en/user/getting_started", variant="primary", modifier="@did__cta")}}
+    <p class="@did__about">{{ about }}</p>
+    {{yield mesh_button(label=start_label, href=start_href, variant="primary", modifier="@did__cta")}}
   </div>
   <div>
-    <h4 class="@did__heading">Philosophy</h4>
+    <h4 class="@did__heading">{{ philosophy_label }}</h4>
     <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/knowledge_graph">/knowledge_graph</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/three_zones">/three_zones</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/why_not_book">/why_not_book</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/universality_tax">/universality_tax</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/thoughts/paths_not_taken">/paths_not_taken</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/knowledge_graph">/knowledge_graph</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/three_zones">/three_zones</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/why_not_book">/why_not_book</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/universality_tax">/universality_tax</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/thoughts/paths_not_taken">/paths_not_taken</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="@did__heading">Docs</h4>
+    <h4 class="@did__heading">{{ docs_label }}</h4>
     <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/en/agent">/personal-agent</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/getting_started">/getting-started</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/federation">/federation</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/telegram">/telegram</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/user/webhooks">/webhooks</a></li>
-      <li class="@did__item"><a class="@did__link" href="/en/changelog">/changelog</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/agent">/personal-agent</a></li>
+      <li class="@did__item"><a class="@did__link" href="{{ start_href }}">/getting-started</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/user/federation">/federation</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/user/telegram">/telegram</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/user/webhooks">/webhooks</a></li>
+      <li class="@did__item"><a class="@did__link" href="/{{ lang }}/changelog">/changelog</a></li>
     </ul>
   </div>
   <div>
-    <h4 class="@did__heading">Contact</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
-      <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
-    </ul>
-  </div>
-</footer>
-<div class="@did__coda">
-  <span>© trip2g.com · 2025–2026 · MIT</span>
-  <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-<footer class="@did">
-  <div>
-    <h4 class="@did__heading">// trip2g</h4>
-    <p class="@did__about">Open source сеть знаний. Храните заметки где хотите — агент находит ответы по вашим базам и базам людей которым вы доверяете.</p>
-    {{yield mesh_button(label="начать →", href="/ru/user/nachalo_rabotyi", variant="primary", modifier="@did__cta")}}
-  </div>
-  <div>
-    <h4 class="@did__heading">Философия</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/knowledge_graph">/knowledge_graph</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/three_zones">/three_zones</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/why_not_book">/why_not_book</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/digital_sovereignty">/digital_sovereignty</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/universality_tax">/universality_tax</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/thoughts/paths_not_taken">/paths_not_taken</a></li>
-    </ul>
-  </div>
-  <div>
-    <h4 class="@did__heading">Документация</h4>
-    <ul class="@did__list">
-      <li class="@did__item"><a class="@did__link" href="/ru/agent">/personal-agent</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/user/nachalo_rabotyi">/getting-started</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/user/federation">/federation</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/user/telegram">/telegram</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/user/webhooks">/webhooks</a></li>
-      <li class="@did__item"><a class="@did__link" href="/ru/changelog">/changelog</a></li>
-    </ul>
-  </div>
-  <div>
-    <h4 class="@did__heading">Контакты</h4>
+    <h4 class="@did__heading">{{ contact_label }}</h4>
     <ul class="@did__list">
       <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
       <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>

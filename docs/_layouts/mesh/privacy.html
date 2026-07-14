@@ -44,48 +44,22 @@
 }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(title="Data lives where<br>you put it.", p1="trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics pixel, no shadow copy of your notes on someone else's box.", p2="Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.", k1="storage", v1="your disk · your S3 · or our 100MB sandbox", k2="access", v2="per-base toggle · pause anytime", k3="peers", v3="opt-in only · revocable trust", k4="network", v4="direct hub ⇄ hub · no relay", k5="code", v5="MIT · audit, fork, run") }}
 <section class="@did">
   <div class="@did__text">
-    <h2 class="@did__title">Data lives where<br>you put it.</h2>
+    <h2 class="@did__title">{{ title }}</h2>
     <p class="@did__p">
-      trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics
-      pixel, no shadow copy of your notes on someone else's box.
+      {{ p1 }}
     </p>
     <p class="@did__p">
-      Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.
-    </p>
-    <ul class="@did__list">
-      <li class="@did__item"><span class="@did__item-key">storage</span><span>your disk · your S3 · or our 100MB sandbox</span></li>
-      <li class="@did__item"><span class="@did__item-key">access</span><span>per-base toggle · pause anytime</span></li>
-      <li class="@did__item"><span class="@did__item-key">peers</span><span>opt-in only · revocable trust</span></li>
-      <li class="@did__item"><span class="@did__item-key">network</span><span>direct hub ⇄ hub · no relay</span></li>
-      <li class="@did__item"><span class="@did__item-key">code</span><span>MIT · audit, fork, run</span></li>
-    </ul>
-  </div>
-  <div class="@did__diag" aria-hidden="true">
-    <img src="{{ asset("privacy-perimeter.svg") }}" alt="" width="360" height="280" loading="lazy">
-  </div>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
-  <div class="@did__text">
-    <h2 class="@did__title">Данные хранятся там,<br>где вы решите.</h2>
-    <p class="@did__p">
-      trip2g — это протокол, а не вендор. Нет центрального сервера, от которого вы зависите,
-      нет пикселя аналитики, нет теневой копии ваших заметок на чужом сервере.
-    </p>
-    <p class="@did__p">
-      Каждый хаб владеет своими данными и сам решает — по каждому подключению и каждой базе — что доступно для запросов, а что нет.
+      {{ p2 }}
     </p>
     <ul class="@did__list">
-      <li class="@did__item"><span class="@did__item-key">хранение</span><span>ваш диск · ваш S3 · или наш sandbox 100MB</span></li>
-      <li class="@did__item"><span class="@did__item-key">доступ</span><span>переключатель на уровне базы · пауза в любой момент</span></li>
-      <li class="@did__item"><span class="@did__item-key">peer'ы</span><span>только по согласию · доверие отзывается</span></li>
-      <li class="@did__item"><span class="@did__item-key">сеть</span><span>прямое hub ⇄ hub · без relay</span></li>
-      <li class="@did__item"><span class="@did__item-key">код</span><span>MIT · аудит, форк, запуск</span></li>
+      <li class="@did__item"><span class="@did__item-key">{{ k1 }}</span><span>{{ v1 }}</span></li>
+      <li class="@did__item"><span class="@did__item-key">{{ k2 }}</span><span>{{ v2 }}</span></li>
+      <li class="@did__item"><span class="@did__item-key">{{ k3 }}</span><span>{{ v3 }}</span></li>
+      <li class="@did__item"><span class="@did__item-key">{{ k4 }}</span><span>{{ v4 }}</span></li>
+      <li class="@did__item"><span class="@did__item-key">{{ k5 }}</span><span>{{ v5 }}</span></li>
     </ul>
   </div>
   <div class="@did__diag" aria-hidden="true">

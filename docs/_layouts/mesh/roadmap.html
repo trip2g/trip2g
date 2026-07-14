@@ -55,59 +55,30 @@
 }
 {{ end }}
 
-{{ block @lid() }}
-{{ yield section_header(lhs="roadmap", rhs="v0.3 · feedback driven · public") }}
+{{ block @lid(s_lhs="roadmap", s_rhs="v0.3 · feedback driven · public", shipped_label="shipped", progress_label="in progress", planned_label="planned", a1="Self-hosted hub", a1s="docker · MIT", a2="Obsidian two-way sync", a2s="vault ⇄ hub", a3="MCP federation", a3s="hub ⇄ hub", a4="Per-base connect / pause", a4s="granular trust", a5="Telegram publishing", a5s="vault → channel", b1="Hosted sandbox · 100MB", b1s="simplecloud.2pub.me", b2="Trust scopes &amp; audit log", b2s="per-peer permissions", b3="Webhooks · cron", b3s="events out", c1="Org-grade SSO &amp; SCIM", c1s="company internal", c2="Encrypted-at-rest vaults", c2s="e2e for sensitive bases", c3="Mesh registry", c3s="discover public-by-choice peers") }}
+{{ yield section_header(lhs=s_lhs, rhs=s_rhs) }}
 <div class="roadmap">
-  {{ yield roadmap_col(cls="shipped", label="shipped") content }}
+  {{ yield roadmap_col(cls="shipped", label=shipped_label) content }}
     <ul>
-      <li>Self-hosted hub <small>docker · MIT</small></li>
-      <li>Obsidian two-way sync <small>vault ⇄ hub</small></li>
-      <li>MCP federation <small>hub ⇄ hub</small></li>
-      <li>Per-base connect / pause <small>granular trust</small></li>
-      <li>Telegram publishing <small>vault → channel</small></li>
+      <li>{{ a1 }} <small>{{ a1s }}</small></li>
+      <li>{{ a2 }} <small>{{ a2s }}</small></li>
+      <li>{{ a3 }} <small>{{ a3s }}</small></li>
+      <li>{{ a4 }} <small>{{ a4s }}</small></li>
+      <li>{{ a5 }} <small>{{ a5s }}</small></li>
     </ul>
   {{ end }}
-  {{ yield roadmap_col(cls="progress", label="in progress") content }}
+  {{ yield roadmap_col(cls="progress", label=progress_label) content }}
     <ul>
-      <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
-      <li>Trust scopes &amp; audit log <small>per-peer permissions</small></li>
-      <li>Webhooks · cron <small>events out</small></li>
+      <li>{{ b1 }} <small>{{ b1s }}</small></li>
+      <li>{{ b2 }} <small>{{ b2s }}</small></li>
+      <li>{{ b3 }} <small>{{ b3s }}</small></li>
     </ul>
   {{ end }}
-  {{ yield roadmap_col(cls="planned", label="planned") content }}
+  {{ yield roadmap_col(cls="planned", label=planned_label) content }}
     <ul>
-      <li>Org-grade SSO &amp; SCIM <small>company internal</small></li>
-      <li>Encrypted-at-rest vaults <small>e2e for sensitive bases</small></li>
-      <li>Mesh registry <small>discover public-by-choice peers</small></li>
-    </ul>
-  {{ end }}
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="роадмап", rhs="v0.3 · обратная связь · публично") }}
-<div class="roadmap">
-  {{ yield roadmap_col(cls="shipped", label="готово") content }}
-    <ul>
-      <li>Свой hub <small>docker · MIT</small></li>
-      <li>Двусторонняя синхронизация Obsidian <small>vault ⇄ hub</small></li>
-      <li>MCP federation <small>hub ⇄ hub</small></li>
-      <li>Подключение / пауза на уровне базы <small>гранулярное доверие</small></li>
-      <li>Публикация в Telegram <small>vault → канал</small></li>
-    </ul>
-  {{ end }}
-  {{ yield roadmap_col(cls="progress", label="в разработке") content }}
-    <ul>
-      <li>Hosted sandbox · 100MB <small>simplecloud.2pub.me</small></li>
-      <li>Области доверия &amp; журнал аудита <small>права на уровне peer'а</small></li>
-      <li>Webhooks · cron <small>события наружу</small></li>
-    </ul>
-  {{ end }}
-  {{ yield roadmap_col(cls="planned", label="запланировано") content }}
-    <ul>
-      <li>SSO &amp; SCIM для организаций <small>внутри компании</small></li>
-      <li>Зашифрованные vault'ы <small>e2e для чувствительных баз</small></li>
-      <li>Реестр mesh <small>поиск публичных peer'ов</small></li>
+      <li>{{ c1 }} <small>{{ c1s }}</small></li>
+      <li>{{ c2 }} <small>{{ c2s }}</small></li>
+      <li>{{ c3 }} <small>{{ c3s }}</small></li>
     </ul>
   {{ end }}
 </div>

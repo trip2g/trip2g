@@ -55,20 +55,62 @@ That's it. Only `_blocks.html` needs an explicit import — it contains `index_l
 
 ## Components
 
-All components live in this directory. Each file defines a `@lid` (EN) and `@lid_ru` (RU) block plus a shared `_style_@lid` CSS block. Import the file and yield the block by its expanded name.
+All components live in this directory. Each file defines **one** `@lid` block plus a shared `_style_@lid` CSS block. Import the file and yield the block by its expanded name.
 
-| File | Block (EN) | Block (RU) | Description |
-|------|-----------|-----------|-------------|
-| `bar.html` | `mesh_bar` | `mesh_bar_ru` | Top navigation bar with ⌘K MCP hint modal |
-| `hero.html` | `mesh_hero` | `mesh_hero_ru` | Type-led hero: copy from the `_index_hero` note + CTA row |
-| `capabilities.html` | `mesh_capabilities` | `mesh_capabilities_ru` | 6-card capability grid, each card links to its docs guide |
-| `network.html` | `mesh_network` | `mesh_network_ru` | Federation payoff ("Join the network") + animated graph and trace frames |
-| `privacy.html` | `mesh_privacy` | `mesh_privacy_ru` | Data privacy section with SVG diagram |
-| `philo.html` | `mesh_philo` | `mesh_philo_ru` | Philosophy blurb |
-| `matrix.html` | `mesh_matrix` | `mesh_matrix_ru` | Red/blue pill matrix section |
-| `try_now.html` | `mesh_try_now` | `mesh_try_now_ru` | Try-now section with prompt box and steps |
-| `newsletter.html` | `mesh_newsletter` | `mesh_newsletter_ru` | Newsletter signup |
-| `foot.html` | `mesh_foot` | `mesh_foot_ru` | Footer with CTA and coda |
+**One block serves both languages.** There are no `@lid_ru` twins. The block declares its
+translatable strings as parameters with **English defaults**; `index.html` yields it bare
+(`{{ yield mesh_bar() }}`), and `ru_index.html` overrides the strings at the call site
+(`{{ yield mesh_bar(lang="ru", docs_label="Документация", …) }}`). See
+[Localization](#localization) below.
+
+| File | Block | Description |
+|------|-------|-------------|
+| `bar.html` | `mesh_bar` | Top navigation bar with ⌘K MCP hint modal |
+| `hero.html` | `mesh_hero` | Type-led hero: copy from the `_index_hero` note + CTA row |
+| `how.html` | `mesh_how` | "0 → live site" steps from the `_index_getting_started` note |
+| `capabilities.html` | `mesh_capabilities` | 6-card capability grid, copy from the `_index_capabilities` note |
+| `network.html` | `mesh_network` | Federation payoff (`_index_payoff` note) + animated graph and trace frames |
+| `privacy.html` | `mesh_privacy` | Data privacy section with SVG diagram |
+| `philo.html` | `mesh_philo` | Philosophy blurb |
+| `matrix.html` | `mesh_matrix` | Red/blue pill matrix section |
+| `cases.html` | `mesh_cases` | 4 topology use-case cards |
+| `roadmap.html` | `mesh_roadmap` | Shipped / in-progress / planned columns |
+| `try_now.html` | `mesh_try_now` | Try-now section with prompt box and steps |
+| `newsletter.html` | `mesh_newsletter` | Newsletter signup |
+| `docs_list.html` | `mesh_docs_list` | JS-populated `tree docs/` list |
+| `pricing.html` | `mesh_pricing` | 3 pricing cards |
+| `community.html` | `mesh_community` | Closed-community CTA (Russian only; no English twin — see Localization) |
+| `foot.html` | `mesh_foot` | Footer with CTA and coda |
+
+## Localization
+
+The landing renders in two languages from **one block per component**. Three mechanisms,
+in order of preference:
+
+1. **`lang` parameter.** Locale-dependent hrefs compose from it: `href="/{{ lang }}/user"`
+   in plain HTML, or `href="/"+lang+"/user"` inside a `{{ yield }}` argument. `index.html`
+   leaves `lang` at its `"en"` default; `ru_index.html` passes `lang="ru"`. A component
+   only declares `lang` when something actually derives from it (hrefs, asset names); pure
+   label/note components skip it.
+2. **String parameters with English defaults.** Every short label — nav text, headings,
+   CTA labels, section-header sides — is a block parameter defaulting to its English text.
+   `ru_index.html` overrides each with the Russian string. Non-mechanical hrefs (e.g.
+   `/en/user/getting_started` vs `/ru/user/nachalo_rabotyi`) are parameters too.
+3. **Markdown notes for paragraph copy.** Where a component's copy is prose with no
+   load-bearing element classes (hero, how, capabilities, network), it lives in a hidden
+   `_index_*.md` note pair (see [Where the landing copy lives](#where-the-landing-copy-lives))
+   and the block takes the note path as a parameter (`note="ru/_index_hero.md"`).
+
+**When copy stays in the template as parameters, not a note:** if the markup carries BEM
+element classes or structure the Markdown→HTML round-trip can't reproduce (`<dl>`, `<pre>`
+with token spans, `<kbd>`, styled inline links, ASCII art, status columns), moving it to a
+note would drop those classes and change the page. Keep it in the template and parametrize
+the strings instead.
+
+**Genuinely different structure** (not just text) between EN and RU → a small
+`{{ if lang == "ru" }}…{{ end }}` around only the differing fragment, as a documented
+exception. `community.html` is Russian-only (no English counterpart), so it is a single
+`@lid` block with hardcoded Russian copy, yielded as `mesh_community()` from `ru_index.html`.
 
 ## Shared blocks (`_blocks.html`)
 
@@ -117,22 +159,17 @@ When writing a new component file, use these placeholders — they are expanded 
 .@did__body {  }
 {{ end }}
 
-{{ block @lid() }}
+{{ block @lid(title="Title", body="Body text.") }}
 <section class="@did">
-  <h2 class="@did__title">Title</h2>
-  <p class="@did__body">Body text.</p>
-</section>
-{{ end }}
-
-{{ block @lid_ru() }}
-<section class="@did">
-  <h2 class="@did__title">Заголовок</h2>
-  <p class="@did__body">Текст.</p>
+  <h2 class="@did__title">{{ title }}</h2>
+  <p class="@did__body">{{ body }}</p>
 </section>
 {{ end }}
 ```
 
-Save as `_layouts/mesh/mycomponent.html`, import it in the page, and yield `mesh_mycomponent()`.
+One block, English defaults. Save as `_layouts/mesh/mycomponent.html`, import it in the
+page, and yield `mesh_mycomponent()`. The Russian page overrides the strings:
+`{{ yield mesh_mycomponent(title="Заголовок", body="Текст.") }}`.
 
 ## Agent instructions: generating a landing page
 
@@ -182,20 +219,16 @@ You can also add custom sections inline between yields using the shared blocks f
 Each component file (`bar.html`, `hero.html`, etc.) is a self-contained BEM block:
 
 ```
-{{ block _style_@lid() }}   ← CSS for this component, scoped to .@did
+{{ block _style_@lid() }}          ← CSS for this component, scoped to .@did
   .@did { ... }
   .@did__nav { ... }
   .@did__nav-link--key { ... }
 {{ end }}
 
-{{ block @lid() }}           ← EN HTML
+{{ block @lid(lang="en", …) }}     ← one block, English defaults; RU overrides at call site
   <header class="@did">
     <nav class="@did__nav">...</nav>
   </header>
-{{ end }}
-
-{{ block @lid_ru() }}        ← RU HTML (same structure, Russian text)
-  ...
 {{ end }}
 ```
 
@@ -334,7 +367,7 @@ No build step. No config. Reload the vault and the page is live.
 
 ### Key principles
 
-1. **One file = one component.** CSS, HTML (EN), HTML (RU) all in one `.html` file.
+1. **One file = one component = one block.** CSS and a single bilingual `@lid` block (English defaults + `lang`/string parameters the Russian page overrides) live in one `.html` file.
 2. **`@lid` for block names, `@did` for CSS classes.** Preprocessor variables — no manual renaming when copying components.
 3. **`yield_blocks` collects CSS automatically.** Place `<style>{{ yield_blocks("_style_") }}</style>` once at end of body. Only CSS for used components is emitted.
 4. **Modifier = BEM mixin.** Pass `modifier="parent-block__child"` to inject a component into a parent's layout context without breaking its own BEM scope.

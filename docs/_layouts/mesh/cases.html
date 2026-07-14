@@ -60,8 +60,8 @@
 }
 {{ end }}
 
-{{ block @lid() }}
-{{ yield section_header(lhs="who is this for", rhs="4 patterns · same protocol") }}
+{{ block @lid(s_lhs="who is this for", s_rhs="4 patterns · same protocol", role_label="Role", setup_label="Setup", outcome_label="Outcome", h1="One person, many bases", d1a="Researcher or learner with knowledge scattered across Obsidian, books, courses, saved articles.", d1b="One hub. Each book, course, project = a separate base. Add when you start, pause when you finish.", d1c="One question to your agent — answers from everything you've ever read, with sources.", h2="Private network, 3–5 peers", d2a="A small trusted circle — co-readers, study partners, building together.", d2b="Each person runs their own hub. All hubs connect to all hubs. Per-base trust.", d2c="One agent question reaches the union of everyone's knowledge — no SaaS in the middle.", h3="Star: company + employees", d3a="Org with shared docs + each employee's working notes. Roles, scopes, retention.", d3b="One central hub holds canon. Each employee runs (or rents) a personal hub that peers with the center.", d3c="Onboarding answers, project history, tribal knowledge — queryable, but per-vault access stays granular.", h4="Two companies, one bridge", d4a="Partner orgs that need to share a slice — research, supply chain, joint projects.", d4b="Each company keeps its star intact. The two central hubs peer with scoped, audited access.", d4c="Shared knowledge without merging systems, exporting data, or signing into a third party.") }}
+{{ yield section_header(lhs=s_lhs, rhs=s_rhs) }}
 <div class="cases">
 
   <article class="case">
@@ -71,11 +71,11 @@
     </div>
     <div class="case-body">
       <div class="case-tag">[01] solo</div>
-      <h3 class="case-h">One person, many bases</h3>
+      <h3 class="case-h">{{ h1 }}</h3>
       <dl class="case-rows">
-        <dt>Role</dt><dd>Researcher or learner with knowledge scattered across Obsidian, books, courses, saved articles.</dd>
-        <dt>Setup</dt><dd>One hub. Each book, course, project = a separate base. Add when you start, pause when you finish.</dd>
-        <dt>Outcome</dt><dd>One question to your agent — answers from everything you've ever read, with sources.</dd>
+        <dt>{{ role_label }}</dt><dd>{{ d1a }}</dd>
+        <dt>{{ setup_label }}</dt><dd>{{ d1b }}</dd>
+        <dt>{{ outcome_label }}</dt><dd>{{ d1c }}</dd>
       </dl>
     </div>
   </article>
@@ -87,11 +87,11 @@
     </div>
     <div class="case-body">
       <div class="case-tag">[02] friends</div>
-      <h3 class="case-h">Private network, 3–5 peers</h3>
+      <h3 class="case-h">{{ h2 }}</h3>
       <dl class="case-rows">
-        <dt>Role</dt><dd>A small trusted circle — co-readers, study partners, building together.</dd>
-        <dt>Setup</dt><dd>Each person runs their own hub. All hubs connect to all hubs. Per-base trust.</dd>
-        <dt>Outcome</dt><dd>One agent question reaches the union of everyone's knowledge — no SaaS in the middle.</dd>
+        <dt>{{ role_label }}</dt><dd>{{ d2a }}</dd>
+        <dt>{{ setup_label }}</dt><dd>{{ d2b }}</dd>
+        <dt>{{ outcome_label }}</dt><dd>{{ d2c }}</dd>
       </dl>
     </div>
   </article>
@@ -103,11 +103,11 @@
     </div>
     <div class="case-body">
       <div class="case-tag">[03] company internal</div>
-      <h3 class="case-h">Star: company + employees</h3>
+      <h3 class="case-h">{{ h3 }}</h3>
       <dl class="case-rows">
-        <dt>Role</dt><dd>Org with shared docs + each employee's working notes. Roles, scopes, retention.</dd>
-        <dt>Setup</dt><dd>One central hub holds canon. Each employee runs (or rents) a personal hub that peers with the center.</dd>
-        <dt>Outcome</dt><dd>Onboarding answers, project history, tribal knowledge — queryable, but per-vault access stays granular.</dd>
+        <dt>{{ role_label }}</dt><dd>{{ d3a }}</dd>
+        <dt>{{ setup_label }}</dt><dd>{{ d3b }}</dd>
+        <dt>{{ outcome_label }}</dt><dd>{{ d3c }}</dd>
       </dl>
     </div>
   </article>
@@ -119,82 +119,11 @@
     </div>
     <div class="case-body">
       <div class="case-tag">[04] b2b mesh</div>
-      <h3 class="case-h">Two companies, one bridge</h3>
+      <h3 class="case-h">{{ h4 }}</h3>
       <dl class="case-rows">
-        <dt>Role</dt><dd>Partner orgs that need to share a slice — research, supply chain, joint projects.</dd>
-        <dt>Setup</dt><dd>Each company keeps its star intact. The two central hubs peer with scoped, audited access.</dd>
-        <dt>Outcome</dt><dd>Shared knowledge without merging systems, exporting data, or signing into a third party.</dd>
-      </dl>
-    </div>
-  </article>
-
-</div>
-{{ end }}
-
-{{ block @lid_ru() }}
-{{ yield section_header(lhs="для кого это", rhs="4 паттерна · один протокол") }}
-<div class="cases">
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · solo</div>
-      <img src="{{ asset("topo-solo.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[01] solo</div>
-      <h3 class="case-h">Один человек, много баз</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Исследователь или учащийся — знания разбросаны по Obsidian, книгам, курсам, сохранённым статьям.</dd>
-        <dt>Настройка</dt><dd>Один хаб. Каждая книга, курс, проект — отдельная база. Добавь когда начинаешь, поставь на паузу когда заканчиваешь.</dd>
-        <dt>Результат</dt><dd>Один вопрос агенту — ответы из всего что вы когда-либо читали, с источниками.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · friends</div>
-      <img src="{{ asset("topo-friends.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[02] friends</div>
-      <h3 class="case-h">Приватная сеть, 3–5 участников</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Небольшой доверенный круг — совместные читатели, напарники по учёбе, командная работа.</dd>
-        <dt>Настройка</dt><dd>Каждый запускает свой хаб. Все хабы связаны друг с другом. Доступ настраивается на уровне базы.</dd>
-        <dt>Результат</dt><dd>Один вопрос агенту — ответ из объединённых знаний всей группы, без SaaS посередине.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · company</div>
-      <img src="{{ asset("topo-company.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[03] company internal</div>
-      <h3 class="case-h">Звезда: компания + сотрудники</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Организация с общими документами и личными рабочими заметками сотрудников. Роли, области доступа, хранение.</dd>
-        <dt>Настройка</dt><dd>Один центральный hub хранит канонические данные. Каждый сотрудник запускает (или арендует) личный hub, связанный с центром.</dd>
-        <dt>Результат</dt><dd>Онбординг, история проектов, неформальные знания — всё доступно для запросов, но доступ к каждому vault остаётся гранулярным.</dd>
-      </dl>
-    </div>
-  </article>
-
-  <article class="case">
-    <div class="case-topo">
-      <div class="case-topo-label">topology · b2b</div>
-      <img src="{{ asset("topo-b2b.svg") }}" alt="" width="200" height="130" loading="lazy">
-    </div>
-    <div class="case-body">
-      <div class="case-tag">[04] b2b mesh</div>
-      <h3 class="case-h">Две компании, один мост</h3>
-      <dl class="case-rows">
-        <dt>Роль</dt><dd>Партнёрские организации, которым нужно обменяться частью данных — исследования, цепочки поставок, совместные проекты.</dd>
-        <dt>Настройка</dt><dd>Каждая компания сохраняет свою звезду. Два центральных hub'а связаны через ограниченный, аудируемый доступ.</dd>
-        <dt>Результат</dt><dd>Общие знания без слияния систем, экспорта данных и входа в сторонний сервис.</dd>
+        <dt>{{ role_label }}</dt><dd>{{ d4a }}</dd>
+        <dt>{{ setup_label }}</dt><dd>{{ d4b }}</dd>
+        <dt>{{ outcome_label }}</dt><dd>{{ d4c }}</dd>
       </dl>
     </div>
   </article>
