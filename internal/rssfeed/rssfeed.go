@@ -189,22 +189,10 @@ func buildItem(l link, publicURL string, notes *model.NoteViews) RSSItem {
 	return item
 }
 
-// IsPubliclyReadable reports whether a note may be exposed through an
-// unauthenticated endpoint. RSS has no user context, so it must honor the same
-// static gates as anonymous page rendering rather than relying on Free alone.
+// IsPubliclyReadable delegates to model.NoteView.IsPubliclyReadable so the RSS
+// middleware and template feeds share one anonymous-access gate.
 func IsPubliclyReadable(note *model.NoteView) bool {
-	if note == nil || !note.Free {
-		return false
-	}
-	if strings.HasSuffix(note.Path, ".html") || note.IsSystem() {
-		return false
-	}
-	for _, subgraph := range note.Subgraphs {
-		if subgraph != nil && subgraph.RequireSignin {
-			return false
-		}
-	}
-	return true
+	return note.IsPubliclyReadable()
 }
 
 // textContent extracts plain text from an AST node's children.
