@@ -2,7 +2,9 @@ package submitform_test
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"trip2g/internal/case/submitform"
 	"trip2g/internal/formspec"
@@ -14,6 +16,7 @@ import (
 
 func TestResolve_form_not_found(t *testing.T) {
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return nil, nil
 		},
@@ -28,12 +31,93 @@ func TestResolve_form_not_found(t *testing.T) {
 	require.Equal(t, "form_not_found", errP.Message)
 }
 
+func TestResolve_unreadable_note_denied_opaquely(t *testing.T) {
+	specCalled := false
+	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return false, nil },
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			specCalled = true
+			return &formspec.FormSpec{CanSubmit: formspec.CanSubmitGuest}, nil
+		},
+		RequestIPFunc: func(ctx context.Context) string { return "1.2.3.4" },
+		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
+	}
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{NoteVersionID: 42})
+	require.NoError(t, err)
+	errP, ok := payload.(*gmodel.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", payload)
+	// Same shape as a nonexistent form — does not confirm the note exists.
+	require.Equal(t, "form_not_found", errP.Message)
+	require.False(t, specCalled, "spec must not be fetched for an unreadable note")
+	require.Empty(t, env.InsertFormSubmitCalls())
+}
+
+func TestResolve_default_field_cap_without_max_length(t *testing.T) {
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitGuest,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText}}, // no max_length
+	}
+	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		RequestIPFunc: func(ctx context.Context) string { return "" },
+		UserIDFunc:    func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:   func(ctx context.Context) bool { return false },
+	}
+	oversized := strings.Repeat("a", 8193)
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &oversized}},
+	})
+	require.NoError(t, err)
+	errP, ok := payload.(*gmodel.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", payload)
+	require.Contains(t, errP.Message, "too long")
+	require.Empty(t, env.InsertFormSubmitCalls())
+}
+
+func TestResolve_length_counts_runes_not_bytes(t *testing.T) {
+	maxLen := 5
+	spec := &formspec.FormSpec{
+		CanSubmit: formspec.CanSubmitGuest,
+		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, MaxLength: &maxLen}},
+	}
+	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
+		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
+			return spec, nil
+		},
+		InsertFormSubmitFunc: func(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
+			return 5, nil
+		},
+		InsertFormStringValueFunc:      func(ctx context.Context, submitID int64, fieldName, value string) error { return nil },
+		EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error { return nil },
+		RequestIPFunc:                  func(ctx context.Context) string { return "" },
+		UserIDFunc:                     func(ctx context.Context) *int64 { return nil },
+		IsAdminFunc:                    func(ctx context.Context) bool { return false },
+	}
+	// 5 multibyte runes = 10 bytes. Byte counting would reject; rune counting accepts.
+	fiveRunes := "привет"[:10] // "приве" is 5 runes / 10 bytes
+	require.Equal(t, 5, utf8.RuneCountInString(fiveRunes))
+	payload, err := submitform.Resolve(context.Background(), env, submitform.Input{
+		NoteVersionID: 1,
+		Fields:        []submitform.FieldValue{{Name: "msg", StringValue: &fiveRunes}},
+	})
+	require.NoError(t, err)
+	_, ok := payload.(*gmodel.SubmitFormPayload)
+	require.True(t, ok, "expected SubmitFormPayload (5 runes within max=5), got %T", payload)
+}
+
 func TestResolve_required_field_missing(t *testing.T) {
 	spec := &formspec.FormSpec{
 		CanSubmit: formspec.CanSubmitGuest,
 		Fields:    []formspec.FormField{{Name: "email", Type: formspec.FieldTypeEmail, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -57,6 +141,7 @@ func TestResolve_file_type_not_supported(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "attach", Type: formspec.FieldTypeFile}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -92,6 +177,7 @@ func TestResolve_success(t *testing.T) {
 	var emailEnqueued bool
 
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -144,6 +230,7 @@ func TestResolve_can_submit_admin_denies_non_admin(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -169,6 +256,7 @@ func TestResolve_can_submit_admin_allows_admin(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -198,6 +286,7 @@ func TestResolve_can_submit_paid_user_not_implemented(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -223,6 +312,7 @@ func TestResolve_turnstile_required_when_missing_token(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},
@@ -252,6 +342,7 @@ func TestResolve_turnstile_passes_with_valid_token(t *testing.T) {
 		Fields:    []formspec.FormField{{Name: "msg", Type: formspec.FieldTypeText, Required: true}},
 	}
 	env := &EnvMock{
+		CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) { return true, nil },
 		GetFormSpecFunc: func(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error) {
 			return spec, nil
 		},

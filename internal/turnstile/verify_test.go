@@ -15,6 +15,13 @@ func TestClient_EmptySecretSkips(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestClient_SiteKeySetSecretEmptyFailsClosed(t *testing.T) {
+	c := New(Config{SiteKey: "site-key", SecretKey: ""})
+	err := c.VerifyCaptcha(context.Background(), "some-token", "1.2.3.4")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "misconfigured")
+}
+
 func TestClient_EmptyTokenFails(t *testing.T) {
 	c := New(Config{SecretKey: "secret"})
 	err := c.VerifyCaptcha(context.Background(), "", "1.2.3.4")

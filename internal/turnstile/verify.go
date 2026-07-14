@@ -33,10 +33,16 @@ func New(config Config) *Client {
 
 // VerifyCaptcha verifies a Turnstile token.
 // Returns nil on success, error on failure.
-// If SecretKey is empty, verification is skipped (dev mode).
+// Empty secret is a no-op ONLY when Turnstile is fully unconfigured (no site key
+// either) — genuine local dev. If a site key is configured but the secret is
+// empty, Turnstile is expected but misconfigured: fail closed instead of
+// silently passing every submit.
 func (c *Client) VerifyCaptcha(ctx context.Context, token, remoteIP string) error {
 	if c.config.SecretKey == "" {
-		return nil // skip in dev
+		if c.config.SiteKey != "" {
+			return errors.New("turnstile misconfigured: site key set but secret key empty")
+		}
+		return nil // dev/off: neither key configured
 	}
 
 	if token == "" {
