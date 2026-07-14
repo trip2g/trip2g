@@ -6,10 +6,6 @@ package fleetgql
 
 import (
 	"context"
-	"path"
-	"strings"
-
-	"trip2g/internal/fleet"
 	"trip2g/internal/fleet/fleetgql/fleetgen"
 	"trip2g/internal/fleet/fleetgql/model"
 	"trip2g/internal/fleet/graph"
@@ -27,65 +23,17 @@ func (r *queryResolver) Roles(ctx context.Context) ([]model.Role, error) {
 
 // RoleGraph is the resolver for the roleGraph field.
 func (r *queryResolver) RoleGraph(ctx context.Context) (*model.RoleGraph, error) {
-	parsed, _ := r.roles.DiscoverParsed(ctx)
-	return toModelRoleGraph(graph.DeriveRoleGraph(parsed)), nil
+	parsed, errs := r.roles.DiscoverParsed(ctx)
+	return toModelRoleGraph(graph.DeriveRoleGraph(parsed), errStrings(errs)), nil
+}
+
+// RoleParseErrors is the resolver for the roleParseErrors field.
+func (r *queryResolver) RoleParseErrors(ctx context.Context) ([]string, error) {
+	_, errs := r.roles.DiscoverParsed(ctx)
+	return toErrStrings(errStrings(errs)), nil // toErrStrings: non-null list must never be nil
 }
 
 // Query returns fleetgen.QueryResolver implementation.
 func (r *Resolver) Query() fleetgen.QueryResolver { return &queryResolver{r} }
 
 type queryResolver struct{ *Resolver }
-
-// toModelRole projects a parsed fleet.Role onto the GraphQL Role. executor ""
-// is reported as its effective default "llm"; an empty model is null.
-func toModelRole(role fleet.Role) model.Role {
-	executor := role.Executor
-	if executor == "" {
-		executor = "llm"
-	}
-	var modelPtr *string
-	if role.Model != "" {
-		m := role.Model
-		modelPtr = &m
-	}
-	return model.Role{
-		Name:           roleName(role.NotePath),
-		Path:           role.NotePath,
-		Executor:       executor,
-		Model:          modelPtr,
-		TriggerOn:      role.TriggerOn,
-		TriggerInclude: role.TriggerInclude,
-		TriggerExclude: role.TriggerExclude,
-		ReadPatterns:   role.ReadPatterns,
-		WritePatterns:  role.WritePatterns,
-	}
-}
-
-// roleName is the note's base filename without its .md extension.
-func roleName(notePath string) string {
-	return strings.TrimSuffix(path.Base(notePath), ".md")
-}
-
-// toModelRoleGraph maps the derived graph.RoleGraph onto the GraphQL types.
-func toModelRoleGraph(g graph.RoleGraph) *model.RoleGraph {
-	nodes := make([]model.GraphNode, 0, len(g.Nodes))
-	for _, n := range g.Nodes {
-		nodes = append(nodes, model.GraphNode{
-			Role:       n.Role,
-			InboxGlob:  n.InboxGlob,
-			OutboxGlob: n.OutboxGlob,
-			Orphan:     n.Orphan,
-		})
-	}
-	edges := make([]model.GraphEdge, 0, len(g.Edges))
-	for _, e := range g.Edges {
-		edges = append(edges, model.GraphEdge{
-			From:       e.From,
-			To:         e.To,
-			Kind:       model.EdgeKind(e.Kind),
-			Exact:      e.Exact,
-			CutByDepth: e.CutByDepth,
-		})
-	}
-	return &model.RoleGraph{Nodes: nodes, Edges: edges, Cycles: g.Cycles}
-}

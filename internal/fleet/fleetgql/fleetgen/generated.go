@@ -50,6 +50,7 @@ type ComplexityRoot struct {
 type QueryResolver interface {
 	Roles(ctx context.Context) ([]model.Role, error)
 	RoleGraph(ctx context.Context) (*model.RoleGraph, error)
+	RoleParseErrors(ctx context.Context) ([]string, error)
 }
 
 type executableSchema struct {
@@ -189,7 +190,10 @@ type GraphEdge {
   from: String!
   to: String!
   kind: EdgeKind!
-  exact: Boolean! # false when the glob overlap was approximated
+  # v1: graph.Overlap is exact for the role-frontmatter glob subset (literals,
+  # *, ?, [...], **, {a,b}); always true today. Reserved for a future
+  # approximating matcher that would need to report non-exact decisions.
+  exact: Boolean!
   cutByDepth: Boolean! # edge the webhook max_depth guard would sever (always false in v1)
 }
 
@@ -197,11 +201,15 @@ type RoleGraph {
   nodes: [GraphNode!]!
   edges: [GraphEdge!]!
   cycles: [[String!]!]! # SCCs over TRIGGER edges (runaway-loop feedback)
+  parseErrors: [String!]! # role notes that failed to parse (excluded from nodes/edges)
 }
 
 type Query {
   roles: [Role!]!
   roleGraph: RoleGraph!
+  # Role notes that failed to parse and are excluded from ` + "`" + `roles` + "`" + `. Debugging
+  # surface: a role that fails to parse must stay visible, not vanish silently.
+  roleParseErrors: [String!]!
 }
 `, BuiltIn: false},
 }
@@ -614,8 +622,39 @@ func (ec *executionContext) fieldContext_Query_roleGraph(_ context.Context, fiel
 				return ec.fieldContext_RoleGraph_edges(ctx, field)
 			case "cycles":
 				return ec.fieldContext_RoleGraph_cycles(ctx, field)
+			case "parseErrors":
+				return ec.fieldContext_RoleGraph_parseErrors(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RoleGraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_roleParseErrors(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_roleParseErrors,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().RoleParseErrors(ctx)
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_roleParseErrors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1087,6 +1126,35 @@ func (ec *executionContext) _RoleGraph_cycles(ctx context.Context, field graphql
 }
 
 func (ec *executionContext) fieldContext_RoleGraph_cycles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RoleGraph",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RoleGraph_parseErrors(ctx context.Context, field graphql.CollectedField, obj *model.RoleGraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RoleGraph_parseErrors,
+		func(ctx context.Context) (any, error) {
+			return obj.ParseErrors, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RoleGraph_parseErrors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RoleGraph",
 		Field:      field,
@@ -2729,6 +2797,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "roleParseErrors":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_roleParseErrors(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -2859,6 +2949,11 @@ func (ec *executionContext) _RoleGraph(ctx context.Context, sel ast.SelectionSet
 			}
 		case "cycles":
 			out.Values[i] = ec._RoleGraph_cycles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "parseErrors":
+			out.Values[i] = ec._RoleGraph_parseErrors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

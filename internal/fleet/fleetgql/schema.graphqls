@@ -29,7 +29,10 @@ type GraphEdge {
   from: String!
   to: String!
   kind: EdgeKind!
-  exact: Boolean! # false when the glob overlap was approximated
+  # v1: graph.Overlap is exact for the role-frontmatter glob subset (literals,
+  # *, ?, [...], **, {a,b}); always true today. Reserved for a future
+  # approximating matcher that would need to report non-exact decisions.
+  exact: Boolean!
   cutByDepth: Boolean! # edge the webhook max_depth guard would sever (always false in v1)
 }
 
@@ -37,9 +40,13 @@ type RoleGraph {
   nodes: [GraphNode!]!
   edges: [GraphEdge!]!
   cycles: [[String!]!]! # SCCs over TRIGGER edges (runaway-loop feedback)
+  parseErrors: [String!]! # role notes that failed to parse (excluded from nodes/edges)
 }
 
 type Query {
   roles: [Role!]!
   roleGraph: RoleGraph!
+  # Role notes that failed to parse and are excluded from `roles`. Debugging
+  # surface: a role that fails to parse must stay visible, not vanish silently.
+  roleParseErrors: [String!]!
 }

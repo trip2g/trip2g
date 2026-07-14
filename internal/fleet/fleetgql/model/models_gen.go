@@ -40,9 +40,10 @@ type Role struct {
 }
 
 type RoleGraph struct {
-	Nodes  []GraphNode `json:"nodes"`
-	Edges  []GraphEdge `json:"edges"`
-	Cycles [][]string  `json:"cycles"`
+	Nodes       []GraphNode `json:"nodes"`
+	Edges       []GraphEdge `json:"edges"`
+	Cycles      [][]string  `json:"cycles"`
+	ParseErrors []string    `json:"parseErrors"`
 }
 
 type EdgeKind string

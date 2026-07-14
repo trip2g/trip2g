@@ -3,6 +3,7 @@ package fleetgql
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,9 +15,14 @@ import (
 )
 
 // fakeSource is a static RoleSource for handler tests.
-type fakeSource struct{ roles []fleet.Role }
+type fakeSource struct {
+	roles []fleet.Role
+	errs  []error
+}
 
-func (f fakeSource) DiscoverParsed(context.Context) ([]fleet.Role, []error) { return f.roles, nil }
+func (f fakeSource) DiscoverParsed(context.Context) ([]fleet.Role, []error) {
+	return f.roles, f.errs
+}
 
 // post runs a GraphQL query against the handler and returns the decoded body.
 func post(t *testing.T, h http.Handler, query string) map[string]json.RawMessage {
@@ -81,6 +87,7 @@ func TestHandlerRoleGraph(t *testing.T) {
 		nodes { role inboxGlob outboxGlob orphan }
 		edges { from to kind exact cutByDepth }
 		cycles
+		parseErrors
 	} }`)
 	var got struct {
 		RoleGraph struct {
@@ -94,7 +101,8 @@ func TestHandlerRoleGraph(t *testing.T) {
 				Exact          bool
 				CutByDepth     bool
 			}
-			Cycles [][]string
+			Cycles      [][]string
+			ParseErrors []string
 		}
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"RoleGraph":`+string(data["roleGraph"])+`}`), &got))
@@ -108,6 +116,30 @@ func TestHandlerRoleGraph(t *testing.T) {
 	require.True(t, e.Exact)
 	require.False(t, e.CutByDepth)
 	require.Empty(t, got.RoleGraph.Cycles)
+	require.Empty(t, got.RoleGraph.ParseErrors)
+}
+
+// TestHandlerParseErrorsSurfaced verifies a role that failed to parse stays
+// visible via roleParseErrors/roleGraph.parseErrors instead of silently
+// vanishing from roles/roleGraph — the debugging surface must show the broken
+// role, not hide it.
+func TestHandlerParseErrorsSurfaced(t *testing.T) {
+	src := fakeSource{
+		roles: []fleet.Role{rgChange("roles/writer.md", []string{"inbox/**"}, []string{"wiki/**"})},
+		errs:  []error{errors.New("parse roles/broken.md: max_tokens: bad int")},
+	}
+	h := NewHTTPHandler(src, nil)
+
+	data := post(t, h, `{ roleParseErrors roleGraph { parseErrors } }`)
+	var got struct {
+		RoleParseErrors []string
+		RoleGraph       struct{ ParseErrors []string }
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"RoleParseErrors":`+string(data["roleParseErrors"])+
+		`,"RoleGraph":`+string(data["roleGraph"])+`}`), &got))
+
+	require.Equal(t, []string{"parse roles/broken.md: max_tokens: bad int"}, got.RoleParseErrors)
+	require.Equal(t, []string{"parse roles/broken.md: max_tokens: bad int"}, got.RoleGraph.ParseErrors)
 }
 
 // rgChange builds a change-triggerable role for handler tests.

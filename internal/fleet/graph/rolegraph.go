@@ -39,11 +39,13 @@ type RGNode struct {
 	Orphan     bool
 }
 
-// RGEdge is a derived interaction. Exact is true when the overlap decision was
-// exact (Overlap is exact for the role-frontmatter glob subset; it is only
-// conservatively true on pathological constructs). CutByDepth marks an edge the
-// webhook max_depth guard would sever; it is always false in v1 (the max_depth
-// wiring is future work) and kept as a forward-compatible field.
+// RGEdge is a derived interaction. Exact is always true in v1: Overlap is
+// exact for the role-frontmatter glob subset (literals, *, ?, [...], **,
+// {a,b}) that role patterns use; the field is reserved for a future
+// approximating matcher that would need to report non-exact decisions, not a
+// signal this package currently produces. CutByDepth marks an edge the webhook
+// max_depth guard would sever; it is always false in v1 (the max_depth wiring
+// is future work) and kept as a forward-compatible field.
 type RGEdge struct {
 	From       string
 	To         string
