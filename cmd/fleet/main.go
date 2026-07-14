@@ -26,6 +26,7 @@ import (
 	fleetappconfig "trip2g/cmd/fleet/appconfig"
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
+	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 	"trip2g/internal/fleet"
 	"trip2g/internal/fleet/fleetgql"
@@ -38,7 +39,7 @@ import (
 
 func main() {
 	// Re-exec'd sandbox child? Confine and exec the interpreter; never returns.
-	agentruntime.MaybeRunSandboxChild()
+	coderun.MaybeRunSandboxChild()
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "fleet:", err)
 		os.Exit(1)
@@ -344,8 +345,8 @@ func runOnce(ctx context.Context, cli cliFlags) error {
 		Model:         model,
 		MaxTokens:     maxTokens,
 		MaxSteps:      maxSteps,
-		Sandbox: agentruntime.SandboxPolicy{
-			Mode:    agentruntime.SandboxMode(cli.cfg.Sandbox),
+		Sandbox: coderun.SandboxPolicy{
+			Mode:    coderun.SandboxMode(cli.cfg.Sandbox),
 			Network: cli.cfg.SandboxNetwork,
 		},
 		LLM: llm,
@@ -477,10 +478,10 @@ func validateConfig(cfg fleet.Config) error {
 	}
 	// Empty means the safe default (native); see SandboxPolicy.withDefaults.
 	switch cfg.Sandbox {
-	case "", string(agentruntime.SandboxNative), string(agentruntime.SandboxOff), string(agentruntime.SandboxBestEffort):
+	case "", string(coderun.SandboxNative), string(coderun.SandboxOff), string(coderun.SandboxBestEffort):
 	default:
 		return fmt.Errorf("fleet: Sandbox must be %q, %q or %q (got %q); use --sandbox",
-			agentruntime.SandboxNative, agentruntime.SandboxBestEffort, agentruntime.SandboxOff, cfg.Sandbox)
+			coderun.SandboxNative, coderun.SandboxBestEffort, coderun.SandboxOff, cfg.Sandbox)
 	}
 	return nil
 }
@@ -631,7 +632,7 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	}
 
 	if cli.interpretersPath != "" {
-		if err := agentruntime.LoadInterpretersFile(cli.interpretersPath); err != nil {
+		if err := coderun.LoadInterpretersFile(cli.interpretersPath); err != nil {
 			return cliFlags{}, fmt.Errorf("fleet: load interpreters: %w", err)
 		}
 	}

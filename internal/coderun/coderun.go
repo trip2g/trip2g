@@ -1,4 +1,4 @@
-package agentruntime
+package coderun
 
 import (
 	"bytes"
@@ -55,7 +55,7 @@ func currentRegistry() *interpreterRegistry {
 func mustBuildRegistry(data []byte) *interpreterRegistry {
 	r, err := buildRegistry(data)
 	if err != nil {
-		panic("agentruntime: failed to build interpreter registry: " + err.Error())
+		panic("coderun: failed to build interpreter registry: " + err.Error())
 	}
 	return r
 }
@@ -275,10 +275,10 @@ func prepareCmd(cmd *exec.Cmd, workDir string, env []string, stdin []byte, outBu
 	cmd.Stderr = errBuf
 }
 
-// parseCodeOutput parses the code child's stdout JSON into []AgentChange +
+// ParseCodeOutput parses the code child's stdout JSON into []AgentChange +
 // answer string. stdout must match {"changes":[...],"answer":"..."}.
 // A "content"-only entry → AgentChangeKindWrite; "find"/"replace" → AgentChangeKindPatch.
-func parseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
+func ParseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
 	var out codeOutput
 	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
 		preview := stdout

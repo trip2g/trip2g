@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 )
 
 // Debug surface: a localhost-only HTTP handler for stepping through a code
@@ -112,13 +112,13 @@ func (f *Fleet) serveDebugBlocks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	raw := agentruntime.ExtractFencedBlocks(body)
+	raw := coderun.ExtractFencedBlocks(body)
 	infos := make([]debugBlockInfo, len(raw))
 	for i, b := range raw {
 		infos[i] = debugBlockInfo{
 			Index:   i,
 			Lang:    b.Lang,
-			Program: agentruntime.ProgramForFenceLang(b.Lang),
+			Program: coderun.ProgramForFenceLang(b.Lang),
 			Code:    b.Code,
 		}
 	}
@@ -155,7 +155,7 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 		timeout = time.Duration(role.EffectiveTimeoutSeconds()) * time.Second
 	}
 
-	blocks := agentruntime.ExtractFencedBlocks(body)
+	blocks := coderun.ExtractFencedBlocks(body)
 	if len(blocks) == 0 {
 		http.Error(w, "no fenced code block found", http.StatusBadRequest)
 		return
@@ -166,7 +166,7 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 	}
 	block := blocks[req.Block]
 
-	program := agentruntime.ProgramForFenceLang(block.Lang)
+	program := coderun.ProgramForFenceLang(block.Lang)
 	if program == "" {
 		http.Error(w, fmt.Sprintf("fence language %q not supported", block.Lang), http.StatusBadRequest)
 		return
@@ -179,7 +179,7 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// Runs a single block: RunBlock (single-block path, same as production).
 	// The caller feeds the previous block's stdout as Stdin to walk the pipeline.
-	stdout, stderr, _, runErr := agentruntime.RunBlock(r.Context(), agentruntime.CodeSpec{
+	stdout, stderr, _, runErr := coderun.RunBlock(r.Context(), coderun.CodeSpec{
 		Program:        program,
 		Code:           block.Code,
 		Stdin:          []byte(req.Stdin),

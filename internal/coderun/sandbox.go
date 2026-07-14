@@ -1,9 +1,34 @@
-package agentruntime
+package coderun
 
 import (
+	"context"
 	"log/slog"
+	"os"
+	"strings"
 	"time"
 )
+
+// SandboxSupported reports whether the native per-block sandbox can be built and
+// started on this host/kernel (unprivileged user namespaces + MS_REC|MS_PRIVATE
+// remount). It probes by launching a trivial confined child, so it must be
+// called only AFTER MaybeRunSandboxChild in the same binary (the probe re-execs
+// this binary). Non-Linux always returns false.
+func SandboxSupported() bool {
+	dir, err := os.MkdirTemp("", "coderun-sbprobe-*")
+	if err != nil {
+		return false
+	}
+	defer os.RemoveAll(dir)
+	cmd, err := sandboxCommand(context.Background(), []string{"true"}, dir, SandboxPolicy{}.withDefaults(0))
+	if err != nil {
+		return false
+	}
+	cmd.Dir = dir
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
+	var sb strings.Builder
+	cmd.Stderr = &sb
+	return cmd.Run() == nil
+}
 
 // SandboxMode selects the OS-level isolation posture for code execution.
 type SandboxMode string

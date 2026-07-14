@@ -10,16 +10,16 @@ import (
 	goopenai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 )
 
 // newTestServer builds a codellm server that runs bash blocks unsandboxed, so
 // the wire-protocol tests are portable (no unprivileged-userns dependency). The
-// sandbox itself is exercised in agentruntime's own tests; Phase 2 wires it here.
+// sandbox itself is exercised in coderun's own tests.
 func newTestServer() *Server {
 	return New(Config{
 		AllowedPrograms: []string{"bash"},
-		Sandbox:         agentruntime.SandboxPolicy{Mode: agentruntime.SandboxOff},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
 	})
 }
 
@@ -236,7 +236,7 @@ func TestModelsAndHealthz(t *testing.T) {
 func TestAuthSeam(t *testing.T) {
 	srv := New(Config{
 		AllowedPrograms: []string{"bash"},
-		Sandbox:         agentruntime.SandboxPolicy{Mode: agentruntime.SandboxOff},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
 		Auth: func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusForbidden)

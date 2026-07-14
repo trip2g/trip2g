@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 	"trip2g/internal/logger"
 	"trip2g/internal/webhookutil"
 )
@@ -272,7 +272,7 @@ func roleFenceLang(body string) (string, bool) {
 // resolveFenceLang reports whether a fence language tag maps to a supported
 // code executor program via the interpreter registry.
 func resolveFenceLang(lang string) bool {
-	return agentruntime.FenceLangKnown(lang)
+	return coderun.FenceLangKnown(lang)
 }
 
 func contains(set []string, v string) bool {

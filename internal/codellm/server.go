@@ -3,12 +3,12 @@
 // markdown-with-fenced-code, executes the fenced blocks, and returns the writes
 // as OpenAI tool_calls (write_note / patch_note / finish).
 //
-// This is Phase 1 of docs/dev/codellm_extraction.md: the wire protocol + the
-// {changes}→tool_calls mapping + the hard invariants (always-finish, 422 on
-// apply/parse failure). It reuses internal/agentruntime for execution (RunBlock /
-// pipeline / sandbox) — the sandbox move (Phase 2) and the fleet cutover
-// (Phase 3) are deliberately NOT part of this service yet. codellm holds no
-// vault, no KB, no auth, no secrets; scope enforcement stays in fleet.
+// Per docs/dev/codellm_extraction.md: the wire protocol + the {changes}→tool_calls
+// mapping + the hard invariants (always-finish, 422 on apply/parse failure). It
+// uses internal/coderun for execution (RunBlock / pipeline / sandbox), which
+// Phase 2 moved out of internal/agentruntime; the fleet cutover (Phase 3) is
+// deliberately NOT part of this service yet. codellm holds no vault, no KB, no
+// auth, no secrets; scope enforcement stays in fleet.
 package codellm
 
 import (
@@ -24,8 +24,8 @@ import (
 
 	goopenai "github.com/sashabaranov/go-openai"
 
-	"trip2g/internal/agentruntime"
 	"trip2g/internal/codellm/codellmgql"
+	"trip2g/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
 
@@ -47,10 +47,9 @@ type Config struct {
 
 	// Sandbox is the OS-level isolation policy for each executed block. The zero
 	// value is the safe default (native, enforcing). main.go calls
-	// agentruntime.MaybeRunSandboxChild() first and defaults --sandbox to
-	// native, so native mode is already operational in Phase 1; Phase 2 moves
-	// the sandbox/interpreters/debug-surface source out of agentruntime.
-	Sandbox agentruntime.SandboxPolicy
+	// coderun.MaybeRunSandboxChild() first and defaults --sandbox to native, so
+	// each executed block gets the full native posture.
+	Sandbox coderun.SandboxPolicy
 
 	// MaxStdoutBytes caps each block's captured stdout; 0 → 1 MiB default.
 	MaxStdoutBytes int
@@ -168,7 +167,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	body, bag := extractBodyAndBag(req.Messages)
 
-	in := agentruntime.CodeInput{
+	in := coderun.CodeInput{
 		Body:            body,
 		AllowedPrograms: s.cfg.AllowedPrograms,
 		Sandbox:         s.cfg.Sandbox,
@@ -184,7 +183,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	changes, answer, err := agentruntime.ExecCode(r.Context(), in)
+	changes, answer, err := coderun.ExecCode(r.Context(), in)
 	if err != nil {
 		// Apply-error semantics = hard-fail 422 (decision b): a failing block,
 		// timeout, or unparseable stdout is a deterministic failure, not a soft
@@ -202,8 +201,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 // returns the standard completion PLUS the non-standard x_fleet_debug field.
 // A normal OpenAI client ignores the extra field; the debugger reads it to show
 // each block's stdout and the editable inter-block pipe buffer.
-func (s *Server) respondWithDebug(w http.ResponseWriter, r *http.Request, model string, in agentruntime.CodeInput) {
-	changes, answer, blocks, err := agentruntime.ExecCodeDebug(r.Context(), in)
+func (s *Server) respondWithDebug(w http.ResponseWriter, r *http.Request, model string, in coderun.CodeInput) {
+	changes, answer, blocks, err := coderun.ExecCodeDebug(r.Context(), in)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
 		return
@@ -235,7 +234,7 @@ type fleetDebugBlock struct {
 	PipeBuffer string `json:"pipeBuffer"`
 }
 
-func toDebugBlocks(blocks []agentruntime.BlockDebug) []fleetDebugBlock {
+func toDebugBlocks(blocks []coderun.BlockDebug) []fleetDebugBlock {
 	out := make([]fleetDebugBlock, len(blocks))
 	for i, b := range blocks {
 		out[i] = fleetDebugBlock{Index: b.Index, Stdout: b.Stdout, PipeBuffer: b.PipeBuffer}

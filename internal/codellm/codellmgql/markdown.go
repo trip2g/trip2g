@@ -3,12 +3,12 @@ package codellmgql
 import (
 	"strings"
 
-	"trip2g/internal/agentruntime"
 	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/internal/coderun"
 )
 
 // parseMarkdownBlocks splits md into ordered code/prose blocks. It reuses
-// agentruntime.ExtractFencedBlocks — codellm's OWN fence parser, the same one
+// coderun.ExtractFencedBlocks — codellm's OWN fence parser, the same one
 // execution runs with — so the block boundaries the editor sees match exactly
 // what codellm executes. Prose is everything between/around the code fences,
 // recovered by splitting md on each block's reconstructed fence text.
@@ -18,7 +18,7 @@ import (
 // prose segments are the exact slices of md between the located fences, and each
 // code block is re-fenced with its own language.
 func parseMarkdownBlocks(md string) []model.MdBlock {
-	fenced := agentruntime.ExtractFencedBlocks(md)
+	fenced := coderun.ExtractFencedBlocks(md)
 	blocks := make([]model.MdBlock, 0, len(fenced)*2+1)
 
 	cursor := 0

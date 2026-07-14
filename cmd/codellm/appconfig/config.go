@@ -18,7 +18,7 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 )
 
 // Config holds codellm's runtime configuration.
@@ -34,7 +34,7 @@ type Config struct {
 	AllowedPrograms []string
 
 	// Sandbox is the OS-level isolation mode for each executed block.
-	Sandbox agentruntime.SandboxMode
+	Sandbox coderun.SandboxMode
 
 	// Timeout bounds a single completion's code run; 0 = request-context bound.
 	Timeout time.Duration
@@ -69,7 +69,7 @@ func DefaultConfig() Config {
 	return Config{
 		Addr:            DefaultAddr,
 		AllowedPrograms: splitCSV(DefaultAllowedPrograms),
-		Sandbox:         agentruntime.SandboxNative,
+		Sandbox:         coderun.SandboxNative,
 		Timeout:         DefaultTimeout,
 		MaxStdoutBytes:  0,
 		Trip2gBaseURL:   DefaultTrip2gBaseURL,
@@ -110,7 +110,7 @@ func (c *Config) applyEnv() {
 		c.AllowedPrograms = splitCSV(v)
 	}
 	if v := os.Getenv("CODELLM_SANDBOX"); v != "" {
-		c.Sandbox = agentruntime.SandboxMode(v)
+		c.Sandbox = coderun.SandboxMode(v)
 	}
 	if v := os.Getenv("CODELLM_TIMEOUT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
@@ -152,7 +152,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	}
 
 	c.AllowedPrograms = splitCSV(allowedPrograms)
-	c.Sandbox = agentruntime.SandboxMode(sandbox)
+	c.Sandbox = coderun.SandboxMode(sandbox)
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.Trip2gBaseURL, ozzo.Required),
 		ozzo.Field(&c.MaxStdoutBytes, ozzo.Min(0)),
 		ozzo.Field(&c.Timeout, ozzo.By(nonNegativeDuration)),
-		ozzo.Field(&c.Sandbox, ozzo.In(agentruntime.SandboxNative, agentruntime.SandboxBestEffort, agentruntime.SandboxOff)),
+		ozzo.Field(&c.Sandbox, ozzo.In(coderun.SandboxNative, coderun.SandboxBestEffort, coderun.SandboxOff)),
 	)
 }
 

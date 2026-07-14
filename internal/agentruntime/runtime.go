@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"trip2g/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
 
@@ -55,7 +56,7 @@ type Input struct {
 
 	// Sandbox is the OS-level isolation policy for the exec tool's code runs.
 	// The zero value is the safe default (native where supported).
-	Sandbox SandboxPolicy
+	Sandbox coderun.SandboxPolicy
 
 	// MaxTokens is the NON-overridable per-run token hard-cap (safety floor).
 	// The model has no tool to change it; the loop enforces it. Must be > 0.
@@ -356,7 +357,7 @@ func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
 // non-empty, exec is registered.
 // Future MCP tools: add invokers here, gated by the same allowedPrograms mechanism
 // or a dedicated per-tool allowlist. Never add tools unconditionally.
-func buildInvokers(allowedPrograms []string, sandbox SandboxPolicy) map[string]toolInvoker {
+func buildInvokers(allowedPrograms []string, sandbox coderun.SandboxPolicy) map[string]toolInvoker {
 	if len(allowedPrograms) == 0 {
 		return nil
 	}
@@ -369,7 +370,7 @@ func buildInvokers(allowedPrograms []string, sandbox SandboxPolicy) map[string]t
 // It runs the code via RunBlock (secret-scrubbed), parses stdout as write JSON,
 // and applies changes via the scoped KB — same write_patterns enforcement as
 // write_note. Out-of-scope writes are denied and recorded, not silently dropped.
-func makeExecInvoker(allowedPrograms []string, sandbox SandboxPolicy) toolInvoker {
+func makeExecInvoker(allowedPrograms []string, sandbox coderun.SandboxPolicy) toolInvoker {
 	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
 		var args struct {
 			Program string `json:"program"`
@@ -378,10 +379,10 @@ func makeExecInvoker(allowedPrograms []string, sandbox SandboxPolicy) toolInvoke
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
 			return "error: invalid arguments: " + err.Error()
 		}
-		if !isAllowed(args.Program, allowedPrograms) {
+		if !coderun.IsAllowed(args.Program, allowedPrograms) {
 			return fmt.Sprintf("error: program %q not in allowed_programs", args.Program)
 		}
-		stdout, _, _, runErr := RunBlock(ctx, CodeSpec{
+		stdout, _, _, runErr := coderun.RunBlock(ctx, coderun.CodeSpec{
 			Program: args.Program,
 			Code:    args.Code,
 			Sandbox: sandbox,
@@ -391,7 +392,7 @@ func makeExecInvoker(allowedPrograms []string, sandbox SandboxPolicy) toolInvoke
 		if runErr != nil {
 			return "error: " + runErr.Error()
 		}
-		changes, answer, perr := parseCodeOutput(stdout)
+		changes, answer, perr := coderun.ParseCodeOutput(stdout)
 		if perr != nil {
 			return "error: " + perr.Error()
 		}

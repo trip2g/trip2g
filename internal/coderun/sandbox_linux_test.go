@@ -1,6 +1,6 @@
 //go:build linux
 
-package agentruntime
+package coderun
 
 import (
 	"context"
@@ -99,7 +99,7 @@ fi`, port)
 		Sandbox: SandboxPolicy{Mode: SandboxOff},
 	})
 	require.NoError(t, runErr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "reachable", answer, "control run must reach the loopback server")
 
@@ -109,7 +109,7 @@ fi`, port)
 		Code:    probe,
 	})
 	require.NoError(t, runErr)
-	_, answer, perr = parseCodeOutput(stdout)
+	_, answer, perr = ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "unreachable", answer, "sandboxed child must have no network access")
 }
@@ -139,7 +139,7 @@ fi`, secret)
 		Sandbox: SandboxPolicy{Mode: SandboxOff},
 	})
 	require.NoError(t, runErr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "readable", answer, "control run must read the outside file")
 
@@ -148,7 +148,7 @@ fi`, secret)
 		Code:    probe,
 	})
 	require.NoError(t, runErr)
-	_, answer, perr = parseCodeOutput(stdout)
+	_, answer, perr = ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "denied", answer, "sandboxed child must not read outside its workdir")
 }
@@ -164,7 +164,7 @@ func TestSandbox_WorkdirStaysWritable(t *testing.T) {
 		Code:    code,
 	})
 	require.NoError(t, runErr, "stderr: %s", stderr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "wrote", answer)
 }
@@ -214,7 +214,7 @@ fi`, pid)
 		Sandbox: SandboxPolicy{Mode: SandboxOff},
 	})
 	require.NoError(t, runErr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "visible", answer, "control run must see the host process in /proc")
 
@@ -224,7 +224,7 @@ fi`, pid)
 		Code:    probe,
 	})
 	require.NoError(t, runErr)
-	_, answer, perr = parseCodeOutput(stdout)
+	_, answer, perr = ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "hidden", answer, "sandboxed child must not see host processes in /proc")
 }
@@ -246,7 +246,7 @@ print(json.dumps({"changes": [], "answer": str(libc.prctl(39, 0, 0, 0, 0))}))`
 		Code:    code,
 	})
 	require.NoError(t, runErr, "stderr: %s", stderr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 	require.Equal(t, "1", answer, "sandboxed child must have NO_NEW_PRIVS set")
 }
@@ -275,7 +275,7 @@ func TestSandbox_RlimitsApplied(t *testing.T) {
 		},
 	})
 	require.NoError(t, runErr, "stderr: %s", stderr)
-	_, answer, perr := parseCodeOutput(stdout)
+	_, answer, perr := ParseCodeOutput(stdout)
 	require.NoError(t, perr)
 
 	fields := strings.Split(answer, "|")
@@ -300,7 +300,7 @@ func TestSandbox_ModesBothExecute(t *testing.T) {
 			Sandbox: SandboxPolicy{Mode: mode},
 		})
 		require.NoError(t, runErr, "mode %s failed: %s", mode, stderr)
-		_, answer, perr := parseCodeOutput(stdout)
+		_, answer, perr := ParseCodeOutput(stdout)
 		require.NoError(t, perr)
 		require.Equal(t, "ok", answer, "mode %s", mode)
 	}
