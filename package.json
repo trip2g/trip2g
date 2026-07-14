@@ -20,8 +20,10 @@
     "codeblock": "node assets/codeblock/esbuild.browser.mjs"
   },
   "dependencies": {
+    "@mostlylucid/mermaid-enhancements": "^1.0.0",
     "@types/change-case": "^0.0.30",
     "@types/jsdom": "^27.0.0",
+    "beautiful-mermaid": "^1.1.3",
     "change-case": "^5.4.4",
     "echarts": "^6.1.0",
     "graphology": "^0.26.0",

@@ -4,12 +4,18 @@ Mermaid renders ` ```mermaid ` fenced code blocks as diagrams, like Obsidian.
 Implementing it introduced a general mechanism — **per-note, backend-decided
 widget script loading** — that any future per-language client widget reuses.
 
+Diagrams render with one of two engines by type — beautiful-mermaid for
+flowchart/state/sequence/class/ER/xychart, mermaid.js as the fallback for
+everything else — both enhanced with pan/zoom/fullscreen/export from
+`@mostlylucid/mermaid-enhancements`. See "The mermaid bundle — dual renderer"
+below.
+
 ## Two parts
 
 1. **Conditional widget loading** (backend) — the server knows, at render time,
    which client widgets a page needs, and emits exactly those `<script>` tags.
-2. **The mermaid bundle** (frontend) — a tiny glue that lazily loads the heavy
-   mermaid library, mirroring the datachart/echarts split.
+2. **The mermaid bundle** (frontend) — a tiny glue that routes each diagram to
+   the right engine and lazily loads it, mirroring the datachart/echarts split.
 
 No `mermaid` HTML is produced server-side: goldmark already renders the fenced
 block as `<pre><code class="language-mermaid">…</code></pre>`. The glue takes it
@@ -57,46 +63,89 @@ no JS-execution gate.
 
 That's the whole wiring — no client loader, no template changes.
 
-## The mermaid bundle
+## The mermaid bundle — dual renderer
 
-`assets/mermaid/` mirrors `assets/chart/`:
+`assets/mermaid/` mirrors `assets/chart/`, but renders each diagram with one of
+two engines depending on its type:
 
-- `src/index.ts` → `assets/mermaid.js` — tiny glue. Finds
-  `pre > code.language-mermaid`, converts each to `<div class="mermaid">` with the
-  decoded text, lazily loads `/assets/mermaid.min.js` (only if a block exists),
-  then `mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default',
-  securityLevel: 'strict' })` + `mermaid.run({ nodes })`.
-- `src/lib.ts` → `assets/mermaid.min.js` — wraps the ESM mermaid package in an
-  IIFE that sets `window.mermaid`, mirroring the prebuilt `echarts.min.js` global.
-  ~3 MB; loaded lazily and only on pages with a diagram.
-- `esbuild.browser.mjs` builds both outputs.
+- **[beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid)** — a
+  synchronous, from-scratch renderer (`renderMermaidSVG(text, options) → string`,
+  no async, no DOM deps) for 6 diagram types: flowchart (`graph`/`flowchart`),
+  state (`stateDiagram`/`stateDiagram-v2`), sequence (`sequenceDiagram`), class
+  (`classDiagram`), ER (`erDiagram`), and XY charts (`xychart-beta`). Prettier
+  output than mermaid.js's default theme.
+- **mermaid.js** — the reference implementation, kept as the fallback for every
+  diagram type beautiful-mermaid doesn't support (`gantt`, `pie`, `gitGraph`,
+  `mindmap`, `timeline`, `journey`, `sankey`, `C4Context`, `quadrantChart`, …)
+  and for any beautiful-mermaid parse failure (caught and retried on this path).
 
-Theme follows `document.documentElement.classList.contains('dark')`, set by the
-inline theme script in `views.html`.
+`src/index.ts` → `assets/mermaid.js` (the glue) does the routing: it finds
+`pre > code.language-mermaid`, converts each to `<div class="mermaid">`, and
+sorts blocks into the two engines by detecting the diagram type from the first
+non-empty, non-`%%`-comment line's leading keyword (`firstKeyword()` /
+`BEAUTIFUL_KEYWORDS` in `index.ts`). Each engine is its own lazy chunk, loaded
+only if a block on the page needs it:
 
-### Pan/zoom
+- `src/lib.ts` → `assets/mermaid.min.js` — mermaid.js wrapped in an IIFE that
+  sets `window.mermaid` (unchanged from before). ~3 MB minified.
+- `src/lib-beautiful.ts` → `assets/beautifulmermaid.min.js` — beautiful-mermaid
+  wrapped the same way as `window.beautifulMermaid`. ~1.5 MB minified (pulls in
+  ELK.js for flowchart layout) — too heavy to fold into the glue eagerly, so it
+  gets its own lazy chunk rather than joining `mermaid.js`.
 
-`src/panzoom.ts` makes each rendered SVG pan/zoomable — zero-dep, Pointer
-Events based (svg-pan-zoom needs Hammer.js for pinch, so a small custom
-implementation is lighter):
+`@mostlylucid/mermaid-enhancements` (pan/zoom/export, see below) *is* bundled
+eagerly into `mermaid.js` — tree-shaken down to ~48 KB minified / ~15 KB
+gzipped, small enough not to need a lazy chunk of its own.
 
-- Touch: pinch-to-zoom + one-finger drag to pan (drag only once zoomed —
-  at fit the container keeps `touch-action: pan-y` so page scroll works).
-- Desktop: + / − / reset / fullscreen buttons overlaid top-right, plus
-  ctrl/⌘+wheel zoom (plain wheel keeps scrolling the page).
-- Fullscreen is a CSS `position: fixed` overlay (portable, unlike
-  `requestFullscreen` on iOS); Escape or the button exits.
-- Default state is untouched fit-to-width; the CSS is injected by the glue so
-  nothing is added to the main bundle. Theme re-render rebinds instead of
-  stacking listeners.
+Theme follows `document.documentElement.classList.contains('dark')` /
+`[data-theme]`, set by the inline theme script in `views.html`. beautiful-mermaid
+diagrams re-theme for free: their colors are passed as `var(--pico-*)` CSS
+custom properties on the `<svg>` (`beautifulThemeOptions()` in `index.ts`), so
+Pico's own light/dark cascade repaints them with no re-render. mermaid.js
+diagrams still re-render on theme change (`onThemeChange` + `renderAll()`),
+same as before.
+
+beautiful-mermaid also unconditionally embeds a Google Fonts `@import` in every
+SVG's `<style>` block for whatever `font` name is in effect (default `Inter`) —
+a CDN call this self-hosted-only site must not make. `stripGoogleFontsImport()`
+removes it from the returned SVG string before it's injected; the real font is
+applied afterward via our own CSS (`.mermaid-wrapper .mermaid svg text`).
+
+### Pan/zoom, fullscreen, export
+
+Both engines' output is enhanced with
+[`@mostlylucid/mermaid-enhancements`](https://github.com/scottgal/mostlylucidweb/tree/main/mostlylucid-mermaid)
+(`enhanceMermaidDiagrams()`, called after each render) — pan (drag), zoom
+(buttons + ctrl/⌘+wheel), a fullscreen lightbox, and PNG/SVG export, built on
+`svg-pan-zoom` + `html-to-image`. This replaced an earlier hand-rolled
+`panzoom.ts` whose drag panning didn't actually work; the community library's
+drag/zoom/fullscreen was verified live (real pointer drag pans the diagram,
+confirmed via a transform-matrix check before/after).
+
+The library auto-wraps any `.mermaid[data-processed="true"]` element it finds
+in `.mermaid-wrapper` + a controls toolbar — mermaid.js sets
+`data-processed="true"` itself; the beautiful-mermaid path sets it manually
+after injecting the SVG so both engines get identical treatment. Its own
+stylesheet + Boxicons-font toolbar would be a second self-hosted asset, so
+`index.ts` injects an equivalent stylesheet instead (`ENH_CSS`): same class
+names, colors mapped to `var(--pico-*)`, icons as plain glyph characters
+(no icon font, no CDN).
+
+`.mermaid-wrapper` is bounded to `max-height: 80vh`. Combined with the
+library's `fit: true` / `center: true` initial pan-zoom, a large diagram fits
+that viewport-bounded box on load instead of shrinking to unreadable size —
+and the same fit-to-box math fixes wide-but-short diagrams (previously a
+sliver): scale is bounded by whichever dimension is tighter, so a wide diagram
+fits by width and sits centered rather than stretched to fill the height. Full
+detail beyond fit level is one zoom/pan or fullscreen away.
 
 ## Build
 
 ```
-npm run mermaid        # builds assets/mermaid.js + assets/mermaid.min.js
+npm run mermaid        # builds assets/mermaid.js + mermaid.min.js + beautifulmermaid.min.js
 ```
 
-Both outputs are committed artifacts (like `chart.js` / `echarts.min.js`).
+All three outputs are committed artifacts (like `chart.js` / `echarts.min.js`).
 `npm run build` (tsc + vite) does not build the widget bundles — run the script
 after editing `assets/mermaid/src/*`.
 
@@ -109,8 +158,8 @@ after editing `assets/mermaid/src/*`.
 | `internal/templateviews/note.go` | `HasCharts()` / `HasCodeLanguage()` accessors |
 | `internal/case/rendernotepage/endpoint.go` | appends widget scripts per note |
 | `cmd/server/main.go` | core-only `UserJSURLs()`, `AssetURL()` |
-| `assets/mermaid/` | glue + lib bundle sources |
-| `assets/mermaid.js`, `assets/mermaid.min.js` | built artifacts |
+| `assets/mermaid/` | glue + lib bundle sources (`index.ts`, `lib.ts`, `lib-beautiful.ts`) |
+| `assets/mermaid.js`, `assets/mermaid.min.js`, `assets/beautifulmermaid.min.js` | built artifacts |
 | `assets/embed.go` | embeds the artifacts |
 | `docs/demo/mermaid.md` | demo note + e2e fixture (`/mermaid`) |
 | `e2e/vault.spec.js` | "Mermaid Diagrams" tests |
