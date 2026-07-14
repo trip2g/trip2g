@@ -6,6 +6,8 @@ lang_redirect: "[[ru/thoughts/flat-file-cms]]"
 
 *What this is about: what class trip2g belongs to, who its neighbors are, and what in the positioning is honest versus marketing. Short answer: it's a flat-file CMS — content in files, rendering at runtime, no separate database server. The niche has existed for fifteen years but stayed thin: the market split into two poles — static generators and database-backed CMSes — and almost nobody occupied the middle. trip2g stands in that middle, with two differences: the editing surface is a local Obsidian vault with sync, and under the hood it's not literal files but SQLite. A hybrid: you edit like files, the server works like a database.*
 
+*A July-2026 fact-check: Grav 2.0 shifted part of the map. [[en/thoughts/flat-file-cms-revisited|The corrected re-examination]] covers what no longer holds and where trip2g still stands alone.*
+
 ## The feeling that started it all
 
 There's a simple need that had no simple tool for years: "make a small site from HTML and templates." Almost any site is notes, pages, a bit of navigation. You want something like nginx plus an API that can save individual files in place. Put in Markdown, get a page. Edit a template, the page changes. No database, no build pipeline, no deploy ceremony.
