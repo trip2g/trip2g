@@ -73,7 +73,7 @@ func (r *chartRenderer) render(w util.BufWriter, src []byte, node ast.Node, ente
 // renderChart parses the block and emits a chart container plus a sibling JSON
 // script the client widget reads. Resolution depends on data.source:
 //   - inline:      rows are baked into the script (data present)
-//   - frontmatter: the frontmatter [[link]] is resolved to a presigned URL and
+//   - frontmatter: the frontmatter [[link]] is resolved to a stable asset URL and
 //     emitted as data-src; the browser fetches it (data null)
 //   - url/internal: backend-fetched + cached (not yet wired) → data null (loader)
 func (r *chartRenderer) renderChart(w util.BufWriter, src []byte, n *ast.FencedCodeBlock) {
@@ -149,7 +149,7 @@ func (r *chartRenderer) cachedRows(chart model.NoteViewChart) model.ChartRowsRes
 }
 
 // resolveFrontmatterSrc reads the named frontmatter key (which holds a vault
-// [[link]]), resolves the link target to its presigned asset URL, and reports
+// [[link]]), resolves the link target to its stable asset URL, and reports
 // the data format from the file extension. Empty url → unresolved (no asset).
 func (r *chartRenderer) resolveFrontmatterSrc(ref string) (string, string) {
 	if ref == "" || r.resolver == nil || r.resolver.currentPage == nil {

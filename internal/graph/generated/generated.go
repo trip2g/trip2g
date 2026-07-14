@@ -2823,7 +2823,7 @@ type PushedNoteAsset {
   path: String! # the client must resolve this to the absolute path
   sha256Hash: String # if the hash does not match
   absolutePath: String! # vault path (e.g., "/subdir/assets/image.jpg")
-  url: String! # presigned S3 URL
+  url: String! # stable content-addressed URL (/_system/assets/...)
 }
 
 type PushedNote {

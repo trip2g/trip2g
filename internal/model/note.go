@@ -49,8 +49,6 @@ type NoteAssetReplace struct {
 	Hash string
 
 	AbsolutePath string
-
-	ExpiresAt time.Time
 }
 
 type NoteViewSection struct {

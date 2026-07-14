@@ -9,36 +9,16 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"trip2g/assets"
-	"trip2g/internal/appconfig"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
-	"trip2g/internal/noteloader"
 
 	"github.com/valyala/fasthttp"
 )
-
-func (a *app) setFileStorageExpiringCallback() {
-	a.Storage.OnURLExpiring(func() {
-		a.log.Info("presigned URLs expiring, reloading notes")
-
-		reloadCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		options := noteloader.LoadOptions{ForceRefreshURLs: true}
-		loadErr := a.loadAllNotes(reloadCtx, options)
-		if loadErr != nil {
-			a.log.Error("failed to reload all notes", "error", loadErr)
-		} else {
-			a.log.Info("notes reloaded successfully")
-		}
-	})
-}
 
 func (a *app) StorageDBLimit() int64 {
 	return int64(a.config.StorageDBLimit)
@@ -96,26 +76,6 @@ func (a *app) setupAssets() {
 			// remove /assets prefix
 			return ctx.Path()[7:]
 		},
-	}
-
-	// When the local storage backend is active, serve note assets from disk via
-	// the /_assets/ route. fasthttp.FS confines reads to Root and cleans paths,
-	// so traversal outside the assets dir is rejected. Root mirrors the
-	// localstorage layout: <StorageLocalDir>/assets/<NoteAssetPath>.
-	if a.config.StorageBackend == appconfig.StorageBackendLocal {
-		a.localAssetsFS = &fasthttp.FS{
-			Root:               filepath.Join(a.config.StorageLocalDir, "assets"),
-			IndexNames:         []string{},
-			GenerateIndexPages: false,
-			Compress:           !a.config.DevMode,
-			SkipCache:          a.config.DevMode,
-			AcceptByteRange:    true,
-
-			PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
-				// remove /_assets prefix (len("/_assets") == 8)
-				return ctx.Path()[8:]
-			},
-		}
 	}
 
 	// initialize asset hashes map

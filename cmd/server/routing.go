@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/assetindex"
+	"trip2g/internal/case/serveasset"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/model"
 	"trip2g/internal/readreplica"
@@ -197,15 +199,13 @@ func (a *app) handleSitemap(req *appreq.Request) bool {
 // Middleware should return true if the request is fully handled.
 type Middleware func(req *appreq.Request) bool
 
+var (
+	_ serveasset.Env = (*app)(nil)
+	_ assetindex.Env = (*app)(nil)
+)
+
 func (a *app) prepareMiddlewares() []Middleware {
 	fsHandler := a.assetsFS.NewRequestHandler()
-
-	// Local-storage asset handler: serves GET /_assets/<NoteAssetPath> from disk.
-	// nil unless the local storage backend is active.
-	var localAssetsHandler fasthttp.RequestHandler
-	if a.localAssetsFS != nil {
-		localAssetsHandler = a.localAssetsFS.NewRequestHandler()
-	}
 
 	return []Middleware{
 		// Read-only replica: forward every mutating request to the leader before
@@ -240,14 +240,9 @@ func (a *app) prepareMiddlewares() []Middleware {
 
 			return false
 		},
-		func(req *appreq.Request) bool {
-			if localAssetsHandler != nil && strings.HasPrefix(req.Path, "/_assets/") {
-				localAssetsHandler(req.Req)
-				return true
-			}
-
-			return false
-		},
+		// Content-addressed note/layout assets with access control (both the
+		// MinIO and local storage backends stream through this route).
+		serveasset.Handle,
 		func(req *appreq.Request) bool {
 			return a.handlePurchaseTokens(req.Req)
 		},

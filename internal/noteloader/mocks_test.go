@@ -6,7 +6,6 @@ package noteloader_test
 import (
 	"context"
 	"sync"
-	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/logger"
@@ -44,12 +43,6 @@ var _ noteloader.Env = &EnvMock{}
 //			},
 //			NoteAssetPathFunc: func(asset db.NoteAsset) string {
 //				panic("mock out the NoteAssetPath method")
-//			},
-//			NoteAssetURLFunc: func(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error) {
-//				panic("mock out the NoteAssetURL method")
-//			},
-//			NowFunc: func() time.Time {
-//				panic("mock out the Now method")
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
@@ -90,12 +83,6 @@ type EnvMock struct {
 
 	// NoteAssetPathFunc mocks the NoteAssetPath method.
 	NoteAssetPathFunc func(asset db.NoteAsset) string
-
-	// NoteAssetURLFunc mocks the NoteAssetURL method.
-	NoteAssetURLFunc func(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
-
-	// NowFunc mocks the Now method.
-	NowFunc func() time.Time
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -144,16 +131,6 @@ type EnvMock struct {
 			// Asset is the asset argument value.
 			Asset db.NoteAsset
 		}
-		// NoteAssetURL holds details about calls to the NoteAssetURL method.
-		NoteAssetURL []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Asset is the asset argument value.
-			Asset db.NoteAsset
-		}
-		// Now holds details about calls to the Now method.
-		Now []struct {
-		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -180,8 +157,6 @@ type EnvMock struct {
 	lockLogger                 sync.RWMutex
 	lockNoteAssetExists        sync.RWMutex
 	lockNoteAssetPath          sync.RWMutex
-	lockNoteAssetURL           sync.RWMutex
-	lockNow                    sync.RWMutex
 	lockPublicURL              sync.RWMutex
 	lockRawAssets              sync.RWMutex
 	lockRawNoteChunks          sync.RWMutex
@@ -403,69 +378,6 @@ func (mock *EnvMock) NoteAssetPathCalls() []struct {
 	mock.lockNoteAssetPath.RLock()
 	calls = mock.calls.NoteAssetPath
 	mock.lockNoteAssetPath.RUnlock()
-	return calls
-}
-
-// NoteAssetURL calls NoteAssetURLFunc.
-func (mock *EnvMock) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error) {
-	if mock.NoteAssetURLFunc == nil {
-		panic("EnvMock.NoteAssetURLFunc: method is nil but Env.NoteAssetURL was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Asset db.NoteAsset
-	}{
-		Ctx:   ctx,
-		Asset: asset,
-	}
-	mock.lockNoteAssetURL.Lock()
-	mock.calls.NoteAssetURL = append(mock.calls.NoteAssetURL, callInfo)
-	mock.lockNoteAssetURL.Unlock()
-	return mock.NoteAssetURLFunc(ctx, asset)
-}
-
-// NoteAssetURLCalls gets all the calls that were made to NoteAssetURL.
-// Check the length with:
-//
-//	len(mockedEnv.NoteAssetURLCalls())
-func (mock *EnvMock) NoteAssetURLCalls() []struct {
-	Ctx   context.Context
-	Asset db.NoteAsset
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Asset db.NoteAsset
-	}
-	mock.lockNoteAssetURL.RLock()
-	calls = mock.calls.NoteAssetURL
-	mock.lockNoteAssetURL.RUnlock()
-	return calls
-}
-
-// Now calls NowFunc.
-func (mock *EnvMock) Now() time.Time {
-	if mock.NowFunc == nil {
-		panic("EnvMock.NowFunc: method is nil but Env.Now was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockNow.Lock()
-	mock.calls.Now = append(mock.calls.Now, callInfo)
-	mock.lockNow.Unlock()
-	return mock.NowFunc()
-}
-
-// NowCalls gets all the calls that were made to Now.
-// Check the length with:
-//
-//	len(mockedEnv.NowCalls())
-func (mock *EnvMock) NowCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockNow.RLock()
-	calls = mock.calls.Now
-	mock.lockNow.RUnlock()
 	return calls
 }
 

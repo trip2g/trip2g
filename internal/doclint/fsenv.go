@@ -111,11 +111,6 @@ func (e *fsEnv) NoteAssetExists(_ context.Context, _ db.NoteAsset) (bool, error)
 	return false, nil
 }
 
-// NoteAssetURL returns an empty presigned URL: no object storage in the FS env.
-func (e *fsEnv) NoteAssetURL(_ context.Context, _ db.NoteAsset) (model.PresignedURL, error) {
-	return model.PresignedURL{}, nil
-}
-
 // NoteAssetPath returns an empty string: no asset storage path in the FS env.
 func (e *fsEnv) NoteAssetPath(_ db.NoteAsset) string {
 	return ""

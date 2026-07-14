@@ -6,7 +6,6 @@ import (
 	"fmt"
 	htmltemplate "html/template"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"trip2g/internal/sitemap"
 
 	"github.com/blevesearch/bleve/v2"
-	"golang.org/x/sync/errgroup"
 )
 
 type RawNote struct {
@@ -53,11 +51,9 @@ type Env interface {
 	RawAssets(ctx context.Context) ([]RawAsset, error)
 	RawNoteChunks(ctx context.Context) ([]RawNoteChunk, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
-	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetPath(asset db.NoteAsset) string
 	PublicURL() string
 	Logger() logger.Logger
-	Now() time.Time
 
 	// IsDevMode reports whether this is a development instance. It drives
 	// jet.DevelopmentMode for layout templates: false (production) caches the
@@ -132,8 +128,7 @@ func (l *Loader) SetChartDataProvider(p mdloader.ChartDataProvider) {
 }
 
 type LoadOptions struct {
-	SkipSearchIndex  bool
-	ForceRefreshURLs bool // bypass URL cache, regenerate all presigned URLs
+	SkipSearchIndex bool
 }
 
 //nolint:gocognit,funlen // complex loading logic with multiple data sources
@@ -169,26 +164,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to get note assets: %w", err)
 	}
 
-	l.log.Debug("check assets")
-
-	// Build cache of existing assets by hash for URL reuse
-	cachedAssets := make(map[string]*model.NoteAssetReplace)
-	if l.nvs != nil {
-		for _, nv := range l.nvs.List {
-			for _, ar := range nv.AssetReplaces {
-				if ar.Hash == "" {
-					continue
-				}
-
-				cachedAssets[ar.Hash] = ar
-			}
-		}
-	}
-
-	assetMap, err := l.buildAssetMap(ctx, assets, cachedAssets, options.ForceRefreshURLs)
-	if err != nil {
-		return fmt.Errorf("failed to build asset map: %w", err)
-	}
+	assetMap := buildAssetMap(assets)
 
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []model.LayoutSourceFile{}
@@ -370,19 +346,11 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	return nil
 }
 
-func (l *Loader) buildAssetMap(
-	ctx context.Context,
-	assets []RawAsset,
-	cachedAssets map[string]*model.NoteAssetReplace,
-	forceRefresh bool,
-) (map[int64]map[string]*model.NoteAssetReplace, error) {
+// buildAssetMap maps version_id -> note-relative asset path -> replace info.
+// Asset URLs are stable, content-addressed paths served by trip2g itself
+// (/_system/assets/{sha256}/{fileName}) — no storage round-trip, no expiry.
+func buildAssetMap(assets []RawAsset) map[int64]map[string]*model.NoteAssetReplace {
 	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
-	minValidExpiry := l.env.Now().Add(time.Minute)
-
-	var cachedCount int
-
-	// Collect assets that need presigned URL generation
-	var toGenerate []RawAsset
 
 	for _, asset := range assets {
 		noteMap, ok := assetMap[asset.VersionID]
@@ -391,73 +359,15 @@ func (l *Loader) buildAssetMap(
 			assetMap[asset.VersionID] = noteMap
 		}
 
-		// Try to reuse cached presigned URL if hash matches and URL is still valid
-		// Skip cache entirely when forceRefresh is true
-		cached, found := cachedAssets[asset.NoteAsset.Sha256Hash]
-		if !forceRefresh && found && cached.ExpiresAt.After(minValidExpiry) {
-			noteMap[asset.Path] = &model.NoteAssetReplace{
-				ID:           asset.NoteAsset.ID,
-				URL:          cached.URL,
-				Hash:         asset.NoteAsset.Sha256Hash,
-				ExpiresAt:    cached.ExpiresAt,
-				AbsolutePath: asset.AbsolutePath,
-			}
-			cachedCount++
-			continue
-		}
-
-		toGenerate = append(toGenerate, asset)
-	}
-
-	generatedCount := len(toGenerate)
-	if generatedCount > 0 {
-		// Generate presigned URLs in parallel using errgroup
-		numWorkers := runtime.NumCPU() * 2
-		if numWorkers > generatedCount {
-			numWorkers = generatedCount
-		}
-
-		type result struct {
-			asset        RawAsset
-			presignedURL model.PresignedURL
-		}
-
-		results := make([]result, generatedCount)
-		g, gCtx := errgroup.WithContext(ctx)
-		g.SetLimit(numWorkers)
-
-		for i, asset := range toGenerate {
-			g.Go(func() error {
-				url, err := l.env.NoteAssetURL(gCtx, asset.NoteAsset)
-				if err != nil {
-					return fmt.Errorf("asset %s: %w", asset.Path, err)
-				}
-				results[i] = result{asset: asset, presignedURL: url}
-				return nil
-			})
-		}
-
-		err := g.Wait()
-		if err != nil {
-			return nil, err
-		}
-
-		// Apply results to assetMap
-		for _, r := range results {
-			noteMap := assetMap[r.asset.VersionID]
-			noteMap[r.asset.Path] = &model.NoteAssetReplace{
-				ID:           r.asset.NoteAsset.ID,
-				URL:          r.presignedURL.Value,
-				Hash:         r.asset.NoteAsset.Sha256Hash,
-				ExpiresAt:    r.presignedURL.ExpiresAt,
-				AbsolutePath: r.asset.AbsolutePath,
-			}
+		noteMap[asset.Path] = &model.NoteAssetReplace{
+			ID:           asset.NoteAsset.ID,
+			URL:          model.NoteAssetURLPath(asset.NoteAsset.Sha256Hash, asset.NoteAsset.FileName),
+			Hash:         asset.NoteAsset.Sha256Hash,
+			AbsolutePath: asset.AbsolutePath,
 		}
 	}
 
-	l.log.Debug("assets processed", "cached", cachedCount, "generated", generatedCount)
-
-	return assetMap, nil
+	return assetMap
 }
 
 func (l *Loader) NoteViews() *model.NoteViews {

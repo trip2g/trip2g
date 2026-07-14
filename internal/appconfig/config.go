@@ -228,7 +228,7 @@ const (
 	DefaultMinIORegion      = "us-east-1"
 	DefaultMinIOUseSSL      = false
 	DefaultMinIOInitTimeout = 5 * time.Second
-	DefaultMinIOURLExpires  = 6 * 24 * time.Hour // Max 7 days for MinIO presigned URLs
+	DefaultMinIOURLExpires  = 6 * 24 * time.Hour // deprecated, unused (kept for flag compat)
 )
 
 // DefaultStorageConfig returns default MinIO storage configuration.
@@ -601,7 +601,7 @@ func (c *Config) defineMinioFlags() {
 		&c.Storage.PublicURL,
 		"minio-public-url",
 		c.Storage.PublicURL,
-		"Override scheme and host in presigned URLs (e.g. https://storage.example.com)",
+		"Deprecated, unused: assets are served via /_system/assets/",
 	)
 	flag.DurationVar(
 		&c.Storage.InitTimeout,
@@ -613,7 +613,7 @@ func (c *Config) defineMinioFlags() {
 		&c.Storage.URLExpiresIn,
 		"minio-url-expires-in",
 		c.Storage.URLExpiresIn,
-		"MinIO presigned URL expiration time",
+		"Deprecated, unused: assets are served via /_system/assets/",
 	)
 	flag.DurationVar(
 		&c.APIKeyLogs.Retention,

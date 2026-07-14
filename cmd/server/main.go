@@ -14,6 +14,7 @@ import (
 	_ "time/tzdata" // embed IANA tz DB so time.LoadLocation works on any base image
 
 	"trip2g/internal/appconfig"
+	"trip2g/internal/assetindex"
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
@@ -217,11 +218,12 @@ type appState struct {
 
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
-	// localAssetsFS serves note assets from the local-storage dir via the
-	// /_assets/ route. nil unless the local storage backend is active.
-	localAssetsFS *fasthttp.FS
 	// assetsMu guards assetHashes rebuilds.
 	assetsMu sync.Mutex
+
+	// AssetIndex maps asset sha256 -> owning notes / publicness for the
+	// /_system/assets/ route; invalidated on note reloads.
+	*assetindex.AssetIndex
 
 	*configregistry.SiteConfigBuilder
 
@@ -495,7 +497,7 @@ func main() {
 	a.setupAssets()
 	a.setTokenValidator()
 	a.personalTokenResolver = personaltoken.NewResolver(a)
-	a.setFileStorageExpiringCallback()
+	a.AssetIndex = assetindex.New(a)
 
 	// WRITER SLOT — acquire before starting any writer subsystem. This is an
 	// honest-but-minimal probe (BEGIN IMMEDIATE; COMMIT) that the SQLite write
@@ -574,6 +576,7 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 	// A reload changes note content, layouts and telegram links, so flush the
 	// whole anonymous page cache rather than reasoning about which keys moved.
 	a.ClearPageCache()
+	a.InvalidateAssetIndex()
 
 	return a.latestNoteLoader.NoteViews(), nil
 }
@@ -594,6 +597,7 @@ func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
 	}
 
 	a.ClearPageCache()
+	a.InvalidateAssetIndex()
 
 	return a.liveNoteLoader.NoteViews(), nil
 }

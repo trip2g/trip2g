@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,11 +30,13 @@ type Config struct {
 	UseSSL    bool
 	Prefix    string
 
-	// PublicURL overrides the scheme and host in presigned URLs.
-	// Useful when the SDK connects to an internal endpoint but URLs must use
-	// a public-facing address (e.g. to preserve HTTPS signatures through a CDN).
+	// PublicURL is deprecated and unused: assets are served through trip2g's
+	// own /_system/assets/ route, not via presigned URLs. Kept so the
+	// --minio-public-url flag still parses.
 	PublicURL string
 
+	// URLExpiresIn is deprecated and unused (see PublicURL). Kept so the
+	// --minio-url-expires-in flag still parses.
 	URLExpiresIn time.Duration
 
 	InitTimeout time.Duration
@@ -49,7 +50,6 @@ func (c *Config) ValidateConfig() error {
 		ozzo.Field(&c.Bucket, ozzo.Required),
 		ozzo.Field(&c.Region, ozzo.Required),
 		ozzo.Field(&c.InitTimeout, ozzo.Required),
-		ozzo.Field(&c.URLExpiresIn, ozzo.Required),
 	)
 }
 
@@ -227,23 +227,6 @@ func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
 	return fmt.Sprintf("%sna/%d/%s", a.config.Prefix, asset.ID, asset.FileName)
 }
 
-// OnURLExpiring sets up a callback to be called when the URL is about to expire.
-// The app must rebuild dependent pages before the URL expires.
-func (a *FileStorage) OnURLExpiring(callback func()) {
-	interval := a.config.URLExpiresIn - time.Minute*2
-	if interval < 0 {
-		interval = time.Minute
-	}
-
-	ticker := time.NewTicker(interval)
-
-	go func() {
-		for range ticker.C {
-			callback()
-		}
-	}()
-}
-
 func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error) {
 	safeCtx, cancel := a.ctx(ctx)
 	defer cancel()
@@ -266,36 +249,6 @@ func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (
 	}
 
 	return stats.Size > 0, nil
-}
-
-func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error) {
-	safeCtx, cancel := a.ctx(ctx)
-	defer cancel()
-
-	presignedURL, err := a.minioClient.PresignedGetObject(
-		safeCtx,
-		a.config.Bucket,
-		a.NoteAssetPath(asset),
-		a.config.URLExpiresIn,
-		url.Values{},
-	)
-
-	if err != nil {
-		return model.PresignedURL{}, fmt.Errorf("failed to generate presigned URL: %w", err)
-	}
-
-	if a.config.PublicURL != "" {
-		public, parseErr := url.Parse(a.config.PublicURL)
-		if parseErr == nil {
-			presignedURL.Scheme = public.Scheme
-			presignedURL.Host = public.Host
-		}
-	}
-
-	return model.PresignedURL{
-		Value:     presignedURL.String(),
-		ExpiresAt: time.Now().Add(a.config.URLExpiresIn),
-	}, nil
 }
 
 func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error {
@@ -346,6 +299,30 @@ func (a *FileStorage) GetAssetObject(ctx context.Context, asset db.NoteAsset) (i
 	}
 
 	return io.NopCloser(bytes.NewReader(data)), nil
+}
+
+// StreamAssetObject streams length bytes of an asset starting at offset,
+// without buffering the object in memory (unlike GetAssetObject, which drains
+// the object for callers that read after their context ended). The reader's
+// context is canceled on Close, so the caller must Close it when done.
+func (a *FileStorage) StreamAssetObject(ctx context.Context, asset db.NoteAsset, offset, length int64) (io.ReadCloser, error) {
+	safeCtx, cancel := a.ctx(ctx)
+
+	opts := minio.GetObjectOptions{}
+	if offset > 0 || length < asset.Size {
+		if err := opts.SetRange(offset, offset+length-1); err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to set asset range: %w", err)
+		}
+	}
+
+	object, err := a.minioClient.GetObject(safeCtx, a.config.Bucket, a.NoteAssetPath(asset), opts)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to get asset object: %w", err)
+	}
+
+	return &cancelOnCloseReadCloser{ReadCloser: object, cancel: cancel}, nil
 }
 
 func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {
