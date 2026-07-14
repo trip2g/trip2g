@@ -121,7 +121,10 @@ func TestBrowserAuth_TokenLaneBypass(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 
 	// With the channel token → fleet lane bypass → served.
-	body, _ := json.Marshal(goopenai.ChatCompletionRequest{Model: "codellm", Messages: []goopenai.ChatCompletionMessage{bashBody(`echo '{"changes":[],"answer":"ok"}'`)}})
+	body, _ := json.Marshal(goopenai.ChatCompletionRequest{
+		Model:    "codellm",
+		Messages: []goopenai.ChatCompletionMessage{bashBody(`echo '{"changes":[],"answer":"ok"}'`)},
+	})
 	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
 	req.Header.Set("X-Channel-Token", "secret")
 	rec = httptest.NewRecorder()
@@ -129,8 +132,8 @@ func TestBrowserAuth_TokenLaneBypass(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
 }
 
-var errAuth = &authErr{}
+var errAuth = &authError{}
 
-type authErr struct{}
+type authError struct{}
 
-func (*authErr) Error() string { return "no token" }
+func (*authError) Error() string { return "no token" }

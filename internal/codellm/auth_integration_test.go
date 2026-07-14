@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	goopenai "github.com/sashabaranov/go-openai"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/agentruntime"
@@ -20,7 +21,7 @@ import (
 func fakeMonolith(t *testing.T, role string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/_system/graphql", r.URL.Path)
+		assert.Equal(t, "/_system/graphql", r.URL.Path)
 		_, _ = io.Copy(io.Discard, r.Body)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":{"viewer":{"role":"` + role + `"}}}`))

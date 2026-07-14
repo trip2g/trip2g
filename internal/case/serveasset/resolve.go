@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/valyala/fasthttp"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/assetindex"
 	"trip2g/internal/db"
@@ -54,7 +56,7 @@ func Handle(req *appreq.Request) bool {
 		return false
 	}
 
-	env := req.Env.(Env)
+	env, _ := req.Env.(Env)
 	ctx := req.Req
 
 	if !ctx.IsGet() && !ctx.IsHead() {
@@ -93,33 +95,8 @@ func Handle(req *appreq.Request) bool {
 	ownership, known := env.AssetOwnership(hash, fileName)
 	public := known && ownership.Public
 
-	if !public {
-		token, tokenErr := req.UserToken()
-		if tokenErr != nil || token == nil {
-			ctx.SetStatusCode(http.StatusUnauthorized)
-			ctx.SetBodyString("401 Unauthorized")
-			return true
-		}
-
-		allowed := token.IsAdmin()
-		for _, note := range ownership.Notes {
-			if allowed {
-				break
-			}
-			canRead, readErr := env.CanReadNote(ctx, note)
-			if readErr != nil {
-				env.Logger().Error("serveasset: access check failed", "hash", hash, "error", readErr)
-				ctx.SetStatusCode(http.StatusInternalServerError)
-				return true
-			}
-			allowed = canRead
-		}
-
-		if !allowed {
-			ctx.SetStatusCode(http.StatusForbidden)
-			ctx.SetBodyString("403 Forbidden")
-			return true
-		}
+	if !public && enforceAccess(req, env, ownership, hash) {
+		return true
 	}
 
 	h := &ctx.Response.Header
@@ -139,21 +116,9 @@ func Handle(req *appreq.Request) bool {
 
 	ctx.SetContentType(contentType(fileName))
 
-	offset, length := int64(0), asset.Size
-	status := http.StatusOK
-
-	if rangeHdr := string(ctx.Request.Header.Peek(fasthttpRangeHeader)); rangeHdr != "" {
-		start, end, satisfiable, applied := parseRange(rangeHdr, asset.Size)
-		if !satisfiable {
-			h.Set("Content-Range", fmt.Sprintf("bytes */%d", asset.Size))
-			ctx.SetStatusCode(http.StatusRequestedRangeNotSatisfiable)
-			return true
-		}
-		if applied {
-			offset, length = start, end-start+1
-			status = http.StatusPartialContent
-			h.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, asset.Size))
-		}
+	offset, length, status, handled := resolveRange(ctx, h, asset)
+	if handled {
+		return true
 	}
 
 	ctx.SetStatusCode(status)
@@ -174,6 +139,70 @@ func Handle(req *appreq.Request) bool {
 	return true
 }
 
+// enforceAccess applies the non-public access rules. It returns true when it
+// has written a 401/403/500 response and the caller must stop; false when the
+// requester is allowed to read the asset.
+func enforceAccess(req *appreq.Request, env Env, ownership assetindex.Ownership, hash string) bool {
+	ctx := req.Req
+
+	token, tokenErr := req.UserToken()
+	if tokenErr != nil || token == nil {
+		ctx.SetStatusCode(http.StatusUnauthorized)
+		ctx.SetBodyString("401 Unauthorized")
+		return true
+	}
+
+	allowed := token.IsAdmin()
+	for _, note := range ownership.Notes {
+		if allowed {
+			break
+		}
+		canRead, readErr := env.CanReadNote(ctx, note)
+		if readErr != nil {
+			env.Logger().Error("serveasset: access check failed", "hash", hash, "error", readErr)
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			return true
+		}
+		allowed = canRead
+	}
+
+	if !allowed {
+		ctx.SetStatusCode(http.StatusForbidden)
+		ctx.SetBodyString("403 Forbidden")
+		return true
+	}
+
+	return false
+}
+
+// resolveRange applies a Range header (if any) to asset, setting Content-Range
+// headers as needed. It returns the byte offset/length to stream, the response
+// status code, and handled=true when a 416 response was already written and the
+// caller must stop.
+func resolveRange(ctx *fasthttp.RequestCtx, h *fasthttp.ResponseHeader, asset *db.NoteAsset) (int64, int64, int, bool) {
+	offset, length := int64(0), asset.Size
+	status := http.StatusOK
+
+	rangeHdr := string(ctx.Request.Header.Peek(fasthttpRangeHeader))
+	if rangeHdr == "" {
+		return offset, length, status, false
+	}
+
+	start, end, satisfiable, applied := parseRange(rangeHdr, asset.Size)
+	if !satisfiable {
+		h.Set("Content-Range", fmt.Sprintf("bytes */%d", asset.Size))
+		ctx.SetStatusCode(http.StatusRequestedRangeNotSatisfiable)
+		return 0, 0, 0, true
+	}
+	if applied {
+		offset, length = start, end-start+1
+		status = http.StatusPartialContent
+		h.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, asset.Size))
+	}
+
+	return offset, length, status, false
+}
+
 const fasthttpRangeHeader = "Range"
 
 func notFound(ctx interface {
@@ -186,13 +215,13 @@ func notFound(ctx interface {
 
 // parsePath splits "/_system/assets/{sha256}/{fileName}" and validates the
 // hash (64 lowercase-insensitive hex chars) and fileName (single segment).
-func parsePath(path string) (hash, fileName string, ok bool) {
+func parsePath(path string) (string, string, bool) {
 	rest := path[len(model.AssetRoutePrefix):]
 	slash := strings.IndexByte(rest, '/')
 	if slash < 0 {
 		return "", "", false
 	}
-	hash, fileName = rest[:slash], rest[slash+1:]
+	hash, fileName := rest[:slash], rest[slash+1:]
 	if len(hash) != 64 || !isHex(hash) {
 		return "", "", false
 	}
@@ -203,7 +232,7 @@ func parsePath(path string) (hash, fileName string, ok bool) {
 }
 
 func isHex(s string) bool {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		c := s[i]
 		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
 			return false
@@ -223,7 +252,7 @@ func contentType(fileName string) string {
 // applied=false with satisfiable=true means the header should be ignored
 // (multi-range or malformed) and the full body served with 200.
 // satisfiable=false means respond 416.
-func parseRange(header string, size int64) (start, end int64, satisfiable, applied bool) {
+func parseRange(header string, size int64) (int64, int64, bool, bool) {
 	spec, found := strings.CutPrefix(header, "bytes=")
 	if !found || strings.Contains(spec, ",") {
 		return 0, 0, true, false // ignore: not a byte range / multi-range

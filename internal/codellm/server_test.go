@@ -114,7 +114,9 @@ func TestChatCompletions_PatchNote(t *testing.T) {
 	require.Len(t, calls, 2)
 	require.Equal(t, "patch_note", calls[0].Function.Name)
 	var pargs struct {
-		Path, Find, Replace string
+		Path    string `json:"path"`
+		Find    string `json:"find"`
+		Replace string `json:"replace"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(calls[0].Function.Arguments), &pargs))
 	require.Equal(t, "index.md", pargs.Path)
@@ -136,7 +138,7 @@ func TestChatCompletions_AlwaysFinish_EmptyAnswer(t *testing.T) {
 	calls := resp.Choices[0].Message.ToolCalls
 	require.Len(t, calls, 1, "no changes → only the mandatory finish")
 	require.Equal(t, "finish", calls[0].Function.Name)
-	require.Equal(t, "", finishArgs(t, calls))
+	require.Empty(t, finishArgs(t, calls))
 }
 
 // TestEveryCompletionEndsWithFinish asserts the always-finish invariant across a
@@ -213,7 +215,7 @@ func TestExtractBodyAndBag(t *testing.T) {
 	require.Contains(t, body, "role body")
 	require.Contains(t, body, "Begin.")
 	require.NotContains(t, body, "changed_files", "fleet_input must not be scanned for code")
-	require.Equal(t, `{"changed_files":[]}`, string(bag))
+	require.JSONEq(t, `{"changed_files":[]}`, string(bag))
 }
 
 func TestModelsAndHealthz(t *testing.T) {

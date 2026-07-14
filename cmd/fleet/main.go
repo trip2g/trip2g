@@ -32,6 +32,8 @@ import (
 	"trip2g/internal/fleet/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/zerologger"
+
+	"github.com/Khan/genqlient/graphql"
 )
 
 func main() {
@@ -77,7 +79,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := cli.appCfg.Validate(); err != nil {
+	if err = cli.appCfg.Validate(); err != nil {
 		return fmt.Errorf("fleet: invalid config: %w", err)
 	}
 
@@ -99,23 +101,12 @@ func run() error {
 
 	reconciler := fleet.NewReconciler(adminGQL, cli.cfg)
 
-	// --graph-addr: localhost-only debug surface serving the dependency graph
-	// (GET / = UI, GET /graph.json = machine JSON). Internal introspection
-	// tool — refuse anything but a loopback bind, and never mount it on the
-	// public delivery listener.
-	var graphSrv *http.Server
-	if cli.graphAddr != "" {
-		if lerr := validateLoopbackAddr(cli.graphAddr); lerr != nil {
-			return fmt.Errorf("--graph-addr: %w", lerr)
-		}
-		gs := graph.NewServer(discovery, adminGQL, cli.cfg)
-		graphSrv = &http.Server{Addr: cli.graphAddr, Handler: gs.Handler(), ReadHeaderTimeout: 10 * time.Second}
-		go func() {
-			lg.Info("fleet graph debug UI listening", "addr", cli.graphAddr)
-			if gerr := graphSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
-				lg.Error("graph debug server failed", "err", gerr)
-			}
-		}()
+	// --graph-addr: localhost-only debug surface serving the dependency graph.
+	graphSrv, err := startGraphDebugServer(lg, discovery, adminGQL, cli)
+	if err != nil {
+		return err
+	}
+	if graphSrv != nil {
 		defer func() { _ = graphSrv.Close() }()
 	}
 
@@ -126,20 +117,11 @@ func run() error {
 	// monolith-unreachable -> fail-closed). This is a separate server from the
 	// webhook delivery listener (cli.cfg.ListenAddr, /deliver/, HMAC-authed), so
 	// the cookie gate never touches the monolith->fleet delivery path.
-	var graphqlSrv *http.Server
-	if cli.appCfg.GraphQLAddr != "" {
-		warnIfGraphQLAddrNonLoopback(lg, cli.appCfg.GraphQLAddr)
-		gqlMux, gErr := newFleetGraphQLHandler(discovery, cli.cfg.Trip2gBaseURL)
-		if gErr != nil {
-			return fmt.Errorf("fleet: graphql auth: %w", gErr)
-		}
-		graphqlSrv = &http.Server{Addr: cli.appCfg.GraphQLAddr, Handler: gqlMux, ReadHeaderTimeout: 10 * time.Second}
-		go func() {
-			lg.Info("fleet GraphQL API listening", "addr", cli.appCfg.GraphQLAddr)
-			if gerr := graphqlSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
-				lg.Error("graphql server failed", "err", gerr)
-			}
-		}()
+	graphqlSrv, err := startFleetGraphQLServer(lg, discovery, cli)
+	if err != nil {
+		return err
+	}
+	if graphqlSrv != nil {
 		defer func() { _ = graphqlSrv.Close() }()
 	}
 
@@ -155,20 +137,7 @@ func run() error {
 	srv := &http.Server{Addr: cli.cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
 	// Optional loopback-only debug surface for step-by-step code-block runs.
-	// Separate server on a separate addr — never mounted on the public mux.
-	// validateConfig already rejected non-loopback addresses.
-	if cli.cfg.DebugListenAddr != "" {
-		dbgSrv := &http.Server{
-			Addr:              cli.cfg.DebugListenAddr,
-			Handler:           f.DebugHandler(),
-			ReadHeaderTimeout: 10 * time.Second,
-		}
-		go func() {
-			lg.Info("fleet debug listening (loopback only)", "addr", cli.cfg.DebugListenAddr)
-			if dbgErr := dbgSrv.ListenAndServe(); dbgErr != nil && dbgErr != http.ErrServerClosed {
-				lg.Error("debug server", "err", dbgErr)
-			}
-		}()
+	if dbgSrv := startDebugServer(lg, f, cli); dbgSrv != nil {
 		defer func() { _ = dbgSrv.Close() }()
 	}
 
@@ -203,6 +172,80 @@ func run() error {
 			syncOnce(ctx, lg, f, discovery, reconciler)
 		}
 	}
+}
+
+// startGraphDebugServer starts the localhost-only dependency-graph debug UI
+// (GET / = UI, GET /graph.json = machine JSON) when --graph-addr is set. It is
+// an internal introspection tool, so a non-loopback bind is refused. Returns
+// nil when disabled; the caller owns Close via defer.
+func startGraphDebugServer(
+	lg logger.Logger,
+	discovery *fleet.Discovery,
+	adminGQL graphql.Client,
+	cli cliFlags,
+) (*http.Server, error) {
+	if cli.graphAddr == "" {
+		return nil, nil
+	}
+	if err := validateLoopbackAddr(cli.graphAddr); err != nil {
+		return nil, fmt.Errorf("--graph-addr: %w", err)
+	}
+	gs := graph.NewServer(discovery, adminGQL, cli.cfg)
+	srv := &http.Server{Addr: cli.graphAddr, Handler: gs.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		lg.Info("fleet graph debug UI listening", "addr", cli.graphAddr)
+		if gerr := srv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
+			lg.Error("graph debug server failed", "err", gerr)
+		}
+	}()
+	return srv, nil
+}
+
+// startFleetGraphQLServer starts the fleet's own GraphQL read API (roles +
+// roleGraph) when --graphql-addr is set. The entire mux is gated by the
+// delegated-admin middleware. Returns nil when disabled; the caller owns Close.
+func startFleetGraphQLServer(
+	lg logger.Logger,
+	discovery *fleet.Discovery,
+	cli cliFlags,
+) (*http.Server, error) {
+	if cli.appCfg.GraphQLAddr == "" {
+		return nil, nil
+	}
+	warnIfGraphQLAddrNonLoopback(lg, cli.appCfg.GraphQLAddr)
+	gqlMux, err := newFleetGraphQLHandler(discovery, cli.cfg.Trip2gBaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("fleet: graphql auth: %w", err)
+	}
+	srv := &http.Server{Addr: cli.appCfg.GraphQLAddr, Handler: gqlMux, ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		lg.Info("fleet GraphQL API listening", "addr", cli.appCfg.GraphQLAddr)
+		if gerr := srv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
+			lg.Error("graphql server failed", "err", gerr)
+		}
+	}()
+	return srv, nil
+}
+
+// startDebugServer starts the loopback-only step-by-step code-block debug
+// surface when DebugListenAddr is set (validateConfig already rejected
+// non-loopback addresses). Returns nil when disabled; the caller owns Close.
+func startDebugServer(lg logger.Logger, f *fleet.Fleet, cli cliFlags) *http.Server {
+	if cli.cfg.DebugListenAddr == "" {
+		return nil
+	}
+	srv := &http.Server{
+		Addr:              cli.cfg.DebugListenAddr,
+		Handler:           f.DebugHandler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		lg.Info("fleet debug listening (loopback only)", "addr", cli.cfg.DebugListenAddr)
+		if dbgErr := srv.ListenAndServe(); dbgErr != nil && dbgErr != http.ErrServerClosed {
+			lg.Error("debug server", "err", dbgErr)
+		}
+	}()
+	return srv
 }
 
 // newFleetGraphQLHandler builds the fleet GraphQL server's HTTP handler: a mux

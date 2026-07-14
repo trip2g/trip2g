@@ -157,42 +157,12 @@ func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) (codeRun
 	var stdout string
 	var debug []BlockDebug
 	if len(blocks) == 1 {
-		// Single block: use RunBlock for byte-identical behavior.
-		out, _, _, runErr := RunBlock(ctx, CodeSpec{
-			Program:        programs[0],
-			Code:           blocks[0].Code,
-			Input:          in.Input,
-			Timeout:        in.Timeout,
-			EnvPassthrough: in.EnvPassthrough,
-			EnvPrefix:      in.EnvPrefix,
-			MaxStdoutBytes: limit,
-			Sandbox:        in.Sandbox,
-		})
-		if runErr != nil {
-			return codeRunResult{}, fmt.Errorf("coderun: %w", runErr)
-		}
-		stdout = out
-		if capture {
-			debug = []BlockDebug{{Index: 0, Stdout: out}}
-		}
+		stdout, debug, err = runSingleBlock(ctx, blocks[0], programs[0], in, limit, capture)
 	} else {
-		// Multi-block: true streaming pipeline. In debug mode, allocate a tap per
-		// inter-block edge so wirePipeline tees each block's stdout into it.
-		var taps pipelineDebugTaps
-		if capture {
-			taps = make(pipelineDebugTaps, len(blocks)-1)
-			for i := range taps {
-				taps[i] = &limitedBuffer{limit: limit}
-			}
-		}
-		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
-		if pipeErr != nil {
-			return codeRunResult{}, pipeErr
-		}
-		stdout = out
-		if capture {
-			debug = buildBlockDebug(taps, out, len(blocks))
-		}
+		stdout, debug, err = runMultiBlock(ctx, blocks, programs, in, limit, capture)
+	}
+	if err != nil {
+		return codeRunResult{}, err
 	}
 
 	rawChanges, answer, perr := parseCodeOutput(stdout)
@@ -200,6 +170,55 @@ func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) (codeRun
 		return codeRunResult{}, perr
 	}
 	return codeRunResult{Changes: rawChanges, Answer: answer, Steps: len(blocks), Debug: debug}, nil
+}
+
+// runSingleBlock runs exactly one fenced block via RunBlock for byte-identical
+// behavior with the legacy single-block path. debug is non-nil only when capture.
+func runSingleBlock(
+	ctx context.Context, block FencedBlock, program string, in CodeInput, limit int, capture bool,
+) (string, []BlockDebug, error) {
+	out, _, _, runErr := RunBlock(ctx, CodeSpec{
+		Program:        program,
+		Code:           block.Code,
+		Input:          in.Input,
+		Timeout:        in.Timeout,
+		EnvPassthrough: in.EnvPassthrough,
+		EnvPrefix:      in.EnvPrefix,
+		MaxStdoutBytes: limit,
+		Sandbox:        in.Sandbox,
+	})
+	if runErr != nil {
+		return "", nil, fmt.Errorf("coderun: %w", runErr)
+	}
+	var debug []BlockDebug
+	if capture {
+		debug = []BlockDebug{{Index: 0, Stdout: out}}
+	}
+	return out, debug, nil
+}
+
+// runMultiBlock runs 2+ blocks through the streaming pipeline. In debug mode it
+// allocates a tap per inter-block edge so wirePipeline tees each block's stdout
+// into it. debug is non-nil only when capture.
+func runMultiBlock(
+	ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int, capture bool,
+) (string, []BlockDebug, error) {
+	var taps pipelineDebugTaps
+	if capture {
+		taps = make(pipelineDebugTaps, len(blocks)-1)
+		for i := range taps {
+			taps[i] = &limitedBuffer{limit: limit}
+		}
+	}
+	out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
+	if pipeErr != nil {
+		return "", nil, pipeErr
+	}
+	var debug []BlockDebug
+	if capture {
+		debug = buildBlockDebug(taps, out, len(blocks))
+	}
+	return out, debug, nil
 }
 
 // buildBlockDebug assembles per-block debug from the captured inter-block taps

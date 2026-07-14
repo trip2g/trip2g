@@ -152,7 +152,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req goopenai.ChatCompletionRequest
-	if err := json.Unmarshal(raw, &req); err != nil {
+	if err = json.Unmarshal(raw, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request_error", "decode request: "+err.Error())
 		return
 	}
@@ -247,8 +247,9 @@ func toDebugBlocks(blocks []agentruntime.BlockDebug) []fleetDebugBlock {
 // code (everything except the reserved fleet_input message) into the body to
 // scan, and returns the fleet_input message content as the delivery bag. The
 // system-prompt wrapper has no fences, so only the role body's blocks are found.
-func extractBodyAndBag(messages []goopenai.ChatCompletionMessage) (body string, bag []byte) {
+func extractBodyAndBag(messages []goopenai.ChatCompletionMessage) (string, []byte) {
 	var sb strings.Builder
+	var bag []byte
 	for _, m := range messages {
 		if m.Name == fleetInputMessageName {
 			bag = []byte(m.Content)
@@ -309,7 +310,7 @@ func buildResponse(model string, changes []webhookutil.AgentChange, answer strin
 }
 
 // changeToToolCall maps one AgentChange to a tool name and JSON arguments.
-func changeToToolCall(ch webhookutil.AgentChange) (name, args string) {
+func changeToToolCall(ch webhookutil.AgentChange) (string, string) {
 	if ch.Kind == webhookutil.AgentChangeKindPatch {
 		return "patch_note", mustJSON(map[string]string{
 			"path":    ch.Path,
