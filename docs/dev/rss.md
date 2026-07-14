@@ -1,195 +1,26 @@
 # RSS
 
-## Концепция
+RSS is entirely template-driven: a Jet layout (`_layouts/rss.html`) + a feed note (`layout: rss`, `content_type: application/rss+xml; charset=utf-8`). No Go RSS-specific package exists anymore.
 
-Любая заметка — это RSS лента. Markdown AST страницы преобразуется в RSS feed.
+## The one Go primitive: `NoteQuery.Public()`
 
-Каждая ссылка в заметке становится RSS item. Заголовок ссылки → `<title>`, URL → `<link>`. Если ссылка ведёт на внутреннюю заметку — подтягиваются её метаданные (description, created_at).
+`internal/templateviews/query.go` — `NoteQuery.Public()` restricts `.All()` results to notes readable by anonymous visitors (`model.NoteView.IsPubliclyReadable()`: `Free`, not a system note, not in a `RequireSignin` subgraph). Filtering happens before offset/limit so pagination can't be used to probe hidden notes.
 
-## URL схема
+`model.NoteView.IsPubliclyReadable()` (`internal/model/note.go`) is the single source of truth for "can an unauthenticated visitor see this note" — used by `.Public()`, by `internal/assetindex` (deciding public vs access-checked asset serving), and by any future anonymous-facing feature.
 
-`/path/to/note.rss.xml` — RSS фид для любой заметки.
+## The default `_layouts/rss.html`
 
-## Преобразование Markdown AST → RSS
-
-Парсим AST заметки, извлекаем все ссылки. Порядок items = порядок ссылок в документе.
-
-Каждая ссылка → RSS item:
-- `<title>` — текст ссылки
-- `<link>` — URL (абсолютный)
-- `<description>` — description целевой заметки (если внутренняя ссылка)
-- `<pubDate>` — `rss_created_at` или `created_at` целевой заметки
-
-## Frontmatter (опционально)
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `rss_title` | `string` | Заголовок фида (по умолчанию title заметки) |
-| `rss_description` | `string` | Описание фида (по умолчанию description заметки) |
-
-## Реализация
-
-### Структура кода
-
-| Компонент | Путь | Описание |
-|-----------|------|----------|
-| Package | `internal/rssfeed/` | Генерация RSS 2.0 XML |
-| Middleware | `cmd/server/main.go:handleRSSFeed()` | Перехват `*.rss.xml` запросов |
-| Config | `model.SiteConfig.EnableRSS` | Булев конфиг (default `true`) |
-| Frontmatter | `NoteView.RSSTitle`, `RSSDescription` | Переопределение заголовка/описания |
-
-### Middleware: handleRSSFeed
-
-`cmd/server/main.go:1763-1796`
-
-```go
-func (a *app) handleRSSFeed(req *appreq.Request) bool {
-    // 1. Проверка суффикса .rss.xml
-    if !strings.HasSuffix(req.Path, ".rss.xml") {
-        return false
-    }
-
-    // 2. Проверка конфига enable_rss
-    cfg := a.SiteConfig(context.Background())
-    if !cfg.EnableRSS {
-        return false
-    }
-
-    // 3. Извлечение пути заметки
-    notePath := strings.TrimSuffix(req.Path, ".rss.xml")
-
-    // 4. Поиск заметки в LiveNoteViews
-    notes := a.LiveNoteViews()
-    note := notes.GetByPath(notePath)
-    if note == nil {
-        return false
-    }
-
-    // 5. Генерация RSS
-    xmlBytes, err := rssfeed.Generate(note, a.PublicURL(), notes)
-
-    // 6. Отдача XML
-    req.Req.SetContentType("application/rss+xml; charset=utf-8")
-    req.Req.SetBody(xmlBytes)
-    return true
-}
+```jet
+{{ range i, n := nvs.ByGlob(note.M().GetString("rss_glob", "**")).Public().SortBy("created_at").Desc().Limit(note.M().GetInt("rss_limit", 20)).All() }}
 ```
 
-### Generator: rssfeed.Generate()
+Notes:
+- `html()` (Jet built-in) escapes into XML numeric refs — used for all text fields including `content:encoded`, avoiding the `]]>`-inside-CDATA problem.
+- No `<?xml?>` declaration (avoids a preamble-injection edge case).
+- `range i, n := ...` — Jet's single-var `range x := ...` binds the loop index, not the value; the two-var form is required to get the note.
 
-`internal/rssfeed/rssfeed.go:50`
+Ships in both `onboarding-vault/` (new-vault default) and `docs/demo/` (e2e fixture), each with a matching `feed.md`.
 
-**Входные данные:**
-- `note *model.NoteView` — заметка для конвертации
-- `publicURL string` — base URL сайта
-- `notes *model.NoteViews` — для резолва internal links
+## What was removed
 
-**Алгоритм:**
-
-1. **Извлечение ссылок** (`extractLinks()` строка 96):
-   - Обход AST заметки через `ast.Walk()`
-   - Поиск `wikilink.Node` и `ast.KindLink`
-   - Skip embedded images/videos
-   - Для wikilinks: резолв через `note.ResolvedLinks[target]`
-   - Для markdown links: используется `l.Destination` как есть
-
-2. **Построение feed**:
-   ```go
-   feedTitle := note.RSSTitle != "" ? note.RSSTitle : note.Title
-   feedDesc := note.RSSDescription != "" ? note.RSSDescription : note.Description
-   ```
-
-3. **Генерация items**:
-   - Каждая ссылка → `RSSItem`
-   - Для internal links: обогащение метаданными (`enrichItem()` строка 191)
-
-4. **Сериализация в XML**
-
-### Обогащение внутренних ссылок
-
-`enrichItem()` (строка 191-204):
-
-```go
-func enrichItem(item *RSSItem, notes *model.NoteViews, path string) {
-    target := notes.GetByPath(path)
-    if target == nil {
-        return
-    }
-
-    if target.Description != nil {
-        item.Description = *target.Description
-    }
-
-    if !target.CreatedAt.IsZero() {
-        item.PubDate = target.CreatedAt.Format(time.RFC1123Z)
-    }
-}
-```
-
-Метаданные целевой заметки:
-- `Description` → `<description>`
-- `CreatedAt` → `<pubDate>` (RFC1123Z format)
-
-### AST Walking
-
-Поддерживаются два типа ссылок:
-
-| Тип | AST Node | Пример | Обработка |
-|-----|----------|--------|-----------|
-| Wikilink | `wikilink.Node` | `[[target\|text]]` | Резолв через `ResolvedLinks` |
-| Markdown link | `ast.KindLink` | `[text](url)` | URL используется как есть |
-
-**Skip rules:**
-- Embedded media: `![[image.png]]` — пропускается (строка 116)
-- Image links: `[img](file.jpg)` — пропускается (строка 146)
-
-### Конфиг: enable_rss
-
-Таблица: `config_bools` (строка `value_id = 'enable_rss'`)
-
-Загружается в `app.SiteConfig()` (`cmd/server/main.go:521-558`):
-```go
-cfg := model.SiteConfig{
-    EnableRSS: true, // default
-}
-
-bools, err := a.AllLatestConfigBools(ctx)
-for _, b := range bools {
-    if b.ValueID == "enable_rss" {
-        cfg.EnableRSS = b.Value
-    }
-}
-```
-
-### Frontmatter поля
-
-| Поле | Тип | Default | Использование |
-|------|-----|---------|---------------|
-| `rss_title` | `string` | `note.Title` | Заголовок RSS канала |
-| `rss_description` | `string` | `note.Description` | Описание RSS канала |
-
-Парсятся через `goldmark-meta` в `mdloader`, хранятся в `NoteView.RawMeta`.
-
-### Формат RSS 2.0
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-  <channel>
-    <title>Feed Title</title>
-    <link>https://example.com/page</link>
-    <description>Feed description</description>
-    <item>
-      <title>Link text</title>
-      <link>https://example.com/target</link>
-      <description>Target description</description>
-      <pubDate>Mon, 02 Jan 2006 15:04:05 -0700</pubDate>
-      <guid>https://example.com/target</guid>
-    </item>
-  </channel>
-</rss>
-```
-
-## Sitemap.xml
-
-Отдельная задача — генерация `sitemap.xml` из всех опубликованных страниц.
+The old `internal/rssfeed/` package (curated-links model: walk a note's markdown AST, each link → one RSS item) and the `<permalink>.rss.xml` middleware (`cmd/server/routing.go:handleRSSFeed`) are gone, along with the `EnableRSS` config flag (`enable_rss` in the generic `config_bool_values`/`configregistry` system — registry-only, no schema/migration involved). No redirect shim; old `.rss.xml` URLs 404.

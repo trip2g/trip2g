@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	"trip2g/internal/model"
-	"trip2g/internal/rssfeed"
 )
 
 type Env interface {
@@ -112,7 +111,7 @@ func build(env Env) map[Key]*Ownership {
 				k := Key{Hash: ar.Hash, FileName: ar.FileName}
 				e := entry(k)
 				e.Notes = append(e.Notes, nv)
-				if rssfeed.IsPubliclyReadable(nv) {
+				if nv.IsPubliclyReadable() {
 					e.Public = true
 				}
 			}

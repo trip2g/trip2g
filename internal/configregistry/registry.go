@@ -50,7 +50,6 @@ const (
 // Bool config IDs.
 const (
 	ConfigShowDraftVersions      = "show_draft_versions"
-	ConfigEnableRSS              = "enable_rss"
 	ConfigEnableNotFoundTracking = "enable_not_found_tracking"
 )
 
@@ -113,11 +112,6 @@ var (
 			ConfigMeta: ConfigMeta{ID: ConfigShowDraftVersions, Description: "Show the latest unreleased versions to everyone (bypass releases)."},
 			Default:    true,
 			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.ShowDraftVersions = v },
-		},
-		ConfigEnableRSS: {
-			ConfigMeta: ConfigMeta{ID: ConfigEnableRSS, Description: "Enable RSS feed for notes."},
-			Default:    true,
-			SetupFunc:  func(cfg *model.SiteConfig, v bool) { cfg.EnableRSS = v },
 		},
 		ConfigEnableNotFoundTracking: {
 			ConfigMeta: ConfigMeta{

@@ -4,67 +4,36 @@ free: true
 lang_redirect: "[[ru/user/rss-feeds]]"
 ---
 
-Any page on your site can become an RSS feed. Links inside a note automatically become feed items.
-
-### How it works
-
-Add `.rss.xml` to any note's URL and get a ready RSS feed.
-
-Example: `/reading` becomes `/reading.rss.xml`
-
-Every link on the page becomes a feed item:
-- Link text → item title
-- URL → item link
-- If the link points to one of your notes — its description and creation date are pulled in
-
-Items appear in the same order as links on the page.
+RSS is a note. Add a note with `layout: rss` frontmatter and it renders as an RSS 2.0 feed of your other notes.
 
 ### Setup
 
-#### Basic usage
-
-Nothing to configure. Add `.rss.xml` to any page URL:
-
-```
-https://yoursite.com/reading → https://yoursite.com/reading.rss.xml
-```
-
-#### Custom title and description
-
-By default the feed title and description come from the note. Override them in frontmatter:
+Create a note (e.g. `feed.md`) with:
 
 ```yaml
 ---
-rss_title: "My Reading List"
-rss_description: "Articles and books worth reading"
+slug: /feed.xml
+content_type: application/rss+xml; charset=utf-8
+layout: rss
+free: true
+rss_glob: "**"
+rss_limit: 20
 ---
 ```
 
+That's it — visit `/feed.xml` and you have a feed. Only publicly readable notes (free, not sign-in-gated, not system) ever appear in it.
+
 | Field | Purpose | Default |
 |-------|---------|---------|
-| `rss_title` | RSS channel title | Note title |
-| `rss_description` | RSS channel description | Note description |
+| `rss_glob` | Which notes to include (glob, e.g. `"blog/**"`) | `**` (everything) |
+| `rss_limit` | Max items | `20` |
+| `rss_title` | Feed title | Note title |
+| `rss_description` | Feed description | Note description |
 
-#### Disabling RSS
+### Customizing the feed
 
-Add `enable_rss = false` in site settings to disable feed generation entirely.
+The feed is rendered by `_layouts/rss.html` — a normal Jet layout. Edit it (or point `layout:` at your own file) to change item shape, add fields, or build several differently-scoped feeds (e.g. `/blog-feed.xml` with `rss_glob: "blog/**"`).
 
-### Use cases
+### Migrating from the old per-note `.rss.xml`
 
-**Topic curator** — collect links on a topic in one note. Add a new article — subscribers are notified automatically.
-
-**Currently reading** — a growing list of books and articles. Subscribers follow your discoveries in real time.
-
-**Work journal** — daily notes with links to tasks and resources. Colleagues subscribe and see what you're working on.
-
-**Project roadmap** — add links to completed features. Users subscribe to progress updates.
-
-**Changelog** — each release is a link to a note with the change description. History of changes as an RSS feed.
-
-### Troubleshooting
-
-**Feed is empty** — check that the page has links. Images and media don't appear in RSS — only text links.
-
-**No descriptions** — descriptions are pulled only for internal links (your notes). External links have no description.
-
-**No dates** — dates come from the target note's `created_at` field. If missing, the item has no date.
+The old automatic `<permalink>.rss.xml` feed (one feed per note, items = the note's links) is gone. Existing subscriber URLs of that form now 404 — there's no redirect. Set up a `/feed.xml` note as above.

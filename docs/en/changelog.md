@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## v0.10.0 (2026-07-13)
 
+### RSS is now a template, not a Go feature
+
+- **What.** The old automatic `<permalink>.rss.xml` feed (one per note, items = the note's links) is gone, along with its `enable_rss` site setting. RSS is now a normal Jet layout: a note with `layout: rss` + `content_type: application/rss+xml; charset=utf-8` frontmatter renders an RSS 2.0 feed, served wherever you route it (default: `/feed.xml`). Which notes appear is controlled by `rss_glob`/`rss_limit` frontmatter, and only publicly readable notes (free, not sign-in-gated, not system) are ever included.
+- **Why.** The per-note curated-links feed was rigid and undiscoverable. A template-based feed is fully customizable — edit `_layouts/rss.html` to change item shape, or build several feeds with different scopes — using the same layout system as everything else on the site.
+- **How.** See [[en/user/rss]]. Existing `.rss.xml` subscriber URLs 404 now; there's no redirect — set up a `/feed.xml` note to replace them.
+
 ### Theming the default template + a live theme editor
 
 - **What.** Two new pages document how to re-skin the default template. [[en/user/themes]] explains that the whole look comes from Pico CSS `--pico-*` variables — override them in a `<style>` block pasted into admin **HTML Injection** and the site re-themes at once, no rebuild or fork. [[en/user/theme-editor]] renders a live editor right on the site: drag the variables, watch the preview, and (signed in as admin) click **Save** to write the theme into your site's HTML injection. The editor is a custom Jet layout (`layout: theme_editor`), installable on any site from [trip2g/theme_editor_template](https://github.com/trip2g/theme_editor_template).
