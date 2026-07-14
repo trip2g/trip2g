@@ -580,6 +580,9 @@ services:
       - TRIP2G_FLEET_FLEET_SECRET=e2ec-fleet-secret
       - TRIP2G_FLEET_LLM_BASE_URL=http://codellm:8082/v1
       - TRIP2G_FLEET_LLM_API_KEY=e2e-codellm-shared-key-0123456789abcdef
+      # This fleet's LLM endpoint IS codellm, so it may deliver the code role's
+      # env_passthrough vars via the $FLEET_INPUT bag (gates injectEnvPassthrough).
+      - TRIP2G_FLEET_LLM_EXECUTES_CODE=true
       - TRIP2G_FLEET_DEFAULT_MODEL=codellm
       - TRIP2G_FLEET_AGENTS_FOLDER=roles/
       - TRIP2G_FLEET_POLL_SECONDS=3

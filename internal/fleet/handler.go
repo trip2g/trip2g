@@ -351,31 +351,59 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 }
 
 // injectEnvPassthrough augments a code-role delivery bag with the role's
-// declared env_passthrough vars, read from THIS fleet's own environment, under
-// an "env" key. Post-cutover an executor:code role runs in codellm, whose child
-// env is scrubbed to PATH+FLEET_INPUT — so env_passthrough can no longer hand
-// fleet's vars to the code through the process env; they must ride the delivery
-// bag ($FLEET_INPUT) instead. The code reads them from bag["env"][NAME].
+// declared env_passthrough (exact names) and env_prefix (name prefixes) vars,
+// read from THIS fleet's own environment, under an "env" key. Post-cutover an
+// executor:code role runs in codellm, whose child env is scrubbed to
+// PATH+FLEET_INPUT — so env passthrough can no longer hand fleet's vars to the
+// code through the process env; they must ride the delivery bag ($FLEET_INPUT)
+// instead. The code reads them from bag["env"][NAME].
 //
-// This is the minimal path that keeps env_passthrough roles working under the
-// cutover (and unblocks the krisp-ingest e2e). It is NOT the productized answer:
-// the bag rides the HTTP request, so a real secret would cross the very boundary
-// codellm hardens. The productized path is codellm's requires_secrets manifest
-// (secret held in codellm's own config, injected per-skill) — see the
-// "Env passthrough is dropped" section of docs/dev/codellm_extraction.md.
-func injectEnvPassthrough(bag []byte, names []string) []byte {
-	if len(names) == 0 {
+// The caller gates this on Config.LLMExecutesCode (default off): it fires ONLY
+// for a codellm-backed fleet. A fleet whose --llm-base-url points at a real LLM
+// must never ship env_passthrough secrets in the request body to that third
+// party, so injection is off unless the operator explicitly declares the fleet
+// executes code.
+//
+// SECURITY: even so, this is the INTERIM path. The bag rides the fleet→codellm
+// request body, so it is NOT safe for real secrets — every injection logs a loud
+// warning. The productized answer is codellm's requires_secrets manifest (secret
+// held in codellm's own config, injected per-skill) — see the "Env passthrough
+// is dropped" section of docs/dev/codellm_extraction.md.
+func injectEnvPassthrough(bag []byte, roleName string, names, prefixes []string) []byte {
+	if len(names) == 0 && len(prefixes) == 0 {
 		return bag
 	}
-	env := make(map[string]string, len(names))
+	env := map[string]string{}
 	for _, n := range names {
 		if v, ok := os.LookupEnv(n); ok {
 			env[n] = v
 		}
 	}
+	if len(prefixes) > 0 {
+		for _, kv := range os.Environ() {
+			k, v, _ := strings.Cut(kv, "=")
+			for _, p := range prefixes {
+				if strings.HasPrefix(k, p) {
+					env[k] = v
+					break
+				}
+			}
+		}
+	}
 	if len(env) == 0 {
 		return bag
 	}
+
+	// Log the var NAMES only (never values) so an operator SEES that these vars
+	// are about to cross the fleet→codellm request boundary.
+	names = make([]string, 0, len(env))
+	for k := range env {
+		names = append(names, k)
+	}
+	//nolint:sloglint // Fleet has no logger instance; global slog is intentional here
+	slog.Warn("fleet: env_passthrough vars ride the fleet→codellm request body — do NOT use for real secrets; use the codellm requires_secrets manifest",
+		"role", roleName, "vars", names)
+
 	m := map[string]any{}
 	if len(bag) > 0 {
 		_ = json.Unmarshal(bag, &m)
@@ -425,6 +453,14 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 		// HardFailApply preserves RunCode's all-or-nothing semantics (a failed
 		// apply fails the run). No MaxSteps pin: codellm's always-finish invariant
 		// stops the loop in one turn, so the normal step ceiling is safe.
+		//
+		// Deliver the role's declared env passthrough via the bag ONLY when this
+		// fleet is codellm-backed (LLMExecutesCode); a real-LLM fleet must never
+		// ship those vars in the request body to a third party.
+		bag := p.InputBag
+		if f.cfg.LLMExecutesCode {
+			bag = injectEnvPassthrough(bag, p.Role.NotePath, p.Role.EnvPassthrough, p.Role.EnvPrefix)
+		}
 		return agentruntime.Run(p.Ctx, agentruntime.Input{
 			Instruction:   p.Instr,
 			ReadPatterns:  p.Role.ReadPatterns,
@@ -433,7 +469,7 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 			Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
 			MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
 			MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
-			InputBag:      injectEnvPassthrough(p.InputBag, p.Role.EnvPassthrough),
+			InputBag:      bag,
 			HardFailApply: true,
 			LLM:           f.llm,
 			KB:            kb,

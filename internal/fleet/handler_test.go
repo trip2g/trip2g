@@ -808,3 +808,37 @@ func TestServeDelivery_MaxBytesReader413(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code,
 		"oversized body must be rejected by MaxBytesReader before the agent runs")
 }
+
+// TestInjectEnvPassthrough covers the post-cutover credential path: the code
+// role's declared env_passthrough (exact) + env_prefix (prefix) vars are copied
+// from the fleet's env into the delivery bag under "env", preserving existing
+// bag keys. Values are never logged (only names) — not asserted here, but the
+// helper logs names only.
+func TestInjectEnvPassthrough(t *testing.T) {
+	t.Setenv("KRISP_TOKEN", "tok")
+	t.Setenv("KRISP_BASE_URL", "http://krisp")
+	t.Setenv("KRISP_EXTRA", "extra") // matched by the "KRISP_" prefix
+	t.Setenv("UNRELATED", "nope")
+
+	bag := []byte(`{"depth":1}`)
+	out := injectEnvPassthrough(bag, "roles/krisp/x.md", []string{"KRISP_TOKEN", "KRISP_BASE_URL"}, []string{"KRISP_"})
+
+	var m map[string]any
+	require.NoError(t, json.Unmarshal(out, &m))
+	require.EqualValues(t, 1, m["depth"], "existing bag keys preserved")
+	env, ok := m["env"].(map[string]any)
+	require.True(t, ok, "env object present")
+	require.Equal(t, "tok", env["KRISP_TOKEN"])
+	require.Equal(t, "http://krisp", env["KRISP_BASE_URL"])
+	require.Equal(t, "extra", env["KRISP_EXTRA"], "env_prefix picks up matching vars")
+	_, unrelated := env["UNRELATED"]
+	require.False(t, unrelated, "non-declared, non-prefixed vars are excluded")
+}
+
+// TestInjectEnvPassthrough_NoDeclarations is a no-op passthrough: a role with no
+// env_passthrough/env_prefix leaves the bag untouched (no "env" key added).
+func TestInjectEnvPassthrough_NoDeclarations(t *testing.T) {
+	bag := []byte(`{"depth":2}`)
+	out := injectEnvPassthrough(bag, "roles/x.md", nil, nil)
+	require.Equal(t, string(bag), string(out))
+}

@@ -585,6 +585,10 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"OpenAI-compatible base URL")
 	fs.StringVar(&cli.cfg.LLMAPIKey, "llm-api-key", "",
 		"LLM API key (falls back to OPENAI_API_KEY)")
+	fs.BoolVar(&cli.cfg.LLMExecutesCode, "llm-executes-code", false,
+		"this fleet's --llm-base-url IS codellm (it executes executor:code roles); enables delivering a code role's "+
+			"declared env_passthrough/env_prefix vars via the $FLEET_INPUT bag. Leave OFF for a real-LLM endpoint — "+
+			"on would ship those vars in the request body to the provider")
 	fs.IntVar(&cli.cfg.TokenCeiling, "token-ceiling", 100000,
 		"non-overridable per-run token cap")
 	fs.IntVar(&cli.cfg.StepCeiling, "step-ceiling", 25,
