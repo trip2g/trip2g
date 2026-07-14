@@ -60,11 +60,11 @@ type Config struct {
 	Trip2gBaseURL string
 
 	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES
-	// (exact) and name prefixes codellm MAY expose from its OWN environment to
-	// executed code. A request's fleet_env names are intersected with these, so a
-	// request can never reach an env var the operator did not allow. Both empty
+	// (exact) and name prefixes codellm exposes from its OWN environment to
+	// executed code, on every run. codellm owns the secrets, so codellm alone
+	// decides what to expose — the request carries nothing about env. Both empty
 	// (the default) = expose nothing. Holding the secret VALUES here (deploy-time
-	// env / mounted secret) is the point: fleet ships only names.
+	// env / mounted secret) is the point: fleet holds no secrets.
 	ExposeEnv       []string
 	ExposeEnvPrefix []string
 }

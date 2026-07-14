@@ -559,9 +559,9 @@ services:
   # processes roles tagged `fleet_id: e2ec` (the krisp ingest role), while the
   # llm-mock `fleet` (e2e) owns the transcript-agent LLM role.
   #
-  # This fleet holds NO secret values. The krisp role's env_passthrough NAMES
-  # ride the request as a fleet_env message; codellm (which holds KRISP_TOKEN/
-  # KRISP_BASE_URL in its own env) exposes them to the code child.
+  # This fleet holds NO secret values and sends nothing about env. codellm (which
+  # holds KRISP_TOKEN/KRISP_BASE_URL in its own env) decides what to expose to the
+  # code child via its CODELLM_EXPOSE_ENV allowlist.
   fleet-code:
     build:
       context: .
@@ -593,8 +593,8 @@ services:
       - TRIP2G_FLEET_STEP_CEILING=25
       - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
       # NOTE: KRISP_TOKEN/KRISP_BASE_URL are NOT here — fleet never holds secret
-      # values. The role's env_passthrough names ride the request as fleet_env;
-      # codellm holds the values and exposes them (see the codellm service).
+      # values and sends nothing about env. codellm holds the values and decides
+      # what to expose via CODELLM_EXPOSE_ENV (see the codellm service).
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
       interval: 5s

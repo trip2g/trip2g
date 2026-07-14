@@ -47,8 +47,8 @@ func main() {
 		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
 		MaxStdoutBytes:  cfg.MaxStdoutBytes,
 		Timeout:         cfg.Timeout,
-		// Secret VALUES live here (codellm's own env); a request supplies only
-		// NAMES, intersected with this allowlist before exposure to the child.
+		// Secret VALUES live here (codellm's own env); this allowlist is the whole
+		// decision of what to expose to the child. The request carries no env.
 		ExposeEnv:       cfg.ExposeEnv,
 		ExposeEnvPrefix: cfg.ExposeEnvPrefix,
 		// codellm's own OpenAI-standard api_key (Authorization: Bearer <api_key>),
