@@ -51,8 +51,10 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 		desired[markerFor(r.cfg.FleetID, role)] = role
 	}
 
-	// Delete owned webhooks whose marker is no longer desired (also drops extras
-	// sharing this fleet's /<h>/ from a superseded spec version).
+	// Delete owned webhooks whose marker is no longer desired (this also drops
+	// extras from a superseded spec version: they share this fleet's
+	// "fleet:<FleetID>:" description-marker prefix — listOwned already filtered
+	// to it — but their old marker/spec-hash suffix no longer matches desired).
 	for marker, have := range existing {
 		if _, keep := desired[marker]; !keep {
 			if derr := r.delete(ctx, have.id); derr != nil {

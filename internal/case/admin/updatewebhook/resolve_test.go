@@ -61,6 +61,42 @@ func TestResolve_UpdatesConcurrencyAndAttach(t *testing.T) {
 	require.Equal(t, "{ y: 2 }", *env.updated.TransformJsonnet)
 }
 
+// TestResolve_IDAndURLOnly_PassesPatchSemantics is a regression guard for the
+// fleet hash-registry takeover (internal/fleet/reconcile.go's update()): a
+// caller that sends ONLY {id, url} — every other field left nil/absent — must
+// pass validateBounds and PATCH-merge cleanly, leaving every other existing
+// field (enabled, description, onCreate/onUpdate/onRemove, timeoutSeconds,
+// ...) untouched. This is the shape genqlient marshals when fleet re-claims a
+// webhook after a restart/move; if any of these fields were a present zero
+// instead of an absent pointer, timeoutSeconds:0 would fail validateBounds
+// ("must be between 1 and 3600") and every takeover would hard-fail.
+func TestResolve_IDAndURLOnly_PassesPatchSemantics(t *testing.T) {
+	env := &mockEnv{
+		existing: db.ChangeWebhook{
+			ID: 7, Url: "https://old-host.example/_fleet/abc/webhook/xyz",
+			Description: "fleet:f1:roles/triage.md#deadbeef", Enabled: true,
+			OnCreate: true, OnUpdate: true, TimeoutSeconds: 300,
+		},
+	}
+	out, err := updatewebhook.Resolve(context.Background(), env, model.ChangeWebhookUpdateInput{
+		ID:  7,
+		URL: ptr.To("https://new-host.example/_fleet/abc/webhook/xyz"),
+	})
+	require.NoError(t, err)
+	_, isErr := out.(*model.ErrorPayload)
+	require.False(t, isErr, "an {id,url}-only update must not trip validateBounds: %+v", out)
+	require.NotNil(t, env.updated, "the webhook must be updated")
+	require.NotNil(t, env.updated.Url)
+	require.Equal(t, "https://new-host.example/_fleet/abc/webhook/xyz", *env.updated.Url)
+	// Every other field is absent (nil), i.e. "keep existing" under patch semantics.
+	require.Nil(t, env.updated.Enabled)
+	require.Nil(t, env.updated.Description)
+	require.Nil(t, env.updated.OnCreate)
+	require.Nil(t, env.updated.OnUpdate)
+	require.Nil(t, env.updated.OnRemove)
+	require.Nil(t, env.updated.TimeoutSeconds)
+}
+
 func TestResolve_RejectsBadConcurrencyMode(t *testing.T) {
 	env := &mockEnv{}
 	out, err := updatewebhook.Resolve(context.Background(), env, model.ChangeWebhookUpdateInput{

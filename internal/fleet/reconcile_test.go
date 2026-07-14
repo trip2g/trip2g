@@ -104,6 +104,57 @@ func TestReconcile_TakesOverStaleURL(t *testing.T) {
 	require.Equal(t, changeDeliveryURL("https://fleet.example", "f1", role.NotePath), updates[0].Url)
 }
 
+// TestReconcile_TakeoverUpdate_SendsOnlyIdAndURL is the CRITICAL regression
+// guard: it captures the RAW JSON variables genqlient actually marshals for
+// the changeWebhookUpdate call (not a typed-struct decode, which can't tell a
+// present zero-value field from an absent one and would hide this bug) and
+// asserts the "input" object contains EXACTLY the keys "id" and "url".
+//
+// Why this matters: ChangeWebhookUpdateInput's other fields (enabled,
+// description, onCreate/onUpdate/onRemove, timeoutSeconds, ...) are plain Go
+// zero values in update()'s {Id, Url}-only literal. trip2g's
+// changeWebhookUpdate resolver applies PATCH semantics (an absent JSON field
+// keeps the existing DB value), but a *present* zero would be applied as a
+// real value: enabled:false disables the webhook, description:"" wipes the
+// reconcile marker, onCreate/onUpdate/onRemove:false stops it firing, and
+// timeoutSeconds:0 fails the resolver's validateBounds check outright (making
+// every takeover a hard reconcile error). The omitempty directives on
+// ChangeWebhookUpdateInput (operations.graphql) are what make genqlient omit
+// these fields from the marshaled JSON instead of sending them as zeros.
+func TestReconcile_TakeoverUpdate_SendsOnlyIdAndURL(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	marker := markerFor("f1", role)
+	staleURL := "https://OLD-host.example/_fleet/" + fleetHash("f1") + "/webhook/" + urlKey(role.NotePath)
+
+	var rawVars json.RawMessage
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL([3]string{"7", marker, staleURL}), nil
+		case "UpdateChangeWebhook":
+			rawVars = vars
+			return updateOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.NotNil(t, rawVars, "changeWebhookUpdate must have been called")
+
+	var v struct {
+		Input map[string]json.RawMessage `json:"input"`
+	}
+	require.NoError(t, json.Unmarshal(rawVars, &v))
+
+	keys := make([]string, 0, len(v.Input))
+	for k := range v.Input {
+		keys = append(keys, k)
+	}
+	require.ElementsMatch(t, []string{"id", "url"}, keys,
+		"the wire variables for a takeover update must carry ONLY id and url; "+
+			"any other present key is a zero-value field that will overwrite the "+
+			"existing webhook row under trip2g's PATCH semantics")
+}
+
 // TestReconcile_NoUpdateWhenURLMatches asserts that when the marker AND the url
 // already match this fleet's current address, reconcile is a no-op (no update).
 func TestReconcile_NoUpdateWhenURLMatches(t *testing.T) {
@@ -193,15 +244,20 @@ func TestReconcile_SchemaBumpRecreatesLegacyWebhook(t *testing.T) {
 }
 
 // TestReconcile_DropsExtrasSharingHashSegment asserts that when two webhooks
-// share this fleet's /<h>/ (same fleet_id) — the desired one plus a stale
-// superseded-spec extra — the extra is deleted while the desired one is kept.
+// for the same role both carry this fleet's "fleet:<FleetID>:" description
+// marker prefix — the current one plus a stale extra from a superseded spec
+// version (different specVer suffix) — the extra is deleted (marker mismatch
+// against desired) while the current one is kept untouched. Both happen to
+// share the same /<h>/ url segment (same fleet_id), since dedup here is
+// marker-keyed, not url-keyed; the url-keyed path is the takeover/update tests
+// above.
 func TestReconcile_DropsExtrasSharingHashSegment(t *testing.T) {
 	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
 	marker := markerFor("f1", role)
 	currentURL := changeDeliveryURL("https://fleet.example", "f1", role.NotePath)
 	h := fleetHash("f1")
-	staleMarker := "fleet:f1:" + role.NotePath + "#deadbeef"           // same /<h>/, superseded spec
-	staleURL := "https://fleet.example/_fleet/" + h + "/webhook/stale" // shares /<h>/
+	staleMarker := "fleet:f1:" + role.NotePath + "#deadbeef"           // same fleet, superseded spec
+	staleURL := "https://fleet.example/_fleet/" + h + "/webhook/stale" // shares /<h>/ (same fleet_id)
 
 	var deletedIDs []int64
 	var updateCalls, createCalls int
@@ -225,7 +281,7 @@ func TestReconcile_DropsExtrasSharingHashSegment(t *testing.T) {
 		return "", fmt.Errorf("unexpected op %q", op)
 	})
 	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
-	require.Equal(t, []int64{9}, deletedIDs, "the superseded extra sharing /<h>/ is dropped")
+	require.Equal(t, []int64{9}, deletedIDs, "the superseded-marker extra is dropped")
 	require.Zero(t, createCalls, "desired marker already present")
 	require.Zero(t, updateCalls, "desired url already current")
 }

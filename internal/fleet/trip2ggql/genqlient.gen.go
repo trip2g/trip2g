@@ -99,24 +99,24 @@ func (v *ChangeWebhookDeleteInput) GetId() int64 { return v.Id }
 type ChangeWebhookUpdateInput struct {
 	Id               int64    `json:"id"`
 	Url              string   `json:"url"`
-	IncludePatterns  []string `json:"includePatterns"`
-	ExcludePatterns  []string `json:"excludePatterns"`
-	Instruction      string   `json:"instruction"`
-	MaxDepth         int64    `json:"maxDepth"`
-	PassApiKey       bool     `json:"passApiKey"`
-	IncludeContent   bool     `json:"includeContent"`
-	TimeoutSeconds   int64    `json:"timeoutSeconds"`
-	MaxRetries       int64    `json:"maxRetries"`
-	Enabled          bool     `json:"enabled"`
-	Description      string   `json:"description"`
-	OnCreate         bool     `json:"onCreate"`
-	OnUpdate         bool     `json:"onUpdate"`
-	OnRemove         bool     `json:"onRemove"`
-	ReadPatterns     []string `json:"readPatterns"`
-	WritePatterns    []string `json:"writePatterns"`
-	TransformJsonnet string   `json:"transformJsonnet"`
-	AttachNotes      []string `json:"attachNotes"`
-	ConcurrencyMode  string   `json:"concurrencyMode"`
+	IncludePatterns  []string `json:"includePatterns,omitempty"`
+	ExcludePatterns  []string `json:"excludePatterns,omitempty"`
+	Instruction      string   `json:"instruction,omitempty"`
+	MaxDepth         int64    `json:"maxDepth,omitempty"`
+	PassApiKey       bool     `json:"passApiKey,omitempty"`
+	IncludeContent   bool     `json:"includeContent,omitempty"`
+	TimeoutSeconds   int64    `json:"timeoutSeconds,omitempty"`
+	MaxRetries       int64    `json:"maxRetries,omitempty"`
+	Enabled          bool     `json:"enabled,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	OnCreate         bool     `json:"onCreate,omitempty"`
+	OnUpdate         bool     `json:"onUpdate,omitempty"`
+	OnRemove         bool     `json:"onRemove,omitempty"`
+	ReadPatterns     []string `json:"readPatterns,omitempty"`
+	WritePatterns    []string `json:"writePatterns,omitempty"`
+	TransformJsonnet string   `json:"transformJsonnet,omitempty"`
+	AttachNotes      []string `json:"attachNotes,omitempty"`
+	ConcurrencyMode  string   `json:"concurrencyMode,omitempty"`
 }
 
 // GetId returns ChangeWebhookUpdateInput.Id, and is useful for accessing the field via an interface.
@@ -2601,6 +2601,19 @@ mutation UpdateChangeWebhook ($input: ChangeWebhookUpdateInput!) {
 // UpdateChangeWebhook points an existing owned webhook at this fleet's current
 // delivery URL (hash-registry takeover: a restarted/moved fleet with the same
 // fleet_id re-claims the /<h>/ webhook, last-writer-wins).
+//
+// update() (reconcile.go) sets ONLY {Id, Url} — every other field below must
+// omitempty so a Go zero value is NEVER sent to the monolith. trip2g's
+// changeWebhookUpdate resolver uses PATCH semantics (an absent field keeps the
+// existing value); a *present* zero would disable the webhook (enabled:false),
+// wipe the reconcile marker (description:""), stop it firing
+// (onCreate/onUpdate/onRemove:false), and fail validateBounds outright
+// (timeoutSeconds:0 below the required minimum), turning every takeover into a
+// hard reconcile error instead of a narrow url update. NOTE: $input must stay
+// on its own line below — a genqlient quirk attributes a directive comment to
+// the $input variable (not the operation) when it shares the "mutation ...("
+// line, which rejects "for" with "for is only applicable to operations and
+// arguments".
 func UpdateChangeWebhook(
 	ctx_ context.Context,
 	client_ graphql.Client,
