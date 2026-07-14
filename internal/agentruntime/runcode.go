@@ -53,7 +53,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	rawChanges, answer, steps, _, err := runCodeBlocksCore(ctx, in, false)
+	core, err := runCodeBlocksCore(ctx, in, false)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +64,11 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	scoped := NewScopedKB(in.KB, nil, in.WritePatterns)
 	res := &Result{
 		Status:     StatusCompleted,
-		Steps:      steps,
+		Steps:      core.Steps,
 		TokensUsed: 0,
-		Answer:     answer,
+		Answer:     core.Answer,
 	}
-	for _, ch := range rawChanges {
+	for _, ch := range core.Changes {
 		var applyErr error
 		switch ch.Kind {
 		case webhookutil.AgentChangeKindPatch:
@@ -96,8 +96,8 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 // are ignored. A block execution failure or a stdout-parse failure returns an
 // error, which codellm maps to HTTP 422 (deterministic hard-fail, no retry).
 func ExecCode(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, error) {
-	changes, answer, _, _, err := runCodeBlocksCore(ctx, in, false)
-	return changes, answer, err
+	core, err := runCodeBlocksCore(ctx, in, false)
+	return core.Changes, core.Answer, err
 }
 
 // BlockDebug is one block's captured execution, exposed to the debugger surface
@@ -116,8 +116,19 @@ type BlockDebug struct {
 // buffer is captured as it streams. Otherwise identical to ExecCode (same
 // {changes, answer} contract, same hard-fail semantics).
 func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, []BlockDebug, error) {
-	changes, answer, _, debug, err := runCodeBlocksCore(ctx, in, true)
-	return changes, answer, debug, err
+	core, err := runCodeBlocksCore(ctx, in, true)
+	return core.Changes, core.Answer, core.Debug, err
+}
+
+// codeRunResult is the shared execution core's result: the parsed {changes,
+// answer} contract, the block count (Steps), and — when capture was requested —
+// the per-block debug capture. Kept as one struct rather than a wide return
+// tuple; field semantics match the former positional returns exactly.
+type codeRunResult struct {
+	Changes []webhookutil.AgentChange
+	Answer  string
+	Steps   int
+	Debug   []BlockDebug // nil unless capture was requested
 }
 
 // runCodeBlocksCore is the shared execution core of RunCode, ExecCode, and
@@ -127,15 +138,15 @@ func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange
 // contract. It performs no KB writes and no scope checks. When capture is true it
 // also returns per-block BlockDebug via a non-nil pipelineDebugTaps; when false
 // no taps are allocated (the zero-overhead production path).
-func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) ([]webhookutil.AgentChange, string, int, []BlockDebug, error) {
+func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) (codeRunResult, error) {
 	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
-		return nil, "", 0, nil, errors.New("coderun: no fenced code block found in rendered body")
+		return codeRunResult{}, errors.New("coderun: no fenced code block found in rendered body")
 	}
 
 	programs, err := resolvePrograms(blocks, in)
 	if err != nil {
-		return nil, "", 0, nil, err
+		return codeRunResult{}, err
 	}
 
 	limit := in.MaxStdoutBytes
@@ -158,7 +169,7 @@ func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) ([]webho
 			Sandbox:        in.Sandbox,
 		})
 		if runErr != nil {
-			return nil, "", 0, nil, fmt.Errorf("coderun: %w", runErr)
+			return codeRunResult{}, fmt.Errorf("coderun: %w", runErr)
 		}
 		stdout = out
 		if capture {
@@ -176,7 +187,7 @@ func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) ([]webho
 		}
 		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
 		if pipeErr != nil {
-			return nil, "", 0, nil, pipeErr
+			return codeRunResult{}, pipeErr
 		}
 		stdout = out
 		if capture {
@@ -186,9 +197,9 @@ func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) ([]webho
 
 	rawChanges, answer, perr := parseCodeOutput(stdout)
 	if perr != nil {
-		return nil, "", 0, nil, perr
+		return codeRunResult{}, perr
 	}
-	return rawChanges, answer, len(blocks), debug, nil
+	return codeRunResult{Changes: rawChanges, Answer: answer, Steps: len(blocks), Debug: debug}, nil
 }
 
 // buildBlockDebug assembles per-block debug from the captured inter-block taps
