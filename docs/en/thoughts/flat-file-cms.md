@@ -65,14 +65,16 @@ So this is a hybrid: **edit like files — server works like a database.** The U
 
 ## The second angle: app-shell
 
-From "live server with write-API" follows something flat-file CMSes never promised. A custom layout in trip2g is a full HTML page with admin-level trust. Which means you can put an SPA inside it.
+A custom layout in trip2g is a full HTML page with admin-level trust, which means you can put an SPA inside it.
 
 This isn't a hypothesis — two components already work this way: the kanban board and the theme editor. Both are SPAs inside a layout note that talk to trip2g's own GraphQL. Data for such an app comes from two paths:
 
 - **From notes.** The kanban stores its model directly in Markdown notes and saves through `updateNotes`. Notes become the application's database — with versioning and a git mirror for free.
 - **From your own Postgres alongside.** Deploy [PostGraphile](https://www.graphile.org/postgraphile/) or [PostgREST](https://postgrest.org), have Caddy reverse-proxy `/api`, bridge authorization — and the SPA inside a trip2g layout works against a full relational database. The honest cost: you lose the simplicity of one binary, the stack is assembled from parts again.
 
-This gives a second positioning formula: trip2g is also an app-shell. "Bring your SPA — I'll provide hosting, authorization, routing, assets; data comes from my notes or from your Postgres." Plus what no neighbor has at all: an MCP endpoint (those same notes as tools for an agent), paid access, and federation between hubs.
+This gives a second positioning formula: trip2g is also an app-shell. "Bring your SPA — I'll provide hosting, authorization, routing, assets; data comes from my notes or from your Postgres." Plus: an MCP endpoint (those same notes as tools for an agent), paid access, and federation between hubs.
+
+Grav 2.0 (released June 2026) now ships a first-party REST API, a native MCP server, and a SvelteKit SPA admin — while staying purely flat-file with no database. It is trip2g's closest neighbor in spirit, and the more honest flat-file of the two: Grav's canonical store is files, not SQLite. What remains specific to trip2g: the Obsidian vault as authoring surface with two-way sync, the file-UX-over-SQLite hybrid, and multi-channel delivery — web, Telegram, and federation — from one binary.
 
 ```mermaid
 quadrantChart
@@ -99,7 +101,7 @@ quadrantChart
 
 trip2g's position doesn't read off one chart — it holds along several axes at once, and each one separates it from different neighbors. The three diagrams below fill in what A and B don't show.
 
-**Operational model.** How many processes you need to run and whether the server is live. Here trip2g sits with SSGs in terms of simplicity (one binary), but by liveness it's on WordPress's side. That cell — "one process AND a live server" — is nearly empty.
+**Operational model.** How many processes you need to run and whether the server is live. Here trip2g sits with SSGs in terms of simplicity (one binary), but by liveness it's on WordPress's side. That cell — "one process AND a live server" — is sparsely populated: Grav 2.0 (flat-file, no DB) is the closest neighbor, alongside SilverBullet.
 
 ```mermaid
 quadrantChart
@@ -107,18 +109,18 @@ quadrantChart
     x-axis One process --> Assembled stack
     y-axis Static output --> Live server
     quadrant-1 stack, live
-    quadrant-2 empty cell
+    quadrant-2 one binary + live
     quadrant-3 one binary, static
     quadrant-4 assembled, static
     Hugo Eleventy: [0.15, 0.1]
     SilverBullet: [0.2, 0.75]
-    Grav: [0.35, 0.7]
+    Grav 2.0: [0.3, 0.78]
     trip2g: [0.18, 0.82]
     Decap Tina: [0.7, 0.2]
     WordPress: [0.75, 0.85]
 ```
 
-*Diagram C: how many pieces you need to assemble (one process ↔ assembled stack) and whether there's a live runtime (static output ↔ server). trip2g — "one binary AND a live server", the cell that is nearly empty.*
+*Diagram C: how many pieces you need to assemble (one process ↔ assembled stack) and whether there's a live runtime (static output ↔ server). trip2g — "one binary AND a live server"; Grav 2.0 occupies the same cell — flat-file PHP, no DB, live.*
 
 **Content model and delivery.** What lives inside — documents or database records — and how it's served: as a page or via a programmatic interface. Classic CMSes and SSGs serve pages from documents. Headless CMSes serve records via API. trip2g is unusual in that the same document is served *both* as a page to humans *and* as a tool to an agent via MCP.
 
@@ -131,7 +133,8 @@ quadrantChart
     quadrant-2 docs, API
     quadrant-3 docs, page
     quadrant-4 records, page
-    Hugo Grav: [0.15, 0.12]
+    Hugo: [0.15, 0.1]
+    Grav 2.0: [0.15, 0.65]
     Obsidian Publish: [0.1, 0.2]
     WordPress: [0.6, 0.25]
     Contentful Strapi: [0.72, 0.8]
@@ -152,7 +155,8 @@ quadrantChart
     quadrant-2 open, platform
     quadrant-3 open, publish
     quadrant-4 proprietary, publish
-    Hugo Grav: [0.15, 0.15]
+    Hugo: [0.15, 0.1]
+    Grav 2.0: [0.15, 0.55]
     SilverBullet: [0.2, 0.5]
     Obsidian Publish: [0.55, 0.2]
     WordPress: [0.7, 0.55]
@@ -173,4 +177,4 @@ An honest list, so the positioning doesn't become "suits everyone."
 
 ## Conclusion
 
-The class formula: **flat-file CMS whose surface is a local Obsidian vault and whose server is a single binary with a targeted write-API.** The hybrid "files outside, database inside" is not a compromise but a choice: the UX of files, the reliability of a database. And because the server is live and the API writes in place, the same tool turns out to be an app-shell for small applications — from a kanban on notes to an SPA with Postgres alongside. The middle ground between Hugo and WordPress stood half-empty for fifteen years; occupying it is not inventing a new category but finishing an old one.
+The class formula: **flat-file CMS whose surface is a local Obsidian vault and whose server is a single binary with a targeted write-API.** The hybrid "files outside, database inside" is not a compromise but a choice: the UX of files, the reliability of a database. And because the server is live and the API writes in place, the same tool turns out to be an app-shell for small applications — from a kanban on notes to an SPA with Postgres alongside. The middle ground between Hugo and WordPress is no longer empty — Grav 2.0, SilverBullet, and others occupy it too. What remains specific to trip2g: the Obsidian vault as authoring surface with two-way sync, the file-UX-over-SQLite hybrid, and multi-channel delivery — web, Telegram, and federation — from one binary.
