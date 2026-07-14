@@ -1,0 +1,111 @@
+{
+  "note": "codellm Krisp python skill — SANITIZED sample (real call content elided; full transcript stays local)",
+  "captured_at": "2026-07-14T09:39:31Z",
+  "endpoint": "http://127.0.0.1:8092/v1/chat/completions",
+  "sandbox": "off (network needed for api.krisp.ai)",
+  "request": {
+    "model": "codellm",
+    "messages": [
+      {
+        "role": "system",
+        "content": "<system message: skill.md body, 5006 chars — see skill.md>"
+      },
+      {
+        "role": "system",
+        "name": "fleet_input",
+        "content": "{\"krisp_token\":\"***REDACTED***\",\"n\":3}"
+      },
+      {
+        "role": "user",
+        "content": "Begin."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "write_note"
+        }
+      }
+    ]
+  },
+  "response": {
+    "id": "codellm-605f6f0ff2b5",
+    "object": "chat.completion",
+    "created": 1784021971,
+    "model": "codellm",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "id": "call_0",
+              "type": "function",
+              "function": {
+                "name": "write_note",
+                "arguments": "{\"path\":\"calls/YYYY-MM-DD-xxxxxxxx.md\",\"content\":\"<elided: 25246 chars of a real Krisp note (frontmatter + transcript)>\"}"
+              }
+            },
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "write_note",
+                "arguments": "{\"path\":\"calls/YYYY-MM-DD-xxxxxxxx.md\",\"content\":\"<elided: 19096 chars of a real Krisp note (frontmatter + transcript)>\"}"
+              }
+            },
+            {
+              "id": "call_2",
+              "type": "function",
+              "function": {
+                "name": "write_note",
+                "arguments": "{\"path\":\"calls/YYYY-MM-DD-xxxxxxxx.md\",\"content\":\"<elided: 64306 chars of a real Krisp note (frontmatter + transcript)>\"}"
+              }
+            },
+            {
+              "id": "call_3",
+              "type": "function",
+              "function": {
+                "name": "finish",
+                "arguments": "{\"answer\":\"Pulled 3 latest Krisp call(s) [titles/details elided for public repo]\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls",
+        "content_filter_results": {
+          "hate": {
+            "filtered": false
+          },
+          "self_harm": {
+            "filtered": false
+          },
+          "sexual": {
+            "filtered": false
+          },
+          "violence": {
+            "filtered": false
+          },
+          "jailbreak": {
+            "filtered": false,
+            "detected": false
+          },
+          "profanity": {
+            "filtered": false,
+            "detected": false
+          }
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": null
+    },
+    "system_fingerprint": ""
+  }
+}
