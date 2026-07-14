@@ -514,13 +514,15 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 	}
 
 	// Explicit frontmatter og_image/cover wins; otherwise fall back to the first
-	// image in the note body.
+	// image in the note body. Asset URLs are site-relative (see
+	// model.NoteAssetURLPath) — og:image is fetched by external crawlers/link
+	// unfurlers, so it must be absolute, same as og:url above.
 	if ogImage := resp.Note.OGImageURL(); ogImage != "" {
-		tags["og:image"] = ogImage
+		tags["og:image"] = model.AbsoluteURL(ogBaseURL, ogImage)
 	} else if resp.Note.FirstImage != nil {
 		assetReplace, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
 		if ok && assetReplace != nil {
-			tags["og:image"] = assetReplace.URL
+			tags["og:image"] = model.AbsoluteURL(ogBaseURL, assetReplace.URL)
 		}
 	}
 

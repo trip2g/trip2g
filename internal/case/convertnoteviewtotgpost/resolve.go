@@ -208,7 +208,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	post.Warnings = res.Warnings
 	post.DisableWebPagePreview = source.NoteView.ExtractTelegramPublishDisableWebPagePreview()
 
-	mediaURLs, err := getAllMediaURLs(source.NoteView)
+	mediaURLs, err := getAllMediaURLs(source.NoteView, publicURL)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,11 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	return &post, nil
 }
 
-func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
+// getAllMediaURLs collects the note's media asset URLs, absolutized against
+// publicURL: Telegram (tgbotapi.FileURL / the http.Get streaming fallback)
+// fetches them from outside trip2g's origin, so the in-page relative
+// /_system/assets/... URLs (see model.NoteAssetURLPath) are meaningless here.
+func getAllMediaURLs(noteView *model.NoteView, publicURL string) ([]string, error) {
 	var mediaURLs []string
 	var missingAssets []string
 
@@ -274,7 +278,7 @@ func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 			continue
 		}
 
-		mediaURLs = append(mediaURLs, assetReplace.URL)
+		mediaURLs = append(mediaURLs, model.AbsoluteURL(publicURL, assetReplace.URL))
 
 		// Telegram allows max 10 media files in a group
 		if len(mediaURLs) >= 10 {

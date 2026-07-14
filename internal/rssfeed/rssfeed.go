@@ -183,7 +183,7 @@ func buildItem(l link, publicURL string, notes *model.NoteViews) RSSItem {
 
 	// For internal links, try to get metadata from the target note.
 	if isInternal && notes != nil {
-		enrichItem(&item, notes, l.URL)
+		enrichItem(&item, notes, l.URL, publicURL)
 	}
 
 	return item
@@ -209,7 +209,7 @@ func IsPubliclyReadable(note *model.NoteView) bool {
 
 // textContent extracts plain text from an AST node's children.
 // enrichItem adds metadata from the target note to an RSS item.
-func enrichItem(item *RSSItem, notes *model.NoteViews, path string) {
+func enrichItem(item *RSSItem, notes *model.NoteViews, path, publicURL string) {
 	target := notes.GetByPath(path)
 	// Keep link/title metadata for inaccessible targets so readers can discover
 	// the item, but never include private description, dates, or rendered HTML.
@@ -222,7 +222,12 @@ func enrichItem(item *RSSItem, notes *model.NoteViews, path string) {
 	}
 
 	if target.HTML != "" {
-		item.ContentEncoded = "<content:encoded><![CDATA[" + string(target.HTML) + "]]></content:encoded>"
+		// target.HTML embeds site-relative /_system/assets/... image URLs
+		// (same-origin, cacheable — see model.NoteAssetURLPath). RSS readers
+		// fetch content:encoded from outside trip2g's origin, so those URLs
+		// must be absolutized here, same as og:image / JSON-LD.
+		html := model.AbsolutizeAssetURLsInHTML(string(target.HTML), publicURL)
+		item.ContentEncoded = "<content:encoded><![CDATA[" + html + "]]></content:encoded>"
 	}
 
 	if !target.CreatedAt.IsZero() {

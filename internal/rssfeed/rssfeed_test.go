@@ -172,6 +172,34 @@ func TestGenerateOmitsPaywalledTargetContent(t *testing.T) {
 	require.NotContains(t, xml, "content:encoded")
 }
 
+// TestGenerateAbsolutizesAssetURLsInContentEncoded pins the fix for broken
+// RSS reader images: note.HTML embeds site-relative /_system/assets/... URLs
+// (same-origin, cacheable in the normal page-render path), but RSS readers
+// fetch content:encoded from outside trip2g's origin — a relative <img src>
+// there would 404 for every subscriber.
+func TestGenerateAbsolutizesAssetURLsInContentEncoded(t *testing.T) {
+	note := &model.NoteView{
+		Title:         "Feed",
+		Permalink:     "/feed",
+		Free:          true,
+		ResolvedLinks: map[string]string{"pic": "/pic"},
+	}
+	parseNote(t, "[[pic]]", note)
+
+	result, err := Generate(note, "https://example.com", &model.NoteViews{Map: map[string]*model.NoteView{
+		"/pic": {
+			Title:     "Pic",
+			Permalink: "/pic",
+			Free:      true,
+			HTML:      `<p>look <img src="/_system/assets/abc123/photo.png" alt=""></p>`,
+		},
+	}})
+	require.NoError(t, err)
+	xml := string(result)
+	require.Contains(t, xml, `src="https://example.com/_system/assets/abc123/photo.png"`)
+	require.NotContains(t, xml, `src="/_system/assets/abc123/photo.png"`)
+}
+
 func TestGenerateOmitsSignInOnlyTargetContent(t *testing.T) {
 	note := &model.NoteView{
 		Title:         "Feed",

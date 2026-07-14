@@ -125,6 +125,22 @@ func TestJSONLD_EscapesScriptInjection(t *testing.T) {
 	require.Equal(t, "Pwn </script><script>alert(1)</script>", doc.Graph[0]["headline"])
 }
 
+// TestJSONLDImage_IsAbsolute pins the fix for broken schema.org image/logo
+// fields: note asset URLs are site-relative (see model.NoteAssetURLPath), but
+// JSON-LD is consumed by external crawlers (Google rich results, social
+// unfurlers), so image/logo must be absolute — same as og:image.
+func TestJSONLDImage_IsAbsolute(t *testing.T) {
+	nv := makeNote("blog/my-post.md", map[string]interface{}{"og_image": "cover.png"})
+	nv.AssetReplaces = map[string]*model.NoteAssetReplace{
+		"cover.png": {Hash: "abc", FileName: "cover.png", URL: model.NoteAssetURLPath("abc", "cover.png")},
+	}
+	nvs := makeNVS([]*model.NoteView{nv})
+
+	ctx := &Ctx{Note: nvs.ByPath("blog/my-post.md"), PublicURL: "https://ex.com"}
+
+	require.Equal(t, "https://ex.com/_system/assets/abc/cover.png", ctx.JSONLDImage())
+}
+
 // extractLDJSON returns the JSON body between the ld+json script tags.
 func extractLDJSON(t *testing.T, out string) string {
 	t.Helper()
