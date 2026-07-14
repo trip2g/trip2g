@@ -99,7 +99,8 @@ func TestGraphQLServerGatesEntireMux(t *testing.T) {
 // (cli.cfg.ListenAddr, /deliver/) that main builds WITHOUT the delegated-admin
 // wrapper — see run(). This mirrors that delivery mux with a stub handler and
 // asserts a cookieless request reaches the handler (i.e. is NOT rejected by the
-// admin-cookie gate), unlike the GraphQL mux above.
+// admin-cookie gate), unlike the GraphQL mux above. Real HMAC-signature
+// coverage of ServeDelivery itself lives in internal/fleet/handler_test.go.
 func TestWebhookDeliveryNotCookieGated(t *testing.T) {
 	var reached bool
 	deliveryMux := http.NewServeMux()
@@ -114,4 +115,47 @@ func TestWebhookDeliveryNotCookieGated(t *testing.T) {
 
 	require.True(t, reached, "delivery handler must run without an admin cookie")
 	require.NotEqual(t, http.StatusUnauthorized, rec.Code)
+}
+
+// spyLogger records Warn calls; other levels are no-ops.
+type spyLogger struct {
+	warned bool
+	msg    string
+	kv     []interface{}
+}
+
+func (s *spyLogger) Info(string, ...interface{})  {}
+func (s *spyLogger) Error(string, ...interface{}) {}
+func (s *spyLogger) Debug(string, ...interface{}) {}
+func (s *spyLogger) Warn(msg string, kv ...interface{}) {
+	s.warned = true
+	s.msg = msg
+	s.kv = kv
+}
+
+// TestWarnIfGraphQLAddrNonLoopback verifies the loud opt-in warning fires only
+// for a non-loopback bind, matching --graph-addr/--debug-listen's loopback
+// notion but without hard-blocking (a remote-fleet-behind-Caddy setup is
+// legitimate; the delegated-admin gate still authenticates every request).
+func TestWarnIfGraphQLAddrNonLoopback(t *testing.T) {
+	tests := []struct {
+		addr      string
+		wantWarn  bool
+		wantMatch bool // for wantWarn cases: addr must appear in the logged kv
+	}{
+		{"127.0.0.1:9093", false, false},
+		{"localhost:9093", false, false},
+		{"[::1]:9093", false, false},
+		{":9093", true, true},
+		{"0.0.0.0:9093", true, true},
+		{"192.168.1.10:9093", true, true},
+	}
+	for _, tt := range tests {
+		lg := &spyLogger{}
+		warnIfGraphQLAddrNonLoopback(lg, tt.addr)
+		require.Equal(t, tt.wantWarn, lg.warned, tt.addr)
+		if tt.wantMatch {
+			require.Contains(t, lg.kv, tt.addr)
+		}
+	}
 }

@@ -128,6 +128,7 @@ func run() error {
 	// the cookie gate never touches the monolith->fleet delivery path.
 	var graphqlSrv *http.Server
 	if cli.appCfg.GraphQLAddr != "" {
+		warnIfGraphQLAddrNonLoopback(lg, cli.appCfg.GraphQLAddr)
 		gqlMux, gErr := newFleetGraphQLHandler(discovery, cli.cfg.Trip2gBaseURL)
 		if gErr != nil {
 			return fmt.Errorf("fleet: graphql auth: %w", gErr)
@@ -372,6 +373,25 @@ func validateLoopbackAddr(addr string) error {
 		return fmt.Errorf("host %q is not loopback; bind 127.0.0.1, ::1 or localhost", host)
 	}
 	return nil
+}
+
+// warnIfGraphQLAddrNonLoopback logs a loud warning when --graphql-addr is
+// bound off loopback. Unlike --graph-addr/--debug-listen, a non-loopback
+// GraphQL bind is not hard-blocked — a remote-fleet-behind-its-own-Caddy setup
+// is a legitimate topology, and the delegated-admin gate still authenticates
+// every request — but the operator should see the exposure explicitly.
+func warnIfGraphQLAddrNonLoopback(lg logger.Logger, addr string) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return
+	}
+	if host == "localhost" {
+		return
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return
+	}
+	lg.Warn("fleet GraphQL bound non-loopback; ensure Caddy is the sole ingress + delegated-admin gate", "addr", addr)
 }
 
 // normalizeCallbackURL strips trailing slashes so webhook URLs assemble cleanly.
