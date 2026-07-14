@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 )
 
@@ -39,7 +39,7 @@ func gatedServer(t *testing.T, monolithURL string) *Server {
 	require.NoError(t, err)
 	return New(Config{
 		AllowedPrograms: []string{"bash"},
-		Sandbox:         agentruntime.SandboxPolicy{Mode: agentruntime.SandboxOff},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
 		Auth:            BrowserAuth(mw.Wrap, nil),
 	})
 }

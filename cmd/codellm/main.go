@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"trip2g/internal/agentruntime"
 	"trip2g/internal/codellm"
+	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 
 	"trip2g/cmd/codellm/appconfig"
@@ -24,7 +24,7 @@ func main() {
 	// (marker env var). It must run first so a re-exec lands in the child branch
 	// and never falls through to start a second server. No-op when the marker is
 	// absent. Phase 2 completes the sandbox story (move + tests).
-	agentruntime.MaybeRunSandboxChild()
+	coderun.MaybeRunSandboxChild()
 
 	cfg, err := appconfig.Get()
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,
-		Sandbox:         agentruntime.SandboxPolicy{Mode: cfg.Sandbox},
+		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
 		MaxStdoutBytes:  cfg.MaxStdoutBytes,
 		Timeout:         cfg.Timeout,
 		// TokenCheck left nil: the fleet↔codellm locked channel (mTLS/shared

@@ -1,6 +1,6 @@
 //go:build linux
 
-package agentruntime
+package coderun
 
 import (
 	"context"

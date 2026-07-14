@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 )
 
 func TestGetArgs_Defaults(t *testing.T) {
@@ -14,7 +14,7 @@ func TestGetArgs_Defaults(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, DefaultAddr, cfg.Addr, "must default to loopback, not all-interfaces")
 	require.Equal(t, []string{"python", "bash", "node"}, cfg.AllowedPrograms)
-	require.Equal(t, agentruntime.SandboxNative, cfg.Sandbox)
+	require.Equal(t, coderun.SandboxNative, cfg.Sandbox)
 	require.Equal(t, DefaultTimeout, cfg.Timeout)
 	require.Equal(t, 0, cfg.MaxStdoutBytes)
 	require.Empty(t, cfg.ChannelToken)
@@ -32,7 +32,7 @@ func TestGetArgs_EnvOverridesDefaults(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "0.0.0.0:9999", cfg.Addr)
 	require.Equal(t, []string{"bash"}, cfg.AllowedPrograms)
-	require.Equal(t, agentruntime.SandboxBestEffort, cfg.Sandbox)
+	require.Equal(t, coderun.SandboxBestEffort, cfg.Sandbox)
 	require.Equal(t, 5*time.Second, cfg.Timeout)
 	require.Equal(t, 1024, cfg.MaxStdoutBytes)
 	require.Equal(t, "secret", cfg.ChannelToken)

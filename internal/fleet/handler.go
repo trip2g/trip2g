@@ -13,6 +13,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 
 	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
 
@@ -402,9 +403,9 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 }
 
 // sandboxPolicy maps the fleet-level sandbox config to the runtime policy.
-func (f *Fleet) sandboxPolicy() agentruntime.SandboxPolicy {
-	return agentruntime.SandboxPolicy{
-		Mode:    agentruntime.SandboxMode(f.cfg.Sandbox),
+func (f *Fleet) sandboxPolicy() coderun.SandboxPolicy {
+	return coderun.SandboxPolicy{
+		Mode:    coderun.SandboxMode(f.cfg.Sandbox),
 		Network: f.cfg.SandboxNetwork,
 	}
 }

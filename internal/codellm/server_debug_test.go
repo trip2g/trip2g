@@ -10,7 +10,7 @@ import (
 	goopenai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/internal/coderun"
 )
 
 // chatDebugResponse mirrors debugResponse for decoding on the client side.
@@ -111,7 +111,7 @@ func TestBrowserAuth_TokenLaneBypass(t *testing.T) {
 	}
 	srv := New(Config{
 		AllowedPrograms: []string{"bash"},
-		Sandbox:         agentruntime.SandboxPolicy{Mode: agentruntime.SandboxOff},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
 		TokenCheck:      tokenOK,
 		Auth:            BrowserAuth(rejectAdmin, tokenOK),
 	})
