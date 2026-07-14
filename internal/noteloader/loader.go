@@ -77,6 +77,13 @@ type Loader struct {
 	nvs *model.NoteViews
 	log logger.Logger
 
+	// generation counts successful Load calls, bumped atomically with the nvs
+	// swap below. Consumers that cache derived state (e.g. the asset-publicness
+	// index) compare it against a locally-stored value to detect a reload
+	// without needing an explicit invalidation call — closing the TOCTOU window
+	// where a new snapshot is published but stale derived state is still served.
+	generation uint64
+
 	layouts *model.Layouts
 
 	searchIndex       bleve.Index
@@ -329,6 +336,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	l.Lock()
 	l.nvs = nvs
+	l.generation++
 	// Only replace prevHTML when this Load cycle actually re-rendered notes.
 	// Spurious reloads (e.g. triggered by subgraph/webhook handling after a save)
 	// have count=0 and must not clear the prevHTML that the changedHtmlSelectors
@@ -363,6 +371,7 @@ func buildAssetMap(assets []RawAsset) map[int64]map[string]*model.NoteAssetRepla
 			ID:           asset.NoteAsset.ID,
 			URL:          model.NoteAssetURLPath(asset.NoteAsset.Sha256Hash, asset.NoteAsset.FileName),
 			Hash:         asset.NoteAsset.Sha256Hash,
+			FileName:     asset.NoteAsset.FileName,
 			AbsolutePath: asset.AbsolutePath,
 		}
 	}
@@ -374,6 +383,15 @@ func (l *Loader) NoteViews() *model.NoteViews {
 	l.Lock()
 	defer l.Unlock()
 	return l.nvs.Copy() // TODO: optimize
+}
+
+// Generation returns the number of successful Load calls so far. It changes
+// atomically with the published snapshot (same lock), so comparing it across
+// calls detects a reload without an explicit invalidation signal.
+func (l *Loader) Generation() uint64 {
+	l.Lock()
+	defer l.Unlock()
+	return l.generation
 }
 
 // PreviousHTML returns the rendered HTML of a note from the previous Load cycle,

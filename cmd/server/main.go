@@ -576,7 +576,6 @@ func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.Note
 	// A reload changes note content, layouts and telegram links, so flush the
 	// whole anonymous page cache rather than reasoning about which keys moved.
 	a.ClearPageCache()
-	a.InvalidateAssetIndex()
 
 	return a.latestNoteLoader.NoteViews(), nil
 }
@@ -597,9 +596,18 @@ func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
 	}
 
 	a.ClearPageCache()
-	a.InvalidateAssetIndex()
 
 	return a.liveNoteLoader.NoteViews(), nil
+}
+
+// AssetIndexGeneration reports whether either note loader has published a new
+// snapshot since the asset index was last built, so serveasset never trusts a
+// publicness decision computed before a free<->paid flip. Combines both
+// loaders (rather than mirroring LiveNoteViews' ShowDraftVersions branch) so
+// a change on either side always invalidates — over-invalidating is safe,
+// under-invalidating is the leak this exists to prevent.
+func (a *app) AssetIndexGeneration() uint64 {
+	return a.latestNoteLoader.Generation()<<32 | a.liveNoteLoader.Generation()
 }
 
 // CachedPage returns the pre-gzipped bytes cached for key, if any. Part of the

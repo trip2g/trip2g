@@ -48,6 +48,13 @@ type NoteAssetReplace struct {
 	URL  string
 	Hash string
 
+	// FileName is the served file name (last URL path segment). Combined with
+	// Hash it identifies the exact asset row: two note_assets rows can share a
+	// Hash (identical bytes) under different FileNames, and publicness/access
+	// must be decided per (Hash, FileName), never per Hash alone — see
+	// internal/assetindex.
+	FileName string
+
 	AbsolutePath string
 }
 

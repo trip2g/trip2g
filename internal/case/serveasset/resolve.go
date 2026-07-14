@@ -32,7 +32,13 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	NoteAssetsBySha256Hash(ctx context.Context, sha256Hash string) ([]db.NoteAsset, error)
-	AssetOwnership(sha256Hash string) (assetindex.Ownership, bool)
+	// AssetOwnership reports ownership for the exact (hash, fileName) identity
+	// — never for the hash alone. Two note_assets rows can share a hash while
+	// having different file names and different owning notes (e.g. a public
+	// asset and an unrelated private one that happen to be byte-identical);
+	// keying by hash alone would let the private row's fileName inherit the
+	// public row's access decision.
+	AssetOwnership(sha256Hash, fileName string) (assetindex.Ownership, bool)
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 	// StreamAssetObject streams length bytes of the asset starting at offset,
 	// without buffering the whole object in memory.
@@ -84,7 +90,7 @@ func Handle(req *appreq.Request) bool {
 		return true
 	}
 
-	ownership, known := env.AssetOwnership(hash)
+	ownership, known := env.AssetOwnership(hash, fileName)
 	public := known && ownership.Public
 
 	if !public {

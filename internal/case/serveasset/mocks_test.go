@@ -24,7 +24,7 @@ var _ serveasset.Env = &EnvMock{}
 //
 //		// make and configure a mocked serveasset.Env
 //		mockedEnv := &EnvMock{
-//			AssetOwnershipFunc: func(sha256Hash string) (assetindex.Ownership, bool) {
+//			AssetOwnershipFunc: func(sha256Hash string, fileName string) (assetindex.Ownership, bool) {
 //				panic("mock out the AssetOwnership method")
 //			},
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
@@ -47,7 +47,7 @@ var _ serveasset.Env = &EnvMock{}
 //	}
 type EnvMock struct {
 	// AssetOwnershipFunc mocks the AssetOwnership method.
-	AssetOwnershipFunc func(sha256Hash string) (assetindex.Ownership, bool)
+	AssetOwnershipFunc func(sha256Hash string, fileName string) (assetindex.Ownership, bool)
 
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
@@ -67,6 +67,8 @@ type EnvMock struct {
 		AssetOwnership []struct {
 			// Sha256Hash is the sha256Hash argument value.
 			Sha256Hash string
+			// FileName is the fileName argument value.
+			FileName string
 		}
 		// CanReadNote holds details about calls to the CanReadNote method.
 		CanReadNote []struct {
@@ -105,19 +107,21 @@ type EnvMock struct {
 }
 
 // AssetOwnership calls AssetOwnershipFunc.
-func (mock *EnvMock) AssetOwnership(sha256Hash string) (assetindex.Ownership, bool) {
+func (mock *EnvMock) AssetOwnership(sha256Hash string, fileName string) (assetindex.Ownership, bool) {
 	if mock.AssetOwnershipFunc == nil {
 		panic("EnvMock.AssetOwnershipFunc: method is nil but Env.AssetOwnership was just called")
 	}
 	callInfo := struct {
 		Sha256Hash string
+		FileName   string
 	}{
 		Sha256Hash: sha256Hash,
+		FileName:   fileName,
 	}
 	mock.lockAssetOwnership.Lock()
 	mock.calls.AssetOwnership = append(mock.calls.AssetOwnership, callInfo)
 	mock.lockAssetOwnership.Unlock()
-	return mock.AssetOwnershipFunc(sha256Hash)
+	return mock.AssetOwnershipFunc(sha256Hash, fileName)
 }
 
 // AssetOwnershipCalls gets all the calls that were made to AssetOwnership.
@@ -126,9 +130,11 @@ func (mock *EnvMock) AssetOwnership(sha256Hash string) (assetindex.Ownership, bo
 //	len(mockedEnv.AssetOwnershipCalls())
 func (mock *EnvMock) AssetOwnershipCalls() []struct {
 	Sha256Hash string
+	FileName   string
 } {
 	var calls []struct {
 		Sha256Hash string
+		FileName   string
 	}
 	mock.lockAssetOwnership.RLock()
 	calls = mock.calls.AssetOwnership

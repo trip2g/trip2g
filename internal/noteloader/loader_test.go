@@ -23,10 +23,10 @@ func makeMinimalEnv(notes []noteloader.RawNote, requireSignin func() bool) *EnvM
 		RawAssetsFunc:       func(_ context.Context) ([]noteloader.RawAsset, error) { return nil, nil },
 		RawNoteChunksFunc:   func(_ context.Context) ([]noteloader.RawNoteChunk, error) { return nil, nil },
 		NoteAssetExistsFunc: func(_ context.Context, _ db.NoteAsset) (bool, error) { return false, nil },
-		NoteAssetPathFunc: func(_ db.NoteAsset) string { return "" },
-		PublicURLFunc:     func() string { return "https://example.com" },
-		LoggerFunc:        func() logger.Logger { return &logger.TestLogger{} },
-		IsDevModeFunc:     func() bool { return false },
+		NoteAssetPathFunc:   func(_ db.NoteAsset) string { return "" },
+		PublicURLFunc:       func() string { return "https://example.com" },
+		LoggerFunc:          func() logger.Logger { return &logger.TestLogger{} },
+		IsDevModeFunc:       func() bool { return false },
 		LoadFrontmatterPatchesFunc: func(_ context.Context) ([]frontmatterpatch.CompiledPatch, error) {
 			return nil, nil
 		},

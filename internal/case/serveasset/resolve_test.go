@@ -41,7 +41,7 @@ func newEnv(o envOpts) *EnvMock {
 		NoteAssetsBySha256HashFunc: func(ctx context.Context, hash string) ([]db.NoteAsset, error) {
 			return o.rows, nil
 		},
-		AssetOwnershipFunc: func(hash string) (assetindex.Ownership, bool) {
+		AssetOwnershipFunc: func(hash, fileName string) (assetindex.Ownership, bool) {
 			return o.ownership, o.known
 		},
 		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
@@ -316,4 +316,48 @@ func TestHandle_MultipleRowsSameHash_PicksMatchingFileName(t *testing.T) {
 	calls := env.StreamAssetObjectCalls()
 	require.Len(t, calls, 1)
 	require.Equal(t, int64(7), calls[0].Asset.ID)
+}
+
+// TestHandle_SharedHashDifferentFileName_PrivateRowNotLeakedViaPublicSibling
+// pins the fix for a hash-only-keyed publicness leak: a private row
+// ("private.png") shares its sha256 with an unrelated public row
+// ("public.png", different note_assets row, identical bytes). Ownership must
+// be looked up per (hash, fileName) — never per hash alone — so fetching the
+// private row's own filename anonymously must still be denied even though
+// the same hash is public under a different filename.
+func TestHandle_SharedHashDifferentFileName_PrivateRowNotLeakedViaPublicSibling(t *testing.T) {
+	publicRow := db.NoteAsset{ID: 1, FileName: "public.png", Sha256Hash: testHash, Size: int64(len(testBody))}
+	privateRow := db.NoteAsset{ID: 2, FileName: "private.png", Sha256Hash: testHash, Size: int64(len(testBody))}
+	rows := []db.NoteAsset{publicRow, privateRow}
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		NoteAssetsBySha256HashFunc: func(ctx context.Context, hash string) ([]db.NoteAsset, error) {
+			return rows, nil
+		},
+		AssetOwnershipFunc: func(hash, fileName string) (assetindex.Ownership, bool) {
+			switch fileName {
+			case "public.png":
+				return publicOwnership(), true
+			case "private.png":
+				return privateOwnership(), true
+			default:
+				return assetindex.Ownership{}, false
+			}
+		},
+		CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) { return false, nil },
+		StreamAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset, offset, length int64) (io.ReadCloser, error) {
+			return io.NopCloser(strings.NewReader(testBody[offset : offset+length])), nil
+		},
+	}
+
+	// The public sibling is fetchable anonymously.
+	ctx, _ := doRequest(t, env, reqOpts{path: model.NoteAssetURLPath(testHash, "public.png")})
+	require.Equal(t, http.StatusOK, ctx.Response.StatusCode())
+
+	// The private row, same hash, must NOT be fetchable anonymously just
+	// because a sibling row with the same bytes is public.
+	ctx, _ = doRequest(t, env, reqOpts{path: model.NoteAssetURLPath(testHash, "private.png")})
+	require.Equal(t, http.StatusUnauthorized, ctx.Response.StatusCode(),
+		"a private row must not inherit publicness from a same-hash sibling row")
 }
