@@ -275,3 +275,25 @@ func TestNoteQuery_ChainedDescAsc(t *testing.T) {
 	require.Equal(t, "Zebra Post", notes[1].Title()) // tech, order 3
 	require.Equal(t, "Alpha Post", notes[2].Title()) // design, order 1
 }
+
+func TestNoteQuery_Public(t *testing.T) {
+	nvs := model.NewNoteViews()
+	nvs.PathMap["blog/free.md"] = &model.NoteView{
+		Path: "blog/free.md", Title: "Free Post", Permalink: "/blog/free", Free: true,
+	}
+	nvs.PathMap["blog/paid.md"] = &model.NoteView{
+		Path: "blog/paid.md", Title: "Paid Post", Permalink: "/blog/paid", Free: false,
+	}
+	nvs.PathMap["blog/gated.md"] = &model.NoteView{
+		Path: "blog/gated.md", Title: "Gated Post", Permalink: "/blog/gated", Free: true,
+		Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
+	}
+	q := templateviews.NewNVS(nvs, "live")
+
+	all := q.ByGlob("blog/*.md").All()
+	require.Len(t, all, 3, "without Public() all notes are returned")
+
+	public := q.ByGlob("blog/*.md").Public().All()
+	require.Len(t, public, 1, "Public() drops paid and sign-in-gated notes")
+	require.Equal(t, "Free Post", public[0].Title())
+}

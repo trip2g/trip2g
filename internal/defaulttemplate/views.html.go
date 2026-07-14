@@ -65,20 +65,22 @@ func StreamRender(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:16
 	}
 //line views.html:17
-	if ctx.EnableRSS && ctx.Note != nil {
+	for _, feed := range ctx.RSSFeeds() {
 //line views.html:17
-		qw422016.N().S(`
-<link rel="alternate" type="application/rss+xml" href="`)
+		qw422016.N().S(`<link rel="alternate" type="application/rss+xml" title="`)
 //line views.html:18
-		qw422016.N().S(ctx.Note.PermalinkEncoded())
+		qw422016.E().S(feed.Title)
 //line views.html:18
-		qw422016.N().S(`.rss.xml">
+		qw422016.N().S(`" href="`)
+//line views.html:18
+		qw422016.N().S(feed.Href)
+//line views.html:18
+		qw422016.N().S(`">
 `)
 //line views.html:19
 	}
 //line views.html:19
 	qw422016.N().S(`
-
 <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 <link rel="shortcut icon" href="/assets/favicon.ico" />

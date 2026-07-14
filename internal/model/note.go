@@ -1502,3 +1502,22 @@ func (n *NoteView) IsSystem() bool {
 	p := filepath.ToSlash(n.Path)
 	return len(p) > 0 && p[0] == '_' || strings.Contains(p, "/_")
 }
+
+// IsPubliclyReadable reports whether a note may be exposed through an
+// unauthenticated endpoint. Such endpoints (RSS, template feeds) have no user
+// context, so they must honor the same static gates as anonymous page rendering
+// rather than relying on Free alone.
+func (n *NoteView) IsPubliclyReadable() bool {
+	if n == nil || !n.Free {
+		return false
+	}
+	if strings.HasSuffix(n.Path, ".html") || n.IsSystem() {
+		return false
+	}
+	for _, subgraph := range n.Subgraphs {
+		if subgraph != nil && subgraph.RequireSignin {
+			return false
+		}
+	}
+	return true
+}

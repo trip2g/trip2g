@@ -22,6 +22,13 @@ type HrefLang struct {
 	Href string // full URL including scheme+host
 }
 
+// RSSFeedLink is a single discovered RSS feed, rendered as a
+// <link rel="alternate" type="application/rss+xml"> autodiscovery tag.
+type RSSFeedLink struct {
+	Title string
+	Href  string
+}
+
 // OGTag is a single Open Graph / Twitter meta tag. It exists so the template can
 // emit ctx.OGTags in a stable (property-sorted) order — see OGTagsSorted.
 type OGTag struct {
@@ -81,8 +88,6 @@ type Ctx struct {
 	SigninWallError    *SigninWallError
 	UserToken          *usertoken.Data
 	Lang               string
-
-	EnableRSS bool
 
 	TelegramLinks []model.TelegramPostLink
 	SimilarNotes  []*model.NoteView
@@ -175,6 +180,35 @@ func (ctx *Ctx) noteExists(name string) bool {
 	}
 	permalink := "/" + strings.ToLower(strings.ReplaceAll(name, " ", "_"))
 	return ctx.Notes.ByPermalink(permalink) != nil
+}
+
+// RSSFeeds returns one RSSFeedLink per note whose content_type declares it as
+// an RSS feed (application/rss+xml, optionally with a charset suffix), for
+// <link rel="alternate"> autodiscovery. Empty if the site has no feed note.
+func (ctx *Ctx) RSSFeeds() []RSSFeedLink {
+	if ctx.Notes == nil {
+		return nil
+	}
+
+	var feeds []RSSFeedLink
+	for _, note := range ctx.Notes.List() {
+		ct := strings.ToLower(strings.TrimSpace(note.M().GetString("content_type", "")))
+		if !strings.HasPrefix(ct, "application/rss+xml") {
+			continue
+		}
+
+		title := note.M().GetString("rss_title", "")
+		if title == "" {
+			title = note.Title()
+		}
+		if title == "" {
+			title = "RSS"
+		}
+
+		feeds = append(feeds, RSSFeedLink{Title: title, Href: note.Permalink()})
+	}
+
+	return feeds
 }
 
 // SidebarWidgets returns widgets for the given position ("left" or "right").

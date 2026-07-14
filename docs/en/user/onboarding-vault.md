@@ -30,6 +30,7 @@ The archive is a normal Obsidian vault plus a few pre-filled config files:
 | `.mcp.json`, `codex.json` | MCP server configs for AI agents (Claude Code, Codex), pre-filled with your instance URL and key. |
 | `antigravity-mcp-config.json` | MCP config for Antigravity — copy it to `~/.gemini/antigravity/mcp_config.json`. |
 | `AGENTS.md` | Instructions an AI agent reads to search and publish your notes. |
+| `_layouts/` | Example feature templates that ship in the vault: `rss.html` (RSS feed), and others used by kanban and the theme editor. These are editable — open any file in Obsidian, change it, sync. See [[en/user/rss]] for a worked example. |
 
 The MCP configs and `AGENTS.md` let an AI agent search your published notes and, when enabled, manage the site. See [[en/user/agent-memory]].
 

@@ -24,6 +24,7 @@ type NoteQuery struct {
 	sorts  []sortField
 	limit  int
 	offset int
+	public bool
 }
 
 // SortBy adds a sort criterion by a Note method name (Title, CreatedAt, Permalink).
@@ -56,6 +57,14 @@ func (q *NoteQuery) Asc() *NoteQuery {
 	return q
 }
 
+// Public restricts results to notes readable by anonymous visitors, applying the
+// same static access gates as page rendering. Filtering happens before offset and
+// limit so pagination cannot probe hidden notes.
+func (q *NoteQuery) Public() *NoteQuery {
+	q.public = true
+	return q
+}
+
 // Limit sets the maximum number of notes to return.
 func (q *NoteQuery) Limit(n int) *NoteQuery {
 	q.limit = n
@@ -83,6 +92,9 @@ func (q *NoteQuery) All() []*Note {
 			if !match {
 				continue
 			}
+		}
+		if q.public && !nv.IsPubliclyReadable() {
+			continue
 		}
 		notes = append(notes, NewNote(nv))
 	}

@@ -54,7 +54,6 @@ func TestSiteConfigBuilder_DefaultsFromRegistry(t *testing.T) {
 	require.Equal(t, "UTC", cfg.Timezone)
 	require.Empty(t, cfg.DefaultLayout)
 	require.True(t, cfg.ShowDraftVersions)
-	require.True(t, cfg.EnableRSS)
 	require.False(t, cfg.EnableNotFoundTracking)
 	require.Equal(t, 820, cfg.VectorMinSimilarity)
 	require.Equal(t, model.DefaultURLNormalizationMethod, cfg.URLNormalizationMethod)
@@ -70,7 +69,6 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 		},
 		bools: []db.AllLatestConfigBoolsRow{
 			{ValueID: "show_draft_versions", Value: false},
-			{ValueID: "enable_rss", Value: false},
 			{ValueID: "enable_not_found_tracking", Value: true},
 		},
 		ints: []db.AllLatestConfigIntsRow{
@@ -84,7 +82,6 @@ func TestSiteConfigBuilder_DBValuesOverrideDefaults(t *testing.T) {
 	require.Equal(t, "%s — My Site", cfg.SiteTitleTemplate)
 	require.Equal(t, "Europe/Moscow", cfg.Timezone)
 	require.False(t, cfg.ShowDraftVersions)
-	require.False(t, cfg.EnableRSS)
 	require.True(t, cfg.EnableNotFoundTracking)
 	require.Equal(t, 500, cfg.VectorMinSimilarity)
 
@@ -180,7 +177,7 @@ func TestTypedRegistryLookup(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "UTC", sm.Default)
 
-	bm, ok := configregistry.GetBool("enable_rss")
+	bm, ok := configregistry.GetBool("show_draft_versions")
 	require.True(t, ok)
 	require.True(t, bm.Default)
 
