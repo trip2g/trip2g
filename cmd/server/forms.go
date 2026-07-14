@@ -6,6 +6,18 @@ import (
 	"trip2g/internal/db"
 )
 
+// CanReadNoteVersion is the opaque cross-case port used by submitform to gate
+// the submit path on note readability. It resolves the note for the (untrusted,
+// enumerable) noteVersionID and reuses the shared canreadnote check. A missing
+// note returns false so the caller denies without leaking existence.
+func (a *app) CanReadNoteVersion(ctx context.Context, noteVersionID int64) (bool, error) {
+	note := a.LatestNoteViews().GetByVersionID(noteVersionID)
+	if note == nil {
+		return false, nil
+	}
+	return a.CanReadNote(ctx, note)
+}
+
 func (a *app) InsertFormSubmit(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error) {
 	return a.WriteQueries.InsertFormSubmit(ctx, db.InsertFormSubmitParams{
 		NoteVersionID: noteVersionID,

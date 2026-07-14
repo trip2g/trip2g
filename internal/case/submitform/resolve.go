@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/mail"
+	"unicode/utf8"
 
 	"trip2g/internal/formspec"
 	gmodel "trip2g/internal/graph/model"
@@ -12,7 +13,16 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg submitform_test . Env
 
+// maxFieldRunes is a global hard cap applied to every string/email field
+// regardless of the spec, counted in runes. Prevents oversized submissions
+// (up to the request body limit) from being stored verbatim.
+const maxFieldRunes = 8192
+
 type Env interface {
+	// CanReadNoteVersion reports whether the current viewer may READ the note
+	// identified by noteVersionID. Returns false for a nonexistent note so the
+	// submit path can deny opaquely without leaking existence.
+	CanReadNoteVersion(ctx context.Context, noteVersionID int64) (bool, error)
 	GetFormSpec(ctx context.Context, noteVersionID int64, formID string) (*formspec.FormSpec, error)
 	InsertFormSubmit(ctx context.Context, noteVersionID int64, formID string, userID *int64, ip string) (int64, error)
 	InsertFormStringValue(ctx context.Context, submitID int64, fieldName, value string) error
@@ -50,6 +60,18 @@ const (
 )
 
 func Resolve(ctx context.Context, env Env, input Input) (gmodel.SubmitFormOrErrorPayload, error) { //nolint:gocognit
+	// Gate on note readability first. note_version_id is enumerable, so without
+	// this a guest could fetch the spec of / submit to a paywalled, subgraph, or
+	// signin-gated note. Deny with the same shape as a missing form so the
+	// response does not leak whether the note exists or its access policy.
+	readable, err := env.CanReadNoteVersion(ctx, input.NoteVersionID)
+	if err != nil {
+		return nil, fmt.Errorf("submitform: check note readability: %w", err)
+	}
+	if !readable {
+		return &gmodel.ErrorPayload{Message: "form_not_found"}, nil
+	}
+
 	spec, err := env.GetFormSpec(ctx, input.NoteVersionID, input.FormID)
 	if err != nil {
 		return nil, fmt.Errorf("submitform: get form spec: %w", err)
@@ -160,10 +182,14 @@ func validateFields(spec *formspec.FormSpec, values []FieldValue) error { //noli
 				continue
 			}
 			v := *fv.StringValue
-			if field.MinLength != nil && len(v) < *field.MinLength {
+			n := utf8.RuneCountInString(v)
+			if n > maxFieldRunes {
+				return fmt.Errorf("%s: too long", field.Name)
+			}
+			if field.MinLength != nil && n < *field.MinLength {
 				return fmt.Errorf("%s: too short", field.Name)
 			}
-			if field.MaxLength != nil && len(v) > *field.MaxLength {
+			if field.MaxLength != nil && n > *field.MaxLength {
 				return fmt.Errorf("%s: too long", field.Name)
 			}
 			if len(field.StringEnum) > 0 && !containsStr(field.StringEnum, v) {
@@ -175,6 +201,9 @@ func validateFields(spec *formspec.FormSpec, values []FieldValue) error { //noli
 					return fmt.Errorf("%s: required", field.Name)
 				}
 				continue
+			}
+			if utf8.RuneCountInString(*fv.StringValue) > maxFieldRunes {
+				return fmt.Errorf("%s: too long", field.Name)
 			}
 			if _, parseErr := mail.ParseAddress(*fv.StringValue); parseErr != nil {
 				return fmt.Errorf("%s: invalid email", field.Name)

@@ -21,6 +21,9 @@ var _ submitform.Env = &EnvMock{}
 //
 //		// make and configure a mocked submitform.Env
 //		mockedEnv := &EnvMock{
+//			CanReadNoteVersionFunc: func(ctx context.Context, noteVersionID int64) (bool, error) {
+//				panic("mock out the CanReadNoteVersion method")
+//			},
 //			EnqueueSendFormSubmitEmailFunc: func(ctx context.Context, submitID int64) error {
 //				panic("mock out the EnqueueSendFormSubmitEmail method")
 //			},
@@ -64,6 +67,9 @@ var _ submitform.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CanReadNoteVersionFunc mocks the CanReadNoteVersion method.
+	CanReadNoteVersionFunc func(ctx context.Context, noteVersionID int64) (bool, error)
+
 	// EnqueueSendFormSubmitEmailFunc mocks the EnqueueSendFormSubmitEmail method.
 	EnqueueSendFormSubmitEmailFunc func(ctx context.Context, submitID int64) error
 
@@ -102,6 +108,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CanReadNoteVersion holds details about calls to the CanReadNoteVersion method.
+		CanReadNoteVersion []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NoteVersionID is the noteVersionID argument value.
+			NoteVersionID int64
+		}
 		// EnqueueSendFormSubmitEmail holds details about calls to the EnqueueSendFormSubmitEmail method.
 		EnqueueSendFormSubmitEmail []struct {
 			// Ctx is the ctx argument value.
@@ -195,6 +208,7 @@ type EnvMock struct {
 			IP string
 		}
 	}
+	lockCanReadNoteVersion         sync.RWMutex
 	lockEnqueueSendFormSubmitEmail sync.RWMutex
 	lockGetFormSpec                sync.RWMutex
 	lockInsertFormBoolValue        sync.RWMutex
@@ -207,6 +221,42 @@ type EnvMock struct {
 	lockTurnstileSiteKey           sync.RWMutex
 	lockUserID                     sync.RWMutex
 	lockVerifyTurnstile            sync.RWMutex
+}
+
+// CanReadNoteVersion calls CanReadNoteVersionFunc.
+func (mock *EnvMock) CanReadNoteVersion(ctx context.Context, noteVersionID int64) (bool, error) {
+	if mock.CanReadNoteVersionFunc == nil {
+		panic("EnvMock.CanReadNoteVersionFunc: method is nil but Env.CanReadNoteVersion was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		NoteVersionID int64
+	}{
+		Ctx:           ctx,
+		NoteVersionID: noteVersionID,
+	}
+	mock.lockCanReadNoteVersion.Lock()
+	mock.calls.CanReadNoteVersion = append(mock.calls.CanReadNoteVersion, callInfo)
+	mock.lockCanReadNoteVersion.Unlock()
+	return mock.CanReadNoteVersionFunc(ctx, noteVersionID)
+}
+
+// CanReadNoteVersionCalls gets all the calls that were made to CanReadNoteVersion.
+// Check the length with:
+//
+//	len(mockedEnv.CanReadNoteVersionCalls())
+func (mock *EnvMock) CanReadNoteVersionCalls() []struct {
+	Ctx           context.Context
+	NoteVersionID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		NoteVersionID int64
+	}
+	mock.lockCanReadNoteVersion.RLock()
+	calls = mock.calls.CanReadNoteVersion
+	mock.lockCanReadNoteVersion.RUnlock()
+	return calls
 }
 
 // EnqueueSendFormSubmitEmail calls EnqueueSendFormSubmitEmailFunc.
