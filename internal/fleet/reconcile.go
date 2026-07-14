@@ -51,21 +51,35 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 		desired[markerFor(r.cfg.FleetID, role)] = role
 	}
 
-	// Delete owned webhooks whose marker is no longer desired.
-	for marker, id := range existing {
+	// Delete owned webhooks whose marker is no longer desired (also drops extras
+	// sharing this fleet's /<h>/ from a superseded spec version).
+	for marker, have := range existing {
 		if _, keep := desired[marker]; !keep {
-			if derr := r.delete(ctx, id); derr != nil {
+			if derr := r.delete(ctx, have.id); derr != nil {
 				return derr
 			}
 		}
 	}
-	// Create webhooks for desired markers not yet present.
+	// Create webhooks for desired markers not yet present; take over stale ones.
 	for marker, role := range desired {
-		if _, present := existing[marker]; present {
-			continue // marker already matches => spec unchanged (ver is content-derived)
+		have, present := existing[marker]
+		if !present {
+			if cerr := r.create(ctx, role); cerr != nil {
+				return cerr
+			}
+			continue
 		}
-		if cerr := r.create(ctx, role); cerr != nil {
-			return cerr
+		// Marker present => spec unchanged (ver is content-derived). But a
+		// restarted/moved fleet with the same fleet_id computes the same marker
+		// yet the stored url may point at the old address. Re-claim it
+		// (last-writer-wins takeover) by pointing the /<h>/ webhook at this
+		// fleet's current delivery url. An empty stored url means the row shape
+		// carries no url to compare (test fakes), so leave it alone.
+		want := changeDeliveryURL(r.cfg.CallbackURL, r.cfg.FleetID, role.NotePath)
+		if have.url != "" && have.url != want {
+			if uerr := r.update(ctx, have.id, want); uerr != nil {
+				return uerr
+			}
 		}
 	}
 	return nil
@@ -111,8 +125,8 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, id := range existing {
-		if derr := r.delete(ctx, id); derr != nil {
+	for _, have := range existing {
+		if derr := r.delete(ctx, have.id); derr != nil {
 			return derr
 		}
 	}
@@ -128,16 +142,23 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 	return nil
 }
 
-func (r *Reconciler) listOwned(ctx context.Context) (map[string]int64, error) {
+// ownedWebhook is a listed change-webhook this fleet owns (by description
+// marker): its id (for update/delete) and current delivery url (for takeover).
+type ownedWebhook struct {
+	id  int64
+	url string
+}
+
+func (r *Reconciler) listOwned(ctx context.Context) (map[string]ownedWebhook, error) {
 	resp, err := trip2ggql.ListChangeWebhooks(ctx, r.gql)
 	if err != nil {
 		return nil, err
 	}
 	prefix := "fleet:" + r.cfg.FleetID + ":"
-	owned := map[string]int64{}
+	owned := map[string]ownedWebhook{}
 	for _, n := range resp.Admin.AllChangeWebhooks.Nodes {
 		if strings.HasPrefix(n.Description, prefix) {
-			owned[n.Description] = n.Id
+			owned[n.Description] = ownedWebhook{id: n.Id, url: n.Url}
 		}
 	}
 	return owned, nil
@@ -145,7 +166,7 @@ func (r *Reconciler) listOwned(ctx context.Context) (map[string]int64, error) {
 
 func (r *Reconciler) create(ctx context.Context, role Role) error {
 	input := trip2ggql.ChangeWebhookCreateInput{
-		Url:              r.cfg.CallbackURL + "/deliver/" + urlKey(role.NotePath),
+		Url:              changeDeliveryURL(r.cfg.CallbackURL, r.cfg.FleetID, role.NotePath),
 		IncludePatterns:  orEmpty(role.TriggerInclude),
 		ExcludePatterns:  orEmpty(role.TriggerExclude),
 		ReadPatterns:     orEmpty(role.ReadPatterns),
@@ -189,6 +210,20 @@ func (r *Reconciler) delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// update re-points an existing owned change-webhook at url (hash-registry
+// takeover). Only id+url are set, so trip2g updates the delivery target and
+// leaves the rest of the webhook spec untouched.
+func (r *Reconciler) update(ctx context.Context, id int64, url string) error {
+	resp, err := trip2ggql.UpdateChangeWebhook(ctx, r.gql, trip2ggql.ChangeWebhookUpdateInput{Id: id, Url: url})
+	if err != nil {
+		return err
+	}
+	if ep, ok := resp.Admin.ChangeWebhookUpdate.(*trip2ggql.UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload); ok {
+		return fmt.Errorf("changeWebhookUpdate: %s", ep.Message)
+	}
+	return nil
+}
+
 func (r *Reconciler) listOwnedCron(ctx context.Context) (map[string]int64, error) {
 	resp, err := trip2ggql.ListCronWebhooks(ctx, r.gql)
 	if err != nil {
@@ -206,7 +241,7 @@ func (r *Reconciler) listOwnedCron(ctx context.Context) (map[string]int64, error
 
 func (r *Reconciler) createCron(ctx context.Context, role Role) error {
 	input := trip2ggql.CreateCronWebhookInput{
-		Url:             r.cfg.CallbackURL + "/deliver/cron/" + urlKey(role.NotePath),
+		Url:             cronDeliveryURL(r.cfg.CallbackURL, r.cfg.FleetID, role.NotePath),
 		CronSchedule:    role.CronSchedule,
 		ReadPatterns:    orEmpty(role.ReadPatterns),
 		WritePatterns:   orEmpty(role.WritePatterns),

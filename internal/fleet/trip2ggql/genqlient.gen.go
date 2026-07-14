@@ -96,6 +96,89 @@ type ChangeWebhookDeleteInput struct {
 // GetId returns ChangeWebhookDeleteInput.Id, and is useful for accessing the field via an interface.
 func (v *ChangeWebhookDeleteInput) GetId() int64 { return v.Id }
 
+type ChangeWebhookUpdateInput struct {
+	Id               int64    `json:"id"`
+	Url              string   `json:"url"`
+	IncludePatterns  []string `json:"includePatterns"`
+	ExcludePatterns  []string `json:"excludePatterns"`
+	Instruction      string   `json:"instruction"`
+	MaxDepth         int64    `json:"maxDepth"`
+	PassApiKey       bool     `json:"passApiKey"`
+	IncludeContent   bool     `json:"includeContent"`
+	TimeoutSeconds   int64    `json:"timeoutSeconds"`
+	MaxRetries       int64    `json:"maxRetries"`
+	Enabled          bool     `json:"enabled"`
+	Description      string   `json:"description"`
+	OnCreate         bool     `json:"onCreate"`
+	OnUpdate         bool     `json:"onUpdate"`
+	OnRemove         bool     `json:"onRemove"`
+	ReadPatterns     []string `json:"readPatterns"`
+	WritePatterns    []string `json:"writePatterns"`
+	TransformJsonnet string   `json:"transformJsonnet"`
+	AttachNotes      []string `json:"attachNotes"`
+	ConcurrencyMode  string   `json:"concurrencyMode"`
+}
+
+// GetId returns ChangeWebhookUpdateInput.Id, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetId() int64 { return v.Id }
+
+// GetUrl returns ChangeWebhookUpdateInput.Url, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetUrl() string { return v.Url }
+
+// GetIncludePatterns returns ChangeWebhookUpdateInput.IncludePatterns, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetIncludePatterns() []string { return v.IncludePatterns }
+
+// GetExcludePatterns returns ChangeWebhookUpdateInput.ExcludePatterns, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetExcludePatterns() []string { return v.ExcludePatterns }
+
+// GetInstruction returns ChangeWebhookUpdateInput.Instruction, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetInstruction() string { return v.Instruction }
+
+// GetMaxDepth returns ChangeWebhookUpdateInput.MaxDepth, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetMaxDepth() int64 { return v.MaxDepth }
+
+// GetPassApiKey returns ChangeWebhookUpdateInput.PassApiKey, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetPassApiKey() bool { return v.PassApiKey }
+
+// GetIncludeContent returns ChangeWebhookUpdateInput.IncludeContent, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetIncludeContent() bool { return v.IncludeContent }
+
+// GetTimeoutSeconds returns ChangeWebhookUpdateInput.TimeoutSeconds, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetTimeoutSeconds() int64 { return v.TimeoutSeconds }
+
+// GetMaxRetries returns ChangeWebhookUpdateInput.MaxRetries, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetMaxRetries() int64 { return v.MaxRetries }
+
+// GetEnabled returns ChangeWebhookUpdateInput.Enabled, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetEnabled() bool { return v.Enabled }
+
+// GetDescription returns ChangeWebhookUpdateInput.Description, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetDescription() string { return v.Description }
+
+// GetOnCreate returns ChangeWebhookUpdateInput.OnCreate, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetOnCreate() bool { return v.OnCreate }
+
+// GetOnUpdate returns ChangeWebhookUpdateInput.OnUpdate, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetOnUpdate() bool { return v.OnUpdate }
+
+// GetOnRemove returns ChangeWebhookUpdateInput.OnRemove, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetOnRemove() bool { return v.OnRemove }
+
+// GetReadPatterns returns ChangeWebhookUpdateInput.ReadPatterns, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetReadPatterns() []string { return v.ReadPatterns }
+
+// GetWritePatterns returns ChangeWebhookUpdateInput.WritePatterns, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetWritePatterns() []string { return v.WritePatterns }
+
+// GetTransformJsonnet returns ChangeWebhookUpdateInput.TransformJsonnet, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetTransformJsonnet() string { return v.TransformJsonnet }
+
+// GetAttachNotes returns ChangeWebhookUpdateInput.AttachNotes, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetAttachNotes() []string { return v.AttachNotes }
+
+// GetConcurrencyMode returns ChangeWebhookUpdateInput.ConcurrencyMode, and is useful for accessing the field via an interface.
+func (v *ChangeWebhookUpdateInput) GetConcurrencyMode() string { return v.ConcurrencyMode }
+
 // CreateChangeWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
 type CreateChangeWebhookAdminAdminMutation struct {
 	ChangeWebhookCreate CreateChangeWebhookAdminAdminMutationChangeWebhookCreateChangeWebhookCreateOrErrorPayload `json:"-"`
@@ -1007,6 +1090,7 @@ func (v *ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksCo
 type ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook struct {
 	Id          int64  `json:"id"`
 	Description string `json:"description"`
+	Url         string `json:"url"`
 }
 
 // GetId returns ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook.Id, and is useful for accessing the field via an interface.
@@ -1017,6 +1101,11 @@ func (v *ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksCo
 // GetDescription returns ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook.Description, and is useful for accessing the field via an interface.
 func (v *ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook) GetDescription() string {
 	return v.Description
+}
+
+// GetUrl returns ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook.Url, and is useful for accessing the field via an interface.
+func (v *ListChangeWebhooksAdminAdminQueryAllChangeWebhooksAdminChangeWebhooksConnectionNodesAdminChangeWebhook) GetUrl() string {
+	return v.Url
 }
 
 // ListChangeWebhooksResponse is returned by ListChangeWebhooks on success.
@@ -1329,6 +1418,204 @@ func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) 
 // GetPath returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.Path, and is useful for accessing the field via an interface.
 func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) GetPath() string {
 	return v.Path
+}
+
+// UpdateChangeWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
+type UpdateChangeWebhookAdminAdminMutation struct {
+	ChangeWebhookUpdate UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload `json:"-"`
+}
+
+// GetChangeWebhookUpdate returns UpdateChangeWebhookAdminAdminMutation.ChangeWebhookUpdate, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutation) GetChangeWebhookUpdate() UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload {
+	return v.ChangeWebhookUpdate
+}
+
+func (v *UpdateChangeWebhookAdminAdminMutation) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateChangeWebhookAdminAdminMutation
+		ChangeWebhookUpdate json.RawMessage `json:"changeWebhookUpdate"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateChangeWebhookAdminAdminMutation = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.ChangeWebhookUpdate
+		src := firstPass.ChangeWebhookUpdate
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateChangeWebhookAdminAdminMutation.ChangeWebhookUpdate: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateChangeWebhookAdminAdminMutation struct {
+	ChangeWebhookUpdate json.RawMessage `json:"changeWebhookUpdate"`
+}
+
+func (v *UpdateChangeWebhookAdminAdminMutation) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateChangeWebhookAdminAdminMutation) __premarshalJSON() (*__premarshalUpdateChangeWebhookAdminAdminMutation, error) {
+	var retval __premarshalUpdateChangeWebhookAdminAdminMutation
+
+	{
+
+		dst := &retval.ChangeWebhookUpdate
+		src := v.ChangeWebhookUpdate
+		var err error
+		*dst, err = __marshalUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateChangeWebhookAdminAdminMutation.ChangeWebhookUpdate: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload includes the requested fields of the GraphQL interface ChangeWebhookUpdateOrErrorPayload.
+//
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload is implemented by the following types:
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload
+type UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload interface {
+	implementsGraphQLInterfaceUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload) implementsGraphQLInterfaceUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload() {
+}
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload) implementsGraphQLInterfaceUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload() {
+}
+
+func __unmarshalUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload(b []byte, v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "ChangeWebhookUpdatePayload":
+		*v = new(UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload)
+		return json.Unmarshal(b, *v)
+	case "ErrorPayload":
+		*v = new(UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing ChangeWebhookUpdateOrErrorPayload.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalUpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload(v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload:
+		typename = "ChangeWebhookUpdatePayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload
+		}{typename, v}
+		return json.Marshal(result)
+	case *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload:
+		typename = "ErrorPayload"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdateOrErrorPayload: "%T"`, v)
+	}
+}
+
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload includes the requested fields of the GraphQL type ChangeWebhookUpdatePayload.
+type UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload struct {
+	Typename string                                                                                                      `json:"__typename"`
+	Webhook  UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook `json:"webhook"`
+}
+
+// GetTypename returns UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetWebhook returns UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload.Webhook, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayload) GetWebhook() UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook {
+	return v.Webhook
+}
+
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook includes the requested fields of the GraphQL type AdminChangeWebhook.
+type UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook struct {
+	Id int64 `json:"id"`
+}
+
+// GetId returns UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook.Id, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateChangeWebhookUpdatePayloadWebhookAdminChangeWebhook) GetId() int64 {
+	return v.Id
+}
+
+// UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload includes the requested fields of the GraphQL type ErrorPayload.
+type UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload struct {
+	Typename string `json:"__typename"`
+	Message  string `json:"message"`
+}
+
+// GetTypename returns UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload.Typename, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload) GetTypename() string {
+	return v.Typename
+}
+
+// GetMessage returns UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload.Message, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookAdminAdminMutationChangeWebhookUpdateErrorPayload) GetMessage() string {
+	return v.Message
+}
+
+// UpdateChangeWebhookResponse is returned by UpdateChangeWebhook on success.
+type UpdateChangeWebhookResponse struct {
+	Admin UpdateChangeWebhookAdminAdminMutation `json:"admin"`
+}
+
+// GetAdmin returns UpdateChangeWebhookResponse.Admin, and is useful for accessing the field via an interface.
+func (v *UpdateChangeWebhookResponse) GetAdmin() UpdateChangeWebhookAdminAdminMutation {
+	return v.Admin
 }
 
 // UpdateCronWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
@@ -1891,6 +2178,14 @@ type __SearchScopedInput struct {
 // GetQ returns __SearchScopedInput.Q, and is useful for accessing the field via an interface.
 func (v *__SearchScopedInput) GetQ() string { return v.Q }
 
+// __UpdateChangeWebhookInput is used internally by genqlient
+type __UpdateChangeWebhookInput struct {
+	Input ChangeWebhookUpdateInput `json:"input"`
+}
+
+// GetInput returns __UpdateChangeWebhookInput.Input, and is useful for accessing the field via an interface.
+func (v *__UpdateChangeWebhookInput) GetInput() ChangeWebhookUpdateInput { return v.Input }
+
 // __UpdateCronWebhookInput is used internally by genqlient
 type __UpdateCronWebhookInput struct {
 	Input UpdateCronWebhookInput `json:"input"`
@@ -2134,6 +2429,7 @@ query ListChangeWebhooks {
 			nodes {
 				id
 				description
+				url
 			}
 		}
 	}
@@ -2272,6 +2568,53 @@ func SearchScoped(
 	}
 
 	data_ = &SearchScopedResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateChangeWebhook.
+const UpdateChangeWebhook_Operation = `
+mutation UpdateChangeWebhook ($input: ChangeWebhookUpdateInput!) {
+	admin {
+		changeWebhookUpdate(input: $input) {
+			__typename
+			... on ChangeWebhookUpdatePayload {
+				webhook {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
+`
+
+// UpdateChangeWebhook points an existing owned webhook at this fleet's current
+// delivery URL (hash-registry takeover: a restarted/moved fleet with the same
+// fleet_id re-claims the /<h>/ webhook, last-writer-wins).
+func UpdateChangeWebhook(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	input ChangeWebhookUpdateInput,
+) (data_ *UpdateChangeWebhookResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateChangeWebhook",
+		Query:  UpdateChangeWebhook_Operation,
+		Variables: &__UpdateChangeWebhookInput{
+			Input: input,
+		},
+	}
+
+	data_ = &UpdateChangeWebhookResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

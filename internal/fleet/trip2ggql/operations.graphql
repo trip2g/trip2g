@@ -25,6 +25,25 @@ query ListChangeWebhooks {
       nodes {
         id
         description
+        url
+      }
+    }
+  }
+}
+
+# UpdateChangeWebhook points an existing owned webhook at this fleet's current
+# delivery URL (hash-registry takeover: a restarted/moved fleet with the same
+# fleet_id re-claims the /<h>/ webhook, last-writer-wins).
+mutation UpdateChangeWebhook($input: ChangeWebhookUpdateInput!) {
+  admin {
+    changeWebhookUpdate(input: $input) {
+      ... on ChangeWebhookUpdatePayload {
+        webhook {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
       }
     }
   }

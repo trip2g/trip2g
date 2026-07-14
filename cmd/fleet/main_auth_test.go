@@ -97,20 +97,21 @@ func TestGraphQLServerGatesEntireMux(t *testing.T) {
 
 // TestWebhookDeliveryNotCookieGated documents the auth split. The webhook
 // delivery path (monolith -> fleet, HMAC-authed) runs on a SEPARATE server
-// (cli.cfg.ListenAddr, /deliver/) that main builds WITHOUT the delegated-admin
-// wrapper — see run(). This mirrors that delivery mux with a stub handler and
-// asserts a cookieless request reaches the handler (i.e. is NOT rejected by the
-// admin-cookie gate), unlike the GraphQL mux above. Real HMAC-signature
-// coverage of ServeDelivery itself lives in internal/fleet/handler_test.go.
+// (cli.cfg.ListenAddr, /_fleet/<h>/webhook/) that main builds WITHOUT the
+// delegated-admin wrapper — see run(). This mirrors that delivery mux with a
+// stub handler and asserts a cookieless request reaches the handler (i.e. is
+// NOT rejected by the admin-cookie gate), unlike the GraphQL mux above. Real
+// HMAC-signature coverage of ServeDelivery itself lives in
+// internal/fleet/handler_test.go.
 func TestWebhookDeliveryNotCookieGated(t *testing.T) {
 	var reached bool
 	deliveryMux := http.NewServeMux()
-	deliveryMux.HandleFunc("/deliver/", func(w http.ResponseWriter, _ *http.Request) {
+	deliveryMux.HandleFunc("/_fleet/", func(w http.ResponseWriter, _ *http.Request) {
 		reached = true // real fleet verifies HMAC here (f.ServeDelivery)
 		w.WriteHeader(http.StatusOK)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/deliver/somekey", strings.NewReader("{}"))
+	req := httptest.NewRequest(http.MethodPost, "/_fleet/abc123/webhook/somekey", strings.NewReader("{}"))
 	rec := httptest.NewRecorder()
 	deliveryMux.ServeHTTP(rec, req)
 

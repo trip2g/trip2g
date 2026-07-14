@@ -51,6 +51,13 @@ func (f *Fleet) SetRoles(roles []Role) {
 	f.mu.Unlock()
 }
 
+// WebhookPath is this fleet's delivery path prefix ("/_fleet/<h>/webhook/"),
+// used both to mount the receive handler and to strip the prefix off incoming
+// delivery requests.
+func (f *Fleet) WebhookPath() string {
+	return webhookPathPrefix(f.cfg.FleetID)
+}
+
 func (f *Fleet) roleByKey(key string) (Role, bool) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()

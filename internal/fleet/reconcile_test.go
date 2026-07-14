@@ -44,9 +44,115 @@ func nodesData(nodes ...[2]string) string {
 	return `{"admin":{"allChangeWebhooks":{"nodes":[` + strings.Join(parts, ",") + `]}}}`
 }
 
+// nodesDataURL is like nodesData but carries a url per node, for takeover tests.
+func nodesDataURL(nodes ...[3]string) string {
+	parts := make([]string, 0, len(nodes))
+	for _, n := range nodes {
+		parts = append(parts, fmt.Sprintf(`{"id":%s,"description":%q,"url":%q}`, n[0], n[1], n[2]))
+	}
+	return `{"admin":{"allChangeWebhooks":{"nodes":[` + strings.Join(parts, ",") + `]}}}`
+}
+
 const createOKData = `{"admin":{"changeWebhookCreate":{"__typename":"ChangeWebhookCreatePayload","webhook":{"id":8}}}}`
 
 const deleteOKData = `{"admin":{"changeWebhookDelete":{"__typename":"ChangeWebhookDeletePayload","deletedId":0}}}`
+
+const updateOKData = `{"admin":{"changeWebhookUpdate":{"__typename":"ChangeWebhookUpdatePayload","webhook":{"id":7}}}}`
+
+// updateInputFrom decodes an UpdateChangeWebhook request's typed input variable.
+func updateInputFrom(t *testing.T, vars json.RawMessage) trip2ggql.ChangeWebhookUpdateInput {
+	t.Helper()
+	var v struct {
+		Input trip2ggql.ChangeWebhookUpdateInput `json:"input"`
+	}
+	require.NoError(t, json.Unmarshal(vars, &v))
+	return v.Input
+}
+
+// TestReconcile_TakesOverStaleURL asserts the hash-registry takeover: a webhook
+// with this fleet's marker but pointing at a stale address (a restarted/moved
+// fleet with the same fleet_id) is re-pointed at the fleet's current /<h>/
+// delivery url via changeWebhookUpdate — no create, no delete (last-writer-wins).
+func TestReconcile_TakesOverStaleURL(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	marker := markerFor("f1", role)
+	staleURL := "https://OLD-host.example/_fleet/" + fleetHash("f1") + "/webhook/" + urlKey(role.NotePath)
+
+	var updates []trip2ggql.ChangeWebhookUpdateInput
+	var createCalls, deleteCalls int
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL([3]string{"7", marker, staleURL}), nil
+		case "UpdateChangeWebhook":
+			updates = append(updates, updateInputFrom(t, vars))
+			return updateOKData, nil
+		case "CreateChangeWebhook":
+			createCalls++
+			return createOKData, nil
+		case "DeleteChangeWebhook":
+			deleteCalls++
+			return deleteOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.Zero(t, createCalls, "takeover updates, never recreates")
+	require.Zero(t, deleteCalls, "takeover updates, never deletes")
+	require.Len(t, updates, 1, "the stale-url webhook must be taken over via update")
+	require.Equal(t, int64(7), updates[0].Id)
+	require.Equal(t, changeDeliveryURL("https://fleet.example", "f1", role.NotePath), updates[0].Url)
+}
+
+// TestReconcile_NoUpdateWhenURLMatches asserts that when the marker AND the url
+// already match this fleet's current address, reconcile is a no-op (no update).
+func TestReconcile_NoUpdateWhenURLMatches(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	marker := markerFor("f1", role)
+	currentURL := changeDeliveryURL("https://fleet.example", "f1", role.NotePath)
+
+	var updateCalls, createCalls, deleteCalls int
+	gql := fakeAdminGQL(func(op string, _ json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL([3]string{"7", marker, currentURL}), nil
+		case "UpdateChangeWebhook":
+			updateCalls++
+			return updateOKData, nil
+		case "CreateChangeWebhook":
+			createCalls++
+			return createOKData, nil
+		case "DeleteChangeWebhook":
+			deleteCalls++
+			return deleteOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.Zero(t, updateCalls, "url already current => no takeover update")
+	require.Zero(t, createCalls)
+	require.Zero(t, deleteCalls)
+}
+
+// TestReconcile_Update_ErrorPayload_SurfacesAsError asserts an ErrorPayload from
+// changeWebhookUpdate propagates instead of being swallowed.
+func TestReconcile_Update_ErrorPayload_SurfacesAsError(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1}
+	marker := markerFor("f1", role)
+	staleURL := "https://old.example/_fleet/x/webhook/" + urlKey(role.NotePath)
+	gql := fakeAdminGQL(func(op string, _ json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL([3]string{"7", marker, staleURL}), nil
+		case "UpdateChangeWebhook":
+			return `{"admin":{"changeWebhookUpdate":{"__typename":"ErrorPayload","message":"url is required"}}}`, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	err := newReconciler(gql).Reconcile(context.Background(), []Role{role})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "url is required")
+}
 
 // TestSpecVer_SchemaBumpRotatesMarker asserts the schema-version bump makes
 // specVer differ from the legacy hash for a fixed role, so every marker rotates
@@ -86,6 +192,44 @@ func TestReconcile_SchemaBumpRecreatesLegacyWebhook(t *testing.T) {
 		"recreated webhook must enable include_content")
 }
 
+// TestReconcile_DropsExtrasSharingHashSegment asserts that when two webhooks
+// share this fleet's /<h>/ (same fleet_id) — the desired one plus a stale
+// superseded-spec extra — the extra is deleted while the desired one is kept.
+func TestReconcile_DropsExtrasSharingHashSegment(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	marker := markerFor("f1", role)
+	currentURL := changeDeliveryURL("https://fleet.example", "f1", role.NotePath)
+	h := fleetHash("f1")
+	staleMarker := "fleet:f1:" + role.NotePath + "#deadbeef"           // same /<h>/, superseded spec
+	staleURL := "https://fleet.example/_fleet/" + h + "/webhook/stale" // shares /<h>/
+
+	var deletedIDs []int64
+	var updateCalls, createCalls int
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL(
+				[3]string{"7", marker, currentURL},
+				[3]string{"9", staleMarker, staleURL},
+			), nil
+		case "DeleteChangeWebhook":
+			deletedIDs = append(deletedIDs, deleteIDFrom(t, vars))
+			return deleteOKData, nil
+		case "UpdateChangeWebhook":
+			updateCalls++
+			return updateOKData, nil
+		case "CreateChangeWebhook":
+			createCalls++
+			return createOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+	require.Equal(t, []int64{9}, deletedIDs, "the superseded extra sharing /<h>/ is dropped")
+	require.Zero(t, createCalls, "desired marker already present")
+	require.Zero(t, updateCalls, "desired url already current")
+}
+
 func newReconciler(gql graphql.Client) *Reconciler {
 	return NewReconciler(gql, Config{
 		FleetID:     "f1",
@@ -119,7 +263,8 @@ func TestReconcile_CreatesMissingWebhook(t *testing.T) {
 	require.True(t, created.PassApiKey)
 	require.Equal(t, int64(1), created.MaxDepth)
 	require.Contains(t, created.Description, "fleet:f1:roles/triage.md#")
-	require.True(t, strings.HasPrefix(created.Url, "https://fleet.example/deliver/"))
+	require.Equal(t, changeDeliveryURL("https://fleet.example", "f1", "roles/triage.md"), created.Url)
+	require.Contains(t, created.Url, "/_fleet/"+fleetHash("f1")+"/webhook/")
 }
 
 // TestReconcile_RequestsNoteContent is a regression test for the content gap:
@@ -344,7 +489,8 @@ func TestReconcile_CreatesCronWebhookForCronRole(t *testing.T) {
 	require.True(t, createdInput.PassApiKey, "cron webhook must pass api_key")
 	require.True(t, createdInput.Enabled, "cron webhook must be enabled")
 	require.Equal(t, int64(120), createdInput.TimeoutSeconds)
-	require.Contains(t, createdInput.Url, "/deliver/cron/")
+	require.Equal(t, cronDeliveryURL("https://fleet.example", "f1", "roles/kb-refresh.md"), createdInput.Url)
+	require.Contains(t, createdInput.Url, "/_fleet/"+fleetHash("f1")+"/webhook/cron/")
 	require.Contains(t, createdInput.Description, "fleetcron:f1:roles/kb-refresh.md#")
 }
 

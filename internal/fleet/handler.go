@@ -69,10 +69,12 @@ const inputKeyDepth = "depth"
 // statusError is the AgentResponse status value for hard-failure responses.
 const statusError = "error"
 
-// ServeDelivery handles POST /deliver/<urlKey> (change deliveries) and
-// POST /deliver/cron/<urlKey> (cron-triggered deliveries).
+// ServeDelivery handles POST /_fleet/<h>/webhook/<urlKey> (change deliveries)
+// and POST /_fleet/<h>/webhook/cron/<urlKey> (cron-triggered deliveries), where
+// <h> is this fleet's identity hash. Authenticated by the per-role HMAC secret,
+// NOT the delegated-admin cookie (that gates the separate GraphQL server).
 func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
-	rawPath := strings.TrimPrefix(r.URL.Path, "/deliver/")
+	rawPath := strings.TrimPrefix(r.URL.Path, f.WebhookPath())
 	isCron := strings.HasPrefix(rawPath, "cron/")
 	key := rawPath
 	if isCron {
@@ -286,7 +288,7 @@ func statusSeverity(status string) int {
 	}
 }
 
-// serveCronDelivery handles a cron-triggered POST /deliver/cron/<key>.
+// serveCronDelivery handles a cron-triggered POST /_fleet/<h>/webhook/cron/<key>.
 // Unlike change delivery, there are no changed_files; the role body is rendered
 // once with an empty change context and the wall-clock `now` variable.
 func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role Role, body []byte) {

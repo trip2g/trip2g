@@ -40,6 +40,11 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 		wantErr string
 	}{
 		{
+			name:    "missing_fleet_id",
+			mutate:  func(c *fleet.Config) { c.FleetID = "" },
+			wantErr: "FleetID",
+		},
+		{
 			name:    "missing_callback_url",
 			mutate:  func(c *fleet.Config) { c.CallbackURL = "" },
 			wantErr: "CallbackURL",
