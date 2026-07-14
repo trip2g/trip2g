@@ -33,18 +33,18 @@
 
 {{ block @lid() }}
 <div class="@did">
-  <div class="@did__cell mesh-matrix__cell--red">
-    <pre class="@did__ascii mesh-matrix__ascii--red">
+  <div class="@did__cell @did__cell--red">
+    <pre class="@did__ascii @did__ascii--red">
   ██████╗ ███████╗██████╗
   ██╔══██╗██╔════╝██╔══██╗
   ██████╔╝█████╗  ██║  ██║
   ██╔══██╗██╔══╝  ██║  ██║</pre>
     <div class="@did__title">Take the red pill.</div>
     <div class="@did__desc">Add the MCP. Your agent connects to the network. You see how deep the rabbit hole goes.</div>
-    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="mesh-matrix__cta")}}
+    {{yield mesh_button(label="mcp:add →", href="/simple", modifier="@did__cta")}}
   </div>
-  <div class="@did__cell mesh-matrix__cell--blue">
-    <pre class="@did__ascii mesh-matrix__ascii--blue">
+  <div class="@did__cell @did__cell--blue">
+    <pre class="@did__ascii @did__ascii--blue">
   ██████╗ ██╗     ██╗   ██╗███████╗
   ██╔══██╗██║     ██║   ██║██╔════╝
   ██████╔╝██║     ██║   ██║█████╗
@@ -58,18 +58,18 @@
 
 {{ block @lid_ru() }}
 <div class="@did">
-  <div class="@did__cell mesh-matrix__cell--red">
-    <pre class="@did__ascii mesh-matrix__ascii--red">
+  <div class="@did__cell @did__cell--red">
+    <pre class="@did__ascii @did__ascii--red">
   ██████╗ ███████╗██████╗
   ██╔══██╗██╔════╝██╔══██╗
   ██████╔╝█████╗  ██║  ██║
   ██╔══██╗██╔══╝  ██║  ██║</pre>
     <div class="@did__title">Возьми красную таблетку.</div>
     <div class="@did__desc">Добавь MCP. Твой агент подключается к сети. Ты увидишь насколько глубока кроличья нора.</div>
-    {{yield mesh_button(label="mcp:add →", href="/ru/simple", modifier="mesh-matrix__cta")}}
+    {{yield mesh_button(label="mcp:add →", href="/ru/simple", modifier="@did__cta")}}
   </div>
-  <div class="@did__cell mesh-matrix__cell--blue">
-    <pre class="@did__ascii mesh-matrix__ascii--blue">
+  <div class="@did__cell @did__cell--blue">
+    <pre class="@did__ascii @did__ascii--blue">
   ██████╗ ██╗     ██╗   ██╗███████╗
   ██╔══██╗██║     ██║   ██║██╔════╝
   ██████╔╝██║     ██║   ██║█████╗

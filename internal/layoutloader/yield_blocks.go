@@ -47,13 +47,7 @@ func expandBlockName(content, sourceID string) string {
 	if !strings.Contains(content, "@lid") && !strings.Contains(content, "@did") {
 		return content
 	}
-	// derive base: strip leading slash, strip extension
-	base := strings.TrimPrefix(sourceID, "/")
-	if idx := strings.LastIndex(base, "."); idx != -1 {
-		base = base[:idx]
-	}
-	lid := strings.ReplaceAll(base, "/", "_") // lodash id
-	did := strings.ReplaceAll(base, "/", "-") // dash id (hyphens throughout)
+	lid, did := derivePlaceholderIDs(sourceID)
 
 	const sentinelLid = "\x00at_lid\x00"
 	const sentinelDid = "\x00at_did\x00"

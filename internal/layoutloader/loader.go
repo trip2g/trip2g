@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"trip2g/internal/logger"
@@ -96,6 +97,14 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			}
 			content = jetContent
 		}
+		// Scan the pre-expansion source for the file's own hardcoded @lid/@did
+		// names before expandBlockName rewrites the placeholders.
+		if selfLit := scanSelfLiteral(content, source.ID); len(selfLit) > 0 {
+			jl.pendingWarnings[source.ID] = append(jl.pendingWarnings[source.ID], selfLit...)
+			for _, w := range selfLit {
+				log.Warn(w.Message)
+			}
+		}
 		jl.templates[source.ID] = expandBlockName(content, source.ID)
 		jl.sourceIDs = append(jl.sourceIDs, source.ID)
 	}
@@ -154,12 +163,30 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			// Normalize ID to match production format: strip /_layouts prefix and .html
 			// extension. Production loader strips these when building the templates map,
 			// so Jet import resolution (relative paths) only works with normalized IDs.
+			providedMainContent := main.Content
 			main.ID = normalizeLayoutID(main.ID)
 
 			// If no inline content provided, fill from snapshot so load() does not
 			// overwrite the server template with an empty string.
 			if main.Content == "" {
 				main.Content = snap[main.ID]
+			}
+
+			// Scan the user-authored (pre-expansion) sources for self-literal
+			// @lid/@did drift. Only extra (caller-supplied) files and an explicitly
+			// provided main content are raw; snapshot templates are already expanded.
+			selfLit := make(map[string]struct{})
+			rawSources := make(map[string]string)
+			for k, v := range extra {
+				rawSources[normalizeLayoutID(k)] = v
+			}
+			if providedMainContent != "" {
+				rawSources[main.ID] = providedMainContent
+			}
+			for id, content := range rawSources {
+				for _, w := range scanSelfLiteral(content, id) {
+					selfLit[w.Message] = struct{}{}
+				}
 			}
 
 			// Fresh isolated loader — never touches the production jl.
@@ -183,6 +210,14 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			var warnings []string
 			if errStr != "" {
 				warnings = append(warnings, "compile: "+errStr)
+			}
+			if len(selfLit) > 0 {
+				msgs := make([]string, 0, len(selfLit))
+				for m := range selfLit {
+					msgs = append(msgs, m)
+				}
+				sort.Strings(msgs)
+				warnings = append(warnings, msgs...)
 			}
 			if view == nil {
 				return model.Layout{}, warnings
