@@ -14,7 +14,9 @@
 {%- for _, hl := range ctx.HrefLangs -%}
 <link rel="alternate" hreflang="{%s= hl.Lang %}" href="{%s= hl.Href %}">
 {%- endfor -%}
-<link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+{%- for _, feed := range ctx.RSSFeeds() -%}
+<link rel="alternate" type="application/rss+xml" title="{%s feed.Title %}" href="{%s= feed.Href %}">
+{%- endfor -%}
 
 <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
