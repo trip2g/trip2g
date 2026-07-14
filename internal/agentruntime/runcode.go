@@ -53,50 +53,9 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	blocks := ExtractFencedBlocks(in.Body)
-	if len(blocks) == 0 {
-		return nil, errors.New("coderun: no fenced code block found in rendered body")
-	}
-
-	programs, err := resolvePrograms(blocks, in)
+	rawChanges, answer, steps, err := runCodeBlocks(ctx, in)
 	if err != nil {
 		return nil, err
-	}
-
-	limit := in.MaxStdoutBytes
-	if limit == 0 {
-		limit = 1 << 20
-	}
-
-	var stdout string
-	if len(blocks) == 1 {
-		// Single block: use RunBlock for byte-identical behavior.
-		out, _, _, runErr := RunBlock(ctx, CodeSpec{
-			Program:        programs[0],
-			Code:           blocks[0].Code,
-			Input:          in.Input,
-			Timeout:        in.Timeout,
-			EnvPassthrough: in.EnvPassthrough,
-			EnvPrefix:      in.EnvPrefix,
-			MaxStdoutBytes: limit,
-			Sandbox:        in.Sandbox,
-		})
-		if runErr != nil {
-			return nil, fmt.Errorf("coderun: %w", runErr)
-		}
-		stdout = out
-	} else {
-		// Multi-block: true streaming pipeline.
-		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, nil)
-		if pipeErr != nil {
-			return nil, pipeErr
-		}
-		stdout = out
-	}
-
-	rawChanges, answer, perr := parseCodeOutput(stdout)
-	if perr != nil {
-		return nil, perr
 	}
 
 	// Apply changes through ScopedKB — NOT a scope bypass. Every write goes
@@ -105,7 +64,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 	scoped := NewScopedKB(in.KB, nil, in.WritePatterns)
 	res := &Result{
 		Status:     StatusCompleted,
-		Steps:      len(blocks),
+		Steps:      steps,
 		TokensUsed: 0,
 		Answer:     answer,
 	}
@@ -127,6 +86,72 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		res.Changes = append(res.Changes, ch)
 	}
 	return res, nil
+}
+
+// ExecCode extracts and runs the fenced blocks in in.Body and returns the parsed
+// {changes, answer} stdout contract WITHOUT applying the changes to a KB and
+// WITHOUT scope enforcement. It is the execution-only half of RunCode: codellm
+// uses it to map the changes onto OpenAI tool_calls, leaving scope enforcement
+// (write_patterns via ScopedKB) to the caller (fleet). in.KB and in.WritePatterns
+// are ignored. A block execution failure or a stdout-parse failure returns an
+// error, which codellm maps to HTTP 422 (deterministic hard-fail, no retry).
+func ExecCode(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, error) {
+	changes, answer, _, err := runCodeBlocks(ctx, in)
+	return changes, answer, err
+}
+
+// runCodeBlocks is the shared execution core of RunCode and ExecCode: it extracts
+// the fenced blocks, resolves+allowlist-checks their programs, runs them (single
+// block via RunBlock, multiple via the streaming pipeline), and parses the last
+// block's stdout as the {changes, answer} contract. It performs no KB writes and
+// no scope checks. Returns the parsed changes, answer, and block count (Steps).
+func runCodeBlocks(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, int, error) {
+	blocks := ExtractFencedBlocks(in.Body)
+	if len(blocks) == 0 {
+		return nil, "", 0, errors.New("coderun: no fenced code block found in rendered body")
+	}
+
+	programs, err := resolvePrograms(blocks, in)
+	if err != nil {
+		return nil, "", 0, err
+	}
+
+	limit := in.MaxStdoutBytes
+	if limit == 0 {
+		limit = 1 << 20
+	}
+
+	var stdout string
+	if len(blocks) == 1 {
+		// Single block: use RunBlock for byte-identical behavior.
+		out, _, _, runErr := RunBlock(ctx, CodeSpec{
+			Program:        programs[0],
+			Code:           blocks[0].Code,
+			Input:          in.Input,
+			Timeout:        in.Timeout,
+			EnvPassthrough: in.EnvPassthrough,
+			EnvPrefix:      in.EnvPrefix,
+			MaxStdoutBytes: limit,
+			Sandbox:        in.Sandbox,
+		})
+		if runErr != nil {
+			return nil, "", 0, fmt.Errorf("coderun: %w", runErr)
+		}
+		stdout = out
+	} else {
+		// Multi-block: true streaming pipeline.
+		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, nil)
+		if pipeErr != nil {
+			return nil, "", 0, pipeErr
+		}
+		stdout = out
+	}
+
+	rawChanges, answer, perr := parseCodeOutput(stdout)
+	if perr != nil {
+		return nil, "", 0, perr
+	}
+	return rawChanges, answer, len(blocks), nil
 }
 
 // resolvePrograms resolves and allowlist-checks every block's program before
