@@ -143,6 +143,12 @@ func (m *Middleware) fetchViewerRole(ctx context.Context, cookieHeader string) (
 	// Forward the end-user's cookie verbatim — this is the whole point.
 	req.Header.Set("Cookie", cookieHeader)
 
+	// net/http (not fasthttp) deliberately: this propagates the inbound
+	// request's ctx, so a slow/hung monolith fails closed via context
+	// cancellation within the caller's own request lifetime. fasthttp's client
+	// has no context param (only DoTimeout/DoDeadline), which would need a
+	// manually threaded deadline to get the same guarantee. Low-QPS auth gate:
+	// cancellation-correctness beats throughput here.
 	resp, err := m.client.Do(req)
 	if err != nil {
 		return "", err
