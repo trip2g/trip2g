@@ -177,6 +177,8 @@ The point is moving isolation from **in-process** confinement to a **container b
 
 ## Backward-compat and cutover
 
+**Superseded routing model (2026-07-14):** the `--codellm-base-url` + in-fleet `f.codeLLM` second-client approach below is **replaced** by the per-provider-fleet model in `fleet_graphql.md` — one fleet serves one LLM endpoint, a role picks its fleet with `fleet_id`, and **codellm is just a fleet whose `--llm-base-url` points at the codellm service.** So the cutover has no `--codellm-base-url` flag and no second client inside a fleet: you stand up a codellm-configured fleet, retag `executor: code` roles to run against it, and that fleet's single LLM client *is* codellm. The invariants below (`MaxSteps: 1`, the `InputBag` delivery, apply-error 422 enforced at the fleet apply path, the parity tests, the env-passthrough audit) all still hold regardless of which fleet routes the run. The paragraphs below describe the older single-fleet mechanics and are kept for the invariant details; treat the routing specifics as historical.
+
 **Migration of `executor: code` roles — zero role edits.** Keep `executor: code` as author-facing sugar; swap only the backend. Fleet holds two LLM clients: `f.llm` (real model, `cmd/fleet/main.go:80`) and a new `f.codeLLM` (an `OpenAILLM` pointed at `--codellm-base-url`). `execRole`'s code branch (`handler.go:376`) builds an `agentruntime.Input` pointed at codellm instead of calling `f.codeRunner`. The `Input` must be **fully specified** — `Run` hard-requires both `MaxTokens > 0` and `MaxSteps > 0` (`runtime.go:110`, `:113`) or it returns an error immediately, so a naive migration that omits them breaks every code role:
 
 ```go

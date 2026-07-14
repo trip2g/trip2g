@@ -7,6 +7,28 @@
 
 fleet grows its **own** GraphQL endpoint, separate from the monolith's, serving what only fleet understands: the parsed roles, the **agent-interaction graph** (who-triggers-whom, derived from trigger/read/write patterns), and a **stateful debugger** for stepping a role's code block-by-block. The monolith stays a dumb note store and knows nothing about roles — the boundary holds because fleet owns its own API. Browser tools reach it same-origin via a Caddy `/_fleet/*` reverse-proxy that just forwards the request (and the session cookie). **Auth is delegated per-request:** fleet takes the incoming browser cookie and asks its own trip2g `query { viewer { role } }`; `admin` → allowed, anything else → 401, monolith-unreachable → fail-closed. This gives full parity with the monolith's admin check (including the ban validator) while fleet holds no secret and verifies nothing itself. Two trip2g **templates** (graph visualizer, debugger) consume this API — the same "app = layout + GraphQL" pattern as kanban_template / theme_editor. **codellm is the one deliberate exception to "everything GraphQL":** it stays an OpenAI-REST server-to-server endpoint (see `codellm_extraction.md`), because its whole value is impersonating an LLM.
 
+## fleet identity & mutual exclusion: hash-in-webhook-url (no migration)
+
+One fleet serves one LLM endpoint/provider; two providers = two fleet processes. A role picks its fleet with `fleet_id: X` in frontmatter; each fleet processes only roles whose `fleet_id` is its own (a partition key over the role set). codellm needs no special case: it is just a fleet whose `--llm-base-url` points at the codellm service (the earlier `--codellm-base-url` cutover flag is dropped).
+
+**Claiming a `fleet_id` reuses the existing webhook registration — no lease table, no new column, no migration.** fleet already registers `change_webhooks` for its roles (the reconcile loop). The trick: derive the webhook URL deterministically from the fleet_id.
+
+- Convention: a fleet's delivery endpoint is `/_fleet/<h>/webhook`, where `h = sha256("fleet:" + fleet_id)`.
+- `h` is a stable, namespaced marker (the `fleet:` prefix namespaces it against other sha256 uses and keeps the plaintext fleet_id out of the URL). It is **not a secret** — fleet_id is not sensitive; `h` is just an opaque stable id, never used for auth.
+- The marker lives in the **existing `url` column** (`change_webhooks.url`), so there is nothing to migrate.
+
+**Mutual exclusion / takeover = match by the `/<h>/` segment.** On reconcile, a fleet finds the webhooks whose URL path contains `/<h>/`, points them at its own current address, and drops any others sharing that `/<h>/`. Whoever registers last owns the URL the monolith delivers to → **last-writer-wins**. A duplicate fleet with the same `fleet_id` computes the same `h`, targets the same webhook, and "takes over the webhook_url and that's it." Dedup is by the **`/<h>/` segment**, not the full URL — this covers both topologies: one box behind Caddy (URL is the same relative path anyway) and a fleet on another machine (full URL differs by host, but `/<h>/` is identical).
+
+**Crash recovery is free:** a restarted fleet recomputes `h` and re-claims the webhook (updates the URL to its new address). No lease, no TTL, no heartbeat, no `flock` (which is local-only and breaks across machines). `created_at` / `updated_at` on the row give free observability of when a `fleet_id` was last (re)claimed — surface it in the graph viz.
+
+Cost: mutual exclusion is application-enforced (reconcile), not a DB unique constraint, so a concurrent double-claim has a bounded flip window where both briefly look owned. Since the monolith delivers to whatever URL is currently stored, only one fleet receives at a time; the residual risk is one in-flight overlapping run — acceptable exactly to the degree roles are idempotent (find/replace, content-hash dedup survive it; append / external POST do not). If a hard atomic guarantee is ever needed, that is the migration (a `fleet_id` column + unique index) — deferred until a non-idempotent role demands it.
+
+### Auth split on the `/_fleet/*` prefix
+
+Two different callers share the prefix and use **different** auth — the fleet mux routes by path:
+- `/_fleet/graphql` (and other browser tools) — **browser → fleet**, gated by the delegated-admin cookie check (below).
+- `/_fleet/<h>/webhook` — **monolith → fleet**, server-to-server change delivery, authenticated by the existing webhook `secret` / HMAC (`shared_webhooks.md`), NOT the cookie. The delegated-admin middleware must NOT wrap the webhook path.
+
 ## Why fleet gets its own API (not a monolith resolver, not a note)
 
 Three rejected alternatives and why:
