@@ -4,13 +4,13 @@ free: true
 lang_redirect: "[[ru/thoughts/flat-file-cms-revisited]]"
 ---
 
-*What this is about: the same question as the first essay — what class trip2g belongs to and who its neighbors are — but after checking against the reality of July 2026. The short answer changed. trip2g is not "the empty middle of flat-file CMS": that middle has been claimed by Grav 2.0, which is more honestly flat-file and now ships the same AI story. The actual, narrow, and defensible niche is the intersection of two things that nobody else has: **the authoring surface is your personal Obsidian vault with two-way sync**, and the delivery is **not just web, but web + Telegram + agent (MCP) + federation between hubs**, over canonical SQLite. Everything else — write-API, app-shell, MCP — has been table stakes since June 2026, not differentiators.*
+*What this is about: the same question as the first essay — what class trip2g belongs to and who its neighbors are — but after checking against the reality of July 2026. The short answer changed. trip2g is not "the empty middle of flat-file CMS": that middle has been claimed by Grav 2.0, which is more honestly flat-file and now ships the same AI story. The actual, narrow, and defensible niche is the intersection of two things that nobody else has: **the authoring surface is your personal Obsidian vault with two-way sync**, and the delivery is **web + Telegram + agent (MCP) + federation between hubs**, over canonical SQLite. Everything else — write-API, app-shell, MCP — has been table stakes since June 2026, not differentiators.*
 
 This is a fact-checked re-examination of [[en/thoughts/flat-file-cms|"Tool Class: a Live Server over Markdown Files"]]. The original essay stands; this is its review after Grav 2.0 moved the map.
 
 ## What changed from v1 / corrections
 
-Short verdict: **the v1 thesis is half-obsolete a month later.** Grav 2.0 shipped on 22 June 2026 — and the three things the essay called "what no neighbor has at all" (an MCP endpoint, a targeted write-API, going beyond publishing) Grav now does out of the box, while remaining more honestly flat-file than trip2g. "The middle is almost empty" is an overstatement: the middle is thin, but it now contains a polished, funded tool that just shipped the exact AI story trip2g thought was its ace. The thesis survives only if the niche is narrowed from "empty middle of flat-file CMS" to "your personal Obsidian vault as the surface of a live server, publishing to multiple channels and federating."
+Short verdict: **the v1 thesis is half-obsolete a month later.** Grav 2.0 shipped on 22 June 2026 — and the three things the essay called "what no neighbor has at all" (an MCP endpoint, a targeted write-API, going beyond publishing) Grav now does out of the box, while remaining more honestly flat-file than trip2g. "The middle is almost empty" is an overstatement: the middle is thin, but it now contains a mature tool that just shipped the exact AI story trip2g thought was its ace. The thesis survives only if the niche is narrowed from "empty middle of flat-file CMS" to "your personal Obsidian vault as the surface of a live server, publishing to multiple channels and federating."
 
 Corrections in descending order of impact on the argument:
 
@@ -26,13 +26,13 @@ What this breaks in the essay:
 - "MCP endpoint — something no neighbor has at all" → **false** from 22 June 2026.
 - "Targeted write-API" as a differentiator → **no longer a differentiator**: Grav has a core REST API with ETag concurrency.
 - "A live server with a write-API implies app-shell, which flat-file CMSes never promised" → **weakened**: Grav 2.0 is itself built api-first, with headless/decoupled as first-class.
-- And the irony: **Grav is more honestly flat-file than trip2g.** Grav's canonical store is files, no database at all. trip2g's canonical store is SQLite. On the "genuine flat-file" axis, trip2g loses to Grav, not the other way around.
+- The irony: **Grav is more honestly flat-file than trip2g.** Grav's canonical store is files, no database at all. trip2g's canonical store is SQLite. On the "genuine flat-file" axis, trip2g loses to Grav, not the other way around.
 
 Sources: getgrav.org/blog/grav-2-stable-released, /blog/grav-2-api, alternativeto.net (news 06.2026).
 
 ### 2. "The middle is almost empty" — an overstatement
 
-The middle (live server + files + small templates) already contains: **Grav 2.0** (now with API+MCP on top), **Statamic** (Laravel server, flat-file by default), **SilverBullet** (self-hosted runtime). The "one process AND live server" cell in diagram C is not empty — at minimum Grav (PHP, no DB) and trip2g are in it. Honest framing: the middle is **thin, but not empty**, and since June 2026 it has a direct competitor on the AI story.
+The middle (live server + files + small templates) already contains: **Grav 2.0** (now with API+MCP on top), **Statamic** (Laravel server, flat-file by default), **SilverBullet** (self-hosted runtime). The "one process AND live server" cell in diagram C is not empty — at minimum Grav (PHP, no DB) and trip2g are in it. More precisely: the middle is **thin, but not empty**, and since June 2026 it has a direct competitor on the AI story.
 
 ### 3. Statamic — not pure flat-file, but a "files OR database" spectrum
 
@@ -52,7 +52,7 @@ The essay placed SilverBullet as "the closest neighbor," a "self-hosted Markdown
 
 ---
 
-## Analysis: where trip2g actually stands
+## Analysis: where trip2g stands
 
 ## What happened to the original thesis
 
@@ -65,7 +65,7 @@ The July 2026 check left two of the four standing.
 - **(2) Obsidian vault as the surface** — **survived intact.** No neighbor lets you write through your existing local Obsidian vault with two-way sync. Grav uses admin panel / SFTP / git, SilverBullet has its own browser editor, Obsidian Publish does use your vault but it's proprietary hosting, publishing only, no server or API of your own.
 - **(3) files/database hybrid** — survived partially. The idea of "living between files and a database" already exists with Statamic (files OR database by config). What's unique is not the idea but the form: the file surface as a *representation* of canonical SQLite with FTS, embeddings, and subscriptions. And this form has a cost: on the "genuine flat-file" axis trip2g sits further from files than Grav.
 
-The honest pivot: move trip2g's differentiators off the axes where Grav 2.0 has now caught up (API, MCP, app-shell, platform depth) and onto the axes where it's still alone — **authoring surface (your vault) and delivery channels (web + Telegram + agent + federation)**.
+The pivot, then: move trip2g's differentiators off the axes where Grav 2.0 has now caught up (API, MCP, app-shell, platform depth) and onto the axes where it's still alone — **authoring surface (your vault) and delivery channels (web + Telegram + agent + federation)**.
 
 ## Two poles, a thin — but not empty — middle
 
@@ -82,7 +82,7 @@ The middle — live server, files on disk, small templates, edit in place — is
 - **Kirby** (PHP, txt files, Panel) — paid, flat-file, headless mode.
 - **SilverBullet** — self-hosted, but v2 moved to the browser and it's a notebook, not a publisher.
 
-And even in this middle nobody made the key move trip2g made: **the editing surface is not "files on the server" and not a proprietary admin — it's your local Obsidian vault, syncing in both directions.**
+Even in this middle nobody made the key move trip2g made: **the editing surface is not "files on the server" and not a proprietary admin — it's your local Obsidian vault, syncing in both directions.**
 
 Neighbors along other axes (updated from v1):
 
@@ -90,7 +90,7 @@ Neighbors along other axes (updated from v1):
 
 **Markdown runtimes and wikis** — SilverBullet (see above: v2 is browser-based, PKM, not a publisher), TiddlyWiki and DokuWiki (files + runtime, but that's a wiki), Obsidian Publish (your vault, but proprietary hosting, publishing only) and Quartz (a regular SSG for vaults, v4 in TypeScript).
 
-**Content-source contrasts** — Notion-to-site (Super.so, Potion, Simple.ink): "your store becomes a site," but the source is proprietary, content locked in Notion. Aegea (Ilya Birman): runtime with MySQL, its own editor, baked-in design — polished, but single-purpose.
+**Content-source contrasts** — Notion-to-site (Super.so, Potion, Simple.ink): "your store becomes a site," but the source is proprietary, content locked in Notion. Aegea (Ilya Birman): runtime with MySQL, its own editor, baked-in design — single-purpose.
 
 ## Map A: render-time vs storage (corrected)
 
@@ -118,7 +118,7 @@ quadrantChart
     WordPress: [0.88, 0.9]
 ```
 
-*Diagram A: when the page renders and where content lives. Key correction — trip2g is higher on the "database" axis because its canonical store is SQLite; Grav 2.0 is the more honestly flat-file neighbor in the bottom-right.*
+*Diagram A: when the page renders and where content lives. trip2g is higher on the "database" axis because its canonical store is SQLite; Grav 2.0 is the more honestly flat-file neighbor in the bottom-right.*
 
 ## Map B: where trip2g is still alone — the authoring surface
 
@@ -147,7 +147,7 @@ quadrantChart
 
 ## Map C: ops vs liveness (the cell is no longer empty)
 
-Honest correction: the "one process AND live server" cell is not empty. Grav (PHP, no database) and trip2g (one Go binary) are both in it. SilverBullet is nearby, but its runtime has moved to the browser.
+The "one process AND live server" cell is not empty. Grav (PHP, no database) and trip2g (one Go binary) are both in it. SilverBullet is nearby, but its runtime has moved to the browser.
 
 ```mermaid
 quadrantChart
@@ -167,7 +167,7 @@ quadrantChart
     WordPress: [0.8, 0.85]
 ```
 
-*Diagram C: how many pieces you assemble and whether the runtime is live. Correction from v1 — the quadrant renamed from "empty cell" to "sparse, not empty": Grav 2.0 now stands next to trip2g. The operational simplicity advantage remains, but it's no longer "an empty cell."*
+*Diagram C: how many pieces you assemble and whether the runtime is live. The quadrant is renamed from "empty cell" to "sparse, not empty": Grav 2.0 now stands next to trip2g. The operational simplicity advantage remains, but it's no longer "an empty cell."*
 
 ## Map D: content model vs delivery (MCP no longer belongs to trip2g alone)
 
@@ -191,7 +191,7 @@ quadrantChart
     trip2g: [0.32, 0.85]
 ```
 
-*Diagram D: documents ↔ database records and page ↔ API/agent. Correction — Grav 2.0 lifted to the top edge alongside trip2g: it now has MCP+REST over a document model too. "trip2g is unique in serving a document to an agent" no longer holds — Grav does it too.*
+*Diagram D: documents ↔ database records and page ↔ API/agent. Grav 2.0 is lifted to the top edge alongside trip2g: it now has MCP+REST over a document model too. "trip2g is unique in serving a document to an agent" no longer holds — Grav does it too.*
 
 ## Map E: lock-in vs capability (open files plus platform — no longer trip2g's alone)
 
@@ -215,7 +215,7 @@ quadrantChart
     trip2g: [0.25, 0.85]
 ```
 
-*Diagram E: how locked in the content is and how much the tool is a platform. Correction — Grav 2.0 sits directly below trip2g in the "open, platform" quadrant. Open files plus platform depth are no longer exclusive to trip2g.*
+*Diagram E: how locked in the content is and how much the tool is a platform. Grav 2.0 sits directly below trip2g in the "open, platform" quadrant. Open files plus platform depth are no longer exclusive to trip2g.*
 
 ## Map F (new): what actually sets trip2g apart
 
@@ -272,7 +272,7 @@ v1: "flat-file CMS in the empty middle, with MCP/write-API/app-shell that no nei
 v2, narrow and defensible: **trip2g is what happens when your existing local Obsidian vault becomes a live server that publishes to multiple channels (web + Telegram), exposes write-API and MCP tools to an agent, hosts small applications, and federates with other hubs — on top of canonical SQLite that provides search, versioning, and subscriptions.**
 
 What holds up under adversarial review, and what's rhetoric:
-- **Holds:** authoring surface = your Obsidian vault with two-way sync (nobody else); multi-channel delivery (Telegram + web from one source); federation between hubs; Obsidian-native semantics (wikilinks, embeds). This is the moat — and it is NOT a "flat-file CMS" feature set.
+- **Holds:** authoring surface = your Obsidian vault with two-way sync (nobody else); multi-channel delivery (Telegram + web from one source); federation between hubs; Obsidian-native semantics (wikilinks, embeds). This is the moat: you can't copy it without becoming Obsidian — the content lives in your already-installed editor, not in the engine's admin panel. And it is NOT a "flat-file CMS" feature set.
 - **No longer holds as a differentiator:** MCP endpoint (Grav 2.0 has one), targeted write-API (Grav REST+ETag), app-shell/platform depth (Grav api-first), "files-or-database hybrid" as an idea (Statamic does files-or-database).
 - **Holds with a caveat:** "one binary + live server" — yes, but Grav (PHP, no DB) stands next to it, the cell isn't empty. And "flat-file CMS" as a self-description is weak: trip2g's canonical store is a database; it is more accurately described as a **DB-CMS with a file-based authoring surface**, not a flat-file CMS.
 
