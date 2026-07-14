@@ -3,8 +3,10 @@
 // OpenAI tool_calls. See docs/dev/codellm_extraction.md (Phase 1).
 //
 // SECURITY: an unauthenticated /v1/chat/completions is RCE-as-a-service. The
-// fleet↔codellm channel MUST be locked (mTLS / shared token / loopback) before
-// exposure — the auth/token seams in internal/codellm are wired by a later PR.
+// fleet↔codellm channel is locked by two auth lanes (see internal/codellm):
+// the browser delegated-admin cookie gate and the server-to-server channel-token
+// lane (CODELLM_CHANNEL_TOKEN, Authorization: Bearer). An unset token disables
+// the fleet lane (fail-safe), leaving the cookie gate as the only way in.
 package main
 
 import (
@@ -46,10 +48,11 @@ func main() {
 		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
 		MaxStdoutBytes:  cfg.MaxStdoutBytes,
 		Timeout:         cfg.Timeout,
-		// TokenCheck left nil: the fleet↔codellm locked channel (mTLS/shared
-		// token, cfg.ChannelToken is its placeholder) is a deploy concern, not
-		// built here. With it nil, every browser-facing request must pass the
-		// delegated-admin gate (the secure default).
+		// Fleet lane: authenticate a server-to-server caller by the shared channel
+		// token (Authorization: Bearer <token>), constant-time compared. An empty
+		// CODELLM_CHANNEL_TOKEN disables the lane (fail-safe), leaving the browser
+		// delegated-admin gate as the only way in.
+		TokenCheck: codellm.ChannelTokenCheck(cfg.ChannelToken),
 	}
 	srvCfg.Auth = codellm.BrowserAuth(admin.Wrap, srvCfg.TokenCheck)
 

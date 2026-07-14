@@ -42,9 +42,11 @@ type Config struct {
 	// MaxStdoutBytes caps each block's captured stdout; 0 = 1 MiB default.
 	MaxStdoutBytes int
 
-	// ChannelToken is a placeholder for the future fleet<->codellm locked-channel
-	// check (shared token / mTLS material, per docs/dev/codellm_extraction.md).
-	// Not enforced yet — a later PR wires channel auth using this value.
+	// ChannelToken is the shared fleet<->codellm channel token. codellm accepts a
+	// server-to-server caller presenting it as `Authorization: Bearer <token>`
+	// (constant-time compared) as the fleet lane, bypassing the browser cookie
+	// gate. Empty disables the fleet lane (fail-safe): only the browser
+	// delegated-admin gate then admits requests.
 	ChannelToken string
 
 	// Trip2gBaseURL is the trip2g base URL used by the delegated-admin gate on
@@ -144,7 +146,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
-	fs.StringVar(&c.ChannelToken, "channel-token", c.ChannelToken, "shared fleet<->codellm channel token (not yet enforced)")
+	fs.StringVar(&c.ChannelToken, "channel-token", c.ChannelToken, "shared fleet<->codellm channel token (Bearer); empty disables the fleet lane")
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL, "base URL of the trip2g instance that answers viewer{role}")
 
 	if err := fs.Parse(args); err != nil {

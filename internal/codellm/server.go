@@ -66,12 +66,14 @@ type Config struct {
 	// TokenCheck. nil defaults to a no-op passthrough (tests / standalone).
 	Auth func(http.Handler) http.Handler
 
-	// TokenCheck is the seam for the fleet↔codellm locked-channel check
-	// (shared token / mTLS). It identifies the server-to-server fleet lane so
-	// BrowserAuth lets it bypass the browser cookie gate. Not fully built
-	// (mTLS is a deploy concern); nil → no fleet lane, every request must pass
-	// the browser admin gate (the secure default). Kept distinct from Auth so
-	// the transport-lock and the caller-identity concerns wire independently.
+	// TokenCheck is the seam for the fleet↔codellm locked-channel check. In
+	// production it is ChannelTokenCheck(cfg.ChannelToken): a shared channel token
+	// presented as `Authorization: Bearer <token>` and compared in constant time,
+	// identifying the server-to-server fleet lane so BrowserAuth lets it bypass the
+	// browser cookie gate. An empty configured token disables the lane (fail-safe).
+	// nil → no fleet lane, every request must pass the browser admin gate (the
+	// secure default). Kept distinct from Auth so the transport-lock and the
+	// caller-identity concerns wire independently.
 	TokenCheck func(*http.Request) error
 }
 
@@ -137,13 +139,11 @@ func (s *Server) Handler() http.Handler {
 // fenced blocks, and returns the writes as tool_calls ending in exactly one
 // finish. Execution/parse failures are a deterministic 422 (not retried).
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
-	if s.cfg.TokenCheck != nil {
-		if err := s.cfg.TokenCheck(r); err != nil {
-			writeError(w, http.StatusUnauthorized, "unauthorized", err.Error())
-			return
-		}
-	}
-
+	// Auth is composed entirely in cfg.Auth (BrowserAuth): the fleet channel-token
+	// lane and the browser cookie gate are both decided before this handler runs.
+	// A second TokenCheck here would be contradictory — it would REQUIRE the token
+	// on a request the cookie lane already admitted (no token), breaking the
+	// browser debugger lane.
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request_error", "read request: "+err.Error())
