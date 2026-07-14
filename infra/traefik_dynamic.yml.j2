@@ -40,6 +40,13 @@ http:
       service: lottie-converter
       tls:
         certResolver: letsencrypt
+    helpers:
+      rule: "Host(`helpers.trip2g.com`)"
+      entryPoints:
+        - websecure
+      service: helpers
+      tls:
+        certResolver: letsencrypt
 
   services:
 {% for svc in trip2g_services %}
@@ -66,3 +73,7 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ lottie_port | default('3000') }}"
+    helpers:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:8099"
