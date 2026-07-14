@@ -26,6 +26,7 @@ import (
 	fleetappconfig "trip2g/cmd/fleet/appconfig"
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
+	"trip2g/internal/delegatedadmin"
 	"trip2g/internal/fleet"
 	"trip2g/internal/fleet/fleetgql"
 	"trip2g/internal/fleet/graph"
@@ -119,15 +120,20 @@ func run() error {
 	}
 
 	// --graphql-addr: the fleet's own GraphQL read API (roles + roleGraph).
-	// Reuses fleet.ParseRole via the same Discovery. Auth is a no-op seam
-	// (pass nil) until the shared delegated-admin middleware lands; the design
-	// puts this behind Caddy /_fleet/* with per-request cookie delegation.
+	// Reuses fleet.ParseRole via the same Discovery. The ENTIRE browser-facing
+	// mux on this port is gated by the delegated-admin middleware (forwards the
+	// caller's cookie to the monolith's viewer{role}; admin -> serve, else 401,
+	// monolith-unreachable -> fail-closed). This is a separate server from the
+	// webhook delivery listener (cli.cfg.ListenAddr, /deliver/, HMAC-authed), so
+	// the cookie gate never touches the monolith->fleet delivery path.
 	var graphqlSrv *http.Server
 	if cli.appCfg.GraphQLAddr != "" {
-		gqlHandler := fleetgql.NewHTTPHandler(discovery, nil)
-		mux := http.NewServeMux()
-		mux.Handle("/graphql", gqlHandler)
-		graphqlSrv = &http.Server{Addr: cli.appCfg.GraphQLAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+		warnIfGraphQLAddrNonLoopback(lg, cli.appCfg.GraphQLAddr)
+		gqlMux, gErr := newFleetGraphQLHandler(discovery, cli.cfg.Trip2gBaseURL)
+		if gErr != nil {
+			return fmt.Errorf("fleet: graphql auth: %w", gErr)
+		}
+		graphqlSrv = &http.Server{Addr: cli.appCfg.GraphQLAddr, Handler: gqlMux, ReadHeaderTimeout: 10 * time.Second}
 		go func() {
 			lg.Info("fleet GraphQL API listening", "addr", cli.appCfg.GraphQLAddr)
 			if gerr := graphqlSrv.ListenAndServe(); gerr != nil && gerr != http.ErrServerClosed {
@@ -197,6 +203,23 @@ func run() error {
 			syncOnce(ctx, lg, f, discovery, reconciler)
 		}
 	}
+}
+
+// newFleetGraphQLHandler builds the fleet GraphQL server's HTTP handler: a mux
+// serving POST /graphql (roles + roleGraph), with the ENTIRE mux wrapped by the
+// delegated-admin middleware so every browser-facing path on this port — not
+// just /graphql — is gated on the caller being a verified trip2g admin.
+// monolithBaseURL is where viewer{role} is asked (fleet's Trip2gBaseURL). The
+// webhook delivery path lives on a different server and is intentionally NOT
+// wrapped here (it authenticates via HMAC, not the admin cookie).
+func newFleetGraphQLHandler(roles fleetgql.RoleSource, monolithBaseURL string) (http.Handler, error) {
+	da, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: monolithBaseURL})
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/graphql", fleetgql.NewHTTPHandler(roles, nil))
+	return da.Wrap(mux), nil
 }
 
 // runOnce reads cli.oncePath as a role-note, parses it, validates against the
@@ -350,6 +373,25 @@ func validateLoopbackAddr(addr string) error {
 		return fmt.Errorf("host %q is not loopback; bind 127.0.0.1, ::1 or localhost", host)
 	}
 	return nil
+}
+
+// warnIfGraphQLAddrNonLoopback logs a loud warning when --graphql-addr is
+// bound off loopback. Unlike --graph-addr/--debug-listen, a non-loopback
+// GraphQL bind is not hard-blocked — a remote-fleet-behind-its-own-Caddy setup
+// is a legitimate topology, and the delegated-admin gate still authenticates
+// every request — but the operator should see the exposure explicitly.
+func warnIfGraphQLAddrNonLoopback(lg logger.Logger, addr string) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return
+	}
+	if host == "localhost" {
+		return
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return
+	}
+	lg.Warn("fleet GraphQL bound non-loopback; ensure Caddy is the sole ingress + delegated-admin gate", "addr", addr)
 }
 
 // normalizeCallbackURL strips trailing slashes so webhook URLs assemble cleanly.

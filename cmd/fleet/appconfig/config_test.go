@@ -13,7 +13,7 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, DefaultListenAddr, cfg.ListenAddr)
 	require.Equal(t, DefaultTrip2gBaseURL, cfg.Trip2gBaseURL)
 	require.Equal(t, DefaultModel, cfg.DefaultModel)
-	require.Empty(t, cfg.GraphQLAddr) // disabled by default
+	require.Equal(t, DefaultGraphQLAddr, cfg.GraphQLAddr) // loopback by default
 	require.Empty(t, cfg.CodellmBaseURL)
 
 	cfg.Prepare()

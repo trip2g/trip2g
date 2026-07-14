@@ -26,6 +26,12 @@ const (
 	DefaultTrip2gBaseURL = "http://localhost:8081"
 	DefaultModel         = "gpt-4o-mini"
 	DefaultOfferedTools  = "search,read_note,patch_note,write_note"
+
+	// DefaultGraphQLAddr binds the fleet GraphQL API to loopback by default so
+	// exposure is an explicit operator opt-in, with Caddy /_fleet/* as the sole
+	// ingress (mirrors codellm's loopback default). The API is gated by the
+	// delegated-admin middleware regardless of bind.
+	DefaultGraphQLAddr = "127.0.0.1:9093"
 )
 
 // Config holds the subset of fleet's machine-level settings layered via
@@ -55,6 +61,7 @@ func DefaultConfig() *Config {
 		AgentsFolder:    DefaultAgentsFolder,
 		ListenAddr:      DefaultListenAddr,
 		Trip2gBaseURL:   DefaultTrip2gBaseURL,
+		GraphQLAddr:     DefaultGraphQLAddr,
 		DefaultModel:    DefaultModel,
 		offeredToolsCSV: DefaultOfferedTools,
 	}
@@ -74,10 +81,11 @@ func (c *Config) DefineFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL,
 		"trip2g base URL")
 	fs.StringVar(&c.GraphQLAddr, "graphql-addr", c.GraphQLAddr,
-		"listen address serving the fleet GraphQL read API (POST /graphql: roles + roleGraph), "+
-			"e.g. 127.0.0.1:9093; empty = disabled. Intended behind Caddy /_fleet/* with the "+
-			"delegated-admin check; auth is a no-op seam until that middleware is wired, so do "+
-			"NOT expose a non-loopback bind publicly yet")
+		"listen address serving the fleet GraphQL read API (POST /graphql: roles + roleGraph); "+
+			"defaults to loopback (127.0.0.1:9093), empty = disabled. The whole port is gated by "+
+			"the delegated-admin middleware (forwards the caller's cookie to the monolith's "+
+			"viewer{role}; admin -> serve, else 401, monolith-unreachable -> fail-closed). Front it "+
+			"with Caddy /_fleet/* as the sole ingress; expose a non-loopback bind only behind that proxy")
 	fs.StringVar(&c.DefaultModel, "default-model", c.DefaultModel,
 		"default model when a role omits model")
 	fs.StringVar(&c.offeredToolsCSV, "offered-tools", c.offeredToolsCSV,
