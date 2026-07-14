@@ -66,7 +66,6 @@ Properties:
 type Role {
   name: String!
   path: String!            # role note path under agents-folder
-  executor: String!        # "llm" | "code"
   model: String
   triggerOn: [String!]!    # create | update | remove
   triggerInclude: [String!]!

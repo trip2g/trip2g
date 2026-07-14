@@ -485,12 +485,13 @@ func (r *recordingLLM) Chat(_ context.Context, _ string, messages []agentruntime
 	return r.result, nil
 }
 
-// newCodeRoleFleet builds a Fleet with an executor:code role pointed at llm.
+// newCodeRoleFleet builds a Fleet with a code-body role pointed at llm. Routing
+// is by fleet_id now — a role declares no executor; a codellm-backed fleet runs
+// the code body.
 func newCodeRoleFleet(llm agentruntime.LLM) *Fleet {
 	role := Role{
 		NotePath:      "roles/code.md",
 		Mode:          "change",
-		Executor:      "code",
 		WritePatterns: []string{"boards/**"},
 		Body:          "```bash\necho hi\n```",
 	}

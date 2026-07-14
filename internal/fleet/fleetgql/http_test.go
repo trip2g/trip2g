@@ -46,20 +46,19 @@ func post(t *testing.T, h http.Handler, query string) map[string]json.RawMessage
 func TestHandlerRoles(t *testing.T) {
 	src := fakeSource{roles: []fleet.Role{
 		{
-			NotePath: "roles/indexer.md", Executor: "code", Model: "gpt-4o",
+			NotePath: "roles/indexer.md", Model: "gpt-4o",
 			TriggerOn: []string{"create", "update"}, Mode: "change",
 			TriggerInclude: []string{"wiki/**"}, WritePatterns: []string{"index/**"},
 		},
-		{NotePath: "roles/writer.md"}, // executor "" -> default "llm"; model "" -> null
+		{NotePath: "roles/writer.md"}, // model "" -> null
 	}}
 	h := NewHTTPHandler(src, nil)
 
-	data := post(t, h, `{ roles { name path executor model triggerInclude writePatterns } }`)
+	data := post(t, h, `{ roles { name path model triggerInclude writePatterns } }`)
 	var got struct {
 		Roles []struct {
 			Name           string   `json:"name"`
 			Path           string   `json:"path"`
-			Executor       string   `json:"executor"`
 			Model          *string  `json:"model"`
 			TriggerInclude []string `json:"triggerInclude"`
 			WritePatterns  []string `json:"writePatterns"`
@@ -70,12 +69,10 @@ func TestHandlerRoles(t *testing.T) {
 
 	require.Equal(t, "indexer", got.Roles[0].Name)
 	require.Equal(t, "roles/indexer.md", got.Roles[0].Path)
-	require.Equal(t, "code", got.Roles[0].Executor)
 	require.NotNil(t, got.Roles[0].Model)
 	require.Equal(t, "gpt-4o", *got.Roles[0].Model)
 
-	require.Equal(t, "llm", got.Roles[1].Executor) // default projection
-	require.Nil(t, got.Roles[1].Model)             // empty model -> null
+	require.Nil(t, got.Roles[1].Model) // empty model -> null
 }
 
 func TestHandlerRoleGraph(t *testing.T) {

@@ -33,20 +33,6 @@ const (
 // does NOT scan it for fenced code; it must match codellm's fleetInputMessageName.
 const fleetInputMessageName = "fleet_input"
 
-// fleetEnvMessageName is the reserved message name that carries the code role's
-// declared env var NAMES (Input.EnvPassthrough/EnvPrefix) as a JSON system
-// message. A codellm executor intersects them with its own expose-allowlist and
-// forwards the matching vars from ITS OWN env to the code child — so only NAMES
-// cross the wire, never values. Must match codellm's fleetEnvMessageName.
-const fleetEnvMessageName = "fleet_env"
-
-// fleetEnvNames is the JSON payload of the fleet_env message: the code role's
-// declared env var names (exact) and prefixes.
-type fleetEnvNames struct {
-	Passthrough []string `json:"passthrough,omitempty"`
-	Prefix      []string `json:"prefix,omitempty"`
-}
-
 // toolInvoker is the extension-point function type for the tool registry seam.
 // Built-in tools (search, read_note, write_note, patch_note, finish) are
 // handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
@@ -86,16 +72,8 @@ type Input struct {
 	// InputBag, when non-empty, is delivered as a system message named
 	// "fleet_input" carrying the JSON delivery bag. codellm treats that message
 	// as $FLEET_INPUT (it does not scan it for fenced code); a real LLM sees a
-	// harmless labeled JSON context block. Used by the executor:code→codellm path.
+	// harmless labeled JSON context block. Used by the code→codellm path.
 	InputBag []byte
-
-	// EnvPassthrough / EnvPrefix are the code role's declared env var NAMES (not
-	// values). When non-empty they ride a reserved "fleet_env" system message so a
-	// codellm executor can expose the matching vars from ITS OWN env to the code
-	// child (gated by codellm's expose-allowlist). Names only; values never leave
-	// codellm. A real LLM sees a harmless labeled JSON context block.
-	EnvPassthrough []string
-	EnvPrefix      []string
 
 	// HardFailApply makes a genuine write/patch APPLY failure (a bad or non-unique
 	// patch find, a KB write error — NOT an out-of-scope denial) fail the whole
@@ -187,17 +165,6 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 			Role:    RoleSystem,
 			Name:    fleetInputMessageName,
 			Content: string(in.InputBag),
-		})
-	}
-	// Declared env var NAMES ride the fleet_env message (values never leave
-	// codellm). Marshaling a two-slice struct cannot fail, so the error is
-	// discarded.
-	if len(in.EnvPassthrough) > 0 || len(in.EnvPrefix) > 0 {
-		envJSON, _ := json.Marshal(fleetEnvNames{Passthrough: in.EnvPassthrough, Prefix: in.EnvPrefix})
-		messages = append(messages, Message{
-			Role:    RoleSystem,
-			Name:    fleetEnvMessageName,
-			Content: string(envJSON),
 		})
 	}
 	messages = append(messages, Message{Role: RoleUser, Content: "Begin."})
