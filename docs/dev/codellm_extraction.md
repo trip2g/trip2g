@@ -175,6 +175,21 @@ The point is moving isolation from **in-process** confinement to a **container b
 
 **Container/userns interaction (gotcha).** The per-block sandbox needs unprivileged user namespaces, which some container runtimes disable. If userns is unavailable inside the codellm container, `native` mode fails closed (refuses to run). Either the container must permit userns, or codellm relies on the container as the *sole* boundary and runs blocks in `besteffort`/`off` — an explicit, logged operator choice, not a silent downgrade.
 
+## P3 plan (decided 2026-07-14, per-provider-fleet, direct cutover)
+
+Four owner decisions lock the shape:
+- **Full per-provider-fleet immediately.** One fleet serves one LLM endpoint; roles tag `fleet_id`; codellm is a fleet with `--llm-base-url=<codellm>` + `--llm-api-key=<key>`. fleet_id identity via the webhook hash-url registry (see fleet_graphql.md).
+- **Rely on codellm's always-finish invariant — NO MaxSteps:1 pin.** codellm guarantees exactly one `finish` per completion (invariant + conformance test from #234), so the loop stops after one turn regardless of the role's MaxSteps. No need to detect codellm-bound roles to pin single-shot. (Accepted risk: a codellm always-finish bug would let the normal MaxSteps re-execute; guarded only codellm-side.)
+- **Apply-error = hard-fail** (preserve today's all-or-nothing): a bad-`find` patch in the applied tool_calls fails the run loudly, not a soft per-tool skip.
+- **Direct cutover** (no A/B flag): `executor: code` runs through the normal llm path against codellm; the in-process `RunCode` branch is deleted after.
+
+### PR breakdown
+- **P3a — fleet_id + role partitioning + hash-registry** (foundation, fleet-side, does NOT touch the code-exec path): `--fleet-id` (required) on fleet; `fleet_id` field on `ParseRole` (role.go); fleet reconcile/discovery processes only roles whose `fleet_id` matches; webhook registration URL becomes `/_fleet/<sha256("fleet:"+fleet_id)>/webhook`; reconcile de-dups/takes-over by the `/<h>/` segment (last-writer-wins, crash-recovery free). This is the identity+routing base.
+- **P3b — cutover** (touches the live path): delete the `executor: code` → `f.codeRunner` branch (handler.go); code roles run as normal llm runs against the fleet's LLM (codellm); the delivery bag rides as a `fleet_input` system message on those runs (InputBag on agentruntime.Input); enforce apply-error **hard-fail** in the tool-apply loop (runtime.go) so a failed patch fails the run.
+- **P3c — delete in-process** (after P3b verified live): remove fleet's in-process RunCode usage; keep `coderun` only for the `exec` tool until P5. Pre-req: env_passthrough audit (secret-dependent roles can't migrate — see the secrets manifest).
+
+Order: P3a (foundation) → P3b (cutover) → P3c (delete). P3a is fleet-side/routing, safe to build first; P3b touches handler.go/runtime.go (the live path).
+
 ## Backward-compat and cutover
 
 **Superseded routing model (2026-07-14):** the `--codellm-base-url` + in-fleet `f.codeLLM` second-client approach below is **replaced** by the per-provider-fleet model in `fleet_graphql.md` — one fleet serves one LLM endpoint, a role picks its fleet with `fleet_id`, and **codellm is just a fleet whose `--llm-base-url` points at the codellm service.** So the cutover has no `--codellm-base-url` flag and no second client inside a fleet: you stand up a codellm-configured fleet, retag `executor: code` roles to run against it, and that fleet's single LLM client *is* codellm. The invariants below (`MaxSteps: 1`, the `InputBag` delivery, apply-error 422 enforced at the fleet apply path, the parity tests, the env-passthrough audit) all still hold regardless of which fleet routes the run. The paragraphs below describe the older single-fleet mechanics and are kept for the invariant details; treat the routing specifics as historical.
