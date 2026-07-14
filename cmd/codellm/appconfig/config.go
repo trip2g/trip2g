@@ -24,9 +24,9 @@ import (
 // Config holds codellm's runtime configuration.
 type Config struct {
 	// Addr is the listen address for the OpenAI-compatible API. Defaults to
-	// loopback: codellm's Auth/TokenCheck seams are no-op in Phase 1, so
-	// binding to all interfaces must be an explicit operator opt-in, not the
-	// default.
+	// loopback: codellm's auth is the api_key check plus the browser
+	// delegated-admin cookie gate (see APIKey), so binding to all interfaces
+	// must be an explicit operator opt-in, not the default.
 	Addr string
 
 	// AllowedPrograms is the interpreter allowlist (python, bash, node, ...).
@@ -42,12 +42,14 @@ type Config struct {
 	// MaxStdoutBytes caps each block's captured stdout; 0 = 1 MiB default.
 	MaxStdoutBytes int
 
-	// ChannelToken is the shared fleet<->codellm channel token. codellm accepts a
-	// server-to-server caller presenting it as `Authorization: Bearer <token>`
-	// (constant-time compared) as the fleet lane, bypassing the browser cookie
-	// gate. Empty disables the fleet lane (fail-safe): only the browser
-	// delegated-admin gate then admits requests.
-	ChannelToken string
+	// APIKey is codellm's own OpenAI-standard api_key — the same credential shape
+	// any OpenAI-compatible endpoint has. codellm accepts a caller presenting it
+	// as `Authorization: Bearer <api_key>` (constant-time compared), bypassing
+	// the browser cookie gate. Empty disables key auth (fail-safe): only the
+	// browser delegated-admin gate then admits requests. When non-empty, must be
+	// at least minAPIKeyLength chars (a short key would let key auth guard
+	// against nothing).
+	APIKey string
 
 	// Trip2gBaseURL is the trip2g base URL used by the delegated-admin gate on
 	// the browser-facing endpoints (/v1 via the browser proxy and /graphql):
@@ -65,6 +67,11 @@ const (
 	DefaultTimeout         = 300 * time.Second
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
 )
+
+// minAPIKeyLength is the minimum length a non-empty APIKey must have. Key auth
+// guards an RCE-capable endpoint (code execution); a short key is guessable and
+// makes that guard worthless. Empty is still allowed — it means key auth is off.
+const minAPIKeyLength = 32
 
 // DefaultConfig returns Config's baseline values, before env/flag overrides.
 func DefaultConfig() Config {
@@ -124,8 +131,8 @@ func (c *Config) applyEnv() {
 			c.MaxStdoutBytes = n
 		}
 	}
-	if v := os.Getenv("CODELLM_CHANNEL_TOKEN"); v != "" {
-		c.ChannelToken = v
+	if v := os.Getenv("CODELLM_API_KEY"); v != "" {
+		c.APIKey = v
 	}
 	if v := os.Getenv("CODELLM_TRIP2G_URL"); v != "" {
 		c.Trip2gBaseURL = v
@@ -146,7 +153,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
-	fs.StringVar(&c.ChannelToken, "channel-token", c.ChannelToken, "shared fleet<->codellm channel token (Bearer); empty disables the fleet lane")
+	fs.StringVar(&c.APIKey, "api-key", c.APIKey, "codellm's OpenAI-standard api_key (Bearer); empty disables key auth")
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL, "base URL of the trip2g instance that answers viewer{role}")
 
 	if err := fs.Parse(args); err != nil {
@@ -165,7 +172,25 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.MaxStdoutBytes, ozzo.Min(0)),
 		ozzo.Field(&c.Timeout, ozzo.By(nonNegativeDuration)),
 		ozzo.Field(&c.Sandbox, ozzo.In(coderun.SandboxNative, coderun.SandboxBestEffort, coderun.SandboxOff)),
+		ozzo.Field(&c.APIKey, ozzo.By(minAPIKeyLengthIfSet)),
 	)
+}
+
+// minAPIKeyLengthIfSet allows an empty APIKey (key auth off) but rejects a
+// non-empty one shorter than minAPIKeyLength (a guessable key would make key
+// auth on an RCE-capable endpoint worthless).
+func minAPIKeyLengthIfSet(value any) error {
+	s, ok := value.(string)
+	if !ok {
+		return errors.New("not a string")
+	}
+	if s == "" {
+		return nil
+	}
+	if len(s) < minAPIKeyLength {
+		return fmt.Errorf("must be at least %d characters", minAPIKeyLength)
+	}
+	return nil
 }
 
 // nonNegativeDuration rejects a negative timeout (0 is valid: request-context

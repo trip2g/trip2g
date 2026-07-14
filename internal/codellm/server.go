@@ -59,19 +59,21 @@ type Config struct {
 	Timeout time.Duration
 
 	// Auth gates the two BROWSER-facing endpoints (/v1/chat/completions and
-	// /graphql). In production it is BrowserAuth(delegatedAdmin, TokenCheck): the
-	// browser lane is gated by the delegated-admin cookie check (cookie →
-	// monolith viewer{role}; admin → serve, else 401), while the fleet lane
-	// (server-to-server /v1 over a locked channel) bypasses the cookie gate via
-	// TokenCheck. nil defaults to a no-op passthrough (tests / standalone).
+	// /graphql). In production it is BrowserAuth(delegatedAdmin, TokenCheck): a
+	// caller presenting codellm's own OpenAI-standard api_key (Authorization:
+	// Bearer) is served directly via TokenCheck; otherwise the request falls
+	// through to the delegated-admin cookie check (cookie → monolith
+	// viewer{role}; admin → serve, else 401). nil defaults to a no-op passthrough
+	// (tests / standalone).
 	Auth func(http.Handler) http.Handler
 
-	// TokenCheck is the seam for the fleet↔codellm locked-channel check. In
-	// production it is ChannelTokenCheck(cfg.ChannelToken): a shared channel token
-	// presented as `Authorization: Bearer <token>` and compared in constant time,
-	// identifying the server-to-server fleet lane so BrowserAuth lets it bypass the
-	// browser cookie gate. An empty configured token disables the lane (fail-safe).
-	// nil → no fleet lane, every request must pass the browser admin gate (the
+	// TokenCheck is the seam for codellm's own api_key check. In production it is
+	// APIKeyCheck(cfg.APIKey): codellm's OpenAI-standard api_key, presented as
+	// `Authorization: Bearer <api_key>` and compared in constant time — the same
+	// credential shape any OpenAI-compatible endpoint has, so any client
+	// (fleet's OpenAILLM included) authenticates identically to a real LLM
+	// endpoint. An empty configured key disables key auth (fail-safe). nil → no
+	// key auth, every request must pass the browser admin-cookie gate (the
 	// secure default). Kept distinct from Auth so the transport-lock and the
 	// caller-identity concerns wire independently.
 	TokenCheck func(*http.Request) error
@@ -80,16 +82,17 @@ type Config struct {
 // BrowserAuth composes codellm's two auth regimes into one middleware for the
 // browser-facing endpoints:
 //
+//   - API-key lane (any OpenAI-compatible client, fleet included): when
+//     tokenCheck is non-nil AND passes — the caller presented codellm's own
+//     api_key (Authorization: Bearer) — the request is served directly. This is
+//     the standard "base_url + api_key" shape any OpenAI endpoint has; codellm
+//     is no different, which keeps it interchangeable with a real LLM.
 //   - Browser lane (Caddy /_codellm/* forwards the session cookie): gated by the
 //     admin middleware — the delegated-admin check (cookie → monolith
 //     viewer{role}; admin → serve, else 401, monolith-unreachable → fail-closed).
-//   - Fleet lane (server-to-server /v1 over a locked channel): when tokenCheck
-//     is non-nil AND passes, the request is a trusted server-to-server caller and
-//     bypasses the cookie gate. This is the seam for the mTLS/shared-token lane
-//     (not fully built — a deploy concern).
 //
-// tokenCheck nil → no fleet lane; every request must pass the browser admin gate
-// (the secure default until fleet integration supplies the channel token).
+// tokenCheck nil → no key auth; every request must pass the browser admin gate
+// (the secure default until an api_key is configured).
 func BrowserAuth(admin func(http.Handler) http.Handler, tokenCheck func(*http.Request) error) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		gated := admin(next)
@@ -139,11 +142,11 @@ func (s *Server) Handler() http.Handler {
 // fenced blocks, and returns the writes as tool_calls ending in exactly one
 // finish. Execution/parse failures are a deterministic 422 (not retried).
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
-	// Auth is composed entirely in cfg.Auth (BrowserAuth): the fleet channel-token
-	// lane and the browser cookie gate are both decided before this handler runs.
-	// A second TokenCheck here would be contradictory — it would REQUIRE the token
-	// on a request the cookie lane already admitted (no token), breaking the
-	// browser debugger lane.
+	// Auth is composed entirely in cfg.Auth (BrowserAuth): the api_key check and
+	// the browser cookie gate are both decided before this handler runs. A second
+	// TokenCheck here would be contradictory — it would REQUIRE the key on a
+	// request the cookie lane already admitted (no key), breaking the browser
+	// debugger lane.
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request_error", "read request: "+err.Error())
