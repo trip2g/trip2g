@@ -328,9 +328,9 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 	}
 }
 
-// rateLimitErr carries the "Too Many Requests" marker telegram.HandleRateLimit
+// errRateLimit carries the "Too Many Requests" marker telegram.HandleRateLimit
 // looks for; "retry after 0" keeps the retry delay at the 1s floor for tests.
-var rateLimitErr = errors.New("Too Many Requests: retry after 0")
+var errRateLimit = errors.New("Too Many Requests: retry after 0") //nolint:staticcheck // mirrors literal Telegram API error text
 
 func sendRetryParams() model.TelegramSendPostParams {
 	return model.TelegramSendPostParams{
@@ -368,7 +368,7 @@ func TestResolve_RateLimit_RetriedThenSucceeds(t *testing.T) {
 	env := sendRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 		calls++
 		if calls == 1 {
-			return 0, rateLimitErr
+			return 0, errRateLimit
 		}
 		return 111, nil
 	})
@@ -387,7 +387,7 @@ func TestResolve_RateLimit_RetriedThenSucceeds(t *testing.T) {
 
 func TestResolve_RateLimit_RetriesExhausted(t *testing.T) {
 	env := sendRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
-		return 0, rateLimitErr
+		return 0, errRateLimit
 	})
 
 	err := sendtelegrammessage.Resolve(context.Background(), env, sendRetryParams())
@@ -403,7 +403,7 @@ func TestResolve_RateLimit_CtxCancelledDuringWait(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	env := sendRetryEnv(func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 		cancel() // cancel before the retry wait
-		return 0, rateLimitErr
+		return 0, errRateLimit
 	})
 
 	err := sendtelegrammessage.Resolve(ctx, env, sendRetryParams())

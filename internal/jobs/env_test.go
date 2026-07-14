@@ -35,13 +35,15 @@ func (e *registerTestEnv) EnqueueJob(_ context.Context, job model.BackgroundTask
 
 func TestRegisterHandlerUnmarshalsAndCallsThrough(t *testing.T) {
 	env := &registerTestEnv{}
-	var calledCtx context.Context
+	ctx := context.Background()
 	var calledParams registerTestParams
+	var handlerCalled bool
 
 	Register(env, model.BackgroundDefaultQueue, "test_job", 5,
-		func(ctx context.Context, params registerTestParams) error {
-			calledCtx = ctx
+		func(gotCtx context.Context, params registerTestParams) error {
+			require.Equal(t, ctx, gotCtx)
 			calledParams = params
+			handlerCalled = true
 			return nil
 		})
 
@@ -49,11 +51,10 @@ func TestRegisterHandlerUnmarshalsAndCallsThrough(t *testing.T) {
 	require.Equal(t, "test_job", env.registeredID)
 	require.NotNil(t, env.handler)
 
-	ctx := context.Background()
 	err := env.handler(ctx, []byte(`{"value":"hello"}`))
 
 	require.NoError(t, err)
-	require.Equal(t, ctx, calledCtx)
+	require.True(t, handlerCalled)
 	require.Equal(t, registerTestParams{Value: "hello"}, calledParams)
 }
 

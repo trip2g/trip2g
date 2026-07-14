@@ -12,13 +12,13 @@ import (
 // @lid = lodash id (underscores), used for Jet block names.
 // @did = dash id (hyphens), used for BEM CSS class names.
 // Examples: "/mesh/bar" → lid="mesh_bar", did="mesh-bar".
-func derivePlaceholderIDs(sourceID string) (lid, did string) {
+func derivePlaceholderIDs(sourceID string) (string, string) {
 	base := strings.TrimPrefix(sourceID, "/")
 	if idx := strings.LastIndex(base, "."); idx != -1 {
 		base = base[:idx]
 	}
-	lid = strings.ReplaceAll(base, "/", "_")
-	did = strings.ReplaceAll(base, "/", "-")
+	lid := strings.ReplaceAll(base, "/", "_")
+	did := strings.ReplaceAll(base, "/", "-")
 	return lid, did
 }
 
@@ -50,9 +50,9 @@ func scanSelfLiteral(content, sourceID string) []model.NoteWarning {
 	}
 	var hits []hit
 
-	addHits := func(re *regexp.Regexp, group int, kind, text string) {
+	addHits := func(re *regexp.Regexp, kind, text string) {
 		for _, m := range re.FindAllStringSubmatchIndex(content, -1) {
-			start := m[2*group]
+			start := m[2]
 			if start < 0 {
 				continue
 			}
@@ -64,19 +64,19 @@ func scanSelfLiteral(content, sourceID string) []model.NoteWarning {
 	if did != "" {
 		// non-word (or start) before; BEM/CSS boundary (or end) after.
 		didRe := regexp.MustCompile(`(?:^|[^\w])(` + regexp.QuoteMeta(did) + `)(?:__|--|[\s'"` + "`" + `.#:\[)\{,;]|$)`)
-		addHits(didRe, 1, "@did", did)
+		addHits(didRe, "@did", did)
 	}
 
 	if lid != "" {
 		q := regexp.QuoteMeta(lid)
 		// <lid>_ru( — RU variant call/definition (checked first so the _ru form wins).
-		addHits(regexp.MustCompile(`(?:^|[^\w])(`+q+`)_ru\(`), 1, "@lid", lid)
+		addHits(regexp.MustCompile(`(?:^|[^\w])(`+q+`)_ru\(`), "@lid", lid)
 		// <lid>( — call or block definition.
-		addHits(regexp.MustCompile(`(?:^|[^\w])(`+q+`)\(`), 1, "@lid", lid)
+		addHits(regexp.MustCompile(`(?:^|[^\w])(`+q+`)\(`), "@lid", lid)
 		// _style_<lid> — the paired CSS block, boundary (or end) after.
-		addHits(regexp.MustCompile(`_style_(`+q+`)(?:[^\w]|$)`), 1, "@lid", lid)
+		addHits(regexp.MustCompile(`_style_(`+q+`)(?:[^\w]|$)`), "@lid", lid)
 		// yield <lid> — a yield reference, boundary (or end) after.
-		addHits(regexp.MustCompile(`yield\s+(`+q+`)(?:[^\w]|$)`), 1, "@lid", lid)
+		addHits(regexp.MustCompile(`yield\s+(`+q+`)(?:[^\w]|$)`), "@lid", lid)
 	}
 
 	if len(hits) == 0 {

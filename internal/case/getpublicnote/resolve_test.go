@@ -64,7 +64,7 @@ func TestResolve_PathIDMiss(t *testing.T) {
 	out, err := getpublicnote.Resolve(context.Background(), env, model.NoteInput{PathID: ptr(int64(999))}, nil)
 	require.NoError(t, err)
 	require.Nil(t, out)
-	require.Equal(t, "", gotPath) // no view matched, no input.Path -> empty path
+	require.Empty(t, gotPath) // no view matched, no input.Path -> empty path
 }
 
 func TestResolve_ScopedAllowed(t *testing.T) {

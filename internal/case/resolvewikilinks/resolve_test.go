@@ -19,11 +19,11 @@ func scopedCtx(readPatterns []string) context.Context {
 	})
 }
 
-// viewsResolvingTo builds NoteViews where bare link `basename` resolves to target.
-func viewsResolvingTo(basename string, target *appmodel.NoteView) *appmodel.NoteViews {
+// viewsResolvingTo builds NoteViews where bare link "foo" resolves to target.
+func viewsResolvingTo(target *appmodel.NoteView) *appmodel.NoteViews {
 	return &appmodel.NoteViews{
 		Map:         map[string]*appmodel.NoteView{},
-		BasenameMap: map[string][]*appmodel.NoteView{basename: {target}},
+		BasenameMap: map[string][]*appmodel.NoteView{"foo": {target}},
 	}
 }
 
@@ -55,7 +55,7 @@ func TestResolve_Unresolved(t *testing.T) {
 func TestResolve_ResolvedPermalink(t *testing.T) {
 	target := &appmodel.NoteView{Path: "boards/foo.md", Permalink: "/foo", PermalinkOriginal: "/foo-orig"}
 	env := &resolvewikilinks.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo("foo", target) },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo(target) },
 	}
 	out, err := resolvewikilinks.Resolve(context.Background(), env, model.ResolveWikilinksFilter{Links: []string{"foo"}})
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestResolve_ResolvedPermalink(t *testing.T) {
 func TestResolve_ResolvedSlugUsesPermalinkOriginal(t *testing.T) {
 	target := &appmodel.NoteView{Path: "boards/foo.md", Slug: "foo", Permalink: "/foo", PermalinkOriginal: "/foo-orig"}
 	env := &resolvewikilinks.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo("foo", target) },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo(target) },
 	}
 	out, err := resolvewikilinks.Resolve(context.Background(), env, model.ResolveWikilinksFilter{Links: []string{"foo"}})
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestResolve_ResolvedSlugUsesPermalinkOriginal(t *testing.T) {
 func TestResolve_ScopedAllowed(t *testing.T) {
 	target := &appmodel.NoteView{Path: "boards/foo.md", Permalink: "/foo"}
 	env := &resolvewikilinks.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo("foo", target) },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo(target) },
 	}
 	out, err := resolvewikilinks.Resolve(scopedCtx([]string{"boards/**"}), env, model.ResolveWikilinksFilter{Links: []string{"foo"}})
 	require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestResolve_ScopedAllowed(t *testing.T) {
 func TestResolve_ScopedDeniedDoesNotLeakExistence(t *testing.T) {
 	target := &appmodel.NoteView{Path: "secret/foo.md", Permalink: "/foo"}
 	env := &resolvewikilinks.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo("foo", target) },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo(target) },
 	}
 	out, err := resolvewikilinks.Resolve(scopedCtx([]string{"boards/**"}), env, model.ResolveWikilinksFilter{Links: []string{"foo"}})
 	require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestResolve_ScopedDeniedDoesNotLeakExistence(t *testing.T) {
 func TestResolve_ScopedEmptyPatternsFailClosed(t *testing.T) {
 	target := &appmodel.NoteView{Path: "boards/foo.md", Permalink: "/foo"}
 	env := &resolvewikilinks.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo("foo", target) },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return viewsResolvingTo(target) },
 	}
 	out, err := resolvewikilinks.Resolve(scopedCtx(nil), env, model.ResolveWikilinksFilter{Links: []string{"foo"}})
 	require.NoError(t, err)

@@ -581,7 +581,7 @@ func findRouteForHost(routes []model.ParsedRoute, host, requestPath string) *mod
 }
 
 // buildDefaultTemplateCtx constructs a *defaulttemplate.Ctx from the request, layout params, and response.
-func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly requires many optional fields
+func buildDefaultTemplateCtx(
 	req *appreq.Request, layoutParams renderlayout.Params, resp *Response, env Env,
 ) *defaulttemplate.Ctx {
 	// Attach the admin-only "last edited by" resolver so the default template can
@@ -675,12 +675,12 @@ func buildDefaultTemplateCtx( //nolint:gocognit // template context assembly req
 	}
 
 	if resp.Note != nil && env.Features().VectorSearch.Enabled {
-		simResults, err := similarnotes.Resolve(req.Req, env, graphmodel.SimilarNotesInput{
+		simResults, simErr := similarnotes.Resolve(req.Req, env, graphmodel.SimilarNotesInput{
 			Path:  resp.Note.Path,
 			Limit: ptr.To(int32(10)),
 		})
-		if err != nil {
-			env.Logger().Error("similar notes failed", "error", err)
+		if simErr != nil {
+			env.Logger().Error("similar notes failed", "error", simErr)
 		} else {
 			for _, sn := range simResults {
 				if sn.Note != nil && sn.Note.NoteView != nil {

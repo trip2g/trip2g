@@ -95,8 +95,8 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// ?preview_id=xxx — no auth required.
 	if id := string(args.Peek("preview_id")); id != "" {
-		entry, ok := buf.GetByID(id)
-		if !ok {
+		entry, found := buf.GetByID(id)
+		if !found {
 			ctx.SetStatusCode(http.StatusNotFound)
 			ctx.SetBodyString("preview not found")
 			return nil, nil

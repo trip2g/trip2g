@@ -13,9 +13,9 @@ import (
 	"trip2g/internal/model"
 )
 
-// rateLimitErr carries the "Too Many Requests" marker telegram.HandleRateLimit
+// errRateLimit carries the "Too Many Requests" marker telegram.HandleRateLimit
 // looks for; "retry after 0" keeps the retry delay at the 1s floor for tests.
-var rateLimitErr = errors.New("Too Many Requests: retry after 0")
+var errRateLimit = errors.New("Too Many Requests: retry after 0") //nolint:staticcheck // mirrors literal Telegram API error text
 
 func updateAccountRetryParams() model.TelegramAccountUpdatePostParams {
 	return model.TelegramAccountUpdatePostParams{
@@ -58,7 +58,7 @@ func TestResolve_RateLimit_RetriedThenSucceeds(t *testing.T) {
 
 	env := updateAccountRetryEnv(func(ctx context.Context, id int64) (db.TelegramAccount, error) {
 		getAccountCalls++
-		return db.TelegramAccount{}, rateLimitErr
+		return db.TelegramAccount{}, errRateLimit
 	})
 	env.GetTelegramPublishSentAccountMessageContentHashFunc = func(ctx context.Context, arg db.GetTelegramPublishSentAccountMessageContentHashParams) (string, error) {
 		hashCalls++
@@ -84,7 +84,7 @@ func TestResolve_RateLimit_RetriesExhausted(t *testing.T) {
 	calls := 0
 	env := updateAccountRetryEnv(func(ctx context.Context, id int64) (db.TelegramAccount, error) {
 		calls++
-		return db.TelegramAccount{}, rateLimitErr
+		return db.TelegramAccount{}, errRateLimit
 	})
 	env.GetTelegramPublishSentAccountMessageContentHashFunc = func(ctx context.Context, arg db.GetTelegramPublishSentAccountMessageContentHashParams) (string, error) {
 		return "old_hash", nil
@@ -105,7 +105,7 @@ func TestResolve_RateLimit_CtxCancelledDuringWait(t *testing.T) {
 	env := updateAccountRetryEnv(func(ctx context.Context, id int64) (db.TelegramAccount, error) {
 		calls++
 		cancel() // cancel before the retry wait
-		return db.TelegramAccount{}, rateLimitErr
+		return db.TelegramAccount{}, errRateLimit
 	})
 	env.GetTelegramPublishSentAccountMessageContentHashFunc = func(ctx context.Context, arg db.GetTelegramPublishSentAccountMessageContentHashParams) (string, error) {
 		return "old_hash", nil

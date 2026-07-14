@@ -99,12 +99,7 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 		}
 		// Scan the pre-expansion source for the file's own hardcoded @lid/@did
 		// names before expandBlockName rewrites the placeholders.
-		if selfLit := scanSelfLiteral(content, source.ID); len(selfLit) > 0 {
-			jl.pendingWarnings[source.ID] = append(jl.pendingWarnings[source.ID], selfLit...)
-			for _, w := range selfLit {
-				log.Warn(w.Message)
-			}
-		}
+		scanAndWarn(jl, source.ID, content, log)
 		jl.templates[source.ID] = expandBlockName(content, source.ID)
 		jl.sourceIDs = append(jl.sourceIDs, source.ID)
 	}
@@ -132,109 +127,104 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			ByFullName: make(map[string]model.LayoutBlock),
 		},
 		AssetReplaces: mergedAssets,
-		Load: func(source model.LayoutSourceFile) model.Layout {
-			view, parseErr := jl.load(source)
-			layout := model.Layout{View: view}
-			if view != nil {
-				layout.Personalized = jl.detectPersonalized(source.ID, source.Content, view)
-			}
-			if parseErr != "" {
-				layout.Warnings = []model.NoteWarning{{
-					Level:   model.NoteWarningCritical,
-					Message: parseErr,
-				}}
-			}
-			return layout
-		},
-		LoadPreview: func(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
-			// Snapshot the shared templates map under lock, then release immediately.
-			jl.mu.Lock()
-			snap := make(map[string]string, len(jl.templates)+len(extra))
-			for k, v := range jl.templates {
-				snap[k] = v
-			}
-			jl.mu.Unlock()
-
-			// Caller-supplied files override server files.
-			for k, v := range extra {
-				snap[k] = v
-			}
-
-			// Normalize ID to match production format: strip /_layouts prefix and .html
-			// extension. Production loader strips these when building the templates map,
-			// so Jet import resolution (relative paths) only works with normalized IDs.
-			providedMainContent := main.Content
-			main.ID = normalizeLayoutID(main.ID)
-
-			// If no inline content provided, fill from snapshot so load() does not
-			// overwrite the server template with an empty string.
-			if main.Content == "" {
-				main.Content = snap[main.ID]
-			}
-
-			// Scan the user-authored (pre-expansion) sources for self-literal
-			// @lid/@did drift. Only extra (caller-supplied) files and an explicitly
-			// provided main content are raw; snapshot templates are already expanded.
-			selfLit := make(map[string]struct{})
-			rawSources := make(map[string]string)
-			for k, v := range extra {
-				rawSources[normalizeLayoutID(k)] = v
-			}
-			if providedMainContent != "" {
-				rawSources[main.ID] = providedMainContent
-			}
-			for id, content := range rawSources {
-				for _, w := range scanSelfLiteral(content, id) {
-					selfLit[w.Message] = struct{}{}
-				}
-			}
-
-			// Fresh isolated loader — never touches the production jl.
-			sourceIDs := make([]string, 0, len(snap))
-			for k := range snap {
-				sourceIDs = append(sourceIDs, k)
-			}
-			preview := &jetLoader{
-				templates:            snap,
-				sourceIDs:            sourceIDs,
-				log:                  jl.log,
-				devMode:              jl.devMode,
-				layouts:              model.Layouts{Map: make(map[string]model.Layout)},
-				pendingWarnings:      make(map[string][]model.NoteWarning),
-				sets:                 make(map[string]*jet.Set),
-				yieldBlocksSlices:    make(map[string]*[]string),
-				yieldBlocksWarnSinks: make(map[string]*[]model.NoteWarning),
-			}
-
-			view, errStr := preview.load(main)
-			var warnings []string
-			if errStr != "" {
-				warnings = append(warnings, "compile: "+errStr)
-			}
-			if len(selfLit) > 0 {
-				msgs := make([]string, 0, len(selfLit))
-				for m := range selfLit {
-					msgs = append(msgs, m)
-				}
-				sort.Strings(msgs)
-				warnings = append(warnings, msgs...)
-			}
-			if view == nil {
-				return model.Layout{}, warnings
-			}
-
-			// Wire yield_blocks so {{ yield_blocks("prefix") }} collects CSS blocks.
-			preview.layouts.Map[main.ID] = model.Layout{View: view}
-			preview.wireYieldBlocksForPreview(main.ID, view)
-
-			return model.Layout{View: view}, warnings
-		},
+		Load:          jl.loadLayout,
+		LoadPreview:   jl.loadPreview,
 	}
 
 	jl.processTemplates(sourceFiles)
 	jl.wireYieldBlocks(sourceFiles)
 
 	return &jl.layouts, nil
+}
+
+// loadLayout is the model.Layouts.Load callback: loads a single source file on demand.
+func (jl *jetLoader) loadLayout(source model.LayoutSourceFile) model.Layout {
+	view, parseErr := jl.load(source)
+	layout := model.Layout{View: view}
+	if view != nil {
+		layout.Personalized = jl.detectPersonalized(source.ID, source.Content, view)
+	}
+	if parseErr != "" {
+		layout.Warnings = []model.NoteWarning{{
+			Level:   model.NoteWarningCritical,
+			Message: parseErr,
+		}}
+	}
+	return layout
+}
+
+// loadPreview is the model.Layouts.LoadPreview callback: compiles a preview layout
+// from caller-supplied content against a snapshot of the production templates,
+// using a fresh isolated loader that never touches the production jl.
+func (jl *jetLoader) loadPreview(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
+	// Snapshot the shared templates map under lock, then release immediately.
+	jl.mu.Lock()
+	snap := make(map[string]string, len(jl.templates)+len(extra))
+	for k, v := range jl.templates {
+		snap[k] = v
+	}
+	jl.mu.Unlock()
+
+	// Caller-supplied files override server files.
+	for k, v := range extra {
+		snap[k] = v
+	}
+
+	// Normalize ID to match production format: strip /_layouts prefix and .html
+	// extension. Production loader strips these when building the templates map,
+	// so Jet import resolution (relative paths) only works with normalized IDs.
+	providedMainContent := main.Content
+	main.ID = normalizeLayoutID(main.ID)
+
+	// If no inline content provided, fill from snapshot so load() does not
+	// overwrite the server template with an empty string.
+	if main.Content == "" {
+		main.Content = snap[main.ID]
+	}
+
+	// Scan the user-authored (pre-expansion) sources for self-literal
+	// @lid/@did drift. Only extra (caller-supplied) files and an explicitly
+	// provided main content are raw; snapshot templates are already expanded.
+	selfLit := collectRawSelfLiterals(extra, main.ID, providedMainContent)
+
+	sourceIDs := make([]string, 0, len(snap))
+	for k := range snap {
+		sourceIDs = append(sourceIDs, k)
+	}
+	preview := &jetLoader{
+		templates:            snap,
+		sourceIDs:            sourceIDs,
+		log:                  jl.log,
+		devMode:              jl.devMode,
+		layouts:              model.Layouts{Map: make(map[string]model.Layout)},
+		pendingWarnings:      make(map[string][]model.NoteWarning),
+		sets:                 make(map[string]*jet.Set),
+		yieldBlocksSlices:    make(map[string]*[]string),
+		yieldBlocksWarnSinks: make(map[string]*[]model.NoteWarning),
+	}
+
+	view, errStr := preview.load(main)
+	var warnings []string
+	if errStr != "" {
+		warnings = append(warnings, "compile: "+errStr)
+	}
+	if len(selfLit) > 0 {
+		msgs := make([]string, 0, len(selfLit))
+		for m := range selfLit {
+			msgs = append(msgs, m)
+		}
+		sort.Strings(msgs)
+		warnings = append(warnings, msgs...)
+	}
+	if view == nil {
+		return model.Layout{}, warnings
+	}
+
+	// Wire yield_blocks so {{ yield_blocks("prefix") }} collects CSS blocks.
+	preview.layouts.Map[main.ID] = model.Layout{View: view}
+	preview.wireYieldBlocksForPreview(main.ID, view)
+
+	return model.Layout{View: view}, warnings
 }
 
 // normalizeLayoutID converts a user-supplied layout path to the production ID format.
@@ -253,6 +243,40 @@ func normalizeLayoutID(id string) string {
 		id = "/" + id
 	}
 	return id
+}
+
+// scanAndWarn scans a source's pre-expansion content for self-literal @lid/@did
+// drift, recording it as a pending warning and logging it.
+func scanAndWarn(jl *jetLoader, sourceID, content string, log logger.Logger) {
+	selfLit := scanSelfLiteral(content, sourceID)
+	if len(selfLit) == 0 {
+		return
+	}
+	jl.pendingWarnings[sourceID] = append(jl.pendingWarnings[sourceID], selfLit...)
+	for _, w := range selfLit {
+		log.Warn(w.Message)
+	}
+}
+
+// collectRawSelfLiterals scans the user-authored (pre-expansion) preview sources
+// for self-literal @lid/@did drift. Only extra (caller-supplied) files and an
+// explicitly provided main content are raw; snapshot templates are already expanded.
+func collectRawSelfLiterals(extra map[string]string, mainID, providedMainContent string) map[string]struct{} {
+	rawSources := make(map[string]string)
+	for k, v := range extra {
+		rawSources[normalizeLayoutID(k)] = v
+	}
+	if providedMainContent != "" {
+		rawSources[mainID] = providedMainContent
+	}
+
+	selfLit := make(map[string]struct{})
+	for id, content := range rawSources {
+		for _, w := range scanSelfLiteral(content, id) {
+			selfLit[w.Message] = struct{}{}
+		}
+	}
+	return selfLit
 }
 
 // processTemplates is the second pass: load each template, walk for assets and blocks, store layout.
