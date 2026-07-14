@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -464,8 +465,28 @@ func TestServeDelivery_ForEach_AggregatesCappedStatus(t *testing.T) {
 		"aggregate status must reflect the capped item, not the last completed one")
 }
 
-// newCodeRoleFleet builds a Fleet with a code-executor role and a stub codeRunner.
-func newCodeRoleFleet(stubRunner func(context.Context, agentruntime.CodeInput) (*agentruntime.Result, error)) *Fleet {
+// recordingLLM records every message batch and tool list it is handed, then
+// returns a fixed scripted result. It lets a test assert what Input/messages the
+// executor:code path constructed against f.llm without a live codellm.
+type recordingLLM struct {
+	mu        sync.Mutex
+	seen      []agentruntime.Message
+	seenTools []agentruntime.ToolDef
+	result    agentruntime.ChatResult
+}
+
+func (r *recordingLLM) Chat(_ context.Context, _ string, messages []agentruntime.Message, tools []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.seen = append(r.seen, messages...)
+	if r.seenTools == nil {
+		r.seenTools = tools
+	}
+	return r.result, nil
+}
+
+// newCodeRoleFleet builds a Fleet with an executor:code role pointed at llm.
+func newCodeRoleFleet(llm agentruntime.LLM) *Fleet {
 	role := Role{
 		NotePath:      "roles/code.md",
 		Mode:          "change",
@@ -476,38 +497,33 @@ func newCodeRoleFleet(stubRunner func(context.Context, agentruntime.CodeInput) (
 	cfg := Config{
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
-		AllowedPrograms: []string{"bash"},
 	}
-	f := NewFleet(cfg, http.DefaultClient, nil) // llm=nil is fine for code roles
-	f.codeRunner = stubRunner
+	f := NewFleet(cfg, http.DefaultClient, llm)
 	f.SetRoles([]Role{role})
 	return f
 }
 
-// TestServeDelivery_CodeRole_DispatchesRunCode asserts that a role with
-// executor:code invokes the codeRunner (not agentruntime.Run), and that the
-// response reports TokensUsed=0 (code roles have no LLM spend).
-func TestServeDelivery_CodeRole_DispatchesRunCode(t *testing.T) {
-	var runCodeCalled bool
-	var receivedWritePatterns []string
+// TestServeDelivery_CodeRole_RoutesThroughLLM asserts the P3b cutover: an
+// executor:code role now runs as a normal agentruntime.Run against the fleet's
+// LLM (f.llm = codellm), with the rendered code body as the instruction and the
+// delivery bag riding as a fleet_input system message — NOT the deleted
+// in-process code runner.
+func TestServeDelivery_CodeRole_RoutesThroughLLM(t *testing.T) {
+	finishArgs, _ := json.Marshal(map[string]any{"answer": "code done"})
+	llm := &recordingLLM{result: agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "finish", Arguments: string(finishArgs)}},
+		PromptTokens: 3, CompletionTokens: 2,
+	}}
 
-	stub := func(_ context.Context, in agentruntime.CodeInput) (*agentruntime.Result, error) {
-		runCodeCalled = true
-		receivedWritePatterns = in.WritePatterns
-		return &agentruntime.Result{
-			Status:     agentruntime.StatusCompleted,
-			Answer:     "code done",
-			TokensUsed: 0,
-			Steps:      1,
-		}, nil
-	}
-
-	f := newCodeRoleFleet(stub)
+	f := newCodeRoleFleet(llm)
 	key := urlKey("roles/code.md")
 	body, _ := json.Marshal(map[string]any{
 		"depth":       0,
 		"instruction": "run code",
 		"api_token":   "scoped-token",
+		"changes": []map[string]any{
+			{"path": "boards/sprint.md", "event": "modified"},
+		},
 	})
 	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body))
 	role, ok := f.roleByKey(key)
@@ -517,59 +533,25 @@ func TestServeDelivery_CodeRole_DispatchesRunCode(t *testing.T) {
 	f.ServeDelivery(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.True(t, runCodeCalled, "code executor role must invoke codeRunner, not agentruntime.Run")
-	require.Equal(t, []string{"boards/**"}, receivedWritePatterns)
+	require.NotEmpty(t, llm.seen, "executor:code must run against the fleet LLM (f.llm), not an in-process runner")
+
+	var sawBody, sawBag bool
+	for _, m := range llm.seen {
+		if strings.Contains(m.Content, "echo hi") {
+			sawBody = true
+		}
+		if m.Role == agentruntime.RoleSystem && m.Name == "fleet_input" {
+			sawBag = true
+			require.Contains(t, m.Content, "changed_files", "fleet_input bag must carry the delivery context")
+		}
+	}
+	require.True(t, sawBody, "rendered code body must reach the LLM as the instruction")
+	require.True(t, sawBag, "delivery bag must ride as a fleet_input system message")
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	require.Equal(t, 0, resp.TokensUsed, "code roles have zero LLM token spend")
+	require.Equal(t, "code done", resp.Message)
 	require.Equal(t, agentruntime.StatusCompleted, resp.Status)
-}
-
-// TestServeDelivery_CodeRole_PassesEnvPassthrough asserts that env_passthrough
-// and env_prefix declared on the role are threaded into the CodeInput.
-func TestServeDelivery_CodeRole_PassesEnvPassthrough(t *testing.T) {
-	var receivedEnvPassthrough []string
-	var receivedEnvPrefix []string
-
-	stub := func(_ context.Context, in agentruntime.CodeInput) (*agentruntime.Result, error) {
-		receivedEnvPassthrough = in.EnvPassthrough
-		receivedEnvPrefix = in.EnvPrefix
-		return &agentruntime.Result{Status: agentruntime.StatusCompleted}, nil
-	}
-
-	role := Role{
-		NotePath:       "roles/envcode.md",
-		Mode:           "change",
-		Executor:       "code",
-		WritePatterns:  []string{"notes/**"},
-		Body:           "```bash\necho hi\n```",
-		EnvPassthrough: []string{"MY_TOKEN"},
-		EnvPrefix:      []string{"KRISP_"},
-	}
-	cfg := Config{
-		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
-		TokenCeiling: 100000, StepCeiling: 25,
-		AllowedPrograms: []string{"bash"},
-	}
-	f := NewFleet(cfg, http.DefaultClient, nil)
-	f.codeRunner = stub
-	f.SetRoles([]Role{role})
-
-	key := urlKey("roles/envcode.md")
-	body, _ := json.Marshal(map[string]any{
-		"depth": 0, "api_token": "tok",
-	})
-	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body))
-	r, ok := f.roleByKey(key)
-	require.True(t, ok)
-	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(r)))
-	rec := httptest.NewRecorder()
-	f.ServeDelivery(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, []string{"MY_TOKEN"}, receivedEnvPassthrough)
-	require.Equal(t, []string{"KRISP_"}, receivedEnvPrefix)
 }
 
 func TestClampBudget(t *testing.T) {

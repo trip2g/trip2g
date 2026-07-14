@@ -377,16 +377,27 @@ type execRoleInput struct {
 func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 	kb := newRemoteKB(p.GQL, p.Overlay)
 	if p.Role.Executor == executorCode {
-		return f.codeRunner(p.Ctx, agentruntime.CodeInput{
-			Body:            p.Instr,
-			WritePatterns:   p.Role.WritePatterns,
-			KB:              kb,
-			AllowedPrograms: f.cfg.AllowedPrograms,
-			Input:           p.InputBag,
-			EnvPassthrough:  p.Role.EnvPassthrough,
-			EnvPrefix:       p.Role.EnvPrefix,
-			MaxStdoutBytes:  f.cfg.MaxStdoutBytes,
-			Sandbox:         f.sandboxPolicy(),
+		// P3b cutover: executor:code no longer runs in-process. It routes through
+		// this fleet's LLM client (f.llm) — for a codellm-configured fleet, f.llm
+		// IS codellm (--llm-base-url points at it), which executes the rendered
+		// code body and returns write_note/patch_note/finish tool_calls. The
+		// delivery bag rides as a fleet_input system message (InputBag). Writes go
+		// through the same ScopedKB(write_patterns) enforcement as any llm role.
+		// HardFailApply preserves RunCode's all-or-nothing semantics (a failed
+		// apply fails the run). No MaxSteps pin: codellm's always-finish invariant
+		// stops the loop in one turn, so the normal step ceiling is safe.
+		return agentruntime.Run(p.Ctx, agentruntime.Input{
+			Instruction:   p.Instr,
+			ReadPatterns:  p.Role.ReadPatterns,
+			WritePatterns: p.Role.WritePatterns,
+			Tools:         p.Role.Tools,
+			Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
+			MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
+			MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
+			InputBag:      p.InputBag,
+			HardFailApply: true,
+			LLM:           f.llm,
+			KB:            kb,
 		})
 	}
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
