@@ -1,0 +1,29 @@
+# gqlgen config for codellm's own GraphQL surface (markdown structure only).
+# Separate from the monolith's repo-root gqlgen.yml and from fleet's fleetgql —
+# a standalone parse/assemble API compiled into cmd/codellm. Mirrors the
+# fleetgql setup (#231).
+#
+# Regenerate:
+#   go tool github.com/99designs/gqlgen generate --config internal/codellm/codellmgql/gqlgen.yml
+
+schema:
+  - internal/codellm/codellmgql/schema.graphqls
+
+exec:
+  package: codellmgen
+  layout: single-file
+  filename: internal/codellm/codellmgql/codellmgen/generated.go
+
+model:
+  filename: internal/codellm/codellmgql/model/models_gen.go
+  package: model
+
+resolver:
+  package: codellmgql
+  layout: follow-schema
+  dir: internal/codellm/codellmgql
+  filename_template: "{name}.resolvers.go"
+
+omit_slice_element_pointers: true
+omit_complexity: true
+skip_mod_tidy: true

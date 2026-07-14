@@ -53,7 +53,7 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 		return nil, errors.New("coderun: KB is required")
 	}
 
-	rawChanges, answer, steps, err := runCodeBlocks(ctx, in)
+	rawChanges, answer, steps, _, err := runCodeBlocksCore(ctx, in, false)
 	if err != nil {
 		return nil, err
 	}
@@ -96,24 +96,46 @@ func RunCode(ctx context.Context, in CodeInput) (*Result, error) {
 // are ignored. A block execution failure or a stdout-parse failure returns an
 // error, which codellm maps to HTTP 422 (deterministic hard-fail, no retry).
 func ExecCode(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, error) {
-	changes, answer, _, err := runCodeBlocks(ctx, in)
+	changes, answer, _, _, err := runCodeBlocksCore(ctx, in, false)
 	return changes, answer, err
 }
 
-// runCodeBlocks is the shared execution core of RunCode and ExecCode: it extracts
-// the fenced blocks, resolves+allowlist-checks their programs, runs them (single
-// block via RunBlock, multiple via the streaming pipeline), and parses the last
-// block's stdout as the {changes, answer} contract. It performs no KB writes and
-// no scope checks. Returns the parsed changes, answer, and block count (Steps).
-func runCodeBlocks(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, int, error) {
+// BlockDebug is one block's captured execution, exposed to the debugger surface
+// (the x_fleet_debug extension on codellm's /v1/chat/completions). Stdout is the
+// block's own stdout; PipeBuffer is the inter-block buffer this block feeds into
+// the NEXT block's stdin (empty for the last block, which has no downstream).
+type BlockDebug struct {
+	Index      int
+	Stdout     string
+	PipeBuffer string
+}
+
+// ExecCodeDebug is ExecCode plus per-block capture for the debugger. It drives
+// the pipelineDebugTaps seam with a non-nil tap per inter-block edge (via the
+// io.TeeReader path in wirePipeline), so each block's stdout / inter-block pipe
+// buffer is captured as it streams. Otherwise identical to ExecCode (same
+// {changes, answer} contract, same hard-fail semantics).
+func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, []BlockDebug, error) {
+	changes, answer, _, debug, err := runCodeBlocksCore(ctx, in, true)
+	return changes, answer, debug, err
+}
+
+// runCodeBlocksCore is the shared execution core of RunCode, ExecCode, and
+// ExecCodeDebug: it extracts the fenced blocks, resolves+allowlist-checks their
+// programs, runs them (single block via RunBlock, multiple via the streaming
+// pipeline), and parses the last block's stdout as the {changes, answer}
+// contract. It performs no KB writes and no scope checks. When capture is true it
+// also returns per-block BlockDebug via a non-nil pipelineDebugTaps; when false
+// no taps are allocated (the zero-overhead production path).
+func runCodeBlocksCore(ctx context.Context, in CodeInput, capture bool) ([]webhookutil.AgentChange, string, int, []BlockDebug, error) {
 	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
-		return nil, "", 0, errors.New("coderun: no fenced code block found in rendered body")
+		return nil, "", 0, nil, errors.New("coderun: no fenced code block found in rendered body")
 	}
 
 	programs, err := resolvePrograms(blocks, in)
 	if err != nil {
-		return nil, "", 0, err
+		return nil, "", 0, nil, err
 	}
 
 	limit := in.MaxStdoutBytes
@@ -122,6 +144,7 @@ func runCodeBlocks(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange
 	}
 
 	var stdout string
+	var debug []BlockDebug
 	if len(blocks) == 1 {
 		// Single block: use RunBlock for byte-identical behavior.
 		out, _, _, runErr := RunBlock(ctx, CodeSpec{
@@ -135,23 +158,58 @@ func runCodeBlocks(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange
 			Sandbox:        in.Sandbox,
 		})
 		if runErr != nil {
-			return nil, "", 0, fmt.Errorf("coderun: %w", runErr)
+			return nil, "", 0, nil, fmt.Errorf("coderun: %w", runErr)
 		}
 		stdout = out
+		if capture {
+			debug = []BlockDebug{{Index: 0, Stdout: out}}
+		}
 	} else {
-		// Multi-block: true streaming pipeline.
-		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, nil)
+		// Multi-block: true streaming pipeline. In debug mode, allocate a tap per
+		// inter-block edge so wirePipeline tees each block's stdout into it.
+		var taps pipelineDebugTaps
+		if capture {
+			taps = make(pipelineDebugTaps, len(blocks)-1)
+			for i := range taps {
+				taps[i] = &limitedBuffer{limit: limit}
+			}
+		}
+		out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
 		if pipeErr != nil {
-			return nil, "", 0, pipeErr
+			return nil, "", 0, nil, pipeErr
 		}
 		stdout = out
+		if capture {
+			debug = buildBlockDebug(taps, out, len(blocks))
+		}
 	}
 
 	rawChanges, answer, perr := parseCodeOutput(stdout)
 	if perr != nil {
-		return nil, "", 0, perr
+		return nil, "", 0, nil, perr
 	}
-	return rawChanges, answer, len(blocks), nil
+	return rawChanges, answer, len(blocks), debug, nil
+}
+
+// buildBlockDebug assembles per-block debug from the captured inter-block taps
+// (n-1 of them) plus the last block's final stdout. Block i<n-1 streams its
+// stdout into the pipe feeding block i+1, so its Stdout and PipeBuffer are the
+// same captured tap; the last block's Stdout is the final output and its
+// PipeBuffer is empty (no downstream).
+func buildBlockDebug(taps pipelineDebugTaps, finalStdout string, n int) []BlockDebug {
+	debug := make([]BlockDebug, n)
+	for i := range n {
+		d := BlockDebug{Index: i}
+		if i < n-1 {
+			buf := taps[i].String()
+			d.Stdout = buf
+			d.PipeBuffer = buf
+		} else {
+			d.Stdout = finalStdout
+		}
+		debug[i] = d
+	}
+	return debug
 }
 
 // resolvePrograms resolves and allowlist-checks every block's program before

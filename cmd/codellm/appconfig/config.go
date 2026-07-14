@@ -46,6 +46,14 @@ type Config struct {
 	// check (shared token / mTLS material, per docs/dev/codellm_extraction.md).
 	// Not enforced yet — a later PR wires channel auth using this value.
 	ChannelToken string
+
+	// MonolithURL is the trip2g monolith base URL used by the delegated-admin
+	// gate on the browser-facing endpoints (/v1 via the browser proxy and
+	// /graphql): each request's session cookie is forwarded to the monolith's
+	// viewer{role} query. Defaults to loopback (the monolith on the same box,
+	// mirroring the Caddy SSE proxy). Required and non-empty so the browser gate
+	// is always wired (fail-closed).
+	MonolithURL string
 }
 
 // Defaults.
@@ -53,6 +61,7 @@ const (
 	DefaultAddr            = "127.0.0.1:8082"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
+	DefaultMonolithURL     = "http://127.0.0.1:8081"
 )
 
 // DefaultConfig returns Config's baseline values, before env/flag overrides.
@@ -63,6 +72,7 @@ func DefaultConfig() Config {
 		Sandbox:         agentruntime.SandboxNative,
 		Timeout:         DefaultTimeout,
 		MaxStdoutBytes:  0,
+		MonolithURL:     DefaultMonolithURL,
 	}
 }
 
@@ -115,6 +125,9 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_CHANNEL_TOKEN"); v != "" {
 		c.ChannelToken = v
 	}
+	if v := os.Getenv("CODELLM_MONOLITH_URL"); v != "" {
+		c.MonolithURL = v
+	}
 }
 
 // defineAndParseFlags registers flags seeded from the env-resolved config (so
@@ -132,6 +145,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
 	fs.StringVar(&c.ChannelToken, "channel-token", c.ChannelToken, "shared fleet<->codellm channel token (not yet enforced)")
+	fs.StringVar(&c.MonolithURL, "monolith-url", c.MonolithURL, "trip2g monolith base URL for the delegated-admin gate on browser-facing endpoints")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -145,6 +159,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 func (c *Config) validate() error {
 	return ozzo.ValidateStruct(c,
 		ozzo.Field(&c.Addr, ozzo.Required),
+		ozzo.Field(&c.MonolithURL, ozzo.Required),
 		ozzo.Field(&c.MaxStdoutBytes, ozzo.Min(0)),
 		ozzo.Field(&c.Timeout, ozzo.By(nonNegativeDuration)),
 		ozzo.Field(&c.Sandbox, ozzo.In(agentruntime.SandboxNative, agentruntime.SandboxBestEffort, agentruntime.SandboxOff)),
