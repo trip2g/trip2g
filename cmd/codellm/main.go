@@ -59,7 +59,7 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	log.Printf("codellm listening on %s (sandbox=%s, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.AllowedPrograms)
-	if err := srv.ListenAndServe(); err != nil {
+	if err = srv.ListenAndServe(); err != nil {
 		log.Fatalf("codellm: server error: %v", err)
 	}
 }

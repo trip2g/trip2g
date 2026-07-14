@@ -19,7 +19,8 @@ func (e *testEnv) LiveNoteViews() *model.NoteViews { return e.nvs }
 func (e *testEnv) Layouts() *model.Layouts         { return e.layouts }
 func (e *testEnv) AssetIndexGeneration() uint64    { return e.generation }
 
-func noteWithAsset(path, hash, fileName string, free bool) *model.NoteView {
+func noteWithAsset(path, fileName string, free bool) *model.NoteView {
+	const hash = "h1"
 	return &model.NoteView{
 		Path: path,
 		Free: free,
@@ -34,7 +35,7 @@ func views(notes ...*model.NoteView) *model.NoteViews {
 }
 
 func TestAssetOwnership_PublicViaFreeNote(t *testing.T) {
-	env := &testEnv{nvs: views(noteWithAsset("post.md", "h1", "img.png", true))}
+	env := &testEnv{nvs: views(noteWithAsset("post.md", "img.png", true))}
 	idx := assetindex.New(env)
 
 	own, ok := idx.AssetOwnership("h1", "img.png")
@@ -44,7 +45,7 @@ func TestAssetOwnership_PublicViaFreeNote(t *testing.T) {
 }
 
 func TestAssetOwnership_PrivateViaPaidNote(t *testing.T) {
-	env := &testEnv{nvs: views(noteWithAsset("post.md", "h1", "img.png", false))}
+	env := &testEnv{nvs: views(noteWithAsset("post.md", "img.png", false))}
 	idx := assetindex.New(env)
 
 	own, ok := idx.AssetOwnership("h1", "img.png")
@@ -54,7 +55,7 @@ func TestAssetOwnership_PrivateViaPaidNote(t *testing.T) {
 }
 
 func TestAssetOwnership_FreeNoteInSigninSubgraphIsNotPublic(t *testing.T) {
-	note := noteWithAsset("post.md", "h1", "img.png", true)
+	note := noteWithAsset("post.md", "img.png", true)
 	note.Subgraphs = map[string]*model.NoteSubgraph{"members": {RequireSignin: true}}
 	idx := assetindex.New(&testEnv{nvs: views(note)})
 
@@ -65,8 +66,8 @@ func TestAssetOwnership_FreeNoteInSigninSubgraphIsNotPublic(t *testing.T) {
 
 func TestAssetOwnership_SharedAssetPublicIfAnyOwnerIsFree(t *testing.T) {
 	env := &testEnv{nvs: views(
-		noteWithAsset("paid.md", "h1", "img.png", false),
-		noteWithAsset("free.md", "h1", "img.png", true),
+		noteWithAsset("paid.md", "img.png", false),
+		noteWithAsset("free.md", "img.png", true),
 	)}
 	idx := assetindex.New(env)
 
@@ -104,7 +105,7 @@ func TestAssetOwnership_UnknownHash(t *testing.T) {
 // publicness must not bleed onto a private sibling row that merely shares
 // the hash.
 func TestAssetOwnership_SameHashDifferentFileNameIsIndependent(t *testing.T) {
-	publicNote := noteWithAsset("free.md", "h1", "public.png", true)
+	publicNote := noteWithAsset("free.md", "public.png", true)
 	privateNote := &model.NoteView{
 		Path: "paid.md",
 		Free: false,
@@ -131,7 +132,7 @@ func TestAssetOwnership_SameHashDifferentFileNameIsIndependent(t *testing.T) {
 // current generation — it self-checks env.AssetIndexGeneration() on every
 // call instead of relying on an explicit invalidation call.
 func TestAssetOwnership_StaleGenerationTriggersRebuild(t *testing.T) {
-	env := &testEnv{nvs: views(noteWithAsset("post.md", "h1", "img.png", true)), generation: 1}
+	env := &testEnv{nvs: views(noteWithAsset("post.md", "img.png", true)), generation: 1}
 	idx := assetindex.New(env)
 
 	own, ok := idx.AssetOwnership("h1", "img.png")
@@ -141,7 +142,7 @@ func TestAssetOwnership_StaleGenerationTriggersRebuild(t *testing.T) {
 	// Simulate a reload that flips the note free -> paid, publishing a new
 	// snapshot AND bumping the generation atomically (as noteloader.Loader
 	// does) — no explicit invalidation call.
-	env.nvs = views(noteWithAsset("post.md", "h1", "img.png", false))
+	env.nvs = views(noteWithAsset("post.md", "img.png", false))
 	env.generation = 2
 
 	own, ok = idx.AssetOwnership("h1", "img.png")
@@ -154,7 +155,7 @@ func TestAssetOwnership_StaleGenerationTriggersRebuild(t *testing.T) {
 // so a stable snapshot doesn't pay the rebuild cost per request.
 func TestAssetOwnership_SameGenerationServesCachedIndex(t *testing.T) {
 	calls := 0
-	env := &countingEnv{testEnv: testEnv{nvs: views(noteWithAsset("post.md", "h1", "img.png", true)), generation: 1}, calls: &calls}
+	env := &countingEnv{testEnv: testEnv{nvs: views(noteWithAsset("post.md", "img.png", true)), generation: 1}, calls: &calls}
 	idx := assetindex.New(env)
 
 	_, _ = idx.AssetOwnership("h1", "img.png")

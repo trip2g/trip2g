@@ -57,11 +57,13 @@ func TestHandlerRoles(t *testing.T) {
 	data := post(t, h, `{ roles { name path executor model triggerInclude writePatterns } }`)
 	var got struct {
 		Roles []struct {
-			Name, Path, Executor string
-			Model                *string
-			TriggerInclude       []string
-			WritePatterns        []string
-		}
+			Name           string   `json:"name"`
+			Path           string   `json:"path"`
+			Executor       string   `json:"executor"`
+			Model          *string  `json:"model"`
+			TriggerInclude []string `json:"triggerInclude"`
+			WritePatterns  []string `json:"writePatterns"`
+		} `json:"Roles"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"Roles":`+string(data["roles"])+`}`), &got))
 	require.Len(t, got.Roles, 2)
@@ -92,18 +94,21 @@ func TestHandlerRoleGraph(t *testing.T) {
 	var got struct {
 		RoleGraph struct {
 			Nodes []struct {
-				Role                  string
-				InboxGlob, OutboxGlob []string
-				Orphan                bool
-			}
+				Role       string   `json:"role"`
+				InboxGlob  []string `json:"inboxGlob"`
+				OutboxGlob []string `json:"outboxGlob"`
+				Orphan     bool     `json:"orphan"`
+			} `json:"nodes"`
 			Edges []struct {
-				From, To, Kind string
-				Exact          bool
-				CutByDepth     bool
-			}
-			Cycles      [][]string
-			ParseErrors []string
-		}
+				From       string `json:"from"`
+				To         string `json:"to"`
+				Kind       string `json:"kind"`
+				Exact      bool   `json:"exact"`
+				CutByDepth bool   `json:"cutByDepth"`
+			} `json:"edges"`
+			Cycles      [][]string `json:"cycles"`
+			ParseErrors []string   `json:"parseErrors"`
+		} `json:"RoleGraph"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"RoleGraph":`+string(data["roleGraph"])+`}`), &got))
 
@@ -132,8 +137,10 @@ func TestHandlerParseErrorsSurfaced(t *testing.T) {
 
 	data := post(t, h, `{ roleParseErrors roleGraph { parseErrors } }`)
 	var got struct {
-		RoleParseErrors []string
-		RoleGraph       struct{ ParseErrors []string }
+		RoleParseErrors []string `json:"roleParseErrors"`
+		RoleGraph       struct {
+			ParseErrors []string `json:"parseErrors"`
+		} `json:"RoleGraph"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"RoleParseErrors":`+string(data["roleParseErrors"])+
 		`,"RoleGraph":`+string(data["roleGraph"])+`}`), &got))

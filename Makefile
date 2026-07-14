@@ -52,7 +52,7 @@ db-down:
 
 lint:
 	./internal/db/list_queries.sh
-	go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run
+	go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run --build-tags dev
 
 check-doc-links:
 	./scripts/check-doc-lang-links.sh

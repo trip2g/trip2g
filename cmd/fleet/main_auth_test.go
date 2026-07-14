@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/fleet"
@@ -24,7 +25,7 @@ func (s authFakeSource) DiscoverParsed(context.Context) ([]fleet.Role, []error) 
 func fakeMonolith(t *testing.T, role string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/_system/graphql", r.URL.Path)
+		assert.Equal(t, "/_system/graphql", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":{"viewer":{"role":"` + role + `"}}}`))
 	}))

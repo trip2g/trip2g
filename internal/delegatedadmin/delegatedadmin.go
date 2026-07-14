@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -71,7 +72,7 @@ type Middleware struct {
 // New builds a Middleware. MonolithBaseURL must be non-empty.
 func New(cfg Config) (*Middleware, error) {
 	if cfg.MonolithBaseURL == "" {
-		return nil, fmt.Errorf("delegatedadmin: MonolithBaseURL is required")
+		return nil, errors.New("delegatedadmin: MonolithBaseURL is required")
 	}
 	client := cfg.HTTPClient
 	if client == nil {
@@ -160,7 +161,7 @@ func (m *Middleware) fetchViewerRole(ctx context.Context, cookieHeader string) (
 	}
 
 	var parsed viewerRoleResponse
-	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
 		return "", err
 	}
 	if len(parsed.Errors) > 0 {
